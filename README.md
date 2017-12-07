@@ -1,5 +1,5 @@
 
-# Rayleigh v 0.9 #
+# Rayleigh Version 0.9 #
 
 Rayleigh is a 3-D convection code designed for the study of planetary and stellar dynamos.  In particular, it evolves the incompressible and anelastic MHD equations in spherical geometry using a pseudo-spectral approach.  Rayleigh employs spherical harmonics in the horizontal direction and Chebyshev polynomials in the radial direction.  The code has undergone extensive accuracy testing using the [Christensen et al. (2001)](http://adsabs.harvard.edu/abs/2001PEPI..128...25C) Boussinesq benchmarks and the [Jones et al. (2011)](http://adsabs.harvard.edu/abs/2011Icar..216..120J) anelastic benchmarks.   Rayleigh has been developed with NSF support through the Computational Infrastructure for Geodynamics ([CIG](https://geodynamics.org/cig/news/newsletters/may-2016/)).
 
@@ -9,5 +9,5 @@ The pseudo-spectral nature of Rayleigh means that its parallelization necessaril
 ![mira_performance.jpg](https://bitbucket.org/repo/Rp975y/images/3897197863-mira_performance.jpg)
 
 
-# When Will Rayleigh Be Released?#
+# When Will Rayleigh Be Released? #
 Rayleigh is scheduled for release at Fall AGU 2017.  In the meantime, please pardon the mess.  The code and (and presently incomplete) documentation are in a state of flux.  See the Wiki and the documentation directory (in the source) for tips.  Some videos corresponding to the images above can be found [here](http://www.youtube.com/user/feathern24).
