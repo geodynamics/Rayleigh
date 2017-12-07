@@ -1,0 +1,216 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                Rayleigh v0.9 Installation Instructions
+                    November 21, 2017
+                    N. Featherstone
+    
+Throughout this Document, <rayleigh root> refers to the directory in which this
+file (named 'INSTALL') is located.  If this file is not located in <rayleigh root>,
+then you should identify the location of <rayleigh root> before proceeding.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I.  Overview of the Installation Process
+
+Compilation and installation of Rayleigh is accomplished using the "configure / make 
+/ make install " process.  Building Rayleigh requires the execution of three commands from
+within <rayleigh root>:
+
+1. ./configure --OPTION1=... -OPTION2=... 
+2. make
+3. make install
+
+(4.) Running 'make distclean' will revert <rayleigh root> to it's pre-configured state.
+
+The configure script automatically supports both GNU and Intel Compilers.  An
+IBM-compiler example is provided at the end of this document.  On many Intel-based machines, 
+running ./configure or ./configure -mkl  will suffice.  In other circumstances, it may be 
+necessary to specify a subset of configure's options.  Some possible variations are 
+illustrated in section III.
+
+To see a detailed description of all available options, run ./configure -h.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+II.  Dependencies
+
+Rayleigh requires the the following compilers and libraries:
+
+1. Fortran-MPI compiler that supports the Fortran 2003 standard.
+2. C++ compiler (does not need to be MPI-capable)
+
+3. Intel's Math Kernel Library (MKL)
+
+    OR
+
+3a. BLAS
+3b. LAPack
+3c. FFTW (version 3.x)
+
+
+MKL provides an interface to BLAS, LAPack, and FFTW routines.   
+We strongly recommend that you link against the MKL library
+when running Rayleigh on Intel processors.  This is true even if
+you are not compiling with the Intel compiler.
+
+If you do not have MKL installed, then you will need to know the location
+of your BLAS, LAPACK, and FFTW installations.  In particular, the configure
+script requires that you know the "root" directory for these installations.
+By "root," we mean the directory that contains subdirectories named "lib,"
+"include," etc.   Rayleigh expects to find the following four files when
+building without MKL:
+
+<BLAS ROOT>/lib/libblas.so  OR <BLAS ROOT>/lib/libopenblas.so
+<LAPACK ROOT>/lib/liblapack.so
+<FFTW ROOT>/lib/libfftw3.so
+<FFTW ROOT>/include/fftw3.f
+
+These libraries may be linked statically, as discussed in section III.
+In that case, similarly named library files with a '.a' extension will
+be required.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III.  Configuration
+
+III.a  Overview
+
+Rayleigh's configure script currently supports the Intel and GNU compilers.  
+For other compilers, the optimization, include, and library  flags 
+will need to be set manually by passing approriate flags to configure.
+
+NOTE:  If your system uses a module system to manage software, be sure to load 
+all relevant modules (e.g., intel, impi, mkl, etc.) before running 
+configure.
+
+The configure process also determines where the rayleigh executables will 
+be placed. By default, executables are placed in <rayleigh root>/bin. 
+
+The 'bin' subdirectory is created when "make install" is run.  If you 
+would like to install Rayleigh to another directory, use the prefix 
+keyword when running configure.  E.g.,
+
+./configure --prefix=<rayleigh install>
+
+The compilation process generates two executables:  
+    <rayleigh install>/bin/rayleigh.opt 
+        and 
+    <rayleigh install>/bin/rayleigh.dbg
+
+The rayleigh.opt executable is compiled with optimization flags appropriate
+for your compiler type and should be used for production runs.
+
+The rayleigh.dbg executable is compiled with debugging flags and should
+not be used for production runs.  Instead, if Rayleigh crashes unexpectedly,
+it is a good idea to re-run the same job with rayleigh.dbg and report
+the error message(s) to the development team.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III.b   Configuration using the Intel compiler and MKL.
+
+Running ./configure will work "out of the box" on many Intel systems, 
+provided the following environment variables are defined:
+
+1. FC  (the name of your Fortran-MPI compiler; e.g., mpiifort, mpif90 etc.)
+2. CC  (the name of your C-compiler; e.g., icc or icpc)
+3. MKLROOT (the location of your MKL installation)
+
+If these environment variables are undefined, or if they are set to something 
+that you do not wish to override, invoke configure in a fashion similar to:
+
+./configure --with-mkl=<MKL root> --CC=icc --FC=mpiifort (or mpifc, mpif90, etc.)
+
+NOTE:  When compiling with Intel, you will be prompted to specify the level of 
+vectorization. Alternatively, you may compile for all levels of vectorization 
+supported by Intel processors. If you choose to do so, no rayleigh.opt will be
+produced.  Instead, rayleigh.avx, rayleigh.sse, and rayleigh.avx2 will be
+generated (in addition to rayleigh.dbg).
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III.c Configuration using the GNU compiler and MKL
+
+MKL can also be linked to code compiled using GFortran.  The configuration 
+process in this situation is similar to that used for Intel compilers, but 
+configure is called with the -mkl flag. If the MKLROOT, FC, and CC environment 
+variables are set, run the following:
+
+./configure -mkl
+
+If they are not set, run:
+
+./configure --with-mkl=<mkl root> --CC=gcc --FC=mpif90 (or mpifc, etc.)
+
+As with Intel compilation, FC should refer to your Fortran-MPI compiler.
+Be sure to set FC to mpif90 or mpifc, and not to gfortran.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III.d  Configuration using non-MKL libraries
+
+Rayleigh can be configured to use your preferred FFTW, BLAS, and LAPACK 
+libraries.  These directories are specified using the --with-blas, --with-lapack, 
+and --with-fftw flags.   By default, Raleigh links dynamically to shared libraries.
+To alter this behavior, use the  --static-blas, --static-lapack, and or --static-fftw
+flags.  If using OpenBLAS instead of BLAS, run configure with the -openblas flag.
+
+The following example illustrates how to link with shared OpenBLAS and FFTW libraries,
+and a static LAPack library:
+
+BLASROOT=/software/openblas/0.2.20
+LAPACKROOT=/software/lapack/3.8.0
+FFTWROOT=/software/fftw/3.3.4
+./configure \
+--FC=mpif90 \
+--CC=gcc \
+--with-blas=$BLASROOT \
+--with-lapack=$LAPACKROOT \
+--with-fftw=$FFTWROOT \
+--static-lapack \
+--openblas
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III.e  Configuration using Alternative Compilers / Customized Compiler Flags
+
+For compilers other than GNU or Intel, you will need to manually specify
+the optimization, library, and include flags.  You may also wish to do this
+if you are experimenting with new compilation flags that are not automatically
+provided by configure for Intel or GNU.   These flags can be set using --LIBFLAGS,
+--FFLAGS_OPT, --FFLAGS_DBG, and --INCLUDE.  FFLAGS_OPT and FFLAGS_DBG define
+the optimization flags used for rayleigh.opt and rayleigh.dbg respectively.
+
+Alternatively, the --FFLAGS can be set to use the same optimization flags for
+rayleigh.opt and rayleigh.dbg.
+
+
+NOTE:  the -nodirs (or --nodirs) flag can be set on Machines where linking C-code
+code to Fortran code via Rayleigh's Makefile produces errors.  In that case, users
+will need to create their subdirectories for each Rayleigh run manually.  This
+can be done by running the script rayleigh/etc/make_dirs from within a run directory.
+
+The example below shows how to configure the code for Mira, an IBM Blue Gene/Q.
+
+export BLAS_LIB=/soft/libraries/alcf/current/xl/BLAS/lib
+export LAPACK_LIB=/soft/libraries/alcf/current/xl/LAPACK/lib
+export FFTW_LIB=/soft/libraries/alcf/current/xl/FFTW3/lib
+export FFTW_INC=/soft/libraries/alcf/current/xl/FFTW3/inc
+
+./configure \
+--FC=mpixlf2003_r \
+--CC=gcc \
+--LIBFLAGS="-L$FFTW_LIB -lfftw3 -L$LAPACK_LIB -llapack -L$BLAS_LIB -lblas" \
+--INCLUDE="-I$FFTW_INC" \
+--FFLAGS_OPT="-qfree=f90 -O2" \
+--FFLAGS_DBG="-qfree=f90 -O0 -g -traceback  -qcheck  -C" \
+--nodirs
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IV
+
+Ultimately, the role of 'configure' is to generate a definitions file that is included
+by 'Make' at compilation time.  This file is named "Machine_Definitions," and it is 
+placed in <rayleigh root>/src/build by configure.  As a last resort, you may edit this 
+file directly in order to customize the compiler flags generated by running configure.  
+If the configure process fails to create Machine_Definitions, your build is a challening
+one.  Run './configure --blank' to generate a template that you may edit as needed.  
+IMPORTANT:  Ensure that whitespace is removed at the end of each line in this file.
+
+
+
+
+
+
