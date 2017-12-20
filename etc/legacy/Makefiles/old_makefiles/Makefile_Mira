@@ -1,0 +1,104 @@
+F90 = mpixlf2003_r
+F90FLAGS = -r8 -O3 -fpp -FR -fp-model strict -I$(FFTWINC)
+FFTWINC = /soft/libraries/alcf/current/xl/FFTW3/include
+FFTWLIB = /soft/libraries/alcf/current/xl/FFTW3/lib
+##FFTWINC = /soft/libraries/essl/current/essl/5.1/FFTW3/include
+##FFTWLIB = /soft/libraries/essl/current/essl/5.1/FFTW3/lib
+
+LALIB = /soft/libraries/alcf/current/xl/LAPACK/lib
+BLLIB = /soft/libraries/alcf/current/xl/BLAS/lib
+##LALIB = /home/morozov/lib
+##BLLIB = /home/morozov/lib
+LESSL = /soft/libraries/essl/current/lib64
+ILESSL = /soft/libraries/essl/current/include
+
+# The first set of flags has the build path hard-coded.  This is error prone!
+#F90FLAGS =  -qfree=f90 -O2 -I/projects/cig_dynamo/rayleigh_dev/build -I$(FFTWINC) 
+##F90FLAGS =  -qessl -qfree=f90 -qnosmp  -O3 -I .  -I$(FFTWINC)
+#NOTE -- turned off qstrict above
+F90FLAGS =  -qfree=f90 -O2 -I .  -I$(FFTWINC)
+LIBFLAGS = -L$(FFTWLIB) -lfftw3 -L$(LALIB) -llapack -L$(BLLIB) -lblas
+PNAME = rayleigh
+ifeq ($(RAYLEIGH_OPT1),O3)
+	PNAME = rayleigh.O3
+        F90FLAGS =  -qfree=f90 -O3 -I .  -I$(FFTWINC)
+endif
+
+ifeq ($(RAYLEIGH_OPT1),essl)
+        PNAME = rayleigh.essl
+	F90FLAGS =  -qessl -qfree=f90 -O2 -I .  -I$(FFTWINC)
+        LIBFLAGS = -L$(FFTWLIB) -lfftw3 -L/soft/libraries/essl/current/lib64/ -L/soft/libraries/alcf/current/xl/LAPACK/lib -lesslbg -llapack -lesslbg -L$(BLLIB) -lblas
+
+
+endif
+
+ifeq ($(RAYLEIGH_OPT1),essl_devel)
+	PNAME = rayleigh.essl_devel
+        F90FLAGS =  -qessl -qfree=f90 -O3 -I .  -I$(FFTWINC)
+        LIBFLAGS = -L$(FFTWLIB) -lfftw3 -L/soft/libraries/essl/current/lib64/ -L/soft/libraries/alcf/current/xl/LAPACK/lib -lesslbg -llapack -lesslbg -L$(BLLIB) -lblas
+
+
+endif
+
+ifeq ($(RAYLEIGH_OPT1),essl_devel2)
+        PNAME = rayleigh.essl_devel2
+        F90FLAGS =  -qessl -qprefetch -qfree=f90 -O3 -qhot -qarch=auto -qcache=auto -qtune=auto -q64 -I .  -I$(FFTWINC)
+        LIBFLAGS = -L$(FFTWLIB) -lfftw3 -L/soft/libraries/essl/current/lib64/ -L/soft/libraries/alcf/current/xl/LAPACK/lib -lesslbg -llapack -lesslbg -L$(BLLIB) -lblas
+
+
+endif
+
+ifeq ($(RAYLEIGH_OPT1),essl_devel3)
+        PNAME = rayleigh.essl_devel3
+        F90FLAGS =  -qessl -qstrict -qprefetch -qfree=f90 -O3 -qhot -qarch=auto -qcache=auto -qtune=auto -q64 -I .  -I$(FFTWINC)
+        LIBFLAGS = -L$(FFTWLIB) -lfftw3 -L/soft/libraries/essl/current/lib64/ -L/soft/libraries/alcf/current/xl/LAPACK/lib -lesslbg -llapack -lesslbg -L$(BLLIB) -lblas
+
+
+endif
+
+
+ifeq ($(RAYLEIGH_OPT1),debug)
+	PNAME = rayleigh.debug
+        F90FLAGS =  -qfree=f90 -O2 -g -traceback -I .  -I$(FFTWINC)
+endif
+
+ifeq ($(RAYLEIGH_OPT1), omp)
+	#This one is theoretically slower than omp_devel, but it is stable
+	PNAME =  rayleigh.omp
+        F90FLAGS = -qessl -qipa -qprefetch -qfree=f90 -qsmp=omp:noauto -O3 -qhot -qstrict -qarch=auto -qcache=auto -qtune=auto -q64 -I .  -I$(FFTWINC)
+
+
+        LIBFLAGS =  -L$(FFTWLIB) -lfftw3 -lfftw3_omp -L$(LALIB) -L$(LESSL) -lesslsmpbg -llapack -lesslsmpbg -L$(BLLIB) -lblas /soft/compilers/ibmcmp-nov2014/vacpp/bg/12.1/lib/libibmc++.a /bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib/libstdc++.a
+
+
+endif
+
+ifeq ($(RAYLEIGH_OPT1), omp_devel)
+	PNAME = rayleigh.omp_devel
+	#This one is having memory issues at the moment and fails in legendre transforms line 1000
+
+        F90FLAGS = -qessl -qprefetch -qfree=f90 -qsmp=omp:noauto -O3 -qhot -qarch=auto -qcache=auto -qtune=auto -q64 -I .  -I$(FFTWINC)
+
+
+        LIBFLAGS =  -L$(FFTWLIB) -lfftw3 -lfftw3_omp -L$(LALIB) -L$(LESSL) -lesslsmpbg -llapack -lesslsmpbg -L$(BLLIB) -lblas /soft/compilers/ibmcmp-nov2014/vacpp/bg/12.1/lib/libibmc++.a /bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib/libstdc++.a
+
+
+endif
+
+
+#LIBFLAGS = -L$(FFTWLIB) -lfftw3 -L/soft/libraries/essl/current/lib64/ -L/soft/libraries/alcf/current/xl/LAPACK/lib -lesslbg -llapack -lesslbg -L$(BLLIB) -lblas
+
+PROG =	rayleigh
+
+.SUFFIXES: .o .F90 .f .F
+
+include object_list
+
+$(PROG) :$(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)
+	$(F90) $(F90FLAGS) -o  $(PNAME) $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ) $(LIBFLAGS)
+.F90.o :
+	$(F90) $(F90FLAGS) -c $<
+clean : 
+	rm -f *.o *.mod rayleigh
+ready :
+

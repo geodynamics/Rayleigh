@@ -1,0 +1,213 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{latexsym,graphicx,rotating,amsmath}
+\addtolength{\textwidth}{1.0truein}
+\addtolength{\hoffset}{-0.5truein}
+\addtolength{\textheight}{2.0truein}
+\addtolength{\voffset}{-0.2truein}
+\def\deg{$^{\circ}$~}
+%\def\df{{\frac{\partial f_i}{\partial x}}}
+%\def\ddf{{\frac{\partial^2 f_i}{\partial x^2}}}
+%\def\dddf{{\frac{\partial^3 f_i}{\partial x^3}}}
+%\def\ddddf{{\frac{\partial^4 f_i}{\partial x^4}}}
+\def\dfz{f_{0,i}}
+\def\df{f_{1,i}}
+\def\ddf{f_{2,i}}
+\def\dddf{f_{3,i}}
+\def\ddddf{f_{4,i}}
+\def\dmm{\Delta_{m2}}
+\def\dm{\Delta_{m1}}
+\def\dpl{\Delta_{1}}
+\def\dpp{\Delta_{2}}
+\def\dppp{\Delta_{3}}
+
+\begin{document}
+
+\section{Radial Derivative Scheme in ASH}
+
+We approximate the derivative of a function at some point $x_i$ in ASH as a linear combination of some number of neighboring points.  We refer to the collection of neighboring points that enter into this linear combination as the $stencil$ for point $x_i$.  In general, a larger stencil size yields a derivative with a higher formal accuracy.  We have chosen a five-point stencil, centered on each $x_i$, as the ASH default, but the code has been generalized to allow any stencil size to be attempted.    
+
+For a five point stencil, the derivative of some function $f(x)$ at point $x_i$ is approximated as
+\begin{equation}
+\frac{\partial^n f}{\partial x^n}|_{x_i} = d_{n1}\, f(x_{i-2})+ d_{n2}\, f(x_{i-1}) + d_{n3}\, f(x_i) + d_{n4}\, f(x_{i+1}) + d_{n5}\, f(x_{i+2}),
+\label{dij}
+\end{equation}
+where the $d_{ij}$'s are a set of coefficients determined at initialization time.  On a uniform grid, a five-point stencil corresponds to first and second derivatives with 4th-order accuracy and a third derivative with 2nd-order accuracy.  A fourth derivative (or higher) is never taken in the current version of ASH.  
+
+\subsection{Determination of the $d_{ij}$'s}
+The $d_{ij}$ coefficients of equation 1 may be determined by Taylor expanding about the point $x_i$ to approximate $f$ at the other points in the stencil.  By doing so, we generate a set of linear equations that can be solved to yield the $d_{ij}$'s.  To begin with, let us define the distances between the point $x_i$ and the other points in the stencil as
+
+\begin{equation}
+\begin{array}{cc}
+\Delta_{m2} &= x_{i-2}-x_i \\
+\Delta_{m1} &= x_{i-1}-x_i \\
+\Delta_{1}  &= x_{i+1}-x_i \\
+\Delta_{2}  &= x_{i+2}-x_i 
+\end{array}.
+\end{equation}
+We now adopt the following notational convention
+\begin{equation}
+f_{n,i} \equiv \frac{\partial^n f}{\partial x^n}|_{x_i},
+\end{equation}
+and Taylor expand about $x_i$ to arrive at the following 5 equations:
+\begin{equation}
+\begin{array}{ccc}
+f_{i-2} = & \dfz & +  \dmm\df+\frac{\dmm^2}{2}\ddf+\frac{\dmm^3}{3!}\dddf+ \frac{\dmm^4}{4!}\ddddf+...\\
+\\
+f_{i-1} = & \dfz & +  \dm\df+\frac{\dm^2}{2}\ddf+\frac{\dm^3}{3!}\dddf+ \frac{\dm^4}{4!}\ddddf +...\\
+\\
+ f_{i}  = & \dfz & \\
+\\
+f_{i+1} = & \dfz & +  \dpl\df+\frac{\dpl^2}{2}\ddf+\frac{\dpl^3}{3!}\dddf+ \frac{\dpl^4}{4!}\ddddf +...\\
+\\
+f_{i+2} = & \dfz & +   \dpp\df+\frac{\dpp^2}{2}\ddf+\frac{\dpp^3}{3!}\dddf+ \frac{\dpp^4}{4!}\ddddf +...
+\end{array}
+\end{equation}
+By expanding only out to fourth order (our stencil size minus 1), we arrive at five equations with five unknowns (derivatives zero through four).  The central equation is trivial, but we will include it to keep the representation of the system clear.  We can write this system of equations in matrix form as
+\begin{equation}
+\left( \begin{array}{ccccc} 
+		1 & \Delta_{m2} & (1/2!)\Delta_{m2}^2 & (1/3!)\Delta_{m2}^3 & (1/4!)\Delta_{m2}^4 \\
+		1 & \Delta_{m1} & (1/2!)\Delta_{m1}^2 & (1/3!)\Delta_{m1}^3 & (1/4!)\Delta_{m1}^4 \\
+		1 & 0 & 0 & 0 & 0 \\
+		1 & \Delta_{p1} & (1/2!)\Delta_{p1}^2 & (1/3!)\Delta_{p1}^3 & (1/4!)\Delta_{p1}^4 \\
+		1 & \Delta_{p2} & (1/2!)\Delta_{p2}^2 & (1/3!)\Delta_{p2}^3 & (1/4!)\Delta_{p2}^4
+\end{array} \right) 
+\left( \begin{array}{c} 
+\dfz \\ 
+\df \\ 
+\ddf \\ 
+\dddf \\
+\ddddf 
+\end{array} \right)
+=
+\left( \begin{array}{c} 
+f_{i-2} \\ 
+f_{i-1} \\ 
+f_{i} \\ 
+f_{i+1} \\
+f_{i+2} 
+\end{array} \right),
+\label{main_matrix}
+\end{equation}
+or more compactly as
+\begin{equation}
+\bf N\, f_n = f,
+\end{equation}
+Where \textbf{N} is the matrix of $\Delta$'s, $\bf f_n$ is the derivative vector, and $\bf f$ is the function vector.  If we denote $\bf N^{-1}$ as $\bf D$, we have
+\begin{equation}
+\bf f_n = D f,
+\end{equation}
+and we see that the $d_{ij}$'s from Equation \ref{dij} are the elements of the inverse matrix $\bf D$.
+
+In ASH FD, at initialization time, the inverse matrix {\bf D} is solved for at each grid point and at each derivative order (in case different stencil sizes/derivative accuracies are requested). Thus for a $N$ grid points, we do $3N$ inversions, but these are small matrices, and the initialization is generally very fast.  More specifics are given below for anyone who is interested (also see the subroutine gen\_coefs in Derivatives.F).
+
+\subsection{Preconditioning of the Derivative Matrix}
+The matrix in equation \ref{main_matrix} has columns with widely disparate values.  For a solar convection zone simulation with a uniform radial grid with 200 points, the $\Delta$'s are of order 10$^{\mathrm{8}}$, and the fifth column of the matrix will have values of order 10$^{32}$ times larger than the first column.  To avoid any numerical precision issues in the matrix inversion, we recast the system of equations as
+\begin{equation}
+\left( \begin{array}{ccccc} 
+		1 & (\Delta_{m2}/\delta) & (\Delta_{m2}/\delta)^2 & (\Delta_{m2}/\delta)^3 & (\Delta_{m2}/\delta)^4 \\
+		1 & (\Delta_{m1}/\delta) & (\Delta_{m1}/\delta)^2 & (\Delta_{m1}/\delta)^3 & (\Delta_{m1}/\delta)^4 \\
+		1 & 0 & 0 & 0 & 0 \\
+		1 & (\Delta_{p1}/\delta) & (\Delta_{p1}/\delta)^2 & (\Delta_{p1}/\delta)^3 & (\Delta_{p1}/\delta)^4 \\
+		1 & (\Delta_{p2}/\delta) & (\Delta_{p2}/\delta)^2 & (\Delta_{p2}/\delta)^3 & (\Delta_{p2}/\delta)^4 \\
+\end{array} \right) 
+\left( \begin{array}{c} 
+\dfz \\ 
+\delta\df \\ 
+(\delta^2/!2)\ddf \\ 
+(\delta^3/!3)\dddf \\
+(\delta^4/!4)\ddddf 
+\end{array} \right)
+=
+\left( \begin{array}{c} 
+f_{i-2} \\ 
+f_{i-1} \\ 
+f_{i} \\ 
+f_{i+1} \\
+f_{i+2} 
+\end{array} \right),
+\label{precon_matrix}
+\end{equation}
+where $\delta$, the average over distances \textit{within the stencil}, is defined as
+\begin{equation}
+\delta = \frac{\left|\Delta_{m2} \right|+ \left|\Delta_{m1} \right| + \left|\Delta_{p1} \right|+ \left|\Delta_{p2} \right|}{4}.
+\end{equation}
+For a uniform grid, this yields
+\begin{equation}
+{\bf N} = 
+\left( \begin{array}{ccccc} 
+		1 & -4/3 & 16/9 & -64/27 & 256/81 \\
+		1 & -2/3 & 4/9 & -8/27 & 16/81 \\
+		1 & 0 & 0 & 0 & 0 \\
+		1 & 2/3 & 4/9 & 8/27 & 16/81 \\
+		1 & 4/3 & 16/9 & 64/27 & 256/81 \\
+\end{array} \right)
+\approx
+\left( \begin{array}{ccccc} 
+		1 & -1.33 & 1.78 & -2.37 & 3.16 \\
+		1 & -0.67 & 0.44 & -0.30 & 0.20 \\
+		1 & 0 & 0 & 0 & 0 \\
+		1 & 0.67 & 0.44 & 0.30 & 0.20 \\
+		1 & 1.33 & 1.78 & 2.37 & 3.16 \\
+\end{array} \right),
+\end{equation}
+and all matrix elements are within a factor of 10 of each other.  Once the inverse matrix $\bf D$ is found, we need to multiply the $nth$ row by $n!/\delta^n$ before extracting the $d_{ij}$'s.  The subroutine gen\_coefs (Derivatives.F) uses the algorithm above to compute the $d_{ij}$'s.
+
+\subsection{Non-Symmetric Stencils}
+A centered stencil is not possible for points N\_R-1 and 2, so  we use a 4-point stencil for these points.  The stencil includes the boundary point, the point itself, and the 2 interior neighbor points.  We find the coefficients for point $x_2$ by solving:
+\begin{equation}
+\begin{array}{ccc}
+f_{i-1} = & \dfz & +  \dm\df+\frac{\dm^2}{2}\ddf+\frac{\dm^3}{3!}\dddf  +...\\
+\\
+ f_{i}  = & \dfz & \\
+\\
+f_{i+1} = & \dfz & + \dpl\df+\frac{\dpl^2}{2}\ddf+\frac{\dpl^3}{3!}\dddf +...\\
+\\
+f_{i+2} = & \dfz & + \dpp\df+\frac{\dpp^2}{2}\ddf+\frac{\dpp^3}{3!}\dddf +...
+\end{array},
+\end{equation}
+and those for point $x_{N\_R-1}$ with
+\begin{equation}
+\begin{array}{ccc}
+f_{i-2} = & \dfz & +  \dmm\df+\frac{\dmm^2}{2}\ddf+\frac{\dmm^3}{3!}\dddf+ ...\\
+\\
+f_{i-1} = & \dfz & +  \dm\df+\frac{\dm^2}{2}\ddf+\frac{\dm^3}{3!}\dddf  +...\\
+\\
+ f_{i}  = & \dfz & \\
+\\
+f_{i+1} = & \dfz & + \dpl\df+\frac{\dpl^2}{2}\ddf+\frac{\dpl^3}{3!}\dddf +...\\
+\end{array}.
+\end{equation} 
+Boundary points are handled using forward/backward differences.  By default, the boundary accuracy is set to 2nd order for the first and second derivatives.  This involves the boundary point and two interior points for the first derivative, but three interior points for the second derivative.  To calculate the first derivative at point $x_{N\_R}$, our system of equations becomes
+\begin{equation}
+\begin{array}{ccc}
+f_{i-2} = & \dfz & +  \dmm\df+\frac{\dmm^2}{2}\ddf+...\\
+\\
+f_{i-1} = & \dfz & +  \dm\df+\frac{\dm^2}{2}\ddf  +...\\
+\\
+ f_{i}  = & \dfz & \\
+\end{array}.
+\end{equation}
+For the second derivative on a boundary, we need one additional point, and the appropriate system of equations to solve at point $x_1$ would be
+\begin{equation}
+\begin{array}{ccc}
+ f_{i}  = & \dfz & \\
+\\
+f_{i+1} = & \dfz & + \dpl\df+\frac{\dpl^2}{2}\ddf+\frac{\dpl^3}{3!}\dddf +...\\
+\\
+f_{i+2} = & \dfz & + \dpp\df+\frac{\dpp^2}{2}\ddf+\frac{\dpp^3}{3!}\dddf +... \\
+\\
+f_{i+3} = & \dfz & + \dppp\df+\frac{\dppp^2}{2}\ddf+\frac{\dppp^3}{3!}\dddf +...
+\end{array}
+\end{equation}
+
+
+\section{Additional Notes}
+\subsection{The Nonlinear 2nd Derivative}
+The radial advection of $\phi$- and $\theta$-momentum involves a term that looks like
+\begin{equation}
+(\nabla^2_H W )\frac{\partial^2 W}{\partial r^2}.
+\end{equation}
+For reasons unknown, this term leads to instabilities when the second derivative is calculated using coefficients generated with the Taylor expansion methods described above.  Fortunately, a double application of the first derivative operator $is$ stable (for a variety of stencil sizes).  We can generate a separate set of second derivative coefficients for use with these advective terms through a double application of the first derivative operator.  These coefficients are stored in the array ``dd\_coefs\_nl" and are currently only used in the calculation of $\partial v_{\theta}/\partial dr$ and $\partial v_{\phi}/\partial dr$ (see the subroutine radial\_velocity\_derivatives in Derivatives.F).  These terms only appear in the advective and viscous heating terms.  Everywhere else in the code uses the standard second derivative coefficients.  To use the special coefficients, set the keyword nl\_deriv\_method in the controls namelist to 3.  By default, this keyword is 2, and the 1st derivative is called twice for these terms.  This is a little more communication, but it allows you to use fewer radial points per cpu (5 rather than 9 by default).
+
+
+\end{document}

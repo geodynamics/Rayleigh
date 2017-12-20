@@ -1,0 +1,84 @@
+\documentclass[10pt, letterpaper]{article}
+\usepackage[letterpaper,margin=0.75in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage[table]{xcolor}
+%\usepackage[thinlines]{easytable}
+\DeclareMathSizes{10}{10}{10}{10}
+\begin{document}
+
+\title{Introduction to \LaTeX{}}
+\author{Author's Name}
+
+\maketitle
+
+\begin{abstract}
+The abstract text goes here.
+\end{abstract}
+
+\section{Velocity Field \& Related Variables}
+The velocity field is defined 
+
+\begin{equation}
+    \label{simple_equation}
+    \alpha = \sqrt{ \beta }
+\end{equation}
+
+\subsection{Subsection Heading Here}
+Write your subsection text here. here is a much longer line of text to see if I can understand where the margins land.
+
+
+\rowcolors{2}{gray!25}{white}
+\begin{table}
+\centering
+\begin{tabular}{|ccc||ccc||ccc|}
+\hline
+Expression & Code & Variable & Expression & Code & Variable & Expression & Code & Variable \\
+\hline
+\input velocity_field_table0.tex
+\hline
+\end{tabular}
+\end{table}
+
+\rowcolors{2}{gray!25}{white}
+\begin{table}
+\centering
+\begin{tabular}{|ccc||ccc||ccc|}
+\hline
+Expression & Code & Variable & Expression & Code & Variable & Expression & Code & Variable \\
+\hline
+\input velocity_field_table1.tex
+\hline
+\end{tabular}
+\end{table}
+
+\newpage
+
+\subsection{Mass Flux}
+\rowcolors{2}{gray!25}{white}
+\begin{table}
+\centering
+\begin{tabular}{|ccc||ccc||ccc|}
+\hline
+Expression & Code & Variable & Expression & Code & Variable & Expression & Code & Variable \\
+\hline
+\input mass_flux_table0.tex
+\hline
+\end{tabular}
+\end{table}
+\subsection{Vorticity}
+\rowcolors{2}{gray!25}{white}
+\begin{table}
+\centering
+\begin{tabular}{|ccc||ccc||ccc|}
+\hline
+Expression & Code & Variable & Expression & Code & Variable & Expression & Code & Variable \\
+\hline
+\input vorticity_field_table0.tex
+\hline
+\end{tabular}
+\end{table}
+\section{Conclusion}
+Write your conclusion here.
+
+\end{document}

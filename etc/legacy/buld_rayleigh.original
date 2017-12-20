@@ -1,0 +1,82 @@
+#!/bin/bash
+###  RAYLEIGH BUILD SCRIPT
+###  Usage:  ./build_rayleigh machine_name target
+###  The Makefile employed is machine dependent
+###  See the Makefiles directory for example Makefiles
+###  The value of machine_name should correspond to one of the Makefiles
+###  in that directory.  Machine name for Makefile is indicated following underscore.
+
+###  For example, to use Makefile_LCD
+###  ./build_rayleigh LCD
+
+###  To use Makefile_Pleiades
+###  ./build_rayleigh Pleiades
+
+###  A debugging flag may be passed to makefiles that support it.
+### ./build_rayleigh Pleiades debug  (for example)
+
+export MACHINE=$1
+export RAYLEIGH_OPT=$2
+RAYLEIGH_OPT2=$3
+RAYLEIGH_OPT3=$4
+TARGET=$2
+
+NOCOMM=machine.no_comments
+MACHDEF=Machine_Definitions
+if [ ! -e build ]
+then
+  mkdir build
+  cd build
+else
+  cd build
+  rm -f *.F90
+  rm -f Makefile
+  rm -f $MACHDEF
+  rm -f $NOCOMM
+fi
+
+cp ../parallel_framework/*.F90 .
+cp ../data_structures/*.F90 .
+cp ../math_layer/*.F90 .
+cp ../IO/*.F90 .
+cp ../test_suite/*.F90 .
+cp ../physics/*.F90 .
+cp ../Utility/*.F90 .
+cp ../Utility/*.c .
+cp ../Makefiles/Makefile .
+cp ../Makefiles/object_list .
+
+MACHINE_TYPE=Intel
+if [ $MACHINE == "Mira" ]
+then
+  MACHINE_TYPE=IBM
+fi
+
+if [ $MACHINE == "Fermi" ]
+then
+  MACHINE_TYPE=IBM
+fi
+
+if [ $MACHINE_TYPE == "IBM" ] 
+then
+cp ../Utility/MakeDir.F90_IBM MakeDir.F90
+#OpenMP-related code.  Note supported presently
+#if [ $RAYLEIGH_OPT1 == "omp" ] 
+#then
+#  echo Builing OpenMP-version-Mira
+#  cp ../math_layer/Fourier_Transform.mira_omp Fourier_Transform.F90
+#  cp ../math_layer/Chebyshev_Polynomials.mira_omp Chebyshev_Polynomials.F90
+#  cp ../parallel_framework/Parallel_Framework.mira_omp Parallel_Framework.F90
+#fi
+fi
+
+MACHINEFILE=../Makefiles/machine.${MACHINE}
+NOCOMM=machine.no_comments
+#First, we strip any user comments out of MACHINEFILE as we copy it to NOCOMM
+grep -o '^[^#]*' $MACHINEFILE > $NOCOMM
+
+#Next we copy NOCOMM to MACHDEF, removing trailing whitespace in the process
+#  This is super important as errors can arise in the make process otherwise.
+sed 's/[ \t]*$//' $NOCOMM > $MACHDEF
+echo " "
+make ${TARGET}  

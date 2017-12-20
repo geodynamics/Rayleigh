@@ -1,0 +1,25 @@
+DSOBJ = Structures.o BufferedOutput.o cmkdir.o MakeDir.o
+PFOBJ = MPI_Base.o All_to_All.o SendReceive.o ISendReceive.o General_MPI.o MPI_LAYER.o Load_Balance.o \
+        Parallel_Framework.o Spherical_Buffer.o General_IO.o
+MOBJ  = Math_Constants.o Timing.o Finite_Difference.o Chebyshev_Polynomials.o \
+        Chebyshev_Polynomials_Alt.o Linear_Solve.o Legendre_Polynomials.o Legendre_Transforms.o \
+        Math_Utility.o Fourier_Transform.o Spectral_Derivatives.o
+IOOBJ = Spherical_IO.o  
+POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o BoundaryConditions.o TransportCoefficients.o  \
+        Fields.o Checkpointing.o Initial_Conditions.o \
+        Diagnostics_Base.o \
+        Diagnostics_ADotGradB.o \
+        Diagnostics_Velocity_Field.o Diagnostics_Magnetic_Field.o \
+        Diagnostics_Current_Density.o Diagnostics_Vorticity_Field.o \
+        Diagnostics_Thermodynamic_Gradients.o Diagnostics_Linear_Forces.o \
+        Diagnostics_Energies.o Diagnostics_Energy_Flux.o \
+        Diagnostics_Lorentz_Forces.o Diagnostics_Induction.o \
+        Diagnostics_Inertial_Forces.o Diagnostics_Angular_Momentum.o \
+        Diagnostics_Miscellaneous.o Diagnostics_Custom.o \
+        Diagnostics_Interface.o \
+        Benchmarking.o Sphere_Linear_Terms.o \
+        Sphere_Spectral_Space.o Sphere_Hybrid_Space.o Sphere_Physical_Space.o Sphere_Driver.o
+TOBJ  = Test_SHT.o Test_Cheby.o TestSuite.o
+MAINOBJ = Input.o Main.o
+
+OBJ = $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)

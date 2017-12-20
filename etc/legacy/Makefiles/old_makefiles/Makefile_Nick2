@@ -1,0 +1,44 @@
+F90  = /usr/local/mpich2-1.0.7/bin/mpif90
+F90 = mpif90
+CC = gcc
+#   Flags for the LAPack Libraries
+FFTW_LIB = /home/nick/MYLIB/fftw-3.3.5/lib
+FFTW_INC = /home/nick/MYLIB/fftw-3.3.5/include
+
+ifeq ($(RAYLEIGH_OPT1),openmp)
+	LIBFLAGS = -L/usr/lib/x86_64-linux-gnu -lfftw3_threads -lfftw3 -lm -L/usr/lib -lblas -llapack -lstdc++
+else
+	LIBFLAGS = -L/$(FFTW_LIB) -lfftw3 -L/usr/lib -lblas -llapack -lstdc++
+endif
+
+
+ifeq ($(RAYLEIGH_OPT1),openmp)
+	F90FLAGS = -O1 -fbounds-check -Duseomp=.true. -cpp -fbacktrace -ffixed-line-length-132 -fopenmp -I/usr/include
+else
+	F90FLAGS = -O1 -fbounds-check -fbacktrace -ffixed-line-length-132  -fopenmp -I/usr/include -I/home/nick/Pardiso
+endif
+
+ifeq ($(RAYLEIGH_OPT1),debug)
+        ##F90FLAGS = -O1 -fbounds-check -fbacktrace -ffixed-line-length-132  -fopenmp -I/usr/include
+        F90FLAGS = -O0 -fbounds-check -fbacktrace -ffixed-line-length-132 -I/usr/include -I$(FFTW_INC)
+
+else
+        F90FLAGS = -O3 -mavx -ffixed-line-length-132 -I/usr/include -I$(FFTW_INC)
+endif
+
+
+PROG =	rayleigh
+
+.SUFFIXES: .o .F90 .f .F .c
+include object_list
+
+$(PROG) :$(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)
+	$(F90) $(F90FLAGS) -o  $(PROG) $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ) $(LIBFLAGS)
+.F90.o :
+	$(F90) $(F90FLAGS) -c $<
+.cc.o:
+	$(CC) $(CFLAGS) -c *.cc
+clean : 
+	rm -f *.o *.mod rayleigh
+ready :
+
