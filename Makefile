@@ -33,7 +33,7 @@ clean:
 
 
 install:
-	@echo "Installing executables into: " $(PREFIX)"\bin"
+	@echo "Installing executables into: " $(PREFIX)"/bin"
 	@mkdir -p $(PREFIX)/bin
 	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
 
