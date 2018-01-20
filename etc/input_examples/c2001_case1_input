@@ -29,33 +29,7 @@
 &io_controls_namelist
 /
 &output_namelist
-shellslice_levels    = 16,17
-shellslice_values    = 1,2,3,64, 401,402,403 !velocity, temperature, B-field
-shellslice_frequency = 1000
-shellslice_nrec      = 5
 
-shellspectra_levels    = 16,32,48,64
-shellspectra_values    = 1,2,3,64,401,402,402 ! velocity, temperature, B-field
-shellspectra_frequency = 100000000
-shellspectra_nrec      = 5
-
-azavg_values = 1,2,3,64,61,62, 401,402,403  
-azavg_frequency = 4100000
-azavg_nrec = 2
-
-!velocity, entropy, energy fluxes, various kinetic and magnetic energies (see below)
-shellavg_values = 1,2,3,64,116,117,118,120,121,122,125,126,127,128,130,131,132,475,476,477,478,480,481,482
-shellavg_frequency = 10000
-shellavg_nrec = 100
-
-! KE, {radial, theta, phi} KE, Mean {radial, theta, phi} KE 
-! ME, {radial, theta, phi} ME, Mean {radial, theta, phi} ME 
-globalavg_values = 125,126,127,128,130,131,132,475,476,477,478,480,481,482
-globalavg_frequency = 100
-globalavg_nrec = 10
-
-full3d_values = 4
-full3d_frequency = 9000000
 /
 
 &Boundary_Conditions_Namelist
