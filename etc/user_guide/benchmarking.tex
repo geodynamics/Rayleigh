@@ -1,0 +1,91 @@
+\clearpage
+%\section{Running the Code}
+
+%\textbf{IMPORTANT:}  Each Rayleigh simulation should be run from within a unique directory.   Do not run Rayleigh from within the source-code/repository root directory.  Do not cross the beams: no running two Rayleigh simulations from within the same directory.  Just Be Cool.  Create a new directory for each model that you want to run, and then copy or softlink rayleigh.opt into that directory.
+
+
+%Once you have successfully installed Rayleigh, create a unique directory where you can run \textit{a single model} with the code and store its output.  Each model that you run will need to be run from within its own, dedicated directory.  You will need to copy the rayleigh executables into this directory, as well as an input file that you wish to run or modify. \textbf{The input file that you wish to use must be renamed to ``main\_input'' within the simulation directory.}  Input files can be found in Rayleigh/etc/input\_examples.  Each Rayleigh simulation (or model; we use these words interchangeably) will require its own input file named \textit{main\_input}.   Any one of these files may be copied to your simulation directory and modified to suite your needs.
+
+
+
+\section{Running a Benchmark}\label{sec:benchmarking}
+
+
+
+Rayleigh has been programmed with internal testing suite so that its results may be compared against benchmarks described in the following two papers:
+\begin{enumerate}
+\item Christensen, U.R., et al. 2001, \textit{A Numerical Dynamo Benchmark}, \textit{PEPI}, 128, 25
+\item Jones, C.A., et al., 2011, \textit{Anelastic-Convective-Driven Dynamo Benchmarks}, \textit{Icarus}, 216, 120
+\end{enumerate}
+
+We recommend running a benchmark whenever running Rayleigh on a new machine for the first time, or after recompiling the code. The Christensen et al. (2001) reference describes two Boussinesq tests that Rayleigh's results may be compared against.   The Jones et al. (2011) reference describes anelastic tests.  Rayleigh has been tested successfully against two benchmarks from each of these papers.  Input files for these different tests are enumerated in Table \ref{table:benchmarks} below.  In addition to the input files listed in Table \ref{table:benchmarks}, input examples appropriate for use as a template for new runs are provided with the \textit{\_input} suffix (as opposed to the \textit{minimal} suffix.  These input files still have benchmark\_mode active.  Be sure to turn this flag off if not running a benchmark.
+
+\textbf{Important:}  If you are not running a benchmark, but only wish to modify an existing benchmark-input file, delete the line containing the text ``\textit{benchmark\_mode=X}.''  When benchmark mode is active, custom inputs, such as Rayleigh number, are overridden and reset to their benchmark-appropriate values.
+
+\textbf{We suggest using the c2001\_case0\_minimal input file for installation verification}.  Algorithmically, there is little difference between the MHD, non-MHD, Boussinesq, and anelastic modes of Rayleigh.  As a result, when installing the code on a new machine, it is normally sufficient to run the cheapest benchmark, case 0 from Christensen 2001.  
+
+To run this benchmark, create a directory from within which to run your benchmark, and follow along with the commands below.  Modify the directory structure a each step as appropriate:
+\begin{enumerate}
+\item mkdir {path\_to\_my\_sim}
+\item cd {path\_to\_my\_sim}
+\item cp {path\_to\_rayleigh/Rayleigh/etc/input\_examples/c2001\_case0\_minimal~~~main\_input}
+\item cp path\_to\_rayleigh/Rayleigh/bin/rayleigh.opt~~~rayleigh.opt  (or use \textit{ln -s}  in lieu of \textit{cp})
+\item mpiexec -np \textbf{N} ./rayleigh.opt -nprow \textbf{X} -npcol \textbf{Y} -nr \textbf{R} -ntheta \textbf{T}
+\end{enumerate}
+
+For the value \textbf{N}, select the number of cores you wish to run with. For this short test, 32 cores is more than sufficient.  Even with only four cores, the lower-resolution test suggested below will only take around half an hour.  The values \textbf{X} and \textbf{Y} are integers that describe the process grid.   They should both be at least 2, and must satisfy the expression 
+\begin{equation}
+N=X \times Y.
+\end{equation}
+Some suggested combinations are \{N,X,Y\} = \{32,4,8\}, \{16,4,4\}, \{8,2,4\}, \{4,2,2\}.   The values \textbf{R} and \textbf{T} denote the number of radial and latitudinal collocation points respectively.   Select either \{R,T\}=\{48,64\} or \{R,T\}=\{64,96\}.  The lower-resolution case takes about 3 minutes to run on 32 Intel Haswell cores.  The higher-resolution case takes about 12 minutes to run on 32 Intel Haswell cores.
+
+Once your simulation has run, examine the file path\_to\_my\_sim/Benchmark\_Reports/00025000.   You should see output similar to that presented in Tables \ref{table:bench_low} or \ref{table:bench_high}.  Your numbers may differ slightly, but all values should have a \% difference of less than 1.  If this condition is satisfied, your installation is working correctly.
+
+\begin{table}[t]
+\centering
+\begin{tabular} {l | l | l}
+\hline
+Paper & Benchmark & Input File\\\hline
+Christensen et al. 2001 & Case 0 & Rayleigh/etc/input\_examples/c2001\_case0\_minimal \\
+Christensen et al. 2001 & Case 1(MHD)  & Rayleigh/etc/input\_examples/c2001\_case1\_minimal \\
+Jones et al. 2011 & Steady Hydro & Rayleigh/etc/input\_examples/j2011\_steady\_hydro\_minimal \\
+Jones et al. 2011 & Steady MHD & Rayleigh/etc/input\_examples/j2011\_steady\_MHD\_minimal\\
+\hline
+
+\end{tabular}
+\caption{\label{table:benchmarks} Benchmark-input examples useful for verifying Rayleigh's installation.  Those from Christensen et al. (2001) are Boussinesq.  Those from Jones et al. (2011) are anelastic.}
+\end{table}
+
+\begin{table}
+\centering
+\begin{tabular} {| l | r | r | r | r |}
+\hline
+   Observable      &    Measured    & Suggested   & \% Difference &  Std. Dev. \\
+\hline
+   Kinetic Energy  &     58.347827  &   58.348000  &   -0.000297  &    0.000000 \\
+   Temperature     &      0.427416  &    0.428120  &   -0.164525  &    0.000090 \\ 
+   Vphi            &    -10.118053  &  -10.157100  &   -0.384434  &    0.012386 \\
+   Drift Frequency &      0.183272  &    0.182400  &    0.477962  &    0.007073 \\
+\hline
+\end{tabular}
+\caption{\label{table:bench_low} Rayleigh benchmark report for Christensen et al. (2001) case 0 when run with nr=48 and ntheta=64.  Run time was approximately 3 minutes when run on 32 Intel Haswell cores.  
+\newline
+Run command:  mpiexec -np 32 ./rayleigh.opt -nprow 4 -npcol 8 -nr 48 -ntheta 64 }
+\end{table}
+
+\begin{table}
+\centering
+\begin{tabular} {| l | r | r | r | r |}
+\hline
+   Observable      &    Measured    & Suggested   & \% Difference &  Std. Dev. \\
+\hline
+   Kinetic Energy  &     58.347829  &   58.348000  &   -0.000294  &    0.000000 \\
+   Temperature     &      0.427786  &    0.428120  &   -0.077927  &    0.000043 \\
+   Vphi            &    -10.140183  &  -10.157100  &   -0.166551  &    0.005891 \\
+   Drift Frequency &      0.182276  &    0.182400  &   -0.067994  &    0.004877 \\
+\hline
+\end{tabular}
+\caption{\label{table:bench_high} Rayleigh benchmark report for Christensen et al. (2001) case 0 when run with nr=64 and ntheta=96.  Run time was approximately 12 minutes when run on 32 Intel Haswell cores.  
+\newline
+Run command:  mpiexec -np 32 ./rayleigh.opt -nprow 4 -npcol 8 -nr 64 -ntheta 96 }
+\end{table}

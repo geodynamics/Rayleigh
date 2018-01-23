@@ -1,0 +1,110 @@
+\clearpage
+\section{Checkpointing}\label{sec:checkpointing}
+
+We refer to saved states in Rayleigh as \textbf{checkpoints}.  A single checkpoint consists of  13 files when magnetism is activated, and 9 files when magnetism is turned off.  A checkpoint written at time step \textit{X} contains all information needed to advance the system to time step \textit{X+1}. Checkpoint filenames end with a suffix indicating the contents of the file (see Table \ref{table:checkpoints}).  Each checkpoint filename possess a prefix as well.  Files belonging to the same checkpoint share the same prefix.  A checkpoint file collection, written at time step 10,000 would look like that shown in Table \ref{table:checkpoints}.
+\begin{table}
+\centering
+\begin{tabular} {| l | l |}
+\hline
+ Filename & Contents \\
+\hline
+ 00010000\_W      & Poloidal Stream function (at time step 10,000)  \\
+ 00010000\_Z   & Toroidal Stream function\\
+ 00010000\_P      & Pressure   \\
+ 00010000\_S      & Entropy   \\
+ 00010000\_C   & Poloidal Vector Potential  \\
+ 00010000\_A   & Toroidal Vector Potential \\
+ 00010000\_WAB      & Adams-Bashforth (A-B) terms for radial momentum (W) equation   \\
+ 00010000\_ZAB   & A-B terms for radial vorticity (Z) equation\\
+ 00010000\_PAB      & A-B terms for horizontal divergence of momentum (dWdr) equation   \\
+ 00010000\_SAB      & A-B terms for Entropy equation   \\
+ 00010000\_CAB   & A-B terms for C-equation  \\
+ 00010000\_AAB   & A-B terms for A-equation \\
+ 00010000\_grid\_etc & grid and time-stepping info \\
+\hline
+\end{tabular}
+\caption{\label{table:checkpoints} Example checkpoint file collection for a time step 10,000.  File contents are indicated.}
+\end{table}
+
+These files contain all information needed to advance the system state from time step 10,000 to time step 10,001.  Checkpoints come in two flavors, denoted by two different prefix conventions:  \textbf{standard checkpoints} and \textbf{quicksaves}.  This section discusses how to generate and restart from both types of checkpoints.
+
+\subsection{Standard Checkpoints}
+Standard checkpoints are intended to serve as regularly spaced restart points for a given run.  These files begin with an 8-digit prefix indicating the time step at which the checkpoint was created. 
+
+\subsubsection{Generating Standard Checkpoints}
+The frequency with which standard checkpoints are generated can be controlled by modifying the \textbf{checkpoint\_interval} variable in the \textbf{temporal\_controls\_namelist}.  For example, if you want to generate a checkpoint once every 50,000 time steps, you would modify your main\_input file to read:
+
+\begin{lstlisting}
+&temporal_controls_namelist
+ checkpoint_interval = 50000  ! Checkpoint every 50,000 time steps 
+/
+\end{lstlisting}
+The default value of checkpoint\_interval is 1,000,000, which is typically much larger than what you will use in practice.  
+
+\subsubsection{Restarts From Standard Checkpoints}
+Restarting from a checkpoint is accomplished by first assigning a value of -1 to the variables \textbf{init\_type} and/or \textbf{magnetic\_init\_type} in the \textbf{initial\_conditions\_namelist}.  In addition, the time step from which you wish to restart from should be specified using the \textbf{restart\_iter} variable in the initial\_conditions\_namelist.  The example below will restart both the magnetic and hydrodynamic variables using the set of checkpoint files beginning with the prefix 00005000.
+\begin{lstlisting}
+&initial_conditions_namelist
+ init_type = -1             !Restart magnetic and hydro variables from time step 5,000
+ magnetic_init_type = -1
+ restart_iter = 5000
+/
+\end{lstlisting}
+
+When both values are set to -1, hydrodynamic and magnetic variables are read from the relevant checkpoint files.  Alternatively, magnetic and hydrodynamic variables may be initialized separately.  This allows you to add magnetism to an already equilibrated hydrodynamic case, for instance.  The example below will initialize the system with a random magnetic field, but it will read the hydrodynamic information (W,Z,S,P) from a checkpoint created at time step 50,000:
+\begin{lstlisting}
+&initial_conditions_namelist
+ init_type = -1            ! Restart hydro from time step 5,000
+ magnetic_init_type = 7    ! Add a random magnetic field
+ restart_iter = 5000
+/
+\end{lstlisting}
+In addition to specifying the checkpoint time step manually, you can tell Rayleigh to simply restart using the last checkpoint written by assigning a value of zero to init\_type:
+
+\begin{lstlisting}
+&initial_conditions_namelist
+ init_type = -1
+ magnetic_init_type = 7
+ restart_iter = 0        ! Restart using the most recent checkpoint
+/
+\end{lstlisting}
+
+In this case, Rayleigh reads the \textbf{last\_checkpoint} file (found within the Checkpoints directory) to determine which checkpoint it reads.
+
+
+\subsection{Quicksaves}
+In practice, Rayleigh checkpoints are used for two purposes:  (1) guarding against unexpected crashes and (2) supplementing a run's record with a series of restart points.  While standard checkpoints may serve both purposes, the frequency with which checkpoints are written for purpose (1) is often much higher than that needed for purpose (2).  This means that a lot of data culling is performed at the end of a run or, if disk space is a particularly limiting factor, during the run itself.  For this reason, Rayleigh has a \textbf{quicksave} checkpointing scheme in addition to the standard scheme.  Quicksaves can be written with high-cadence, but require low storage due to the rotating reuse of quicksave files.
+
+\subsubsection{1.2.1 Generating Quicksaves}
+
+The cadence with which quicksaves are written can be specified by setting the \textbf{quicksave\_interval} variable in the \textbf{temporal\_controls\_namelist}.  Alternatively, the elapsed wall time (in minutes) that passes between quicksaves may be controlled by specifying the \textbf{quicksave\_minutes} variable.  If both quicksave\_interval and quicksave\_minutes are specified, quicksave\_minutes takes precedence.
+
+What distinguishes quicksaves from standard checkpoints is that only a specified number of quicksaves exist on the disk at any given time.  That number is determined by the value of \textbf{num\_quicksaves}.  Quicksave files begin with the prefix \textit{quicksave\_XX}, where XX is a 2-digit code, ranging from 1 through num\_quicksaves and indicates the quicksave number.  Consider the following example:
+\begin{lstlisting}
+&temporal_controls_namelist
+ checkpoint_interval = 35000  ! Generate a standard checkpoint once every 35,000 time steps
+ quicksave_interval = 10000   ! Generate a quicksave once every 10,000 time steps
+ num_quicksaves = 2           ! Keep only two quicksaves on disk at a time
+/
+\end{lstlisting}
+At time step 10,000, a set of checkpoint files beginning with prefix quicksave\_01 will be generated.  At time step 20,000, a set of checkpoint files beginning with prefix quicksave\_02 will be generated.  Following that, at time step 30,000, another checkpoint will be generated, \textit{but it will overwrite the existing quicksave\_01 files}.  At time step 40,000, the quicksave\_02 files will be overwritten, and so forth.  Because the \textbf{num\_quicsaves} was set to 2, filenames with prefix quicksave\_03 will never be generated.
+
+Note that checkpoints beginning with an 8-digit prefix (e.g., 00035000) are still written to disk regularly and are not affected by the quicksave checkpointing.  On time steps where  a quicksave and a standard checkpoint would both be written, only the standard checkpoint is written.  Thus, at time step 70,000 in the example above, a standard checkpoint would be written, and the files beginning with quicksave\_01 would remain unaltered.
+
+\subsubsection{1.2.2 Restarting from Quicksaves}
+Restarting from quicksave\_XX may be accomplished by specifying the value of restart\_iter to be -XX (i.e., the negative of the quicksave you wish to restart from).  The following example shows how to restart the hydrodynamic variables from quicksave\_02, while also initializing a random magnetic field.
+```
+\begin{lstlisting}
+&initial_conditions_namelist
+ init_type = -1         ! Restart hydro variables from a checkpoint
+ magnetic_init_type = 7 ! Initialize a random magnetic field
+ restart_iter = -2      ! Restart from quicksave number 2
+/
+\end{lstlisting}
+
+Note that the file last\_checkpoint contains the number of last checkpoint written.  This might be a quicksave or a standard checkpoint.  Specifying a value of zero for restart\_iter thus works with quicksaves and standard checkpoints alike.    
+
+\subsection{1.3 Checkpoint Logs}
+When checkpoints are written, the number of the most recent checkpoint is appended to a file named \textbf{checkpoint\_log}, found in the Checkpoints directory.   The checkpoint log can be used to identify  the time step number of a quicksave file that otherwise has no identifying information.  While this information is also contained in the grid\_etc file, those are written in unformatted binary and cumbersome to access from the terminal command line.
+
+An entry in the log of "00050000 02" means that a checkpoint was written at time step 50,000 to quicksave\_02.  An entry lacking a two-digit number indicates that a standard checkpoint was written at that time step.  The most recent entry in the checkpoint log always comes at the end of the file.
