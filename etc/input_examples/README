@@ -1,0 +1,8 @@
+Rayleigh v 0.9.0
+
+This directory contains example input files for Rayleigh.
+To use one of these files, copy it to your Rayleigh run directory and rename it to "main_input ."
+
+Only the file benchmark_diagnostics_input will produce output.
+To add output to the other examples, copy the entries from its output_namelist
+into the output_namelist of your chosen main_input file.

@@ -1,0 +1,68 @@
+!This initializes a rotating, solar-like case, spanning the innermost
+!3 density scaleheights of the convection zone.
+!This run setup is similar to the non-rotating runs found in
+!Featherstone & Hindman, 2016, ApJ, 818, 32
+&problemsize_namelist
+ n_r = 128
+ n_theta = 768
+ nprow = 64
+ npcol = 32
+ rmin = 5.0d10
+ rmax = 6.5860209d10
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ rotation  = .true.
+ magnetism = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 1000.0d0
+ max_iterations = 5000000
+ checkpoint_interval = 100000
+ quicksave_interval = 25000
+ num_quicksaves = 3
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .false.
+strict_L_Conservation = .false.
+dtdr_bottom = 0.0d0
+T_Top    = 0.0d0
+T_Bottom = 851225.7d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .false.
+fix_dtdr_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 7
+magnetic_init_type = 7
+mag_amp = 1.0d0
+temp_amp = 1.0d1
+temp_w = 0.01d4
+restart_iter = 0
+/
+&Test_Namelist
+/
+&Reference_Namelist
+reference_type = 2
+heating_type = 1
+luminosity = 3.846d33
+poly_n = 1.5d0
+poly_Nrho = 3.0d0
+poly_mass = 1.98891D33
+poly_rho_i = 0.18053428d0
+pressure_specific_heat = 3.5d8
+angular_velocity = 2.6d-6
+/
+&Transport_Namelist
+nu_top    = 2.d12
+kappa_top = 2.d12
+/

@@ -1,0 +1,63 @@
+! This setup is similar to the non-dimensional anelastic run
+! of Heimpel et al., 2016, Nature Geoscience Letters, 9, 19
+&problemsize_namelist
+ n_r = 128
+ n_theta = 192
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.9d0
+ shell_depth = 1.0d0
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ rotation  = .true.
+/
+&temporal_controls_namelist
+ max_time_step = 0.05d0  ! timescale is 1/Omega, fastest wave is 1/2 that - divide by 10 to be safe
+ max_iterations = 1000000
+ check_frequency = 100000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+ quicksave_interval =  10000
+ num_quicksaves = 3 
+ save_last_timestep = .true.
+/
+&io_controls_namelist
+/
+&output_namelist
+
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .false.
+dTdr_top    =  85.81d0
+dTdr_bottom = -1.0d0
+fix_dtdr_top = .true.
+fix_dtdr_bottom = .true.
+/
+&Initial_Conditions_Namelist
+conductive_profile = .true.  !ell =0 entropy is conductive
+init_type = 7
+magnetic_init_type = 7
+mag_amp = 1.0d0
+temp_amp = 0.01d0
+temp_w = 0.01d4
+restart_iter = 0
+/
+&Test_Namelist
+/
+&Reference_Namelist
+reference_type = 3
+Ekman_Number = 3.0d-6
+Prandtl_Number = 1.0d0
+Modified_Rayleigh_Number = 0.048d0
+heating_type = 4
+poly_n = 2.0d0
+poly_Nrho = 5.0d0
+/
+&Transport_Namelist
+hyperdiffusion = .true.
+hyperdiffusion_alpha = 120.0
+hyperdiffusion_beta = 3.0d0
+/

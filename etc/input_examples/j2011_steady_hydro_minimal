@@ -1,0 +1,34 @@
+&problemsize_namelist
+ n_r = 128
+ n_theta = 192
+ nprow = 32
+ npcol = 16
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ benchmark_mode = 3
+ benchmark_integration_interval = 100
+ benchmark_report_interval = 10000
+/
+&temporal_controls_namelist
+ max_iterations = 200000
+ checkpoint_interval = 100000
+ quicksave_interval = 10000
+ num_quicksaves = 2
+/
+&io_controls_namelist
+/
+&output_namelist
+/
+
+&Boundary_Conditions_Namelist
+/
+&Initial_Conditions_Namelist
+/
+&Test_Namelist
+/
+&Reference_Namelist
+/
+&Transport_Namelist
+/

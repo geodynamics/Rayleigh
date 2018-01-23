@@ -1,0 +1,60 @@
+&problemsize_namelist
+ n_r = 128
+ n_theta = 192
+ nprow = 64
+ npcol = 32
+ rmin = 2.45d9
+ rmax = 7.0d9
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ rotation  = .true.
+ magnetism = .false.
+ benchmark_mode = 3
+ benchmark_integration_interval = 100
+ benchmark_report_interval = 10000
+/
+&temporal_controls_namelist
+ max_time_step = 30.0d0
+ max_iterations = 5000000
+ checkpoint_interval = 100000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+
+/
+
+&Boundary_Conditions_Namelist
+strict_L_Conservation = .false.
+T_Top    = 0.0d0
+T_Bottom = 851225.7d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 6
+temp_amp = 1.0d1
+temp_w = 0.01d4
+restart_iter = 0
+/
+&Test_Namelist
+/
+&Reference_Namelist
+reference_type = 2
+heating_type = 0
+poly_n = 2.0d0
+poly_Nrho = 5.0d0
+poly_mass = 1.9D30
+poly_rho_i = 1.1d0
+pressure_specific_heat = 1.0509d8
+dimensional = .true.
+angular_velocity = 1.76d-4
+/
+&Transport_Namelist
+nu_top    = 3.64364d12
+kappa_top = 3.64364d12
+/
