@@ -21,7 +21,7 @@ The following documents form the initial Rayleigh documentation.
 
 Authors
 --------
-Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Please see the ACKNOWLEDGEMENT file for citation information.
+Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Please see the *ACKNOWLEDGEMENT* file for citation information.
 
 License
 -------
