@@ -13,12 +13,11 @@ The following documents form the initial Rayleigh documentation.
 
 | Document | Description |
 |----------|-------------|
+| INSTALL | in-depth installation instructions |
 | doc/Rayleigh_User_Guide.pdf |  Overview of compiling and running Rayleigh |
 | doc/Diagnostic_Plotting.{html,pdf} | Guide to generating and plotting Rayleigh output (text version) |
 | etc/analysis/Diagnostic_Plotting.ipynb | Same as above (interactive Jupyter notebook) |
 | doc/Rayleigh_Output_Variables.pdf |  Tabulated menu of Rayleigh output codes |
-
-In addition, slide stacks from a previous set of tutorials given on Rayleigh may be found in *doc/tutorials*.
 
 Authors
 --------
