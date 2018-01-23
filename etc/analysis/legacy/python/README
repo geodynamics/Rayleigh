@@ -1,0 +1,2 @@
+The numpy package must beinstalled for these python reading routines to work. 
+Print statements are written in the Python 2 standard (i.e. print is a statement, not a function).
