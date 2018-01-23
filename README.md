@@ -17,7 +17,7 @@ The following documents form the initial Rayleigh documentation.
 | doc/Rayleigh_User_Guide.pdf |  Overview of compiling and running Rayleigh |
 | doc/Diagnostic_Plotting.{html,pdf} | Guide to generating and plotting Rayleigh output (text version) |
 | etc/analysis/Diagnostic_Plotting.ipynb | Same as above (interactive Jupyter notebook) |
-| doc/Rayleigh_Output_Variables.pdf |  Tabulated menu of Rayleigh output codes |
+| doc/Rayleigh_Output_Variables.pdf |  Tables of Rayleigh output menu codes |
 
 Authors
 --------
