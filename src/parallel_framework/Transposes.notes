@@ -1,0 +1,27 @@
+Module Transposes
+
+Contains
+
+
+	Subroutine Initialize_Transpose()
+		! Just some thoughts
+		! We need to know the buffer size to initialize a transpose for it
+		! nx,ny,nz
+		! Also we need to know the geometry (spherical has special load-balancing)
+		
+		! Transpose also defined by starting config/ending config
+
+		! Buffer will be dimensioned as (in_processor, delta_n2, delta_n3*nfields)
+		
+		! Config 1
+		! z-inprocessor, x,y distributed
+		! (nz, delta_x, delta_y*nfields)
+
+		! Config 2
+		! (
+
+
+	End Subroutine Initialize_Transpose
+
+
+End Module Transposes

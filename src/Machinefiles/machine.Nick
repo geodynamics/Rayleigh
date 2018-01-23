@@ -1,0 +1,68 @@
+################################################################
+# I. Specify the fortran compiler (FC) and the c compiler (CC)
+
+FC = mpif90    # FORTRAN Compiler (must be FORTRAN 2003-compliant)
+CC  = gcc -w      # C compiler    (-w suppresses warnings associated with the single, small file compiled via gcc)
+
+################################################################################
+# II.   Create names for the different ways in which rayleigh should be built.
+#       
+#       Depending on what you are doing, you may wish to build versions of 
+#       Rayleigh compiled with different sets of compiler flags and/or libraries.
+#       
+#       For each build version, first define an environment variable. The value of
+#       that variable will be used to create a suffix for the executable. The example
+#       lays the groundwork to build exectuables named rayleigh.opt and rayleigh.dbg.
+#
+#       You must always have one version-variable named "DEFAULT".  You may give it any 
+#       non-empty value you wish, but the variable name must be "DEFAULT".
+#       If the user executes "./build_rayleigh MACHINE" without any addition options,
+#       an exectuable named rayleigh.$(DEFAULT) will be built.
+
+DEFAULT = opt  
+DEBUG   = dbg  
+
+
+
+################################################################################
+# III.  Create a simple white-space-separated list of the version names.
+#       The spaces are required here.
+
+VERSIONS = $(DEFAULT) $(DEBUG)
+ 
+
+#################################################################################
+# IV.   (OPTIONAL) Define any custom environment variables you would like to use 
+#       as shorthand when defining the compile flags and library links for each version.   
+#       Typically Rayleigh will need to know where libblas.so, liblapack.so, fftw3.so, 
+#       and fftw3.f are located.
+
+BLAS_LIB   = /usr/lib                               #location of libblas.so
+LAPACK_LIB = /usr/lib                               #location of liblapack.so
+FFTW_LIB   = /home/nick/MYLIB/fftw-3.3.5/lib        #location of libfftw3.so
+FFTW_INC   = $(MKLROOT)/include/fftw    #location of fftw3.f
+
+
+##################################################################################
+# V.    Define the optimization and linking flags for each version.  For each
+#       version of the code you would like to be built, you must define a FFLAGS_ 
+#       variable and a LIB_ variable with the version's name appended as a suffix.
+#       This is done via    FFLAGS_$(VERSION_VARIABLE_NAME) = .....   and
+#                           LIB_$(VERSION_VARIABLE_NAME)    = .....
+#       Note that Rayleigh will always need to have the location of fftw3.f in its
+#       include path, which should be included as part of FFLAGS
+
+
+# Optimized version:   $(DEFAULT)
+FFLAGS_$(DEFAULT)   = -O3 -mavx -ffixed-line-length-132 -I$(FFTW_INC)
+LIB_$(DEFAULT)       = -L$(FFTW_LIB) -lfftw3 -L$(BLAS_LIB) -lblas -L$(LAPACK_LIB) -llapack -lstdc++
+LIB_$(DEFAULT) = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+
+# Non-optimized; debugging flags turned on:  $(DEBUG)
+FFLAGS_$(DEBUG) = -O0 -fbounds-check -fbacktrace -ffixed-line-length-132  -I$(FFTW_INC)
+LIB_$(DEBUG)   = $(LIB_$(DEFAULT))   # Note that this is how we copy the value of LIB_$(DEFAULT) into LIB_$(DEBUG)
+
+###################################################################################
+# VI.  (Optional)  Add a description of each version. The description will be displayed when that version is built.
+DESC_$(DEFAULT) = "Description:  GFORTRAN with optimization flags"
+DESC_$(DEBUG) = "Description:  GFORTRAN with debugging flags"

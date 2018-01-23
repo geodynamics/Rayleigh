@@ -1,0 +1,34 @@
+F90  = /usr/local/mpich2-1.0.7/bin/mpif90
+F90 = mpif90
+F90 = /usr/lib64/openmpi/bin/mpif90
+#   Flags for the MKL libraries
+LIBFLAGS = -mkl -I$(MKLROOT)/include/fftw
+
+#use the first of these for debugging (comment out second line to debug)
+ifeq ($(RAYLEIGH_DEBUG),debug)
+	F90FLAGS = -r8 -O0 -CB -g -traceback -fpp -FR -check all -warn all -I$(MKLROOT)/include/fftw
+else
+	F90FLAGS = -r8 -O3 -xSSE4.2 -fpp -FR -I$(MKLROOT)/include/fftw
+endif
+PROG =	rayleigh
+
+.SUFFIXES: .o .F90 .f .F
+##DSOBJ = Structures.o
+##PFOBJ = MPI_Base.o All_to_All.o SendReceive.o ISendReceive.o General_MPI.o MPI_LAYER.o Load_Balance.o Parallel_Framework.o
+##MOBJ  = Timing.o Finite_Difference.o Chebyshev_Polynomials.o Linear_Solve.o Legendre_Polynomials.o Legendre_Transforms.o \
+        Fourier_Transform.o Spectral_Derivatives.o
+##IOOBJ = Spherical_IO.o
+##POBJ  = Run_Parameters.o Controls.o Timers.o ProblemSize.o ReferenceState.o TransportCoefficients.o BoundaryConditions.o NonDimensionalization.o Fields.o Checkpointing.o Initial_Conditions.o Diagnostics.o \
+##        ClockInfo.o Linear_Terms_Sphere.o Spectral_Space_Sphere.o Physical_Space_Sphere.o Hybrid_Space_Sphere.o Drive_Sphere.o
+##TOBJ  = Test_SHT.o Test_Cheby.o TestSuite.o
+##MAINOBJ = Input.o Main.o
+include object_list
+
+
+$(PROG) :$(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)
+	$(F90) $(F90FLAGS) -o  $(PROG) $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ) $(LIBFLAGS)
+
+.F90.o :
+	$(F90) $(F90FLAGS) -c $<
+clean : 
+	rm -f *.o *.mod rayleigh

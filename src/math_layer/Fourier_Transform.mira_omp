@@ -1,0 +1,130 @@
+Module Fourier_Transform
+	Implicit None
+	Include 'fftw3.f'
+
+	Interface FFT_To_Spectral
+		Module Procedure r2c_ip4d_fftw
+	End Interface
+	Interface FFT_To_Physical
+		Module Procedure c2r_ip4d_fftw
+	End Interface
+Contains
+    Subroutine Initialize_FFTs()
+        Use Parallel_Framework, Only : pfi
+        Implicit None
+        ! Really just here for openmp init
+        integer :: iret, nthread
+
+        nthread = pfi%nthreads
+#ifdef _OPENMP
+        if (nthread .gt. 1) Then
+            call dfftw_init_threads(iret)
+				!Note that when using MKL, iret will be 0 always.
+				!iret = 0 means an error when using normal FFTW, but for MKL
+				! This routine is a wrapper that does nothing.
+            !write(6,*)"iret is: ", iret
+        
+            !write(6,*)"FFTW planning with nthreads: ", nthread
+            call dfftw_plan_with_nthreads(nthread)
+        Endif
+#endif
+    End Subroutine Initialize_FFts
+
+	Subroutine r2c_ip4D_fftw(x,plan,rsc)
+		! r2c: Real to Complex (forward transform)
+		! ip4D: In-place transform of 4D array 
+		! fftw : FFTW 
+		Real*8, Intent(InOut) :: x(:,:,:,:)
+		Integer*8, Intent(In), Optional :: plan
+		Integer*8 :: fresh_plan
+		Integer :: n, howmany
+		Integer :: inembed, istride, idist
+		Integer :: onembed, ostride, odist
+		Integer :: xshape(4)
+		Logical, Intent(In), Optional :: rsc
+		If (present(plan)) Then
+			! Plan exists - x assumed to keep memory location
+			call dfftw_execute(plan)
+		Else
+			! X will typically be deallocated and reallocated (unfortunately)
+			! So we will need to recreate the plan (because x's memory location may change)
+			xshape = shape(x)
+			n = xshape(1) -2 ! We assume nphi is even that the arrays has been padded by 2
+			howmany = xshape(2)*xshape(3)*xshape(4)
+			inembed = 0
+			onembed = 0
+			istride = 1
+			ostride = 1
+			! idist is the distance between successive arrays to be transformed are stored
+			! odist is the distance between where successive results stored
+			!	-- we assume the stride is 1 here, so this is just the length of the first dimension of the array
+			idist = 2*(n/2+1)		! In place transforms require extra padding - 2 extra for even n.  1 extra for odd n.
+			odist = n/2+1			! This is the size of the corresponding complex arrays
+										! At least it would be if we weren't doing this in place
+			
+			call dfftw_plan_many_dft_r2c(fresh_plan,1,n, howmany, &
+												& x, inembed, istride, idist, &
+												& x, onembed, ostride, odist, &
+												& FFTW_ESTIMATE)
+			call dfftw_execute(fresh_plan)
+			call dfftw_destroy_plan(fresh_plan)
+		Endif
+		If (present(rsc)) Then
+			! FUTURE OPTIMIZATION:  wrap this weighting into the legendre polynomial arrays
+			! This ensures that Asin(mx) in physical space gives power A for m in spectral space
+			! Scaling is based on size of array & m = zero mode gets adjusted scaling since the fft is in place
+			If(rsc) Then
+				x(3:,:,:,:) = x(3:,:,:,:)/(n/2)
+				x(1,:,:,:) = x(1,:,:,:)/n
+			Endif
+		Endif
+	End Subroutine r2c_ip4D_fftw
+
+	Subroutine c2r_ip4D_fftw(x,plan,rsc)
+		! r2c: Complex to Real (inverse transform)
+		! ip4D: In-place transform of 4D array 
+		! fftw : FFTW 
+		Real*8, Intent(InOut) :: x(:,:,:,:)
+		Logical, Intent(In), optional :: rsc
+		Integer*8, Intent(In), Optional :: plan
+		Integer*8 :: fresh_plan
+		Integer :: n, howmany
+		Integer :: inembed, istride, idist
+		Integer :: onembed, ostride, odist
+		Integer :: xshape(4)
+		If (present(rsc)) Then
+			! rescale m = 0 before going in - again, should wrap this into legendre weights at some point
+			If(rsc) x(1,:,:,:) = x(1,:,:,:)*2
+		Endif
+		If (present(plan)) Then
+			! Plan exists - x assumed to keep memory location
+			call dfftw_execute(plan)
+		Else
+			! X will typically be deallocated and reallocated (unfortunately)
+			! So we will need to recreate the plan (because x's memory location may change)
+			xshape = shape(x)
+			n = xshape(1) -2 ! We assume nphi is even that the arrays has been padded by 2
+			howmany = xshape(2)*xshape(3)*xshape(4)
+			inembed = 0
+			onembed = 0
+			istride = 1
+			ostride = 1
+			! idist is the distance between successive arrays to be transformed are stored
+			! odist is the distance between where successive results stored
+			!	-- we assume the stride is 1 here, so this is just the length of the first dimension of the array
+			odist = 2*(n/2+1)		! In place transforms require extra padding - 2 extra for even n.  1 extra for odd n.
+			idist = n/2+1			! This is the size of the corresponding complex arrays
+										! At least it would be if we weren't doing this in place
+			
+			call dfftw_plan_many_dft_c2r(fresh_plan,1,n, howmany, &
+												& x, inembed, istride, idist, &
+												& x, onembed, ostride, odist, &
+												& FFTW_ESTIMATE)
+			call dfftw_execute(fresh_plan)
+			call dfftw_destroy_plan(fresh_plan)
+		Endif
+		If (present(rsc)) Then
+			If(rsc) x = x/2 
+		Endif
+	End Subroutine c2r_ip4D_fftw
+End Module Fourier_Transform

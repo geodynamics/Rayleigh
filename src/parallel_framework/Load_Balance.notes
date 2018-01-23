@@ -1,0 +1,159 @@
+Module Load_Balancing
+	! USE Communication
+	! Use ProblemSize
+	! Use Controls  (for dealiasing)
+	Implicit None
+	Type Load_Config
+		! Very similar data structure to that found in ASH  (e.g. my_r%min, my_r%max etc.)
+		Integer :: min, max, delta
+		Integer :: np  ! The number of processors the load is distributed across
+		Integer :: nx  ! The total number of values distributed across np processors
+	End Type Load_Config
+
+	!///////////////////////////////////////////////////////////////////////////
+	!	General Load Balancing
+	! lb_1(:), lb_2(:), lb_3(:)	Possibly point to these with more meaningful aliases
+	! my_1, my_2, my_3
+	! might allow better indexing.
+
+	!///////////////////////////////////////////////////////////////////////////
+	! Spherical Geometry Load Balancing
+	! Some names similar to ASH for now (they seem to work pretty well)
+	Type(Load_Config), Allocatable, Public :: lb_rad(:), lb_theta(:), lb_m(:)
+	Type(Load_Config) :: my_mp, my_theta, my_r
+	Integer, Allocatable :: m_values(:)	! global-sized array of m_values
+
+	!///////////////////////////////////////////////////////////////////////////
+	! Cartesian Geometry Load Balancing
+	Type(Load_Config), Allocatable, Public :: lb_z(:), lb_y(:), lb_x(:)
+	
+Contains
+	Subroutine Spherical_Load_Balance()
+		Implicit None
+
+		Allocate(lb_rad(0:N_Column_CPUs-1))
+		Allocate(lb_theta(0:N_Row_CPUs-1))
+		Allocate(lb_m(0:N_Row_CPUs-1))
+
+		!------------------------------------------------------
+		! Probably want to move this to the Problemsize module
+		If (DeAliasing) Then
+			l_max = (2*n_theta-1)/3
+		Else
+			l_max = n_theta
+		Endif
+		m_max = l_max
+		n_m = l_max+1
+		n_l = l_max+1
+		!------------------------------------------------------	
+
+		Call Distribute_Load(lb_rad,N_r, column_cpus)
+		! Might need another object here that describes modes per processor.  Have to think on this.
+		Call Distribute_Load(lb_theta,N_theta, row_cpus)		
+		Call Distribute_Load(lb_m,n_m, row_cpus)	! Need to set n_m = m_max+1
+		Call Distribute_m()	! Assumes high m/low m pairing now.  Do something else for rhomboidal
+		
+	End Subroutine Spherical_Load_Balance
+
+	Subroutine Cartesian_Load_Balance()
+		Implicit None
+
+		Allocate(lb_z(0:N_Column_CPUs-1))
+		Allocate(lb_y(0:N_Row_CPUs-1))
+		Allocate(lb_x(0:N_Row_CPUs-1))
+
+		Call Distribute_Load(lb_z,N_x, column_cpus)
+		Call Distribute_Load(lb_y,N_y, row_cpus)		
+		Call Distribute_Load(lb_x,N_z, row_cpus)
+
+	End Subroutine Cartesian_Load_Balance
+
+	Subroutine Load_Balance(lb_in,nx,comm_group)
+		Implicit None
+		Type(Load_Config) :: lb_in(:)
+		Type(communictor) :: comm_group
+		Integer, Intent(In) :: nx		! the size of the dimension we want to load balance (e.g. nr_global)
+		Integer :: p,np, mcheck, nx_local
+		np = comm_group%np
+		nx_local = nx/np
+		mcheck = mod(nx,np)-1
+		lb_in(0)%min = 1
+		Do p = 0, np-1 
+			if (p .gt. 0) lb_in(p)%min = lb_in(p-1)%max+1
+			lb_in(p)%delta = nx_local
+			lb_in(p)%nx = nx
+			If (p .le. mcheck) then
+				lb_in(p)%delta = nx_local+1
+			Endif
+			lb_in(p)%max = lb_in(p)%min+lb_in(p)%delta-1
+			
+		Enddo
+	End Subroutine Load_Balance
+
+
+	Subroutine m_balance(lb,n_m)
+		! Pair up high and low m's
+		Integer, Intent(in) :: n_m
+		Integer :: npairs , np, i, mcheck, mextra
+		Integer, Allocatable :: pairs(:,:), unpaired(:)
+		npairs = n_m/2		! Total number of high/low m-pairs
+		mcheck = Mod(n_m,2) 
+		Allocate(pairs(1:2,1:npairs))
+		
+		Do i = 0, npairs-1
+			pairs(1,i+1) = i
+			pairs(2,i+1) = n_m-i
+		Enddo
+
+		!  Next distribute the pairs amongst the different cpus
+		
+		offset = 0
+		current_pair = 1
+		do p = 0, np-1
+			my_npairs = lb(p)%delta/2
+			ind = lb_m(p)%min
+			do i = 1, my_npairs
+				m_values(ind) = pairs(1,current_pair)
+				m_values(ind+1) = pairs(2,current_pair)
+				current_pair = current_pair+1
+				ind = ind+2
+			enddo
+		enddo
+
+		p = 0 ! yes - should be outside the 'if'
+
+		!Break up any pairs that are left
+		If (current_pair .ne. (npairs+1)) then
+			dpair = npairs+1-current_pair
+			Allocate(unpaired(1:dpair*2))
+			ind = 1
+			do i = 1, dpair
+				unpaired(ind) = pairs(1,current_pair)
+				unpaired(ind+1) = pairs(2,current_pair)
+				ind = ind+2
+			enddo
+			do i = 1, dpair
+				my_npairs = lb(p)%delta/2
+				ind = lb_m%min+my_npairs
+				m_values(ind) = unpaired(i)
+				p = p+1
+			enddo			
+			DeAllocate(unpaired)
+		Endif
+
+		! Account for middle m_value if it was left unpaired
+		if (mcheck .eq. 1) then 
+			mextra = n_m/2+1
+			my_npairs = lb(p)%delta/2
+			ind = lb_m(p)%min+my_npairs
+			m_values(ind) = mextra
+		endif
+
+		DeAllocate(pairs)
+	End Subroutine m_balance
+
+
+
+
+
+End Module Load_Balancing

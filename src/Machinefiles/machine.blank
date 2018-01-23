@@ -1,0 +1,10 @@
+FC = unknown
+CC = unknown
+DEFAULT = opt
+DEBUG = dbg
+VERSIONS = $(DEFAULT) $(DEBUG)
+RAYLEIGH_INC = unknown
+FFLAGS_$(DEFAULT) = unknown $(RAYLEIGH INC)
+LIB_$(DEFAULT) = unknown -lstdc++
+FFLAGS_$(DEBUG) = unknown $(RAYLEIGH_INC)
+LIB_$(DEBUG) = unknown -lstdc++

@@ -1,0 +1,30 @@
+ntheta = 128
+nphi = 2*ntheta
+spawn, 'ls workspace/*w1', ifiles
+ni = N_ELEMENTS(ifiles)
+
+cube = dblarr(nphi,100,ntheta,1)
+for i = 0, ni -1 DO BEGIN
+	read_4d,ifiles[i],dat, lims = lims
+	rstart = lims.rstart
+	rend = lims.rend
+	tstart = lims.tstart
+	tend = lims.tend
+	cube[*,rstart:rend,tstart:tend,0] = dat
+endfor
+
+spawn, 'ls workspace/*w2', ifiles
+ni = N_ELEMENTS(ifiles)
+cube2 = 0*cube
+
+for i = 0, ni -1 DO BEGIN
+	read_4d,ifiles[i],dat, lims = lims
+	rstart = lims.rstart
+	rend = lims.rend
+	tstart = lims.tstart
+	tend = lims.tend
+	cube2[*,rstart:rend,tstart:tend,0] = dat
+endfor
+
+
+end

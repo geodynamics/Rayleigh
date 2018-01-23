@@ -1,0 +1,66 @@
+################################################################
+# I. Specify the fortran compiler (FC) and the c compiler (CC)
+
+FC  = mpiifort    # FORTRAN Compiler (must be FORTRAN 2003-compliant)
+CC  = icc      # C compiler      
+
+################################################################################
+# II.   Create names for the different ways in which rayleigh should be built.
+#       
+#       Depending on what you are doing, you may wish to build versions of 
+#       Rayleigh compiled with different sets of compiler flags and/or libraries.
+#       
+#       For each build version, first define an environment variable. The value of
+#       that variable will be used to create a suffix for the executable. This example
+#       defines exectuables named rayleigh.avx2, rayleigh.dbg, rayleigh.avx, and rayleigh.sse
+#
+#       You must always have one version-variable named "DEFAULT".  You may give it any 
+#       non-empty value you wish, but the variable name must be "DEFAULT".
+#       If the user executes "./build_rayleigh MACHINE" without any addition options,
+#       an exectuable named rayleigh.$(DEFAULT) will be built.
+
+
+DEFAULT = opt    #        Haswell/Broadwell cores (avx2)
+DEBUG   = dbg    #         No optimization; debugging flags turned on
+
+################################################################################
+# III.  Create a simple white-space-separated list of the version names.
+#       The spaces are required here.
+
+VERSIONS = $(DEFAULT) $(DEBUG) 
+
+
+#################################################################################
+# IV.   (OPTIONAL) Define any custom environment variables you would like to use 
+#       as shorthand when defining the compile flags and library links for each version.   
+#       Typically Rayleigh will need to know where libblas.so, liblapack.so, fftw3.so, 
+#       and fftw3.f are located.
+
+MKL_INC = -I$(CURC_MKL_ROOT)/include -I$(CURC_MKL_ROOT)/include/fftw
+
+##################################################################################
+# V.    Define the optimization and linking flags for each version.  For each
+#       version of the code you would like to be built, you must define a FFLAGS_ 
+#       variable and a LIB_ variable with the version's name appended as a suffix.
+#       This is done via    FFLAGS_$(VERSION_VARIABLE_NAME) = .....   and
+#                           LIB_$(VERSION_VARIABLE_NAME)    = .....
+#       Note that Rayleigh will always need to have the location of fftw3.f in its
+#       include path, which should be included as part of FFLAGS
+
+# Optimized version:   $(DEFAULT); AVX2
+FFLAGS_$(DEFAULT)    = -FR -fpp -r8 -O3 -xCORE-AVX2 -shared_intel $(MKL_INC)
+LIB_$(DEFAULT)       = -lstdc++ -lmpi -mkl
+
+# Non-optimized; debugging flags turned on:  $(DEBUG)
+FFLAGS_$(DEBUG) = -FR -fpp -r8 -O0 -g -CB -traceback -shared_intel $(MKL_INC)
+LIB_$(DEBUG)   := $(LIB_$(DEFAULT))   # Note that this is how we copy the value of LIB_$(DEFAULT) into LIB_$(DEBUG)
+
+
+
+##################################################################################
+# VI.  (Optional)   Add a description for each version described by this machine file.
+#                   The description will be printed when its respective version is built.
+DESC_$(DEFAULT) = " Intel Cores with AVX2 instructions"
+DESC_$(DEBUG)   = " No optimization; debugging flags turned on."
+
+

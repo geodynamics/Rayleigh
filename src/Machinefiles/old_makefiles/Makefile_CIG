@@ -1,0 +1,30 @@
+F90 = mpif90
+CC = gcc
+#   Flags for the LAPack Libraries
+
+LIBFLAGS = -L/usr/lib/x86_64-linux-gnu -lfftw3 -L/usr/lib -lblas -llapack -lstdc++
+
+
+ifeq ($(RAYLEIGH_OPT),debug)
+	F90FLAGS = -O1 -fbounds-check -fbacktrace -ffixed-line-length-132  -I/usr/include
+else
+	F90FLAGS = -O3 -ffixed-line-length-132  -I/usr/include
+endif
+
+
+
+PROG =	rayleigh
+
+.SUFFIXES: .o .F90 .f .F .c
+include object_list
+
+$(PROG) :$(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)
+	$(F90) $(F90FLAGS) -o  $(PROG) $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ) $(LIBFLAGS)
+.F90.o :
+	$(F90) $(F90FLAGS) -c $<
+.cc.o:
+	$(CC) $(CFLAGS) -c *.cc
+clean :
+	rm -f *.o *.mod rayleigh
+ready :
+
