@@ -11,7 +11,7 @@
 &physical_controls_namelist
  benchmark_mode = 1
  benchmark_integration_interval = 100
- benchmark_report_interval = 1000
+ benchmark_report_interval = 5000
  rotation  = .True.
  magnetism = .false.
  viscous_heating = .false.
@@ -20,7 +20,7 @@
 &temporal_controls_namelist
  max_time_step = 1.0d-4
  max_iterations = 40000
- checkpoint_interval = 10000
+ checkpoint_interval = 100000
  cflmin = 0.4d0
  cflmax = 0.6d0
 /
