@@ -9,7 +9,7 @@ The pseudo-spectral nature of Rayleigh means that its parallelization necessaril
  
  Getting Started
  ----------------
-The following documents form the initial Rayleigh documentation.  
+The following documents form the initial Rayleigh documentation.  Note that the html version of the Diagnostics_Plotting document, which is automatically generated from a Jupyter notebook, is more cleanly formatted than the pdf version.
 
 | Document | Description |
 |----------|-------------|
