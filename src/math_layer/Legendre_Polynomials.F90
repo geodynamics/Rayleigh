@@ -243,9 +243,18 @@ Subroutine Parity_Resort(m)
     Integer, Intent(In) :: m
 	Integer :: l, indeven, indodd,partest, i
     Real*16 :: renorm, tmp
+    Real*16 :: PTS_normalization, STP_normalization
 	! Resort the p_lms into even and odd arrays
 
-
+        ! We wrap a normalization factor, related to the FFT
+        ! into the Legendre weights.
+        If (m_values(m) .eq. 0) Then
+            PTS_normalization = 1.0d0/(2.0d0*n_theta)
+            STP_normalization = 1.0d0
+        Else
+            PTS_normalization = 1.0d0/(n_theta)
+            STP_normalization = 0.5d0
+        Endif
 		n_l_even(m) = 0
 		n_l_odd(m) = 0
 		Do l = m_values(m), l_max
@@ -280,8 +289,8 @@ Subroutine Parity_Resort(m)
                 Do i = 1, n_theta/2
                     renorm = 2.0q0*PiQuad*gl_weights(i)
                     tmp = p_lmq(m)%data(i,l)*renorm
-				    ip_lm_odd(m)%data(i,indodd) = tmp
-				    p_lm_odd(m)%data(indodd,i) = p_lmq(m)%data(i,l)
+				    ip_lm_odd(m)%data(i,indodd) = tmp*PTS_normalization
+				    p_lm_odd(m)%data(indodd,i) = p_lmq(m)%data(i,l)*STP_normalization
                 Enddo
 				indodd = indodd +1
                 
@@ -291,8 +300,8 @@ Subroutine Parity_Resort(m)
                 Do i = 1, n_theta/2
                     renorm = 2.0q0*PiQuad*gl_weights(i)
                     tmp = p_lmq(m)%data(i,l)*renorm
-    				ip_lm_even(m)%data(i,indeven) = tmp
-    				p_lm_even(m)%data(indeven,i) =   p_lmq(m)%data(i,l)
+    				ip_lm_even(m)%data(i,indeven) = tmp*PTS_normalization
+    				p_lm_even(m)%data(indeven,i) =   p_lmq(m)%data(i,l)*STP_normalization
                 Enddo
 				indeven = indeven+1
 			Endif
@@ -386,3 +395,4 @@ Subroutine compute_factorial_ratio(m,ratio)
 		Enddo
 End Subroutine compute_factorial_ratio
 End Module Legendre_Polynomials
+
