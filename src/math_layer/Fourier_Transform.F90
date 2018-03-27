@@ -69,15 +69,7 @@ Contains
 			call dfftw_execute(fresh_plan)
 			call dfftw_destroy_plan(fresh_plan)
 		Endif
-		If (present(rsc)) Then
-			! FUTURE OPTIMIZATION:  wrap this weighting into the legendre polynomial arrays
-			! This ensures that Asin(mx) in physical space gives power A for m in spectral space
-			! Scaling is based on size of array & m = zero mode gets adjusted scaling since the fft is in place
-			If(rsc) Then
-				x(3:,:,:,:) = x(3:,:,:,:)/(n/2)
-				x(1,:,:,:) = x(1,:,:,:)/n
-			Endif
-		Endif
+
 	End Subroutine r2c_ip4D_fftw
 
 	Subroutine c2r_ip4D_fftw(x,plan,rsc)
@@ -92,10 +84,7 @@ Contains
 		Integer :: inembed, istride, idist
 		Integer :: onembed, ostride, odist
 		Integer :: xshape(4)
-		If (present(rsc)) Then
-			! rescale m = 0 before going in - again, should wrap this into legendre weights at some point
-			If(rsc) x(1,:,:,:) = x(1,:,:,:)*2
-		Endif
+
 		If (present(plan)) Then
 			! Plan exists - x assumed to keep memory location
 			call dfftw_execute(plan)
@@ -123,8 +112,6 @@ Contains
 			call dfftw_execute(fresh_plan)
 			call dfftw_destroy_plan(fresh_plan)
 		Endif
-		If (present(rsc)) Then
-			If(rsc) x = x/2 
-		Endif
+
 	End Subroutine c2r_ip4D_fftw
 End Module Fourier_Transform
