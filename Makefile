@@ -42,6 +42,8 @@ distclean:
 	rm -f $(BUILD)/*.F
 	rm -f $(BUILD)/*.F90
 	rm -f $(BUILD)/*.c
+	rm -f $(BUILD)/*.o
+	rm -f $(BUILD)/*.mod
 	rm -f $(BUILD)/Machine_Definitions
 	rm -f $(BUILD)/machine.no_comments
 	@rm -f $(PREFIX)/rayleigh.*
