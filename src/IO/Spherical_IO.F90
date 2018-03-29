@@ -3228,7 +3228,8 @@ Contains
 				! This file should contain everything that needs to be known for processing later
 	         write(iterstring,'(i8.8)') current_iteration
             cfile = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//'grid'
-	         open(unit=15,file=cfile,form='unformatted', status='replace')
+	         open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
+           Write(15)endian_tag
 	         Write(15)nr
 				Write(15)ntheta
 				Write(15)nphi
