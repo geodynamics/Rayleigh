@@ -157,6 +157,91 @@ Contains
         !Note: We use tmp to store v dot D_ij modulo the diagonal terms involving div dot v
         !Store that in tmp1 and then set qty_i = v_j(vr*dlnrhodr+D_ij)
 
+        If (compute_quantity(visc_flux_r)) Then
+            DO_PSI
+                tmp1(PSI) = 2*buffer(PSI,vr) * buffer(PSI,dvrdr) ! 2 vr dot e_r_r
+            END_DO
+
+            DO_PSI
+                tmp1(PSI) = tmp1(PSI)+buffer(PSI,vtheta) * &              ! 2 vtheta dot e_r_theta
+                ( buffer(PSI,dvtdr) -one_over_r(r)*(buffer(PSI,vtheta) - buffer(PSI,dvrdt)) ) 
+            END_DO
+
+            DO_PSI
+                tmp1(PSI) = tmp1(PSI)+buffer(PSI,vphi) * &              ! 2 vphi dot e_r_phi
+                ( buffer(PSI,dvpdr) -one_over_r(r)*(buffer(PSI,vphi) - csctheta(t)*buffer(PSI,dvrdp)) ) 
+            END_DO
+
+            DO_PSI                                              ! -2 vr dot div(v)/3
+                tmp1(PSI) = tmp1(PSI)+2*buffer(PSI,vr)*(buffer(PSI,vr)*ref%dlnrho(r)*one_third )
+            END_DO
+
+            DO_PSI            
+                qty(PSI) = tmp1(PSI)*nu(r)*ref%density(r)                            
+            END_DO    
+
+            Call Add_Quantity(qty)      
+        Endif    
+
+        If (compute_quantity(visc_flux_theta)) Then
+            DO_PSI
+                tmp1(PSI) = buffer(PSI,vr) * & ! 2 vr dot e_r_theta
+                ( buffer(PSI,dvtdr) -one_over_r(r)*(buffer(PSI,vtheta) - buffer(PSI,dvrdt)) ) 
+            END_DO
+
+            DO_PSI
+                tmp1(PSI) = tmp1(PSI)+buffer(PSI,vtheta) * & ! 2 vtheta dot e_theta_theta
+                2*one_over_r(r)*(buffer(PSI,vr) + buffer(PSI,dvtdt)) 
+            END_DO
+
+            DO_PSI
+                tmp1(PSI) = tmp1(PSI)+buffer(PSI,vphi) * & ! 2 vphi dot e_theta_phi
+                one_over_r(r)*(csctheta(t)*buffer(PSI,dvtdp) + buffer(PSI,dvpdt) - buffer(PSI,vphi)*cottheta(t) )
+            END_DO
+
+            DO_PSI                                              ! -2 vtheta dot div(v)/3
+                tmp1(PSI) = tmp1(PSI)+2*buffer(PSI,vtheta)*(buffer(PSI,vr)*ref%dlnrho(r)*one_third )
+            END_DO
+
+            DO_PSI            
+                qty(PSI) = tmp1(PSI)*nu(r)*ref%density(r)                            
+            END_DO    
+
+            Call Add_Quantity(qty)     
+
+
+        Endif
+
+        If (compute_quantity(visc_flux_phi)) Then
+            DO_PSI
+                tmp1(PSI) = buffer(PSI,vr) * &  ! 2 vr dot e_r_phi
+                ( buffer(PSI,dvpdr) -one_over_r(r)*(buffer(PSI,vphi) - csctheta(t)*buffer(PSI,dvrdp)) ) 
+            END_DO
+
+            DO_PSI
+                tmp1(PSI) = tmp1(PSI)+buffer(PSI,vtheta) * & ! 2 vtheta dot e_theta_phi
+                 one_over_r(r)*(csctheta(t)*buffer(PSI,dvtdp) + buffer(PSI,dvpdt) - buffer(PSI,vphi)*cottheta(t) )
+            END_DO
+
+            DO_PSI
+                tmp1(PSI) = tmp1(PSI)+buffer(PSI,vphi) * & ! 2 vphi dot e_phi_phi
+                Two_Over_R(r)*(buffer(PSI,vr) + cottheta(t)*buffer(PSI,vtheta) + csctheta(t)*buffer(PSI,dvpdp))
+            END_DO
+
+            DO_PSI                                              ! -2 vphi dot div(v)/3
+                tmp1(PSI) = tmp1(PSI)+2*buffer(PSI,vphi)*(buffer(PSI,vr)*ref%dlnrho(r)*one_third )
+            END_DO
+
+            DO_PSI            
+                qty(PSI) = tmp1(PSI)*nu(r)*ref%density(r)                            
+            END_DO    
+
+            Call Add_Quantity(qty) 
+
+        Endif
+
+        !NOTE:  Left off here.   Issues in earlier implementation.
+
         If (compute_quantity(visc_flux_r) .or. compute_quantity(visc_flux_theta) &
             .or. compute_quantity(visc_flux_phi)) Then
              !Radial contribution (mod rho*nu)

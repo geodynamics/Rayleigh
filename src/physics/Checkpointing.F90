@@ -371,6 +371,7 @@ Contains
             cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
             open(unit=15,file=cfile,form='unformatted', status='old')
             Read(15)n_r_old
+            Write(6,*)'nr_old: ', n_r_old
             Read(15)grid_type_old
             Read(15)l_max_old
             Read(15)dt
