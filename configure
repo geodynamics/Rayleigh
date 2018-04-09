@@ -96,6 +96,10 @@ function displayhelp {
     echo "      The C-compiler command DOES NOT need to be MPI-capable."
     echo ""
 
+    echo "  --devel / -devel "
+    echo "      Forces Rayleigh to build with debugging flags and no."
+    echo "      vectorization (useful for quick development builds)."
+
     echo "  --FC=<fortran compiler name> "
     echo "      Specifies the Fortran compiler command to be invoked by Make."
     echo "      FC must be in your PATH, or else configure will fail.  FC must"
@@ -296,6 +300,10 @@ do
 
     --nodirs | -nodirs )
       NODIRS="TRUE";
+      ;;
+
+    --devel | -devel)
+      DEVELMODE="TRUE";
       ;;
 
     -mkl)
@@ -508,7 +516,18 @@ FFLAGS[1]=$DBG_FLAGS
 VECLEVEL[1]=""
 nvers=2
 MULTIVEC=FALSE
-if [[ $FVERSION == "INTEL" ]]
+
+if [[ $DEVELMODE == "TRUE" ]]
+then
+  echo "************************************************************************"
+  echo " Development mode has been activated.  Both rayleigh.opt"
+  echo " and rayleigh.dbg will be compiled with debugging flags "
+  echo " and no vectorization."
+  FFLAGS[0]=$DBG_FLAGS
+fi
+
+
+if [[ $FVERSION == "INTEL" ]] &&  [[ $DEVELMODE != "TRUE" ]]
 then
 
   echo "***********************************************************************"
@@ -559,6 +578,7 @@ then
        fi
     done
   echo "***********************************************************************"
+
 fi
 
 
@@ -743,6 +763,7 @@ if [[ $NODIRS == "TRUE" ]]
 then
   echo "NODIRS = 1" >> make.inc
 fi
+
 echo " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo " Configuration is complete."
 echo " A Machine_Definitions files has been placed in $RAYLEIGHROOT/src/build."
