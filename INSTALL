@@ -187,13 +187,13 @@ The example below shows how to configure the code for Mira, an IBM Blue Gene/Q.
 export BLAS_LIB=/soft/libraries/alcf/current/xl/BLAS/lib
 export LAPACK_LIB=/soft/libraries/alcf/current/xl/LAPACK/lib
 export FFTW_LIB=/soft/libraries/alcf/current/xl/FFTW3/lib
-export FFTW_INC=/soft/libraries/alcf/current/xl/FFTW3/inc
+export FFTW_INC=/soft/libraries/alcf/current/xl/FFTW3/include
 
 ./configure \
 --FC=mpixlf2003_r \
 --CC=gcc \
 --LIBFLAGS="-L$FFTW_LIB -lfftw3 -L$LAPACK_LIB -llapack -L$BLAS_LIB -lblas" \
---INCLUDE="-I$FFTW_INC" \
+--INCLUDE="-I . -I$FFTW_INC" \
 --FFLAGS_OPT="-qfree=f90 -O2" \
 --FFLAGS_DBG="-qfree=f90 -O0 -g -traceback  -qcheck  -C" \
 --nodirs

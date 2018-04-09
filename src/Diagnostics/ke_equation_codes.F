@@ -34,47 +34,47 @@
     Integer, Parameter :: mag_work_mmm = keq_off+22 ! :tex: $c_4\overline{\boldsymbol{v}}\cdot\left[\left(\boldsymbol{\nabla}\times\overline{\boldsymbol{B}}\right)\times\overline{\boldsymbol{B}}\right] $
 
     ! Now the fluxes
-    Integer, Parameter :: ke_flux_radial = keq_off+22    ! :tex: $\frac{1}{2}\mathrm{f}_1v_r\,v^2$
-    Integer, Parameter :: ke_flux_theta  = keq_off+23    ! :tex: $\frac{1}{2}\mathrm{f}_1v_\theta\,v^2 $
-    Integer, Parameter :: ke_flux_phi    = keq_off+24    ! :tex: $\frac{1}{2}\mathrm{f}_1v_\phi\,v^2$
+    Integer, Parameter :: ke_flux_radial = keq_off+23    ! :tex: $\frac{1}{2}\mathrm{f}_1v_r\,v^2$
+    Integer, Parameter :: ke_flux_theta  = keq_off+24    ! :tex: $\frac{1}{2}\mathrm{f}_1v_\theta\,v^2 $
+    Integer, Parameter :: ke_flux_phi    = keq_off+25    ! :tex: $\frac{1}{2}\mathrm{f}_1v_\phi\,v^2$
 
-    Integer, Parameter :: mke_mflux_radial = keq_off+25  ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_r}\,\overline{v}^2 $
-    Integer, Parameter :: mke_mflux_theta  = keq_off+26  ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\theta}\,\overline{v}^2$
-    Integer, Parameter :: mke_mflux_phi    = keq_off+27  ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\phi}\,\overline{v}^2$
+    Integer, Parameter :: mke_mflux_radial = keq_off+26  ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_r}\,\overline{v}^2 $
+    Integer, Parameter :: mke_mflux_theta  = keq_off+27  ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\theta}\,\overline{v}^2$
+    Integer, Parameter :: mke_mflux_phi    = keq_off+28  ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\phi}\,\overline{v}^2$
 
-    Integer, Parameter :: pke_mflux_radial  = keq_off+28 ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_r}\,{v'}^2 $
-    Integer, Parameter :: pke_mflux_theta   = keq_off+29 ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\theta}\,{v'}^2  $
-    Integer, Parameter :: pke_mflux_phi     = keq_off+30 ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\phi}\,{v'}^2  $
+    Integer, Parameter :: pke_mflux_radial  = keq_off+29 ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_r}\,{v'}^2 $
+    Integer, Parameter :: pke_mflux_theta   = keq_off+30 ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\theta}\,{v'}^2  $
+    Integer, Parameter :: pke_mflux_phi     = keq_off+31 ! :tex: $\frac{1}{2}\mathrm{f}_1\,\overline{v_\phi}\,{v'}^2  $
 
-    Integer, Parameter :: pke_pflux_radial  = keq_off+31 ! :tex: $\frac{1}{2}\mathrm{f}_1\,v'_r\,{v'}^2 $
-    Integer, Parameter :: pke_pflux_theta   = keq_off+32 ! :tex: $\frac{1}{2}\mathrm{f}_1\,v'_\theta\,{v'}^2 $
-    Integer, Parameter :: pke_pflux_phi     = keq_off+33 ! :tex: $\frac{1}{2}\mathrm{f}_1\,v'_\phi\,{v'}^2 $
+    Integer, Parameter :: pke_pflux_radial  = keq_off+32 ! :tex: $\frac{1}{2}\mathrm{f}_1\,v'_r\,{v'}^2 $
+    Integer, Parameter :: pke_pflux_theta   = keq_off+33 ! :tex: $\frac{1}{2}\mathrm{f}_1\,v'_\theta\,{v'}^2 $
+    Integer, Parameter :: pke_pflux_phi     = keq_off+34 ! :tex: $\frac{1}{2}\mathrm{f}_1\,v'_\phi\,{v'}^2 $
 
-    Integer, Parameter :: visc_flux_r     = keq_off+34 ! :tex: $c_5\left[\boldsymbol{v}\cdot\boldsymbol{\mathcal{D}} \right]_r$
-    Integer, Parameter :: visc_flux_theta = keq_off+35 ! :tex: $c_5\left[\boldsymbol{v}\cdot\boldsymbol{\mathcal{D}} \right]_\theta $
-    Integer, Parameter :: visc_flux_phi   = keq_off+36 ! :tex: $c_5\left[\boldsymbol{v}\cdot\boldsymbol{\mathcal{D}} \right]_\phi$
+    Integer, Parameter :: visc_flux_r     = keq_off+35 ! :tex: $c_5\left[\boldsymbol{v}\cdot\boldsymbol{\mathcal{D}} \right]_r$
+    Integer, Parameter :: visc_flux_theta = keq_off+36 ! :tex: $c_5\left[\boldsymbol{v}\cdot\boldsymbol{\mathcal{D}} \right]_\theta $
+    Integer, Parameter :: visc_flux_phi   = keq_off+37 ! :tex: $c_5\left[\boldsymbol{v}\cdot\boldsymbol{\mathcal{D}} \right]_\phi$
 
-    Integer, Parameter :: visc_fluxpp_r     = keq_off+37 ! :tex: $c_5\left[\boldsymbol{v'}\cdot\boldsymbol{\mathcal{D'}} \right]_r$
-    Integer, Parameter :: visc_fluxpp_theta = keq_off+38 ! :tex: $c_5\left[\boldsymbol{v'}\cdot\boldsymbol{\mathcal{D'}} \right]_\theta$
-    Integer, Parameter :: visc_fluxpp_phi   = keq_off+39 ! :tex: $c_5\left[\boldsymbol{v'}\cdot\boldsymbol{\mathcal{D'}} \right]_\phi$
+    Integer, Parameter :: visc_fluxpp_r     = keq_off+38 ! :tex: $c_5\left[\boldsymbol{v'}\cdot\boldsymbol{\mathcal{D'}} \right]_r$
+    Integer, Parameter :: visc_fluxpp_theta = keq_off+39 ! :tex: $c_5\left[\boldsymbol{v'}\cdot\boldsymbol{\mathcal{D'}} \right]_\theta$
+    Integer, Parameter :: visc_fluxpp_phi   = keq_off+40 ! :tex: $c_5\left[\boldsymbol{v'}\cdot\boldsymbol{\mathcal{D'}} \right]_\phi$
 
-    Integer, Parameter :: visc_fluxmm_r     = keq_off+40 ! :tex: $c_5\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\overline{\mathcal{D}}} \right]_r$
-    Integer, Parameter :: visc_fluxmm_theta = keq_off+41 ! :tex: $c_5\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\overline{\mathcal{D}}} \right]_\theta$
-    Integer, Parameter :: visc_fluxmm_phi   = keq_off+42 ! :tex: $c_5\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\overline{\mathcal{D}}} \right]_\phi$
+    Integer, Parameter :: visc_fluxmm_r     = keq_off+41 ! :tex: $c_5\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\overline{\mathcal{D}}} \right]_r$
+    Integer, Parameter :: visc_fluxmm_theta = keq_off+42 ! :tex: $c_5\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\overline{\mathcal{D}}} \right]_\theta$
+    Integer, Parameter :: visc_fluxmm_phi   = keq_off+43 ! :tex: $c_5\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\overline{\mathcal{D}}} \right]_\phi$
 
-    Integer, Parameter :: press_flux_r     = keq_off+43  ! :tex: $-c_3v_r P$
-    Integer, Parameter :: press_flux_theta = keq_off+44  ! :tex: $-c_3v_\theta P$
-    Integer, Parameter :: press_flux_phi   = keq_off+45  ! :tex: $-c_3v_\phi P$
+    Integer, Parameter :: press_flux_r     = keq_off+44  ! :tex: $-c_3v_r P$
+    Integer, Parameter :: press_flux_theta = keq_off+45  ! :tex: $-c_3v_\theta P$
+    Integer, Parameter :: press_flux_phi   = keq_off+46  ! :tex: $-c_3v_\phi P$
 
-    Integer, Parameter :: press_fluxpp_r     = keq_off+43  ! :tex: $-c_3v'_r P'$
-    Integer, Parameter :: press_fluxpp_theta = keq_off+44  ! :tex: $-c_3v'_\theta P'$
-    Integer, Parameter :: press_fluxpp_phi   = keq_off+45  ! :tex: $-c_3v'_\phi P'$
+    Integer, Parameter :: press_fluxpp_r     = keq_off+47  ! :tex: $-c_3v'_r P'$
+    Integer, Parameter :: press_fluxpp_theta = keq_off+48  ! :tex: $-c_3v'_\theta P'$
+    Integer, Parameter :: press_fluxpp_phi   = keq_off+49  ! :tex: $-c_3v'_\phi P'$
 
-    Integer, Parameter :: press_fluxmm_r     = keq_off+43  ! :tex: $-c_3\overline{v_r}\, \overline{P}$
-    Integer, Parameter :: press_fluxmm_theta = keq_off+44  ! :tex: $-c_3\overline{v_\theta}\, \overline{P}$
-    Integer, Parameter :: press_fluxmm_phi   = keq_off+45  ! :tex: $-c_3\overline{v_\phi}\, \overline{P}$
+    Integer, Parameter :: press_fluxmm_r     = keq_off+50  ! :tex: $-c_3\overline{v_r}\, \overline{P}$
+    Integer, Parameter :: press_fluxmm_theta = keq_off+51  ! :tex: $-c_3\overline{v_\theta}\, \overline{P}$
+    Integer, Parameter :: press_fluxmm_phi   = keq_off+52  ! :tex: $-c_3\overline{v_\phi}\, \overline{P}$
 
-    Integer, Parameter :: production_shear_ke  = keq_off+46 ! :tex: $ -- $
-    Integer, Parameter :: production_shear_pke = keq_off+47 ! :tex: $ -- $
-    Integer, Parameter :: production_shear_mke = keq_off+48 ! :tex: $ -- $
+    Integer, Parameter :: production_shear_ke  = keq_off+53 ! :tex: $ -- $
+    Integer, Parameter :: production_shear_pke = keq_off+54 ! :tex: $ -- $
+    Integer, Parameter :: production_shear_mke = keq_off+55 ! :tex: $ -- $
     

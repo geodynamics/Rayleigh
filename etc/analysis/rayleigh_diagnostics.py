@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 import os
-
+maxq = 4000
 class RayleighTiming:
 
     def __init__(self,filename,byteswap=True):
@@ -203,7 +203,7 @@ class G_Avgs:
             self.vals[i,:] = tmp
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
-        maxq = 801
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -285,7 +285,7 @@ class Shell_Avgs:
                 print('This ShellAverage file is version 2, and ntheta was not provided.')
                 print('The 2nd, 3rd and 4th moments are set to zero')   
                 self.vals[:,1,:,:] = 0.0            
-        maxq = 3000
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -348,7 +348,7 @@ class AZ_Avgs:
             self.vals[:,:,:,i] = tmp
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
-        maxq = 801
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -445,7 +445,7 @@ class Point_Probes:
 
         #print 'iters: ', self.iters
         #print 'times: ', self.time
-        maxq = 4000
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -521,7 +521,7 @@ class Meridional_Slices:
             self.vals[:,:,:,:,i] = tmp
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
-        maxq = 801
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -588,7 +588,7 @@ class Equatorial_Slices:
             self.vals[:,:,:,i] = tmp
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
-        maxq = 801
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -673,7 +673,7 @@ class Shell_Slices:
 
 
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
-        maxq = 801
+
         lut_max = 1000
         lut = np.zeros(maxq)+int(lut_max)
         self.lut = lut.astype('int32')
@@ -879,7 +879,7 @@ class SPH_Modes:
                         for m in range(1,nm):
                             self.vals[m,:,j,q,k] = self.vals[m,:,j,q,k]/sqrttwo
 
-        maxq = 801
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
@@ -993,7 +993,7 @@ class Shell_Spectra:
                         for m in range(1,nm):
                             self.vals[:,m,j,q,k] = self.vals[:,m,j,q,k]/sqrttwo
 
-        maxq = 801
+
         lut = np.zeros(maxq)+int(1000)
         self.lut = lut.astype('int32')
         for i,q in enumerate(self.qv):
