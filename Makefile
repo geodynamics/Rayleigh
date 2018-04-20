@@ -1,6 +1,10 @@
 include make.inc
 SRC=src
 BUILD=$(SRC)/build
+
+# make the CUSTOMROOT variable available to sub-make processes
+export CUSTOMROOT
+
 rayleigh:
 	@mkdir -p $(BUILD)/compiled
 	@cp $(SRC)/parallel_framework/*.F90 $(BUILD)/.
@@ -18,6 +22,9 @@ rayleigh:
 	@cp $(SRC)/object_list $(BUILD)/.
 ifeq ($(NODIRS),1)
 	cp $(SRC)/Utility/MakeDir.F90_IBM $(BUILD)/MakeDir.F90
+endif
+ifdef CUSTOMROOT
+	@cp $(CUSTOMROOT)/* $(BUILD)/.
 endif
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) all

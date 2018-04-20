@@ -99,6 +99,7 @@ function displayhelp {
     echo "  --devel / -devel "
     echo "      Forces Rayleigh to build with debugging flags and no."
     echo "      vectorization (useful for quick development builds)."
+    echo ""
 
     echo "  --FC=<fortran compiler name> "
     echo "      Specifies the Fortran compiler command to be invoked by Make."
@@ -237,6 +238,11 @@ function displayhelp {
     echo "          <LAPACK ROOT>/lib/liblapack.a"
     echo ""
 
+    echo "  --with-custom=<CUSTOM ROOT>"
+    echo "      Set this flag to specify the location of custom Rayleigh source files."
+    echo "      These files will be copied to the build directory and override any of"
+    echo "      the standard Rayleigh source files."
+    echo ""
 
 }
 
@@ -249,6 +255,7 @@ RAYLEIGHROOT=$PWD
 PREFIX=$RAYLEIGHROOT
 NEED_HELP=no
 USE_MKL="FALSE"
+CUSTOMROOT="none"
 
 
 ###############################################################################################
@@ -262,6 +269,10 @@ do
     -help | --help | -h)
       displayhelp;
       exit 0;
+      ;;
+
+    --with-custom=*)
+      CUSTOMROOT=`expr "x$option" : "x-*with-custom=\(.*\)"`;
       ;;
 
     -prefix=* | --prefix=*)
@@ -379,6 +390,12 @@ then
       if [[ $NODIRS == "TRUE" ]]
       then
         echo "NODIRS = 1" >> make.inc
+      fi
+      if [[ $CUSTOMROOT == "none" ]]
+      then
+        echo "CUSTOMROOT = " >> make.inc
+      else
+        echo "CUSTOMROOT = "$CUSTOMROOT >> make.inc
       fi
       exit 0
 
@@ -762,6 +779,12 @@ echo "PREFIX = "$PREFIX > make.inc
 if [[ $NODIRS == "TRUE" ]]
 then
   echo "NODIRS = 1" >> make.inc
+fi
+if [[ $CUSTOMROOT == "none" ]]
+then
+  echo "CUSTOMROOT = " >> make.inc
+else
+  echo "CUSTOMROOT = "$CUSTOMROOT >> make.inc
 fi
 
 echo " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
