@@ -1,5 +1,5 @@
 
-# Rayleigh Version 0.9.0 #
+# Rayleigh Version 0.9.1 #
 
 [![DOI](https://zenodo.org/badge/113108631.svg)](https://zenodo.org/badge/latestdoi/113108631)
 
