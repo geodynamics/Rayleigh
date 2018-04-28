@@ -51,7 +51,7 @@ function dbg_flags {
 
 function displayhelp {
     echo ""
-    echo "            Rayleigh v0.9 Configuration Help"
+    echo "            Rayleigh v0.9.1 Configuration Help"
     echo "            ================================"
     echo " "
     echo "  usage: ./configure [options]"
