@@ -1,0 +1,3 @@
+make distclean
+./configure -devel
+make

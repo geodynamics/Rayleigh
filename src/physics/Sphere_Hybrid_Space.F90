@@ -1,9 +1,4 @@
-#define DO_IDX2 Do mp = my_mp%min, my_mp%max; m = m_values(mp); Do imi = 1, 2; Do r = my_r%min, my_r%max
-#define END_DO enddo; enddo; enddo
-#define IDX2 m:l_max,r,imi
-#define SBUFFA wsp%s2a(mp)%data
-#define SBUFFB wsp%s2b(mp)%data
-#define ASBUFFA cobuffer%s2a(mp)%data
+#include "indices.F"
 Module Sphere_Hybrid_Space
 
     ! NOTE: WE NEED a 1/density variable

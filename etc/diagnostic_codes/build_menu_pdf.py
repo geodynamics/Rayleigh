@@ -1,3 +1,5 @@
+nqmax = 4000  # The maximum possible quantity code.  Should be consistent with the number in SphericalIO.F90
+glob_echecks = (nqmax+1)*[0]  # used to check for duplicates across all quantity codes
 def classify_line(codeline):
     """Description:  Classifies a line of code as offset-code, quantity-code, or other
        Inputs:  
@@ -108,6 +110,7 @@ for inpref in inprefs:
     qcodes = []
     texcodes=[]
 
+    loc_echecks = (nqmax+1)*[0]  # Used to check for duplicated indices within each .F file 
     for aline in lines:
         ltype=classify_line(aline)
         if (ltype == 1):
@@ -119,7 +122,8 @@ for inpref in inprefs:
             varnames.append(vname)
             qcodes.append(qcode+offset)
             texcodes.append(tcode)
-
+            loc_echecks[int(qcode+offset)]+=1
+            glob_echecks[int(qcode+offset)]+=1
         if (ltype == 2):
             pieces=parse_offset_line(aline)
             vname=pieces[0]
@@ -127,6 +131,11 @@ for inpref in inprefs:
             relvname=pieces[2]
             mydict[vname]=mydict[relvname]+roffset
             offset=mydict[vname]
+
+    for ecvi, ecv in enumerate(loc_echecks):
+        if (ecv > 1):
+            print("Error in ", infile, ' qcode duplicated: ', ecvi) 
+    
     tfcnt=0
     ofile=inpref[0]+'_table'+str(tfcnt)+'.tex'
     myfile= open(ofile,"w")
@@ -172,3 +181,8 @@ for inpref in inprefs:
                 myfile= open(ofile,"w")
     #print(len(varnames))
     myfile.close()
+
+#Finally, perform a consistency check across all quantity codes parsed
+for ecvi, ecv in enumerate(glob_echecks):
+    if (ecv > 1):
+        print('Global Error -- qcode duplicated: ', ecvi) 

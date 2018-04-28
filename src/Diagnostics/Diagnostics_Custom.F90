@@ -1,10 +1,4 @@
-#define DO_PSI Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_PSI2 Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max
-#define END_DO2 enddo; enddo
-#define END_DO enddo; enddo; enddo
-#define PSI k,r,t
-#define PSI2 r,t
-
+#include "indices.F"
 !///////////////////////////////////////////////////////////////////
 !               DIAGNOSTICS_CUSTOM
 !   This is where users can implement their own diagnostics

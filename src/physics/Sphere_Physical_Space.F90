@@ -1,11 +1,6 @@
-#define RHSP wsp%p3b
-#define DO_IDX Do t = my_theta%min, my_theta%max;    Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define END_DO enddo; enddo; enddo
-#define IDX k,r,t
-#define FIELDSP wsp%p3a
-#define IDXM r,t
 
-!NOTE STABLE MACRO ABOVE!
+#include "indices.F"
+
 Module Sphere_Physical_Space
     Use Parallel_Framework
     Use Controls

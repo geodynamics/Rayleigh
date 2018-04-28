@@ -1,6 +1,10 @@
 include make.inc
 SRC=src
 BUILD=$(SRC)/build
+
+# make the CUSTOMROOT variable available to sub-make processes
+export CUSTOMROOT
+
 rayleigh:
 	@mkdir -p $(BUILD)/compiled
 	@cp $(SRC)/parallel_framework/*.F90 $(BUILD)/.
@@ -14,10 +18,16 @@ rayleigh:
 	@cp $(SRC)/Diagnostics/*.F $(BUILD)/.
 	@cp $(SRC)/Utility/*.F90 $(BUILD)/.
 	@cp $(SRC)/Utility/*.c $(BUILD)/.
+	@cp $(SRC)/Include/*.F $(BUILD)/.
 	@cp $(SRC)/Makefile $(BUILD)/.
 	@cp $(SRC)/object_list $(BUILD)/.
 ifeq ($(NODIRS),1)
 	cp $(SRC)/Utility/MakeDir.F90_IBM $(BUILD)/MakeDir.F90
+endif
+ifdef CUSTOMROOT
+	@echo Custom directory specified.
+	@echo Any files from $(CUSTOMROOT) will overwrite standard Rayleigh source files.
+	@cp $(CUSTOMROOT)/* $(BUILD)/. 2>/dev/null || :
 endif
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) all
@@ -42,6 +52,10 @@ distclean:
 	rm -f $(BUILD)/*.F
 	rm -f $(BUILD)/*.F90
 	rm -f $(BUILD)/*.c
+	rm -f $(BUILD)/*.o
+	rm -f $(BUILD)/*.mod
+	rm -f $(BUILD)/object_list
+	rm -f $(BUILD)/Makefile
 	rm -f $(BUILD)/Machine_Definitions
 	rm -f $(BUILD)/machine.no_comments
 	@rm -f $(PREFIX)/rayleigh.*

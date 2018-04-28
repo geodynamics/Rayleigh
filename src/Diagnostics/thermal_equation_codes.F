@@ -44,72 +44,72 @@
 
     ! Heat sources...
     ! Q
-    Integer, Parameter :: vol_heat_flux = te_eq_off+31 ! :tex: $F_Q(r)$
-    Integer, Parameter :: vol_heating   = te_eq_off+32 ! :tex: $\mathrm{f}_6(r)$
+    Integer, Parameter :: vol_heat_flux = te_eq_off+33 ! :tex: $F_Q(r)$
+    Integer, Parameter :: vol_heating   = te_eq_off+34 ! :tex: $\mathrm{f}_6(r)$
 
 
     ! Viscous Heating
-    Integer, Parameter :: visc_heating = te_eq_off+33 ! :tex:  $c_5\Phi(r,\theta,\phi)$
+    Integer, Parameter :: visc_heating = te_eq_off+35 ! :tex:  $c_5\Phi(r,\theta,\phi)$
 
     ! Ohmic Heating
 
-    Integer, Parameter :: ohmic_heat    = te_eq_off+34 !  :tex:  $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}'}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
-    Integer, Parameter :: ohmic_heat_pp = te_eq_off+35 !  :tex: $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}'}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
-    Integer, Parameter :: ohmic_heat_pm = te_eq_off+36 !  :tex: $\mathrm{f}_7c_4\left( \overline{\boldsymbol{\mathcal{J}}}\cdot\overline{\boldsymbol{\mathcal{J}}} \right)$
-    Integer, Parameter :: ohmic_heat_mm = te_eq_off+37 !  :tex: $\mathrm{f}_7c_4\left( \overline{\boldsymbol{\mathcal{J}}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
+    Integer, Parameter :: ohmic_heat    = te_eq_off+36 !  :tex:  $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}'}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
+    Integer, Parameter :: ohmic_heat_pp = te_eq_off+37 !  :tex: $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}'}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
+    Integer, Parameter :: ohmic_heat_pm = te_eq_off+38 !  :tex: $\mathrm{f}_7c_4\left( \overline{\boldsymbol{\mathcal{J}}}\cdot\overline{\boldsymbol{\mathcal{J}}} \right)$
+    Integer, Parameter :: ohmic_heat_mm = te_eq_off+39 !  :tex: $\mathrm{f}_7c_4\left( \overline{\boldsymbol{\mathcal{J}}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
 
 
 
     ! Advective Fluxes (heat)
-    Integer, Parameter :: rhot_vr_s = te_eq_off+38 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r\Theta$
-    Integer, Parameter :: rhot_vrp_sp = te_eq_off+39 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\Theta'$
-    Integer, Parameter :: rhot_vrp_sm = te_eq_off+40 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\overline{\Theta}$
-    Integer, Parameter :: rhot_vrm_sp = te_eq_off+41 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\Theta'$
-    Integer, Parameter :: rhot_vrm_sm = te_eq_off+42 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\,\overline{\Theta}$
+    Integer, Parameter :: rhot_vr_s = te_eq_off+40 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r\Theta$
+    Integer, Parameter :: rhot_vrp_sp = te_eq_off+41 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\Theta'$
+    Integer, Parameter :: rhot_vrp_sm = te_eq_off+42 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\overline{\Theta}$
+    Integer, Parameter :: rhot_vrm_sp = te_eq_off+43 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\Theta'$
+    Integer, Parameter :: rhot_vrm_sm = te_eq_off+44 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\,\overline{\Theta}$
     
-    Integer, Parameter :: rhot_vt_s   = te_eq_off+43 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta \Theta$
-    Integer, Parameter :: rhot_vtp_sp = te_eq_off+44 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\Theta'$
-    Integer, Parameter :: rhot_vtp_sm = te_eq_off+45 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\overline{\Theta}$
-    Integer, Parameter :: rhot_vtm_sp = te_eq_off+46 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\theta}\Theta'$
-    Integer, Parameter :: rhot_vtm_sm = te_eq_off+47 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\theta}\,\overline{\Theta}$
+    Integer, Parameter :: rhot_vt_s   = te_eq_off+45 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta \Theta$
+    Integer, Parameter :: rhot_vtp_sp = te_eq_off+46 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\Theta'$
+    Integer, Parameter :: rhot_vtp_sm = te_eq_off+47 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\overline{\Theta}$
+    Integer, Parameter :: rhot_vtm_sp = te_eq_off+48 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\theta}\Theta'$
+    Integer, Parameter :: rhot_vtm_sm = te_eq_off+49 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\theta}\,\overline{\Theta}$
 
-    Integer, Parameter :: rhot_vp_s   = te_eq_off+48 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\phi \Theta$
-    Integer, Parameter :: rhot_vpp_sp = te_eq_off+49 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\phi'\Theta'$
-    Integer, Parameter :: rhot_vpp_sm = te_eq_off+50 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\phi'\overline{\Theta}$
-    Integer, Parameter :: rhot_vpm_sp = te_eq_off+51 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\phi}\Theta'$
-    Integer, Parameter :: rhot_vpm_sm = te_eq_off+52 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\phi}\,\overline{\Theta}$
+    Integer, Parameter :: rhot_vp_s   = te_eq_off+50 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\phi \Theta$
+    Integer, Parameter :: rhot_vpp_sp = te_eq_off+51 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\phi'\Theta'$
+    Integer, Parameter :: rhot_vpp_sm = te_eq_off+52 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\phi'\overline{\Theta}$
+    Integer, Parameter :: rhot_vpm_sp = te_eq_off+53 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\phi}\Theta'$
+    Integer, Parameter :: rhot_vpm_sm = te_eq_off+54 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_\phi}\,\overline{\Theta}$
 
 
     ! Advective Fluxes (enthalpy -- thermo-mechanical)
-    Integer, Parameter :: enth_flux_r     = te_eq_off+53    ! :tex: $c_P \mathrm{f}_1 v_r T$
-    Integer, Parameter :: enth_flux_theta = te_eq_off+54    ! :tex: $c_P \mathrm{f}_1 v_\theta T$
-    Integer, Parameter :: enth_flux_phi   = te_eq_off+55    ! :tex: $c_P \mathrm{f}_1 v_\phi T$
+    Integer, Parameter :: enth_flux_r     = te_eq_off+55    ! :tex: $c_P \mathrm{f}_1 v_r T$
+    Integer, Parameter :: enth_flux_theta = te_eq_off+56    ! :tex: $c_P \mathrm{f}_1 v_\theta T$
+    Integer, Parameter :: enth_flux_phi   = te_eq_off+57    ! :tex: $c_P \mathrm{f}_1 v_\phi T$
 
-    Integer, Parameter :: enth_flux_rpp     = te_eq_off+56    ! :tex: $c_P \mathrm{f}_1 v_r' T'$
-    Integer, Parameter :: enth_flux_thetapp = te_eq_off+57    ! :tex: $c_P \mathrm{f}_1 v_\theta' T'$
-    Integer, Parameter :: enth_flux_phipp   = te_eq_off+58    ! :tex: $c_P \mathrm{f}_1 v_\phi' T'$
+    Integer, Parameter :: enth_flux_rpp     = te_eq_off+58    ! :tex: $c_P \mathrm{f}_1 v_r' T'$
+    Integer, Parameter :: enth_flux_thetapp = te_eq_off+59    ! :tex: $c_P \mathrm{f}_1 v_\theta' T'$
+    Integer, Parameter :: enth_flux_phipp   = te_eq_off+60    ! :tex: $c_P \mathrm{f}_1 v_\phi' T'$
 
-    Integer, Parameter :: enth_flux_rpm     = te_eq_off+59    ! :tex: $c_P \mathrm{f}_1 v_r'\, \overline{T}$
-    Integer, Parameter :: enth_flux_thetapm = te_eq_off+60    ! :tex: $c_P \mathrm{f}_1 v_\theta'\, \overline{T}$
-    Integer, Parameter :: enth_flux_phipm   = te_eq_off+61    ! :tex: $c_P \mathrm{f}_1 v_\phi'\, \overline{T}$
+    Integer, Parameter :: enth_flux_rpm     = te_eq_off+61    ! :tex: $c_P \mathrm{f}_1 v_r'\, \overline{T}$
+    Integer, Parameter :: enth_flux_thetapm = te_eq_off+62    ! :tex: $c_P \mathrm{f}_1 v_\theta'\, \overline{T}$
+    Integer, Parameter :: enth_flux_phipm   = te_eq_off+63    ! :tex: $c_P \mathrm{f}_1 v_\phi'\, \overline{T}$
 
-    Integer, Parameter :: enth_flux_rmp     = te_eq_off+62    ! :tex: $c_P \mathrm{f}_1\, \overline{v_r}\, T'$
-    Integer, Parameter :: enth_flux_thetamp = te_eq_off+63    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\theta}\, T'$
-    Integer, Parameter :: enth_flux_phimp   = te_eq_off+64    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\phi}\, T'$
+    Integer, Parameter :: enth_flux_rmp     = te_eq_off+64    ! :tex: $c_P \mathrm{f}_1\, \overline{v_r}\, T'$
+    Integer, Parameter :: enth_flux_thetamp = te_eq_off+65    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\theta}\, T'$
+    Integer, Parameter :: enth_flux_phimp   = te_eq_off+66    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\phi}\, T'$
 
-    Integer, Parameter :: enth_flux_rmm     = te_eq_off+65    ! :tex: $c_P \mathrm{f}_1\, \overline{v_r}\, \overline{T}$
-    Integer, Parameter :: enth_flux_thetamm = te_eq_off+66    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\theta}\, \overline{T}$
-    Integer, Parameter :: enth_flux_phimm   = te_eq_off+67    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\phi}\, \overline{T}$
+    Integer, Parameter :: enth_flux_rmm     = te_eq_off+67    ! :tex: $c_P \mathrm{f}_1\, \overline{v_r}\, \overline{T}$
+    Integer, Parameter :: enth_flux_thetamm = te_eq_off+68    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\theta}\, \overline{T}$
+    Integer, Parameter :: enth_flux_phimm   = te_eq_off+69    ! :tex: $c_P \mathrm{f}_1\, \overline{v_\phi}\, \overline{T}$
 
     ! Diffusive Fluxes
-    Integer, Parameter :: cond_flux_r     = te_eq_off+68    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \Theta}{\partial r}$
-    Integer, Parameter :: cond_flux_theta = te_eq_off+69    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \Theta}{\partial \theta}$
-    Integer, Parameter :: cond_flux_phi   = te_eq_off+70    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \Theta}{\partial \phi}$
+    Integer, Parameter :: cond_flux_r     = te_eq_off+70    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \Theta}{\partial r}$
+    Integer, Parameter :: cond_flux_theta = te_eq_off+71    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \Theta}{\partial \theta}$
+    Integer, Parameter :: cond_flux_phi   = te_eq_off+72    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \Theta}{\partial \phi}$
 
-    Integer, Parameter :: cond_fluxp_r     = te_eq_off+71    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \Theta'}{\partial r}$
-    Integer, Parameter :: cond_fluxp_theta = te_eq_off+72    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \Theta'}{\partial \theta}$
-    Integer, Parameter :: cond_fluxp_phi   = te_eq_off+73    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \Theta'}{\partial \phi}$
+    Integer, Parameter :: cond_fluxp_r     = te_eq_off+73    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \Theta'}{\partial r}$
+    Integer, Parameter :: cond_fluxp_theta = te_eq_off+74    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \Theta'}{\partial \theta}$
+    Integer, Parameter :: cond_fluxp_phi   = te_eq_off+75    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \Theta'}{\partial \phi}$
 
-    Integer, Parameter :: cond_fluxm_r     = te_eq_off+74    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \overline{\Theta}}{\partial r}$
-    Integer, Parameter :: cond_fluxm_theta = te_eq_off+75    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \overline{\Theta}}{\partial \theta}$
-    Integer, Parameter :: cond_fluxm_phi   = te_eq_off+76    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \overline{\Theta}}{\partial \phi}$
+    Integer, Parameter :: cond_fluxm_r     = te_eq_off+76    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \overline{\Theta}}{\partial r}$
+    Integer, Parameter :: cond_fluxm_theta = te_eq_off+77    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \overline{\Theta}}{\partial \theta}$
+    Integer, Parameter :: cond_fluxm_phi   = te_eq_off+78    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \overline{\Theta}}{\partial \phi}$

@@ -96,6 +96,11 @@ function displayhelp {
     echo "      The C-compiler command DOES NOT need to be MPI-capable."
     echo ""
 
+    echo "  --devel / -devel "
+    echo "      Forces Rayleigh to build with debugging flags and no."
+    echo "      vectorization (useful for quick development builds)."
+    echo ""
+
     echo "  --FC=<fortran compiler name> "
     echo "      Specifies the Fortran compiler command to be invoked by Make."
     echo "      FC must be in your PATH, or else configure will fail.  FC must"
@@ -233,6 +238,11 @@ function displayhelp {
     echo "          <LAPACK ROOT>/lib/liblapack.a"
     echo ""
 
+    echo "  --with-custom=<CUSTOM ROOT>"
+    echo "      Set this flag to specify the location of custom Rayleigh source files."
+    echo "      These files will be copied to the build directory and override any of"
+    echo "      the standard Rayleigh source files."
+    echo ""
 
 }
 
@@ -245,6 +255,7 @@ RAYLEIGHROOT=$PWD
 PREFIX=$RAYLEIGHROOT
 NEED_HELP=no
 USE_MKL="FALSE"
+CUSTOMROOT="none"
 
 
 ###############################################################################################
@@ -258,6 +269,10 @@ do
     -help | --help | -h)
       displayhelp;
       exit 0;
+      ;;
+
+    --with-custom=*)
+      CUSTOMROOT=`expr "x$option" : "x-*with-custom=\(.*\)"`;
       ;;
 
     -prefix=* | --prefix=*)
@@ -296,6 +311,10 @@ do
 
     --nodirs | -nodirs )
       NODIRS="TRUE";
+      ;;
+
+    --devel | -devel)
+      DEVELMODE="TRUE";
       ;;
 
     -mkl)
@@ -371,6 +390,12 @@ then
       if [[ $NODIRS == "TRUE" ]]
       then
         echo "NODIRS = 1" >> make.inc
+      fi
+      if [[ $CUSTOMROOT == "none" ]]
+      then
+        echo "CUSTOMROOT = " >> make.inc
+      else
+        echo "CUSTOMROOT = "$CUSTOMROOT >> make.inc
       fi
       exit 0
 
@@ -508,7 +533,18 @@ FFLAGS[1]=$DBG_FLAGS
 VECLEVEL[1]=""
 nvers=2
 MULTIVEC=FALSE
-if [[ $FVERSION == "INTEL" ]]
+
+if [[ $DEVELMODE == "TRUE" ]]
+then
+  echo "************************************************************************"
+  echo " Development mode has been activated.  Both rayleigh.opt"
+  echo " and rayleigh.dbg will be compiled with debugging flags "
+  echo " and no vectorization."
+  FFLAGS[0]=$DBG_FLAGS
+fi
+
+
+if [[ $FVERSION == "INTEL" ]] &&  [[ $DEVELMODE != "TRUE" ]]
 then
 
   echo "***********************************************************************"
@@ -518,8 +554,9 @@ then
   echo " -- Westmere cores                  :  SSE4.2"
   echo " -- Sandy Bridge / Ivy Bridge cores :  AVX"
   echo " -- Haswell /Broadwell              :  AVX2 "
+  echo " -- SkyLake / Knights Landing       :  AVX512 "
   echo ""
-    OPTIONS="SSE4.2 AVX AVX2 ALL NONE"
+    OPTIONS="SSE4.2 AVX AVX2 AVX512 ALL NONE"
     select opt in $OPTIONS; do
        if [ "$opt" = "SSE4.2" ]; then
         FFLAGS[0]=$OPT_FLAGS" -xSSE4.2"
@@ -530,18 +567,24 @@ then
        elif [ "$opt" = "AVX2" ]; then
         FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX2"
         break            
+       elif [ "$opt" = "AVX512" ]; then
+        FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX512"
+        break      
        elif [ "$opt" = "ALL" ]; then
          DEFAULT='avx2'
-         nvers=4
+         nvers=5
          MULTIVEC=TRUE
          FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX2"
          FFLAGS[2]=$OPT_FLAGS" -xAVX"
          FFLAGS[3]=$OPT_FLAGS" -xSSE4.2"
+         FFLAGS[4]=$OPT_FLAGS" -xCORE-AVX512"
          RVALUES[0]=$DEFAULT 
          RVALUES[2]=avx
          RVALUES[3]=sse
+         RVAKYES[4]=avx512
          RVTAGS[2]="AVX"
          RVTAGS[3]="SSE"
+         RVTAGS[4]="AVX512"
          break
        elif [ "$opt" == "NONE" ]; then
          FFLAGS[0]=$OPT_FLAGS
@@ -552,6 +595,7 @@ then
        fi
     done
   echo "***********************************************************************"
+
 fi
 
 
@@ -736,6 +780,13 @@ if [[ $NODIRS == "TRUE" ]]
 then
   echo "NODIRS = 1" >> make.inc
 fi
+if [[ $CUSTOMROOT == "none" ]]
+then
+  echo "CUSTOMROOT = " >> make.inc
+else
+  echo "CUSTOMROOT = "$CUSTOMROOT >> make.inc
+fi
+
 echo " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo " Configuration is complete."
 echo " A Machine_Definitions files has been placed in $RAYLEIGHROOT/src/build."

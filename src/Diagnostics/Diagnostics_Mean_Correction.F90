@@ -1,10 +1,6 @@
-#define DO_PSI Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_PSI2 Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max
-#define END_DO2 enddo; enddo
-#define END_DO enddo; enddo; enddo
-#define PSI k,r,t
-#define PSI2 r,t
-#define DDBUFF d2buffer%p3a
+#include "indices.F"
+
+
 Module Diagnostics_Mean_Correction
     Use Diagnostics_Base
     Use Spherical_IO
@@ -79,11 +75,11 @@ Contains
 
         ! ---- v' v'
         compute_fluct_fluct = .false.
-        If (compute_quantity(vp_grad_vp_r))     compute_full_full = .true.
-        If (compute_quantity(vp_grad_vp_theta)) compute_full_full = .true.
-        If (compute_quantity(vp_grad_vp_phi))   compute_full_full = .true.
-        If (compute_quantity(advec_work_ppp))     compute_full_full = .true.
-        If (compute_quantity(advec_work_mpp))     compute_full_full = .true. 
+        If (compute_quantity(vp_grad_vp_r))     compute_fluct_fluct = .true.
+        If (compute_quantity(vp_grad_vp_theta)) compute_fluct_fluct = .true.
+        If (compute_quantity(vp_grad_vp_phi))   compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_ppp))     compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true. 
 
         If (compute_fluct_fluct) Then
 
