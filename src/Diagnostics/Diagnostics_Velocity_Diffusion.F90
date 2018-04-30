@@ -25,7 +25,7 @@ Contains
         Allocate(mu_visc(1:N_R), dmudr(1:N_R))
 
         mu_visc = ref%density*nu
-        dmudr = mu_visc*ref%density*(ref%dlnrho+dlnu)
+        dmudr = mu_visc*(ref%dlnrho+dlnu)
 
 
         !////////////////////////////////////////////////////////
