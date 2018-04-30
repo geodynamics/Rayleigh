@@ -30,4 +30,4 @@ Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Ple
 
 License
 -------
-Raleigh v0.9.0 is released under the [GPL v3 license.](https://www.gnu.org/licenses/gpl-3.0.en.html)
+Raleigh v0.9.1 is released under the [GPL v3 license.](https://www.gnu.org/licenses/gpl-3.0.en.html)
