@@ -16,7 +16,7 @@ Contains
         ncorrect = 0
 
         !//////////////////////////////////////////////////
-        ! For the time being, we only correct the radial forces
+        ! We only correct the radial forces
         ! (we remove the ell=0 mean).  This should not be necessary
         ! for the theta/phi forces
 
@@ -78,8 +78,8 @@ Contains
         If (compute_quantity(vp_grad_vp_r))     compute_fluct_fluct = .true.
         If (compute_quantity(vp_grad_vp_theta)) compute_fluct_fluct = .true.
         If (compute_quantity(vp_grad_vp_phi))   compute_fluct_fluct = .true.
-        If (compute_quantity(advec_work_ppp))     compute_fluct_fluct = .true.
-        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true. 
+        If (compute_quantity(advec_work_ppp))   compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_mpp))   compute_fluct_fluct = .true. 
 
         If (compute_fluct_fluct) Then
 
@@ -136,7 +136,8 @@ Contains
 
         !/////////////////////////////////////////////////////
         ! Viscous Force
-        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work)) Then
+        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
+            compute_quantity(viscous_mforce_r) ) Then
             ncorrect = ncorrect+1
             vforce_r = ncorrect
         Endif
@@ -157,7 +158,7 @@ Contains
         If (compute_quantity(jp_cross_bp_r) .or. compute_quantity(mag_work_ppp) &
             .or. compute_quantity(mag_work_mpp)) Then
             ncorrect = ncorrect+1
-            lforce_r = ncorrect
+            lforcepp_r = ncorrect
 
         Endif
         
@@ -341,7 +342,8 @@ Contains
 
 
 
-        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work)) Then
+        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
+            compute_quantity(viscous_mforce_r) ) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -397,6 +399,7 @@ Contains
 
         If (compute_quantity(jp_cross_bp_r) .or. compute_quantity(mag_work_ppp) &
             .or. compute_quantity(mag_work_mpp)) Then
+
             DO_PSI
                 mean_3dbuffer(PSI, lforcepp_r) = ( fbuffer(PSI,curlbtheta)*fbuffer(PSI,bphi)- &
                          & fbuffer(PSI,btheta)*fbuffer(PSI,curlbphi) )*ref%Lorentz_Coeff

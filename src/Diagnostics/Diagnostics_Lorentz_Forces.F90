@@ -60,7 +60,7 @@ Contains
             DO_PSI2
                 !qty(1:n_phi,PSI2) = ( m0_values(PSI2,curlbtheta)*m0_values(PSI2,bphi)- &
                 !                  & m0_values(PSI2,btheta)*m0_values(PSI2,curlbphi) )*ref%Lorentz_Coeff
-                qty(PSI) = mean_3dbuffer(PSI,lforcemm_r) - mean_ell0buffer(r, lforcemm_r)
+                qty(1:n_phi, PSI2) = mean_3dbuffer(1:n_phi,PSI2,lforcemm_r) - mean_ell0buffer(r, lforcemm_r)
             END_DO2
             If (compute_quantity(jm_cross_bm_r)) Call Add_Quantity(qty)
             If (compute_quantity(mag_work_mmm)) Then
