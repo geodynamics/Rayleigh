@@ -428,7 +428,7 @@ Contains
             d2buffer%p3b(:,:,:,i) = inbuffer(:,:,:,ddindmap(3,i))
             d2buffer%p3b(:,:,:,i+nddfields) = inbuffer(:,:,:,ddindmap(4,i))
         Enddo
-        Call fft_to_spectral(d2buffer%p3b, rsc = .true.)
+        Call fft_to_spectral_rsc(d2buffer%p3b)  ! call this version since dropping in midway through loop
 
         !Copy dxdp into dxdr space, then calculate dxdpdp
         Do i = 1, nddfields
