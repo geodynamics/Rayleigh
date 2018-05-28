@@ -185,10 +185,11 @@ Contains
         Logical :: compute_full_full = .false.
         Logical :: compute_fluct_fluct = .false.
         Logical :: compute_mean_mean = .false.
-
+        logical :: compute_mean_correct =.false.
         Real*8 :: amp,del2u, estress
         Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
+        compute_mean_correct = .false.
         !///////////////////////////////////////////////////
         ! Coriolis forces
         If (compute_quantity(coriolis_force_r) .or. &
@@ -197,6 +198,7 @@ Contains
             DO_PSI
                 mean_3dbuffer(PSI,cforce_r) = qty(PSI)
             END_DO
+            compute_mean_correct=.true.
         Endif
 
         !If (compute_quantity(coriolis_force_theta) .or. &
@@ -232,7 +234,7 @@ Contains
         If (compute_full_full ) Then
 
             Call ADotGradB(buffer,buffer,cbuffer,aindices=vindex,bindices=vindex)
-
+            Write(6,*)'Compuging aforce_r'
             If (compute_quantity(v_grad_v_r) .or. compute_quantity(advec_work)) Then
                 DO_PSI
                     mean_3dbuffer(PSI,aforce_r) = cbuffer(PSI,1)*ref%density(r)
@@ -250,7 +252,7 @@ Contains
             !        mean_3dbuffer(PSI,aforce_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
             !Endif
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -286,6 +288,7 @@ Contains
             !        mean_3dbuffer(PSI,aforcepp_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
             !Endif
+            compute_mean_correct=.true.
         Endif
 
         ! -- <v> <v>
@@ -317,7 +320,7 @@ Contains
             !        mean_3dbuffer(PSI,aforcemm_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
             !Endif
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -372,7 +375,7 @@ Contains
 
             END_DO
 
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -388,6 +391,7 @@ Contains
                 mean_3dbuffer(PSI, lforce_r) = (buffer(PSI,curlbtheta)*buffer(PSI,bphi)- &
                          & buffer(PSI,btheta)*buffer(PSI,curlbphi) ) *ref%Lorentz_Coeff
             END_DO
+            compute_mean_correct=.true.
         Endif
 
         If (compute_quantity(jm_cross_bm_r) .or. compute_quantity(mag_work_mmm)) Then
@@ -395,6 +399,7 @@ Contains
                 mean_3dbuffer(1:n_phi,PSI2, lforcemm_r) = ( m0_values(PSI2,curlbtheta)*m0_values(PSI2,bphi)- &
                                   & m0_values(PSI2,btheta)*m0_values(PSI2,curlbphi) )*ref%Lorentz_Coeff
             END_DO2
+            compute_mean_correct=.true.
         Endif
 
         If (compute_quantity(jp_cross_bp_r) .or. compute_quantity(mag_work_ppp) &
@@ -404,7 +409,7 @@ Contains
                 mean_3dbuffer(PSI, lforcepp_r) = ( fbuffer(PSI,curlbtheta)*fbuffer(PSI,bphi)- &
                          & fbuffer(PSI,btheta)*fbuffer(PSI,curlbphi) )*ref%Lorentz_Coeff
             END_DO
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -412,7 +417,11 @@ Contains
 
         !//////////////////////////////////////////////////////
         ! Perform the averaging
-        Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)        
+        if (compute_mean_correct) then
+            !Write(6,*)'Allocated: ', allocated(mean_3dbuffer), allocated(mean_ell0buffer)
+
+            Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)        
+        endif
     End Subroutine Mean_Correction
 
     !/////////////////////////////////////////
