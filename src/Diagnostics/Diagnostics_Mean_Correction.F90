@@ -234,7 +234,7 @@ Contains
         If (compute_full_full ) Then
 
             Call ADotGradB(buffer,buffer,cbuffer,aindices=vindex,bindices=vindex)
-            Write(6,*)'Compuging aforce_r'
+
             If (compute_quantity(v_grad_v_r) .or. compute_quantity(advec_work)) Then
                 DO_PSI
                     mean_3dbuffer(PSI,aforce_r) = cbuffer(PSI,1)*ref%density(r)
@@ -258,11 +258,9 @@ Contains
 
         ! -- v' v' 
         compute_fluct_fluct = .false.
-        If (compute_quantity(vp_grad_vp_r))     compute_full_full = .true.
-        !If (compute_quantity(vp_grad_vp_theta)) compute_full_full = .true.
-        !If (compute_quantity(vp_grad_vp_phi))   compute_full_full = .true.
-        If (compute_quantity(advec_work_ppp))     compute_full_full = .true.
-        If (compute_quantity(advec_work_mpp))     compute_full_full = .true. 
+        If (compute_quantity(vp_grad_vp_r))     compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_ppp))     compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true. 
 
         If (compute_fluct_fluct) Then
             Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices=vindex,bindices=vindex)
