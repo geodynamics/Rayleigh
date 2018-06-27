@@ -34,6 +34,8 @@ endif
 	@echo ""
 	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	@echo "Compilation is complete."
+	@echo " "
+	@echo " "
 	@echo "Run 'make install' to install the rayleigh executables into: "
 	@echo $(PREFIX)"/bin"
 	@echo ""

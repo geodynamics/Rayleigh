@@ -85,6 +85,18 @@ Module ReferenceState
 
     ! These last two flags are deprecated.  They are retained for now to prevent crashes due to improper input
     Logical :: Dimensional = .false., NonDimensional_Anelastic = .false. 
+
+    !//////////////////////////////////////////////////////////////////////
+    ! Development Section
+    ! Everything below this line is related to in-development features. 
+    ! This is unsupported code.
+    ! The code may well break if these variables are used in production.
+    ! Email inquiries regarding these implementation or meaning of anything below this line
+    ! will be politely ignored.
+    Real*8, Allocatable :: paf_v2(:)
+    Real*8, Allocatable :: paf_gv2(:)
+
+
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity, &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
@@ -151,6 +163,10 @@ Contains
         Character*6  :: istr
 		Character*12 :: dstring
     	Character*8 :: dofmt = '(ES12.5)'
+        ! devel variables (see note at top regarding devel)
+        Real*8 :: pafk
+        Real*8, Allocatable :: array2d(:,:)
+        Character*120 :: dvf
         Dimensional_Reference = .false.
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
         If (my_rank .eq. 0) Then
@@ -206,6 +222,27 @@ Contains
         ref%dpdr_w_term(:)        =  ref%density*pscaling
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
         ref%Coriolis_Coeff        =  2.0d0/Ekman_Number          
+
+        If (devel_physics) Then
+            Allocate(paf_v2(1:N_R), paf_gv2(1:N_R))
+            pafk = 4.49d0/radius(1)  ! 4.49 is possibly a control parameter...possibly.
+            paf_v2(:) = sin(pafk*radius)/pafk/radius
+            paf_v2 = paf_v2*paf_v2
+            ! take derivative 
+            paf_gv2 = -2.0d0*paf_v2/radius
+            paf_gv2 = paf_gv2+&
+                      2.0d0*sin(pafk*radius)*cos(pafk*radius)/pafk/(radius**3)    
+
+            paf_gv2 = paf_gv2*Rayleigh_Number
+            paf_v2 = paf_v2*Rayleigh_Number
+
+            Allocate(array2d(1:N_R,2))
+            array2d(:,1) = paf_v2(:)
+            array2d(:,2) = paf_gv2(:)
+            dvf = 'paf.dat'
+            Call Write_Profile(array2d,dvf)
+            DeAllocate(array2d)
+        Endif
 
 
         ref%script_N_top       = 1.0d0

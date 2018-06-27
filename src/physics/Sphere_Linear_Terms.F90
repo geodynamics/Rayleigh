@@ -207,12 +207,20 @@ Contains
 
                 !==================================================
                 !                Radial Momentum Equation
+
+                !If (devel_physics) Then
+                    ! T term
+                !    amp = 1.0d0
+                    ! grad T term
+                !    amp = 1.0d0
+                !Else
                 
-                ! Temperature
+                    ! Temperature
 
-                amp = -ref%Buoyancy_Coeff/H_Laplacian
-                Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
+                    amp = -ref%Buoyancy_Coeff/H_Laplacian
+                    Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
+                !Endif
                 ! Pressure
                 !amp = 1.0d0/(Ek*H_Laplacian)*ref%density        ! dPdr
                 amp = ref%dpdr_W_term/H_Laplacian
