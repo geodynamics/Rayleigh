@@ -95,6 +95,8 @@ Module ReferenceState
     ! will be politely ignored.
     Real*8, Allocatable :: paf_v2(:)
     Real*8, Allocatable :: paf_gv2(:)
+    Real*8, Allocatable :: paf_p2(:)
+    Real*8, Allocatable :: paf_gp2(:)
 
 
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
@@ -165,6 +167,7 @@ Contains
     	Character*8 :: dofmt = '(ES12.5)'
         ! devel variables (see note at top regarding devel)
         Real*8 :: pafk
+        Real*8, Allocatable :: sink(:), cosk(:)
         Real*8, Allocatable :: array2d(:,:)
         Character*120 :: dvf
         Dimensional_Reference = .false.
@@ -225,23 +228,34 @@ Contains
 
         If (devel_physics) Then
             Allocate(paf_v2(1:N_R), paf_gv2(1:N_R))
+            Allocate(paf_p2(1:N_R), paf_gp2(1:N_R))
+            Allocate(sink(1:N_R), cosk(1:N_R) )
             pafk = 4.49d0/radius(1)  ! 4.49 is possibly a control parameter...possibly.
-            paf_v2(:) = sin(pafk*radius)/pafk/radius
-            paf_v2 = paf_v2*paf_v2
+            
+
+            paf_p2(:) = sin(pafk*radius)/pafk/radius
+            paf_p2 = paf_p2*paf_p2
             ! take derivative 
-            paf_gv2 = -2.0d0*paf_v2/radius
-            paf_gv2 = paf_gv2+&
+            paf_gp2 = -2.0d0*paf_p2/radius
+            paf_gp2 = paf_gp2+&
                       2.0d0*sin(pafk*radius)*cos(pafk*radius)/pafk/(radius**3)    
 
-            paf_gv2 = paf_gv2*Rayleigh_Number
-            paf_v2 = paf_v2*Rayleigh_Number
+            paf_gp2 = paf_gp2*Rayleigh_Number
+            paf_p2 = paf_p2*Rayleigh_Number
 
-            Allocate(array2d(1:N_R,2))
-            array2d(:,1) = paf_v2(:)
-            array2d(:,2) = paf_gv2(:)
+
+
+
+            Allocate(array2d(1:N_R,3))
+            array2d(:,1) = radius(:)
+            array2d(:,2) = paf_v2(:)
+            array2d(:,3) = paf_gv2(:)
+            array2d(:,2) = paf_p2(:)
+            array2d(:,3) = paf_gp2(:)
             dvf = 'paf.dat'
             Call Write_Profile(array2d,dvf)
             DeAllocate(array2d)
+            DeAllocate(sink, cosk)
         Endif
 
 
