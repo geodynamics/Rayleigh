@@ -106,8 +106,11 @@ Contains
                 ! W equation        
                 Call Initialize_Equation_Coefficients(weq,wvar,2,lp)
                 Call Initialize_Equation_Coefficients(weq,pvar,1,lp)
-                Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
-
+                If (devel_physics) Then
+                    Call Initialize_Equation_Coefficients(weq,tvar,1,lp)
+                Else
+                    Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
+                Endif
 
                 ! P equation
                 Call Initialize_Equation_Coefficients(peq,wvar, 3,lp) 
@@ -208,19 +211,26 @@ Contains
                 !==================================================
                 !                Radial Momentum Equation
 
-                !If (devel_physics) Then
+                If (devel_physics) Then
                     ! T term
                 !    amp = 1.0d0
                     ! grad T term
                 !    amp = 1.0d0
-                !Else
+                    ! Temperature
+
+                    amp = -paf_gv2/H_Laplacian
+                    Call add_implicit_term(weq, tvar, 0, amp,lp)            
+
+                    amp = -paf_v2/H_Laplacian
+                    Call add_implicit_term(weq, tvar, 1, amp,lp)            
+                Else
                 
                     ! Temperature
 
                     amp = -ref%Buoyancy_Coeff/H_Laplacian
                     Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
-                !Endif
+                Endif
                 ! Pressure
                 !amp = 1.0d0/(Ek*H_Laplacian)*ref%density        ! dPdr
                 amp = ref%dpdr_W_term/H_Laplacian

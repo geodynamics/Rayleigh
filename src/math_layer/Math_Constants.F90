@@ -6,6 +6,7 @@ Module Math_Constants
     Real*8 :: Half = 0.5d0
     Real*8 :: Zero = 0.0d0
     Real*8 :: one=1.0d0
+    Real*8 :: two=2.0d0
 Contains
     Subroutine Set_Math_Constants()
         Implicit None

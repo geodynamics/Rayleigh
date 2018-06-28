@@ -231,7 +231,8 @@ Contains
             Allocate(paf_p2(1:N_R), paf_gp2(1:N_R))
             Allocate(sink(1:N_R), cosk(1:N_R) )
             pafk = 4.49d0/radius(1)  ! 4.49 is possibly a control parameter...possibly.
-            
+            sink = sin(pafk*radius)
+            cosk = cos(pafk*radius)
 
             paf_p2(:) = sin(pafk*radius)/pafk/radius
             paf_p2 = paf_p2*paf_p2
@@ -244,14 +245,30 @@ Contains
             paf_p2 = paf_p2*Rayleigh_Number
 
 
+            paf_v2 = sink*sink+(pafk**2)*r_squared*cosk*cosk
+            paf_v2 = paf_v2 - two*pafk*radius*sink*cosk
+            paf_v2 = paf_v2/(pafk**4)
+            paf_v2 = paf_v2*OneOverRSquared*OneOverRSquared
 
 
-            Allocate(array2d(1:N_R,3))
+
+            
+            paf_gv2 = -two*(pafk**3)*r_squared*cosk*sink +two*(pafk**2)*radius*sink*sink
+            paf_gv2 = paf_gv2/(pafk**4)
+            paf_gv2 = paf_gv2*OneOverRSquared*OneOverRSquared
+             
+            paf_gv2 = paf_gv2-4.0d0*paf_v2*One_Over_R  
+
+            !renormalize (do gv2 first!)
+            paf_gv2 = paf_gv2/maxval(paf_v2) *Rayleigh_Number
+            paf_v2 = paf_v2/maxval(paf_v2) * Rayleigh_Number
+
+            Allocate(array2d(1:N_R,5))
             array2d(:,1) = radius(:)
             array2d(:,2) = paf_v2(:)
             array2d(:,3) = paf_gv2(:)
-            array2d(:,2) = paf_p2(:)
-            array2d(:,3) = paf_gp2(:)
+            array2d(:,4) = paf_p2(:)
+            array2d(:,5) = paf_gp2(:)
             dvf = 'paf.dat'
             Call Write_Profile(array2d,dvf)
             DeAllocate(array2d)
