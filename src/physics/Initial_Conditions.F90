@@ -682,13 +682,13 @@ Contains
             Do l = m, l_max
                 if ( (l .eq. 4) .and. (m .eq. 4) ) Then
                     Do r = my_r%min, my_r%max
-                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc2(r)*(1.0d0-mdelta)*(5.0d0/7.0d0)
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc2(r)*(1.0d0-mdelta)*(5.0d0/7.0d0)*sqrt(2.0d0)
                     Enddo
                 endif
 
                 if ( (l .eq. 4) .and. (m .eq. 0) ) Then
                     Do r = my_r%min, my_r%max
-                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc2(r)/sqrt(2.0d0)
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc2(r)
                     Enddo
                 endif
 

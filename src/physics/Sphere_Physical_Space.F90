@@ -86,7 +86,7 @@ Contains
         ! We are now ready to build the nonlinear terms
         Call wsp%construct('p3b')
         wsp%config = 'p3b'
-
+        wsp%p3b(:,:,:,:) = 0.0d0
         !................................
         !Nonlinear Advection
         Call StopWatch(nl_time)%startclock()
