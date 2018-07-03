@@ -57,6 +57,9 @@ Contains
 		! These variables are in spectral space radially
 		!!!DDDD Write(6,*)'I am getting the new rhs: ', my_rank
 		Call Get_All_RHS(wsp%p1a)
+
+
+
 		Call gridcp%dealias_buffer(wsp%p1a)	! de-alias
 
 

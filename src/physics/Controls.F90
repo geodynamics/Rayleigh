@@ -32,7 +32,8 @@ Module Controls
     ! Flags that control various fundamental aspects of the physics employed
     Logical :: magnetism = .false.          ! Turn magnetism on or off (default is off)
     Logical :: nonlinear = .true.           ! Nonlinear terms can be turned off (calculated but zeroed out - for debugging)
-    Logical :: momentum_advection = .true.
+    Logical :: momentum_advection = .true.  ! u dot grad u is not calculated (mostly useful for debugging)
+    Logical :: inertia = .true.             ! If false, Du/Dt is set to zero (useful for mantle convection problems)
     Logical :: Rotation = .false.           ! Rotate or not
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
@@ -51,7 +52,7 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, stable_flag, &
-                & momentum_advection, devel_physics
+                & momentum_advection, devel_physics, inertia
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -123,7 +124,10 @@ Contains
                 ofilename = Trim(my_path)//Trim(stdout_file)
                 Call stdout%init(116,line_count = stdout_flush_interval,filename=ofilename)
         End Select
-
+        If (.not. inertia) Then
+            Write(6,*)"Setting momentum_advection to False"
+            momentum_advection = .false.
+        Endif
     End Subroutine Initialize_Controls
 
 

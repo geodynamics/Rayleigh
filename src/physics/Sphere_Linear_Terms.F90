@@ -236,10 +236,13 @@ Contains
                 amp = ref%dpdr_W_term/H_Laplacian
                 Call add_implicit_term(weq,pvar, 1, amp,lp)
 
-
                 ! W
-                amp = 1.0d0
-                Call add_implicit_term(weq,wvar, 0, amp,lp,static = .true.)    ! This term does not a get a dt factor
+
+                If (inertia) Then
+                    ! (from u_{t+1} in CN method -- no dt factor)
+                    amp = 1.0d0
+                    Call add_implicit_term(weq,wvar, 0, amp,lp,static = .true.) 
+                Endif
 
                 !amp = H_Laplacian        ! Diffusion
                 amp = H_Laplacian*nu*diff_factor
@@ -264,8 +267,12 @@ Contains
                 Call add_implicit_term(peq,pvar, 0, amp,lp)
 
                 ! W
-                amp = 1.0d0
-                Call add_implicit_term(peq,wvar, 1, amp,lp, static = .true.)    ! Time independent term
+                If (inertia) Then
+                    ! (from u_{t+1} in CN method -- no dt factor)
+                    amp = 1.0d0
+                    Call add_implicit_term(peq,wvar, 1, amp,lp, static = .true.)  
+                Endif
+
                 !amp =-H_Laplacian*2.0d0/radius    
                 amp =-nu*H_Laplacian*2.0d0/radius*diff_factor
                 Call add_implicit_term(peq,wvar, 0, amp,lp)
@@ -316,8 +323,12 @@ Contains
                 
                 !=====================================================
                 !    Z Equation
-                amp = 1.0d0
-                Call add_implicit_term(zeq,zvar, 0, amp,lp, static = .true.)    ! Time-independent piece
+
+                If (inertia) Then
+                    ! (from u_{t+1} in CN method -- no dt factor)
+                    amp = 1.0d0
+                    Call add_implicit_term(zeq,zvar, 0, amp,lp, static = .true.)    ! Time-independent piece
+                Endif
 
                 !amp = H_Laplacian
                 amp = H_Laplacian*nu*diff_factor

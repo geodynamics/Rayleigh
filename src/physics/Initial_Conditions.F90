@@ -5,7 +5,7 @@ Module Initial_Conditions
     Use Fourier_Transform
     Use Legendre_Transforms, Only : Legendre_Transform 
     Use SendReceive
-
+    Use Math_Constants
     Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
     Use Controls
     Use Timers
@@ -38,11 +38,12 @@ Module Initial_Conditions
     Real*8  :: bfield_scale = 1.0d0
     Real*8  :: tvar_scale = 1.0d0
     Real*8  :: pressure_scale = 1.0d0
+    Real*8  :: mdelta = 0.0d0  ! mantle convection benchmark delta
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
             & magnetic_init_type,alt_check, mag_amp, conductive_profile, rescale_velocity, &
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
-            & rescale_pressure, tvar_scale, pressure_scale
+            & rescale_pressure, tvar_scale, pressure_scale, mdelta
 Contains
     
     Subroutine Initialize_Fields()
@@ -106,6 +107,13 @@ Contains
             call benchmark_init_hydro()
             If (my_rank .eq. 0) Then
                 Call stdout%print(" ---- Hydro Init Type    : Benchmark (Christensen et al. 2001) ")
+            Endif
+        Endif
+
+        If (init_type .eq. 2) Then
+            Call Mantle_Benchmark_Init()
+            If (my_rank .eq. 0) Then
+                Call stdout%print(" ---- Hydro Init Type    : Mantle Benchmark (Arrial et al. 2014) ")
             Endif
         Endif
 
@@ -638,8 +646,76 @@ Contains
 
 
 
+    ! Initial Condition for cubic steady state
+    ! P.-A Arrial, N. Flyer, G.B. Wright, L.H. Kellogg, 2014
+    ! Geosci. Model Dev., 7 2065-2076
+    Subroutine Mantle_Benchmark_Init()
+        Implicit None
+        Real*8, Allocatable :: rfunc1(:), rfunc2(:)
+        Real*8 :: x
+        Integer :: r, l, m, mp
+        Integer :: fcount(3,2)
+        type(SphericalBuffer) :: tempfield
+        fcount(:,:) = 1
 
+        Allocate(rfunc1(my_r%min: my_r%max))
+        Allocate(rfunc2(my_r%min: my_r%max))
 
+        Do r = my_r%min, my_r%max
+
+            x = (radius(r)-r_outer)/(r_inner-r_outer)
+            rfunc1(r) = (r_inner/radius(r))*x
+
+            x = (radius(r)-r_inner)/(r_outer-r_inner)
+            rfunc2(r) = sin(pi*x)*0.01d0
+        Enddo
+        !write(6,*)'rf max ', maxval(rfunc1)
+
+        ! We put our temporary field in spectral space
+        Call tempfield%init(field_count = fcount, config = 's2b')        
+        Call tempfield%construct('s2b')        
+
+        ! Set the ell = 0 temperature and the real part of Y44        
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            Do l = m, l_max
+                if ( (l .eq. 4) .and. (m .eq. 4) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc1(r)*(1.0d0-mdelta)*(5.0d0/7.0d0)
+                    Enddo
+                endif
+
+                if ( (l .eq. 4) .and. (m .eq. 0) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc2(r)
+                    Enddo
+                endif
+
+                if ( (l .eq. 0) .and. (m .eq. 0) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc1(r)*sqrt(4.0d0*pi)
+                    Enddo
+                endif
+            Enddo
+        Enddo
+        DeAllocate(rfunc1,rfunc2)
+
+        Call tempfield%reform() ! goes to p1b
+        If (chebyshev) Then
+            ! we need to load the chebyshev coefficients, and not the physical representation into the RHS
+            Call tempfield%construct('p1a')
+
+            Call gridcp%To_Spectral(tempfield%p1b,tempfield%p1a)
+
+            tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
+            Call tempfield%deconstruct('p1a')
+        Endif
+        ! Set temperature.  Leave the other fields alone
+        Call Set_RHS(teq,tempfield%p1b(:,:,:,1))
+
+        Call tempfield%deconstruct('p1b')
+    End Subroutine Mantle_Benchmark_Init
 
 
 
