@@ -241,15 +241,10 @@ Contains
             paf_gp2 = paf_gp2+&
                       2.0d0*sin(pafk*radius)*cos(pafk*radius)/pafk/(radius**3)    
 
-            paf_gp2 = paf_gp2*Rayleigh_Number
-            paf_p2 = paf_p2*Rayleigh_Number
-
-
             paf_v2 = sink*sink+(pafk**2)*r_squared*cosk*cosk
             paf_v2 = paf_v2 - two*pafk*radius*sink*cosk
             paf_v2 = paf_v2/(pafk**4)
             paf_v2 = paf_v2*OneOverRSquared*OneOverRSquared
-
 
 
             
