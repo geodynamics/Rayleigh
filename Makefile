@@ -7,13 +7,13 @@ export CUSTOMROOT
 
 rayleigh:
 	@mkdir -p $(BUILD)/compiled
-	@cp $(SRC)/parallel_framework/*.F90 $(BUILD)/.
-	@cp $(SRC)/data_structures/*.F90 $(BUILD)/.
-	@cp $(SRC)/math_layer/*.F90 $(BUILD)/.
-	@cp $(SRC)/plugins/*.F90 $(BUILD)/.
+	@cp $(SRC)/Parallel_Framework/*.F90 $(BUILD)/.
+	@cp $(SRC)/Data_Structures/*.F90 $(BUILD)/.
+	@cp $(SRC)/Math_Layer/*.F90 $(BUILD)/.
+	@cp $(SRC)/Plugins/*.F90 $(BUILD)/.
 	@cp $(SRC)/IO/*.F90 $(BUILD)/.
-	@cp $(SRC)/test_suite/*.F90 $(BUILD)/.
-	@cp $(SRC)/physics/*.F90 $(BUILD)/.
+	@cp $(SRC)/Test_Suite/*.F90 $(BUILD)/.
+	@cp $(SRC)/Physics/*.F90 $(BUILD)/.
 	@cp $(SRC)/Diagnostics/*.F90 $(BUILD)/.
 	@cp $(SRC)/Diagnostics/*.F $(BUILD)/.
 	@cp $(SRC)/Utility/*.F90 $(BUILD)/.
