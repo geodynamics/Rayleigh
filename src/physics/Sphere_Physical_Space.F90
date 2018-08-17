@@ -95,11 +95,11 @@ Contains
         Call Volumetric_Heating()    
         If (viscous_heating) Call Compute_Viscous_Heating()
 
-        If (momentum_advection) Then
-            Call Momentum_Advection_Radial()
-            Call Momentum_Advection_Theta()
-            Call Momentum_Advection_Phi()
-        Endif
+
+        Call Momentum_Advection_Radial()
+        Call Momentum_Advection_Theta()
+        Call Momentum_Advection_Phi()
+
 
         If (magnetism) Then
             Call Compute_Ohmic_Heating()
@@ -356,15 +356,23 @@ Contains
 
         ! Build -radius^2 [u dot grad u]_r
 
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        If (momentum_advection) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
 
-        DO_IDX
-            RHSP(IDX,wvar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvrdr)*r_squared(r) &
-                - FIELDSP(IDX,vtheta) * ( FIELDSP(IDX,dvrdt)-FIELDSP(IDX,vtheta) )*radius(r)    &
-                - FIELDSP(IDX,vphi)*(FIELDSP(IDX,dvrdp)*csctheta(t)-FIELDSP(IDX,vphi) )*radius(r)  
-        END_DO
-    
-        !$OMP END PARALLEL DO
+            DO_IDX
+                RHSP(IDX,wvar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvrdr)*r_squared(r) &
+                    - FIELDSP(IDX,vtheta) * ( FIELDSP(IDX,dvrdt)-FIELDSP(IDX,vtheta) )*radius(r)    &
+                    - FIELDSP(IDX,vphi)*(FIELDSP(IDX,dvrdp)*csctheta(t)-FIELDSP(IDX,vphi) )*radius(r)  
+            END_DO
+        
+            !$OMP END PARALLEL DO
+        Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,wvar) = 0.0d0
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
 
         !==================== STABLE ==========================
         If (stable_flag)  Then
@@ -594,27 +602,34 @@ Contains
         Integer :: t, r,k
         ! Build (radius/sintheta)[u dot grad u]_theta
 
-        ! First add all the terms that get multiplied by u_theta
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,pvar) = wsp%p3a(IDX,dvrdr)       &    
-                 + ( wsp%p3a(IDX,dvpdp)*csctheta(t)    & ! vphi/sintheta/r dvrdphi        !check this comment...
-                 +   wsp%p3a(IDX,vtheta)*cottheta(t)   & !vtheta cot(theta)/r
-                 +   wsp%p3a(IDX,vr) ) *one_over_r(r)                   &   !ur/r
-                 +   wsp%p3a(IDX,vr)*ref%dlnrho(r) !ur dlnrho
-        END_DO
-        !$OMP END PARALLEL DO
+        If (momentum_advection) Then
+            ! First add all the terms that get multiplied by u_theta
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,pvar) = wsp%p3a(IDX,dvrdr)       &    
+                     + ( wsp%p3a(IDX,dvpdp)*csctheta(t)    & ! vphi/sintheta/r dvrdphi        !check this comment...
+                     +   wsp%p3a(IDX,vtheta)*cottheta(t)   & !vtheta cot(theta)/r
+                     +   wsp%p3a(IDX,vr) ) *one_over_r(r)                   &   !ur/r
+                     +   wsp%p3a(IDX,vr)*ref%dlnrho(r) !ur dlnrho
+            END_DO
+            !$OMP END PARALLEL DO
 
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,pvar) = -RHSP(IDX,pvar)*wsp%p3a(IDX,vtheta) & ! multiply by -u_theta
-                + wsp%p3a(IDX,vr  )*wsp%p3a(IDX,dvtdr)                         & ! vr dvthetadr
-                + wsp%p3a(IDX,vphi)*( wsp%p3a(IDX,dvtdp)*csctheta(t) & ! vphi/sintheta/r dvtheta dphi
-                - wsp%p3a(IDX,vphi )*cottheta(t) )*one_over_r(r)    ! vphi^2 cot(theta)/r
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,pvar) = -RHSP(IDX,pvar)*wsp%p3a(IDX,vtheta) & ! multiply by -u_theta
+                    + wsp%p3a(IDX,vr  )*wsp%p3a(IDX,dvtdr)                         & ! vr dvthetadr
+                    + wsp%p3a(IDX,vphi)*( wsp%p3a(IDX,dvtdp)*csctheta(t) & ! vphi/sintheta/r dvtheta dphi
+                    - wsp%p3a(IDX,vphi )*cottheta(t) )*one_over_r(r)    ! vphi^2 cot(theta)/r
 
-        END_DO
-        !$OMP END PARALLEL DO
-
+            END_DO
+            !$OMP END PARALLEL DO
+        Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,pvar) = 0.0d0
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
         !==================== STABLE ==========================
         If (STABLE_flag) Then
         ! Add terms due to mean flow to the momentum equation
@@ -678,16 +693,25 @@ Contains
         Integer :: t, r, k
         ! Build (radius/sintheta)[u dot grad u]_phi
 
-        ! terms multiplied by u_theta
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,zvar) = FIELDSP(IDX,vtheta)*(FIELDSP(IDX,zvar)  & ! terms multiplied by u_theta
-                                    +FIELDSP(IDX,dvtdp)*csctheta(t)*one_over_r(r)) &
-                +FIELDSP(IDX,vr)*FIELDSP(IDX,dvpdr)    & ! radial advection
-                + FIELDSP(IDX,vphi) & ! terms multiplied by u_phi
-                * ( FIELDSP(IDX,dvpdp)*csctheta(t) + FIELDSP(IDX,vr))*one_over_r(r)
-        END_DO
-        !$OMP END PARALLEL DO
+
+        If (momentum_advection) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,zvar) = FIELDSP(IDX,vtheta)*(FIELDSP(IDX,zvar)  & ! terms multiplied by u_theta
+                                        +FIELDSP(IDX,dvtdp)*csctheta(t)*one_over_r(r)) &
+                    +FIELDSP(IDX,vr)*FIELDSP(IDX,dvpdr)    & ! radial advection
+                    + FIELDSP(IDX,vphi) & ! terms multiplied by u_phi
+                    * ( FIELDSP(IDX,dvpdp)*csctheta(t) + FIELDSP(IDX,vr))*one_over_r(r)
+            END_DO
+            !$OMP END PARALLEL DO
+
+        Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,zvar) = 0.0d0
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
 
         !==================== STABLE ==========================
         If (STABLE_flag) Then
