@@ -75,19 +75,7 @@ changes to the code at once). Please do
 not hesitate to ask questions about the workflow on the mailing list if you are
 not sure what to do.
 
-*The following paragraph should be replaced with the coding conventions Rayleigh uses*
-
-Since Rayleigh is a fairly large project we
-use a set of [coding
-conventions](https://www.dealii.org/developer/doxygen/deal.II/CodingConventions.html)
-equal to those used by <a href="http://www.dealii.org">deal.II</a>
-upon which ASPECT is based, so as to keep the style of the source code
-consistent. This convention essentially consists of using
-[astyle](http://astyle.sourceforge.net/astyle.html) v.2.04 with a
-[style file](doc/astyle.rc) for indentation, CamelCase for classes and
-namespaces, and lower_case_names_with_underscores for everything else. 
-
-*end of replacement paragraph*
+*This is a placeholder for a paragraph about coding conventions*
 
 If you are new to the project then we will work with you to ensure your
 contributions are formatted with this style, so please do not think of it as a
