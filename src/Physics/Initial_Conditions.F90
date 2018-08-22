@@ -119,7 +119,7 @@ Contains
         If (init_type .eq. 3) Then
             call diffusion_init_hydro()
             If (my_rank .eq. 0) Then
-                Call stdout%print(" ---- Hydro Init Type    : Benchmark (Jones et al. 2011) ")
+                Call stdout%print(" ---- Hydro Init Type    : Diffusion ")
             Endif
         Endif
 
@@ -544,7 +544,7 @@ Contains
             Call tempfield%deconstruct('p1a')
         Endif
         ! Set Z (toroidal stream function).  Leave the other fields alone
-        Call Set_RHS(teq,tempfield%p1b(:,:,:,zvar))
+        Call Set_RHS(zeq,tempfield%p1b(:,:,:,1))
 
         Call tempfield%deconstruct('p1b')
     End Subroutine Diffusion_Init_Hydro
