@@ -116,6 +116,12 @@ Contains
                 Call stdout%print(" ---- Hydro Init Type    : Mantle Benchmark (Arrial et al. 2014) ")
             Endif
         Endif
+        If (init_type .eq. 3) Then
+            call diffusion_init_hydro()
+            If (my_rank .eq. 0) Then
+                Call stdout%print(" ---- Hydro Init Type    : Benchmark (Jones et al. 2011) ")
+            Endif
+        Endif
 
         If (init_type .eq. 6) Then
             call abenchmark_init_hydro()
@@ -488,7 +494,60 @@ Contains
 
     End Subroutine Random_Thermal_Init
 
+    !//////////////////////////////////////////////////////////////////////////////////
+    !  Diffusion Init (for linear solve development)
+    !  Initializes the Toroidal Stream Function (Z)
+    Subroutine Diffusion_Init_Hydro()
+        Implicit None
+        Real*8, Allocatable :: rfunc(:)
+        Real*8 :: x
+        Integer :: r, l, m, mp
+        Integer :: fcount(3,2)
+        type(SphericalBuffer) :: tempfield
+        fcount(:,:) = 1
 
+        Allocate(rfunc(my_r%min: my_r%max))
+
+        Do r = my_r%min, my_r%max
+            x = 2.0d0*pi*(radius(r)-r_inner)/(r_outer-r_inner)
+            rfunc(r) = (1-cos(x))*0.5d0
+
+        Enddo
+        !write(6,*)'rf max ', maxval(rfunc1)
+
+        ! We put our temporary field in spectral space
+        Call tempfield%init(field_count = fcount, config = 's2b')        
+        Call tempfield%construct('s2b')        
+
+        ! Set the ell = 0 temperature and the real part of Y44        
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            Do l = m, l_max
+                if ( (l .eq. 1) .and. (m .eq. 1) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc(r)
+                    Enddo
+                endif
+            Enddo
+        Enddo
+        DeAllocate(rfunc)
+
+        Call tempfield%reform() ! goes to p1b
+        If (chebyshev) Then
+            ! we need to load the chebyshev coefficients, and not the physical representation into the RHS
+            Call tempfield%construct('p1a')
+
+            Call gridcp%To_Spectral(tempfield%p1b,tempfield%p1a)
+
+            tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
+            Call tempfield%deconstruct('p1a')
+        Endif
+        ! Set Z (toroidal stream function).  Leave the other fields alone
+        Call Set_RHS(teq,tempfield%p1b(:,:,:,zvar))
+
+        Call tempfield%deconstruct('p1b')
+    End Subroutine Diffusion_Init_Hydro
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Benchmark Initialization Routines

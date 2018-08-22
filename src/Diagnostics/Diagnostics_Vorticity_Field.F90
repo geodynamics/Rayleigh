@@ -223,6 +223,12 @@ Contains
             Endif
         Endif
 
+        If (compute_quantity(zstream)) Then
+            Write(6,*)'Adding z stream function.'
+            DO_PSI
+                qty(PSI) = buffer(PSI,zvar)
+            END_DO
+        Endif
 
 
         If (compute_quantity(enstrophy))    DeAllocate(ens)
