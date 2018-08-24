@@ -29,11 +29,11 @@ Module Legendre_Polynomials
 	End Type p_lm_array_quad
 
 	Type(p_lm_array_quad), Allocatable :: p_lmq(:) 
-    Type(p_lm_array), Allocatable :: p_lm(:), ip_lm(:)
+	Type(p_lm_array), Allocatable :: p_lm(:), ip_lm(:)
 	Type(p_lm_array), Allocatable :: p_lm_odd(:), p_lm_even(:)
 	Type(p_lm_array), Allocatable :: ip_lm_odd(:), ip_lm_even(:) ! i means 'integration weights included'
 	Type(even_odd_sep), Allocatable :: lvals(:)
-    Type(even_odd_sepi), Allocatable :: lvalsi(:)
+	Type(even_odd_sepi), Allocatable :: lvalsi(:)
 Contains
 
 Subroutine Finalize_Legendre()
