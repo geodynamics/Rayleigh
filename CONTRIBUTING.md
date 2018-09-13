@@ -18,7 +18,7 @@ Rayleigh.
 ## Bug reports
 It is a great help to the community if you report any bugs that you
 may find. We keep track of all open issues related to Rayleigh
-[here](https://github.com/geodynamics/aspect/issues). 
+[here](https://github.com/geodynamics/Rayleigh/issues).
 
 Please follow these simple instructions before opening a new bug report:
 
@@ -85,14 +85,10 @@ road block if you would like to contribute some code.
 
 ## Acknowledgment of contributions
 While we are grateful for every contribution, there are also several official
-ways how your contribution will be acknowledged by the ASPECT community:
+ways how your contribution will be acknowledged by the Rayleigh community:
 - Every commit that was merged into the Rayleigh repository will make you part of
   the growing group of Rayleigh
   [contributors](https://github.com/geodynamics/Rayleigh/graphs/contributors).
-- *is there any other way we can acknowledge contributions? ASPECT has an automatic
-  newsletter that reports recent additions (I could set that up for Rayleigh as well).
-  we keep a changelog with significant contributions since the last release, that is
-  used to generate Release notes, maybe not necessary for now, but something for later*
 - If you contributed a significant part of the manual (such as a new cookbook,
   benchmark, or subsection), you will be listed as one of the contributing
   authors of the manual.
