@@ -106,8 +106,11 @@ Contains
                 ! W equation        
                 Call Initialize_Equation_Coefficients(weq,wvar,2,lp)
                 Call Initialize_Equation_Coefficients(weq,pvar,1,lp)
-                Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
-
+                If (devel_physics) Then
+                    Call Initialize_Equation_Coefficients(weq,tvar,1,lp)
+                Else
+                    Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
+                Endif
 
                 ! P equation
                 Call Initialize_Equation_Coefficients(peq,wvar, 3,lp) 
@@ -207,21 +210,39 @@ Contains
 
                 !==================================================
                 !                Radial Momentum Equation
+
+                If (devel_physics) Then
+                    ! T term
+                !    amp = 1.0d0
+                    ! grad T term
+                !    amp = 1.0d0
+                    ! Temperature
+
+                    amp = -paf_gv2/H_Laplacian
+                    Call add_implicit_term(weq, tvar, 0, amp,lp)            
+
+                    amp = -paf_v2/H_Laplacian
+                    Call add_implicit_term(weq, tvar, 1, amp,lp)            
+                Else
                 
-                ! Temperature
+                    ! Temperature
 
-                amp = -ref%Buoyancy_Coeff/H_Laplacian
-                Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
+                    amp = -ref%Buoyancy_Coeff/H_Laplacian
+                    Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
+                Endif
                 ! Pressure
                 !amp = 1.0d0/(Ek*H_Laplacian)*ref%density        ! dPdr
                 amp = ref%dpdr_W_term/H_Laplacian
                 Call add_implicit_term(weq,pvar, 1, amp,lp)
 
-
                 ! W
-                amp = 1.0d0
-                Call add_implicit_term(weq,wvar, 0, amp,lp,static = .true.)    ! This term does not a get a dt factor
+
+                If (inertia) Then
+                    ! (from u_{t+1} in CN method -- no dt factor)
+                    amp = 1.0d0
+                    Call add_implicit_term(weq,wvar, 0, amp,lp,static = .true.) 
+                Endif
 
                 !amp = H_Laplacian        ! Diffusion
                 amp = H_Laplacian*nu*diff_factor
@@ -246,8 +267,12 @@ Contains
                 Call add_implicit_term(peq,pvar, 0, amp,lp)
 
                 ! W
-                amp = 1.0d0
-                Call add_implicit_term(peq,wvar, 1, amp,lp, static = .true.)    ! Time independent term
+                If (inertia) Then
+                    ! (from u_{t+1} in CN method -- no dt factor)
+                    amp = 1.0d0
+                    Call add_implicit_term(peq,wvar, 1, amp,lp, static = .true.)  
+                Endif
+
                 !amp =-H_Laplacian*2.0d0/radius    
                 amp =-nu*H_Laplacian*2.0d0/radius*diff_factor
                 Call add_implicit_term(peq,wvar, 0, amp,lp)
@@ -298,8 +323,12 @@ Contains
                 
                 !=====================================================
                 !    Z Equation
-                amp = 1.0d0
-                Call add_implicit_term(zeq,zvar, 0, amp,lp, static = .true.)    ! Time-independent piece
+
+                If (inertia) Then
+                    ! (from u_{t+1} in CN method -- no dt factor)
+                    amp = 1.0d0
+                    Call add_implicit_term(zeq,zvar, 0, amp,lp, static = .true.)    ! Time-independent piece
+                Endif
 
                 !amp = H_Laplacian
                 amp = H_Laplacian*nu*diff_factor

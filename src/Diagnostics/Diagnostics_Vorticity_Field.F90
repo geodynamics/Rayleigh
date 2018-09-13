@@ -223,6 +223,13 @@ Contains
             Endif
         Endif
 
+        If (compute_quantity(zstream)) Then
+
+            DO_PSI
+                qty(PSI) = buffer(PSI,zvar)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
 
         If (compute_quantity(enstrophy))    DeAllocate(ens)

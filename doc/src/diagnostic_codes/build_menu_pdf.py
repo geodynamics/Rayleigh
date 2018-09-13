@@ -67,7 +67,7 @@ def parse_offset_line(codeline):
     #Check to see if we have a
     return (this_vname,rel_offset,rel_vname)
 
-indir='../../src/Diagnostics'
+indir='../../../src/Diagnostics'
 inprefs=[]
 inprefs.append(['velocity_field'     ,2])
 inprefs.append(['mass_flux'          ,2])

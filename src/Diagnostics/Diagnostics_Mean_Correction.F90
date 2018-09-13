@@ -16,7 +16,7 @@ Contains
         ncorrect = 0
 
         !//////////////////////////////////////////////////
-        ! For the time being, we only correct the radial forces
+        ! We only correct the radial forces
         ! (we remove the ell=0 mean).  This should not be necessary
         ! for the theta/phi forces
 
@@ -78,8 +78,8 @@ Contains
         If (compute_quantity(vp_grad_vp_r))     compute_fluct_fluct = .true.
         If (compute_quantity(vp_grad_vp_theta)) compute_fluct_fluct = .true.
         If (compute_quantity(vp_grad_vp_phi))   compute_fluct_fluct = .true.
-        If (compute_quantity(advec_work_ppp))     compute_fluct_fluct = .true.
-        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true. 
+        If (compute_quantity(advec_work_ppp))   compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_mpp))   compute_fluct_fluct = .true. 
 
         If (compute_fluct_fluct) Then
 
@@ -136,7 +136,8 @@ Contains
 
         !/////////////////////////////////////////////////////
         ! Viscous Force
-        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work)) Then
+        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
+            compute_quantity(viscous_mforce_r) ) Then
             ncorrect = ncorrect+1
             vforce_r = ncorrect
         Endif
@@ -157,7 +158,7 @@ Contains
         If (compute_quantity(jp_cross_bp_r) .or. compute_quantity(mag_work_ppp) &
             .or. compute_quantity(mag_work_mpp)) Then
             ncorrect = ncorrect+1
-            lforce_r = ncorrect
+            lforcepp_r = ncorrect
 
         Endif
         
@@ -184,10 +185,11 @@ Contains
         Logical :: compute_full_full = .false.
         Logical :: compute_fluct_fluct = .false.
         Logical :: compute_mean_mean = .false.
-
+        logical :: compute_mean_correct =.false.
         Real*8 :: amp,del2u, estress
         Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
+        compute_mean_correct = .false.
         !///////////////////////////////////////////////////
         ! Coriolis forces
         If (compute_quantity(coriolis_force_r) .or. &
@@ -196,6 +198,7 @@ Contains
             DO_PSI
                 mean_3dbuffer(PSI,cforce_r) = qty(PSI)
             END_DO
+            compute_mean_correct=.true.
         Endif
 
         !If (compute_quantity(coriolis_force_theta) .or. &
@@ -249,17 +252,15 @@ Contains
             !        mean_3dbuffer(PSI,aforce_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
             !Endif
-
+            compute_mean_correct=.true.
         Endif
 
 
         ! -- v' v' 
         compute_fluct_fluct = .false.
-        If (compute_quantity(vp_grad_vp_r))     compute_full_full = .true.
-        !If (compute_quantity(vp_grad_vp_theta)) compute_full_full = .true.
-        !If (compute_quantity(vp_grad_vp_phi))   compute_full_full = .true.
-        If (compute_quantity(advec_work_ppp))     compute_full_full = .true.
-        If (compute_quantity(advec_work_mpp))     compute_full_full = .true. 
+        If (compute_quantity(vp_grad_vp_r))     compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_ppp))     compute_fluct_fluct = .true.
+        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true. 
 
         If (compute_fluct_fluct) Then
             Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices=vindex,bindices=vindex)
@@ -285,6 +286,7 @@ Contains
             !        mean_3dbuffer(PSI,aforcepp_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
             !Endif
+            compute_mean_correct=.true.
         Endif
 
         ! -- <v> <v>
@@ -316,7 +318,7 @@ Contains
             !        mean_3dbuffer(PSI,aforcemm_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
             !Endif
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -341,7 +343,8 @@ Contains
 
 
 
-        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work)) Then
+        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
+            compute_quantity(viscous_mforce_r) ) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -370,7 +373,7 @@ Contains
 
             END_DO
 
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -386,6 +389,7 @@ Contains
                 mean_3dbuffer(PSI, lforce_r) = (buffer(PSI,curlbtheta)*buffer(PSI,bphi)- &
                          & buffer(PSI,btheta)*buffer(PSI,curlbphi) ) *ref%Lorentz_Coeff
             END_DO
+            compute_mean_correct=.true.
         Endif
 
         If (compute_quantity(jm_cross_bm_r) .or. compute_quantity(mag_work_mmm)) Then
@@ -393,15 +397,17 @@ Contains
                 mean_3dbuffer(1:n_phi,PSI2, lforcemm_r) = ( m0_values(PSI2,curlbtheta)*m0_values(PSI2,bphi)- &
                                   & m0_values(PSI2,btheta)*m0_values(PSI2,curlbphi) )*ref%Lorentz_Coeff
             END_DO2
+            compute_mean_correct=.true.
         Endif
 
         If (compute_quantity(jp_cross_bp_r) .or. compute_quantity(mag_work_ppp) &
             .or. compute_quantity(mag_work_mpp)) Then
+
             DO_PSI
                 mean_3dbuffer(PSI, lforcepp_r) = ( fbuffer(PSI,curlbtheta)*fbuffer(PSI,bphi)- &
                          & fbuffer(PSI,btheta)*fbuffer(PSI,curlbphi) )*ref%Lorentz_Coeff
             END_DO
-
+            compute_mean_correct=.true.
         Endif
 
 
@@ -409,7 +415,11 @@ Contains
 
         !//////////////////////////////////////////////////////
         ! Perform the averaging
-        Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)        
+        if (compute_mean_correct) then
+            !Write(6,*)'Allocated: ', allocated(mean_3dbuffer), allocated(mean_ell0buffer)
+
+            Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)        
+        endif
     End Subroutine Mean_Correction
 
     !/////////////////////////////////////////

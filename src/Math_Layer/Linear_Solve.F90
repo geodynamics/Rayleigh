@@ -594,6 +594,29 @@ Module Linear_Solve
         Endif
     End Subroutine Set_RHS
 
+    Subroutine Zero_RHS(eqid)
+        ! Set the RHS of equation eqid to zero
+        ! This is useful for when we want to remove explicity time-dependence
+        ! from the equation (as with mantle convection problems).
+        Implicit None
+        Integer, Intent(In) :: eqid
+        Integer :: istart,iend, ind 
+
+                    
+        If (n_modes .gt. 0) Then
+            !Primary equation object always has the full, allocated rhs.
+            ind = eqid
+            if (.not. equation_set(1,eqid)%primary) then
+                ind = equation_set(1,eqid)%links(1)
+            endif
+            ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
+            istart = equation_set(1,eqid)%rowblock+1
+            iend = istart+ndim1-1
+        
+
+            equation_set(1,ind)%rhs(istart:iend,:,:) = 0.0d0
+        Endif
+    End Subroutine Zero_RHS
 
     Subroutine Get_All_RHS(buffer)
         Implicit None

@@ -17,7 +17,11 @@ function compiler_version {
   then
     VTMP="GNU"
   fi
-  if [[ $1 == "gcc" ]]
+  if [[ $VSTR == *"gcc"* ]]
+  then
+    VTMP="GNU"
+  fi
+  if [[ $VSTR == *"GNU"* ]]
   then
     VTMP="GNU"
   fi

@@ -65,7 +65,7 @@ point_probe_cache_size=100
 
 
 ! velocity, temperature, energy fluxes, and Kinetic Energy
-shellavg_values = 1,2,3,501, 1438, 1468
+shellavg_values = 1,2,3,501, 1440, 1470
 shellavg_frequency = 200
 shellavg_nrec = 50
 
