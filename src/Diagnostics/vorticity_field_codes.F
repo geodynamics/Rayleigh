@@ -31,3 +31,5 @@
     Integer, Parameter :: vortm_r_sq     = vort_off+20  ! :tex: $\overline{\omega_r}^2$
     Integer, Parameter :: vortm_theta_sq = vort_off+21  ! :tex: $\overline{\omega_\theta}^2$
     Integer, Parameter :: vortm_phi_sq   = vort_off+22  ! :tex: $\overline{\omega_\phi}^2$
+
+    Integer, Parameter :: zstream        = vort_off+23  ! :tex: $Z$

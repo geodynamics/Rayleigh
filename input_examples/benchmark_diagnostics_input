@@ -1,0 +1,115 @@
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.35d0
+ shell_depth = 1.0d0
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ benchmark_mode = 1
+ benchmark_integration_interval = 100
+ benchmark_report_interval = 5000
+ rotation  = .True.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 1.0d-4
+ max_iterations = 40000
+ checkpoint_interval = 100000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+
+! New equatorial slices output
+equatorial_values    = 1,2,3  ! velocity components
+equatorial_frequency = 5000
+equatorial_nrec      = 2
+
+!New meridional slices output.  You must also specify the number of phi-indices
+!Valid values range from 1 through nphi = 2*n_theta
+!The indices below range from phi = 0 up to phi = pi 
+meridional_values    = 1,2,3 ! radial and phi components of velocity; temperature
+meridional_frequency = 5000
+meridional_nrec      = 2
+meridional_indices_nrm = 0.7
+
+shellslice_levels_nrm    = 0.9
+shellslice_values    = 1,2,3 ! velocity components
+shellslice_frequency = 10000
+shellslice_nrec      = 2
+
+shellspectra_levels_nrm    = 0.5 , 0.9
+shellspectra_values    = 1,2,3  ! velocity and temperature
+shellspectra_frequency = 10000
+shellspectra_nrec      = 2
+
+azavg_values = 1,2,3,201,202,501 ! same as above + r- and theta- mass flux
+azavg_frequency = 1000
+azavg_nrec = 10
+
+point_probe_values = 1,2,3, 1201,1202,1203,1216, 1219,1220, 1221, 1228,1229,1230
+point_probe_r_nrm = 0.2, 0.6, 0.9
+point_probe_theta_nrm= 0.35
+point_probe_phi_nrm = 0.21, 0.72
+point_probe_frequency=10
+point_probe_nrec=500
+point_probe_cache_size=100
+
+
+! velocity, temperature, energy fluxes, and Kinetic Energy
+shellavg_values = 1,2,3,501, 1440, 1470
+shellavg_frequency = 200
+shellavg_nrec = 50
+
+! Kinetic energy, Mean KE, Diff-Rot KE, and Convective KE
+globalavg_values = 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412
+globalavg_frequency = 100
+globalavg_nrec = 100
+
+sph_mode_ell = 2,4,8
+sph_mode_levels_nrm = 0.4, 0.7, 0.9
+sph_mode_values = 1,2,3
+sph_mode_frequency = 100
+sph_mode_nrec = 50
+
+
+full3d_values = 64 ! temperature
+full3d_frequency = 9000000
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+dtdr_bottom = 0.0d0
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 1    ! Benchmark init
+temp_amp = 1.0d1
+temp_w = 0.01d4
+restart_iter = -1
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 1.0d5
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/

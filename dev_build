@@ -1,0 +1,4 @@
+make distclean
+./configure -devel
+make
+make install

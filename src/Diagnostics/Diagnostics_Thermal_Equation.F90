@@ -1,10 +1,4 @@
-#define DO_PSI Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_PSI2 Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max
-#define END_DO2 enddo; enddo
-#define END_DO enddo; enddo; enddo
-#define PSI k,r,t
-#define PSI2 r,t
-#define DDBUFF d2buffer%p3a
+#include "indices.F"
 
 Module Diagnostics_Thermal_Equation
     Use Diagnostics_Base
@@ -886,6 +880,7 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Real*8, Allocatable :: rhot(:)
+        Real*8 :: mean_rho, mean_t, mean_r2, mean_q, mean_dr
         Real*8 :: qadd, fpr2dr
         Integer :: r,k, t
         ! Volume Heating
@@ -908,12 +903,17 @@ Contains
 
                 ! Note that radial_integral_weights give int{f r^2}/int(r^2}
                 Do r = N_R-1, 1,-1
-                    qadd = ref%heating(r)*ref%density(r)*ref%temperature(r) ! the heat
-                    qadd = qadd+ ref%heating(r+1)*ref%density(r+1)*ref%temperature(r+1)
-                    qadd = qadd*half
-                    fpr2dr = (r_squared(r) + r_squared(r+1))*Half*four_pi
-                    fpr2dr = fpr2dr*(radius(r)-radius(r+1))
+                    mean_rho = half*(ref%density(r)     +  ref%density(r+1)    )
+                    mean_t   = half*(ref%temperature(r) +  ref%temperature(r+1))
+                    mean_r2  = half*(r_squared(r)       +  r_squared(r+1)      )
+                    mean_q   = half*(ref%heating(r)     +  ref%heating(r+1)    )
+                    mean_dr  = radius(r)-radius(r+1)
+    
+                    qadd = mean_q*mean_rho*mean_t
+                    fpr2dr = mean_r2*four_pi*mean_dr
+
                     tmp1d(r) = tmp1d(r+1)+qadd*fpr2dr
+
                 Enddo
                 tmp1d = tmp1d(1)-tmp1d
                 tmp1d = tmp1d/four_pi/r_squared

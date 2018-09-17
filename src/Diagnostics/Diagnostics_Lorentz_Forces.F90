@@ -1,9 +1,4 @@
-#define DO_PSI Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_PSI2 Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max
-#define END_DO2 enddo; enddo
-#define END_DO enddo; enddo; enddo
-#define PSI k,r,t
-#define PSI2 r,t
+#include "indices.F"
 
 Module Diagnostics_Lorentz_Forces
 
@@ -65,7 +60,7 @@ Contains
             DO_PSI2
                 !qty(1:n_phi,PSI2) = ( m0_values(PSI2,curlbtheta)*m0_values(PSI2,bphi)- &
                 !                  & m0_values(PSI2,btheta)*m0_values(PSI2,curlbphi) )*ref%Lorentz_Coeff
-                qty(PSI) = mean_3dbuffer(PSI,lforcemm_r) - mean_ell0buffer(r, lforcemm_r)
+                qty(1:n_phi, PSI2) = mean_3dbuffer(1:n_phi,PSI2,lforcemm_r) - mean_ell0buffer(r, lforcemm_r)
             END_DO2
             If (compute_quantity(jm_cross_bm_r)) Call Add_Quantity(qty)
             If (compute_quantity(mag_work_mmm)) Then
