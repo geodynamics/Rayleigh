@@ -39,7 +39,14 @@ Contains
             Allocate(ens_pp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
             compute_efluct = .true.
         Endif
-
+        !/////////////////////////////////////////
+        ! Temporary
+        If (Compute_Quantity(valentin)) Then
+            DO_PSI
+                qty(PSI)=0.0d0
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
         !/////////////////////////////////////////
         ! 1. terms involving radial vorticity
         If (compute_quantity(vort_r) .or. compute_quantity(enstrophy) .or. compute_quantity(vort_r_sq)) Then
