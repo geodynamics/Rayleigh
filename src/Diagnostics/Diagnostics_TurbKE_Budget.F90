@@ -1,10 +1,4 @@
-#define DO_PSI Do t = my_theta%min, my_theta%max; Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_PSI2 Do t = my_theta%min, my_theta%max; Do r = my_r%min, my_r%max
-#define END_DO2 enddo; enddo
-#define END_DO enddo; enddo; enddo
-#define PSI k,r,t
-#define PSI2 r,t
-#define DDBUFF d2buffer%p3a
+#include "indices.F"
 Module Diagnostics_TurbKE_Budget
     Use Diagnostics_Base
     Implicit None
@@ -82,46 +76,6 @@ Contains
         Endif
 
 
-        ! Shear Production of turbulent kinetic energy.
-        !       P_T = -rho_bar u'u' : E
-        If (compute_quantity(production_shear_pKE)) Then
-            DO_PSI2
-                one_over_rsin = one_over_r(r) * csctheta(t)
-                ctn_over_r = one_over_r(r) * cottheta(t)
-
-                ! Compute elements of the mean rate of strain tensor E_ij
-                Err = m0_values(PSI2,dvrdr)
-                Ett = one_over_r(r) * (m0_values(PSI2,dvtdt) + m0_values(PSI2,vr))
-                Epp = one_over_rsin * m0_values(PSI2,dvpdp) + ctn_over_r*m0_values(PSI2,vtheta)    &
-                    + one_over_r(r) * m0_values(PSI2,vr)
-
-                ! Twice the diagonal elements, e.g.,  Ert = 2 * E_rt
-                Ert = one_over_r(r) * (m0_values(PSI2,dvrdt) - m0_values(PSI2,vtheta))        &
-                    + m0_values(PSI2,dvtdr)    
-                Erp = m0_values(PSI2,dvpdr) + one_over_rsin * m0_values(PSI2,dvrdp)        &
-                    - one_over_r(r) * m0_values(PSI2,vphi)
-                Etp = one_over_rsin * m0_values(PSI2,dvtdp) - ctn_over_r * m0_values(PSI2,vphi)    &
-                    + one_over_r(r) * m0_values(PSI2,dvpdt)
-
-                ! Compute u'_i u'_j E_ij
-                DO k = 1, n_phi
-                    ! Compute diagonal elements of the double contraction
-                    htmp1 = fbuffer(PSI,vr)**2 * Err
-                        htmp2 = fbuffer(PSI,vtheta)**2 * Ett
-                    htmp3 = fbuffer(PSI,vphi)**2 * Epp
-                            qty(PSI) = htmp1 + htmp2 + htmp3
-
-                    ! Compute off-diagonal elements
-                    htmp1 = fbuffer(PSI,vr)*fbuffer(PSI,vtheta)*Ert
-                    htmp2 = fbuffer(PSI,vr)*fbuffer(PSI,vphi)*Erp
-                    htmp3 = fbuffer(PSI,vtheta)*fbuffer(PSI,vphi)*Etp
-                    qty(PSI) = qty(PSI) + htmp1 + htmp2 + htmp3
-
-                    qty(PSI) = -ref%density(r) * qty(PSI)
-                ENDDO        ! End of phi loop
-                END_DO2        ! End of theta & r loop
-                Call Add_Quantity(qty)  
-        Endif
 
 
         !Viscous Dissipation of turbulent kinetic energy.

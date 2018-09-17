@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/sh
 mkdir Checkpoints
 mkdir AZ_Avgs
 mkdir G_Avgs

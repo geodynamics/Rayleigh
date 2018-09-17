@@ -27,43 +27,43 @@
     Integer, Parameter :: ecrossb_pmp_theta = meq_off+14  ! :tex: $\left[\left(\boldsymbol{v'}\times\boldsymbol{\overline{B}}\right)\times\boldsymbol{B'}\right]_\theta $
     Integer, Parameter :: ecrossb_pmp_phi   = meq_off+15  ! :tex: $\left[\left(\boldsymbol{v'}\times\boldsymbol{\overline{B}}\right)\times\boldsymbol{B'}\right]_\phi $
 
-    Integer, Parameter :: ecrossb_mpp_r     = meq_off+13  ! :tex: $\left[\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r $
-    Integer, Parameter :: ecrossb_mpp_theta = meq_off+14  ! :tex: $\left[\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta $
-    Integer, Parameter :: ecrossb_mpp_phi   = meq_off+15  ! :tex: $\left[\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi $
+    Integer, Parameter :: ecrossb_mpp_r     = meq_off+16  ! :tex: $\left[\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r $
+    Integer, Parameter :: ecrossb_mpp_theta = meq_off+17  ! :tex: $\left[\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta $
+    Integer, Parameter :: ecrossb_mpp_phi   = meq_off+18  ! :tex: $\left[\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi $
 
     !Next, the source terms (ppp etc. order =>  b dot del cross (v x b)
-    Integer, Parameter :: induct_work     = meq_off+16 ! :tex: $\boldsymbol{B}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v}\times\boldsymbol{B}\right)\right] $
-    Integer, Parameter :: induct_work_ppp = meq_off+17 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right] $
-    Integer, Parameter :: induct_work_ppm = meq_off+18 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{\overline{B}}\right)\right] $
-    Integer, Parameter :: induct_work_pmp = meq_off+19 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\right] $
-    Integer, Parameter :: induct_work_mpp = meq_off+20 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right] $
-    Integer, Parameter :: induct_work_mmm = meq_off+21 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{\overline{v}}\times\boldsymbol{\overline{B}}\right)\right] $
+    Integer, Parameter :: induct_work     = meq_off+19 ! :tex: $\boldsymbol{B}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v}\times\boldsymbol{B}\right)\right] $
+    Integer, Parameter :: induct_work_ppp = meq_off+20 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right] $
+    Integer, Parameter :: induct_work_ppm = meq_off+21 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{\overline{B}}\right)\right] $
+    Integer, Parameter :: induct_work_pmp = meq_off+22 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{\overline{v}}\times\boldsymbol{B'}\right)\right] $
+    Integer, Parameter :: induct_work_mpp = meq_off+23 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right] $
+    Integer, Parameter :: induct_work_mmm = meq_off+24 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\nabla}\times\left(\boldsymbol{\overline{v}}\times\boldsymbol{\overline{B}}\right)\right] $
 
 
-    Integer, Parameter :: ishear_work = meq_off+22 ! :tex: $\boldsymbol{B}\cdot\left[\boldsymbol{B}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right] $
-    Integer, Parameter :: iadvec_work = meq_off+23 ! :tex: $-\boldsymbol{B}\cdot\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{B}\right] $
-    Integer, Parameter :: icomp_work  = meq_off+24 ! :tex: $-\boldsymbol{B}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v} \right)\boldsymbol{B}$
+    Integer, Parameter :: ishear_work = meq_off+25 ! :tex: $\boldsymbol{B}\cdot\left[\boldsymbol{B}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right] $
+    Integer, Parameter :: iadvec_work = meq_off+26 ! :tex: $-\boldsymbol{B}\cdot\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{B}\right] $
+    Integer, Parameter :: icomp_work  = meq_off+27 ! :tex: $-\boldsymbol{B}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v} \right)\boldsymbol{B}$
 
-    Integer, Parameter :: ishear_work_pmp = meq_off+25 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\overline{B}}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right] $
-    Integer, Parameter :: iadvec_work_pmp = meq_off+26 ! :tex: $-\boldsymbol{B'}\cdot\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right] $
-    Integer, Parameter :: icomp_work_pmp  = meq_off+27 ! :tex: $-\boldsymbol{B'}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{\overline{v}} \right)\boldsymbol{B'} $
+    Integer, Parameter :: ishear_work_pmp = meq_off+28 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{\overline{B}}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right] $
+    Integer, Parameter :: iadvec_work_pmp = meq_off+29 ! :tex: $-\boldsymbol{B'}\cdot\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right] $
+    Integer, Parameter :: icomp_work_pmp  = meq_off+30 ! :tex: $-\boldsymbol{B'}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{\overline{v}} \right)\boldsymbol{B'} $
 
-    Integer, Parameter :: ishear_work_ppm = meq_off+25 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{\overline{v}}\right] $
-    Integer, Parameter :: iadvec_work_ppm = meq_off+26 ! :tex: $-\boldsymbol{B'}\cdot\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{\overline{B}}\right] $
-    Integer, Parameter :: icomp_work_ppm  = meq_off+27 ! :tex: $-\boldsymbol{B'}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)\boldsymbol{\overline{B}}  $
+    Integer, Parameter :: ishear_work_ppm = meq_off+31 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{\overline{v}}\right] $
+    Integer, Parameter :: iadvec_work_ppm = meq_off+32 ! :tex: $-\boldsymbol{B'}\cdot\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{\overline{B}}\right] $
+    Integer, Parameter :: icomp_work_ppm  = meq_off+33 ! :tex: $-\boldsymbol{B'}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)\boldsymbol{\overline{B}}  $
 
-    Integer, Parameter :: ishear_work_mmm = meq_off+28 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\overline{B}}\cdot\boldsymbol{\nabla}\,\boldsymbol{\overline{v}}\right] $
-    Integer, Parameter :: iadvec_work_mmm = meq_off+29 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\nabla}\boldsymbol{\overline{B}}\right] $
-    Integer, Parameter :: icomp_work_mmm  = meq_off+30 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{\overline{v}} \right)\boldsymbol{\overline{B}} $
+    Integer, Parameter :: ishear_work_mmm = meq_off+34 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\overline{B}}\cdot\boldsymbol{\nabla}\,\boldsymbol{\overline{v}}\right] $
+    Integer, Parameter :: iadvec_work_mmm = meq_off+35 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{\overline{v}}\cdot\boldsymbol{\nabla}\boldsymbol{\overline{B}}\right] $
+    Integer, Parameter :: icomp_work_mmm  = meq_off+36 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{\overline{v}} \right)\boldsymbol{\overline{B}} $
 
-    Integer, Parameter :: ishear_work_mpp = meq_off+31 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right] $
-    Integer, Parameter :: iadvec_work_mpp = meq_off+32 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right] $
-    Integer, Parameter :: icomp_work_mpp  = meq_off+33 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)\boldsymbol{B'} $
+    Integer, Parameter :: ishear_work_mpp = meq_off+37 ! :tex: $\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right] $
+    Integer, Parameter :: iadvec_work_mpp = meq_off+38 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right] $
+    Integer, Parameter :: icomp_work_mpp  = meq_off+39 ! :tex: $-\boldsymbol{\overline{B}}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)\boldsymbol{B'} $
 
-    Integer, Parameter :: ishear_work_ppp = meq_off+34 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right]  $
-    Integer, Parameter :: iadvec_work_ppp = meq_off+35 ! :tex: $-\boldsymbol{B'}\cdot\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right] $
-    Integer, Parameter :: icomp_work_ppp  = meq_off+36 ! :tex: $-\boldsymbol{B'}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)\boldsymbol{B'} $
+    Integer, Parameter :: ishear_work_ppp = meq_off+40 ! :tex: $\boldsymbol{B'}\cdot\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right]  $
+    Integer, Parameter :: iadvec_work_ppp = meq_off+41 ! :tex: $-\boldsymbol{B'}\cdot\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right] $
+    Integer, Parameter :: icomp_work_ppp  = meq_off+42 ! :tex: $-\boldsymbol{B'}\cdot\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)\boldsymbol{B'} $
 
-    Integer, Parameter :: idiff_work    = meq_off+37 ! :tex: $-c_7\boldsymbol{B}\cdot\left[ \boldsymbol{\nabla}\times\left(\mathrm{f}_7\boldsymbol{\nabla}\times\boldsymbol{B}\right)\right] $
-    Integer, Parameter :: idiff_work_pp = meq_off+38 ! :tex: $-c_7\boldsymbol{B'}\cdot\left[ \boldsymbol{\nabla}\times\left(\mathrm{f}_7\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\right] $
-    Integer, Parameter :: idiff_work_mm = meq_off+39 ! :tex: $-c_7\boldsymbol{\overline{B}}\cdot\left[ \boldsymbol{\nabla}\times\left(\mathrm{f}_7\boldsymbol{\nabla}\times\boldsymbol{\overline{B}}\right)\right] $
+    Integer, Parameter :: idiff_work    = meq_off+43 ! :tex: $-c_7\boldsymbol{B}\cdot\left[ \boldsymbol{\nabla}\times\left(\mathrm{f}_7\boldsymbol{\nabla}\times\boldsymbol{B}\right)\right] $
+    Integer, Parameter :: idiff_work_pp = meq_off+44 ! :tex: $-c_7\boldsymbol{B'}\cdot\left[ \boldsymbol{\nabla}\times\left(\mathrm{f}_7\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\right] $
+    Integer, Parameter :: idiff_work_mm = meq_off+45 ! :tex: $-c_7\boldsymbol{\overline{B}}\cdot\left[ \boldsymbol{\nabla}\times\left(\mathrm{f}_7\boldsymbol{\nabla}\times\boldsymbol{\overline{B}}\right)\right] $

@@ -1,9 +1,12 @@
 
-# Rayleigh Version 0.9.0 #
+# Rayleigh Version 0.9.1 #
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1236565.svg)](https://doi.org/10.5281/zenodo.1236565)
 
-[![DOI](https://zenodo.org/badge/113108631.svg)](https://zenodo.org/badge/latestdoi/113108631)
+
 
 Rayleigh is a 3-D convection code designed for the study of dynamo behavior in spherical geometry.  It evolves the incompressible and anelastic MHD equations in spherical geometry using a pseudo-spectral approach.  Rayleigh employs spherical harmonics in the horizontal direction and Chebyshev polynomials in the radial direction.  The code has undergone extensive accuracy testing using the [Christensen et al. (2001)](http://adsabs.harvard.edu/abs/2001PEPI..128...25C) Boussinesq benchmarks and the [Jones et al. (2011)](http://adsabs.harvard.edu/abs/2011Icar..216..120J) anelastic benchmarks.   Rayleigh has been developed with NSF support through the Computational Infrastructure for Geodynamics ([CIG](https://geodynamics.org/cig/news/newsletters/may-2016/)).
+
+
 
 Parallelization
 -----------------------------
@@ -27,4 +30,4 @@ Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Ple
 
 License
 -------
-Raleigh v0.9.0 is released under the [GPL v3 license.](https://www.gnu.org/licenses/gpl-3.0.en.html)
+Raleigh v0.9.1 is released under the [GPL v3 license.](https://www.gnu.org/licenses/gpl-3.0.en.html)
