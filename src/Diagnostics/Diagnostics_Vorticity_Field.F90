@@ -42,7 +42,7 @@ Contains
 !!
         if(compute_quantity(i_vorticity_s)) then
           DO_PSI
-            aty(PSI) = 1.0d0
+            qty(PSI) = 1.0d0
           END_DO
         end if
         call Add_Quantitiy(qty)
