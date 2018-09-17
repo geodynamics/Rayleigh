@@ -44,8 +44,8 @@ Contains
           DO_PSI
             qty(PSI) = 1.0d0
           END_DO
+          call Add_Quantity(qty)
         end if
-        call Add_Quantitiy(qty)
 !!
 !!
         !/////////////////////////////////////////
