@@ -41,6 +41,16 @@ Contains
         Endif
 
         !/////////////////////////////////////////
+        ! Temporary
+
+        If (compute_quantity(krista)) Then
+            DO_PSI
+                qty(PSI) = 0.0d0
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        !/////////////////////////////////////////
         ! 1. terms involving radial vorticity
         If (compute_quantity(vort_r) .or. compute_quantity(enstrophy) .or. compute_quantity(vort_r_sq)) Then
             DO_PSI
