@@ -34,5 +34,5 @@
 
     Integer, Parameter :: zstream        = vort_off+23  ! :tex: $Z$
 !
-    Integer, Parameter :: i_vorricity_s  = vort_off+26  ! :tex: $\omega_{s}$
+    Integer, Parameter :: i_vorticity_s  = vort_off+26  ! :tex: $\omega_{s}$
 
