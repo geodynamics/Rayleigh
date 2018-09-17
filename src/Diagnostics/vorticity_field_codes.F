@@ -33,3 +33,6 @@
     Integer, Parameter :: vortm_phi_sq   = vort_off+22  ! :tex: $\overline{\omega_\phi}^2$
 
     Integer, Parameter :: zstream        = vort_off+23  ! :tex: $Z$
+!
+    Integer, Parameter :: i_vorticity_s  = vort_off+26  ! :tex: $\omega_{s}$
+
