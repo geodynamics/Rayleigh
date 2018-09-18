@@ -69,7 +69,7 @@ Contains
                            & ell0_values(r,tvar))
             END_DO
             If (compute_quantity(buoyancy_mforce)) Call Add_Quantity(qty)
-            If (compute_quantity(buoy_work_pp)) Then
+            If (compute_quantity(buoy_work_mm)) Then
                 DO_PSI
                     qty(PSI)=m0_values(PSI2,vr)*qty(PSI)
                 END_DO
