@@ -5,4 +5,8 @@ manual:
 		pdflatex Rayleigh_User_Guide.tex
 	mv src/user_guide/Rayleigh_User_Guide.pdf .
 
-.PHONY: manual
+doxygen:
+	doxygen options.dox
+
+.PHONY: manual doxygen
+
