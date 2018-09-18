@@ -23,7 +23,7 @@ Contains
 
 	Subroutine Hybrid_Init()
         Integer :: r1, r2
-        !Allocate a few useful arrays that prevent extra mult/adds
+        ! Allocate a few useful arrays that prevent extra mult/adds
         Allocate(over_rhor(my_r%min:my_r%max))
         Allocate(over_rhorsq(my_r%min:my_r%max))
         Allocate(drho_term(my_r%min:my_r%max))
@@ -73,7 +73,7 @@ Contains
 
 		Call StopWatch(rlma_time)%increment()
 
-		!Legendre Transform and transpose the buffer
+		! Legendre Transform and transpose the buffer
 		Call wsp%construct('p2a')
 		Call StopWatch(legendre_time)%startclock()
 		Call Legendre_Transform(wsp%s2a,wsp%p2a)
@@ -156,7 +156,7 @@ Contains
 
 
 
-		!The ell =0 w and p and z equations have zero RHS
+		! The ell =0 w and p and z equations have zero RHS
 		Do mp = my_mp%min, my_mp%max
 			m = m_values(mp)
 			if (m .eq. 0) then
@@ -192,8 +192,8 @@ Contains
     Subroutine Hydro_Output_Derivatives()
         Implicit None
 		Integer :: r, l, m, mp, imi
-        !Compute sin(theta) dP/dtheta and 
-        !place it in the cobuffer
+        ! Compute sin(theta) dP/dtheta and 
+        ! place it in the cobuffer
         Call d_by_dtheta(wsp%s2a,pvar,ftemp1)
         DO_IDX2
             ASBUFFA(IDX2,dpdt_cb) = ftemp1(mp)%data(IDX2)
@@ -205,14 +205,14 @@ Contains
 		Integer ::  m, mp,  r, imi
 
 		
-		!Compute the velocity vield
+		! Compute the velocity vield
 
-		!vr	overwrites w	
+		! vr	overwrites w	
         DO_IDX2
             SBUFFA(IDX2,vr) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vr)*Over_RhoRSQ(r)
         END_DO
 
-		!We compute sintheta v_theta
+		! We compute sintheta v_theta
 		Call d_by_dtheta(wsp%s2a,dwdr,ftemp1)	 
 		Call d_by_dphi(wsp%s2a,zvar,	ftemp2)	  			
 
@@ -224,7 +224,7 @@ Contains
 				SBUFFA(IDX2,vtheta) = ftemp1(mp)%data(IDX2)*Over_RhoR(r)
         END_DO
 
-		!Now sintheta v_phi
+		! Now sintheta v_phi
 		Call   d_by_dphi(wsp%s2a,dwdr,	ftemp1) 
 		Call d_by_dtheta(wsp%s2a,zvar,ftemp2)
         DO_IDX2
@@ -242,7 +242,7 @@ Contains
 		Implicit None
 		Integer :: r, l, m, mp, imi
 		!/////////////////////////////////
-		!sintheta dv theta dr 
+		! sintheta dv theta dr 
 		Call d_by_dtheta(wsp%s2a,d2wdr2,ftemp1)	! Store sintheta dwdtheta there for now.  We're going to use it a bit anyway.
 		Call d_by_dphi(wsp%s2a,dzdr,	ftemp2)	   ! Will overwrite this with dTdtheta shortly			
 
@@ -255,7 +255,7 @@ Contains
             SBUFFA(IDX2,dvtdr) = ftemp1(mp)%data(IDX2)*Over_RhoR(r)
         END_DO
 
-        !.... Small correction for density variation  :  - u_theta*dlnrhodr (added -u_theta/r as well here)
+        ! .... Small correction for density variation  :  - u_theta*dlnrhodr (added -u_theta/r as well here)
         ! Notice that there is a -u_theta/r term above.  These should be combined
         ! for efficiency later
 
@@ -265,7 +265,7 @@ Contains
         END_DO	
 
 		!/////////////////////////////////
-		!sinphi dv phi dr 
+		! sinphi dv phi dr 
 		Call d_by_dphi(wsp%s2a,d2wdr2,ftemp1)	! Store sintheta dwdtheta there for now.  We're going to use it a bit anyway.
 		Call d_by_dtheta(wsp%s2a,dzdr,	ftemp2)	   ! Will overwrite this with dTdtheta shortly			
 
@@ -277,14 +277,14 @@ Contains
             SBUFFA(IDX2,dvpdr) = ftemp1(mp)%data(IDX2)*Over_RhoR(r)
         END_DO
 
-        !.... Small correction for density variation  :  - u_phi*dlnrhodr
+        ! .... Small correction for density variation  :  - u_phi*dlnrhodr
         ! .... moved -u_phi/r here as well
         DO_IDX2		
             SBUFFA(IDX2,dvpdr) = SBUFFA(IDX2,dvpdr)- &
                 &  SBUFFA(IDX2,vphi)*drho_term(r)
         END_DO	
 		!/////////////////////////////////////////
-		!dvrdr	overwrites dwdr	
+		! dvrdr	overwrites dwdr	
 
         DO_IDX2
             SBUFFA(IDX2,dvrdr) = l_l_plus1(m:l_max)* & 
@@ -297,7 +297,7 @@ Contains
                 & SBUFFA(IDX2,vr)*Two_Over_R(r)
         END_DO
 
-		!.... Small correction for density variation  :  - u_r*dlnrhodr
+		! .... Small correction for density variation  :  - u_r*dlnrhodr
         DO_IDX2	
             SBUFFA(IDX2,dvrdr) = SBUFFA(IDX2,dvrdr)- &
                 & SBUFFA(IDX2,vr)*ref%dlnrho(r)
@@ -321,19 +321,19 @@ Contains
 
        
 		!/////////////// BR /////////////////////		
-		!First convert C to Br  !! Br overwrites C
+		! First convert C to Br  ! Br overwrites C
         DO_IDX2
 			SBUFFA(IDX2,Br) = l_l_plus1(m:l_max)*SBUFFA(IDX2,Br)*OneOverRSquared(r)
         END_DO     
 
 		!////////////////// [Del x B]_r ///////////////////////////
-		!(does not overwrite any existing fields)
+		! (does not overwrite any existing fields)
         DO_IDX2
 			SBUFFA(IDX2,curlbr) = l_l_plus1(m:l_max) &
                *SBUFFA(IDX2,Avar)*OneOverRSquared(r)
         END_DO  
 
-        !Convert d2cdr2 to d2cdr2-Br (br = cl(l+1)/r^2
+        ! Convert d2cdr2 to d2cdr2-Br (br = cl(l+1)/r^2
         DO_IDX2
 			SBUFFA(IDX2,d2cdr2) = SBUFFA(IDX2,d2cdr2)-SBUFFA(IDX2,Br)
         END_DO       
@@ -347,7 +347,7 @@ Contains
         DO_IDX2
             SBUFFA(IDX2,dadr) = ftemp2(mp)%data(IDX2)
         END_DO
-        !overwrite ftemp2 with d_d_theta (d2cdr2-br)
+        ! overwrite ftemp2 with d_d_theta (d2cdr2-br)
         Call d_by_dtheta(  wsp%s2a,d2cdr2,ftemp2)
 
         ! Add this term to d_d_phi(d_a_dr) to build rsintheta [del x b]_phi (overwrite dadr)
@@ -357,7 +357,7 @@ Contains
         END_DO
 
         !/////////////[Del x B]_theta ///////////////////////
-        Call d_by_dphi(  wsp%s2a,d2cdr2,ftemp2)       !get phi derivative of d2cdr2-Br
+        Call d_by_dphi(  wsp%s2a,d2cdr2,ftemp2)       ! get phi derivative of d2cdr2-Br
 
         ! Combine with ftemp1 to build rsintheta [del x B]_theta (overwrites d2cdr2)
         DO_IDX2
@@ -376,7 +376,7 @@ Contains
             SBUFFA(IDX2,Avar) = ftemp2(mp)%data(IDX2)
         END_DO
 
-        !overwrite ftemp2 with d_d_theta (dcdr)
+        ! overwrite ftemp2 with d_d_theta (dcdr)
         Call d_by_dtheta(  wsp%s2a,dcdr,ftemp2)
 
         ! Add this term to dA_d_phi to build rsintheta B_theta
@@ -385,7 +385,7 @@ Contains
         END_DO
 
         !///////////// Bphi
-        Call d_by_dphi(  wsp%s2a,dcdr,ftemp2)       !get phi derivative of dcdr
+        Call d_by_dphi(  wsp%s2a,dcdr,ftemp2)       ! get phi derivative of dcdr
 
         ! Combine with ftemp1 to build rsintheta B_phi
         DO_IDX2
@@ -397,12 +397,12 @@ Contains
 		Implicit None
 		Integer :: r, l, m, mp, imi
 
-        !These terms are only needed if we want to output 
-        !inductions terms in the diagnostics
+        ! These terms are only needed if we want to output 
+        ! inductions terms in the diagnostics
 
 
 		!/////////////////////////////////
-		!sintheta dB theta dr
+		! sintheta dB theta dr
 		Call d_by_dtheta(wsp%s2a,d2cdr2,ftemp1)	
 		Call d_by_dphi(wsp%s2a,dadr,	ftemp2)	   		
 
@@ -417,11 +417,11 @@ Contains
 
         DO_IDX2		
             ASBUFFA(IDX2,dbtdr_cb) = ASBUFFA(IDX2,dbtdr_cb)- &
-                & SBUFFA(IDX2,btheta)*OneOverRSquared(r)  !(take care) btheta is really rsintheta btheta
-        END_DO	                                          !hence 1/r^2 instead of 1/r
+                & SBUFFA(IDX2,btheta)*OneOverRSquared(r)  ! (take care) btheta is really rsintheta btheta
+        END_DO	                                          ! hence 1/r^2 instead of 1/r
 
 		!/////////////////////////////////
-		!sintheta dB phi dr 
+		! sintheta dB phi dr 
 		Call d_by_dphi(wsp%s2a,d2cdr2,ftemp1)	
 		Call d_by_dtheta(wsp%s2a,dadr,	ftemp2)	   		
 
@@ -435,11 +435,11 @@ Contains
 
         DO_IDX2		
             ASBUFFA(IDX2,dbpdr_cb) = ASBUFFA(IDX2,dbpdr_cb)- &
-                &  SBUFFA(IDX2,bphi)*OneOverRSquared(r) !(take care) bphi is really rsinthetabphi
+                &  SBUFFA(IDX2,bphi)*OneOverRSquared(r) ! (take care) bphi is really rsinthetabphi
         END_DO	
 
 		!/////////////////////////////////////////  
-		!dB r dr	
+		! dB r dr	
 
         DO_IDX2
             ASBUFFA(IDX2,dbrdr_cb) = l_l_plus1(m:l_max)* & 
@@ -452,7 +452,7 @@ Contains
                 & SBUFFA(IDX2,br)*Two_Over_R(r)
         END_DO
 
-        !sintheta dbrdr
+        ! sintheta dbrdr
 		Call d_by_dtheta(wsp%s2a,br,ftemp1)  
         DO_IDX2
             ASBUFFA(IDX2,dbrdt_cb) = ftemp1(mp)%data(IDX2)
