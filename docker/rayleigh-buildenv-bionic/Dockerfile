@@ -12,7 +12,8 @@ RUN apt update && \
     liblapack-dev \
     libopenmpi-dev \
     make \
-    nano
+    nano \
+    wget
 
 # Export compilers
 ENV CC mpicc
