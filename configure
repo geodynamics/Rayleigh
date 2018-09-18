@@ -773,7 +773,7 @@ grep -o '^[^#]*' $OFILE > $NOCOMM
 
 #Next we copy NOCOMM to MACHDEF, removing trailing whitespace in the process
 #  This is super important as errors can arise in the make process otherwise.
-sed 's/[ \t]*$//' $NOCOMM > $MACHDEF
+sed -E 's/[ '$'\t'']+$//' $NOCOMM > $MACHDEF
 rm $NOCOMM
 rm $OFILE
 echo " "
