@@ -7,7 +7,7 @@ pipeline {
       label 'mypod'
       containerTemplate {
         name 'rayleigh'
-        image 'geodynamics/rayleigh-buildenv-bionic'
+        image 'geodynamics/rayleigh-buildenv-bionic:latest'
         ttyEnabled true
         command 'cat'
       }
