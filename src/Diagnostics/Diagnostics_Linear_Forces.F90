@@ -328,7 +328,9 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = fbuffer(PSI,dvrdr)-One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
+                ! BWH: Corrected a sign error in the math that appears between
+                ! the first and second terms.
+                estress = fbuffer(PSI,dvrdr)+One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
 
                 qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
 
@@ -433,7 +435,9 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = m0_values(PSI2,dvrdr)-One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
+                ! BWH: Corrected a sign error in the math that appears between
+                ! the first and second terms.
+                estress = m0_values(PSI2,dvrdr)+One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
 
                 qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
                 qty(PSI) = qty(PSI)-mean_ell0buffer(r,vforce_r)
