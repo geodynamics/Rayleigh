@@ -34,8 +34,6 @@ pipeline {
         timeout(time: 90, unit: 'MINUTES')
       }
       steps {
-        sh 'cp input_examples/benchmark_diagnostics_input main_input'
-
         // This model expects 4 MPI processes, but MPI does not work
         // inside the container at the moment, so instead run in serial
         // also reduce runtime of the model for fast testing
@@ -47,10 +45,17 @@ pipeline {
         '''
 
         sh '''
+          cd tests/benchmark_diagnostics_input
+
           # This export avoids a warning about
           # a discovered, but unconnected infiniband network.
-          mpirun -np 4 ./bin/rayleigh.dbg
+          mpirun -np 4 ../../bin/rayleigh.dbg
+          git diff > changes.diff
         '''
+
+          archiveArtifacts artifacts: 'changes.diff', fingerprint: true
+          sh 'git diff --exit-code --name-only'
+        }
       }
     }
   }
