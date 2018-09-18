@@ -1,6 +1,6 @@
 \clearpage
 \section{Compiling and Installing Rayleigh}\label{sec:installation}
-A detailed explanation of the installation process may be found in the root directory of the code repository at: 
+A detailed explanation of the installation process may be found in the root directory of the code repository at:
 
 Rayleigh/INSTALL.
 \\
@@ -23,16 +23,16 @@ You will need to install these libraries before compiling Rayleigh.   If you pla
 Rayleigh is compiled using the standard Linux installation scheme of configure/make/make-install.  From within the Rayleigh directory, run these commands:
 \begin{enumerate}
 \item \textbf{./configure}  -- See Rayleigh/INSTALL or run ./configure {-{}-}help to see relevant options.
-\item \textbf{make} -- This compiles the code
+\item \textbf{make} -- This produces the code.
 \item \textbf{make install}  -- This places the Rayleigh executables in Rayleigh/bin.   If you would like to place them in (say) /home/my\_rayleigh, run configure as: \textbf{./configure --prefix=/home/my\_rayleigh}.
 \end{enumerate}
 For most builds, two executables will be created:  rayleigh.opt and rayleigh.dbg.  Use them as follows:
 \begin{enumerate}
 \item When running production jobs, use \textbf{rayleigh.opt}.
-\item If you encounter an unexpected crash and would like to report the error, rerun the job with \textbf{rayleigh.dbg}.  This version of the code is compiled with debugging symbols.  It will (usually) produces meaningful error messages in place of the gibberish that is output when rayleigh.opt crashes.
+\item If you encounter an unexpected crash and would like to report the error, rerun the job with \textbf{rayleigh.dbg}.  This version of the code is compiled with debugging symbols.  It will (usually) produce meaningful error messages in place of the gibberish that is output when rayleigh.opt crashes.
 \end{enumerate}
 
 If \textit{configure} detects the Intel compiler, you will be presented with a number of choices for the vectorization option.  If you select \textit{all}, rayleigh.opt will not be created.  Instead, rayleigh.sse, rayleigh.avx, etc. will be placed in Rayleigh/bin.  This is useful if running on a machine with heterogeneous node architectures (e.g., Pleiades).  If you are not running on such a machine, pick the appropriate vectorization level, and rayleigh.opt will be compiled using that vectorization level.
 
 \subsection{Verifying Your Installation}
-Rayleigh comes with a benchmarking mode that help you verify that the installation is performing correctly.  If you are running Rayleigh for the first time, or running on a new machine, follow along with the example in \S \ref{sec:benchmarking}, and verify that you receive an accurate benchmark report before running a custom model.
+Rayleigh comes with a benchmarking mode that helps you verify that the installation is performing correctly.  If you are running Rayleigh for the first time, or running on a new machine, follow along with the example in \S \ref{sec:benchmarking}, and verify that you receive an accurate benchmark report before running a custom model.
