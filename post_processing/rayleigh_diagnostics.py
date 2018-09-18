@@ -1,7 +1,55 @@
 from __future__ import print_function
 import numpy as np
 import os
+import glob
+
 maxq = 4000
+
+class Spherical_3D:
+    """Rayleigh Spherical_3D Structure
+    ----------------------------------
+    self.basefilename                             : base filename
+    self.nr                                       : number of radial points
+    self.ntheta                                   : number of theta points
+    self.nphi                                     : number of phi points sampled
+    self.rs                                       : radial coordinates
+    self.thetas                                   : co-latitudinal coordinates
+    self.vals[qindex][0:nphi-1,0:ntheta=1,0:nr-1] : dictionary of values, indexed by qindex
+    """
+ 
+    def __init__(self,filename,path='Spherical_3D/'):
+        """filename  : The reference state file to read.
+           path      : The directory where the file is located (if not Spherical_3D)
+        """
+        self.basefilename = os.path.split(filename)[-1].split("_")[0]
+
+        grid_file = path+self.basefilename+"_grid"
+        fd = open(grid_file,'rb')
+        bs = check_endian(fd,314,'int32')
+        nr = swapread(fd,dtype='int32',count=1,swap=bs)
+        ntheta = swapread(fd,dtype='int32',count=1,swap=bs)
+        nphi = swapread(fd,dtype='int32',count=1,swap=bs)
+        assert(nphi == 2*ntheta)
+
+        self.nr = nr
+        self.ntheta = ntheta
+        self.nphi = nphi
+
+        rs = swapread(fd,dtype='float64',count=self.nr,swap=bs)
+        thetas = swapread(fd,dtype='float64',count=self.ntheta,swap=bs)
+        fd.close()
+
+        self.rs = rs
+        self.thetas = thetas
+
+        var_files = glob.glob1(path, self.basefilename+"_*")
+        self.vals = {}
+        for var_file in var_files:
+          index = var_file.split("_")[-1]
+          if index == "grid": continue
+          fd = open(path+var_file, 'rb')
+          self.vals[index] = swapread(fd,dtype='float64',count=nphi*ntheta*nr,swap=bs)
+
 class RayleighTiming:
 
     def __init__(self,filename,byteswap=True):
