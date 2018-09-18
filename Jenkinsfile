@@ -26,12 +26,14 @@ pipeline {
       steps {
         container('rayleigh') {
           sh '''
-            ./configure --with-blas=/usr --with-fftw=/usr --with-lapack=/usr
+            ./configure \
+              --with-blas='/usr' \
+              --with-fftw='/usr' \
+              --with-lapack='/usr'
           '''
-          sh '''
-            make
-            make install
-          '''
+
+          sh 'make'
+          sh 'make install'
         }
       }
     }
