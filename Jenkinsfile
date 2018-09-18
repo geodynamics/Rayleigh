@@ -19,24 +19,6 @@ pipeline {
   }
 
   stages {
-    stage ("Check Permissions") {
-      when {
-        allOf {
-          not {branch 'master'}
-          not {changeRequest authorEmail: "feathern@colorado.edu"}
-          not {changeRequest authorEmail: "rene.gassmoeller@mailbox.org"}
-        }
-      }
-      steps {
-        container('rayleigh') {
-          sh '''
-            wget -q -O - https://api.github.com/repos/geodynamics/Rayleigh/issues/${CHANGE_ID}/labels | grep 'ready to test' || \
-            { echo "This commit will only be tested when it has the label 'ready to test'"; exit 1; }
-          '''
-        }
-      }
-    }
-
     stage('Build') {
       options {
         timeout(time: 15, unit: 'MINUTES')
