@@ -12,8 +12,7 @@ RUN git clone 'https://github.com/geodynamics/Rayleigh.git'
 
 WORKDIR /home/rayleigh_user/Rayleigh
 
-RUN git checkout devel \
-  && ./configure \
+RUN ./configure \
     --with-blas='/usr' \
     --with-fftw='/usr' \
     --with-lapack='/usr' \
