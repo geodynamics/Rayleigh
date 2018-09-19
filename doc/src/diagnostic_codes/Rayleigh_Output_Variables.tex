@@ -1,10 +1,13 @@
-\documentclass[10pt, letterpaper]{article}
+\documentclass[10pt,letterpaper]{article}
 \usepackage[letterpaper,margin=0.75in]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage[table]{xcolor}
-%\usepackage[thinlines]{easytable}
-%\DeclareMathSizes{10}{10}{10}{10}
+\usepackage{longtable}
+\usepackage{array}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}m{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}}
 \newcommand{\ff}{\mathrm{f}}
 \begin{document}
 
@@ -19,23 +22,21 @@
 
 \section{Overview of Diagnostic Outputs in Rayleigh}
 The purpose of this document is to describe Rayleigh's internal menu system used for specifying diagnostic outputs.  Rayleigh's design includes an onboard diagnostics package that allows a user to output a variety of system quantities as the run evolves.  These include system state variables, such as velocity and entropy, as well as derived quantities, such as the vector components of the Lorentz force and the kinetic energy density.  Each diagnostic quantity is requested by adding its associated menu number to the \textit{main\_input} file.  Radial velocity, for instance, has menu code 1, $\theta$-component of velocity has menu code 2, etc.    
-\\
-\\
+
 A few points to keep in mind are
 \begin{itemize}
-\item \textbf{This document is intended to describe the diagnostics output menu only.}   A complete description of Rayleigh's diagnostic package is provided in Rayleigh/doc/Diagnostic\_Plotting.pdf.   A more in-depth description of the anelastic and Boussinesq modes available in Rayleigh is provided in Rayleigh/doc/user\_guide.pdf.
-\item A number of \textit{output methods} may be used to output any system diagnostic.  No diagnostic is linked to a particular \textit{output method}.  The same diagnostic might be output in volume-averaged, azimuthally-averaged, and fully 3-D form, for instance.
-\item You may notice a good deal of redundancy in the available outputs.  For instance, the azimuthal velocity, $v_\phi$, and its zonal average, $\overline{v_\phi}$, are both available as outputs.  Were the user to output both of these in an azimuthally-averaged format, the result would be the same.  3-D output, however, would not yield the same result.  This redundancy has been added to help with post-processing calculations in which it can be useful to have all data products in a similar format.
-\item Given the degree of redundancy found in the list below, you may be surprised to notice that several values are not available for output at all.  Some of these are best added as custom-user diagnostics and may be included in a future release.  Many, however, may be obtained by considering either the sum, or difference, of those outputs already available.
-
+    \item \textbf{This document is intended to describe the diagnostics output menu only.}   A complete description of Rayleigh's diagnostic package is provided in Rayleigh/doc/Diagnostic\_Plotting.pdf.   A more in-depth description of the anelastic and Boussinesq modes available in Rayleigh is provided in Rayleigh/doc/user\_guide.pdf.
+    \item A number of \textit{output methods} may be used to output any system diagnostic.  No diagnostic is linked to a particular \textit{output method}.  The same diagnostic might be output in volume-averaged, azimuthally-averaged, and fully 3-D form, for instance.
+    \item You may notice a good deal of redundancy in the available outputs.  For instance, the azimuthal velocity, $v_\phi$, and its zonal average, $\overline{v_\phi}$, are both available as outputs.  Were the user to output both of these in an azimuthally-averaged format, the result would be the same.  3-D output, however, would not yield the same result.  This redundancy has been added to help with post-processing calculations in which it can be useful to have all data products in a similar format.
+    \item Given the degree of redundancy found in the list below, you may be surprised to notice that several values are not available for output at all.  Some of these are best added as custom-user diagnostics and may be included in a future release.  Many, however, may be obtained by considering either the sum, or difference, of those outputs already available.
 \end{itemize}  
  
 \section{Definitions and Conventions}
 \subsection{Vector and Tensor Notation}
 All vector quantities are represented in bold italics.  Components of a vector are indicated in non-bold italics, along with a subscript indicating the direction associated with that component.  Unit vectors are written in lower-case, bold math font and are indicated by the use of a \textit{hat} character.  For example, a vector quantity $\boldsymbol{a}$ would represented as
 \begin{equation}
-\label{eq:vcomp}
-\boldsymbol{a} = a_r\boldsymbol{\hat{a}}+a_\theta\boldsymbol{\hat{\theta}}+a_\phi\boldsymbol{\hat{\phi}}.
+    \label{eq:vcomp}
+    \boldsymbol{a} = a_r\boldsymbol{\hat{a}}+a_\theta\boldsymbol{\hat{\theta}}+a_\phi\boldsymbol{\hat{\phi}}.
 \end{equation}
 The symbols ($\boldsymbol{\hat{r}}$, $\boldsymbol{\hat{\theta}}$, $\boldsymbol{\hat{\phi}}$) indicate the unit vectors in the ($r$,$\theta$,$\phi$) directions, and ($a_r$, $a_\theta$, $a_\phi$) indicate the components of $\boldsymbol{a}$ along those directions respectively.
 
@@ -48,7 +49,7 @@ The \textit{hat} notation is also used to indicate reference-state quantities.  
 Most of the output variables have been decomposed into a zonally-averaged value, and a fluctuation about that average. The average is indicated by an overbar, such that
 \begin{equation}
 \label{eq:avging}
-\overline{a}\equiv \frac{1}{2\pi}\int_{0}^{2\pi} a(r,\theta,\phi)\, \mathrm{d}\phi.
+    \overline{a}\equiv \frac{1}{2\pi}\int_{0}^{2\pi} a(r,\theta,\phi)\, \mathrm{d}\phi.
 \end{equation}
 
 %For models that are non-rotating, it is more natural to define the average as one taken over spherical surfaces.  This can be accomplished by setting the \textbf{XXXXX} variable to `` \textit{.true.} '' in the \textbf{YYYYY} namelist.  In that case, the definition of $\overline{a}$ given by
@@ -59,8 +60,8 @@ Most of the output variables have been decomposed into a zonally-averaged value,
 
 Fluctations about that average are indicated by a \textit{prime} superscript, such that
 \begin{equation}
-\label{eq:prime}
-a'\equiv a(r,\theta,\phi)-\overline{a}(r,\theta)
+    \label{eq:prime}
+    a'(r,\theta,\phi)\equiv a(r,\theta,\phi)-\overline{a}(r,\theta)
 \end{equation}
 
 Finally, some quantities are averaged over the full sphere.  These are indicated by a double-zero subscript (i.e. $\ell=0,\,m=0$), such that
@@ -75,127 +76,111 @@ Rayleigh solves the Boussinesq or anelastic MHD equations in spherical geometry.
 
 The general form of the momentum equation solved by Rayleigh is given by
 \begin{equation}
-\label{eq:momentum}
-\ff_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
-                                                         +c_1\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  = % Coriolis
-                                                         c_2\,\ff_2(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
-                                                         -c_3\,\ff_1(r)\boldsymbol{\nabla}\left(\frac{P}{\ff_1(r)}\right) % pressure
-                                                         +c_4\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
-                                                         +c_5\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}},
+    \label{eq:momentum}
+    \ff_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+     + c_1\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  = % Coriolis
+    c_2\,\ff_2(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
+     - c_3\,\ff_1(r)\boldsymbol{\nabla}\left(\frac{P}{\ff_1(r)}\right) % pressure
+     + c_4\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+     + c_5\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}},
 \end{equation}
 where the stress tensor $\mathcal{D}$ is given by
 
 \begin{equation}
-\mathcal{D}_{ij} = 2\ff_1(r)\,\ff_3(r)\left[e_{ij}-\frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right].
+    \mathcal{D}_{ij} = 2\ff_1(r)\,\ff_3(r)\left[e_{ij} - \frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right].
 \end{equation}
 The velocity field is denoted by $\boldsymbol{v}$, the thermal anomoly by $\Theta$, the pressure by $P$, and the magnetic field by $\boldsymbol{B}$.  All four of these quantities are 3-dimensional functions of position, in contrast to the 1-dimensional coefficient functions $\ff_i$.  The velocity and magnetic fields are subject to the constraints
 
 \begin{equation}
-\boldsymbol{\nabla}\cdot\left(\ff_1(r)\,\boldsymbol{v}\right)=0
+    \boldsymbol{\nabla}\cdot\left(\ff_1(r)\,\boldsymbol{v}\right) = 0
 \end{equation}
 and
 \begin{equation}
-\boldsymbol{\nabla}\cdot\boldsymbol{B}=0
+    \boldsymbol{\nabla}\cdot\boldsymbol{B}=0
 \end{equation}
 respectively.   The evolution of $\Theta$ is described
 \begin{equation}
-\ff_1(r)\,\ff_4(r)\left[\frac{\partial \Theta}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] =
-                                             c_6\,\boldsymbol{\nabla}\cdot\left[\ff_1(r)\,\ff_4(r)\,\ff_5(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
-                                             +\ff_6(r)   % Internal heating
-                                             +c_8\Phi(r,\theta,\phi)
-                                             +c_9\ff_7(r)\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2,  % Ohmic Heating
+    \ff_1(r)\,\ff_4(r)\left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] =
+    c_6\,\boldsymbol{\nabla}\cdot\left[\ff_1(r)\,\ff_4(r)\,\ff_5(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
+     + \ff_6(r)   % Internal heating
+     + c_8\Phi(r,\theta,\phi)
+     + c_9\ff_7(r)\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2,  % Ohmic Heating
 \end{equation}
 where the viscous heating $\Phi$ is given by
 \begin{equation}
-\label{eq:vischeat}
-\Phi(r,\theta,\phi) = 2\,\ff_1(r)\ff_3(r)\left[e_{ij}e_{ij}-\frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right].
+    \label{eq:vischeat}
+    \Phi(r,\theta,\phi) = 2\,\ff_1(r)\ff_3(r)\left[e_{ij}e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right].
 \end{equation}
 Finally, the evolution of $\boldsymbol{B}$ is described by the induction equation
 \begin{equation}
-\label{eq:induction}
-\frac{\partial \boldsymbol{B}}{\partial t} = \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}-c_7\,\ff_7(r)\boldsymbol{\nabla}\times\boldsymbol{B}\,\right).
+    \label{eq:induction}
+    \frac{\partial \boldsymbol{B}}{\partial t} = \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B} - c_7\,\ff_7(r)\boldsymbol{\nabla}\times\boldsymbol{B}\,\right).
 \end{equation}
 
 Equations \ref{eq:momentum}--\ref{eq:induction} could have been formulated in other ways.  For instance, we could combine $\ff_1$ and $\ff_4$ into a single function in Equation \ref{eq:vischeat}.  The form of the equations presented here has been chosen to reflect that actually used in the code, which was originally written dimensionally.  We now describe the dimensional anelastic and nondimensional Boussinesq formulations used in the code.
 
 \subsection{Dimensional Anelastic Formulation of the MHD Equations}
 When run in dimensional, anelastic mode (cgs units; \textbf{reference\_type=2} ), the following values are assigned to the functions $\ff_i$ and the constants $c_i$:
-%\begin{eqnarray}
 \begin{align*}
-%c_1 &\rightarrow 2\Omega_0 \\
-%c_2 &\rightarrow 1 \\
-%c_3 &\rightarrow 1 \\
-%c_4 &\rightarrow \frac{1}{4\pi} \\
-%c_5 &\rightarrow 1 \\
-%c_6 &\rightarrow 1 \\
-%c_7 &\rightarrow 1 \\
-\ff_1(r) &\rightarrow \hat{\rho}(r)\; &c_1 &\rightarrow 2\Omega_0 \\
-\ff_2(r) &\rightarrow \frac{\hat{\rho(r)}}{c_P}g(r)\; &c_2 &\rightarrow 1 \\
-\ff_3(r) &\rightarrow \nu(r)\; &c_3 &\rightarrow 1\\
-\ff_4(r) &\rightarrow \hat{T}(r)\; &c_4 &\rightarrow \frac{1}{4\pi} \\
-\ff_5(r) &\rightarrow \kappa(r)\; &c_5 &\rightarrow 1 \\
-\ff_6(r) &\rightarrow Q(r)\; &c_6 &\rightarrow 1  \\
-\ff_7(r) &\rightarrow \eta(r)\; &c_7 &\rightarrow 1. \\
-c_8&\rightarrow 1 &c_9 &\rightarrow \frac{1}{4\pi}.
+    \ff_1(r) &\rightarrow \hat{\rho}(r)\; &c_1 &\rightarrow 2\Omega_0 \\
+    \ff_2(r) &\rightarrow \frac{\hat{\rho(r)}}{c_P}g(r)\; &c_2 &\rightarrow 1 \\
+    \ff_3(r) &\rightarrow \nu(r)\; &c_3 &\rightarrow 1\\
+    \ff_4(r) &\rightarrow \hat{T}(r)\; &c_4 &\rightarrow \frac{1}{4\pi} \\
+    \ff_5(r) &\rightarrow \kappa(r)\; &c_5 &\rightarrow 1 \\
+    \ff_6(r) &\rightarrow Q(r)\; &c_6 &\rightarrow 1  \\
+    \ff_7(r) &\rightarrow \eta(r)\; &c_7 &\rightarrow 1. \\
+    c_8&\rightarrow 1 &c_9 &\rightarrow \frac{1}{4\pi}.
 \end{align*}
 
 Here, $\hat{\rho}$ and $\hat{T}$ are the reference-state density and temperature respectively.   $g$ is the gravitational acceleration, $c_P$ is the specific heat at constant pressure, and $\Omega_0$ is the frame rotation rate.   The viscous, thermal, and magnetic diffusivities are given by $\nu$, $\kappa$, and $\eta$ respectively.  Finally, $Q(r)$ is an internal heating function; it might represent radiative heating or heating due to nuclear fusion, for instance.  Note that in the anelastic formulation, the thermal variable $\Theta$ is interpreted is as entropy $s$, rather than temperature $T$.   When these substitutions are made, Equations \ref{eq:momentum}--\ref{eq:induction} transform as follows.
 
 \begin{align*}
-\hat{\rho}(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
-                                                         +2\Omega_0\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
-                                                         \frac{\hat{\rho}(r)}{c_P}g(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
-                                                         +\hat{\rho}(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) % pressure
-                                                         +\frac{1}{4\pi}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
-                                                         +\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}} \;\;\; &\mathrm{Momentum}\\
-%
-%
-\hat{\rho}(r)\,\hat{T}(r)\left[\frac{\partial \Theta}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] &=
-                                             \boldsymbol{\nabla}\cdot\left[\hat{\rho}(r)\,\hat{T}(r)\,\kappa(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
-                                             +Q(r)   % Internal heating
-                                             +\Phi(r,\theta,\phi)
-                                             +\frac{\eta(r)}{4\pi}\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2 &\mathrm{Thermal\; Energy}\\ % Ohmic Heating
-%
-%
-\frac{\partial \boldsymbol{B}}{\partial t} &= \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}-\eta(r)\boldsymbol{\nabla}\times\boldsymbol{B}\,\right) &\mathrm{Induction} \\
-%
-%
-\mathcal{D}_{ij} &= 2\hat{\rho}(r)\,\nu(r)\left[e_{ij}-\frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right] &\mathrm{Viscous\; Stress\; Tensor}\\
-%
-%
-\Phi(r,\theta,\phi) &= 2\,\hat{\rho}(r)\nu(r)\left[e_{ij}e_{ij}-\frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] &\mathrm{Viscous\; Heating} \\
-%
-%
-\boldsymbol{\nabla}\cdot\left(\hat{\rho}(r)\,\boldsymbol{v}\right)&=0 &\mathrm{Solenoidal\; Mass\; Flux}\\
-\boldsymbol{\nabla}\cdot\boldsymbol{B}&=0 &\mathrm{Solenoidal\; Magnetic\; Field}
+    \hat{\rho}(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+    +2\Omega_0\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
+    \frac{\hat{\rho}(r)}{c_P}g(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
+    +\hat{\rho}(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) % pressure
+    +\frac{1}{4\pi}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+    +\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}} \;\;\; &\mathrm{Momentum}\\
+    %
+    %
+    \hat{\rho}(r)\,\hat{T}(r)\left[\frac{\partial \Theta}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] &=
+    \boldsymbol{\nabla}\cdot\left[\hat{\rho}(r)\,\hat{T}(r)\,\kappa(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
+    +Q(r)   % Internal heating
+    +\Phi(r,\theta,\phi)
+    +\frac{\eta(r)}{4\pi}\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2 &\mathrm{Thermal\; Energy}\\ % Ohmic Heating
+    %
+    %
+    \frac{\partial \boldsymbol{B}}{\partial t} &= \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}-\eta(r)\boldsymbol{\nabla}\times\boldsymbol{B}\,\right) &\mathrm{Induction} \\
+    %
+    %
+    \mathcal{D}_{ij} &= 2\hat{\rho}(r)\,\nu(r)\left[e_{ij}-\frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right] &\mathrm{Viscous\; Stress\; Tensor}\\
+    %
+    %
+    \Phi(r,\theta,\phi) &= 2\,\hat{\rho}(r)\nu(r)\left[e_{ij}e_{ij}-\frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] &\mathrm{Viscous\; Heating} \\
+    %
+    %
+    \boldsymbol{\nabla}\cdot\left(\hat{\rho}(r)\,\boldsymbol{v}\right)&=0 &\mathrm{Solenoidal\; Mass\; Flux}\\
+    \boldsymbol{\nabla}\cdot\boldsymbol{B}&=0 &\mathrm{Solenoidal\; Magnetic\; Field}
 \end{align*}
 
 
 \subsection{Nondimensional Boussinesq Formulation of the MHD Equations}
 Rayleigh can also be run using a nondimensional, Boussinesq formulation of the MHD equations (\textbf{reference\_type=1}).  The nondimensionalization employed is as follows: 
 \begin{align*}
-\mathrm{Length} &\rightarrow L &\;\;\;\; \mathrm{(Shell\; Depth)} \\
-\mathrm{Time} &\rightarrow   \frac{L^2}{\nu} &\;\;\;\; \mathrm{(Viscous\; Timescale)}\\
-\mathrm{Temperature} &\rightarrow \Delta T&\;\;\;\; \mathrm{(Temperature\; Contrast\; Across\; Shell)} \\
-\mathrm{Magnetic Field} &\rightarrow \sqrt{\rho\mu\eta\Omega_0},
+    \mathrm{Length} &\rightarrow L &\;\;\;\; \mathrm{(Shell\; Depth)} \\
+    \mathrm{Time} &\rightarrow   \frac{L^2}{\nu} &\;\;\;\; \mathrm{(Viscous\; Timescale)}\\
+    \mathrm{Temperature} &\rightarrow \Delta T&\;\;\;\; \mathrm{(Temperature\; Contrast\; Across\; Shell)} \\
+    \mathrm{Magnetic Field} &\rightarrow \sqrt{\rho\mu\eta\Omega_0},
 \end{align*}
-where $\Omega_0$ is the rotation rate of the grame, $\rho$ is the (constant) density of the fluid, $\mu$ is the magnetic permeability, $\eta$ is the magnetic diffusivity, and $\nu$ is the kinematic viscosity.  After nondimensionalizing, the following nondimensional numbers appear in our equations:
+where $\Omega_0$ is the rotation rate of the frame, $\rho$ is the (constant) density of the fluid, $\mu$ is the magnetic permeability, $\eta$ is the magnetic diffusivity, and $\nu$ is the kinematic viscosity.  After nondimensionalizing, the following nondimensional numbers appear in our equations:
 \begin{align*}
-Pr &=\frac{\nu}{\kappa}                          &\;\;\;\;\;\; \mathrm{Prandtl\; Number} \\
-Pr &=\frac{\nu}{\eta}                            &\;\;\;\;\;\; \mathrm{Magnetic\; Prandtl\; Number} \\
-E  &=\frac{\nu}{\Omega_0\,L^2}                   &\;\;\;\;\;\; \mathrm{Ekman\; Number} \\
-Ra &=\frac{\alpha g_0 \Delta T\,L^3}{\nu\kappa}  &\;\;\;\;\;\; \mathrm{Rayleigh\; Number}, \\
+    Pr &=\frac{\nu}{\kappa}                          &\;\;\;\;\;\; \mathrm{Prandtl\; Number} \\
+    Pm &=\frac{\nu}{\eta}                            &\;\;\;\;\;\; \mathrm{Magnetic\; Prandtl\; Number} \\
+    E  &=\frac{\nu}{\Omega_0\,L^2}                   &\;\;\;\;\;\; \mathrm{Ekman\; Number} \\
+    Ra &=\frac{\alpha g_0 \Delta T\,L^3}{\nu\kappa}  &\;\;\;\;\;\; \mathrm{Rayleigh\; Number},
 \end{align*}
 where $\alpha$ is coefficient of thermal expansion, $g_0$ is the gravitational acceleration, and $\kappa$ is the thermal diffusivity.  Adopting this nondimensionalization is equivalent to assigning values to $\ff_i$ and the constants $c_i$:
-%\begin{eqnarray}
 \begin{align*}
-%c_1 &\rightarrow 2\Omega_0 \\
-%c_2 &\rightarrow 1 \\
-%c_3 &\rightarrow 1 \\
-%c_4 &\rightarrow \frac{1}{4\pi} \\
-%c_5 &\rightarrow 1 \\
-%c_6 &\rightarrow 1 \\
-%c_7 &\rightarrow 1 \\
 \ff_1(r) &\rightarrow 1\; &c_1 &\rightarrow \frac{2}{E} \\
 \ff_2(r) &\rightarrow \left(\frac{r}{r_o}\right)^n \; &c_2 &\rightarrow \frac{Ra}{E\,Pr} \\
 \ff_3(r) &\rightarrow 1\; &c_3 &\rightarrow \frac{1}{E}\\
@@ -208,29 +193,24 @@ c_8&\rightarrow 0 &c_9 &\rightarrow 0.
 Note that our choice of $\ff_2(r)$ allows gravity to vary with radius based on the value of the exponent $n$, which has a default value of 0 in the code.  Note also that our definition of $Ra$ assumes fixed-temperature boundary conditions.  We might choose specify fixed-flux boundary conditions and/or an internal heating through a suitable choice $\ff_6(r)$, in which case the meaning of $Ra$ in our equation set changes, with $Ra$ denoting a flux Rayleigh number instead.  In addition, ohmic and viscous heating, which do not appear in the Boussinesq formulation, are turned off when this nondimensionalization is specified at runtime.   When these substitutions are made, Equations \ref{eq:momentum}--\ref{eq:induction} transform as follows.
 
 \begin{align*}
-\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
-                                                         +\frac{2}{E}\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
-                                                         \frac{Ra}{Pr}\left(\frac{r}{r_o}\right)^n\Theta\,\boldsymbol{\hat{r}} % buoyancy
-                                                         -\frac{1}{E}\boldsymbol{\nabla}P % pressure
-                                                         +\frac{1}{E\,Pm}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
-                                                         +\boldsymbol{\nabla}^2\boldsymbol{v} \;\;\; &\mathrm{Momentum}\\
-%
-%
-\left[\frac{\partial \Theta}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] &=
-                                             \frac{1}{Pr}\boldsymbol{\nabla}^2\Theta  &\mathrm{Thermal\; Energy}\\ % Diffusion
-%
-%
-\frac{\partial \boldsymbol{B}}{\partial t} &= \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}\right)+\frac{1}{Pm}\boldsymbol{\nabla}^2\boldsymbol{B} &\mathrm{Induction} \\
-%
-%
-%
-%
-%
-%
-\boldsymbol{\nabla}\cdot\boldsymbol{v}&=0 &\mathrm{Solenoidal\; Velocity\; Field}\\
-\boldsymbol{\nabla}\cdot\boldsymbol{B}&=0 &\mathrm{Solenoidal\; Magnetic\; Field}
+    \left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+     + \frac{2}{E}\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
+    \frac{Ra}{Pr}\left(\frac{r}{r_o}\right)^n\Theta\,\boldsymbol{\hat{r}} % buoyancy
+     - \frac{1}{E}\boldsymbol{\nabla}P % pressure
+     + \frac{1}{E\,Pm}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+     + \boldsymbol{\nabla}^2\boldsymbol{v} \;\;\; &\mathrm{Momentum}\\
+    %
+    %
+    \left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] &=
+    \frac{1}{Pr}\boldsymbol{\nabla}^2\Theta  &\mathrm{Thermal\; Energy}\\ % Diffusion
+    %
+    %
+    \frac{\partial \boldsymbol{B}}{\partial t} &= \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}\right)+\frac{1}{Pm}\boldsymbol{\nabla}^2\boldsymbol{B} &\mathrm{Induction} \\
+    %
+    %
+    \boldsymbol{\nabla}\cdot\boldsymbol{v}&=0 &\mathrm{Solenoidal\; Velocity\; Field}\\
+    \boldsymbol{\nabla}\cdot\boldsymbol{B}&=0 &\mathrm{Solenoidal\; Magnetic\; Field}
 \end{align*}
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,75 +219,62 @@ Note that our choice of $\ff_2(r)$ allows gravity to vary with radius based on t
 To run in nondimensional anelastic mode, you must set \textbf{reference\_type=3} in the Reference\_Namelist.  The reference state is assumed to be polytropic with a $\frac{1}{r^2}$ profile for gravity.  Transport coefficients $\nu$, $\kappa$, $\eta$ are assumed to be constant in radius.   When this mode is active, the following nondimensionalization is used (following Heimpel et al., 2016, \textit{Nat. Geo}, 9, 19):
 
 \begin{align*}
-\mathrm{Length} &\rightarrow L &\;\;\;\; \mathrm{(Shell\; Depth)} \\
-\mathrm{Time} &\rightarrow   \frac{1}{\Omega_0} &\;\;\;\; \mathrm{(Rotational\; Timescale)}\\
-\mathrm{Temperature} &\rightarrow T_o\equiv\hat{T}(r_\mathrm{max})&\;\;\;\; \mathrm{(Reference-State\; Temperature\; at\; Upper\; Boundary)} \\
-\mathrm{Density} &\rightarrow \rho_o\equiv\hat{\rho}(r_\mathrm{max})&\;\;\;\; \mathrm{(Reference-State\; Density\; at\; Upper\; Boundary)} \\
-\mathrm{Entropy} &\rightarrow \Delta{s}&\;\;\;\; \mathrm{(Entropy\; Constrast\; Across\; Shell)} \\
-\mathrm{Magnetic~Field} &\rightarrow \sqrt{\tilde{\rho}(r_\mathrm{max})\mu\eta\Omega_0}.
+    \mathrm{Length} &\rightarrow L &\;\;\;\; \mathrm{(Shell\; Depth)} \\
+    \mathrm{Time} &\rightarrow   \frac{1}{\Omega_0} &\;\;\;\; \mathrm{(Rotational\; Timescale)}\\
+    \mathrm{Temperature} &\rightarrow T_o\equiv\hat{T}(r_\mathrm{max})&\;\;\;\; \mathrm{(Reference-State\; Temperature\; at\; Upper\; Boundary)} \\
+    \mathrm{Density} &\rightarrow \rho_o\equiv\hat{\rho}(r_\mathrm{max})&\;\;\;\; \mathrm{(Reference-State\; Density\; at\; Upper\; Boundary)} \\
+    \mathrm{Entropy} &\rightarrow \Delta{s}&\;\;\;\; \mathrm{(Entropy\; Constrast\; Across\; Shell)} \\
+    \mathrm{Magnetic~Field} &\rightarrow \sqrt{\tilde{\rho}(r_\mathrm{max})\mu\eta\Omega_0}.
 \end{align*}
 
 When run in this mode, Rayleigh employs a polytropic background state, with an assumed $\frac{1}{r^2}$ variation in gravity.  These choices result in the functions $\ff_i$ and the constants $c_i$ (tildes indicate nondimensional reference-state variables):
-%\begin{eqnarray}
 \begin{align*}
-%c_1 &\rightarrow 2\Omega_0 \\
-%c_2 &\rightarrow 1 \\
-%c_3 &\rightarrow 1 \\
-%c_4 &\rightarrow \frac{1}{4\pi} \\
-%c_5 &\rightarrow 1 \\
-%c_6 &\rightarrow 1 \\
-%c_7 &\rightarrow 1 \\
-\ff_1(r) &\rightarrow \tilde{\rho}(r)\; &c_1 &\rightarrow 2 \\
-\ff_2(r) &\rightarrow \tilde{\rho(r)}\frac{r_\mathrm{max}^2}{r^2}\; &c_2 &\rightarrow \mathrm{Ra}^* \\
-\ff_3(r) &\rightarrow 1\; &c_3 &\rightarrow 1\\
-\ff_4(r) &\rightarrow \tilde{T}(r)\; &c_4 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pm}} \\
-\ff_5(r) &\rightarrow 1\; &c_5 &\rightarrow \mathrm{E} \\
-\ff_6(r) &\rightarrow Q(r)\; &c_6 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pr}}  \\
-\ff_7(r) &\rightarrow 1 \; &c_7 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pm}} \\
-c_8&\rightarrow \frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*} &c_9 &\rightarrow \frac{\mathrm{E}^2\,\mathrm{Di}}{\mathrm{Pm}^2\mathrm{Ra}^*}.
+    \ff_1(r) &\rightarrow \tilde{\rho}(r)\; &c_1 &\rightarrow 2 \\
+    \ff_2(r) &\rightarrow \tilde{\rho(r)}\frac{r_\mathrm{max}^2}{r^2}\; &c_2 &\rightarrow \mathrm{Ra}^* \\
+    \ff_3(r) &\rightarrow 1\; &c_3 &\rightarrow 1\\
+    \ff_4(r) &\rightarrow \tilde{T}(r)\; &c_4 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pm}} \\
+    \ff_5(r) &\rightarrow 1\; &c_5 &\rightarrow \mathrm{E} \\
+    \ff_6(r) &\rightarrow Q(r)\; &c_6 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pr}}  \\
+    \ff_7(r) &\rightarrow 1 \; &c_7 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pm}} \\
+    c_8&\rightarrow \frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*} &c_9 &\rightarrow \frac{\mathrm{E}^2\,\mathrm{Di}}{\mathrm{Pm}^2\mathrm{Ra}^*}.
 \end{align*}
 Two new nondimensional numbers appear in our equations. Di,  the dissipation number, is defined by
 \begin{equation}
-\mathrm{Di}= \frac{g_o\,\mathrm{L}}{c_\mathrm{P}\,T_o},
+    \mathrm{Di}= \frac{g_o\,\mathrm{L}}{c_\mathrm{P}\,T_o},
 \end{equation}
-where $g_o$ and $T_o$ are the gravitational acceleration and temperature at the outer boundary respectively.   Once more, the thermal anomoly $\Theta$ should be interpreted as entropy $s$.   The symbol Ra$^*$ is the modified Rayleigh number, given by
+where $g_o$ and $T_o$ are the gravitational acceleration and temperature at the outer boundary respectively. Once more, the thermal anomaly $\Theta$ should be interpreted as entropy $s$. The symbol Ra$^*$ is the modified Rayleigh number, given by
 \begin{equation}
-\mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}   %\frac{\partial \Theta}{\partial r}|_{r=rmin}
+    \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}   %\frac{\partial \Theta}{\partial r}|_{r=rmin}
 \end{equation}
-
-\noindent We arrive at the following nondimensionalized equations:
+We arrive at the following nondimensionalized equations:
 \begin{align*}
-\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
-                                                         +2\boldsymbol{\hat{z}}\times\boldsymbol{v}  &= % Coriolis
-                                                         \mathrm{Ra}^*\frac{r_\mathrm{max}^2}{r^2}\Theta\,\boldsymbol{\hat{r}} % buoyancy
-                                                         +\boldsymbol{\nabla}\left(\frac{P}{\tilde{\rho}(r)}\right) % pressure
-                                                         +\frac{\mathrm{E}}{\mathrm{Pm}\,\tilde{\rho}}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
-                                                         +\frac{\mathrm{E}}{\tilde{\rho(r)}}\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}} \;\;\; &\mathrm{Momentum}\\
-%
-%
-\tilde{\rho}(r)\,\tilde{T}(r)\left[\frac{\partial \Theta}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] &=
-                                             \frac{\mathrm{E}}{\mathrm{Pr}}\boldsymbol{\nabla}\cdot\left[\tilde{\rho}(r)\,\tilde{T}(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
-                                             +Q(r)   % Internal heating
-                                             +\frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*}\Phi(r,\theta,\phi)
-                                             +\frac{\mathrm{Di\,E^2}}{\mathrm{Pm}^2\mathrm{Ra}^*}\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2 &\mathrm{Thermal\; Energy}\\ % Ohmic Heating
-%
-%
-\frac{\partial \boldsymbol{B}}{\partial t} &= \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}-\frac{\mathrm{E}}{\mathrm{Pm}}\boldsymbol{\nabla}\times\boldsymbol{B}\,\right) &\mathrm{Induction} \\
-%
-%
-\mathcal{D}_{ij} &= 2\tilde{\rho}(r)\left[e_{ij}-\frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right] &\mathrm{Viscous\; Stress\; Tensor}\\
-%
-%
-\Phi(r,\theta,\phi) &= 2\,\tilde{\rho}(r)\left[e_{ij}e_{ij}-\frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] &\mathrm{Viscous\; Heating} \\
-%
-%
-\boldsymbol{\nabla}\cdot\left(\tilde{\rho}(r)\,\boldsymbol{v}\right)&=0 &\mathrm{Solenoidal\; Mass\; Flux}\\
-\boldsymbol{\nabla}\cdot\boldsymbol{B}&=0. &\mathrm{Solenoidal\; Magnetic\; Field}
+    \frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+     + 2\boldsymbol{\hat{z}}\times\boldsymbol{v}  &= % Coriolis
+    \mathrm{Ra}^*\frac{r_\mathrm{max}^2}{r^2}\Theta\,\boldsymbol{\hat{r}} % buoyancy
+     + \boldsymbol{\nabla}\left(\frac{P}{\tilde{\rho}(r)}\right) % pressure
+     + \frac{\mathrm{E}}{\mathrm{Pm}\,\tilde{\rho}}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+     + \frac{\mathrm{E}}{\tilde{\rho(r)}}\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}} \;\;\; &\mathrm{Momentum}\\
+    %
+    %
+    \tilde{\rho}(r)\,\tilde{T}(r)\left[\frac{\partial \Theta}{\partial t} + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] &=
+    \frac{\mathrm{E}}{\mathrm{Pr}}\boldsymbol{\nabla}\cdot\left[\tilde{\rho}(r)\,\tilde{T}(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
+    + Q(r)   % Internal heating
+    + \frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*}\Phi(r,\theta,\phi)
+    + \frac{\mathrm{Di\,E^2}}{\mathrm{Pm}^2\mathrm{Ra}^*}\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2 &\mathrm{Thermal\; Energy}\\ % Ohmic Heating
+    %
+    %
+    \frac{\partial \boldsymbol{B}}{\partial t} &= \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B}-\frac{\mathrm{E}}{\mathrm{Pm}}\boldsymbol{\nabla}\times\boldsymbol{B}\,\right) &\mathrm{Induction} \\
+    %
+    %
+    \mathcal{D}_{ij} &= 2\tilde{\rho}(r)\left[e_{ij} - \frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right] &\mathrm{Viscous\; Stress\; Tensor}\\
+    %
+    %
+    \Phi(r,\theta,\phi) &= 2\,\tilde{\rho}(r)\left[e_{ij}e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] &\mathrm{Viscous\; Heating} \\
+    %
+    %
+    \boldsymbol{\nabla}\cdot\left(\tilde{\rho}(r)\,\boldsymbol{v}\right)&=0 &\mathrm{Solenoidal\; Mass\; Flux}\\
+    \boldsymbol{\nabla}\cdot\boldsymbol{B}&=0. &\mathrm{Solenoidal\; Magnetic\; Field}
 \end{align*}
-
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Velocity field
@@ -315,258 +282,134 @@ where $g_o$ and $T_o$ are the gravitational acceleration and temperature at the 
 \section{Diagnostic Code Tables}
 The remainder of this document contains tables enumerating the menu codes necessary to specify diagnostic outputs in Rayleigh.
 \subsection{Velocity Field}
-Output quantities related to the velocity field, its gradients, and its associated mass flux $\ff_1\boldsymbol{v}$ are defined here.
+Output quantities related to the velocity field, its gradients, and its associated mass flux $\ff_1\boldsymbol{v}$ are defined here. The table below contains all available quantities related to the velocity field.
 
-
-\input table_header.tex
-\input velocity_field_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-
-
-\input table_header.tex
-\input velocity_field_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input velocity_field_table2.tex
-\hline
-\end{tabular}
-\end{table}
-
-
-\input table_header.tex
-\input mass_flux_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Vorticity Field
-\newpage
-\subsection{Vorticity}
-Codes associated with the vorticity field $\boldsymbol{\omega}$ are defined here.  The vorticity field $\boldsymbol{\omega}$ is given by
-\begin{equation}
-\boldsymbol{\omega}=\boldsymbol{\nabla}\times\boldsymbol{v}.
-\end{equation}
-
-\input table_header.tex
-\input vorticity_field_table0.tex
-\hline
-\end{tabular}
-\end{table}
+\input{./table_header.tex}
+\input{./velocity_field_table0.tex}
+\input{./velocity_field_table1.tex}
+\input{./velocity_field_table2.tex}
+\input{./table_footer.tex}
+The table below contains all available quantities related to the mass flux $\ff_1\boldsymbol{v}$.
+\input{./table_header.tex}
+\input{./mass_flux_table0.tex}
+\input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Kinetic Energy
-\newpage
+%% Vorticity Field
+\subsection{Vorticity}
+Codes associated with the vorticity field $\boldsymbol{\omega}$ are defined here. The vorticity field $\boldsymbol{\omega}$ is given by
+\begin{equation}
+    \boldsymbol{\omega}=\boldsymbol{\nabla}\times\boldsymbol{v}\,.
+\end{equation}
 
+\input{./table_header.tex}
+\input{./vorticity_field_table0.tex}
+\input{./table_footer.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Kinetic Energy
 \subsection{Kinetic Energy}
 Codes associated with the generalized kinetic energy density, $\frac{1}{2}\ff_1(r)\boldsymbol{v}^2$, are defined here.
-\input table_header.tex
-\input kinetic_energy_table0.tex
-\hline
-\end{tabular}
-\end{table}
+\input{./table_header.tex}
+\input{./kinetic_energy_table0.tex}
+\input{./table_footer.tex}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Thermal Field
-\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Thermal Field
 \subsection{Thermal Variables}
 Codes associated with the thermal variables $\Theta$ and $P$, and their gradients, are defined here.
+\input{./table_header.tex}
+\input{./thermal_field_table0.tex}
+\input{./thermal_field_table1.tex}
+\input{./table_footer.tex}
 
-\input table_header.tex
-\input thermal_field_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input thermal_field_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-% Thermal energy
-\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%% Thermal energy
 \subsection{thermal energy}
 Codes associated with the thermal energy density and the enthalpy are defined here. 
-
-\input table_header.tex
-\input thermal_energy_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Magnetic Field
-\newpage
-\subsection{Magnetic Field}
-Codes associated with the magnetic field $\boldsymbol{B}$ and its gradients appear here.
-\input table_header.tex
-\input magnetic_field_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input magnetic_field_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input magnetic_field_table2.tex
-\hline
-\end{tabular}
-\end{table}
+\input{./table_header.tex}
+\input{./thermal_energy_table0.tex}
+\input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Curl of B
-\newpage
-We use the shorthand $\boldsymbol{\mathcal{J}}$ to denote the curl of $\boldsymbol{B}$, namely
-\begin{equation}
-\boldsymbol{\mathcal{J}}\equiv\boldsymbol{\nabla}\times\boldsymbol{B}.
-\end{equation}
-\subsection{$\boldsymbol{\nabla}\times\boldsymbol{B}$}
-\input table_header.tex
-\input current_density_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Magnetic Energy
-\newpage
-
-\subsection{Magnetic Energy Density}
-Output codes related to the generalized magnetic energy density, $\frac{1}{2}c_4\boldsymbol{B}^2$, are defined here.
-
-\input table_header.tex
-\input magnetic_energy_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
-% Momentum Equation
-\newpage
-\subsection{momentum equation}
-
-All terms from the momentum equation, and their Reynolds decomposition, are defined here.
-
-\input table_header.tex
-\input momentum_equation_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input momentum_equation_table1.tex
-\hline
-\end{tabular}
-\end{table}
+%% Magnetic Field
+\subsection{Magnetic Field}
+Codes associated with the magnetic field $\boldsymbol{B}$ and its gradients appear here.
+\input{./table_header.tex}
+\input{./magnetic_field_table0.tex}
+\input{./magnetic_field_table1.tex}
+\input{./magnetic_field_table2.tex}
+\input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Thermal Energy Equation
-\newpage
+%% Curl of B
+We use the shorthand $\boldsymbol{\mathcal{J}}$ to denote the curl of $\boldsymbol{B}$, namely
+\begin{equation}
+    \boldsymbol{\mathcal{J}}\equiv\boldsymbol{\nabla}\times\boldsymbol{B}.
+\end{equation}
+\subsection{Current density $\boldsymbol{\nabla}\times\boldsymbol{B}$}
+\input{./table_header.tex}
+\input{./current_density_table0.tex}
+\input{./table_footer.tex}
 
-\subsection{thermal energy equation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Magnetic Energy
+\subsection{Magnetic Energy Density}
+Output codes related to the generalized magnetic energy density, $\frac{1}{2}c_4\boldsymbol{B}^2$, are defined here.
+\input{./table_header.tex}
+\input{./magnetic_energy_table0.tex}
+\input{./table_footer.tex}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+%% Momentum Equation
+\subsection{Momentum Equation}
+All terms from the momentum equation, and their Reynolds decomposition, are defined here.
+\input{./table_header.tex}
+\input{./momentum_equation_table0.tex}
+\input{./momentum_equation_table1.tex}
+\input{./table_footer.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Thermal Energy Equation
+\subsection{Thermal Energy Equation}
 Terms from the thermal energy equation, and their Reynolds decomposition, are defined here.
-
-\input table_header.tex
-\input thermal_equation_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input thermal_equation_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-
-\subsection{Induction Equation}
-
-Terms from the induction equation, and their Reynolds decomposition, are described here.
-
-\input table_header.tex
-\input induction_equation_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input induction_equation_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-
+\input{./table_header.tex}
+\input{./thermal_equation_table0.tex}
+\input{./thermal_equation_table1.tex}
+\input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Mean Angular Momentum Equation
-\newpage
+\subsection{Induction Equation}
+Terms from the induction equation, and their Reynolds decomposition, are described here.
+\input{./table_header.tex}
+\input{./induction_equation_table0.tex}
+\input{./induction_equation_table1.tex}
+\input{./table_footer.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Mean Angular Momentum Equation
 \subsection{Angular Momentum}
 Terms from the angular momentum equation and their associated fluxes are defined here.  Only those terms contributing to the axisymmetric mean are calculated.  Terms of form $a'\,\overline{a}$, which do not contribute to the mean, are omitted.
-\input table_header.tex
-\input amom_equation_table0.tex
-\hline
-\end{tabular}
-\end{table}
+\input{./table_header.tex}
+\input{./amom_equation_table0.tex}
+\input{./table_footer.tex}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Kinetic Energy Equation
-\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Kinetic Energy Equation
 \subsection{Kinetic Energy Equation}
 Terms appearing in the kinetic energy equation ($\boldsymbol{v}\cdot\frac{\partial \hat{\rho}\boldsymbol{v}}{\partial t}$) are described here.
+\input{./table_header.tex}
+\input{./ke_equation_table0.tex}
+\input{./ke_equation_table1.tex}
+\input{./table_footer.tex}
 
-\input table_header.tex
-\input ke_equation_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input ke_equation_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Magnetic Energy Equation
-\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Magnetic Energy Equation
 \subsection{Magnetic Energy Equation}
 Terms appearing in the Magnetic energy equation ($\boldsymbol{B}\cdot\frac{\partial \boldsymbol{B}}{\partial t}$) are described here.
-\input table_header.tex
-\input me_equation_table0.tex
-\hline
-\end{tabular}
-\end{table}
-
-\input table_header.tex
-\input me_equation_table1.tex
-\hline
-\end{tabular}
-\end{table}
-
-%\input table_header.tex
-%\input me_equation_table1.tex
-%\hline
-%\end{tabular}
-%\end{table}
-
-%\input me_table_test.tex
-
+\input{./table_header.tex}
+\input{./me_equation_table0.tex}
+\input{./me_equation_table1.tex}
+\input{./table_footer.tex}
 
 \end{document}
