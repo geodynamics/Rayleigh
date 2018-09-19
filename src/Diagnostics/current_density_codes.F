@@ -9,9 +9,9 @@
     Integer, Parameter :: jm_r = joffset+3      ! :tex: $\overline{\mathcal{J}}_r$
 
     ! Theta components (full, fluctuating, mean)
-    Integer, Parameter :: j_theta  = joffset+4      ! :tex: $\mathcal{J}_\theta$  
-    Integer, Parameter :: jp_theta = joffset+5      ! :tex: $\mathcal{J}_\theta'$   
-    Integer, Parameter :: jm_theta = joffset+6      ! :tex: $\overline{\mathcal{J}}_\theta$      
+    Integer, Parameter :: j_theta  = joffset+4      ! :tex: $\mathcal{J}_\theta$
+    Integer, Parameter :: jp_theta = joffset+5      ! :tex: $\mathcal{J}_\theta'$
+    Integer, Parameter :: jm_theta = joffset+6      ! :tex: $\overline{\mathcal{J}}_\theta$
 
     ! Phi components (full, fluctuating, mean)
     Integer, Parameter :: j_phi  = joffset+7    ! :tex: $\mathcal{J}_\phi$
@@ -30,9 +30,9 @@
     Integer, Parameter :: jm_r_sq = joffset+16      ! :tex: $\left(\overline{\mathcal{J}}_r\right)^2$
 
     ! Theta components (full, fluctuating, mean)
-    Integer, Parameter :: j_theta_sq  = joffset+17      ! :tex: $\left(\mathcal{J}_\theta\right)^2$  
-    Integer, Parameter :: jp_theta_sq = joffset+18      ! :tex: $\left(\mathcal{J}_\theta'\right)^2$   
-    Integer, Parameter :: jm_theta_sq = joffset+19      ! :tex: $\left(\overline{\mathcal{J}}_\theta\right)^2$      
+    Integer, Parameter :: j_theta_sq  = joffset+17      ! :tex: $\left(\mathcal{J}_\theta\right)^2$
+    Integer, Parameter :: jp_theta_sq = joffset+18      ! :tex: $\left(\mathcal{J}_\theta'\right)^2$
+    Integer, Parameter :: jm_theta_sq = joffset+19      ! :tex: $\left(\overline{\mathcal{J}}_\theta\right)^2$
 
     ! Phi components (full, fluctuating, mean)
     Integer, Parameter :: j_phi_sq  = joffset+20    ! :tex: $\left(\mathcal{J}_\phi\right)^2$

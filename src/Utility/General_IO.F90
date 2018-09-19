@@ -35,7 +35,7 @@ Contains
         arrdims = shape(array_data)
         rcheck = arrdims(1)
         ccheck = arrdims(2)
-        
+
         If (pfi%gcomm%rank .eq. 0) Then
             !Only one processes actually opens the file
             !After that, the contents of the array are broadcast across columns and rows
@@ -54,8 +54,8 @@ Contains
                     Read(15)pi_integer
                 Endif
             Endif
-                    
-            If (pi_integer .eq. 314) Then 
+
+            If (pi_integer .eq. 314) Then
                 Read(15)nrows
                 Read(15)ncolumns
                 If ( (nrows*ncolumns) .gt. (rcheck*ccheck) ) Then
@@ -65,7 +65,7 @@ Contains
                     Write(6,*)'File nrows     : ', nrows
                     Write(6,*)'Array ncolumns : ', ccheck
                     Write(6,*)'Array nrows    : ', rcheck
-                    Write(6,*)'Setting array contents to zero.'              
+                    Write(6,*)'Setting array contents to zero.'
                     array_data(:,:) = 0.0d0
                 Else
                     Read(15)array_data(1:nrows,1:ncolumns)

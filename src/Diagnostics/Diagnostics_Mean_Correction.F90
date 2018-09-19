@@ -99,7 +99,7 @@ Contains
         If (compute_quantity(vp_grad_vp_theta)) compute_fluct_fluct = .true.
         If (compute_quantity(vp_grad_vp_phi))   compute_fluct_fluct = .true.
         If (compute_quantity(advec_work_ppp))   compute_fluct_fluct = .true.
-        If (compute_quantity(advec_work_mpp))   compute_fluct_fluct = .true. 
+        If (compute_quantity(advec_work_mpp))   compute_fluct_fluct = .true.
 
         If (compute_fluct_fluct) Then
 
@@ -146,7 +146,7 @@ Contains
 
             !If (compute_quantity(vm_grad_vm_phi) .or. compute_quantity(samom_advec_mm) &
             !    .or. compute_quantity(advec_work_mmm)) Then
- 
+
             !    ncorrect = ncorrect+1
             !    aforcemm_phi = ncorrect
 
@@ -181,7 +181,7 @@ Contains
             lforcepp_r = ncorrect
 
         Endif
-        
+
         !///////////////////////////////////////////////////////////////////////////////////
         If (ncorrect .gt. 0) Then
             Allocate(mean_3dbuffer(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max,1:ncorrect))
@@ -276,11 +276,11 @@ Contains
         Endif
 
 
-        ! -- v' v' 
+        ! -- v' v'
         compute_fluct_fluct = .false.
         If (compute_quantity(vp_grad_vp_r))     compute_fluct_fluct = .true.
         If (compute_quantity(advec_work_ppp))     compute_fluct_fluct = .true.
-        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true. 
+        If (compute_quantity(advec_work_mpp))     compute_fluct_fluct = .true.
 
         If (compute_fluct_fluct) Then
             Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices=vindex,bindices=vindex)
@@ -333,7 +333,7 @@ Contains
             !Endif
 
             !If (compute_quantity(vm_grad_vm_phi) .or. compute_quantity(samom_advec_mm) &
-            !    .or. compute_quantity(advec_work_mmm)) Then 
+            !    .or. compute_quantity(advec_work_mmm)) Then
             !    DO_PSI
             !        mean_3dbuffer(PSI,aforcemm_phi) = cbuffer(PSI,3)*ref%density(r)
             !    END_DO
@@ -375,7 +375,7 @@ Contains
 
                 !Add geometric terms to make this { Del^2{u} }_r
                 del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-                        buffer(PSI,vr) + & 
+                        buffer(PSI,vr) + &
                         buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t) + &
                         ovstheta(t)*buffer(PSI,dvpdp) )
 
@@ -389,7 +389,7 @@ Contains
                 estress = buffer(PSI,dvrdr)-One_Third*buffer(PSI,vr)*ref%dlnrho(r)
 
                 mean_3dbuffer(PSI,vforce_r) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
-                
+
 
             END_DO
 
@@ -438,7 +438,7 @@ Contains
         if (compute_mean_correct) then
             !Write(6,*)'Allocated: ', allocated(mean_3dbuffer), allocated(mean_ell0buffer)
 
-            Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)        
+            Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)
         endif
     End Subroutine Mean_Correction
 
@@ -475,7 +475,7 @@ Contains
         coriolis_term = ref%Coriolis_Coeff
         DO_PSI
             qty(PSI) = - (coriolis_term*costheta(t)*buffer(PSI,vtheta) &
-				       + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r)
+                       + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r)
         END_DO
     End Subroutine Compute_Coriolis_Force_Phi
 

@@ -32,21 +32,21 @@ Module Diagnostics_Second_Derivatives
 
     Integer, Allocatable :: ddindmap(:,:)
     Integer :: nddfields
-    Logical :: compute_vr_dd   = .false. 
-    Logical :: compute_vt_dd   = .false. 
+    Logical :: compute_vr_dd   = .false.
+    Logical :: compute_vt_dd   = .false.
     Logical :: compute_vp_dd   = .false.
 
     Logical :: compute_pvar_dd = .false.
     Logical :: compute_tvar_dd = .false.
 
-    Logical :: compute_br_dd   = .false. 
-    Logical :: compute_bt_dd   = .false. 
+    Logical :: compute_br_dd   = .false.
+    Logical :: compute_bt_dd   = .false.
     Logical :: compute_bp_dd   = .false.
 Contains
 
     Subroutine Init_Derivative_Logic()
         IMPLICIT NONE
-        Integer :: i 
+        Integer :: i
         !///////////////////////////////////////////////////////
         ! Check to see if the user has specified any of the second
         ! derivatives individually
@@ -155,14 +155,14 @@ Contains
         ! different compute_xx_dd variables should be set to true.
 
         If (compute_vr_dd) need_second_derivatives = .true.
-        If (compute_vt_dd) need_second_derivatives = .true.       
-        If (compute_vp_dd) need_second_derivatives = .true. 
+        If (compute_vt_dd) need_second_derivatives = .true.
+        If (compute_vp_dd) need_second_derivatives = .true.
 
-        If (compute_tvar_dd) need_second_derivatives = .true.       
-        If (compute_pvar_dd) need_second_derivatives = .true. 
+        If (compute_tvar_dd) need_second_derivatives = .true.
+        If (compute_pvar_dd) need_second_derivatives = .true.
 
         If (compute_br_dd) need_second_derivatives = .true.
-        If (compute_bt_dd) need_second_derivatives = .true.       
+        If (compute_bt_dd) need_second_derivatives = .true.
         If (compute_bp_dd) need_second_derivatives = .true.
 
         ! Turbulent KE generation
@@ -209,17 +209,17 @@ Contains
         nddfields = 0   ! Number of fields whose second derivatives we want
         ndind = 0       ! internal indexing variable
 
-        IF (compute_vr_dd) nddfields = nddfields +1        
-        IF (compute_vt_dd) nddfields = nddfields +1  
-        IF (compute_vp_dd) nddfields = nddfields +1  
+        IF (compute_vr_dd) nddfields = nddfields +1
+        IF (compute_vt_dd) nddfields = nddfields +1
+        IF (compute_vp_dd) nddfields = nddfields +1
 
         IF (compute_tvar_dd) nddfields = nddfields +1
         IF (compute_pvar_dd) nddfields = nddfields +1
 
         IF (magnetism) THEN
-            IF (compute_br_dd) nddfields = nddfields +1        
-            IF (compute_bt_dd) nddfields = nddfields +1  
-            IF (compute_bp_dd) nddfields = nddfields +1  
+            IF (compute_br_dd) nddfields = nddfields +1
+            IF (compute_bt_dd) nddfields = nddfields +1
+            IF (compute_bp_dd) nddfields = nddfields +1
         ENDIF
 
 
@@ -297,9 +297,9 @@ Contains
 
 
 
-	    ddfcount(1,1) = nddfields*4 ! config 1a
-	    ddfcount(2,1) = nddfields*4 ! 2a
-	    ddfcount(3,1) = nddfields*7 ! 3a
+        ddfcount(1,1) = nddfields*4 ! config 1a
+        ddfcount(2,1) = nddfields*4 ! 2a
+        ddfcount(3,1) = nddfields*7 ! 3a
         ddfcount(3,2) = nddfields*2 ! 3b
         ddfcount(2,2) = nddfields*2 ! 2b
         ddfcount(1,2) = nddfields*4 ! 1b
@@ -314,7 +314,7 @@ Contains
 
     Subroutine Compute_Second_Derivatives(inbuffer)
         Implicit None
-        INTEGER :: i,j, imi, mp, m 
+        INTEGER :: i,j, imi, mp, m
         INTEGER :: r,k, t
         Real*8, Intent(InOut) :: inbuffer(1:,my_r%min:,my_theta%min:,1:)
         Type(rmcontainer3D), Allocatable :: ddtemp(:)
@@ -339,7 +339,7 @@ Contains
         ! 11) FFT, correct for sintheta factor, compute means and fluctuations
 
         ! When this routine is complete, the contents of d2buffer%p3a will be
-        ! [   1 : N  ] -- workspace; 
+        ! [   1 : N  ] -- workspace;
         ! [ N+1 : 2N ] -- dxdtdt
         ! [2N+1 : 3N ] -- dxdrdr
         ! [3N+1 : 4N ] -- dxdrdt
@@ -359,7 +359,7 @@ Contains
         !///////////////////////////////////////////////////////////
         ! Steps 2-3:  Load radial and theta derivatives
         Do i = 1, nddfields*2
-            d2buffer%p3b(:,:,:,ddindmap(1,i)) = inbuffer(:,:,:,ddindmap(2,i)) 
+            d2buffer%p3b(:,:,:,ddindmap(1,i)) = inbuffer(:,:,:,ddindmap(2,i))
         Enddo
 
         !Write(6,*)'Steps 1-3 complete.'
@@ -367,7 +367,7 @@ Contains
         !////////////////////////////////////////////////////////////////
         ! Step 4:  Move to p1b/p1a configuration
         Call fft_to_spectral(d2buffer%p3b, rsc = .true.)
-        Call d2buffer%reform()                          
+        Call d2buffer%reform()
         Call d2buffer%construct('s2b')
         Call Legendre_Transform(d2buffer%p2b,d2buffer%s2b)
         Call d2buffer%deconstruct('p2b')
@@ -380,7 +380,7 @@ Contains
         Call d2buffer%construct('p1a')
         Call gridcp%To_Spectral(d2buffer%p1b,d2buffer%p1a)
         Call gridcp%dealias_buffer(d2buffer%p1a)
-        d2buffer%p1b = 0.0 
+        d2buffer%p1b = 0.0
         d2buffer%config='p1a'
 
         !Write(6,*)'Steps 4 complete.'
@@ -401,7 +401,7 @@ Contains
         !///////////////////////////////////////////////////////////////
         ! Step 7:  Move to s2a & overwrite dxdt with sintheta*{dxdtdt}
         Call d2buffer%reform()
-        
+
         !Write(6,*)'Step 7 reformation complete'
 
         Call Allocate_rlm_Field(ddtemp)
@@ -417,20 +417,20 @@ Contains
         Enddo
 
         !Write(6,*)'Step 7 derivatves complete'
-        
+
         Call DeAllocate_rlm_Field(ddtemp)
 
         !Write(6,*)'Step 7 deallocation complete'
 
-		Call d2buffer%construct('p2a')
-		Call Legendre_Transform(d2buffer%s2a,d2buffer%p2a)
-		Call d2buffer%deconstruct('s2a')
-		d2buffer%config = 'p2a'	
+        Call d2buffer%construct('p2a')
+        Call Legendre_Transform(d2buffer%s2a,d2buffer%p2a)
+        Call d2buffer%deconstruct('s2a')
+        d2buffer%config = 'p2a'
 
         !Write(6,*)'Step 7 complete.'
 
         !/////////////////////////////////////////////////////////////////////
-        !  Steps 8-10 : phi derivatives        
+        !  Steps 8-10 : phi derivatives
         Call d2buffer%reform() ! move to p3a
 
         ! Ordering of fields in buffer is now dxdr, sintheta*{dxdtdt}, dxdrdr, dxdrdt
@@ -453,7 +453,7 @@ Contains
         !Copy dxdp into dxdr space, then calculate dxdpdp
         Do i = 1, nddfields
             j = i+nddfields*5
-            d2buffer%p3a(:,:,:,i) = d2buffer%p3b(:,:,:,i) 
+            d2buffer%p3a(:,:,:,i) = d2buffer%p3b(:,:,:,i)
 
             Call d_by_dphi(d2buffer%p3a,i,j)
         Enddo
@@ -461,7 +461,7 @@ Contains
         !Copy dxdt into dxdr space, then calculate dxdtdp
         Do i = 1, nddfields
             j = i+nddfields*6
-            d2buffer%p3a(:,:,:,i) = d2buffer%p3b(:,:,:,i+nddfields) 
+            d2buffer%p3a(:,:,:,i) = d2buffer%p3b(:,:,:,i+nddfields)
             Call d_by_dphi(d2buffer%p3a,i,j)
         Enddo
 
@@ -475,9 +475,9 @@ Contains
 
         ! Convert sintheta*{dxdtdt} to dxdtdt
         Do i = nddfields+1,nddfields*2
-		    DO_PSI
-			    d2buffer%p3a(PSI,i) = d2buffer%p3a(PSI,i)*csctheta(t)	
-		    END_DO
+            DO_PSI
+                d2buffer%p3a(PSI,i) = d2buffer%p3a(PSI,i)*csctheta(t)
+            END_DO
         Enddo
         !D2buffer is now initialized.  Ordering of fields is:
         ! [dxdt], dxdtdt,dxdrdr,dxdrdt, dxdrdp, dxdpdp, dxdtdp
@@ -494,50 +494,50 @@ Contains
 
         DO j = 1,nddfields*7
             DO_PSI
-                d2_fbuffer(PSI,j) = d2buffer%p3a(PSI,j) - d2_m0(PSI2,j) 
+                d2_fbuffer(PSI,j) = d2buffer%p3a(PSI,j) - d2_m0(PSI2,j)
             END_DO
         ENDDO
 
         !Write(6,*)'Step 11 complete.'
     End Subroutine Compute_Second_Derivatives
 
-	Subroutine Allocate_rlm_Field(arr)
-		Implicit None
-		Type(rmcontainer3D), Intent(InOut), Allocatable :: arr(:)
-		Integer :: mp,m
+    Subroutine Allocate_rlm_Field(arr)
+        Implicit None
+        Type(rmcontainer3D), Intent(InOut), Allocatable :: arr(:)
+        Integer :: mp,m
 
 
-		Allocate(arr(my_mp%min:my_mp%max))
-		Do mp = my_mp%min, my_mp%max
-			m = m_values(mp)
-			Allocate(arr(mp)%data(m:l_max,my_r%min:my_r%max,1:2))
-			arr(mp)%data(:,:,:) = 0.0d0
-		Enddo
-	End Subroutine Allocate_rlm_Field
+        Allocate(arr(my_mp%min:my_mp%max))
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            Allocate(arr(mp)%data(m:l_max,my_r%min:my_r%max,1:2))
+            arr(mp)%data(:,:,:) = 0.0d0
+        Enddo
+    End Subroutine Allocate_rlm_Field
 
-	Subroutine DeAllocate_rlm_Field(arr)
-		Implicit None
-		Type(rmcontainer3D), Intent(InOut), Allocatable :: arr(:)
-		Integer :: mp
-		Do mp = my_mp%min, my_mp%max
-			DeAllocate(arr(mp)%data)
-		Enddo
-		DeAllocate(arr)
-	End Subroutine DeAllocate_rlm_Field
+    Subroutine DeAllocate_rlm_Field(arr)
+        Implicit None
+        Type(rmcontainer3D), Intent(InOut), Allocatable :: arr(:)
+        Integer :: mp
+        Do mp = my_mp%min, my_mp%max
+            DeAllocate(arr(mp)%data)
+        Enddo
+        DeAllocate(arr)
+    End Subroutine DeAllocate_rlm_Field
 
-    Subroutine Set_DD_Indices(iind, nskip, iindmap, & 
+    Subroutine Set_DD_Indices(iind, nskip, iindmap, &
                                      dxdrdr, dxdrdt, dxdrdp, &
                                      dxdtdt, dxdtdp, dxdpdp, &
                                        dxdr,   dxdt, dxdp)
         ! Sets indexing within indmap and assigned values to
-        ! dxdidj consistent with the logic used in 
+        ! dxdidj consistent with the logic used in
         ! Compute_Second_Derivatives()
         ! [ N+1 : 2N ] -- dxdtdt
         ! [2N+1 : 3N ] -- dxdrdr
         ! [3N+1 : 4N ] -- dxdrdt
         ! [4N+1 : 5N ] -- dxdrdp
         ! [5N+1 : 6N ] -- dxdpdp
-        ! [6N+1 : 7N ] -- dxdtdp                                           
+        ! [6N+1 : 7N ] -- dxdtdp
         Implicit None
         INTEGER, Intent(In)    :: iind, nskip
         INTEGER, INTENT(OUT)   :: dxdtdt, dxdrdr, dxdrdt

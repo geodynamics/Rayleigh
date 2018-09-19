@@ -101,7 +101,7 @@ Contains
                     tmp1(PSI) = tmp1(PSI)+qty(PSI)*m0_values(PSI2,vtheta)
                 END_DO
             Endif
-        Endif       
+        Endif
 
         If (compute_quantity(jm_cross_bm_phi) .or. compute_quantity(samom_lorentz_mm) &
             .or. compute_quantity(mag_work_mmm)) Then

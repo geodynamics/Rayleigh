@@ -117,11 +117,11 @@ Contains
 
             !Initial Conditions
             init_type = 1
-            If (init_remember .eq. -1) Then 
+            If (init_remember .eq. -1) Then
                  ! Allow for restarts
                  init_type = -1
                  restart_iter = restart_remember
-            Endif            
+            Endif
 
             !Reference_Namelist
             Ekman_Number = 1.0d-3
@@ -166,12 +166,12 @@ Contains
             !Initial Conditions
             init_type = 1
             magnetic_init_type = 1
-            If ( (init_remember .eq. -1) .or. (minit_remember .eq. -1) ) Then 
+            If ( (init_remember .eq. -1) .or. (minit_remember .eq. -1) ) Then
                  ! Allow for restarts (assume hydro and mhd are both restarted)
                  init_type = -1
                  magnetic_init_type = -1
                  restart_iter = restart_remember
-            Endif            
+            Endif
 
             !Reference_Namelist
             Ekman_Number = 1.0d-3
@@ -192,7 +192,7 @@ Contains
             ! Domain Size
             rmin = 2.45d9
             rmax = 7.0d9
-            
+
 
             !Physical Controls
             rotation = .true.
@@ -216,11 +216,11 @@ Contains
 
             !Initial Conditions
             init_type = 6
-            If (init_remember .eq. -1) Then 
+            If (init_remember .eq. -1) Then
                  ! Allow for restarts
                  init_type = -1
                  restart_iter = restart_remember
-            Endif            
+            Endif
 
             !Reference_Namelist
             reference_type = 2
@@ -247,7 +247,7 @@ Contains
             ! Domain Size
             rmin = 2.45d9
             rmax = 7.0d9
-            
+
 
             !Physical Controls
             rotation = .true.
@@ -277,12 +277,12 @@ Contains
             temp_w = 0.01d4
             conductive_profile=.true.
 
-            If ( (init_remember .eq. -1) .or. (minit_remember .eq. -1) ) Then 
+            If ( (init_remember .eq. -1) .or. (minit_remember .eq. -1) ) Then
                  ! Allow for restarts (assume hydro and mhd are both restarted)
                  init_type = -1
                  magnetic_init_type = -1
                  restart_iter = restart_remember
-            Endif       
+            Endif
 
 
             !Reference_Namelist
@@ -333,8 +333,8 @@ Contains
             benchmark_name = 'Christensen et al. 2001  (Non-MHD, Case 0)'
 
             drift_sign = 1 ! Prograde Drift
-            integration_interval = 100  
-            report_interval = 10000  
+            integration_interval = 100
+            report_interval = 10000
             max_numt = report_interval/integration_interval
             mag_factor = 1.0d0/(2*ekman_number*magnetic_prandtl_number)
             msymm = 4
@@ -348,7 +348,7 @@ Contains
             report_names(2) = '  Temperature     : '
             report_names(3) = '  Vphi            : '
             report_names(4) = '  Drift Frequency : '
-            
+
             !Suggested values from Jones et al. 2000
             suggested_vals(1) = 58.348d0
             suggested_vals(2) = 0.42812d0
@@ -363,8 +363,8 @@ Contains
             benchmark_name = 'Christensen et al. 2001  (MHD, Case 1)'
 
             drift_sign = -1 ! Retrograde Drift
-            integration_interval = 100 !100 
-            report_interval = 10000 ! 10000 
+            integration_interval = 100 !100
+            report_interval = 10000 ! 10000
             max_numt = report_interval/integration_interval
             mag_factor = 1.0d0/(2*ekman_number*magnetic_prandtl_number)
             msymm = 4
@@ -380,7 +380,7 @@ Contains
             report_names(4) = '  Vphi            : '
             report_names(5) = '  Btheta          : '
             report_names(6) = '  Drift Frequency : '
-            
+
             !Suggested values from Jones et al. 2000
             suggested_vals(1) = 30.773d0
             suggested_vals(2) = 626.41d0
@@ -396,8 +396,8 @@ Contains
             benchmark_name = 'Jones et al. 2001  (Hydrodynamic Case)'
 
             drift_sign = 1 ! Prograde Drift
-            integration_interval = 100 !100 
-            report_interval = 10000 ! 10000 
+            integration_interval = 100 !100
+            report_interval = 10000 ! 10000
             max_numt = report_interval/integration_interval
             msymm = 19
             num_rep = 6
@@ -413,7 +413,7 @@ Contains
             report_names(4) = '  Entropy         : '
             report_names(5) = '  Vphi            : '
             report_names(6) = '  Drift Frequency : '
-            
+
             !Suggested values from Jones et al. 2000
             suggested_vals(1) = 5.57028d35
             suggested_vals(2) = 6.38099d34
@@ -429,8 +429,8 @@ Contains
             benchmark_name = 'Jones et al. 2001  (Steady Dynamo Case)'
 
             drift_sign = 1 ! Prograde Drift
-            integration_interval = 100 
-            report_interval = 10000  
+            integration_interval = 100
+            report_interval = 10000
             max_numt = report_interval/integration_interval
             msymm = 7
             num_rep = 10
@@ -451,7 +451,7 @@ Contains
             report_names(9) = '  Btheta          : '
             report_names(10) = '  Drift Frequency : '
 
-            
+
             !Suggested values from Jones et al. 2000
             suggested_vals(1) = 8.03623d36
             suggested_vals(2) = 1.15318d36
@@ -478,7 +478,7 @@ Contains
         If (benchmark_integration_interval .gt. 0) Then
             If (benchmark_report_interval .gt. 0) Then
                 integration_interval = benchmark_integration_interval
-                report_interval = benchmark_report_interval 
+                report_interval = benchmark_report_interval
                 max_numt = report_interval/integration_interval
             Endif
         Endif
@@ -513,7 +513,7 @@ Contains
         have_theta_two = .false.
         have_theta_one = .false.
         have_strip(1:4) = .false.
-    
+
 
         If ((r_one .le. my_r%max) .and. (r_one .ge. my_r%min) ) have_r_one = .true.
         If ((r_two .le. my_r%max) .and. (r_two .ge. my_r%min) ) have_r_two = .true.
@@ -533,25 +533,25 @@ Contains
 
 
 
-        If (my_rank .eq. 0) Then 
+        If (my_rank .eq. 0) Then
             Allocate(strips(1:n_phi,1:nobs))
             Allocate(observations(1:nobs))
             Allocate(obs_series(1:max_numt,1:nobs))
             Allocate(time_series(1:max_numt,1:num_int))  ! Possible that only rank 0 needs these -- check
-            Allocate(time_saves(1:max_numt)) 
-            Allocate(iter_saves(1:max_numt))  
+            Allocate(time_saves(1:max_numt))
+            Allocate(iter_saves(1:max_numt))
             Allocate(drifts(1:max_numt,1:2))
             Allocate(xnow(1:msymm),xlast(1:msymm),xref(1:msymm))
 
             Do p = 0, (npcol*nprow)-1
-		        your_row_rank = mod(p,nprow)
-		        your_col_rank = p/nprow
+                your_row_rank = mod(p,nprow)
+                your_col_rank = p/nprow
 
                 your_r_min = pfi%all_1p(your_col_rank)%min
-                your_r_max = pfi%all_1p(your_col_rank)%max 
+                your_r_max = pfi%all_1p(your_col_rank)%max
                 If ((r_one .le. your_r_max) .and. (r_one .ge. your_r_min) ) Then
                     your_theta_min = pfi%all_2p(your_row_rank)%min
-                    your_theta_max = pfi%all_2p(your_row_rank)%max 
+                    your_theta_max = pfi%all_2p(your_row_rank)%max
                     If ((theta_one .le. your_theta_max) .and. &
                         &  (theta_one .ge. your_theta_min) ) Then
 
@@ -567,7 +567,7 @@ Contains
                 Endif
                 If ((r_two .le. your_r_max) .and. (r_two .ge. your_r_min) ) Then
                     your_theta_min = pfi%all_2p(your_row_rank)%min
-                    your_theta_max = pfi%all_2p(your_row_rank)%max 
+                    your_theta_max = pfi%all_2p(your_row_rank)%max
                     If ((theta_one .le. your_theta_max) .and. &
                         &  (theta_one .ge. your_theta_min) ) Then
 
@@ -597,7 +597,7 @@ Contains
         Real*8 :: rel_diff, mean_value, sdev_value
 
         Integer :: i,p,t,r, funit, iter_start, iter_end
-        Real*8, Allocatable :: ell0_values(:,:), volume_integrals(:), volume_sdev(:)	
+        Real*8, Allocatable :: ell0_values(:,:), volume_integrals(:), volume_sdev(:)
         Real*8, Allocatable :: qty(:,:,:,:), obs_sdev(:)
         Character*120 :: report_file
 
@@ -615,7 +615,7 @@ Contains
 
 
             Allocate(qty(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:num_int))
-            
+
             qty(:,:,:,:) = 0.0d0
 
 
@@ -629,10 +629,10 @@ Contains
                         qty(p,r,t,1) = qty(p,r,t,1)*ref%density(r)*0.5d0
                     Enddo
                 Enddo
-            Enddo                
+            Enddo
 
 
-            !Zonal KE        
+            !Zonal KE
             Do t = my_theta%min, my_theta%max
                 Do r = my_r%min, my_r%max
                     ! compute mean v_phi here
@@ -658,7 +658,7 @@ Contains
                     Enddo
                     tmp = tmp*over_n_phi
                     tmp2 = tmp2*over_n_phi
-                    tmp = 0.5d0*ref%density(r)*(tmp**2+tmp2**2)                       
+                    tmp = 0.5d0*ref%density(r)*(tmp**2+tmp2**2)
                     qty(:,r,t,3) = tmp
                 Enddo
             Enddo
@@ -697,7 +697,7 @@ Contains
                         Enddo
                         tmp = tmp*over_n_phi
                         tmp2 = tmp2*over_n_phi
-                        tmp = (tmp**2+tmp2**2)                       
+                        tmp = (tmp**2+tmp2**2)
                         qty(:,r,t,6) = tmp
                     Enddo
                 Enddo
@@ -714,7 +714,7 @@ Contains
             DeAllocate(ell0_values)
 
 
-  
+
 
             !////////////////////////////////////////////////////////
             Call Assemble_Strips(buffer)
@@ -744,10 +744,10 @@ Contains
 
 
 
-                numt_ind = numt_ind+1   
-                global_count = MIN(global_count+1, max_numt)            
+                numt_ind = numt_ind+1
+                global_count = MIN(global_count+1, max_numt)
 
-                !The first drift measurement is always garbage 
+                !The first drift measurement is always garbage
                 !  - duplicate 2nd measurement for averaging purposes
                 If (global_count .eq. 2) drifts(1,1:2) = drifts(2,1:2)
 
@@ -757,7 +757,7 @@ Contains
                     ! Re-task the volume_integrals array
                     Do i = 1, num_int
                         Call get_moments(time_series(1:global_count,i),mean_value,sdev_value)
-                        volume_integrals(i) = mean_value ! SUM(time_series(1:global_count,i))/global_count  
+                        volume_integrals(i) = mean_value ! SUM(time_series(1:global_count,i))/global_count
                         volume_sdev(i) = sdev_value
                     Enddo
                     Do i = 1, nobs
@@ -872,7 +872,7 @@ Contains
                         report_vals(9) = observations(4)
 
                         !Btheta can be either positive or negative.
-                        !If it's negative, switch to positive so that 
+                        !If it's negative, switch to positive so that
                         !relative error makes sense.
                         If (report_vals(9) .lt. 0.0d0) Then
                             report_vals(9) = -report_vals(9)
@@ -917,12 +917,12 @@ Contains
         Integer, Allocatable :: obs_inds(:)
 
         ! At the end of this routine, rank zero will have
-        ! All four slices in memory 
+        ! All four slices in memory
         Allocate(all_strips(1:n_phi,1:nobs,4))
         Allocate(obs_inds(1:nobs))
         obs_inds(1) = vr
         obs_inds(2) = vphi
-        obs_inds(3) = tvar 
+        obs_inds(3) = tvar
         if (magnetism) obs_inds(4) = btheta
 
         indst(:) = 1
@@ -952,7 +952,7 @@ Contains
                     indst(3) = j
                     Call ISend(all_strips, sirqs(j),n_elements = ndata, dest = 0, &
                         &  tag = btags(j), grp = pfi%gcomm)
-                Endif                
+                Endif
             Endif
         Enddo
 
@@ -971,7 +971,7 @@ Contains
             Enddo
 
 
-                    
+
             strips(:,:) = 0.0d0
             Do j = 1, num_strips
                 Do i = 1, nobs
@@ -990,7 +990,7 @@ Contains
         !Conduct point-wise observations of T, u_phi, and b_theta
         ! Observations taken where vr = 0 and dvr/dphi > 0
         ! Also calculates the drift velocity.
-        ! There is a lot of (somewhat) confusing logic here related to 
+        ! There is a lot of (somewhat) confusing logic here related to
         ! dealing with the drift of vr=0 points needed to
         ! calculate the drift velocity properly
         Real*8, Intent(In) :: time_in
@@ -999,7 +999,7 @@ Contains
         Real*8 :: domegadt2, domegadt
         Real*8 :: delta_time, delta_time_pair, xadd, thisx
         Real*8, Allocatable :: vsave(:,:)
-        Logical :: adjustx 
+        Logical :: adjustx
         Allocate(vsave(1:msymm,1:nobs))
         xind = 1
         im1 = n_phi
@@ -1015,7 +1015,7 @@ Contains
                     x = -vrlast/dvr  ! zero crossing (relative to im1 = 0)
                     xnow(xind) = im1+x
                     If (xnow(xind) .gt. n_phi) xnow(xind) = xnow(xind)-n_phi ! x is always between 0 and n_phi
-                    If (xnow(xind) .lt. 0) xnow(xind) = xnow(xind)+n_phi 
+                    If (xnow(xind) .lt. 0) xnow(xind) = xnow(xind)+n_phi
                     Do j = 1, nobs
                         ! Linearly interpolate to find the values at the zero crossing of vr
                         ! Interpolated vr is zero by definition -- good sanity check to save
@@ -1032,7 +1032,7 @@ Contains
 
         If (xind .ne. (msymm+1)) Write(6,*)'ISSUE!'
 
-        Do i = 1, nobs 
+        Do i = 1, nobs
             observations(i) = SUM(vsave(:,i))/msymm
         Enddo
 
@@ -1056,7 +1056,7 @@ Contains
         domegadt2 = 0.0d0
         xadd = n_phi/dble(msymm)
 
-        
+
         Do i = 1, xind-1
             thisx = xnow(i)
             If (adjustx) Then
@@ -1082,23 +1082,23 @@ Contains
     End Subroutine Point_Observations
 
 
-	Subroutine Write_Array(arr,filename)
-		Implicit None
-		Character*120, Optional, Intent(In) :: filename
-		Integer :: i,j,sig = 314, nx,ny
+    Subroutine Write_Array(arr,filename)
+        Implicit None
+        Character*120, Optional, Intent(In) :: filename
+        Integer :: i,j,sig = 314, nx,ny
         Real*8, Intent(In) :: arr(1:,1:)
         nx = size(arr,1)
         ny = size(arr,2)
 
-		Open(unit=15,file=filename,form='unformatted', status='replace',access='stream')
+        Open(unit=15,file=filename,form='unformatted', status='replace',access='stream')
         Write(15)sig
-		Write(15)nx
+        Write(15)nx
         Write(15)ny
-		Write(15)((arr(i,j),i=1,nx),j = 1, ny)
+        Write(15)((arr(i,j),i=1,nx),j = 1, ny)
 
-		Close(15)
+        Close(15)
 
-	End Subroutine Write_Array
+    End Subroutine Write_Array
     Subroutine Get_Moments(arr,arr_mean,arr_sdev)
         Implicit None
         Real*8, Intent(In) :: arr(1:)
@@ -1113,7 +1113,7 @@ Contains
         Enddo
         arr_mean = arr_mean/n
 
-        arr_sdev = 0.0d0    
+        arr_sdev = 0.0d0
         Do i = 1, n
             arr_sdev = arr_sdev+(arr(i)-arr_mean)**2
         Enddo

@@ -22,8 +22,8 @@
 
 !///////////////////////////////////////////////////////////////////
 !               DIAGNOSTICS_CURRENT_DENSITY
-!               This module computes the components of del x v and enstrophy. 
-!               Zonal means and fluctuations about those means are 
+!               This module computes the components of del x v and enstrophy.
+!               Zonal means and fluctuations about those means are
 !               also computed (if desired).
 !///////////////////////////////////////////////////////////////////
 
@@ -39,11 +39,11 @@ Contains
         Real*8, Allocatable :: ens(:,:,:), ens_pm(:,:,:), ens_mm(:,:,:), ens_pp(:,:,:)
         Logical :: compute_efluct = .false., compute_emean = .false.
 
-        
+
         If (compute_quantity(enstrophy)) Then
             Allocate(ens(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
         Endif
-        
+
         If (compute_quantity(enstrophy_mm)) Then
             Allocate(ens_mm(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
             compute_emean = .true.
@@ -70,7 +70,7 @@ Contains
             END_DO
             If (compute_quantity(vort_r)) Then
                 Call Add_Quantity(qty)
-            Endif 
+            Endif
             If (compute_quantity(enstrophy)) Then
                 ens = qty**2
             Endif
@@ -78,7 +78,7 @@ Contains
                 qty = qty**2
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         If (compute_quantity(vortp_r) .or. compute_efluct .or. compute_quantity(vortp_r_sq)) Then
             DO_PSI
@@ -100,7 +100,7 @@ Contains
                 qty = qty**2
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         If (compute_quantity(vortm_r) .or. compute_emean .or. compute_quantity(vortm_r_sq)) Then
             DO_PSI
@@ -121,7 +121,7 @@ Contains
                 qty = qty**2
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         !/////////////////////////////////////////////////
         ! 2. terms involving theta vorticity
@@ -132,7 +132,7 @@ Contains
             END_DO
             If (compute_quantity(vort_theta)) Then
                 Call Add_Quantity(qty)
-            Endif 
+            Endif
             If (compute_quantity(enstrophy)) Then
                 ens = ens+qty**2
             Endif
@@ -191,7 +191,7 @@ Contains
             END_DO
             If (compute_quantity(vort_phi)) Then
                 Call Add_Quantity(qty)
-            Endif 
+            Endif
             If (compute_quantity(enstrophy)) Then
                 ens = ens+qty**2
                 Call Add_Quantity(ens)

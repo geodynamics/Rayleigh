@@ -72,25 +72,25 @@ Module Diagnostics_Interface
     !//////////////////////////////////
 
     Integer, private :: reboot_count = 0  ! Number of times diagnostics has been rebooted during this run
-    
+
 Contains
 
     !//////////////////////////////////////////////////////////////////////////////////////////
     ! When entering PS_OUTPUT, the indices below may be used to reference the 4th dimension of
     ! the buffer array.  That array is dimensioned as:
     !   buffer(1:n_phi+2, my_r%min:my_r%max, my_theta%min:my_theta%max,1:nvariables)
-    ! 
-    ! The extra 2 in the first index is needed for the in-place FFTs.  Care should be taken
-    !   to only loop over 1 to n_phi.   
     !
-    ! Each index along the 4th dimension of buffer corresponds to a different variable.  
+    ! The extra 2 in the first index is needed for the in-place FFTs.  Care should be taken
+    !   to only loop over 1 to n_phi.
+    !
+    ! Each index along the 4th dimension of buffer corresponds to a different variable.
     !  These indices (left) and the variables they correspond to (right) are given below.
 
     ! Field variables:
     !   vr      -- radial velocity
     !   vtheta  -- theta velocity
     !   vphi    -- phi velocity
-    !   tvar    -- temperature or entropy 
+    !   tvar    -- temperature or entropy
     !   pvar    -- pressure
     !   zvar    -- l(l+1)*Z/r^2  where Z is the toroidal streamfunction
 
@@ -100,12 +100,12 @@ Contains
     !   dvpdr   -- d(v_phi)/dr
     !   dtdr    -- d(temperature or entropy)/dr
 
-    
+
     ! Theta Derivatives:
     !   dvrdt   -- d(v_r)/dtheta
     !   dvtdt   -- d(v_theta)/dtheta
     !   dvpdt   -- d(v_phi)/dtheta
-    !   dtdt    -- d(temperature or entropy)/dtheta 
+    !   dtdt    -- d(temperature or entropy)/dtheta
     !
 
     ! Phi Derivatives:
@@ -133,7 +133,7 @@ Contains
     !   dbtdr   -- d(b_theta)/dr
     !   dbpdr   -- d(b_phi)/dr
 
-    
+
     ! Theta Derivatives:
     !   dbrdt   -- d(b_r)/dtheta
     !   dbtdt   -- d(b_theta)/dtheta
@@ -173,7 +173,7 @@ Contains
             Call Compute_Fluctuations(buffer)
 
             Call Initialize_Mean_Correction()
-        
+
 
             IF (need_second_derivatives) THEN
                 Call Compute_Second_Derivatives(buffer)
@@ -193,14 +193,14 @@ Contains
             ! All requested Shell_Average quantities are computed twice
             ! During the first pass, ell = 0 and m = 0 averages are computed
             !   (for the shell_average quantities)
-            ! During the second pass, all quantities are computed, 
+            ! During the second pass, all quantities are computed,
             !   file output is conducted, and the previously
             !   computed averages are used for moments in the shell_average output
             ! Compute_quantity returns false on the first pass for everything but shell_averages
             !////////////////////////
             Do pass_num = 1, 2
                 ! Set the averaging flag, so that all quantities or only shell averages are computed
-                Call Set_Avg_Flag(pass_num)  
+                Call Set_Avg_Flag(pass_num)
 
                 Call Compute_Velocity_Components(buffer)
                 Call Compute_Vorticity_Field(buffer)
@@ -210,7 +210,7 @@ Contains
                 Call Compute_Thermal_Energy(buffer)
                 Call Compute_Thermal_Second_Derivatives()
                 Call Compute_Thermal_Equation_Terms(buffer)
-                
+
 
 
                 Call Compute_Kinetic_Energy(buffer)
@@ -238,13 +238,13 @@ Contains
                     Call Compute_Magnetic_Energy(buffer)
                     Call Compute_Poynting_Flux(buffer)
                     Call Custom_MHD_Diagnostics(buffer)
-			    Endif 
+                Endif
                 If (pass_num .eq. 1) Call Finalize_Averages()
             Enddo
 
 
-			DeAllocate(qty,tmp1,tmp1d,tmp4)
-			Call Complete_Output(iteration, current_time)
+            DeAllocate(qty,tmp1,tmp1d,tmp4)
+            Call Complete_Output(iteration, current_time)
 
             DeAllocate(ell0_values,m0_values)
             Call DeAllocate_Fluctuations()
@@ -272,7 +272,7 @@ Contains
         Implicit None
         Integer :: i, isize
         Real*8 :: delr
-        
+
         Allocate(tweights(1:n_theta))
         tweights(:) = gl_weights(:)/2.0d0
 
@@ -296,12 +296,12 @@ Contains
 
         Endif
 
-        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path)	
+        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path)
 
         Call Initialize_Diagnostic_Indices()
         !DeAllocate(tweights)  !<---- Used to deallocate these.  We now use these for the computing the ell0 components
         !DeAllocate(rweights)
-        
+
         !Call Set_Spherical_IO_Integration_Weights(gl_weights, r_int_weights)
 
 
@@ -361,8 +361,8 @@ Contains
         Endif
 
 
-        If (reboot_now) Then     
-            If (my_rank .eq. 0) Call stdout%print('Reboot file found.  Rebooting diagnostics.')   
+        If (reboot_now) Then
+            If (my_rank .eq. 0) Call stdout%print('Reboot file found.  Rebooting diagnostics.')
             Call   CleanUP_Spherical_IO()
             Call   Read_Output_Namelist()
             Call Initialize_Diagnostics()
