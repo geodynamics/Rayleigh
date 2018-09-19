@@ -2,7 +2,7 @@
 
 
 \section{Cookbooks}\label{sec:cookbooks}
-\emph{This is section has been written by Maria Weber.}
+\emph{This section has been written by Maria Weber.}
 
 In this section, we explain and document example Rayleigh main input files for a variety of problems. The example input files can be found in directory \textbf{Rayleigh/input\_examples/}. In some cases, we will also show example diagnostic outputs. See \S \ref{sec:diagnostics} for more information on generating Rayleigh diagnostic routines with Python. 
 
@@ -11,7 +11,7 @@ Standard benchmarks that generate minimal output files are discussed in \S \ref{
 
 \subsection{Simple Boussinesq non-MHD benchmark: c2001\_case0\_minimal}\label{sec:cookbook_case0_minimal}
 
-This is the standard benchmark test when running Rayleigh on a new machine, as described in \S \ref{sec:benchmarking}. Christensen et al. (2001) describes two Boussinesq tests that Rayleigh's results may be compared against. Case 0 in Christensen et al. (2001) solves for Boussinesq (non-dimensional) non-magnetic convection. Below are the first four Fortran namelists in the input file \textbf{c2001\_case0\_minimal}. The remaining seven namelists do not have any quantities that need to be specified. 
+This is the standard benchmark test when running Rayleigh on a new machine, as described in \S \ref{sec:benchmarking}. Christensen et al. (2001) describes two Boussinesq tests that Rayleigh's results may be compared against. Case 0 in Christensen et al. (2001) solves for Boussinesq (non-dimensional) non-magnetic convection, and we will discuss the input parameters necessary to set up this benchmark in Rayleigh below. Rayleigh's input parameters are grouped in so-called namelists, which are subcategories of related input parameters that will be read upon program start and assigned to Fortran variables with identical names. Below are the first four Fortran namelists in the input file \textbf{c2001\_case0\_minimal}.
     
 \begin{lstlisting}
 &problemsize_namelist
@@ -37,7 +37,7 @@ This is the standard benchmark test when running Rayleigh on a new machine, as d
 
 In namelist \texttt{problemsize\_namelist}, the number of radial grid points is denoted by \texttt{n\_r} and the number of $\theta$ grid points by \texttt{n\_theta}. For optimal load-balancing, the number of MPI ranks distributed within a row is denoted by \texttt{nprow} and within a column is \texttt{npcol}. See \S \ref{sec:running} for instructions on appropriately defining these values.
 
-When running a benchmark, set \texttt{benchmark\_mode} with \texttt{physical\_controls\_namelist}. When benchmark mode is active, custom inputs are overridden and reset to their benchmark appropriate value (see \S \ref{sec:benchmarking}). Setting \texttt{benchmark\_mode = 1} defines the appropriate Case 0 Christensen et al. (2001) initial conditions. A benchmark report is written every 5000 time steps  by setting \texttt{benchmark\_report\_interval = 5000}. The benchmark reports are text files found within directory \textbf{path\_to\_my\_sim/Benchmark\_Reports/} and numbered according to the appropriate time step. The \texttt{benchmark\_integration\_interval} variable sets the interval at which measurements are taken to calculate the values reported in the benchmark reports.    
+When running a benchmark, set \texttt{benchmark\_mode} under \texttt{physical\_controls\_namelist} to the code number for the corresponding benchmark you want to run. When benchmark mode is active, custom inputs are overridden and reset to their benchmark appropriate value (see \S \ref{sec:benchmarking}). Setting \texttt{benchmark\_mode = 1} defines the appropriate Case 0 Christensen et al. (2001) initial conditions. A benchmark report is written every 5000 time steps  by setting \texttt{benchmark\_report\_interval = 5000}. The benchmark reports are text files found within directory \textbf{path\_to\_my\_sim/Benchmark\_Reports/} and numbered according to the appropriate time step. The \\\texttt{benchmark\_integration\_interval} variable sets the interval at which measurements are taken to calculate the values reported in the benchmark reports.    
 
 Within \texttt{temporal\_controls\_namelist}, the maximum number of iterations is set with \texttt{max\_interations}. Checkpoints are written at time step intervals set by \texttt{checkpoint\_interval}. In this case, the checkpoint interval is larger than the maximum number of iterations, so no checkpoint will be written. The interval at which quicksaves are written is set by variable \texttt{quicksave\_interval} and the number of quicksaves saved on disk at a time is set by \texttt{num\_quicksaves}. See \S \ref{sec:quicksaves} for more information on quicksaves. 
 
