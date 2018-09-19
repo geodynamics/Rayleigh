@@ -609,7 +609,7 @@ Contains
                 grp = pfi%rcomm, indstart = inds)
             Call IWait(sirq)
 		Endif
-        if (allocated(meridional_outputs)) DeAllocate(meridional_outputs)
+        If (allocated(meridional_outputs)) DeAllocate(meridional_outputs)
 
         ! Communication is complete.  Now we open the file using MPI-IO
         
@@ -1514,7 +1514,7 @@ Contains
         !//////////////////////////////////////////////
         ! DeAllocation
         If (my_nth_owned .gt. 0) Then
-            if (allocated(equslice_outputs)) DEALLOCATE( equslice_outputs)
+            If (allocated(equslice_outputs)) DEALLOCATE( equslice_outputs)
         Endif
 
 
