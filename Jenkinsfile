@@ -10,6 +10,7 @@ pipeline {
         image 'gassmoeller/rayleigh:base'
         ttyEnabled true
         command 'cat'
+        alwaysPull true
       }
     }
   }
