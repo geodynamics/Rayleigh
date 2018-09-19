@@ -44,6 +44,7 @@ pipeline {
             main_input
         '''
 
+<<<<<<< HEAD
         sh '''
           cd tests/benchmark_diagnostics_input
 
@@ -52,8 +53,17 @@ pipeline {
           mpirun -np 4 ../../bin/rayleigh.dbg
           git diff > changes.diff
         '''
+=======
+            # This export avoids a warning about
+            # a discovered, but unconnected infiniband network.
+            export OMPI_MCA_btl=self,tcp
+            ../../bin/rayleigh.dbg
+            cd ..
+            git diff > changes.diff
+          '''
+>>>>>>> Simplify test case
 
-          archiveArtifacts artifacts: 'changes.diff', fingerprint: true
+          archiveArtifacts artifacts: 'tests/changes.diff', fingerprint: true
           sh 'git diff --exit-code --name-only'
         }
       }
