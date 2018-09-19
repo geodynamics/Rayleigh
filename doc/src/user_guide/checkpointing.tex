@@ -72,7 +72,7 @@ In addition to specifying the checkpoint time step manually, you can tell Raylei
 In this case, Rayleigh reads the \textbf{last\_checkpoint} file (found within the Checkpoints directory) to determine which checkpoint it reads.
 
 
-\subsection{Quicksaves}
+\subsection{Quicksaves}\label{sec:quicksaves}
 In practice, Rayleigh checkpoints are used for two purposes:  (1) guarding against unexpected crashes and (2) supplementing a run's record with a series of restart points.  While standard checkpoints may serve both purposes, the frequency with which checkpoints are written for purpose (1) is often much higher than that needed for purpose (2).  This means that a lot of data culling is performed at the end of a run or, if disk space is a particularly limiting factor, during the run itself.  For this reason, Rayleigh has a \textbf{quicksave} checkpointing scheme in addition to the standard scheme.  Quicksaves can be written with high-cadence, but require low storage due to the rotating reuse of quicksave files.
 
 \subsubsection{1.2.1 Generating Quicksaves}
