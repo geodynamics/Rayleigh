@@ -512,9 +512,10 @@ Contains
                 my_in_disp = my_in_disp*nlm_total_old 
                 full_in_disp = nlm_total_old*n_r_old
             
-                !tnr is the number of radial points for this row x 2 (for complex values)
-                ! The rowstrip will hold all fields and AB terms for the RHS (hence factor 
-                !  of 2 below).
+                ! tnr is the number of radial points for this row x 2 (for complex values)
+                ! In addition to holding each of the 4 (or 6 in MHD) fields, the rowstrip
+                ! array will also hold the Adams-Bashforth arrays associated with each field
+                ! (hence the ADDITIONAL factor of 2 below).
                 Allocate( rowstrip(1:nlm_total_old, 1:tnr*numfields*2))    
                 rowstrip(:,:) = 0
 
