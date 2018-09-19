@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module Checkpointing
     Use Timers, Only : stopwatch
     Use ProblemSize
@@ -482,9 +502,12 @@ Contains
 
 
         ! Rank zero from each row participates in the read
+        ! Rank zero within each row is responsible for reading in all l-m combinations
+        ! for the subset of radii that its row is responsible for
         If (my_row_rank .eq. 0) Then
             !If (nr_read .gt. 0) Then    ! SMALL BUG HERE RELATED TO MPI_IO Logic... -- Revist this
 
+            
 
                 ! Column zero reads in the old checkpoint no matter what
                 ! the old dimensions are. We'll broadcast back to all members of the row later
@@ -509,7 +532,10 @@ Contains
                 my_in_disp = my_in_disp*nlm_total_old 
                 full_in_disp = nlm_total_old*n_r_old
             
-
+                ! tnr is the number of radial points for this row x 2 (for complex values)
+                ! In addition to holding each of the 4 (or 6 in MHD) fields, the rowstrip
+                ! array will also hold the Adams-Bashforth arrays associated with each field
+                ! (hence the ADDITIONAL factor of 2 below).
                 Allocate( rowstrip(1:nlm_total_old, 1:tnr*numfields*2))    
                 rowstrip(:,:) = 0
 

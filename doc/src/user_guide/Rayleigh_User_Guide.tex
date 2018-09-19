@@ -1,21 +1,20 @@
 \documentclass[10pt, letterpaper]{article}
-\usepackage[letterpaper,margin=0.75in]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage[table]{xcolor}
 \usepackage{color}
-\usepackage[hidelinks]{hyperref}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{5pt}
 \usepackage{textpos}
 
+% use a larger page size; otherwise, it is difficult to have complete
+% code listings and output on a single page
+\usepackage{fullpage}
+
+
+% use the listings package for code snippets. define keywords for prm files
+% and for gnuplot
 \usepackage{listings}
-
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
 \lstset{frame=tb,
   language=Fortran,
   aboveskip=3mm,
@@ -32,6 +31,23 @@
   breakatwhitespace=true,
   tabsize=3
 }
+
+\lstdefinelanguage{prmfile}{morekeywords={set,subsection,end},
+                            morecomment=[l]{\#},escapeinside={\%\%}{\%},}
+\lstdefinelanguage{gnuplot}{morekeywords={plot,using,title,with,set,replot},
+                            morecomment=[l]{\#},}
+
+
+% use the hyperref package; set the base for relative links to
+% the top-level Rayleigh directory so that we can link to
+% files in the Rayleigh tree without having to specify the
+% location relative to the directory where the pdf actually
+% resides
+\usepackage[colorlinks,linkcolor=blue,urlcolor=blue,citecolor=blue,destlabel=true,baseurl=../]{hyperref}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
 
 \begin{document}
 
@@ -175,6 +191,8 @@ Jonathon Aurnou, Benjamin Brown, Bruce Buffet, Nicholas Featherstone, Gary Glatz
 \input physics.tex
 
 \input checkpointing.tex
+
+\input cookbooks.tex
 
 \input diagnostics.tex
 

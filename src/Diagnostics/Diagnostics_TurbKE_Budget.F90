@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 Module Diagnostics_TurbKE_Budget
     Use Diagnostics_Base
@@ -183,8 +203,8 @@ Contains
 
                     ! Compute vector Laplacian u'
                     htmp1 = fbuffer(PSI,vr) + fbuffer(PSI,dvtdt) + cottheta(t) * fbuffer(PSI,vtheta)
-                    htmp2 = one_over_rsin**2 * fbuffer(PSI,dvpdp)
-                     Lap_r = Lap_r - 2D0*one_over_r(r)**2 * htmp1 - htmp2        ! r component (Lap u')_r
+                    htmp2 = one_over_r(r)*one_over_rsin * fbuffer(PSI,dvpdp)
+                    Lap_r = Lap_r - 2D0*(one_over_r(r)**2 * htmp1 + htmp2)        ! r component (Lap u')_r
 
                     htmp1 = one_over_rsin * fbuffer(PSI,vtheta) + 2D0*ctn_over_r * fbuffer(PSI,dvpdp)
                     htmp2 = 2D0*one_over_r(r)**2 * fbuffer(PSI,dvrdt)

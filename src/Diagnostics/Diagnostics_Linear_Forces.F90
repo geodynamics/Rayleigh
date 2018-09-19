@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 Module Diagnostics_Linear_Forces
     Use Diagnostics_Base
@@ -69,7 +89,7 @@ Contains
                            & ell0_values(r,tvar))
             END_DO
             If (compute_quantity(buoyancy_mforce)) Call Add_Quantity(qty)
-            If (compute_quantity(buoy_work_pp)) Then
+            If (compute_quantity(buoy_work_mm)) Then
                 DO_PSI
                     qty(PSI)=m0_values(PSI2,vr)*qty(PSI)
                 END_DO
@@ -328,7 +348,7 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = fbuffer(PSI,dvrdr)-One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
+                estress = fbuffer(PSI,dvrdr)+One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
 
                 qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
 
@@ -433,7 +453,7 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = m0_values(PSI2,dvrdr)-One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
+                estress = m0_values(PSI2,dvrdr)+One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
 
                 qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
                 qty(PSI) = qty(PSI)-mean_ell0buffer(r,vforce_r)
