@@ -2,6 +2,16 @@ from __future__ import print_function
 import numpy as np
 import os
 maxq = 4000
+
+def get_lut(quantities, nlut=maxq):
+    """return the lookup table based on the quantity codes"""
+    nq = len(quantities)
+    lut = np.zeros(nlut) + maxq
+    for i,q in enumerate(quantities):
+        if ((0 <= q) and ( q <= maxq-1)): # quantity must be in [0, maxq-1]
+            lut[q] = i
+    return lut.astype('int32')
+
 class RayleighTiming:
 
     def __init__(self,filename,byteswap=True):
@@ -204,10 +214,7 @@ class G_Avgs:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 class Shell_Avgs:
@@ -286,10 +293,7 @@ class Shell_Avgs:
                 print('The 2nd, 3rd and 4th moments are set to zero')   
                 self.vals[:,1,:,:] = 0.0            
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 class AZ_Avgs:
@@ -349,10 +353,7 @@ class AZ_Avgs:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 class Point_Probes:
@@ -446,10 +447,7 @@ class Point_Probes:
         #print 'iters: ', self.iters
         #print 'times: ', self.time
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -522,10 +520,7 @@ class Meridional_Slices:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -589,10 +584,7 @@ class Equatorial_Slices:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -674,11 +666,7 @@ class Shell_Slices:
 
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
-        lut_max = 1000
-        lut = np.zeros(maxq)+int(lut_max)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
 
 
 
@@ -750,7 +738,7 @@ class Shell_Slices:
                 fd.close()
                 return
 
-            self.lut[:] = lut_max
+            self.lut[:] = maxq
             self.lut[qspec] = 0
             slice_size  = ntheta*nphi*8
             qsize       = nr*slice_size
@@ -880,10 +868,7 @@ class SPH_Modes:
                             self.vals[m,:,j,q,k] = self.vals[m,:,j,q,k]/sqrttwo
 
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -994,10 +979,7 @@ class Shell_Spectra:
                             self.vals[:,m,j,q,k] = self.vals[:,m,j,q,k]/sqrttwo
 
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
         self.lpower  = np.zeros((nell,nr,nq,nrec,3),dtype='float64')
