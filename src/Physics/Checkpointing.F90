@@ -482,9 +482,12 @@ Contains
 
 
         ! Rank zero from each row participates in the read
+        ! Rank zero within each row is responsible for reading in all l-m combinations
+        ! for the subset of radii that its row is responsible for
         If (my_row_rank .eq. 0) Then
             !If (nr_read .gt. 0) Then    ! SMALL BUG HERE RELATED TO MPI_IO Logic... -- Revist this
 
+            
 
                 ! Column zero reads in the old checkpoint no matter what
                 ! the old dimensions are. We'll broadcast back to all members of the row later
@@ -509,7 +512,10 @@ Contains
                 my_in_disp = my_in_disp*nlm_total_old 
                 full_in_disp = nlm_total_old*n_r_old
             
-
+                ! tnr is the number of radial points for this row x 2 (for complex values)
+                ! In addition to holding each of the 4 (or 6 in MHD) fields, the rowstrip
+                ! array will also hold the Adams-Bashforth arrays associated with each field
+                ! (hence the ADDITIONAL factor of 2 below).
                 Allocate( rowstrip(1:nlm_total_old, 1:tnr*numfields*2))    
                 rowstrip(:,:) = 0
 
