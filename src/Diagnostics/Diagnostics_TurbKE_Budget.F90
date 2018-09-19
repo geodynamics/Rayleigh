@@ -183,8 +183,8 @@ Contains
 
                     ! Compute vector Laplacian u'
                     htmp1 = fbuffer(PSI,vr) + fbuffer(PSI,dvtdt) + cottheta(t) * fbuffer(PSI,vtheta)
-                    htmp2 = one_over_rsin**2 * fbuffer(PSI,dvpdp)
-                     Lap_r = Lap_r - 2D0*one_over_r(r)**2 * htmp1 - htmp2        ! r component (Lap u')_r
+                    htmp2 = one_over_r(r)*one_over_rsin * fbuffer(PSI,dvpdp)
+                    Lap_r = Lap_r - 2D0*(one_over_r(r)**2 * htmp1 + htmp2)        ! r component (Lap u')_r
 
                     htmp1 = one_over_rsin * fbuffer(PSI,vtheta) + 2D0*ctn_over_r * fbuffer(PSI,dvpdp)
                     htmp2 = 2D0*one_over_r(r)**2 * fbuffer(PSI,dvrdt)
