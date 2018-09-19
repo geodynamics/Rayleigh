@@ -1,19 +1,19 @@
 \clearpage
 \section{Physics Controls}\label{sec:physics}
-Rayleigh solves the MHD equations in spherical geometry under the Boussinesq and anelastic approximations.  Both the equations that Rayleigh solves and its diagnostics can be formulated either dimensionally or nondimensionally.  A nondimensional Boussinesq formulation, as well as dimensional and non-dimensional anelastic formulations (based on a polytropic reference state) are provided as part of Rayleigh.  
+Rayleigh solves the MHD equations in spherical geometry under the Boussinesq and anelastic approximations.  Both the equations that Rayleigh solves and its diagnostics can be formulated either dimensionally or nondimensionally.  A nondimensional Boussinesq formulation, as well as dimensional and non-dimensional anelastic formulations (based on a polytropic reference state) are provided as part of Rayleigh.
 
 In this section, we present the equation sets solved when running in each of these three modes, and discuss the relevant control parameters for each mode.   We also discuss the boundary conditions available in Rayleigh and those namelist variables that can be used to modify the code's behavior in any of these three modes.
 
 \subsection{Anelastic Mode (dimensional)}
 
-\textbf{Example Input:  Rayleigh/etc/input\_examples/main\_input\_sun}
+\textbf{Example Input:  Rayleigh/input\_examples/main\_input\_sun}
 
 When run in dimensional, anelastic mode, \textbf{reference\_type=2} must be specified in the Reference\_Namelist.  In that case, Rayleigh solves the following form of the MHD equations:
 
 
 
 \begin{align*}
-\hat{\rho}(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+\hat{\rho}(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
                                                          +2\Omega_0\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
                                                          \frac{\hat{\rho}(r)}{c_P}g(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
                                                          +\hat{\rho}(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) % pressure
@@ -46,12 +46,12 @@ Here, $\hat{\rho}$ and $\hat{T}$ are the reference-state density and temperature
 \frac{P}{\hat{P}}= \frac{T}{\hat{T}} + \frac{\rho}{\hat{\rho}}
 \end{equation}
 
-The kinematic viscosity, thermal diffusivity, and magnetic diffusivity are given by $\nu$, $\kappa$, and $\eta$ respectively.  Finally, $Q(r)$ is an internal heating function; it might represent radiative heating or heating due to nuclear fusion, for instance.    
+The kinematic viscosity, thermal diffusivity, and magnetic diffusivity are given by $\nu$, $\kappa$, and $\eta$ respectively.  Finally, $Q(r)$ is an internal heating function; it might represent radiative heating or heating due to nuclear fusion, for instance.
 
 
 When running in anelastic mode, the \textbf{reference\_type} variable in the Reference\_Namelist must be set to 2.
 
-Moreover, certain variables in the \textbf{Reference\_Namelist} and the \textbf{Transport\_Namelist} must be specified.  The Reference\_Namelist variables are described in Table \ref{table:anelastic} and the Transport\_Namelist variables are described in Table \ref{table:anelastic_trans}. Default values indicated in brackets.  
+Moreover, certain variables in the \textbf{Reference\_Namelist} and the \textbf{Transport\_Namelist} must be specified.  The Reference\_Namelist variables are described in Table \ref{table:anelastic} and the Transport\_Namelist variables are described in Table \ref{table:anelastic_trans}. Default values indicated in brackets.
 
 \begin{table}
 \centering
@@ -99,7 +99,7 @@ See the example input file \textbf{main\_input\_sun} for a an example of how to 
 \clearpage
 \subsection{Boussinesq Mode (nondimensional)}
 
-\textbf{Example Input:  Rayleigh/etc/input\_examples/c2001\_case1\_input}
+\textbf{Example Input:  Rayleigh/input\_examples/c2001\_case1\_input}
 
 When run in nondimensional Boussinesq mode, \textbf{reference\_type=1} must be specified in the Reference\_Namelist.  In that case, Rayleigh employs the nondimensionalization
 \begin{align*}
@@ -120,7 +120,7 @@ where $\alpha$ is coefficient of thermal expansion, $g_0$ is the gravitational a
  In addition, ohmic and viscous heating, which do not appear in the Boussinesq formulation, are turned off when this nondimensionalization is specified at runtime.   Rayleigh solves the following equations when running in nondimensional Boussinesq mode:
 
 \begin{align*}
-\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
                                                          +\frac{2}{E}\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
                                                          \frac{Ra}{Pr}\left(\frac{r}{r_o}\right)^n\Theta\,\boldsymbol{\hat{r}} % buoyancy
                                                          -\frac{1}{E}\boldsymbol{\nabla}P % pressure
@@ -186,7 +186,7 @@ Gravity\_Power & Buoyancy coefficient = $\frac{\mathrm{Ra}}{\mathrm{Pr}}\left(\f
 \clearpage
 \subsection{Anelastic Mode (nondimensional)}
 
-\textbf{Example Input:  Rayleigh/etc/input\_examples/main\_input\_jupiter}
+\textbf{Example Input:  Rayleigh/input\_examples/main\_input\_jupiter}
 
 
 When running in nondimensional anelastic mode, you must set \textbf{reference\_type=3} in the Reference\_Namelist.  When this parameter is set, the following nondimensionalization is used (following Heimpel et al., 2016, \textit{Nat. Geo}, 9, 19):
@@ -202,7 +202,7 @@ When running in nondimensional anelastic mode, you must set \textbf{reference\_t
 
 We assume a polytropic background state (similar to dimensional anelastic mode), with gravity varying as $\frac{1}{r^2}$.  We further assume that the transport coefficients $\nu$, $\kappa$, and $\eta$ do not vary with radius.  The results in the nondimensionalized equations (tildes used to indicated nondimensional reference-state values):
 \begin{align*}
-\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
                                                          +2\boldsymbol{\hat{z}}\times\boldsymbol{v}  &= % Coriolis
                                                          \mathrm{Ra}^*\frac{r_\mathrm{max}^2}{r^2}\Theta\,\boldsymbol{\hat{r}} % buoyancy
                                                          +\boldsymbol{\nabla}\left(\frac{P}{\tilde{\rho}(r)}\right) % pressure
@@ -262,7 +262,7 @@ poly\_Nrho [0]               & number of density scaleheights spanning the domai
 
 
 \subsection{Boundary Conditions \& Internal Heating}\label{sec:boundary_conditions}
-Boundary conditions are controlled through the \textbf{Boundary\_Conditions\_Namelist}. All Rayleigh simulations are run with impenetrable boundaries. These boundaries may be either no-slip or stress-free (default).  If you want to employ no-slip conditions at both boundaries, set \textbf{no\_slip\_boundaries = .true.}.  If you wish to set no-slip conditions at only one boundary, set \textbf{no\_slip\_top=.true.} or \textbf{no\_slip\_bottom=.true.} in the Boundary\_Conditions\_Namelist. 
+Boundary conditions are controlled through the \textbf{Boundary\_Conditions\_Namelist}. All Rayleigh simulations are run with impenetrable boundaries. These boundaries may be either no-slip or stress-free (default).  If you want to employ no-slip conditions at both boundaries, set \textbf{no\_slip\_boundaries = .true.}.  If you wish to set no-slip conditions at only one boundary, set \textbf{no\_slip\_top=.true.} or \textbf{no\_slip\_bottom=.true.} in the Boundary\_Conditions\_Namelist.
 
 Magnetic boundary conditions are set to match to a potential field at each boundary.  There are no supported alternatives at this time.
 
@@ -270,18 +270,18 @@ By default, the thermal anomoly $\Theta$ is set to a fixed value at each boundar
 
 Alternatively, you may specify a constant value of $\partial\Theta/\partial r$ at each boundary.  This is accomplished by setting the variables \textbf{fix\_dTdr\_top} and \textbf{fix\_dTdr\_bottom}.   Values of the gradient may be enforced by setting the namelist variables \textbf{dTdr\_top} and \textbf{dTdr\_bottom}.  Both default to a value of zero.
 \subsubsection{Internal Heating}
-The internal heating function $Q(r)$ is activated and described by two variables in the \textbf{Reference\_Namelist}.   These are \textbf{Luminosity} and \textbf{heating\_type}.  Note that these values are part of the \textbf{Reference\_Namelist} and not the \textbf{Boundary\_Conditions} namelist.  Three heating types (0,1, and 4) are fully supported at this time. Heating type zero corresponds to no heating.  This is the default.  
+The internal heating function $Q(r)$ is activated and described by two variables in the \textbf{Reference\_Namelist}.   These are \textbf{Luminosity} and \textbf{heating\_type}.  Note that these values are part of the \textbf{Reference\_Namelist} and not the \textbf{Boundary\_Conditions} namelist.  Three heating types (0,1, and 4) are fully supported at this time. Heating type zero corresponds to no heating.  This is the default.
 
-%Heating type 2 exists, but will not be discussed. For obvious reasons, there is no heating type 3.  
+%Heating type 2 exists, but will not be discussed. For obvious reasons, there is no heating type 3.
 
 \textbf{Heating\_type=1:}
 This heating type is given by :
 \begin{equation}
 \label{eq:heating}
 %\frac{\partial \Theta}{\partial t}=\gamma\left( 1 -\frac{\hat{\rho}(r_\mathrm{max})\,\hat{T}(r_\mathrm{max})  }{\hat{\rho}(r)\, \hat{T}(r)} \right),
-Q(r)= \gamma\,\hat{\rho}(r)\, \hat{T}(r) 
+Q(r)= \gamma\,\hat{\rho}(r)\, \hat{T}(r)
 \end{equation}
-where $\gamma$ is a normalization constant defined such that 
+where $\gamma$ is a normalization constant defined such that
 \begin{equation}
 \label{eq:lum}
 %4\pi r_o^2 \hat{\rho}\hat{T}\kappa(r)\frac{\partial \Theta}{\partial r}=\mathrm{Luminosity}
@@ -297,7 +297,7 @@ This heating type corresponds a heating that is variable in radius, but constant
 The constant $\gamma$ in this case is also set by enforcing Equation \ref{eq:lum}.
 
 \subsection{General Physics Controls}
-A number of logical variables can be used to turn certain physics on (value = .true.) or off ( value = .false.).  These variables are described in Table \ref{table:logicals}, with default values indicated in brackets. 
+A number of logical variables can be used to turn certain physics on (value = .true.) or off ( value = .false.).  These variables are described in Table \ref{table:logicals}, with default values indicated in brackets.
 \begin{table}
 \centering
 \begin{tabular}{| l | l |}
@@ -354,7 +354,7 @@ Magnetic-field initialization follows a similar pattern.  Available values for m
 \item magnetic\_init\_type = 7 ; randomized vector potential
 \end{itemize}
 
-For the randomized magnetic field, both the poloidal and toroidal vector-potential functions are given a random power distribution described by Equation \ref{eq:init}.  Each mode's random amplitude is then determined by namelist variable \textbf{mag\_amp}.   This variable should be interpreted as an approximate magnetic field strength (it's value is rescaled appropriately for the poloidal and toroidal vector potentials, which are differentiated to yield the magnetic field).  
+For the randomized magnetic field, both the poloidal and toroidal vector-potential functions are given a random power distribution described by Equation \ref{eq:init}.  Each mode's random amplitude is then determined by namelist variable \textbf{mag\_amp}.   This variable should be interpreted as an approximate magnetic field strength (it's value is rescaled appropriately for the poloidal and toroidal vector potentials, which are differentiated to yield the magnetic field).
 
 When initializing all fields from scratch, a main\_input file should contain something similar to:
 \begin{lstlisting}
@@ -368,4 +368,4 @@ mag_amp = 1.0d-1
 \end{lstlisting}
 
 %\subsection{Transport Coefficients}
-%The functional form of  kinematic viscosity $\nu$, thermal diffusivity $\kappa$, and magnetic diffusivity $\eta$ can be controlled from the \textbf{Transport%\_Coefficients\_Namelist} of the main\_input file 
+%The functional form of  kinematic viscosity $\nu$, thermal diffusivity $\kappa$, and magnetic diffusivity $\eta$ can be controlled from the \textbf{Transport%\_Coefficients\_Namelist} of the main\_input file

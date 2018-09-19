@@ -14,14 +14,14 @@ Whenever you run a new simulation, a similar series of steps must be performed. 
 Each simulation run using Rayleigh should have its own directory.  The code is run from within that directory, and any output is stored in various subdirectories created by Rayleigh at run time.  Wherever you create your simulation directory, ensure that you have sufficient space to store the output.
 
 \textbf{Do not run Rayleigh from within the source code directory.
-\\ 
+\\
 Do not cross the beams: no running two models from within the same directory.}
 
 After you create your run directory, you will want to copy (cp) or soft link (ln -s ) the executable from Rayleigh/bin to your run directory.  Soft-linking is recommended; if you recompile the code, the executable remains up-to-date.  If running on an IBM machine, copy the script named Rayleigh/etc/make\_dirs to your run directory and execute the script.  This will create the directory structure expected by Rayleigh for its outputs.  This step is unnecessary when compiling with the Intel or GNU compilers.
 
-Next, you must create a main\_input file.  This file contains the information that describes how your simulation is run.  Rayleigh always looks for a file named main\_input in the directory that it is launched from.  Copy one of the sample input files from the Rayleigh/etc/input\_examples/ into your run directory, and rename it to main\_input.  The file named \textit{benchmark\_diagnostics\_input} can be used to generate output for the diagnostics plotting tutorial (see \S \ref{sec:diagnostics}). 
+Next, you must create a main\_input file.  This file contains the information that describes how your simulation is run.  Rayleigh always looks for a file named main\_input in the directory that it is launched from.  Copy one of the sample input files from the Rayleigh/input\_examples/ into your run directory, and rename it to main\_input.  The file named \textit{benchmark\_diagnostics\_input} can be used to generate output for the diagnostics plotting tutorial (see \S \ref{sec:diagnostics}). 
 
-Finally, Rayleigh has some OpenMP-related logic that is still in development.  We do not support Rayleigh's OpenMP mode at this time, but on some systems, it can be important to explicitly disable OpenMP in order to avoid tripping any OpenMP flags used by external libraries, such as Intel's MKL.  Please be sure and run the following command before executing Rayleigh.  This command should be precede \textit{each} call to Rayleigh. 
+Finally, Rayleigh has some OpenMP-related logic that is still in development.  We do not support Rayleigh's OpenMP mode at this time, but on some systems, it can be important to explicitly disable OpenMP in order to avoid tripping any OpenMP flags used by external libraries, such as Intel's MKL.  Please be sure and run the following command before executing Rayleigh.  This command should be precede \textit{each} call to Rayleigh.
 \begin{lstlisting}
 export OMP_NUM_THREADS=1 (bash)
 setenv OMP_NUM_THREADS 1 (c-shell)
@@ -39,12 +39,12 @@ mpiexec -np 8 ./rayleigh.opt -nprow 4 -npcol 2
 \end{lstlisting}
 
 \subsubsection{Load Balancing}
-Rayleigh's performance is sensitive to the values of \textit{nprow} and \textit{npcol}, as well as the number of radial grid points $N_r$ and latitudinal grid points $N_\theta$.   If you examine the main\_input file,  you will see that it is divided into Fortran namelists.  The first namelist is the problemsize\_namelist.  Within this namelist, you will see a place to specify nprow and npcol.  Edit main\_input so that nprow and npcol agree with the N you intend to use (or use the command-line syntax mentioned above).  The dominate effect on parallel scalability is the number of messages sent per iteration.  For optimal message counts, nprow and npcol should be as close to one another in value as possible.  
+Rayleigh's performance is sensitive to the values of \textit{nprow} and \textit{npcol}, as well as the number of radial grid points $N_r$ and latitudinal grid points $N_\theta$.   If you examine the main\_input file,  you will see that it is divided into Fortran namelists.  The first namelist is the problemsize\_namelist.  Within this namelist, you will see a place to specify nprow and npcol.  Edit main\_input so that nprow and npcol agree with the N you intend to use (or use the command-line syntax mentioned above).  The dominate effect on parallel scalability is the number of messages sent per iteration.  For optimal message counts, nprow and npcol should be as close to one another in value as possible.
 %A secondary effect is cache latency/cache bandwidth.  This means that if nprow and npcol cannot be equal, then nprow should be largest.  As nprow increases, fewer Legendre polynomial matrices must be pulled into/out of memory during each iteration.  In summary,
 
 \begin{enumerate}
-\item N = nprow $\times$ npcol.                                           
-\item nprow and npcol should be equal or within a factor of two of one another.                   
+\item N = nprow $\times$ npcol.
+\item nprow and npcol should be equal or within a factor of two of one another.
 %\item If they cannot be equal, increase nprow first.
 \end{enumerate}
 
@@ -111,7 +111,7 @@ Note that the interpretation of $rmin$ and $rmax$ depends on whether your simula
 
 A simulation's runtime and time-step size can be controlled using the \textbf{temporal\_controls} namelist.  The length of time for which a simulation runs before completing is controlled by the namelist variable \textbf{max\_time\_minutes}.  The maximum number of time steps that a simulation will run for is determined by the value of the namelist \textbf{max\_iterations}.  The simulation will complete when it has run for \textit{max\_time\_minutes minutes} or when it has run for \textit{max\_iterations time steps} -- whichever occurs first.
 
-Time-step size in Rayleigh is controlled by the Courant-Friedrichs-Lewy condition (CFL; as determined by the fluid velocity and Alfv\'{e}n speed).  A safety factor of \textbf{cflmax} is applied to the maximum time step determined by the CFL.  Time-stepping is adaptive.  An additional variable \textbf{cflmin} is used to determine if the time step should be increased.  
+Time-step size in Rayleigh is controlled by the Courant-Friedrichs-Lewy condition (CFL; as determined by the fluid velocity and Alfv\'{e}n speed).  A safety factor of \textbf{cflmax} is applied to the maximum time step determined by the CFL.  Time-stepping is adaptive.  An additional variable \textbf{cflmin} is used to determine if the time step should be increased.
 
 The user may also specify the maximum allowed time-step size through the namelist variable \textbf{max\_time\_step}.  The minimum allowable time-step size is controlled through the variable \textbf{min\_time\_step}.  If the CFL condition is less than this value, the simulation will exit.
 
