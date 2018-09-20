@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module Spherical_IO
     Use Spherical_Buffer
 	Use Parallel_Framework
@@ -609,7 +629,7 @@ Contains
                 grp = pfi%rcomm, indstart = inds)
             Call IWait(sirq)
 		Endif
-        DeAllocate(meridional_outputs)
+        If (allocated(meridional_outputs)) DeAllocate(meridional_outputs)
 
         ! Communication is complete.  Now we open the file using MPI-IO
         
@@ -881,7 +901,7 @@ Contains
 			    CALL Isend(probe_outputs,sirq,n_elements = nelem,dest = 0, &
                     tag=probe_tag, grp = pfi%rcomm, indstart = inds)            
                 CALL IWait(sirq)
-                DEALLOCATE(probe_outputs)
+                If (allocated(probe_outputs)) DEALLOCATE(probe_outputs)
             ENDIF
 
 
@@ -1514,7 +1534,7 @@ Contains
         !//////////////////////////////////////////////
         ! DeAllocation
         If (my_nth_owned .gt. 0) Then
-            DEALLOCATE( equslice_outputs)
+            If (allocated(equslice_outputs)) DEALLOCATE( equslice_outputs)
         Endif
 
 
@@ -2629,18 +2649,18 @@ Contains
         yesno = .false.
 
 
-         If (Mod(iter,Global_Averages%Frequency) .eq. 0) yesno = .true.
-         If (Mod(iter,Shell_Averages%Frequency) .eq. 0) yesno = .true.        
-         If (Mod(iter,Shell_Spectra%Frequency) .eq. 0) yesno = .true.            
-         If (Mod(iter,Equatorial_Slices%Frequency) .eq. 0) yesno = .true. 
+         If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%Frequency) .eq. 0)) yesno = .true.
+         If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%Frequency) .eq. 0)) yesno = .true.        
+         If ((Shell_Spectra%nq > 0) .and. (Mod(iter,Shell_Spectra%Frequency) .eq. 0)) yesno = .true.            
+         If ((Equatorial_Slices%nq > 0) .and. (Mod(iter,Equatorial_Slices%Frequency) .eq. 0)) yesno = .true. 
 
-         If (Mod(iter,Meridional_Slices%Frequency) .eq. 0) yesno = .true. 
+         If ((Meridional_Slices%nq > 0) .and. (Mod(iter,Meridional_Slices%Frequency) .eq. 0)) yesno = .true. 
 
-         If (Mod(iter,SPH_Mode_Samples%Frequency) .eq. 0) yesno = .true. 
-         If (Mod(iter,Point_Probes%Frequency) .eq. 0) yesno = .true. 
-         If (Mod(iter,AZ_Averages%Frequency) .eq. 0) yesno = .true.
-         If (Mod(iter,Shell_Slices%Frequency) .eq. 0) yesno = .true. 
-         If (Mod(iter,Full_3D%Frequency) .eq. 0) yesno = .true.
+         If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%Frequency) .eq. 0)) yesno = .true. 
+         If ((Point_Probes%nq > 0) .and. (Mod(iter,Point_Probes%Frequency) .eq. 0)) yesno = .true. 
+         If ((AZ_Averages%nq > 0) .and. (Mod(iter,AZ_Averages%Frequency) .eq. 0)) yesno = .true.
+         If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%Frequency) .eq. 0)) yesno = .true. 
+         If ((Full_3D%nq > 0) .and. (Mod(iter,Full_3D%Frequency) .eq. 0)) yesno = .true.
 
     End function Time_To_Output
 
@@ -2683,32 +2703,32 @@ Contains
 		Integer, Intent(In) :: iter
 		Real*8, Intent(In) :: sim_time
 
-	    If (Mod(iter,Shell_Slices%frequency) .eq. 0 ) Then
+	    If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%frequency) .eq. 0 )) Then
             If (mem_friendly) Then
                 Call Write_Shell_Slices_MEM(iter,sim_time)
             Else
                 Call Write_Shell_Slices(iter,sim_time)
             Endif
         Endif
-	    If (Mod(iter,Shell_Spectra%frequency) .eq. 0 ) Then
+	    If ((Shell_Spectra%nq > 0) .and. (Mod(iter,Shell_Spectra%frequency) .eq. 0 )) Then
             If (mem_friendly) Then
                 Call Write_Shell_Spectra_MEM(iter,sim_time)
             else
                 Call Write_Shell_Spectra(iter,sim_time)
             Endif
         Endif
-	    If (Mod(iter,Equatorial_Slices%frequency) .eq. 0 ) Then
+	    If ((Equatorial_Slices%nq > 0) .and. (Mod(iter,Equatorial_Slices%frequency) .eq. 0 )) Then
 
             Call Write_Equatorial_Slices(iter,sim_time)
 
         Endif
-	    If (Mod(iter,Meridional_Slices%frequency) .eq. 0 ) Then
+	    If ((Meridional_Slices%nq > 0) .and. (Mod(iter,Meridional_Slices%frequency) .eq. 0 )) Then
             Call Write_Meridional_Slices(iter,sim_time)
         Endif
-	    If (Mod(iter,SPH_Mode_Samples%frequency) .eq. 0 ) Then
+	    If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%frequency) .eq. 0 )) Then
             Call Write_SPH_Modes(iter,sim_time)
         Endif
-	    If (Mod(iter,Point_Probes%frequency) .eq. 0 ) Then
+	    If ((Point_Probes%nq > 0) .and. (Mod(iter,Point_Probes%frequency) .eq. 0 )) Then
             Point_Probes%time_save(Point_Probes%cc+1) = sim_time
             Point_Probes%iter_save(Point_Probes%cc+1) = iter
             If ((Point_Probes%cache_size-1) .eq. Point_Probes%cc) Then
@@ -2716,9 +2736,9 @@ Contains
             Endif            
             Call Point_Probes%AdvanceCC() 
         Endif
-	    If (Mod(iter,AZ_Averages%frequency) .eq. 0 ) Call Write_Azimuthal_Average(iter,sim_time)
-	    If (Mod(iter,Shell_Averages%frequency) .eq. 0 ) Call Write_Shell_Average(iter,sim_time)
-	    If (Mod(iter,Global_Averages%frequency) .eq. 0 ) Call Write_Global_Average(iter,sim_time)
+	    If ((AZ_Averages%nq > 0) .and. (Mod(iter,AZ_Averages%frequency) .eq. 0 )) Call Write_Azimuthal_Average(iter,sim_time)
+	    If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
+	    If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%frequency) .eq. 0 )) Call Write_Global_Average(iter,sim_time)
 
         DeAllocate(f_of_r_theta)
         DeAllocate(f_of_r)
@@ -3056,7 +3076,7 @@ Contains
 
         Endif
 
-        DeAllocate(globav_outputs)
+        If (Allocated(globav_outputs)) DeAllocate(globav_outputs)
         DeAllocate(buff)
         DeAllocate(full_avg)
 
@@ -3228,7 +3248,8 @@ Contains
 				! This file should contain everything that needs to be known for processing later
 	         write(iterstring,'(i8.8)') current_iteration
             cfile = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//'grid'
-	         open(unit=15,file=cfile,form='unformatted', status='replace')
+	         open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
+           Write(15)endian_tag
 	         Write(15)nr
 				Write(15)ntheta
 				Write(15)nphi

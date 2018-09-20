@@ -29,17 +29,17 @@ We refer to saved states in Rayleigh as \textbf{checkpoints}.  A single checkpoi
 These files contain all information needed to advance the system state from time step 10,000 to time step 10,001.  Checkpoints come in two flavors, denoted by two different prefix conventions:  \textbf{standard checkpoints} and \textbf{quicksaves}.  This section discusses how to generate and restart from both types of checkpoints.
 
 \subsection{Standard Checkpoints}
-Standard checkpoints are intended to serve as regularly spaced restart points for a given run.  These files begin with an 8-digit prefix indicating the time step at which the checkpoint was created. 
+Standard checkpoints are intended to serve as regularly spaced restart points for a given run.  These files begin with an 8-digit prefix indicating the time step at which the checkpoint was created.
 
 \subsubsection{Generating Standard Checkpoints}
 The frequency with which standard checkpoints are generated can be controlled by modifying the \textbf{checkpoint\_interval} variable in the \textbf{temporal\_controls\_namelist}.  For example, if you want to generate a checkpoint once every 50,000 time steps, you would modify your main\_input file to read:
 
 \begin{lstlisting}
 &temporal_controls_namelist
- checkpoint_interval = 50000  ! Checkpoint every 50,000 time steps 
+ checkpoint_interval = 50000  ! Checkpoint every 50,000 time steps
 /
 \end{lstlisting}
-The default value of checkpoint\_interval is 1,000,000, which is typically much larger than what you will use in practice.  
+The default value of checkpoint\_interval is 1,000,000, which is typically much larger than what you will use in practice.
 
 \subsubsection{Restarts From Standard Checkpoints}
 Restarting from a checkpoint is accomplished by first assigning a value of -1 to the variables \textbf{init\_type} and/or \textbf{magnetic\_init\_type} in the \textbf{initial\_conditions\_namelist}.  In addition, the time step from which you wish to restart from should be specified using the \textbf{restart\_iter} variable in the initial\_conditions\_namelist.  The example below will restart both the magnetic and hydrodynamic variables using the set of checkpoint files beginning with the prefix 00005000.
@@ -93,7 +93,7 @@ Note that checkpoints beginning with an 8-digit prefix (e.g., 00035000) are stil
 
 \subsubsection{1.2.2 Restarting from Quicksaves}
 Restarting from quicksave\_XX may be accomplished by specifying the value of restart\_iter to be -XX (i.e., the negative of the quicksave you wish to restart from).  The following example shows how to restart the hydrodynamic variables from quicksave\_02, while also initializing a random magnetic field.
-```
+
 \begin{lstlisting}
 &initial_conditions_namelist
  init_type = -1         ! Restart hydro variables from a checkpoint
@@ -102,7 +102,7 @@ Restarting from quicksave\_XX may be accomplished by specifying the value of res
 /
 \end{lstlisting}
 
-Note that the file last\_checkpoint contains the number of last checkpoint written.  This might be a quicksave or a standard checkpoint.  Specifying a value of zero for restart\_iter thus works with quicksaves and standard checkpoints alike.    
+Note that the file last\_checkpoint contains the number of last checkpoint written.  This might be a quicksave or a standard checkpoint.  Specifying a value of zero for restart\_iter thus works with quicksaves and standard checkpoints alike.
 
 \subsection{1.3 Checkpoint Logs}
 When checkpoints are written, the number of the most recent checkpoint is appended to a file named \textbf{checkpoint\_log}, found in the Checkpoints directory.   The checkpoint log can be used to identify  the time step number of a quicksave file that otherwise has no identifying information.  While this information is also contained in the grid\_etc file, those are written in unformatted binary and cumbersome to access from the terminal command line.
