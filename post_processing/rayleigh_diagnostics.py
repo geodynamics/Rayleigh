@@ -3,10 +3,10 @@ import numpy as np
 import os
 maxq = 4000
 
-def get_lut(quantities, nlut=maxq):
+def get_lut(quantities):
     """return the lookup table based on the quantity codes"""
     nq = len(quantities)
-    lut = np.zeros(nlut) + maxq
+    lut = np.zeros(maxq) + maxq
     for i,q in enumerate(quantities):
         if ((0 <= q) and ( q <= maxq-1)): # quantity must be in [0, maxq-1]
             lut[q] = i
