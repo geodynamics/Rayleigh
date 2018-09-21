@@ -1,20 +1,21 @@
 \documentclass[10pt, letterpaper]{article}
+\usepackage[letterpaper,margin=0.75in]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage[table]{xcolor}
 \usepackage{color}
+\usepackage[hidelinks]{hyperref}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{5pt}
 \usepackage{textpos}
 
-% use a larger page size; otherwise, it is difficult to have complete
-% code listings and output on a single page
-\usepackage{fullpage}
-
-
-% use the listings package for code snippets. define keywords for prm files
-% and for gnuplot
 \usepackage{listings}
+
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
 \lstset{frame=tb,
   language=Fortran,
   aboveskip=3mm,
@@ -31,24 +32,7 @@
   breakatwhitespace=true,
   tabsize=3
 }
-
-\lstdefinelanguage{prmfile}{morekeywords={set,subsection,end},
-                            morecomment=[l]{\#},escapeinside={\%\%}{\%},}
-\lstdefinelanguage{gnuplot}{morekeywords={plot,using,title,with,set,replot},
-                            morecomment=[l]{\#},}
-
-
-% use the hyperref package; set the base for relative links to
-% the top-level Rayleigh directory so that we can link to
-% files in the Rayleigh tree without having to specify the
-% location relative to the directory where the pdf actually
-% resides
-\usepackage[colorlinks,linkcolor=blue,urlcolor=blue,citecolor=blue,destlabel=true,baseurl=../]{hyperref}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
+\newcommand{\rayleigh}{\textsc{Rayleigh}}
 \begin{document}
 
 \definecolor{dark_grey}{gray}{0.3}
@@ -79,11 +63,12 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 
 %COLOR AND CODENAME BLOCK%
 \begin{center}
-\resizebox{\textwidth}{!}{\colorbox{orange}{\fontfamily{\rmdefault}\selectfont \textcolor{white} {\Large \hspace{0.5in}Rayleigh\hspace{0.1in}
+\resizebox{\textwidth}{!}{\colorbox{orange}{\fontfamily{\rmdefault}\selectfont \textcolor{white} {
 % FILL: name of the code
 % You may want to add \hspace to both sides of the codename to better center it, such as:
 % \newcommand{\codename}{\hspace{0.1in}CodeName\hspace{0.1in}}
-\hspace{0.2in}\manual{}\hspace{0.1in}} }}
+\hspace{0.2in}\rayleigh{}\hspace{0.1in}
+}}}
 %\\[12pt]
 %{\Large LaTeX Template for CIG Software User Manuals}
 \end{center}
@@ -123,7 +108,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 % e.g. Author One\\Author Two\\Author Three\\
 % be sure to have a newline (\\) after the final author
 \large
-\vspace{1.5in}
+\vspace{1.3in}
 \noindent with contributions by: \\
     Kyle Augustson, Wolfgang Bangerth, Rene Gassm\"oller, Sebastian Glane, Brad Hindman, Lorraine Hwang, Hiro Matsui, Ryan Orvedahl, Krista Soderlund, Cian Wilson, Maria Weber, Rakesh Yadav
     \\
@@ -149,7 +134,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \pagebreak
 \pagenumbering{arabic}
 \renewcommand{\abstractname}{Overview}
-
+%\begin{document}
 
 \title{Rayleigh User Guide \\ Version 0.9.1}
 \author{Nicholas Featherstone}
@@ -161,7 +146,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 Rayleigh solves the MHD equations, in a rotating frame, within spherical shells, using the anelastic or Boussinesq approximations.  Derivatives in Rayleigh are calculated using a spectral transform scheme.  Spherical harmonics are used as basis functions in the horizontal direction.  Chebyshev polynomials are employed in radius.  Time-stepping is accomplished used the semi-implicit Crank-Nicolson method for the linear terms, and the Adams-Bashforth method for the nonlinear terms.  Both methods are second-order in time.
 \\
 \\
-This document serves as a guide to installation and running Rayleigh.   Rayleigh's diagnostics package is discussed in the companion document Rayleigh/doc/Diagnostics\_Plotting.{html,pdf}
+This document serves as a guide to installation and running Rayleigh.   Rayleigh's diagnostics package is discussed in the companion document Rayleigh/doc/src/diagnostic\_codes/Diagnostics\_Plotting.{html,pdf}
 \\
 \\
 Rayleigh is written by Nicholas Featherstone, with National-Science-Foundation support through the Geodynamo Working Group of the Computational Infrastructure for Geodynamics (CIG; PI: Louise Kellogg).
@@ -191,8 +176,6 @@ Jonathon Aurnou, Benjamin Brown, Bruce Buffett, Nicholas Featherstone, Gary Glat
 \input physics.tex
 
 \input checkpointing.tex
-
-\input cookbooks.tex
 
 \input diagnostics.tex
 
