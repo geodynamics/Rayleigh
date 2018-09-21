@@ -5,7 +5,7 @@ MOBJ  = Math_Constants.o Timing.o Finite_Difference.o Chebyshev_Polynomials.o \
         Chebyshev_Polynomials_Alt.o Linear_Solve.o Legendre_Polynomials.o Legendre_Transforms.o \
         Math_Utility.o Fourier_Transform.o Spectral_Derivatives.o
 IOOBJ = Spherical_IO.o  
-POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o BoundaryConditions.o TransportCoefficients.o  \
+POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o BoundaryConditions.o TransportCoefficients.o \
         Fields.o Checkpointing.o Initial_Conditions.o \
         Diagnostics_Base.o \
         Diagnostics_Second_Derivatives.o \
@@ -28,4 +28,4 @@ POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o BoundaryC
 TOBJ  = Test_SHT.o Test_Cheby.o TestSuite.o
 MAINOBJ = Input.o Main.o
 
-OBJ = $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)
+OBJ = $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) Run_Parameters.o $(MAINOBJ)

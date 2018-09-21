@@ -44,6 +44,7 @@ Program Main!
     Use Fourier_Transform, Only : Initialize_FFTs
     Use Benchmarking, Only : Initialize_Benchmarking, Benchmark_Input_Reset
     Use Stable_Plugin
+    Use Run_Parameters, Only : Set_Run_Parameters
 	Implicit None
     
     Call Main_MPI_Init(global_rank)   !Initialize MPI
@@ -58,8 +59,9 @@ Program Main!
 		Call Init_ProblemSize()
 		Call Test_Lib()
 	Else
-		Call Main_Initialization()
-		Call Main_Loop_Sphere()
+                Call Main_Initialization()
+                Call Set_Run_Parameters()
+                Call Main_Loop_Sphere()
 	Endif
 	Call Finalization()
 Contains
