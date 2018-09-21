@@ -1,13 +1,13 @@
     !//////////////////////////////////////////////////////////////////////////
     !///////////////////////////////////////////////////
     !       Vorticity Outputs
-    Integer, Parameter :: vort_off = rhovoffset+100 ! :OFFSET CODE: 
+    Integer, Parameter :: vort_off = rhovoffset+100 ! :OFFSET CODE:
 
     Integer, Parameter :: vort_r      = vort_off+1  ! :tex: $\omega_r$
     Integer, Parameter :: vort_theta  = vort_off+2  ! :tex: $\omega_\theta$
     Integer, Parameter :: vort_phi    = vort_off+3  ! :tex: $\omega_\phi$
 
-    Integer, Parameter :: vortp_r     = vort_off+4  ! :tex: $\omega_r^\prime$    
+    Integer, Parameter :: vortp_r     = vort_off+4  ! :tex: $\omega_r^\prime$
     Integer, Parameter :: vortp_theta = vort_off+5  ! :tex: $\omega_\theta^\prime$
     Integer, Parameter :: vortp_phi   = vort_off+6  ! :tex: $\omega_\phi^\prime$
 
@@ -24,7 +24,7 @@
     Integer, Parameter :: vort_theta_sq  = vort_off+15  ! :tex: $\omega_\theta^2$
     Integer, Parameter :: vort_phi_sq    = vort_off+16  ! :tex: $\omega_\phi^2$
 
-    Integer, Parameter :: vortp_r_sq     = vort_off+17  ! :tex: $\omega_r^\prime^2$    
+    Integer, Parameter :: vortp_r_sq     = vort_off+17  ! :tex: $\omega_r^\prime^2$ 
     Integer, Parameter :: vortp_theta_sq = vort_off+18  ! :tex: $\omega_\theta^\prime^2$
     Integer, Parameter :: vortp_phi_sq   = vort_off+19  ! :tex: $\omega_\phi^\prime^2$
 

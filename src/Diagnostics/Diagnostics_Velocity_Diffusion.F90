@@ -26,7 +26,7 @@ Module Diagnostics_Velocity_Diffusion
 
 Contains
     !//////////////////////////////////////////////////////////////////////////////
-    ! Note:  These diagnostic quantities were programmed shortly before 
+    ! Note:  These diagnostic quantities were programmed shortly before
     !        Rayleigh's release.  They were programmed with readability, and
     !        not efficiency or vectorization, in mind.
 
@@ -62,7 +62,7 @@ Contains
 
                 !Add geometric terms to make this { Del^2{u} }_r
                 del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-                        buffer(PSI,vr) + & 
+                        buffer(PSI,vr) + &
                         buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t) + &
                         ovstheta(t)*buffer(PSI,dvpdp) )
 

@@ -9,8 +9,8 @@
 #define SBUFFA wsp%s2a(mp)%data
 #define SBUFFB wsp%s2b(mp)%data
 #define ASBUFFA cobuffer%s2a(mp)%data
-#define DO_PSI Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_PSI2 Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max
+#define DO_PSI Do t = my_theta%min, my_theta%max;    Do r = my_r%min, my_r%max ;Do k = 1, n_phi
+#define DO_PSI2 Do t = my_theta%min, my_theta%max;    Do r = my_r%min, my_r%max
 #define END_DO2 enddo; enddo
 #define PSI k,r,t
 #define PSI2 r,t

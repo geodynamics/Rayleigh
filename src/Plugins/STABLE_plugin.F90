@@ -18,8 +18,8 @@
 !  <http://www.gnu.org/licenses/>.
 !
 
-#define DO_IDX Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max ;Do k = 1, n_phi
-#define DO_IDX2 Do t = my_theta%min, my_theta%max;	Do r = my_r%min, my_r%max
+#define DO_IDX Do t = my_theta%min, my_theta%max;    Do r = my_r%min, my_r%max ;Do k = 1, n_phi
+#define DO_IDX2 Do t = my_theta%min, my_theta%max;    Do r = my_r%min, my_r%max
 #define END_DO2 enddo; enddo
 #define END_DO enddo; enddo; enddo
 #define IDX k,r,t
@@ -36,7 +36,7 @@ Module STABLE_Plugin
   Use ReferenceState
   Use TransportCoefficients
   Use General_MPI
-  Use Legendre_Transforms, Only : Legendre_Transform 
+  Use Legendre_Transforms, Only : Legendre_Transform
   Use Spectral_Derivatives
   Use Spherical_Buffer
   Use Fourier_Transform
@@ -47,7 +47,7 @@ Module STABLE_Plugin
   ! STABLE-specific input parameters
 
   ! Flag for DR and MC
-  ! < 0: No imposed mean flows 
+  ! < 0: No imposed mean flows
   ! = 1: After benchmark of Jouve et al (2007)
   ! = 2: After Dikpati & Gilman models
   ! = 3: After Bangalore models
@@ -61,7 +61,7 @@ Module STABLE_Plugin
 
   ! Parameters for alpha effect and spotmaker
   ! < 0: Nothing: no poloidal source imposed
-  ! = 1: nonlocal axisymmetric alpha-effect 
+  ! = 1: nonlocal axisymmetric alpha-effect
   ! = 2: SpotMaker-D
   ! = 3: SpotMaker-F
   Integer, Public, save :: Poloidal_source = -1
@@ -99,7 +99,7 @@ Module STABLE_Plugin
 
   ! input parameters for SpotMaker
   Real*8, Public, Save :: kindy_alpha0 = 1.d0
-  
+
   ! used for the poloidal source
   Real*8, Public, Allocatable, Save :: kindy_alpha(:)
   Real*8, Public, Allocatable, Save :: kindy_gtheta(:)
@@ -187,12 +187,12 @@ Contains
 
         !--------------------------------------------
         Allocate(x(N_R))
- 
+
         dd = 1.d0 - rb
 
         !--------------------------------------------
         ! Vr
-        norm = - u0 * 2.d0 / Pi 
+        norm = - u0 * 2.d0 / Pi
 
         x = (rr - rb)/(1.d0 - rb)
 
@@ -208,7 +208,7 @@ Contains
         DO_IDX2
            arg = Pi * x(r)
            fr1 = Sin(arg) * (3.d0*rr(r) - rb)
-           fr2 = Cos(arg) * rr(r) * Pi * x(r) 
+           fr2 = Cos(arg) * rr(r) * Pi * x(r)
            gtheta = costheta(t) * sintheta(t)
            Vmean_theta(IDX2) = norm * gtheta * x(r) * (fr1 + fr2) / rr(r)
         END_DO2
@@ -221,7 +221,7 @@ Contains
            omega_k = omega_eq*(omega_c + fr * gtheta) - Angular_Velocity
            Vmean_phi(IDX2) = Radius(r) * Sintheta(t) * Omega_k
         END_DO2
-   
+
         !--------------------------------------------
 
         ! Compute derivatives needed in the momentum advection due to these flows.
@@ -249,7 +249,7 @@ Contains
            rfr1 = rr(r) / (rr(r) - rb)
            gtheta = costheta(t) * sintheta(t)
            dVmean_tdr(IDX2) = ( norm * ( (5.d0*rr(r) - 2.d0*rb)/(1.d0 - rb) * Pi * Cos(arg) &
-                                         + 3.d0 * Sin(arg) - & 
+                                         + 3.d0 * Sin(arg) - &
                                          Pi**2 * rr(r) * x(r) * Sin(arg) / (1.d0-rb) &
                                        ) * gtheta * x(r)  / rr(r)  &
                                 + Vmean_theta(IDX2) * rb / ( rr(r)*(rr(r)-rb) ) )/Solar_Radius
@@ -278,7 +278,7 @@ Contains
                               rr(r) * omega_eq * fr * gtheta / d_tacho
           ! looks fine
         END_DO2
- 
+
         ! dVphi/dt
         DO_IDX2
            fr = 1.d0 + erf(x(r))
@@ -287,7 +287,7 @@ Contains
                               c2 * omega_eq *Radius(r) * Sintheta(t)**3  * fr)
           ! looks fine
         END_DO2
- 
+
         ! Clean up
         Deallocate(x,rr)
 
@@ -307,7 +307,7 @@ Contains
 
        Else
 
-          omega_c = twopi * kindy_omega1 
+          omega_c = twopi * kindy_omega1
           nu_eq = kindy_omega2
           a2 = kindy_omega3
           a4 = kindy_omega4
@@ -319,7 +319,7 @@ Contains
        !--------------------------------------
        ! Two different normalizations are used for radius
 
-       ! hardwired in 
+       ! hardwired in
        Lscale = 1.09d10
        Rnorm = Solar_Radius / Lscale
 
@@ -336,7 +336,7 @@ Contains
        chi = 0.5d0*(1.d0+erf(x))
 
        !--------------------------------------
-   
+
        do theta = my_theta%min,my_theta%max
           mu2 = Costheta(theta)**2
           mu4 = Costheta(theta)**4
@@ -352,10 +352,10 @@ Contains
              Vmean_phi(IDX2) = lambda * omega_k
          enddo
        enddo
- 
+
        !--------------------------------------
        ! Now the MC
-     
+
        If (kindy_rb < 0) Then
 
           ! default values
@@ -363,7 +363,7 @@ Contains
           theta_0 = 0.d0
           rb = 0.65d0 * Rnorm
 
-       Else 
+       Else
           ! defined such that positive kindy_mc gives CCW
           ! cells in the NH
           psi_0 = - kindy_mc
@@ -374,7 +374,7 @@ Contains
           rb = kindy_rb * Rnorm
 
        EndIf
-  
+
        !--------------------------------------
        ! hardwired in
        vscale = 1.09d2 / 1.1d0
@@ -404,14 +404,14 @@ Contains
        ! now loop over indices to define vr and vtheta
 
        do r = my_r%min, my_r%max
-    
+
           f1 = sin(Pi*x(r))
           f1_prime = Pi * cos(Pi*x(r)) / (Rnorm - rb)
 
           ee = - ((rr(r)-r0)/Gamma_m)**2
           f2 = exp(ee)
           f2_prime = -2.d0*(rr(r)-r0)*f2 / (Gamma_m**2)
- 
+
           fmc = f1 * f2
           fmc_prime = f1_prime*f2 + f1*f2_prime
 
@@ -464,9 +464,9 @@ Contains
 
      !===============================================================
      Else If (MeanFlows == 3) Then !Bangalore Meanfield set up
-  
+
         twopi = 2.d0 * Pi
-  
+
         If (kindy_omega1 < 0) Then
            ! default values
            omega_c = twopi * 432.8d-9
@@ -475,57 +475,57 @@ Contains
            a4 = 67.13d-9
            rc = 0.7d0
            d_tacho = 0.05d0
-  
+
         Else
-  
+
            omega_c = twopi * kindy_omega1
            nu_eq = kindy_omega2
            a2 = kindy_omega3
            a4 = kindy_omega4
            rc = kindy_r2
            d_tacho = kindy_d2
-  
+
         EndIf
-  
+
         !--------------------------------------
         ! Two different normalizations are used for radius
-  
-        ! hardwired in 
+
+        ! hardwired in
         Lscale = 1.00d10
         Rnorm = Solar_Radius / Lscale
-  
+
         Allocate(rr(N_R),rstar(N_R))
-  
+
         rstar = Radius / Solar_Radius
         rr = Radius / Lscale
-  
+
         Allocate(x(N_R),chi(N_R))
-  
+
         ! Dikpati & Charbonneau (199) analytical profile
         !--------------------------------------
         ! radial profile for Omega
-  
+
         x = 2.d0*(rstar-rc)/d_tacho
         chi = 0.5d0*(1.d0+erf(x))
-  
+
         !--------------------------------------
         do theta = my_theta%min,my_theta%max
            mu2 = Costheta(theta)**2
            mu4 = Costheta(theta)**4
            omega_s = 2.d0*Pi*(nu_eq+a2*mu2+a4*mu4)
-  
+
            do r = my_r%min, my_r%max
-  
+
               omega_k = omega_c + chi(r)*(omega_s - omega_c) &
                         & - Angular_Velocity
-  
+
               lambda = Radius(r) * Sintheta(theta)
-  
+
               Vmean_phi(IDX2) = lambda * omega_k
-  
+
            enddo
          enddo
-  
+
      !--- Parameters to be used for pumping ---
      !  pumping falls rapidly to zero around 0.7R
          gamCZ = kindy_PumpingCZ
@@ -534,32 +534,32 @@ Contains
          gamr2 = kindy_BotSurPump * Rnorm
          gamd1 = 0.01d0 * Rnorm
          gamd2 = 0.02d0 * Rnorm
-  
+
      ! Magnetic pumping coded. At present, we have only radial pumping...
          Allocate(vpr(N_R))
          vpr = gamCZ * 0.5d0*(1.0d0 + erf((rr-gamr1)/gamd1)) &
             & + (gamS-gamCZ)*0.5d0*(1.0d0+erf((rr-gamr2)/gamd2))
-  
+
      !-- Now the meridional circulation-----------------------------
          If (kindy_rb < 0) Then
-  
+
             ! default values
             psi_0 = 30.d0
             theta_0 = 0.d0
             rb = 0.67d0 * Rnorm
-  
-           Else 
+
+           Else
             ! defined such that positive kindy_mc gives CCW
             ! cells in the NH
             psi_0 = - kindy_mc
-  
+
             ! assume theta_0 is input in degrees
             theta_0 = Pi * kindy_theta0 / 180.d0
-  
+
             rb = kindy_rb * Rnorm
-  
+
          EndIf
-  
+
          !--------------------------------------
          ! hardwired in
          vscale = 1.284d0 * 100.0d0
@@ -568,15 +568,15 @@ Contains
          beta1 = 1.0d0
          beta2 = 1.3d0
          epsilon = 2.d0 + 1.d-7
-  
+
          ! first compute rho and put it in chi
-  
+
          ! kinematic density profile
          ! midx = 1.5d0
          !chi = ((1.d0/rstar) - 0.95d0)**midx
 
        chi = ref%density
-  
+
          ! also define x
          x = (rr - rb)/(Rnorm-rb)
 
@@ -589,14 +589,14 @@ Contains
          ! now loop over indices to define vr and vtheta
 
          do r = my_r%min, my_r%max
-      
+
             f1 = sin(Pi*x(r))
             f1_prime = Pi * cos(Pi*x(r)) / (Rnorm - rb)
 
             ee = - ((rr(r)-r0)/Gamma_m)**2
             f2 = exp(ee)
             f2_prime = -2.d0*(rr(r)-r0)*f2 / (Gamma_m**2)
- 
+
             fmc = f1 * f2
             fmc_prime = f1_prime*f2 + f1*f2_prime
 
@@ -607,9 +607,9 @@ Contains
             !drfac = 0.3d0*(rr(r)-rb)**(-0.7) !If you want less smooth fall at Rb
 
             do theta = my_theta%min, my_theta%max
-  
+
                rth = acos(costheta(theta))
-  
+
                If (rth <= pot) Then
                   th = rth
                Else
@@ -643,7 +643,7 @@ Contains
 
                ! flip for southern hemisphere
                if (rth > pot) bvt = - bvt
-  
+
                lambda = rr(r) * Sin(th)
 
                Vmean_r(IDX2) = norm * bvr / (chi(r)*rr(r)*lambda) + vpr(r)
@@ -651,7 +651,7 @@ Contains
 
            enddo
          enddo
-  
+
      EndIf
 
   End Subroutine Initialize_MeanFlows
@@ -661,7 +661,7 @@ Contains
      ! This just re-defines the turbulent magnetic diffusivity, eta to be consistent
      ! with other flux-transport dynamo models
 
-     ! This routine over-writes the existing arrays eta and its logarithmic 
+     ! This routine over-writes the existing arrays eta and its logarithmic
      ! derivative, dlneta
 
      Real*8 :: eta_0, eta_c, rrc, dd, norm, Solar_Radius
@@ -670,7 +670,7 @@ Contains
 
      Solar_Radius = 6.96d10
 
-     If (kindy_eta == 1) Then 
+     If (kindy_eta == 1) Then
 
        eta_0 = 1.d11
        eta_c = 1.d9 / eta_0
@@ -709,7 +709,7 @@ Contains
        arg = - x**2
        dlneta = eta_mid * &
             2.d0 * exp(arg) / (sqrt(Pi)*kindy_eta_d1*OuterRadius)
-       
+
        ! second step
        x = 2.d0 * (rr - kindy_eta_r2) / kindy_eta_d2
        chi2 = 0.5d0 * (1.d0 + erf(x))
@@ -725,7 +725,7 @@ Contains
        dlneta = dlneta / eta
 
      EndIf
-      
+
 
   End Subroutine STABLE_eta
 
@@ -734,7 +734,7 @@ Contains
      Real*8 :: Solar_Radius, s0, r1, d1
      Real*8, allocatable :: x(:), arg(:)
 
-     If ((Poloidal_Source) < 0) Return  
+     If ((Poloidal_Source) < 0) Return
 
      Allocate(kindy_alpha(N_R),kindy_gtheta(N_Theta))
 
@@ -743,12 +743,12 @@ Contains
      Select Case (Poloidal_Source)
 
         !-------------------------------------------------------
-        Case (1)     
-           ! Flux transport dynamo benchmark 
+        Case (1)
+           ! Flux transport dynamo benchmark
            ! axisymmetric alpha-effect
 
-	   !s0 = kindy_alpha0 * eta_top/Solar_Radius
-	   s0 = 35.d0 * eta_top/Solar_Radius
+       !s0 = kindy_alpha0 * eta_top/Solar_Radius
+       s0 = 35.d0 * eta_top/Solar_Radius
 
            r1 = kindy_r1
            d1 = kindy_d1
@@ -766,23 +766,23 @@ Contains
            ! This is the mean Bphi at r=rc, for use in computing
            ! the alpha-effect
            Allocate(Bmean(my_theta%min:my_theta%max))
-	   
+
         !-------------------------------------------------------
         Case (2)
-           ! SpotMaker-D ; spot deposition     
+           ! SpotMaker-D ; spot deposition
 
-	   ! Not yet implemented
+       ! Not yet implemented
 
         !-------------------------------------------------------
-        Case (3)     
+        Case (3)
            ! SpotMaker-F ; Lifting and twisting flow
-	   ! Not yet implemented
+       ! Not yet implemented
 
         !-------------------------------------------------------
-        Case Default     
+        Case Default
 
-	   print*,'ERROR: Poloidal Source incorrectly specified'
-	   stop
+       print*,'ERROR: Poloidal Source incorrectly specified'
+       stop
 
         End Select
 
@@ -803,7 +803,7 @@ Contains
     SU_B_COUNT(:,:) = 3
     Call grad_su%init(field_count = su_b_count, config = 'p3b')  ! Initiliaize in config p3b -- physical space
     Call grad_su%construct('p3b') ! Allocate space for p3b (not done via init)
-    
+
 
     ! 2) Load (1/sin(theta)) ds_dtheta  == B/sin(theta)
     !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -815,7 +815,7 @@ Contains
     END_DO
     !$OMP END PARALLEL DO
 
-    ! 3) FFT 
+    ! 3) FFT
     Call fft_to_spectral(grad_su%p3b, rsc = .true.)
 
     ! 4) Move to the p2b configuration: theta {r,m} configuration (theta in process)
@@ -824,7 +824,7 @@ Contains
 
     ! 5) Legendre transform
     Call grad_su%construct('s2b')  ! allocate space for spectral configuration
-    Call Legendre_Transform(grad_su%p2b,grad_su%s2b)	! transform
+    Call Legendre_Transform(grad_su%p2b,grad_su%s2b)    ! transform
 
 
     Call grad_su%deconstruct('p2b') ! free up physical configuration space
@@ -847,7 +847,7 @@ Contains
 
     !8.)  Move to p1b  :  r {ell, m}  -- s2b was deallocated and config updated by reform
     Call grad_su%reform()
-    
+
     !9.)  Chebyshev transform.  This transform is not in place, so we need a work array. We will use p1a...
     Call grad_su%construct('p1a')
 

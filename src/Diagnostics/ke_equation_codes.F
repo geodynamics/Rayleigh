@@ -3,9 +3,9 @@
     !       Kinetic Equation Terms
     !       Source terms and fluxes
     !       Only those terms which contribute to a zonal mean are included here
-    Integer, Parameter :: keq_off = amoff +100 ! :OFFSET CODE: 
+    Integer, Parameter :: keq_off = amoff +100 ! :OFFSET CODE:
 
-    ! First the source terms    
+    ! First the source terms
     Integer, Parameter :: press_work    = keq_off+1 ! :tex: $-c_3\mathrm{f}_1\boldsymbol{v}\cdot\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1}\right)$
     Integer, Parameter :: press_work_pp = keq_off+2 ! :tex: $-c_3\mathrm{f}_1\boldsymbol{v'}\cdot\boldsymbol{\nabla}\left(\frac{P'}{\mathrm{f}_1}\right)$
     Integer, Parameter :: press_work_mm = keq_off+3 ! :tex: $-c_3\mathrm{f}_1\overline{\boldsymbol{v}}\cdot\boldsymbol{\nabla}\left(\frac{\overline{P}}{\mathrm{f}_1}\right)$
@@ -77,4 +77,4 @@
     Integer, Parameter :: production_shear_ke  = keq_off+53 ! :tex: $ -- $
     Integer, Parameter :: production_shear_pke = keq_off+54 ! :tex: $ -- $
     Integer, Parameter :: production_shear_mke = keq_off+55 ! :tex: $ -- $
-    
+

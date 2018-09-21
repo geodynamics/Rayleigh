@@ -71,12 +71,12 @@ Contains
     ! INPUTS:
     !            nx         - the number of indices (i.e. gridpoints) to load balance across comm_group
     !            comm_group - MPI communicator across which load balancing is to be done
-    !               
+    !
     ! OUTPUTS:
     !
     !            lb_in      - array of load_config objects containing the load balancing
     !                           information for each member of comm_group
-    !////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    !//////////////////////////////////////////////////////////////////////////////////////////////////////
     Subroutine Standard_Balance(lb_in,nx,comm_group)
         Implicit None
         Type(Load_Config), Intent(InOut) :: lb_in(0:)
@@ -91,7 +91,7 @@ Contains
         mcheck = mod(nx,np)-1 ! Processors with rank less than mcheck get nx_local+1 points
         lb_in(0)%min = 1      ! First grid index is assumed to be 1 and is assigned to process 0
 
-        Do p = 0, np-1 
+        Do p = 0, np-1
             If (p .gt. 0) lb_in(p)%min = lb_in(p-1)%max+1
             lb_in(p)%delta = nx_local
             lb_in(p)%nx = nx
@@ -100,7 +100,7 @@ Contains
                 lb_in(p)%delta = nx_local+1
             Endif
             lb_in(p)%max = lb_in(p)%min+lb_in(p)%delta-1
-            lb_in(p)%nx = nx            
+            lb_in(p)%nx = nx
         Enddo
     End Subroutine Standard_Balance
 
@@ -115,21 +115,21 @@ Contains
     !
     ! INPUTS:
     !            comm   - MPI communicator across which load balancing is to be done
-    !               
+    !
     ! OUTPUTS:
     !
     !            m_values - integer array which, upon exit of the subroutine, contains a list of
     !                       grid indices ordered as they have been distributed across processes.
     !            lb_in    - array of load_config objects containing the load balancing
     !                           information for each member of comm_group
-    !////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    !//////////////////////////////////////////////////////////////////////////////////////////////////////
     Subroutine M_Balance(lb_in, m_values,comm)
         ! Pair up high and low m's
         ! Does not have to be m's.  Can be any index
         Implicit None
         Type(Load_Config), Intent(InOut) :: lb_in(0:)
         Type(Communicator), Intent(In) :: comm
-        Logical :: found 
+        Logical :: found
         Integer, Intent(InOut) :: m_values(1:)
         Integer :: n_m, ind, dpair,k
         Integer :: npairs , np, i, mcheck, mextra
@@ -167,15 +167,15 @@ Contains
             enddo
         enddo
 
-        
+
 
 
         !////////////
         ! find the first process that has a 'hole' to stuff
         ! a broken-up pair into.
-        p = 0 
+        p = 0
         found = .false.
-        
+
         do while(.not. found)
             if (i_am_holding(p) .eq. lb_in(p)%delta) then
                 p = p+1
@@ -209,12 +209,12 @@ Contains
                     m_values(ind) = unpaired((i-1)*2+k)
                     p = p+1
                 enddo
-            enddo            
+            enddo
             DeAllocate(unpaired)
         Endif
 
         ! Account for middle m_value if it was left unpaired
-        if (mcheck .eq. 1) then 
+        if (mcheck .eq. 1) then
             mextra = n_m/2
             my_npairs = lb_in(p)%delta/2
             ind = lb_in(p)%min+my_npairs*2
@@ -232,22 +232,22 @@ Contains
     ! DESCRIPTION:  Handles load balancing of spherical harmonic modes (l-m pairs) across the members of
     !                 of the MPI communicator group 'comm'.  This load balancing is appropriate for
     !                 a triangular truncation.
-    !                 
+    !
     !
     ! INPUTS:
     !            comm   - MPI communicator across which load balancing is to be done
-    !            mlb    - load_config object returned from M_Balance   
+    !            mlb    - load_config object returned from M_Balance
     !            inds   - array of m_values as returned from M_Balance
     ! OUTPUTS:
     !           NONE
     !
-    ! Side Effects:  
+    ! Side Effects:
     !                All variables declared in the L-M load balancing / Parallelization section at the
     !                top of this module are initialized.  These will be wrapped into their own load balancing
     !                object at some point in the future.
     ! Notes:
     !                Editing this routine is not a good idea.
-    !////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    !//////////////////////////////////////////////////////////////////////////////////////////////////////
 
     Subroutine LM_Load_Balance(mlb,inds,comm)
         ! Handles the load balancing of modes for the implicit transpose
@@ -335,7 +335,7 @@ Contains
         ! Distributing pairs this way shouldn't be too bad,
         ! but it might be possible to better load-balance.
         N_radial_Cpus = comm%np
-        lm_per = lm_count/N_Radial_Cpus        
+        lm_per = lm_count/N_Radial_Cpus
         lm_remainder = MOD(lm_count, N_Radial_Cpus)
         Allocate(lm_owner(1:lm_count))
         Allocate(num_lm(0:N_Radial_Cpus-1))

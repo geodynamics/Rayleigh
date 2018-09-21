@@ -22,7 +22,7 @@ Module Controls
     ! Things that control how the simulation runs
     Use BufferedOutput
     Implicit None
-    
+
     !////////////////////////////////////////////////////////////////////////////////
     ! Multiple run controls,  These are not set in a namelist, but are used through command line options.
     Character*120, Allocatable :: rundirs(:)
@@ -33,7 +33,7 @@ Module Controls
 
     !////////////////////////////////////////////////////////////////////////////////
     ! Numerical Controls
-    ! Flats that control details of the parallelization/data layout and 
+    ! Flats that control details of the parallelization/data layout and
     ! how the equations are solved (not what equations are solved).
     Logical :: chebyshev = .true.           ! Set to false to use finite-differences (chebyshev polynomials are used by default)
     Logical :: bandsolve = .false.          ! Set to true to use band solves with the finite-differences
@@ -64,7 +64,7 @@ Module Controls
 
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
-    Integer :: benchmark_mode = 0 
+    Integer :: benchmark_mode = 0
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
@@ -107,11 +107,11 @@ Module Controls
     ! What is normally sent to standard out can, if desired, be sent to a file instead
     Integer :: stdout_flush_interval = 50  ! Lines stored before stdout buffer is flushed to stdout_unit
     Character*120 :: stdout_file = 'nofile'
-    
+
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,stdout_file
 
     !///////////////////////////////////////////////////////////////////////////
-    ! This array may be used for various purposes related to passing messages to the 
+    ! This array may be used for various purposes related to passing messages to the
     ! full pool of processes
     Real*8, Allocatable :: global_msgs(:)
     Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
@@ -153,20 +153,20 @@ Contains
 
     Subroutine Restore_Physics_Defaults()
         Implicit None
-        magnetism = .false.          
-        nonlinear = .true.           
-        Rotation = .false.           
-        lorentz_forces = .true.     
-        viscous_heating = .true.     
+        magnetism = .false.
+        nonlinear = .true.
+        Rotation = .false.
+        lorentz_forces = .true.
+        viscous_heating = .true.
         ohmic_heating = .true.
-        advect_reference_state = .false.  
-        benchmark_mode = 0 
+        advect_reference_state = .false.
+        benchmark_mode = 0
         benchmark_integration_interval = -1
         benchmark_report_interval = -1
     End Subroutine Restore_Physics_Defaults
 
     Subroutine Restore_Numerical_Defaults
-        Implicit None  
+        Implicit None
         chebyshev = .false.
         bandsolve = .false.
         static_transpose = .false.
@@ -174,7 +174,7 @@ Contains
         use_parity = .true.
         deriv_cluge = .true.
         pad_alltoall = .false.
-    End Subroutine Restore_Numerical_Defaults   
+    End Subroutine Restore_Numerical_Defaults
 
     Subroutine Restore_Temporal_Defaults
         Implicit None
@@ -194,7 +194,7 @@ Contains
         min_time_step = 1.0d-13
         chk_type = 1
         diagnostic_reboot_interval = -1
-    End Subroutine Restore_Temporal_Defaults   
+    End Subroutine Restore_Temporal_Defaults
 
 
     Subroutine Restore_IO_Defaults

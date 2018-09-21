@@ -1,4 +1,4 @@
-    Integer, Parameter :: te_eq_off = mom_eq_off+200 ! :OFFSET CODE:  
+    Integer, Parameter :: te_eq_off = mom_eq_off+200 ! :OFFSET CODE:
     ! Advection (Full)
     Integer, Parameter :: rhotv_grad_s   = te_eq_off+1 ! :tex: $\mathrm{f}_1\mathrm{f}_4\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta$
     Integer, Parameter :: rhotvp_grad_sp = te_eq_off+2 ! :tex: $\mathrm{f}_1\mathrm{f}_4\boldsymbol{v'}\cdot\boldsymbol{\nabla}\Theta'$
@@ -66,7 +66,7 @@
     Integer, Parameter :: rhot_vrp_sm = te_eq_off+42 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\overline{\Theta}$
     Integer, Parameter :: rhot_vrm_sp = te_eq_off+43 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\Theta'$
     Integer, Parameter :: rhot_vrm_sm = te_eq_off+44 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\,\overline{\Theta}$
-    
+
     Integer, Parameter :: rhot_vt_s   = te_eq_off+45 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta \Theta$
     Integer, Parameter :: rhot_vtp_sp = te_eq_off+46 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\Theta'$
     Integer, Parameter :: rhot_vtp_sm = te_eq_off+47 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\overline{\Theta}$

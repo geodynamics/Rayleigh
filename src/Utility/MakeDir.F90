@@ -22,7 +22,7 @@ Module MakeDir
 
     Implicit None
 
-Contains 
+Contains
 
     !Wrapper to C routine that calls mkdir.
     !System calls are often inaccessible through Fortran, but not through C.

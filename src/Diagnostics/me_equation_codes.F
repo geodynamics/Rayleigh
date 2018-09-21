@@ -4,7 +4,7 @@
     !       Source terms and fluxes
     !       As far as the Reynold decomposition goes,
     !       Only those terms which contribute to a zonal mean are included here
-    Integer, Parameter :: meq_off = keq_off +100 ! :OFFSET CODE: 
+    Integer, Parameter :: meq_off = keq_off +100 ! :OFFSET CODE:
 
     ! This one's a little different in that we place the fluxes first
     Integer, Parameter :: ecrossb_r     = meq_off+1      ! :tex: $\left[\left(\boldsymbol{v}\times\boldsymbol{B}-\eta\boldsymbol{\mathcal{J}}\right)\times\boldsymbol{B}\right]_r$

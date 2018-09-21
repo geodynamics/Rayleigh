@@ -24,7 +24,7 @@ Module Diagnostics_Base
     !//////////////////////////////////////////////////////////
     ! This module holds common variables that may be accessed
     ! by any diagnostics routine.  These variables are primarily
-    ! temporary, allocatable arrays and the output menu codes. 
+    ! temporary, allocatable arrays and the output menu codes.
     Use ProblemSize
     Use Spherical_IO
     Use Fields
@@ -35,7 +35,7 @@ Module Diagnostics_Base
     Implicit None
 
     !/////////////////////////////////////////////////////////
-    !  Diagnostic Quantity Codes 
+    !  Diagnostic Quantity Codes
     !  Reynolds decompositions are often used in the outputs.
     !  As a result, some shorthand is used as follows:
     !   "m" and "< >" denote the azimuthal OR spherical mean.
@@ -92,24 +92,24 @@ Module Diagnostics_Base
 
     !//////////////////////////////////////////////////////////
     !  Turbulent kinetic energy generation
-    Integer, Parameter :: turbke_offset = custom_offset+100 
+    Integer, Parameter :: turbke_offset = custom_offset+100
 
 
-    Integer, Parameter :: production_buoyant_pKE   = turbke_offset + 1	! Buoyant Production of turbulent kinetic energy
-    !Integer, Parameter :: production_shear_pKE     = turbke_offset + 2	    ! Shear Production of turbulent kinetic energy
-    Integer, Parameter :: dissipation_viscous_pKE  = turbke_offset + 3	! Viscous Dissipation of turbulent kinetic energy
-    Integer, Parameter :: transport_pressure_pKE   = turbke_offset + 4	! Pressure Transport of turbulent kinetic energy
-    Integer, Parameter :: transport_viscous_pKE    = turbke_offset + 5	    ! Viscous Transport of turbulent kinetic energy    
-    Integer, Parameter :: transport_turbadvect_pKE = turbke_offset + 6	! Turbulent Advective Transport of turbulent kinetic energy
-    Integer, Parameter :: transport_meanadvect_pKE = turbke_offset + 7	! Mean Advective Transport of turbulent kinetic energy
-    Integer, Parameter :: rflux_pressure_pKE       = turbke_offset + 8		! Radial Pressure Flux of turbulent kinetic energy
-    Integer, Parameter :: rflux_viscous_pKE        = turbke_offset + 9		    ! Radial Viscous Flux of turbulent kinetic energy    
-    Integer, Parameter :: rflux_turbadvect_pKE     = turbke_offset + 10	    ! Radial Turbulent Advective Flux of turbulent kinetic energy
-    Integer, Parameter :: rflux_meanadvect_pKE     = turbke_offset + 11	    ! Radial Mean Advective Flux of turbulent kinetic energy
-    Integer, Parameter :: thetaflux_pressure_pKE   = turbke_offset + 12	! Colatitudinal Pressure Flux of turbulent kinetic energy
-    Integer, Parameter :: thetaflux_viscous_pKE    = turbke_offset + 13	! Colatitudinal Viscous Flux of turbulent kinetic energy    
-    Integer, Parameter :: thetaflux_turbadvect_pKE = turbke_offset + 14	! Colatitudinal Turbulent Advective Flux of turbulent kinetic energy
-    Integer, Parameter :: thetaflux_meanadvect_pKE = turbke_offset + 15	! Colatitudinal Mean Advective Flux of turbulent kinetic energy
+    Integer, Parameter :: production_buoyant_pKE   = turbke_offset + 1    ! Buoyant Production of turbulent kinetic energy
+    !Integer, Parameter :: production_shear_pKE     = turbke_offset + 2        ! Shear Production of turbulent kinetic energy
+    Integer, Parameter :: dissipation_viscous_pKE  = turbke_offset + 3    ! Viscous Dissipation of turbulent kinetic energy
+    Integer, Parameter :: transport_pressure_pKE   = turbke_offset + 4    ! Pressure Transport of turbulent kinetic energy
+    Integer, Parameter :: transport_viscous_pKE    = turbke_offset + 5        ! Viscous Transport of turbulent kinetic energy
+    Integer, Parameter :: transport_turbadvect_pKE = turbke_offset + 6    ! Turbulent Advective Transport of turbulent kinetic energy
+    Integer, Parameter :: transport_meanadvect_pKE = turbke_offset + 7    ! Mean Advective Transport of turbulent kinetic energy
+    Integer, Parameter :: rflux_pressure_pKE       = turbke_offset + 8        ! Radial Pressure Flux of turbulent kinetic energy
+    Integer, Parameter :: rflux_viscous_pKE        = turbke_offset + 9            ! Radial Viscous Flux of turbulent kinetic energy
+    Integer, Parameter :: rflux_turbadvect_pKE     = turbke_offset + 10        ! Radial Turbulent Advective Flux of turbulent kinetic energy
+    Integer, Parameter :: rflux_meanadvect_pKE     = turbke_offset + 11        ! Radial Mean Advective Flux of turbulent kinetic energy
+    Integer, Parameter :: thetaflux_pressure_pKE   = turbke_offset + 12    ! Colatitudinal Pressure Flux of turbulent kinetic energy
+    Integer, Parameter :: thetaflux_viscous_pKE    = turbke_offset + 13    ! Colatitudinal Viscous Flux of turbulent kinetic energy
+    Integer, Parameter :: thetaflux_turbadvect_pKE = turbke_offset + 14    ! Colatitudinal Turbulent Advective Flux of turbulent kinetic energy
+    Integer, Parameter :: thetaflux_meanadvect_pKE = turbke_offset + 15    ! Colatitudinal Mean Advective Flux of turbulent kinetic energy
 
 
     !///////////////////////////////////
@@ -122,8 +122,8 @@ Module Diagnostics_Base
     ! everything in buffer at output time.
     Real*8, Allocatable :: ell0_values(:,:), m0_values(:,:,:)
 
-    ! This array will hold fluctuating quantities from the buffer { q - <q>}      
-    Real*8, Allocatable :: fbuffer(:,:,:,:)	
+    ! This array will hold fluctuating quantities from the buffer { q - <q>}
+    Real*8, Allocatable :: fbuffer(:,:,:,:)
 
     Logical :: azimuthal_mean = .true. ! when false, the m0_values are overwritten with the ell0_values
 
@@ -133,8 +133,8 @@ Module Diagnostics_Base
     ! ell0 and m0 values of those variables stored in d2buffer
     Real*8, Allocatable :: d2_ell0(:,:), d2_m0(:,:,:)
 
-    ! This array will hold fluctuating quantities from the d2buffer { q - <q>}      
-    Real*8, Allocatable :: d2_fbuffer(:,:,:,:)	
+    ! This array will hold fluctuating quantities from the d2buffer { q - <q>}
+    Real*8, Allocatable :: d2_fbuffer(:,:,:,:)
 
 
     ! Indices within the d2buffer
@@ -184,7 +184,7 @@ Contains
 
         Call cobuffer%init(field_count = cbfcount, config = 'p1a', &
             dynamic_transpose =dbtrans, dynamic_config = dbconfig, &
-            hold_cargo = test_reduce, padding = pad_alltoall)        
+            hold_cargo = test_reduce, padding = pad_alltoall)
     End Subroutine Initialize_Diagnostics_Buffer
 
 
@@ -194,11 +194,11 @@ Contains
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         jmax = size(buffer,4)
         Allocate(fbuffer(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
-        
+
 
         Do j = 1, jmax
             DO_PSI
-                fbuffer(PSI,j) = buffer(PSI,j) - m0_values(PSI2,j) 
+                fbuffer(PSI,j) = buffer(PSI,j) - m0_values(PSI2,j)
             END_DO
         Enddo
 
