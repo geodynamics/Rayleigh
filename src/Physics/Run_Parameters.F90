@@ -166,7 +166,7 @@ Contains
                  Write(io,1005) "  Ekman Number             : ", Ekman_Number
                  Write(io,1005) "  Prandtl Number           : ", Prandtl_Number
                  If (magnetism) Then
-                     Write(io,1005) "  Magnetic Prandtl Number  : ", Prandtl_Number
+                     Write(io,1005) "  Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
                  Endif
              Else If (reference_type .eq. 2) Then
                  Write(io,1001) "  Reference type           : ", "Polytrope (Non-dimensional)"
@@ -174,7 +174,7 @@ Contains
                  Write(io,1005) "  Ekman Number             : ", Ekman_Number
                  Write(io,1005) "  Prandtl Number           : ", Prandtl_Number
                  If (magnetism) Then
-                     Write(io,1005) "  Magnetic Prandtl Number  : ", Prandtl_Number
+                     Write(io,1005) "  Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
                  Endif
                  Write(io,1005) "  Polytropic Index         : ", poly_n
                  Write(io,1005) "  Density Scaleheights     : ", poly_nrho
@@ -182,7 +182,7 @@ Contains
                  Write(io,1001) "  Reference type                : ", "Polytrope (Dimensional)"
                  Write(io,1005) "  Angular Velocity (rad/s)      : ", Angular_Velocity
                  Write(io,1005) "  Inner-Radius Density (g/cm^3) : ", poly_rho_i
-                 Write(io,1005) "  Interiour Mass (g)            : ", poly_mass
+                 Write(io,1005) "  Interior Mass (g)             : ", poly_mass
                  Write(io,1005) "  Polytropic Index              : ", poly_n
                  Write(io,1005) "  Density Scaleheights          : ", poly_nrho
                  Write(io,1005) "  CP (erg g^-1 cm^-3 K^-1)      : ", pressure_specific_heat
