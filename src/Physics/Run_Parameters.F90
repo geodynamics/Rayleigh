@@ -82,8 +82,7 @@ Contains
       If (my_rank .eq. 0) Then
           Inquire(file=Trim(my_path)//Trim(filename), exist=file_exist)
           Open(unit=io, file=Trim(my_path)//Trim(filename), form='formatted', &
-               action='write', access='sequential', status='unknown', position='append', &
-               iostat=ierr)
+               action='write', access='sequential', status='unknown', iostat=ierr)
           If (ierr .eq. 0) Then
              Write(io,*)
              Write(io,999)
