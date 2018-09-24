@@ -67,7 +67,6 @@ $(VERSION):
 	$(eval git_hash := $(shell git log -1 --pretty=format:"%H --- %cd"))
 	$(eval git_url := $(shell git config remote.origin.url))
 	$(eval git_branch := $(shell git rev-parse --abbrev-ref HEAD))
-	$(eval git_hash := $(shell git log -1 --pretty=format:"%H --- %cd"))
 	$(eval build_date := $(shell date))
 	$(eval build_machine := $(shell uname -a))
 	$(eval build_dir := $(shell pwd))
