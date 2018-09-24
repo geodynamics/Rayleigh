@@ -18,6 +18,7 @@
 #  <http://www.gnu.org/licenses/>.
 #
 
+
 from __future__ import print_function
 import numpy as np
 import os
@@ -26,7 +27,8 @@ import glob
 maxq = 4000
 
 class Spherical_3D:
-    """Rayleigh Spherical_3D Structure
+    """
+    Rayleigh Spherical_3D Structure
     ----------------------------------
     self.basefilename                             : base filename
     self.nr                                       : number of radial points
@@ -38,8 +40,9 @@ class Spherical_3D:
     """
  
     def __init__(self,filename,path='Spherical_3D/'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if not Spherical_3D)
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if not Spherical_3D)
         """
         self.basefilename = os.path.split(filename)[-1].split("_")[0]
 
@@ -70,10 +73,13 @@ class Spherical_3D:
           fd = open(path+var_file, 'rb')
           self.vals[index] = swapread(fd,dtype='float64',count=nphi*ntheta*nr,swap=bs)
 
+
+
 class RayleighTiming:
 
     def __init__(self,filename,byteswap=True):
-        """filename  : The reference state file to read.
+        """
+        filename  : The reference state file to read.
         """       
         fd = open(filename,'rb')
         # We read an integer to assess which endian the file was written in...
@@ -102,18 +108,20 @@ class RayleighTiming:
                       'Total Runtime'] 
 
 class RayleighProfile:
-    """Rayleigh Reference State Structure
+    """
+    Rayleigh Reference State Structure
     ----------------------------------
-    self.nr         : number of radial points
-    self.nq         : number of quantities in the 2-D structure file
+    self.nr          : number of radial points
+    self.nq          : number of quantities in the 2-D structure file
     self.radius      : radial coordinates
     self.vals        : vals[0:nr-1,0:nq-1]
 
     """
 
     def __init__(self,filename='none'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename != 'none'):
             
@@ -139,17 +147,18 @@ class RayleighProfile:
         fd.close()
 
 class RayleighArray:
-    """Rayleigh 2-D Array Structure
+    """
+    Rayleigh 2-D Array Structure
     ----------------------------------
     self.nx         : number of x
     self.ny         : number of y-values in the 2-D structure file
-    self.vals        : vals[0:nr-1,0:nq-1]
-
+    self.vals       : vals[0:nr-1,0:nq-1]
     """
 
     def __init__(self,filename ='none'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
 
         if (filename == 'none'):
@@ -187,7 +196,8 @@ class RayleighArray:
         fd.close()
 
 class ReferenceState:
-    """Rayleigh Reference State Structure
+    """
+    Rayleigh Reference State Structure
     ----------------------------------
     self.n_r         : number of radial points
     self.radius      : radial coordinates
@@ -203,8 +213,9 @@ class ReferenceState:
     """
 
     def __init__(self,filename='none',path='./'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'reference'
@@ -233,7 +244,8 @@ class ReferenceState:
         fd.close()
 
 class G_Avgs:
-    """Rayleigh GlobalAverage Structure
+    """
+    Rayleigh GlobalAverage Structure
     ----------------------------------
     self.niter                  : number of time steps
     self.nq                     : number of diagnostic quantities output
@@ -246,8 +258,9 @@ class G_Avgs:
     """
 
     def __init__(self,filename='none',path='G_Avgs/'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -279,7 +292,8 @@ class G_Avgs:
         fd.close()
 
 class Shell_Avgs:
-    """Rayleigh Shell Average Structure
+    """
+    Rayleigh Shell Average Structure
     ----------------------------------
     self.niter                         : number of time steps
     self.nq                            : number of diagnostic quantities output
@@ -300,8 +314,9 @@ class Shell_Avgs:
     self.lut                           : Lookup table for the different diagnostics output
     """
     def __init__(self,filename='none',path='Shell_Avgs/',ntheta=0):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -361,7 +376,8 @@ class Shell_Avgs:
         fd.close()
 
 class AZ_Avgs:
-    """Rayleigh AZ_Avgs Structure
+    """
+    Rayleigh AZ_Avgs Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -424,7 +440,8 @@ class AZ_Avgs:
         fd.close()
 
 class Point_Probes:
-    """Rayleigh Point Probes Structure
+    """
+    Rayleigh Point Probes Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -446,8 +463,9 @@ class Point_Probes:
 
 
     def __init__(self,filename='none',path='Point_Probes/'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -522,7 +540,8 @@ class Point_Probes:
 
 
 class Meridional_Slices:
-    """Rayleigh Meridional Slice Structure
+    """
+    Rayleigh Meridional Slice Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -544,8 +563,9 @@ class Meridional_Slices:
 
 
     def __init__(self,filename='none',path='Meridional_Slices/'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -599,7 +619,8 @@ class Meridional_Slices:
 
 
 class Equatorial_Slices:
-    """Rayleigh Equatorial Slice Structure
+    """
+    Rayleigh Equatorial Slice Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -617,8 +638,9 @@ class Equatorial_Slices:
 
 
     def __init__(self,filename='none',path='Equatorial_Slices/'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        """
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -665,7 +687,8 @@ class Equatorial_Slices:
 
 
 class Shell_Slices:
-    """Rayleigh Shell Slice Structure
+    """
+    Rayleigh Shell Slice Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -708,12 +731,13 @@ class Shell_Slices:
             print('costheta : ', self.costheta)
 
     def __init__(self,filename='none',path='Shell_Slices/',slice_spec = [], rec0 = False):
-        """filename   : The reference state file to read.
-           path       : The directory where the file is located (if full path not in filename
-           slice_spec : Optional list of [time index, quantity code, radial index].  If 
-                        specified, only a single shell is read.  time indexing and radial 
-                        indexing start at 0
-           rec0      : Set to true to read the first timestep's data only.
+        """
+        filename   : The reference state file to read.
+        path       : The directory where the file is located (if full path not in filename
+        slice_spec : Optional list of [time index, quantity code, radial index].  If 
+                     specified, only a single shell is read.  time indexing and radial 
+                     indexing start at 0
+        rec0      : Set to true to read the first timestep's data only.
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -856,7 +880,8 @@ class Shell_Slices:
         fd.close()
 
 class SPH_Modes:
-    """Rayleigh Shell Spectrum Structure
+    """
+    Rayleigh Shell Spectrum Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -880,8 +905,8 @@ class SPH_Modes:
 
     def __init__(self,filename='none',path='SPH_Modes/'):
         """
-           filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -959,7 +984,8 @@ class SPH_Modes:
 
 
 class Shell_Spectra:
-    """Rayleigh Shell Spectrum Structure
+    """
+    Rayleigh Shell Spectrum Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -1005,8 +1031,8 @@ class Shell_Spectra:
 
     def __init__(self,filename='none',path='Shell_Spectra/'):
         """
-           filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+        filename  : The reference state file to read.
+        path      : The directory where the file is located (if full path not in filename
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -1086,7 +1112,8 @@ class Shell_Spectra:
 
 
 class Power_Spectrum():
-    """Rayleigh Power Spectrum Structure
+    """
+    Rayleigh Power Spectrum Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nr                                       : number of radii at which power spectra are available
@@ -1585,12 +1612,13 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
     ax.contour(yr,xr,field,colors='w',levels=levs)
 
 def streamfunction(vr,vt,r,cost,order=0):
-    """------------------------------------------------------------
+    """
+    ------------------------------------------------------------
     This routine takes as input a divergenceless axisymmetric 
     vector field in spherical coordinates and computes from 
     it a streamfunction (a.k.a. a flux flunction).  The grid
     is decribed by r and costheta and can be non-uniform.
-   ------------------------------------------------------------
+    ------------------------------------------------------------
     INPUTS:
    
     Vr, Vtheta = the 2-d vector velocity (or magnetic) field.
@@ -1607,11 +1635,11 @@ def streamfunction(vr,vt,r,cost,order=0):
                  south pole and proceeds upward and northward.
                  If equal to zero, both are done and an average
                  is taken.
-   ------------------------------------------------------------
+    ------------------------------------------------------------
     OUTPUTS:
    
     psi = the streamfunction
-   ------------------------------------------------------------
+    ------------------------------------------------------------
     """
     import numpy
 
@@ -1665,3 +1693,178 @@ def streamfunction(vr,vt,r,cost,order=0):
             psi=0.5*(psi+psi2)
             
     return psi
+
+#-------------------------------------------
+
+def phider(data, order=4):
+    """
+    Finite difference phi-derivative of an input array
+    :param order: order of the finite-difference scheme (possible values are 2 or 4)
+    :type order: int
+    :returns: the phi-derivative of the input array
+    :rtype: numpy.ndarray
+    
+    Function copied from file
+    https://github.com/magic-sph/magic/blob/master/python/magic/libmagic.py
+    developed by Thomas Gastine (gastine@ipgp.fr)
+    """
+    nphi = data.shape[0]
+    dphi = 2.*np.pi/(nphi-1.)
+    if order == 2:
+        der = (np.roll(data, -1,  axis=0)-np.roll(data, 1, axis=0))/(2.*dphi)
+        der[0, ...] = (data[1, ...]-data[-2, ...])/(2.*dphi)
+        der[-1, ...] = der[0, ...]
+    elif order == 4:
+        der = (   -np.roll(data,-2,axis=0) \
+               +8.*np.roll(data,-1,axis=0) \
+               -8.*np.roll(data, 1,axis=0)  \
+                  +np.roll(data, 2,axis=0)   )/(12.*dphi)
+        der[1, ...] = (-data[3, ...]+8.*data[2, ...]-\
+                       8.*data[0, ...] +data[-2, ...])/(12.*dphi)
+        der[-2, ...] = (-data[0, ...]+8.*data[-1, ...]-\
+                       8.*data[-3, ...]+data[-4, ...])/(12.*dphi)
+        der[0, ...] = (-data[2, ...]+8.*data[1, ...]-\
+                       8.*data[-2, ...] +data[-3, ...])/(12.*dphi)
+        der[-1, ...] = der[0, ...]
+    return der
+
+def thetader(data, order=4):
+    """
+    Finite difference theta-derivative of an input array
+    :param data: input array
+    :type data: numpy.ndarray
+    :param order: order of the finite-difference scheme (possible values are 2 or 4)
+    :type order: int
+    :returns: the theta-derivative of the input array
+    :rtype: numpy.ndarray
+
+    Function copied from file
+    https://github.com/magic-sph/magic/blob/master/python/magic/libmagic.py
+    developed by Thomas Gastine (gastine@ipgp.fr)
+    """
+    if len(data.shape) == 3: # 3-D
+        ntheta = data.shape[1]
+        dtheta = np.pi/(ntheta-1.)
+        if order == 2:
+            der = (np.roll(data, -1,  axis=1)-np.roll(data, 1, axis=1))/(2.*dtheta)
+            der[:, 0, :] = (data[:, 1, :]-data[:, 0, :])/dtheta
+            der[:, -1, :] = (data[:, -1, :]-data[:, -2, :])/dtheta
+        elif order == 4:
+            der = (   -np.roll(data,-2,axis=1) \
+                   +8.*np.roll(data,-1,axis=1) \
+                   -8.*np.roll(data, 1,axis=1)  \
+                      +np.roll(data, 2,axis=1)   )/(12.*dtheta)
+            der[:, 1, :] = (data[:, 2, :]-data[:, 0, :])/(2.*dtheta)
+            der[:, -2, :] = (data[:, -1, :]-data[:, -3, :])/(2.*dtheta)
+            der[:, 0, :] = (data[:, 1, :]-data[:, 0, :])/dtheta
+            der[:, -1, :] = (data[:, -1, :]-data[:, -2, :])/dtheta
+
+    elif len(data.shape) == 2: #2-D
+        ntheta = data.shape[0]
+        dtheta = np.pi/(ntheta-1.)
+        if order == 2:
+            der = (np.roll(data, -1,  axis=0)-np.roll(data, 1, axis=0))/(2.*dtheta)
+            der[0, :] = (data[1, :]-data[0, :])/dtheta
+            der[-1, :] = (data[-1, :]-data[-2, :])/dtheta
+        elif order == 4:
+            der = (-np.roll(data,-2,axis=0)+8.*np.roll(data,-1,axis=0)-\
+                  8.*np.roll(data,1,axis=0)+np.roll(data,2,axis=0))/(12.*dtheta)
+            der[1, :] = (data[2, :]-data[0, :])/(2.*dtheta)
+            der[-2, :] = (data[-1, :]-data[-3, :])/(2.*dtheta)
+            der[0, :] = (data[1, :]-data[0, :])/dtheta
+            der[-1, :] = (data[-1, :]-data[-2, :])/dtheta
+
+    return der
+
+
+def zder(data, eta=0.35, spectral=True, colat=None, exclude=False):
+    """
+    z derivative of an input 3D (phi,theta,r) or 2D (theta,r) array
+    >>> dvrdz = zderavg(input_array, eta=radratio, colat=colatitudes)
+    :param data: input array. MUST have type: (phi,theta,r) or (theta,r)
+    :type data: numpy.ndarray
+    :param eta: aspect ratio of the spherical shell
+    :type eta: float
+    :param spectral: when set to True use Chebyshev derivatives, otherwise use
+                     finite differences (default is True)
+    :type spectral: bool
+    :param exclude: when set to True, exclude the first and last radial grid points
+                    and replace them by a spline extrapolation (default is False)
+    :type exclude: bool
+    :param colat: colatitudes (when not specified a regular grid is assumed)
+    :type colat: numpy.ndarray
+    :returns: the z derivative of the input array
+    :rtype: numpy.ndarray
+
+    Function copied from file
+    https://github.com/magic-sph/magic/blob/master/python/magic/libmagic.py
+    developed by Thomas Gastine (gastine@ipgp.fr)
+    """
+    if len(data.shape) == 3: # 3-D
+        ntheta = data.shape[1]
+    elif len(data.shape) == 2: # 2-D
+        ntheta = data.shape[0]
+    nr = data.shape[-1]
+    r1 = 1./(1.-eta)
+    r2 = eta/(1.-eta)
+    if colat is not None:
+        th = colat
+    else:
+        th = np.linspace(0., np.pi, ntheta)
+    rr = chebgrid(nr-1, r1, r2)
+
+    if len(data.shape) == 3: # 3-D
+        thmD = np.zeros_like(data)
+        for i in range(ntheta):
+            thmD[:,i,:] = th[i]
+    elif len(data.shape) == 2: # 2-D
+        thmD = np.zeros((ntheta, nr), 'f')
+        for i in range(ntheta):
+            thmD[i, :]  = th[i]
+
+    dtheta = thetader(data)
+    dr = rder(data, eta, spectral, exclude)
+    dz = np.cos(thmD)*dr - np.sin(thmD)/rr*dtheta
+    return dz
+
+def sder(data, eta=0.35, spectral=True, colat=None, exclude=False):
+    """
+    s derivative of an input 2D (theta,r) array
+    >>> dvpds = sderavg(data_array, eta=radratio, colat=colatitude)
+    :param data: input array Must have type: theta,r 
+    :type data: numpy.ndarray
+    :param eta: aspect ratio of the spherical shell
+    :type eta: float
+    :param spectral: when set to True use Chebyshev derivatives, otherwise use
+                     finite differences (default is True)
+    :type spectral: bool
+    :param exclude: when set to True, exclude the first and last radial grid points
+                    and replace them by a spline extrapolation (default is False)
+    :type exclude: bool
+    :param colat: colatitudes (when not specified a regular grid is assumed)
+    :type colat: numpy.ndarray
+    :returns: the s derivative of the input array
+    :rtype: numpy.ndarray
+
+    Function copied from file
+    https://github.com/magic-sph/magic/blob/master/python/magic/libmagic.py
+    developed by Thomas Gastine (gastine@ipgp.fr)
+
+    """
+    ntheta = data.shape[0]
+    nr = data.shape[-1]
+    r1 = 1./(1.-eta)
+    r2 = eta/(1.-eta)
+    if colat is not None:
+        th = colat
+    else:
+        th = np.linspace(0., np.pi, ntheta)
+    rr = chebgrid(nr-1, r1, r2)
+    rr2D, th2D = np.meshgrid(rr,th)
+    dtheta = thetader(data)
+    dr = rder(data, eta, spectral, exclude)
+    ds = np.sin(th2D)*dr + np.cos(th2D)/rr2D*dtheta
+    return ds
+
+
+
