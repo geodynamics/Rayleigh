@@ -47,9 +47,7 @@ Module Diagnostics_Base
     include "amom_equation_codes.F"
     include "ke_equation_codes.F"
     include "me_equation_codes.F"
-
-
-
+    
 
     ! We have some "known" outputs as well that allow us to verify that
     ! the spherical_io interface is functional
@@ -62,35 +60,16 @@ Module Diagnostics_Base
 
 
     !//////////////////////////////////////////////////////////
-    !  Custom Hydo Outputs:  range from 301 through 400
+    !  Custom Outputs:  range from ...
     Integer, Parameter :: custom_offset = dcheck_off+100 !2200
     Integer, Parameter :: cross_helicity      = custom_offset + 1 ! v dot B
     Integer, Parameter :: turb_cross_helicity = custom_offset+2
     Integer, Parameter :: ell0_vr = custom_offset+3
     Integer, Parameter :: ell0_tvar = custom_offset+4
     Integer, Parameter :: ell0_dpdr = custom_offset+5
-
-    !//////////////////////////////////////////////////////////
-    !  Turbulent kinetic energy generation
-    Integer, Parameter :: turbke_offset = custom_offset+100 
-
-
-    Integer, Parameter :: production_buoyant_pKE   = turbke_offset + 1	! Buoyant Production of turbulent kinetic energy
-    !Integer, Parameter :: production_shear_pKE     = turbke_offset + 2	    ! Shear Production of turbulent kinetic energy
-    Integer, Parameter :: dissipation_viscous_pKE  = turbke_offset + 3	! Viscous Dissipation of turbulent kinetic energy
-    Integer, Parameter :: transport_pressure_pKE   = turbke_offset + 4	! Pressure Transport of turbulent kinetic energy
-    Integer, Parameter :: transport_viscous_pKE    = turbke_offset + 5	    ! Viscous Transport of turbulent kinetic energy    
-    Integer, Parameter :: transport_turbadvect_pKE = turbke_offset + 6	! Turbulent Advective Transport of turbulent kinetic energy
-    Integer, Parameter :: transport_meanadvect_pKE = turbke_offset + 7	! Mean Advective Transport of turbulent kinetic energy
-    Integer, Parameter :: rflux_pressure_pKE       = turbke_offset + 8		! Radial Pressure Flux of turbulent kinetic energy
-    Integer, Parameter :: rflux_viscous_pKE        = turbke_offset + 9		    ! Radial Viscous Flux of turbulent kinetic energy    
-    Integer, Parameter :: rflux_turbadvect_pKE     = turbke_offset + 10	    ! Radial Turbulent Advective Flux of turbulent kinetic energy
-    Integer, Parameter :: rflux_meanadvect_pKE     = turbke_offset + 11	    ! Radial Mean Advective Flux of turbulent kinetic energy
-    Integer, Parameter :: thetaflux_pressure_pKE   = turbke_offset + 12	! Colatitudinal Pressure Flux of turbulent kinetic energy
-    Integer, Parameter :: thetaflux_viscous_pKE    = turbke_offset + 13	! Colatitudinal Viscous Flux of turbulent kinetic energy    
-    Integer, Parameter :: thetaflux_turbadvect_pKE = turbke_offset + 14	! Colatitudinal Turbulent Advective Flux of turbulent kinetic energy
-    Integer, Parameter :: thetaflux_meanadvect_pKE = turbke_offset + 15	! Colatitudinal Mean Advective Flux of turbulent kinetic energy
-
+ 
+    include "turbKE_codes.F"    
+    include "axial_field_codes.F"
 
     !///////////////////////////////////
     Real*8, Allocatable :: qty(:,:,:)   ! This variable holds each quantity that we output

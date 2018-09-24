@@ -33,7 +33,7 @@ Module Diagnostics_Interface
     Use Diagnostics_KE_Flux
 
     Use Diagnostics_TurbKE_Budget
-
+    Use Diagnostics_Axial_Field
     Use Diagnostics_Induction
     Use Diagnostics_Poynting_Flux
 
@@ -185,6 +185,7 @@ Contains
                 Call Compute_Velocity_Components(buffer)
                 Call Compute_Vorticity_Field(buffer)
                 Call Compute_Velocity_Second_Derivatives()
+                Call Compute_Axial_Field(buffer)                
 
                 Call Compute_Thermodynamic_Gradients(buffer)
                 Call Compute_Thermal_Energy(buffer)
