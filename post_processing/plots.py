@@ -24,7 +24,7 @@ class Plots:
     so that ipython can import ploting class directly
 
     For example:
-    export PYTHONPATH=$PYTHONPATH:/home/rakesh/GIT/Rayleigh/
+    export PYTHONPATH=$PYTHONPATH:/home/rakesh/GIT/Rayleigh/:/home/rakesh/GIT/Rayleigh/post_processing
 
     Now launch ipython
 
