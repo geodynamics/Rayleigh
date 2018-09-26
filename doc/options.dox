@@ -1,0 +1,175 @@
+PROJECT_NAME           = "The Rayleigh Code"
+INPUT                  = ../src
+RECURSIVE              = YES
+FILE_PATTERNS          = *.f *.f90 *.F90
+IMAGE_PATH             =
+OUTPUT_DIRECTORY       = ./
+OPTIMIZE_FOR_FORTRAN   = ON
+
+
+
+# The doxygen documentation says this about the following flag:
+#   If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
+#   4096 sub-directories (in 2 levels) under the output directory of each output
+#   format and will distribute the generated files over these directories.
+#   Enabling this option can be useful when feeding doxygen a huge amount of
+#   source files, where putting all generated files in the same directory would
+#   otherwise cause performance problems for the file system.
+# We set the flag to NO since we occasionally need to reference individual
+# doxygen-generated files from other parts of the documentation and need
+# to have predictable file paths.
+#
+# The same is true for SHORT_NAMES, which compresses file names, and
+# CASE_SENSE_NAMES which allows file names to contain upper case letters.
+CREATE_SUBDIRS         = NO
+SHORT_NAMES            = NO
+CASE_SENSE_NAMES       = YES
+
+
+INLINE_INHERITED_MEMB  = NO
+FULL_PATH_NAMES        = YES
+JAVADOC_AUTOBRIEF      = NO
+INHERIT_DOCS           = YES
+TAB_SIZE               = 4
+
+BUILTIN_STL_SUPPORT    = YES
+
+
+#---------------------------------------------------------------------------
+# Build related configuration options
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_CLASSES     = YES
+SORT_MEMBER_DOCS       = NO
+SORT_BRIEF_DOCS        = NO
+SORT_BY_SCOPE_NAME     = NO
+GENERATE_TODOLIST      = YES
+GENERATE_DEPRECATEDLIST= YES
+SHOW_USED_FILES        = YES
+
+#---------------------------------------------------------------------------
+# configuration options related to warning and progress messages
+#---------------------------------------------------------------------------
+
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+
+#---------------------------------------------------------------------------
+# configuration options related to source browsing
+#---------------------------------------------------------------------------
+
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+USE_HTAGS              = NO
+VERBATIM_HEADERS       = NO
+
+#---------------------------------------------------------------------------
+# configuration options related to the alphabetical class index
+#---------------------------------------------------------------------------
+
+ALPHABETICAL_INDEX     = YES
+COLS_IN_ALPHA_INDEX    = 3
+
+#---------------------------------------------------------------------------
+# configuration options related to the HTML output
+#---------------------------------------------------------------------------
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = doxygen
+HTML_FILE_EXTENSION    = .html
+HTML_HEADER            = 
+HTML_FOOTER            = 
+USE_MATHJAX            = YES
+MATHJAX_RELPATH        = 
+MATHJAX_EXTENSIONS     = TeX/AMSmath TeX/AMSsymbols
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 200
+HTML_EXTRA_STYLESHEET  = 
+LAYOUT_FILE            = 
+
+
+#---------------------------------------------------------------------------
+# configuration options related to the LaTeX output
+#---------------------------------------------------------------------------
+
+# don't generate latex output -- it's simply too big!
+GENERATE_LATEX         = NO
+
+# but set a few flags for when processing formulas embedded
+# in the documentation.
+PAPER_TYPE             = a4wide
+EXTRA_PACKAGES         = amsmath amsfonts mathtools
+LATEX_BATCHMODE        = YES
+
+#---------------------------------------------------------------------------
+# Other output formats
+#---------------------------------------------------------------------------
+
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+GENERATE_AUTOGEN_DEF   = NO
+GENERATE_PERLMOD       = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the preprocessor
+#---------------------------------------------------------------------------
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           = ../src
+INCLUDE_FILE_PATTERNS  =
+
+SKIP_FUNCTION_MACROS   = YES
+
+#---------------------------------------------------------------------------
+# Configuration::additions related to external references
+#---------------------------------------------------------------------------
+
+GENERATE_TAGFILE       = rayleigh.tag
+ALLEXTERNALS           = NO
+EXTERNAL_GROUPS        = YES
+PERL_PATH              = 
+
+#---------------------------------------------------------------------------
+# Configuration options related to the dot tool
+#---------------------------------------------------------------------------
+
+CLASS_DIAGRAMS         = YES
+HIDE_UNDOC_RELATIONS   = NO
+HAVE_DOT               = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = YES
+UML_LOOK               = NO
+TEMPLATE_RELATIONS     = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = NO
+DIRECTORY_GRAPH        = YES
+DOT_IMAGE_FORMAT       = svg
+MAX_DOT_GRAPH_DEPTH    = 5
+DOT_TRANSPARENT        = NO
+GENERATE_LEGEND        = YES
+
+DOT_CLEANUP            = YES
+
+#---------------------------------------------------------------------------
+# Configuration::additions related to the search engine
+#---------------------------------------------------------------------------
+
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+  

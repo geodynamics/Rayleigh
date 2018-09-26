@@ -1,8 +1,28 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 !///////////////////////////////////////////////////////////////////
 !               DIAGNOSTICS_CURRENT_DENSITY
-!               This module computes the components of del x B. 
-!               Zonal means and fluctuations about those means are 
+!               This module computes the components of del x B.
+!               Zonal means and fluctuations about those means are
 !               also computed (if desired).
 !///////////////////////////////////////////////////////////////////
 
@@ -21,8 +41,8 @@ Contains
         If (compute_quantity(j_r)) Then
             qty(1:n_phi,:,:) = buffer(1:n_phi,:,:,curlbr)
             Call Add_Quantity(qty)
-        Endif		
-        If (compute_quantity(j_r_sq) .or. compute_quantity(j_sq)) Then 
+        Endif
+        If (compute_quantity(j_r_sq) .or. compute_quantity(j_sq)) Then
             DO_PSI
                 qty(PSI) = buffer(PSI,curlbr)**2
             END_DO
@@ -36,8 +56,8 @@ Contains
         If (compute_quantity(j_theta)) Then
             qty(1:n_phi,:,:) = buffer(1:n_phi,:,:,curlbtheta)
             Call Add_Quantity(qty)
-        Endif		
-        If (compute_quantity(j_theta_sq) .or. compute_quantity(j_sq)) Then 
+        Endif
+        If (compute_quantity(j_theta_sq) .or. compute_quantity(j_sq)) Then
             DO_PSI
                 qty(PSI) = buffer(PSI,curlbtheta)**2
             END_DO
@@ -53,8 +73,8 @@ Contains
         If (compute_quantity(j_phi)) Then
             qty(1:n_phi,:,:) = buffer(1:n_phi,:,:,curlbphi)
             Call Add_Quantity(qty)
-        Endif		
-        If (compute_quantity(j_phi_sq) .or. compute_quantity(j_sq)) Then 
+        Endif
+        If (compute_quantity(j_phi_sq) .or. compute_quantity(j_sq)) Then
             DO_PSI
                 qty(PSI) = buffer(PSI,curlbphi)**2
             END_DO
@@ -62,7 +82,7 @@ Contains
             If (compute_quantity(j_sq)) Then
                 tmp1 = tmp1+qty
                 Call Add_Quantity(tmp1)
-            Endif 
+            Endif
         Endif
 
 
@@ -73,8 +93,8 @@ Contains
         If (compute_quantity(jp_r)) Then
             qty(1:n_phi,:,:) = fbuffer(1:n_phi,:,:,curlbr)
             Call Add_Quantity(qty)
-        Endif		
-        If (compute_quantity(jp_r_sq) .or. compute_quantity(jp_sq)) Then 
+        Endif
+        If (compute_quantity(jp_r_sq) .or. compute_quantity(jp_sq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,curlbr)**2
             END_DO
@@ -86,8 +106,8 @@ Contains
         If (compute_quantity(jp_theta)) Then
             qty(1:n_phi,:,:) = fbuffer(1:n_phi,:,:,curlbtheta)
             Call Add_Quantity(qty)
-        Endif		
-        If (compute_quantity(jp_theta_sq) .or. compute_quantity(jp_sq)) Then 
+        Endif
+        If (compute_quantity(jp_theta_sq) .or. compute_quantity(jp_sq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,curlbtheta)**2
             END_DO
@@ -99,8 +119,8 @@ Contains
         If (compute_quantity(jp_phi)) Then
             qty(1:n_phi,:,:) = fbuffer(1:n_phi,:,:,curlbphi)
             Call Add_Quantity(qty)
-        Endif		
-        If (compute_quantity(jp_phi_sq) .or. compute_quantity(jp_sq)) Then 
+        Endif
+        If (compute_quantity(jp_phi_sq) .or. compute_quantity(jp_sq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,curlbphi)**2
             END_DO
@@ -108,7 +128,7 @@ Contains
             If (compute_quantity(jp_sq)) Then
                 tmp1= tmp1+qty
                 Call Add_Quantity(tmp1)
-            Endif 
+            Endif
         Endif
 
         !////////////////////////////////////////////////////
@@ -120,8 +140,8 @@ Contains
                 qty(PSI) = m0_values(PSI2,curlbr)
             END_DO
             Call Add_Quantity(qty)
-        Endif	
-        If (compute_quantity(jm_r_sq) .or. compute_quantity(jm_sq)) Then 
+        Endif
+        If (compute_quantity(jm_r_sq) .or. compute_quantity(jm_sq)) Then
             DO_PSI
                 qty(PSI) = m0_values(PSI2,curlbr)**2
             END_DO
@@ -136,8 +156,8 @@ Contains
                 qty(PSI) = m0_values(PSI2,curlbtheta)
             END_DO
             Call Add_Quantity(qty)
-        Endif	
-        If (compute_quantity(jm_theta_sq) .or. compute_quantity(jm_sq)) Then 
+        Endif
+        If (compute_quantity(jm_theta_sq) .or. compute_quantity(jm_sq)) Then
             DO_PSI
                 qty(PSI) = m0_values(PSI2,curlbtheta)**2
             END_DO
@@ -151,8 +171,8 @@ Contains
                 qty(PSI) = m0_values(PSI2,curlbphi)
             END_DO
             Call Add_Quantity(qty)
-        Endif	
-        If (compute_quantity(jm_phi_sq) .or. compute_quantity(jm_sq)) Then 
+        Endif
+        If (compute_quantity(jm_phi_sq) .or. compute_quantity(jm_sq)) Then
             DO_PSI
                 qty(PSI) = m0_values(PSI2,curlbphi)**2
             END_DO
@@ -160,7 +180,7 @@ Contains
             If (compute_quantity(jm_sq)) Then
                 tmp1= tmp1+qty
                 Call Add_Quantity(tmp1)
-            Endif 
+            Endif
         Endif
 
         !////////////////////////////////////////////

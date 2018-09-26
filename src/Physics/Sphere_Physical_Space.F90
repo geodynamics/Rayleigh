@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 
 #include "indices.F"
 
@@ -72,7 +92,7 @@ Contains
 
         !////////////////////////////////////////////////////////////////////////
         !This is a good spot to do some simple diagnostic output while we debug the code
-        !since velocity components, Pressure, and Temperature are all 
+        !since velocity components, Pressure, and Temperature are all
         !in memory and in physical space at this point in time.
 
         Call ps_output(wsp%p3a, iteration,simulation_time)
@@ -81,8 +101,8 @@ Contains
 
 
         Call Find_MyMinDT()    ! Piggyback CFL communication on transposes
-        
-        
+
+
         ! We are now ready to build the nonlinear terms
         Call wsp%construct('p3b')
         wsp%config = 'p3b'
@@ -92,7 +112,7 @@ Contains
         Call StopWatch(nl_time)%startclock()
 
         Call Temperature_Advection()
-        Call Volumetric_Heating()    
+        Call Volumetric_Heating()
         If (viscous_heating) Call Compute_Viscous_Heating()
 
 
@@ -103,7 +123,7 @@ Contains
 
         If (magnetism) Then
             Call Compute_Ohmic_Heating()
-            Call Compute_EMF()        
+            Call Compute_EMF()
         Endif
 
         Call StopWatch(nl_time)%increment()
@@ -113,12 +133,12 @@ Contains
 
         Call StopWatch(pspace_time)%increment()
 
-        
+
         Call StopWatch(fft_time)%startclock()
         Call fft_to_spectral(wsp%p3b, rsc = .true.)
         Call StopWatch(fft_time)%increment()
 
-        
+
         Call wsp%load_cargo(global_msgs)
 
         Call StopWatch(rtranspose_time)%startclock()
@@ -157,13 +177,13 @@ Contains
             Do r = my_r%min, my_r%max
                 Do k =1, n_phi
                 wsp%p3b(k,r,t,tvar) = -wsp%p3a(k,r,t,vr)*wsp%p3a(k,r,t,dtdr)     &
-                                     - one_over_r(r)*(                           & 
+                                     - one_over_r(r)*(                           &
                                        wsp%p3a(k,r,t,dtdt)*wsp%p3a(k,r,t,vtheta) &
                                      + wsp%p3a(k,r,t,vphi)*wsp%p3a(k,r,t,dtdp)*csctheta(t) )
 
                 Enddo
             Enddo
-        Enddo                
+        Enddo
         !$OMP END PARALLEL DO
 
         !================================ STABLE =================
@@ -179,7 +199,7 @@ Contains
 
                     Enddo
                 Enddo
-            Enddo                
+            Enddo
             !$OMP END PARALLEL DO
 
             !Add - U_mean dot grad s
@@ -195,7 +215,7 @@ Contains
 
                     Enddo
                 Enddo
-            Enddo                
+            Enddo
             !$OMP END PARALLEL DO
 
         Endif
@@ -214,7 +234,7 @@ Contains
                         wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar)+ref%heating(r)
                     Enddo
                 Enddo
-            Enddo                
+            Enddo
             !$OMP END PARALLEL DO
         Endif
     End Subroutine Volumetric_Heating
@@ -240,10 +260,10 @@ Contains
                             +wsp%p3a(k,r,t,vtheta)*cottheta(t))*one_over_r(r)    !e_phi_phi
                     tmp2 = (wsp%p3a(k,r,t,dvtdt)+wsp%p3a(k,r,t,vr))*one_over_r(r) ! e_theta_theta
                     htemp(k,r,t) = wsp%p3a(k,r,t,dvrdr)*wsp%p3a(k,r,t,dvrdr)+tmp*tmp +tmp2*tmp2
-                    
+
                 Enddo
             Enddo
-        Enddo                
+        Enddo
         !$OMP END PARALLEL DO
 
         !E_r_phi
@@ -253,12 +273,12 @@ Contains
                 Do k =1, n_phi
                     tmp = (wsp%p3a(IDX,dvrdp)*csctheta(t)- wsp%p3a(IDX,vphi))*one_over_r(r) &
                             +wsp%p3a(IDX,dvpdr) ! 2*e_r_phi
-                    
+
                     htemp(IDX) = htemp(IDX)+tmp*tmp*Half  ! +2 e_r_phi**2
-                    
+
                 Enddo
             Enddo
-        Enddo            
+        Enddo
         !$OMP END PARALLEL DO
 
 
@@ -269,12 +289,12 @@ Contains
                 Do k =1, n_phi
                     tmp = (wsp%p3a(IDX,dvrdt)-wsp%p3a(IDX,vtheta))*one_over_r(r) &
                             +wsp%p3a(IDX,dvtdr) ! 2*e_r_theta
-                    
+
                     htemp(IDX) = htemp(IDX)+tmp*tmp*Half   ! + 2+e_r_theta**2
-                    
+
                 Enddo
             Enddo
-        Enddo            
+        Enddo
         !$OMP END PARALLEL DO
 
 
@@ -286,12 +306,12 @@ Contains
                     tmp = (wsp%p3a(IDX,dvpdt) &
                             +wsp%p3a(IDX,dvtdp)*csctheta(t) &
                             -wsp%p3a(IDX,vphi)*cottheta(t) )*one_over_r(r)        ! 2*e_phi_theta
-                    
+
                     htemp(IDX) = htemp(IDX)+tmp*tmp*Half   ! + 2*e_phi_theta**2
-                    
+
                 Enddo
             Enddo
-        Enddo            
+        Enddo
         !$OMP END PARALLEL DO
 
 
@@ -302,10 +322,10 @@ Contains
                 Do k =1, n_phi
                     tmp = -wsp%p3a(IDX,vr)*ref%dlnrho(r)
                     htemp(IDX) = htemp(IDX)-tmp*tmp*one_third   ! + 2*e_phi_theta**2
-                    
+
                 Enddo
             Enddo
-        Enddo            
+        Enddo
         !$OMP END PARALLEL DO
 
 
@@ -316,10 +336,10 @@ Contains
                 Do k =1, n_phi
 
                     wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar)+viscous_heating_coeff(r)*htemp(k,r,t)
-                    
+
                 Enddo
             Enddo
-        Enddo                
+        Enddo
         !$OMP END PARALLEL DO
 
         DeAllocate(htemp)
@@ -344,7 +364,7 @@ Contains
                                          + wsp%p3a(k,r,t,curlbphi)*wsp%p3a(k,r,t,curlbphi))*ohmic_heating_coeff(r)
                     Enddo
                 Enddo
-            Enddo                
+            Enddo
             !$OMP END PARALLEL DO
 
         Endif
@@ -362,9 +382,9 @@ Contains
             DO_IDX
                 RHSP(IDX,wvar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvrdr)*r_squared(r) &
                     - FIELDSP(IDX,vtheta) * ( FIELDSP(IDX,dvrdt)-FIELDSP(IDX,vtheta) )*radius(r)    &
-                    - FIELDSP(IDX,vphi)*(FIELDSP(IDX,dvrdp)*csctheta(t)-FIELDSP(IDX,vphi) )*radius(r)  
+                    - FIELDSP(IDX,vphi)*(FIELDSP(IDX,dvrdp)*csctheta(t)-FIELDSP(IDX,vphi) )*radius(r)
             END_DO
-        
+
             !$OMP END PARALLEL DO
         Else
             !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -383,7 +403,7 @@ Contains
         RHSP(IDX,wvar) = RHSP(IDX,wvar) - &
             (Vmean_r(IDXM)*FIELDSP(IDX,dvrdr) + FIELDSP(IDX,vr)*dVmean_rdr(IDXM))*r_squared(r) &
             - ( Vmean_theta(IDXM)*FIELDSP(IDX,dvrdt) + FIELDSP(IDX,vtheta)*dVmean_rdt(IDXM)    &
-                +  Vmean_phi(IDXM)*FIELDSP(IDX,dvrdp)*csctheta(t) & 
+                +  Vmean_phi(IDXM)*FIELDSP(IDX,dvrdp)*csctheta(t) &
                 -  2.d0*(Vmean_theta(IDXM)*FIELDSP(IDX,vtheta) + Vmean_phi(IDXM)*FIELDSP(IDX,vphi)) &
                 ) * radius(r)
         !print*, &
@@ -398,7 +418,7 @@ Contains
         If (rotation) Then
         !    ! [- 2 z_hat cross u ]_r = 2 sintheta u_phi
             !$OMP PARALLEL DO PRIVATE(t,r,k)
-            DO_IDX            
+            DO_IDX
                 RHSP(IDX,wvar) = RHSP(IDX,wvar) + &
                     & ref%Coriolis_Coeff*sintheta(t)*FIELDSP(IDX,vphi)*R_squared(r)
             END_DO
@@ -411,7 +431,7 @@ Contains
         DO_IDX
             RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)
         END_DO
-        !$OMP END PARALLEL DO    
+        !$OMP END PARALLEL DO
 
 
         If (magnetism .and. lorentz_forces) Then
@@ -425,7 +445,7 @@ Contains
         Endif
 
 
-    
+
     End Subroutine Momentum_Advection_Radial
 
     Subroutine Compute_EMF()
@@ -436,32 +456,32 @@ Contains
 
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
-        DO_IDX    
+        DO_IDX
             RHSP(IDX,emfr) = &
                   FIELDSP(IDX,vtheta) *  FIELDSP(IDX,bphi)  &
-                - FIELDSP(IDX,vphi)     *  FIELDSP(IDX,btheta) 
+                - FIELDSP(IDX,vphi)     *  FIELDSP(IDX,btheta)
         END_DO
-    
+
         !$OMP END PARALLEL DO
 
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
-        DO_IDX    
+        DO_IDX
             RHSP(IDX,emftheta) = &
                 - FIELDSP(IDX,vr) *  FIELDSP(IDX,bphi)  &
                 + FIELDSP(IDX,vphi)   *  FIELDSP(IDX,br)
         END_DO
-    
+
         !$OMP END PARALLEL DO
 
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
-        DO_IDX    
+        DO_IDX
             RHSP(IDX,emfphi) = &
                   FIELDSP(IDX,vr)     *  FIELDSP(IDX,btheta)  &
                 - FIELDSP(IDX,vtheta) *  FIELDSP(IDX,br)
         END_DO
-    
+
         !$OMP END PARALLEL DO
 
                 !==================== STABLE ==========================
@@ -469,35 +489,35 @@ Contains
 
         If (STABLE_flag) Then
 
-		   !$OMP PARALLEL DO PRIVATE(t,r,k)
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
 
- 		   DO_IDX	
-			RHSP(IDX,emfr) = RHSP(IDX,emfr) + &
+            DO_IDX
+            RHSP(IDX,emfr) = RHSP(IDX,emfr) + &
                                   Vmean_theta(IDXM) *  FIELDSP(IDX,bphi)  &
-				- Vmean_phi(IDXM)   *  FIELDSP(IDX,btheta) 
-		   END_DO
-	
-		   !$OMP END PARALLEL DO
+                - Vmean_phi(IDXM)   *  FIELDSP(IDX,btheta)
+           END_DO
 
-		   !$OMP PARALLEL DO PRIVATE(t,r,k)
+           !$OMP END PARALLEL DO
 
-		   DO_IDX	
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+
+           DO_IDX
                         RHSP(IDX,emftheta) = RHSP(IDX,emftheta) + &
                                   Vmean_phi(IDXM) *  FIELDSP(IDX,br)  &
-				- Vmean_r(IDXM)   *  FIELDSP(IDX,bphi) 
-		   END_DO
-	
-		   !$OMP END PARALLEL DO
+                - Vmean_r(IDXM)   *  FIELDSP(IDX,bphi)
+           END_DO
 
-		   !$OMP PARALLEL DO PRIVATE(t,r,k)
+           !$OMP END PARALLEL DO
 
-		   DO_IDX	
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+
+           DO_IDX
                         RHSP(IDX,emfphi) = RHSP(IDX,emfphi) + &
                                   Vmean_r(IDXM) *  FIELDSP(IDX,btheta)  &
-				- Vmean_theta(IDXM)  *  FIELDSP(IDX,br) 
-		   END_DO
-	
-		   !$OMP END PARALLEL DO
+                - Vmean_theta(IDXM)  *  FIELDSP(IDX,br)
+           END_DO
+
+           !$OMP END PARALLEL DO
 
             ! This is only for the axisymmetric benchmark
             If (Poloidal_Source == 1) Then
@@ -522,14 +542,14 @@ Contains
         ! We need to divide by r/sintheta before taking the derivatives in the next space
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
-        DO_IDX    
+        DO_IDX
             RHSP(IDX,emfphi) = RHSP(IDX,emfphi)*csctheta(t)*radius(r)
             RHSP(IDX,emftheta) = RHSP(IDX,emftheta)*csctheta(t)*radius(r)
 
         END_DO
-    
+
         !$OMP END PARALLEL DO
-    
+
     End Subroutine Compute_EMF
 
     !============================= STABLE ====================================
@@ -546,7 +566,7 @@ Contains
 
        ! hardwired in for the benchmark
        rc = 0.7d0 * Radius(1)
-        
+
        onp = 1.d0 / N_Phi
 
        ! first find the two radial values that bracket rc
@@ -606,7 +626,7 @@ Contains
             ! First add all the terms that get multiplied by u_theta
             !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
-                RHSP(IDX,pvar) = wsp%p3a(IDX,dvrdr)       &    
+                RHSP(IDX,pvar) = wsp%p3a(IDX,dvrdr)       &
                      + ( wsp%p3a(IDX,dvpdp)*csctheta(t)    & ! vphi/sintheta/r dvrdphi        !check this comment...
                      +   wsp%p3a(IDX,vtheta)*cottheta(t)   & !vtheta cot(theta)/r
                      +   wsp%p3a(IDX,vr) ) *one_over_r(r)                   &   !ur/r
@@ -662,7 +682,7 @@ Contains
         DO_IDX
             RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)
         END_DO
-        !OMP END PARALLEL DO    
+        !OMP END PARALLEL DO
 
         If (magnetism .and. lorentz_forces) Then
             ! Add -[JxB]_theta
@@ -746,7 +766,7 @@ Contains
         DO_IDX
             RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)
         END_DO
-        !OMP END PARALLEL DO        
+        !OMP END PARALLEL DO
 
         If (magnetism .and. lorentz_forces) Then
             ! Add -[JxB]_phi
@@ -772,7 +792,7 @@ Contains
     Subroutine Phi_Derivatives()
         Implicit None
         Integer :: r,t,k
-        
+
 
         Call d_by_dphi(wsp%p3a,vr,dvrdp)
         Call d_by_dphi(wsp%p3a,vtheta,dvtdp)
@@ -786,7 +806,7 @@ Contains
         Integer :: t,r,k
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
-            FIELDSP(IDX,ind) = FIELDSP(IDX,ind)*csctheta(t)    
+            FIELDSP(IDX,ind) = FIELDSP(IDX,ind)*csctheta(t)
         END_DO
         !$OMP END PARALLEL DO
     End Subroutine sintheta_div
@@ -798,7 +818,7 @@ Contains
         Integer :: t,r,k
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
-            FIELDSP(IDX,ind) = FIELDSP(IDX,ind)*csctheta(t)*one_over_r(r)    
+            FIELDSP(IDX,ind) = FIELDSP(IDX,ind)*csctheta(t)*one_over_r(r)
         END_DO
         !$OMP END PARALLEL DO
     End Subroutine rsintheta_div
@@ -864,7 +884,7 @@ Contains
         If (magnetism) Then
             Call d_by_dphi(wsp%p3a,br,dbrdp)
             Call d_by_dphi(wsp%p3a,btheta,dbtdp)
-            Call d_by_dphi(wsp%p3a,bphi,dbpdp)            
+            Call d_by_dphi(wsp%p3a,bphi,dbpdp)
         Endif
 
 
@@ -895,7 +915,7 @@ Contains
         Endif
 
 
-        
+
     End Subroutine Diagnostics_Prep
 
     Subroutine Compute_dbtheta_by_dtheta()

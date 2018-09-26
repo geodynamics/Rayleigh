@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module Sphere_Linear_Terms
     Use Load_Balance, Only : mp_lm_values, l_lm_values, my_num_lm, m_lm_values, my_lm_min, my_nl_lm, my_nm_lm, my_lm_lval, my_lm_max
     Use Controls
@@ -12,25 +32,25 @@ Module Sphere_Linear_Terms
     Use Math_Constants
     Implicit None
     Real*8, Allocatable :: Lconservation_weights(:)
-    
-Contains    
+
+Contains
     Subroutine Linear_Init()
         Implicit None
         Real*8 :: amp, T,arg
         Integer :: n, r
         !Depending on process layout, some ranks may not participate in the solve
-        If (my_num_lm .gt. 0) Then  
+        If (my_num_lm .gt. 0) Then
             Call Initialize_Linear_System()
 
             If (strict_L_conservation) Then
                 Allocate(Lconservation_weights(1:N_R))
                 Lconservation_weights(1:N_R) = 0.0d0
-                If (chebyshev) Then                           
-                    amp = Pi / (N_R*1.0d0) 
+                If (chebyshev) Then
+                    amp = Pi / (N_R*1.0d0)
                     do n = 1, N_R
                         do r = 1, N_R
                             arg = (n-1.d0) * (r-1.d0+0.5d0) * amp
-                            T = Cos(arg) 
+                            T = Cos(arg)
                             Lconservation_weights(n) = Lconservation_weights(n) + radial_integral_weights(r) * T
                         enddo
                     enddo
@@ -53,7 +73,7 @@ Contains
         rhs_factor = deltat*(1.0d0-alpha_implicit)
         Call Set_Time_Factors(lhs_factor,rhs_factor)
         Call Load_Linear_Coefficients()
-        Call LU_Decompose_Matrices()    
+        Call LU_Decompose_Matrices()
     End Subroutine Reset_Linear_Equations
 
 
@@ -72,7 +92,7 @@ Contains
         nullify(gridpointer)
         gridpointer => gridcp
         If (chebyshev) Call Use_Chebyshev(gridpointer)    ! Turns chebyshev mode to "on" for the linear solve
-        
+
         Call Initialize_Equation_Set(neq,nvar,N_R,my_nl_lm, my_nm_lm,2)
 
         Do lp = 1, my_nl_lm
@@ -103,7 +123,7 @@ Contains
                 DeAllocate(eq_links)
                 DeAllocate(var_links)
             Else
-                ! W equation        
+                ! W equation
                 Call Initialize_Equation_Coefficients(weq,wvar,2,lp)
                 Call Initialize_Equation_Coefficients(weq,pvar,1,lp)
                 If (devel_physics) Then
@@ -113,14 +133,14 @@ Contains
                 Endif
 
                 ! P equation
-                Call Initialize_Equation_Coefficients(peq,wvar, 3,lp) 
+                Call Initialize_Equation_Coefficients(peq,wvar, 3,lp)
                 Call Initialize_Equation_Coefficients(peq,pvar, 0,lp)
 
                 ! T equation
                 Call Initialize_Equation_Coefficients(teq,tvar, 2,lp)
 
                 ! Z equation
-                Call Initialize_Equation_Coefficients(zeq,zvar, 2,lp) 
+                Call Initialize_Equation_Coefficients(zeq,zvar, 2,lp)
 
                 If (magnetism) Then
                     Call Initialize_Equation_Coefficients(ceq,cvar, 2,lp)
@@ -146,7 +166,7 @@ Contains
                 DeAllocate(var_links)
             Endif
         Enddo
-        Call Finalize_Equations()    
+        Call Finalize_Equations()
         If (bandsolve) Call Use_BandSolve()
         If (sparsesolve) Call Use_SparseSolve()
 
@@ -165,8 +185,8 @@ Contains
         Do lp = 1, my_nl_lm
             If (bandsolve) Call DeAllocate_LHS(lp)
             Call Allocate_LHS(lp)
-            l = my_lm_lval(lp)        
- 
+            l = my_lm_lval(lp)
+
             If (hyperdiffusion) Then
                 ell_term = ((l-1.0d0)/(l_max-1.0d0))**hyperdiffusion_beta
                 diff_factor = 1.0d0+hyperdiffusion_alpha*ell_term
@@ -219,12 +239,12 @@ Contains
                     ! Temperature
 
                     amp = -paf_gv2/H_Laplacian
-                    Call add_implicit_term(weq, tvar, 0, amp,lp)            
+                    Call add_implicit_term(weq, tvar, 0, amp,lp)
 
                     amp = -paf_v2/H_Laplacian
-                    Call add_implicit_term(weq, tvar, 1, amp,lp)            
+                    Call add_implicit_term(weq, tvar, 1, amp,lp)
                 Else
-                
+
                     ! Temperature
 
                     amp = -ref%Buoyancy_Coeff/H_Laplacian
@@ -241,7 +261,7 @@ Contains
                 If (inertia) Then
                     ! (from u_{t+1} in CN method -- no dt factor)
                     amp = 1.0d0
-                    Call add_implicit_term(weq,wvar, 0, amp,lp,static = .true.) 
+                    Call add_implicit_term(weq,wvar, 0, amp,lp,static = .true.)
                 Endif
 
                 !amp = H_Laplacian        ! Diffusion
@@ -251,18 +271,18 @@ Contains
                 amp = nu*diff_factor
                 Call add_implicit_term(weq,wvar, 2, amp,lp)
 
-                ! These two diffusion bits are different 
+                ! These two diffusion bits are different
                 ! depending on variation of rho and nu
-                amp = W_Diffusion_Coefs_0*diff_factor        
+                amp = W_Diffusion_Coefs_0*diff_factor
                 Call add_implicit_term(weq,wvar, 0, amp,lp)
                 amp = W_Diffusion_Coefs_1*diff_factor
                 Call add_implicit_term(weq,wvar, 1, amp,lp)
 
                 !==================================================
                 !                Pressure (dWdr) Equation
-                
+
                 ! Pressure
-                !amp = -(1.0d0)/Ek*ref%density    
+                !amp = -(1.0d0)/Ek*ref%density
                 amp = ref%pressure_dwdr_term
                 Call add_implicit_term(peq,pvar, 0, amp,lp)
 
@@ -270,10 +290,10 @@ Contains
                 If (inertia) Then
                     ! (from u_{t+1} in CN method -- no dt factor)
                     amp = 1.0d0
-                    Call add_implicit_term(peq,wvar, 1, amp,lp, static = .true.)  
+                    Call add_implicit_term(peq,wvar, 1, amp,lp, static = .true.)
                 Endif
 
-                !amp =-H_Laplacian*2.0d0/radius    
+                !amp =-H_Laplacian*2.0d0/radius
                 amp =-nu*H_Laplacian*2.0d0/radius*diff_factor
                 Call add_implicit_term(peq,wvar, 0, amp,lp)
                 !amp = H_Laplacian
@@ -289,14 +309,14 @@ Contains
                 Call add_implicit_term(peq,wvar, 0, amp,lp)
 
                 amp = dW_Diffusion_Coefs_1*diff_factor
-                Call add_implicit_term(peq,wvar, 1, amp,lp)                
+                Call add_implicit_term(peq,wvar, 1, amp,lp)
 
-                amp = dW_Diffusion_Coefs_2*diff_factor    
+                amp = dW_Diffusion_Coefs_2*diff_factor
                 Call add_implicit_term(peq,wvar, 2, amp,lp)
                 !====================================================
                 !            Temperature Equation
 
-                ! T 
+                ! T
                 amp = 1.0d0
                 Call add_implicit_term(teq,tvar, 0, amp,lp, static = .true.)        ! Time independent term
 
@@ -312,7 +332,7 @@ Contains
                 Call add_implicit_term(teq,tvar, 2, amp,lp)
 
                 ! Kappa,rho, T variation in radius
-                amp = S_Diffusion_Coefs_1*diff_factor         
+                amp = S_Diffusion_Coefs_1*diff_factor
                 Call add_implicit_term(teq,tvar,1,amp,lp)
 
                 !Reference State Advection (only do this if reference state is non-adiabatic)
@@ -320,7 +340,7 @@ Contains
                     amp = (H_Laplacian/ref%density)*ref%dsdr
                     Call add_implicit_term(teq,wvar,0,amp,lp)
                 Endif
-                
+
                 !=====================================================
                 !    Z Equation
 
@@ -332,10 +352,10 @@ Contains
 
                 !amp = H_Laplacian
                 amp = H_Laplacian*nu*diff_factor
-                Call add_implicit_term(zeq,zvar, 0, amp,lp)                
+                Call add_implicit_term(zeq,zvar, 0, amp,lp)
                 !amp = 1.0d0
                 amp = nu
-                Call add_implicit_term(zeq,zvar, 2, amp,lp)                
+                Call add_implicit_term(zeq,zvar, 2, amp,lp)
 
                 ! Variation of rho and nu
                 amp = Z_Diffusion_Coefs_0*diff_factor
@@ -349,10 +369,10 @@ Contains
                     Call add_implicit_term(aeq,avar, 0, amp,lp, static = .true.)    ! Time-independent piece
 
                     amp = H_Laplacian*eta*diff_factor
-                    Call add_implicit_term(aeq,avar, 0, amp,lp)                    
+                    Call add_implicit_term(aeq,avar, 0, amp,lp)
 
                     amp = 1.0d0*eta*diff_factor
-                    Call add_implicit_term(aeq,avar, 2, amp,lp)    
+                    Call add_implicit_term(aeq,avar, 2, amp,lp)
 
                     ! Eta variation in radius
                     amp = A_Diffusion_Coefs_1*diff_factor
@@ -367,9 +387,9 @@ Contains
                     Call add_implicit_term(ceq,cvar, 0, amp,lp)
 
                     amp = 1.0d0*eta*diff_factor
-                    Call add_implicit_term(ceq,cvar, 2, amp,lp)                    
+                    Call add_implicit_term(ceq,cvar, 2, amp,lp)
                 Endif
-            
+
                 ! If band solve, do the redefinition of the matrix here
 
             Endif
@@ -377,7 +397,7 @@ Contains
             If (sparsesolve) Then
                 !Write(6,*)'matrix: ', weq,lp, my_rank, l
                 Call Sparse_Load(weq,lp)
-                !Write(6,*)'matrix: ', zeq,lp,my_rank, l 
+                !Write(6,*)'matrix: ', zeq,lp,my_rank, l
                 Call Sparse_Load(zeq,lp)
                 If (magnetism) Then
                     Call Sparse_Load(aeq,lp)
@@ -434,7 +454,7 @@ Contains
                 Call Load_BC(lp,r,teq,tvar,one,0)    !upper boundary
             Endif
             If (fix_dtdr_top) Then
-                Call Load_BC(lp,r,teq,tvar,one,1)    
+                Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
 
             r = N_R
@@ -443,7 +463,7 @@ Contains
             Endif
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
-            Endif        
+            Endif
             If (fix_tdt_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
                 Call Clear_Row(teq,lp,N_R-1)
@@ -454,7 +474,7 @@ Contains
             ! The ell=0 pressure is really a diagnostic of the system.
             ! It doesn't drive anything.  The simplist boundary condition
             ! is to enforce a pressure node at the top.
-            r = 1    
+            r = 1
             Call Load_BC(lp,r,peq,pvar,one,0)
 
 
@@ -465,7 +485,7 @@ Contains
             Call Clear_Row(weq,lp,1)
             Call Clear_Row(weq,lp,N_R)
             Call Clear_Row(peq,lp,1)
-            Call Clear_Row(peq,lp,N_R)            
+            Call Clear_Row(peq,lp,N_R)
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
             Call Clear_Row(zeq,lp,1)
@@ -474,17 +494,17 @@ Contains
             ! "1" denotes linking at index 1, starting in domain 2
             ! "2" denotes linking at index npoly, starting in domain 1
             Call FEContinuity(peq,lp,pvar,2,0)   ! Pressure is continuous
-            Call FEContinuity(peq,lp,wvar,1,2)          ! W'' is continuous 
+            Call FEContinuity(peq,lp,wvar,1,2)          ! W'' is continuous
 
             Call FEContinuity(weq,lp,wvar,2,0)   ! W is continuous
-            Call FEContinuity(weq,lp,wvar,1,1)          ! W' is continuous 
+            Call FEContinuity(weq,lp,wvar,1,1)          ! W' is continuous
 
             Call FEContinuity(teq,lp,tvar,2,0)   ! T/S is continuous
             Call FEContinuity(teq,lp,tvar,1,1)          ! T' / S' is continuous (for ell = 0)
 
 
             Call FEContinuity(zeq,lp,zvar,2,0)   ! Z is continuous
-            Call FEContinuity(zeq,lp,zvar,1,1)          ! Z' is continuous 
+            Call FEContinuity(zeq,lp,zvar,1,1)          ! Z' is continuous
 
 
             !*******************************************************
@@ -498,7 +518,7 @@ Contains
                 Endif
             Endif
             If (fix_dtdr_top) Then
-                Call Load_BC(lp,r,teq,tvar,one,1)    
+                Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
 
             r = N_R
@@ -507,14 +527,14 @@ Contains
             Endif
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
-            Endif                    
+            Endif
 
             !///////////////////////////////////////////////////////////////////
             ! These four different boundary conditions are similar, though
             ! slightly different, in nature.  The idea is to try some boundary conditions
             ! that allow entropy and it's derivatives to vary on the boundary
             ! Either Del dot Grad S, Del dot F_conductive, or Del_r dot Grad S or F_conductive is zero
-            
+
             If (fix_divrt_top) Then
                 r = 1
                 !d2sdr2 + 2/r dsdr = 0 at r = r_top
@@ -561,7 +581,7 @@ Contains
 
             !************************************************************
             ! Velocity Boundary Conditions
-    
+
             ! Impenetrable top and bottom
             ! W vanishes at the boundaries
             r = 1
@@ -601,7 +621,7 @@ Contains
                 Call Load_BC(lp,r,zeq,zvar,one,1)
                 Call Load_BC(lp,r,zeq,zvar,samp,0)
             Endif
-    
+
             If ((l .eq. 1) .and. (strict_L_Conservation) ) then
                 Call Clear_Row(zeq,lp,1)
                 Call Load_BC(lp,1,zeq,zvar,one,0,integral = Lconservation_weights)
@@ -641,9 +661,9 @@ Contains
 
                 ! dBpol/dr-(ell+1)*Bpol/r = 0 at inner boundary
                 r = N_R
-                Call Load_BC(lp,r,ceq,cvar,one,1)    
+                Call Load_BC(lp,r,ceq,cvar,one,1)
                 samp = - (l+1)*One_Over_R(r)
-                Call Load_BC(lp,r,ceq,cvar,samp,0)    
+                Call Load_BC(lp,r,ceq,cvar,samp,0)
 
 
                 If (fix_poloidalfield_top) Then
@@ -710,7 +730,7 @@ Contains
     Subroutine Enforce_Boundary_Conditions()
         Implicit None
         Integer :: l, indx, ii,lp, j, k,n
-        ! start applying the boundary and continuity conditions by setting 
+        ! start applying the boundary and continuity conditions by setting
         ! the appropriate right hand sides.
 
         ! This is ugly, and I have no idea how to make this pretty.
@@ -846,10 +866,10 @@ Contains
                     j = j+gridcp%npoly(n)
                     equation_set(1,weq)%RHS(      j, : , indx:indx+n_m) = 0.0d0
                     equation_set(1,weq)%RHS(2*N_R+j, : , indx:indx+n_m) = 0.0d0
-                    if (l .ne. 0) then 
+                    if (l .ne. 0) then
                         equation_set(1,zeq)%RHS(      j, : , indx:indx+n_m) = 0.0d0
                         equation_set(1,weq)%RHS(N_R  +j, : , indx:indx+n_m) = 0.0d0 ! dpdr continuity - only for ell =/ 0
-                    endif                    
+                    endif
                 Enddo
 
 
@@ -875,7 +895,7 @@ Contains
                         Do n = 1, ndomains-1
                             j = j+gridcp%npoly(n)
                             equation_set(1,aeq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
-                            equation_set(1,ceq)%RHS(      j,: , indx:indx+n_m) = 0.0d0                           
+                            equation_set(1,ceq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
                         Enddo
                     endif
                 Endif

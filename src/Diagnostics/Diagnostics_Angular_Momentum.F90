@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 Module Diagnostics_Angular_Momentum
     Use Diagnostics_Base
@@ -44,7 +64,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         If (compute_quantity(famom_fluct_theta)) Then
 
@@ -54,7 +74,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
 
         If (compute_quantity(famom_dr_r)) Then
@@ -65,7 +85,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         If (compute_quantity(famom_dr_theta)) Then
 
@@ -75,18 +95,18 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         !These need to be adjusted to handle non-dimensionalization
         If (compute_quantity(famom_mean_r)) Then
-            
+
             DO_PSI
                 qty(PSI) = ref%density(r)*((radius(r)*sintheta(t))**2) &
                     & *(m0_values(PSI2,vr)*Angular_Velocity)
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         If (compute_quantity(famom_mean_theta)) Then
 
@@ -96,7 +116,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif           
+        Endif
 
 
         If (compute_quantity(famom_diff_r)) Then
@@ -146,7 +166,7 @@ Contains
 
 
         Endif
-        
+
     End Subroutine Compute_Angular_Momentum_Fluxes
 
 End Module Diagnostics_Angular_Momentum
