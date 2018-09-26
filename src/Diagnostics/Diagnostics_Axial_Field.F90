@@ -7,8 +7,6 @@
 !               also computed (if desired).
 !///////////////////////////////////////////////////////////////////
 
-
-
 Module Diagnostics_Axial_Field
     Use Diagnostics_Base
     Implicit None
@@ -22,8 +20,8 @@ Contains
         Real*8  :: tantheta(1:n_theta)
         Real*8, Allocatable  :: tmp2(:,:,:), tmp3(:,:,:)
         tantheta(:) = 1.0d0/cottheta(:)
-        Allocate(tmp2(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))    
-        Allocate(tmp3(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))    
+        Allocate(tmp2(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
+        Allocate(tmp3(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
        
         !/////////////////////////////////////////
         ! 1. terms involving Axial Vorticity and Velocity
@@ -58,7 +56,7 @@ Contains
                 vort_r=One_Over_R(r)*( m0_values(PSI2,dvpdt) + &
                            cottheta(t)*m0_values(PSI2,vphi) )                               !vortm_r
                 vort_theta= -One_Over_R(r)*m0_values(PSI2,vphi)-m0_values(PSI2,dvpdr)       !vortm_theta 
-                tmp2(PSI)=costheta(t)*vort_r-sintheta(t)*vort_theta                          !vortm_z
+                tmp2(PSI)=costheta(t)*vort_r-sintheta(t)*vort_theta                         !vortm_z
             END_DO
             
             If (compute_quantity(vm_z)) Then
@@ -82,7 +80,7 @@ Contains
                            csctheta(t)*fbuffer(PSI,dvtdp) )                           !vortp_r 
                 vort_theta= One_Over_R(r)*( csctheta(t)*fbuffer(PSI,dvrdp) - &
                            fbuffer(PSI,vphi) )-fbuffer(PSI,dvpdr)                     !vortp_theta
-                tmp4(PSI)=costheta(t)*vort_r-sintheta(t)*vort_theta                    !vortp_z
+                tmp4(PSI)=costheta(t)*vort_r-sintheta(t)*vort_theta                   !vortp_z
             END_DO
             
             If (compute_quantity(vp_z)) Then
@@ -112,9 +110,7 @@ Contains
                 qty(PSI)=buffer(PSI,dvrdr)-buffer(PSI,dvtdr)*tantheta(t)-cottheta(t)*one_over_r(r)*&
                 (buffer(PSI,dvrdt)-buffer(PSI,vtheta))+one_over_r(r)*(buffer(PSI,vr)+buffer(PSI,dvtdt)) !dvzdz
             END_DO
-            If (compute_quantity(dvzdz)) Then
-                Call Add_Quantity(qty)
-            Endif 
+            Call Add_Quantity(qty)
         Endif	
 
         If (compute_quantity(dvzdz_m)) Then
@@ -123,18 +119,14 @@ Contains
                 (m0_values(PSI2,dvrdt)-m0_values(PSI2,vtheta))+one_over_r(r)*(m0_values(PSI2,vr)+&
                 m0_values(PSI2,dvtdt)) !dvzdz_m
             END_DO
-            If (compute_quantity(dvzdz_m)) Then
-                Call Add_Quantity(qty)
-            Endif 
+            Call Add_Quantity(qty)
         Endif	
         If (compute_quantity(dvzdz_p)) Then
             DO_PSI
                 qty(PSI)=fbuffer(PSI,dvrdr)-fbuffer(PSI,dvtdr)*tantheta(t)-cottheta(t)*one_over_r(r)*&
                 (fbuffer(PSI,dvrdt)-fbuffer(PSI,vtheta))+one_over_r(r)*(fbuffer(PSI,vr)+fbuffer(PSI,dvtdt)) !dvzdz_p
             END_DO
-            If (compute_quantity(dvzdz_p)) Then
-                Call Add_Quantity(qty)
-            Endif 
+            Call Add_Quantity(qty)
         Endif	
         !///////////////////////////////////////////
         ! 3. terms involving B_z/J_z/dTvardz/dPdz/
