@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 Module Diagnostics_Linear_Forces
     Use Diagnostics_Base
@@ -25,7 +45,7 @@ Contains
         !        As such, the ell=0 buoancy force is uninteresting from the point of
         !        view of the flow.  We explicitly separate the ell=0 component for this
         !        term (as with the pressure term).
-        ! -- full buoyancy 
+        ! -- full buoyancy
         If (compute_quantity(buoyancy_force) .or. compute_quantity(buoy_work)) Then
             DO_PSI
                 qty(PSI) = ref%Buoyancy_Coeff(r)*(buffer(PSI,tvar)-&
@@ -69,7 +89,7 @@ Contains
                            & ell0_values(r,tvar))
             END_DO
             If (compute_quantity(buoyancy_mforce)) Call Add_Quantity(qty)
-            If (compute_quantity(buoy_work_pp)) Then
+            If (compute_quantity(buoy_work_mm)) Then
                 DO_PSI
                     qty(PSI)=m0_values(PSI2,vr)*qty(PSI)
                 END_DO
@@ -134,7 +154,7 @@ Contains
         If (compute_quantity(Coriolis_Force_Phi)) Then
             DO_PSI
                 qty(PSI) = - (coriolis_term*costheta(t)*buffer(PSI,vtheta) &
-					       + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r)
+                           + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -142,7 +162,7 @@ Contains
         If (compute_quantity(Coriolis_pForce_Phi)) Then
             DO_PSI
                 qty(PSI) = - (coriolis_term*costheta(t)*fbuffer(PSI,vtheta) &
-					       + coriolis_term*sintheta(t)*fbuffer(PSI,vr))*ref%density(r)
+                           + coriolis_term*sintheta(t)*fbuffer(PSI,vr))*ref%density(r)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -150,7 +170,7 @@ Contains
         If (compute_quantity(Coriolis_mForce_Phi) .or. compute_quantity(samom_coriolis)) Then
             DO_PSI
                 qty(PSI) = - (coriolis_term*costheta(t)*m0_values(PSI2,vtheta) &
-					       + coriolis_term*sintheta(t)*m0_values(PSI2,vr))*ref%density(r)
+                           + coriolis_term*sintheta(t)*m0_values(PSI2,vr))*ref%density(r)
             END_DO
             If (compute_quantity(Coriolis_mForce_Phi)) Call Add_Quantity(qty)
             If (compute_quantity(samom_coriolis)) Then
@@ -196,7 +216,7 @@ Contains
 
                 !Add geometric terms to make this { Del^2{u} }_r
         !        del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-        !                buffer(PSI,vr) + & 
+        !                buffer(PSI,vr) + &
         !                buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t) + &
         !                ovstheta(t)*buffer(PSI,dvpdp) )
 
@@ -210,7 +230,7 @@ Contains
         !        estress = buffer(PSI,dvrdr)-One_Third*buffer(PSI,vr)*ref%dlnrho(r)
 
         !        qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
-                
+
 
         !    END_DO
 
@@ -277,7 +297,7 @@ Contains
                 del2u = del2u+OneOverRSquared(r)*DDBUFF(PSI,dvpdpdp)*ovs2theta(t)
 
                 ! Add geometric terms here
-                ! del2u - 
+                ! del2u -
                 !Add geometric terms to make this { Del^2{u} }_phi
                 del2u = del2u +OneOverRSquared(r)*( 2.0d0*buffer(PSI,dvrdp)*ovstheta(t) - &
                         ovs2theta(t)*(   buffer(PSI,vphi) - &
@@ -317,7 +337,7 @@ Contains
 
                 !Add geometric terms to make this { Del^2{u} }_r
                 del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-                        fbuffer(PSI,vr) + & 
+                        fbuffer(PSI,vr) + &
                         fbuffer(PSI,dvtdt)+fbuffer(PSI,vtheta)*cottheta(t) + &
                         ovstheta(t)*fbuffer(PSI,dvpdp) )
 
@@ -328,7 +348,7 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = fbuffer(PSI,dvrdr)-One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
+                estress = fbuffer(PSI,dvrdr)+One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
 
                 qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
 
@@ -385,7 +405,7 @@ Contains
                 del2u = del2u+OneOverRSquared(r)*d2_fbuffer(PSI,dvpdpdp)*ovs2theta(t)
 
                 ! Add geometric terms here
-                ! del2u - 
+                ! del2u -
                 !Add geometric terms to make this { Del^2{u} }_phi
                 del2u = del2u +OneOverRSquared(r)*( 2.0d0*fbuffer(PSI,dvrdp)*ovstheta(t) - &
                         ovs2theta(t)*(   fbuffer(PSI,vphi) - &
@@ -422,7 +442,7 @@ Contains
 
                 !Add geometric terms to make this { Del^2{u} }_r
                 del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-                        m0_values(PSI2,vr) + & 
+                        m0_values(PSI2,vr) + &
                         m0_values(PSI2,dvtdt)+m0_values(PSI2,vtheta)*cottheta(t) + &
                         ovstheta(t)*m0_values(PSI2,dvpdp) )
 
@@ -433,7 +453,7 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = m0_values(PSI2,dvrdr)-One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
+                estress = m0_values(PSI2,dvrdr)+One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
 
                 qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
                 qty(PSI) = qty(PSI)-mean_ell0buffer(r,vforce_r)
@@ -498,7 +518,7 @@ Contains
                 del2u = del2u+OneOverRSquared(r)*d2_m0(PSI2,dvpdpdp)*ovs2theta(t)
 
                 ! Add geometric terms here
-                ! del2u - 
+                ! del2u -
                 !Add geometric terms to make this { Del^2{u} }_phi
                 del2u = del2u +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dvrdp)*ovstheta(t) - &
                         ovs2theta(t)*(   m0_values(PSI2,vphi) - &
@@ -543,7 +563,7 @@ Subroutine Compute_Pressure_Force(buffer)
     ! keep things general.
     pfactor(my_r%min:my_r%max) = ref%dpdr_w_term(my_r%min:my_r%max) &
                                 /ref%density(my_r%min:my_r%max)
-    
+
     !////////////////////////////////////////
     !       Pressure Force
 
@@ -664,7 +684,7 @@ Subroutine Compute_Pressure_Force(buffer)
 
 
 
-    ! Theta 
+    ! Theta
     If (compute_quantity(pressure_mforce_theta) .or. compute_quantity(press_work_mm)) Then
         DO_PSI
             qty(PSI) = -m0_values(PSI2,dpdt)*pfactor(r)*One_Over_R(r)
@@ -678,7 +698,7 @@ Subroutine Compute_Pressure_Force(buffer)
         Endif
     Endif
 
-    ! Phi 
+    ! Phi
     If (compute_quantity(pressure_mforce_phi) .or. compute_quantity(press_work_mm)) Then
         DO_PSI
             qty(PSI) = -m0_values(PSI2,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)

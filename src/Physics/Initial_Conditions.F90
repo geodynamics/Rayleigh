@@ -1,9 +1,29 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module Initial_Conditions
     Use ProblemSize
     Use Fields
     Use Parallel_Framework
     Use Fourier_Transform
-    Use Legendre_Transforms, Only : Legendre_Transform 
+    Use Legendre_Transforms, Only : Legendre_Transform
     Use SendReceive
     Use Math_Constants
     Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
@@ -12,7 +32,7 @@ Module Initial_Conditions
     Use General_MPI, Only : BCAST2D
     Use ReferenceState, Only : s_conductive, heating_type,ref
     Use BoundaryConditions, Only : T_top, T_bottom, fix_tvar_Top, fix_tvar_bottom,&
-         & fix_dtdr_top, fix_dtdr_bottom, dtdr_top, dtdr_bottom, & 
+         & fix_dtdr_top, fix_dtdr_bottom, dtdr_top, dtdr_bottom, &
          & C10_bottom, C11_bottom, C1m1_bottom
     Use ClockInfo, Only : Euler_Step
     Use TransportCoefficients, Only : kappa, dlnkappa
@@ -45,7 +65,7 @@ Module Initial_Conditions
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
             & rescale_pressure, tvar_scale, pressure_scale, mdelta
 Contains
-    
+
     Subroutine Initialize_Fields()
         Implicit None
         Logical :: dbtrans, dbconfig
@@ -73,12 +93,12 @@ Contains
 
         Call wsp%init(field_count = wsfcount, config = 'p1b', &
             dynamic_transpose =dbtrans, dynamic_config = dbconfig, &
-            hold_cargo = test_reduce, padding = pad_alltoall, num_cargo = nglobal_msgs)        
+            hold_cargo = test_reduce, padding = pad_alltoall, num_cargo = nglobal_msgs)
         Call wsp%construct('p1b')    ! We will always start in p1b - should do wsp%set_config('p1b')
         wsp%p1b(:,:,:,:) = 0.0d0    ! All fields are zero initially
 
         ! Allocate the Equation Set RHS
-        ! Set it to zero initially    
+        ! Set it to zero initially
         ! The equation set RHS's stays allocated throughout - it is effectively how we save the AB terms.
         Call Allocate_RHS(zero_rhs=.true.)
 
@@ -158,7 +178,7 @@ Contains
                 Endif
             Endif
         Endif
-        ! Fields are now initialized and loaded into the RHS. 
+        ! Fields are now initialized and loaded into the RHS.
         ! We are ready to enter the main loop
         If (my_rank .eq. 0) Then
             Call stdout%print(" -- Fields initialized.")
@@ -177,7 +197,7 @@ Contains
         !rpars(1) = 1 if hydro variables are to be read (0 otherwise)
         !rpars(2) = 1 if magnetic variables are to be read (0 otherwise)
         rpars(1:2) = 0
-        
+
         If (magnetism) Then
 
             If (init_type .eq. -1) rpars(1) = 1
@@ -185,7 +205,7 @@ Contains
 
             !If both variable types are not read in, an euler_step is taken on restart
             prod = rpars(1)*rpars(2)
-            if (prod .eq. 0) euler_step = .true. 
+            if (prod .eq. 0) euler_step = .true.
 
         Else
             If ( init_type .eq. -1) Then
@@ -240,12 +260,12 @@ Contains
         If (rescale_pressure) Then
             ! We do not rescale the ell = 0 mode
             euler_step = .true.
-			Do lm = 1, my_num_lm
+            Do lm = 1, my_num_lm
                 this_ell = l_lm_values(lm)
                 If (this_ell .gt. 0) Then
                     tempfield%p1a(:,:,lm,pvar) = tempfield%p1a(:,:,lm,pvar)*pressure_scale
                 Endif
-			Enddo
+            Enddo
             wsp%p1b(:,:,:,:) = 0.0d0
             If (my_rank .eq. 0) Then
                 Write(scstr,scfmt)pressure_scale
@@ -255,12 +275,12 @@ Contains
         If (rescale_tvar) Then
             ! We do not rescale the ell = 0 mode
             euler_step = .true.
-			Do lm = 1, my_num_lm
+            Do lm = 1, my_num_lm
                 this_ell = l_lm_values(lm)
                 If (this_ell .gt. 0) Then
                     tempfield%p1a(:,:,lm,tvar) = tempfield%p1a(:,:,lm,tvar)*tvar_scale
                 Endif
-			Enddo
+            Enddo
             wsp%p1b(:,:,:,:) = 0.0d0
             If (my_rank .eq. 0) Then
                 Write(scstr,scfmt)tvar_scale
@@ -307,8 +327,8 @@ Contains
 
 
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
 
 
         !///////////////////////
@@ -321,7 +341,7 @@ Contains
         Allocate(rand(1:ncombinations*2,1))
 
         If (my_rank .eq. 0) Then
-            Call system_clock(seed(1))        
+            Call system_clock(seed(1))
             Call random_seed()
             Call random_number(rand)
 
@@ -338,7 +358,7 @@ Contains
         !Else
             ! receive rand
         !    Call receive(rand, source= 0,tag=init_tag,grp = pfi%gcomm)
-        !Endif    
+        !Endif
 
             If (my_row_rank .eq. 0) Then
                 ! Broadcast along the column
@@ -347,9 +367,9 @@ Contains
             Call BCAST2D(rand,grp = pfi%rcomm)
 
 
-        ! Everyone establishes their range of random phases        
+        ! Everyone establishes their range of random phases
         mode_count = 0
-        Do mp = 1, my_mp%max        
+        Do mp = 1, my_mp%max
             if (mp .eq. my_mp%min) then
                 my_mode_start = mode_count+1
             endif
@@ -371,7 +391,7 @@ Contains
         ind1 = my_mode_start
         ind2 = ind1+ncombinations
         Do mp = my_mp%min, my_mp%max
-            m = m_values(mp)            
+            m = m_values(mp)
             Do l = m, l_max
                 tempfield%s2b(mp)%data(l,:,:,:) = 0.0d0
                 amp = rand(ind1,1)*lpow(l)
@@ -430,8 +450,8 @@ Contains
         ampc = dr_fiducial*ampa
 
         ! Construct the streamfunction field buffer
-        Call a_and_c%init(field_count = fcount, config = 'p1b')        
-        Call a_and_c%construct('p1b')        
+        Call a_and_c%init(field_count = fcount, config = 'p1b')
+        Call a_and_c%construct('p1b')
 
         Allocate(zero_profile(1:N_R))
         zero_profile = 0.0d0
@@ -458,8 +478,8 @@ Contains
         amp = temp_amp
 
         ! Construct the streamfunction field buffer
-        Call sbuffer%init(field_count = fcount, config = 'p1b')        
-        Call sbuffer%construct('p1b')        
+        Call sbuffer%init(field_count = fcount, config = 'p1b')
+        Call sbuffer%construct('p1b')
 
         If (conductive_profile) Then
             Allocate(profile0(1:N_R))
@@ -478,10 +498,10 @@ Contains
 
             Endif
             ! Randomize the entropy
-            Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0)            
+            Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0)
             DeAllocate(profile0)
 
-        Else    
+        Else
 
 
 
@@ -516,13 +536,13 @@ Contains
         !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
 
-        ! Set the ell = 0 temperature and the real part of Y44        
+        ! Set the ell = 0 temperature and the real part of Y44
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
-            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             Do l = m, l_max
                 if ( (l .eq. 1) .and. (m .eq. 1) ) Then
                     Do r = my_r%min, my_r%max
@@ -571,13 +591,13 @@ Contains
         !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
 
-        ! Set the ell = 0 temperature and the real part of Y44        
+        ! Set the ell = 0 temperature and the real part of Y44
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
-            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             Do l = m, l_max
                 if ( (l .eq. 4) .and. (m .eq. 4) ) Then
                     Do r = my_r%min, my_r%max
@@ -640,13 +660,13 @@ Contains
         c1 = (1.d0+beta)*(1.d0-zeta_0)/denom
 
         Allocate(zeta(1:N_R))
-      
+
         zeta = c0 + c1 * d / Radius
 
         ee = -1.d0*bm_n
         denom = zeta(1)**ee - zeta(N_R)**ee
 
-         
+
 
         !!!!!!!
 
@@ -660,13 +680,13 @@ Contains
 
         DeAllocate(zeta)
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
 
-        ! Set the ell = 0 temperature and the real part of Y_19^19    and Y_1_1    
+        ! Set the ell = 0 temperature and the real part of Y_19^19    and Y_1_1
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
-            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             Do l = m, l_max
                 if ( (l .eq. 19) .and. (m .eq. 19) ) Then
                     Do r = my_r%min, my_r%max
@@ -731,13 +751,13 @@ Contains
         !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
 
-        ! Set the ell = 0 temperature and the real part of Y44        
+        ! Set the ell = 0 temperature and the real part of Y44
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
-            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             Do l = m, l_max
                 if ( (l .eq. 4) .and. (m .eq. 4) ) Then
                     Do r = my_r%min, my_r%max
@@ -791,14 +811,14 @@ Contains
 
 
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
 
-        ! Set the ell = 1, m = 0 component of C streamfunction to fall off as 1/r    
+        ! Set the ell = 1, m = 0 component of C streamfunction to fall off as 1/r
         ! Set other components to zero
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
-            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             If (m .eq. 0) Then
                 Do r = my_r%min, my_r%max
                     tempfield%s2b(mp)%data(1,r,1,1) = C10_bottom/radius(r)
@@ -858,13 +878,13 @@ Contains
         !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
-        Call tempfield%init(field_count = fcount, config = 's2b')        
-        Call tempfield%construct('s2b')        
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
         roff= 2*my_r%delta
-        ! Set the ell = 0 temperature and the real part of Y44        
+        ! Set the ell = 0 temperature and the real part of Y44
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
-            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0            
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             Do l = m, l_max
                 if ( (l .eq. 1) .and. (m .eq. 0) ) Then
                     Do r = my_r%min, my_r%max
@@ -908,7 +928,7 @@ Contains
         Real*8 :: splx, sply
         Integer :: nr_in, r
         ! Reads in a 1-D radial profile of some quantity,
-        ! interpolates it (using cubic splines) to the current grid, 
+        ! interpolates it (using cubic splines) to the current grid,
         ! and stores it in profile_out.
 
       Open(unit=892, file = profile_file, form = 'unformatted', status = 'old')
@@ -974,7 +994,7 @@ Contains
             !tmp1d is zero otherwise - i.e., no heating
         Endif
         Call Indefinite_Integral(tmp1d,tmp1d2,radius)
-        !tmp1d2(r) is now int_rmin_r Q rho T r^2 dr  
+        !tmp1d2(r) is now int_rmin_r Q rho T r^2 dr
         !tmp1d2 is also now r^2*F_conductive + A {A is undetermined}
 
         If (fix_dtdr_top .or. fix_dtdr_bottom) Then
@@ -983,7 +1003,7 @@ Contains
                 ftest = ftest*ref%density(N_R)*ref%temperature(N_R)*r_squared(N_R)
                 tmp1d2 = tmp1d2-tmp1d2(N_R)+ftest
             Endif
-            
+
             If (fix_dtdr_top .and. (.not. fix_dtdr_bottom)) Then
                 ftest = -dtdr_top*kappa(1)
                 ftest = ftest*ref%density(1)*ref%temperature(1)*r_squared(1)
@@ -994,10 +1014,10 @@ Contains
             Call Indefinite_Integral(tmp1d,tmp1d2,radius)
             !tmp1d2 is now s_conductive + A {A is undetermined}
             tmp1d2 = tmp1d2-tmp1d2(1) ! set to zero at the top ; adjust as needed
-            If (fix_tvar_top) Then                
+            If (fix_tvar_top) Then
                 tmp1d2 = tmp1d2+T_Top
             Endif
-            If (fix_tvar_bottom) Then                
+            If (fix_tvar_bottom) Then
                 tmp1d2 = tmp1d2 - tmp1d2(N_R)+T_Bottom
             Endif
             s_conductive = tmp1d2
@@ -1008,7 +1028,7 @@ Contains
             tmp1d = -tmp1d2*tmp1d3
             Call Indefinite_Integral(tmp1d,tmp1d2,radius)
             Call Indefinite_Integral(tmp1d3,tmp1d,radius)
-            amp = (tmp1d2(1)-tmp1d2(N_R))  - (T_top-T_bottom) 
+            amp = (tmp1d2(1)-tmp1d2(N_R))  - (T_top-T_bottom)
             amp = amp/ (tmp1d(1)-tmp1d(N_R))
             s_conductive = tmp1d2-amp*tmp1d
             s_conductive = s_conductive-s_conductive(1)+T_Top
@@ -1018,7 +1038,7 @@ Contains
 
 
 
-        
+
         DeAllocate(tmp1d,tmp1d2)
     End Subroutine Calculate_Conductive_Profile
 

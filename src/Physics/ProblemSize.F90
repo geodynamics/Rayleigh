@@ -1,46 +1,66 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module ProblemSize
-	Use Parallel_Framework, Only : pfi, Load_Config, Spherical
-	Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
-	Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
-	Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path
-	Use Chebyshev_Polynomials, Only : Cheby_Grid
+    Use Parallel_Framework, Only : pfi, Load_Config, Spherical
+    Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
+    Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
+    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path
+    Use Chebyshev_Polynomials, Only : Cheby_Grid
     Use Math_Constants
     Use BufferedOutput
-	Use Timers
+    Use Timers
 
-	Implicit None
+    Implicit None
 
-	!//////////////////////////////////////////////////////////////
-	! Processor Configuration
-	Integer :: ncpu = 1, nprow = 1, npcol =1 , npout = 1
-	Integer :: my_rank      ! This is the rank within a run communicator
+    !//////////////////////////////////////////////////////////////
+    ! Processor Configuration
+    Integer :: ncpu = 1, nprow = 1, npcol =1 , npout = 1
+    Integer :: my_rank      ! This is the rank within a run communicator
     Integer :: global_rank  ! This differs from my_rank only when multi-run mode is active
     Integer :: ncpu_global  ! Same as ncpu unless multi-run mode is active
     Integer :: my_row_rank, my_column_rank ! rank *within* row and rank *within* column
 
-	!//////////////////////////////////////////////////////////////
-	! Horizontal Grid Variables
-	Integer              :: n_theta = -1, n_phi
+    !//////////////////////////////////////////////////////////////
+    ! Horizontal Grid Variables
+    Integer              :: n_theta = -1, n_phi
     Integer              :: l_max = -1
-	Integer              :: m_max, n_l, n_m
-	Logical              :: dealias = .True.
-	Integer, Allocatable :: m_values(:)
-	Real*8, Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
-	Real*8, Allocatable  :: costheta(:), sintheta(:), cos2theta(:), sin2theta(:), cottheta(:), csctheta(:)
-	Type(Load_Config)    :: my_mp,  my_theta
+    Integer              :: m_max, n_l, n_m
+    Logical              :: dealias = .True.
+    Integer, Allocatable :: m_values(:)
+    Real*8, Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
+    Real*8, Allocatable  :: costheta(:), sintheta(:), cos2theta(:), sin2theta(:), cottheta(:), csctheta(:)
+    Type(Load_Config)    :: my_mp,  my_theta
 
 
-	!//////////////////////////////////////////////////////////////
-	!  Radial Grid Variables
-	Integer             :: n_r, tnr
-	Integer             :: grid_type = 1
-	Real*8              :: rmin = -1.0d0, rmax = -1.0d0, r_inner, r_outer
+    !//////////////////////////////////////////////////////////////
+    !  Radial Grid Variables
+    Integer             :: n_r, tnr
+    Integer             :: grid_type = 1
+    Real*8              :: rmin = -1.0d0, rmax = -1.0d0, r_inner, r_outer
     Real*8              :: aspect_ratio = -1.0d0
     Real*8              :: shell_depth = -1.0d0
     Real*8              :: shell_volume
-	Real*8, Allocatable :: Radius(:), R_squared(:), One_Over_R(:)
-	Real*8, Allocatable :: Two_Over_R(:), OneOverRSquared(:), Delta_R(:)
-	Real*8, Allocatable :: radial_integral_weights(:)
+    Real*8, Allocatable :: Radius(:), R_squared(:), One_Over_R(:)
+    Real*8, Allocatable :: Two_Over_R(:), OneOverRSquared(:), Delta_R(:)
+    Real*8, Allocatable :: radial_integral_weights(:)
     Integer :: precise_bounds = -1
     Type(Load_Config)   :: my_r
 
@@ -62,22 +82,22 @@ Module ProblemSize
     Integer :: perr(1:maxerr)
     Integer :: eindex = 1
     Logical :: grid_error = .false.
-    
 
-	Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, & 
+
+    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, &
             &  precise_bounds,grid_type, l_max, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
             &  n_uniform_domains, uniform_bounds
 Contains
 
-	Subroutine Init_ProblemSize()
-		Implicit None
+    Subroutine Init_ProblemSize()
+        Implicit None
 
 
         perr(:) = 0                       ! initialize the error-checking array
 
         Call Establish_Grid_Parameters()  ! Discern rmax,cheby-domain bounds, l_max, etc.
-		Call Init_Comm()                  ! Initialize the MPI and the parallel framework
+        Call Init_Comm()                  ! Initialize the MPI and the parallel framework
 
         If (my_rank .eq. 0) Then
             call stdout%print(" ")
@@ -86,67 +106,67 @@ Contains
 
         Call Report_Grid_Parameters()     ! Print some grid-related info to the screen
         Call Initialize_Horizontal_Grid() ! Init theta-grid and Legendre transforms
-		Call Initialize_Radial_Grid()     ! Init radial grid and Chebyshev transforms
+        Call Initialize_Radial_Grid()     ! Init radial grid and Chebyshev transforms
 
         If (my_rank .eq. 0) Then
             call stdout%print(" -- Grid initialized.")
             call stdout%print(" ")
         Endif
-        
-	End Subroutine Init_ProblemSize
+
+    End Subroutine Init_ProblemSize
 
     Subroutine Write_Grid()
         Implicit None
         Integer :: r
         Character*120 :: grid_file
-		If (my_rank .eq. 0) Then
+        If (my_rank .eq. 0) Then
             grid_file = Trim(my_path)//'grid'
-			Open(101, file = grid_file, status='replace', form = 'unformatted')
-			Write(101) n_r
-			Write(101) (radius(r),r=1,n_r)
-			Write(101) n_theta
-			Write(101) (costheta(r),r=1,n_theta)
-			Close(101)
-		Endif
+            Open(101, file = grid_file, status='replace', form = 'unformatted')
+            Write(101) n_r
+            Write(101) (radius(r),r=1,n_r)
+            Write(101) n_theta
+            Write(101) (costheta(r),r=1,n_theta)
+            Close(101)
+        Endif
     End Subroutine Write_Grid
 
     Subroutine Init_Comm()
         Implicit None
         Integer :: cpu_tmp(1)
-		Integer :: ppars(1:10)
-		!/////////////////////////////////////////////////////////
-		! Initialize MPI and load balancing (if no errors detected)
-		ncpu = nprow*npcol
-		ppars(1) = Spherical
-		ppars(2) = n_r
-		ppars(3) = n_r
-		ppars(4) = n_theta
-		ppars(5) = n_l
-		ppars(6) = n_phi
-		ppars(7) = n_m		
-		ppars(8) = ncpu
-		ppars(9) = nprow
-		ppars(10) = npcol
+        Integer :: ppars(1:10)
+        !/////////////////////////////////////////////////////////
+        ! Initialize MPI and load balancing (if no errors detected)
+        ncpu = nprow*npcol
+        ppars(1) = Spherical
+        ppars(2) = n_r
+        ppars(3) = n_r
+        ppars(4) = n_theta
+        ppars(5) = n_l
+        ppars(6) = n_phi
+        ppars(7) = n_m
+        ppars(8) = ncpu
+        ppars(9) = nprow
+        ppars(10) = npcol
         If (multi_run_mode) Then
-    		Call pfi%init(ppars,run_cpus, grid_error)
+            Call pfi%init(ppars,run_cpus, grid_error)
         Else
             cpu_tmp(1) = ncpu
-    		Call pfi%init(ppars,cpu_tmp,grid_error)
+            Call pfi%init(ppars,cpu_tmp,grid_error)
         Endif
-		my_rank = pfi%gcomm%rank
-		my_row_rank = pfi%rcomm%rank
-		my_column_rank = pfi%ccomm%rank
+        my_rank = pfi%gcomm%rank
+        my_row_rank = pfi%rcomm%rank
+        my_column_rank = pfi%ccomm%rank
 
 
-		my_mp    = pfi%my_3s
-		my_r     = pfi%my_1p
-		my_theta = pfi%my_2p
+        my_mp    = pfi%my_3s
+        my_r     = pfi%my_1p
+        my_theta = pfi%my_2p
 
         tnr = 2*my_r%delta
         ! Once MPI has been initialized, we can start timing
-		Call Initialize_Timers()
-		Call StopWatch(init_time)%startclock()
-		Call StopWatch(walltime)%startclock()
+        Call Initialize_Timers()
+        Call StopWatch(init_time)%startclock()
+        Call StopWatch(walltime)%startclock()
     End Subroutine Init_Comm
 
     Subroutine Establish_Grid_Parameters()
@@ -191,7 +211,7 @@ Contains
             If (ncheby(1) .le. 0) Then
                 ncheby(1) = n_r/n_uniform_domains
             Endif
-            n_r =n_uniform_domains*ncheby(1) 
+            n_r =n_uniform_domains*ncheby(1)
             ncheby(1:n_uniform_domains) = ncheby(1)
             dealias_by(1:n_uniform_domains) = dealias_by(1)
             cheby_count = n_uniform_domains
@@ -233,11 +253,11 @@ Contains
         If (l_max .le. 0) Then
 
 
-		    If (dealias) Then
-			    l_max = (2*n_theta-1)/3
-		    Else
-			    l_max = n_theta-1
-		    Endif
+            If (dealias) Then
+                l_max = (2*n_theta-1)/3
+            Else
+                l_max = n_theta-1
+            Endif
 
         Else
             !base n_theta on l_max
@@ -249,10 +269,10 @@ Contains
         Endif
 
 
-		n_phi = 2*n_theta
-		m_max = l_max
-		n_l = l_max+1
-		n_m = m_max+1
+        n_phi = 2*n_theta
+        m_max = l_max
+        n_l = l_max+1
+        n_m = m_max+1
         Call Consistency_Check()  ! Identify issues related to the grid setup
 
     End Subroutine Establish_Grid_Parameters
@@ -261,51 +281,51 @@ Contains
     Subroutine Initialize_Horizontal_Grid()
         Implicit None
         Integer :: tmp, l
-		Integer, Allocatable :: m_vals(:)
+        Integer, Allocatable :: m_vals(:)
         Real*8 :: ell
-		!//////////////////////////////////////////////////
-		! Intialize Legendre Transforms & Horizontal Grid
-		Allocate(m_values(1:n_m))
-		m_values = pfi%inds_3s
+        !//////////////////////////////////////////////////
+        ! Intialize Legendre Transforms & Horizontal Grid
+        Allocate(m_values(1:n_m))
+        m_values = pfi%inds_3s
 
-		tmp = my_mp%delta
-		allocate(m_vals(1:tmp))
-		m_vals(:) = m_values(my_mp%min:my_mp%max)
-		
-		Call Initialize_Legendre(n_theta,l_max,m_vals,use_parity)
-		tmp = my_r%delta
-		Call Initialize_Angular_Derivatives(m_vals,l_max,tmp)
-		DeAllocate(m_vals)
+        tmp = my_mp%delta
+        allocate(m_vals(1:tmp))
+        m_vals(:) = m_values(my_mp%min:my_mp%max)
+
+        Call Initialize_Legendre(n_theta,l_max,m_vals,use_parity)
+        tmp = my_r%delta
+        Call Initialize_Angular_Derivatives(m_vals,l_max,tmp)
+        DeAllocate(m_vals)
 
 
-		Allocate(costheta(1:n_theta),cos2theta(1:n_theta))
-		Allocate(sintheta(1:n_theta),sin2theta(1:n_theta))
-		Allocate(csctheta(1:n_theta), cottheta(1:n_theta))
-		costheta  = coloc	! coloc computed in init_legendre
-		cos2theta = costheta*costheta
-		sin2theta = 1-cos2theta
-		sintheta  = sqrt(sin2theta)
-		csctheta = 1/sintheta
-		cottheta = costheta/sintheta
+        Allocate(costheta(1:n_theta),cos2theta(1:n_theta))
+        Allocate(sintheta(1:n_theta),sin2theta(1:n_theta))
+        Allocate(csctheta(1:n_theta), cottheta(1:n_theta))
+        costheta  = coloc    ! coloc computed in init_legendre
+        cos2theta = costheta*costheta
+        sin2theta = 1-cos2theta
+        sintheta  = sqrt(sin2theta)
+        csctheta = 1/sintheta
+        cottheta = costheta/sintheta
 
-		Allocate(l_l_plus1(0:l_max))
-		Allocate(over_l_l_plus1(0:l_max))
-		over_l_l_plus1(0) = 1.0d0 ! Prevent compiler warnings related to dividing by zero
-		Do l = 0, l_max
-			ell = l*1.0d0
-			l_l_plus1(l) = ell*(ell+1)
-			if (l .ne. 0) over_l_l_plus1(l) = 1.0d0/l_l_plus1(l)
-		Enddo
+        Allocate(l_l_plus1(0:l_max))
+        Allocate(over_l_l_plus1(0:l_max))
+        over_l_l_plus1(0) = 1.0d0 ! Prevent compiler warnings related to dividing by zero
+        Do l = 0, l_max
+            ell = l*1.0d0
+            l_l_plus1(l) = ell*(ell+1)
+            if (l .ne. 0) over_l_l_plus1(l) = 1.0d0/l_l_plus1(l)
+        Enddo
 
     End Subroutine Initialize_Horizontal_Grid
 
-	Subroutine Initialize_Radial_Grid()
-		Implicit None
-		Integer :: r, nthr,i ,n
+    Subroutine Initialize_Radial_Grid()
+        Implicit None
+        Integer :: r, nthr,i ,n
 
-		nthr = pfi%nthreads
-		Allocate(Delta_r(1:N_R))
-		Allocate( Radius(1:N_R))
+        nthr = pfi%nthreads
+        Allocate(Delta_r(1:N_R))
+        Allocate( Radius(1:N_R))
         Allocate(Radial_Integral_Weights(1:N_R))
 
 
@@ -313,7 +333,7 @@ Contains
         If (chebyshev) Then ! No other choice at this time
             grid_type = 2
 
-			Call gridcp%Init(radius, radial_integral_weights, &
+            Call gridcp%Init(radius, radial_integral_weights, &
                 & ndomains,ncheby,domain_bounds,nthread = nthr, &
                 & dealias_by = dealias_by)
             r = 1
@@ -332,16 +352,16 @@ Contains
         One_Over_R      = (1.0d0)/Radius
         Two_Over_R      = (2.0d0)/Radius
         OneOverRSquared = (1.0d0)/r_Squared
-		r_inner = rmin
-		r_outer = rmax
-	End Subroutine Initialize_Radial_Grid
+        r_inner = rmin
+        r_outer = rmax
+    End Subroutine Initialize_Radial_Grid
 
     Subroutine Report_Grid_Parameters()
         Implicit None
         Integer :: i
         Character*6 :: istr
         Character*12 :: dstring
-    	Character*8 :: dofmt = '(ES12.5)'
+        Character*8 :: dofmt = '(ES12.5)'
 
         Call Halt_On_Error()  ! Halt the program if errors were found in the consistency check
         If (my_rank .eq. 0) Then
@@ -402,7 +422,7 @@ Contains
         ! Check horizontal and radial load balancing
         tmp = (l_max+1)/2+MOD(l_max+1,2)  ! max nprow based on number of spherical harmonic pairs
         If (tmp .lt. nprow) call add_ecode(6)
-		If (npcol .gt. n_r) call add_ecode(7)
+        If (npcol .gt. n_r) call add_ecode(7)
         !Check parity
         If (MOD(n_theta,2) .ne. 0) Call Add_Ecode(8)
         tmp = 1
@@ -415,12 +435,12 @@ Contains
         Enddo
     End Subroutine Consistency_Check
 
-	Subroutine Halt_On_Error()
+    Subroutine Halt_On_Error()
 
         Integer :: esize, i,j,tmp
         Character*6 :: istr, istr2
         Character*12 :: dstring
-    	Character*8 :: dofmt = '(ES12.5)'
+        Character*8 :: dofmt = '(ES12.5)'
         If (maxval(perr) .gt. 0) Then
             If (my_rank .eq. 0) Then
                 Call stdout%print(' /////////////////////////////////////////////////////////////////')
@@ -451,7 +471,7 @@ Contains
                         Call stdout%print('          N_THETA           :'//trim(istr))
                         Write(istr,'(i6)')l_max
                         Call stdout%print('          L_MAX             :'//trim(istr))
-                        tmp = (l_max+1)/2+MOD(l_max+1,2) 
+                        tmp = (l_max+1)/2+MOD(l_max+1,2)
 
 
                         Write(istr,'(i6)')tmp
@@ -487,10 +507,10 @@ Contains
                 Enddo
                 Call stdout%print(' Exiting...')
                 Call stdout%print(' /////////////////////////////////////////////////////////////////')
-            
+
                 Call stdout%finalize()
             Endif
-		    Call pfi%exit()
+            Call pfi%exit()
         Endif
-	End Subroutine Halt_On_Error
+    End Subroutine Halt_On_Error
 End Module ProblemSize

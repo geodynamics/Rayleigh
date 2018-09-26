@@ -1,9 +1,29 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 
 !///////////////////////////////////////////////////////////////////
 !               DIAGNOSTICS_CURRENT_DENSITY
-!               This module computes the components of del x v and enstrophy. 
-!               Zonal means and fluctuations about those means are 
+!               This module computes the components of del x v and enstrophy.
+!               Zonal means and fluctuations about those means are
 !               also computed (if desired).
 !///////////////////////////////////////////////////////////////////
 
@@ -21,11 +41,11 @@ Contains
         Real*8, Allocatable :: kin_hel_pp(:,:,:), kin_hel_mp(:,:,:)
         Logical :: compute_efluct = .false., compute_emean = .false.
 
-        
+
         If (compute_quantity(enstrophy)) Then
             Allocate(ens(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
         Endif
-        
+
         If (compute_quantity(enstrophy_mm)) Then
             Allocate(ens_mm(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
             compute_emean = .true.
@@ -84,7 +104,7 @@ Contains
             Endif
             If (compute_quantity(vort_r)) Then
                 Call Add_Quantity(qty)
-            Endif 
+            Endif
             If (compute_quantity(enstrophy)) Then
                 ens = qty**2
             Endif
@@ -92,7 +112,7 @@ Contains
                 qty = qty**2
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         If (compute_quantity(kin_helicity_pp_r) .or. compute_quantity(kin_helicity_mp_r) .or. &
             compute_quantity(kin_helicity_pp) .or. compute_quantity(kin_helicity_mp) .or. &
@@ -138,7 +158,7 @@ Contains
                 qty = qty**2
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         If (compute_quantity(kin_helicity_mm_r) .or. compute_quantity(kin_helicity_pm_r) .or. &
             compute_quantity(kin_helicity_mm) .or. compute_quantity(kin_helicity_pm) .or. &
@@ -183,7 +203,7 @@ Contains
                 qty = qty**2
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         !/////////////////////////////////////////////////
         ! 2. terms involving theta vorticity
@@ -207,7 +227,7 @@ Contains
             Endif
             If (compute_quantity(vort_theta)) Then
                 Call Add_Quantity(qty)
-            Endif 
+            Endif
             If (compute_quantity(enstrophy)) Then
                 ens = ens+qty**2
             Endif
@@ -328,7 +348,7 @@ Contains
             Endif
             If (compute_quantity(vort_phi)) Then
                 Call Add_Quantity(qty)
-            Endif 
+            Endif
             If (compute_quantity(enstrophy)) Then
                 ens = ens+qty**2
                 Call Add_Quantity(ens)

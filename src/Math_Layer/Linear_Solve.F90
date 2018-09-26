@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module Linear_Solve
     Use Finite_Difference
     Use Chebyshev_Polynomials, Only : Cheby_Grid
@@ -12,7 +32,7 @@ Module Linear_Solve
     Integer, Save, Private, Allocatable :: nsub_modes(:)
 
     Integer, Save, Private :: ndim1, ndim2, n_links, maximum_deriv_order        ! Variable used to keep track of linked equations (i.e. WPS)
-    
+
     real*8, Save, Private :: LHS_time_factor, RHS_time_factor    ! Forward and Backward time-weighting of the implicit scheme.
     real*8, Allocatable :: dfield(:,:,:,:)
     Logical :: band_solve = .false.
@@ -31,13 +51,13 @@ Module Linear_Solve
     Type Equation
         Type(Coefficient_Array), Allocatable :: coefs(:)
         real*8, Allocatable :: lhs(:,:)        ! The matrix to be inverted for this equation
-                                                                    ! If an equation set is linked, this is only allocated for the primary 
+                                                                    ! If an equation set is linked, this is only allocated for the primary
                                                                     ! equation in the link.
         real*8, Pointer, dimension(:,:) :: mpointer    ! Points to LHS of the primary equation in a linked set (or LHS if not linked)
 
         real*8, Allocatable:: rhs(:,:,:)    ! RHS array for all modes of a given equation.  Only allocated for mode 1
         real*8, Pointer, dimension(:,:,:) :: rhs_pointer    ! Points to the appropriate portion of the joint RHS array
-                                                                                        ! for this equation dimensioned r,real/imag, sub-mode 
+                                                                                        ! for this equation dimensioned r,real/imag, sub-mode
         Integer, Allocatable :: pivot(:)        ! Pivot array corresponding to the LHS matrix
 
         Integer, Allocatable :: links(:)                    ! Array containing indices of other equations that this equation is linked to.
@@ -46,7 +66,7 @@ Module Linear_Solve
         Logical :: primary = .true.                        ! True if this equation is the primary equation of a linked set
         Logical :: linked = .false.                        ! True if this equation is a member of a linked set
         Logical :: solvefor = .false.                        ! Set to true if this mode is solved for in this equation
-        
+
         Integer, Allocatable :: colblock(:)                ! The column block for each variable reference by this equation
         Integer :: rowblock = 0                                ! The rowblock of this equation in the LHS matrix
 
@@ -89,7 +109,7 @@ Module Linear_Solve
         real*8, pointer, dimension(:,:,:) :: data    ! The portion of the RHS array of equation_set(1,equ_ind) that holds this variable
         Logical, Allocatable :: in_equation(:,:,:)
         Integer :: max_dorder ! The maximum derivative order calculated for this variable (for linear or nonlinear terms)
-        Integer :: dmax    ! The maximum derivative order that needs to be saved for this variable 
+        Integer :: dmax    ! The maximum derivative order that needs to be saved for this variable
                                                 ! when leaving the implicit configuration.
         Integer :: dsave_type = 2
         Type(cdarrays), Allocatable :: cderivs(:)
@@ -139,7 +159,7 @@ Module Linear_Solve
     Subroutine Set_Deriv_Save(varind,maxd)
         Implicit None
         Integer, Intent(In) :: maxd, varind
-        Integer :: dtype 
+        Integer :: dtype
         var_set(varind)%dmax = maxd
         dtype = var_set(varind)%dsave_type
         If (dtype .eq. 1) Then
@@ -165,7 +185,7 @@ Module Linear_Solve
         maximum_deriv_order = 0
         n_modes = nmode
         n_modes_total = Sum(nsub)
-        
+
         Allocate(nsub_modes(1:n_modes))
         nsub_modes = nsub
         n_equations = neq
@@ -206,9 +226,9 @@ Module Linear_Solve
                 equation_set(mode,eq_links(i))%primary = .false.
             Endif
 
-            Do j = 1, nlinks    
+            Do j = 1, nlinks
                 ! Establish the colums within the matrix pertaining to each variable
-                equation_set(mode,eq_links(i))%colblock(var_links(j)) = (j-1)*ndim1    
+                equation_set(mode,eq_links(i))%colblock(var_links(j)) = (j-1)*ndim1
 
             Enddo
             var_set(var_links(i))%var_start = (i-1)*ndim1+1        ! mode independent for now
@@ -233,7 +253,7 @@ Module Linear_Solve
         Integer :: i, j, k
         Do k = 1, n_equations
             Do j = 1, n_modes
-                If (allocated(equation_set(j,k)%lhs)) equation_set(j,k)%lhs(:,:) = 0.0d0 
+                If (allocated(equation_set(j,k)%lhs)) equation_set(j,k)%lhs(:,:) = 0.0d0
                 if (band_solve .or. sparse_solve) then
                     If (allocated(equation_set(j,k)%lhs) .and. equation_set(1,k)%primary) Then
                         DeAllocate(equation_set(j,k)%lhs)
@@ -252,7 +272,7 @@ Module Linear_Solve
     Subroutine Finalize_Equations()
         Implicit None
         Integer :: k,j
-    
+
         Do k = 1, n_vars
             j = var_set(k)%max_dorder
             Allocate(var_set(k)%in_equation(1:n_modes,1:n_equations,0:j))
@@ -264,10 +284,10 @@ Module Linear_Solve
         Implicit None
         Integer, Intent(In) :: mode_ind
         Integer :: k,j
-    
+
         j = mode_ind
         Do k = 1, n_equations
-            If (equation_set(j,k)%solvefor) Then        
+            If (equation_set(j,k)%solvefor) Then
                 ! Only DeAllocate matrix information for modes we actually solve for
                 If (equation_set(j,k)%primary) Then
                     If (allocated(equation_set(j,k)%lhs)) Then
@@ -289,7 +309,7 @@ Module Linear_Solve
         Implicit None
         Integer, Intent(In) :: mode_ind
         Integer :: k,j, ndim, ind
-    
+
         ! Check to see if each equation's matrix has already been allocated.
         ! If not, allocate it.  Account for linked equations.
         j = mode_ind
@@ -317,12 +337,12 @@ Module Linear_Solve
     Subroutine Allocate_RHS(zero_rhs)
         Implicit None
         Integer :: k,j, ndim, ind, indx, nsub
-        Logical, Intent(In), Optional :: zero_rhs 
-        ! We use one large RHS for each set of equations, with the first mode's 
+        Logical, Intent(In), Optional :: zero_rhs
+        ! We use one large RHS for each set of equations, with the first mode's
         ! equation object holding that RHS. Each mode's equation object points to
         ! the appropriate parts of that RHS space.  The idea is that the RHS can be
         ! accessed more efficiently when adding nonlinear and CN terms.
-        
+
         Do k = 1, n_equations
 
             !/// Allocation
@@ -463,10 +483,10 @@ Module Linear_Solve
 
         If(present(static)) Then
             equation_set(mode,eqind)%coefs(varind)%data(:,dorder) = amp + &
-                & equation_set(mode,eqind)%coefs(varind)%data(:,dorder) 
+                & equation_set(mode,eqind)%coefs(varind)%data(:,dorder)
         Else
             equation_set(mode,eqind)%coefs(varind)%data(:,dorder) = amp*RHS_Time_Factor+ &
-                & equation_set(mode,eqind)%coefs(varind)%data(:,dorder) 
+                & equation_set(mode,eqind)%coefs(varind)%data(:,dorder)
         Endif
 
         If (present(static)) Then
@@ -487,7 +507,7 @@ Module Linear_Solve
             Endif
             amp = amp/time_amp
             var_set(varind)%in_equation(mode,eqind,dorder) = .true.
-        Endif        
+        Endif
 
     End Subroutine Add_Implicit_Term
 
@@ -523,7 +543,7 @@ Module Linear_Solve
             Do d = 0, djmax
 
                 Do j = 1, n_equations
-                    
+
                         indx = 1
                         Do i = 1, n_modes
                         If (var_set(k)%in_equation(i,j,d))    Then    ! Add this derivative to this equation
@@ -556,7 +576,7 @@ Module Linear_Solve
                 If (equation_set(1,k)%nlinks .gt. 1) Then
                     Do j = 1, equation_set(1,k)%nlinks
                         i = equation_set(1,k)%links(j)
-            
+
                         istart = (j-1)*ndim1
                         !iend   = istart+ndim1
                         Do ii = 1, ndim1
@@ -564,7 +584,7 @@ Module Linear_Solve
                             & RHS_Time_Factor*Implicit_RHS(i)%data(ii,:,:)
                         Enddo
                     Enddo
-                Else    
+                Else
                     equation_set(1,k)%rhs = equation_set(1,k)%rhs+RHS_Time_Factor*Implicit_RHS(k)%data
                 Endif
             Endif
@@ -576,9 +596,9 @@ Module Linear_Solve
         Implicit None
         Real*8, Intent(InOut) :: set_to(:,:,:)
         Integer, Intent(In) :: eqid
-        Integer :: istart,iend, ind 
+        Integer :: istart,iend, ind
 
-                    
+
         If (n_modes .gt. 0) Then
             !Primary equation object always has the full, allocated rhs.
             ind = eqid
@@ -588,7 +608,7 @@ Module Linear_Solve
             ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
             istart = equation_set(1,eqid)%rowblock+1
             iend = istart+ndim1-1
-        
+
 
             equation_set(1,ind)%rhs(istart:iend,:,:) = set_to(1:ndim1,:,:)
         Endif
@@ -600,9 +620,9 @@ Module Linear_Solve
         ! from the equation (as with mantle convection problems).
         Implicit None
         Integer, Intent(In) :: eqid
-        Integer :: istart,iend, ind 
+        Integer :: istart,iend, ind
 
-                    
+
         If (n_modes .gt. 0) Then
             !Primary equation object always has the full, allocated rhs.
             ind = eqid
@@ -612,7 +632,7 @@ Module Linear_Solve
             ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
             istart = equation_set(1,eqid)%rowblock+1
             iend = istart+ndim1-1
-        
+
 
             equation_set(1,ind)%rhs(istart:iend,:,:) = 0.0d0
         Endif
@@ -622,7 +642,7 @@ Module Linear_Solve
         Implicit None
         ! Copy equation structure RHSs to the buffer (dlink RHSs)
         Real*8, Intent(InOut) :: buffer(:,:,:,1:)
-        Integer :: i, ind,istart,iend 
+        Integer :: i, ind,istart,iend
         If (n_modes .gt. 0) Then
             Do i = 1, n_equations
                 ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
@@ -644,7 +664,7 @@ Module Linear_Solve
         ! Buffer RHS's are assumed to be unlinked.
         Implicit None
         Real*8, Intent(InOut) :: buffer(:,:,:,1:)
-        Integer :: i, ind,istart,iend 
+        Integer :: i, ind,istart,iend
 
             Do i = 1, n_equations
                 ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
@@ -656,7 +676,7 @@ Module Linear_Solve
                     ind = equation_set(1,i)%links(1)
                 endif
 
-                equation_set(1,ind)%rhs(istart:iend,:,:) = buffer(1:ndim1,:,:,i)        
+                equation_set(1,ind)%rhs(istart:iend,:,:) = buffer(1:ndim1,:,:,i)
             Enddo
     End Subroutine Set_All_RHS
 
@@ -667,7 +687,7 @@ Module Linear_Solve
         Implicit None
         Real*8, Intent(InOut) :: buffer(:,:,:,1:)
         Real*8, Intent(In) :: mfactor
-        Integer :: i, ind,istart,iend 
+        Integer :: i, ind,istart,iend
 
             Do i = 1, n_equations
                 ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
@@ -679,7 +699,7 @@ Module Linear_Solve
                     ind = equation_set(1,i)%links(1)
                 endif
 
-                equation_set(1,ind)%rhs(istart:iend,:,:) = equation_set(1,ind)%rhs(istart:iend,:,:)+mfactor*buffer(1:ndim1,:,:,i)        
+                equation_set(1,ind)%rhs(istart:iend,:,:) = equation_set(1,ind)%rhs(istart:iend,:,:)+mfactor*buffer(1:ndim1,:,:,i)
             Enddo
     End Subroutine Add_to_all_RHS
 
@@ -703,10 +723,10 @@ Module Linear_Solve
             ! TODO:   N.F. June 27, 2017
             ! This logic should be streamlined.  Possibly best to create a support array
             ! that indicates the maximum dorder for a particular mode....
-            If (allocated(equation_set(i,eqid)%coefs(varid)%data)) then    
+            If (allocated(equation_set(i,eqid)%coefs(varid)%data)) then
             itmp =UBOUND( equation_set(i,eqid)%coefs(varid)%data,2 )
             If (dorder .le. itmp) Then
-            coefs => equation_set(i,eqid)%coefs(varid)%data(:,dorder)    
+            coefs => equation_set(i,eqid)%coefs(varid)%data(:,dorder)
             Do jj = indx, indx+nsub
                 Do ii = 1,ndim2
                     addto(:,ii,jj,eqid) = addto(:,ii,jj,eqid)+dfield(:,ii,jj,dind)*coefs
@@ -778,10 +798,10 @@ Module Linear_Solve
 
     Subroutine print_row(mode,row,eqind)
         Integer, Intent(In) :: mode, row, eqind
-        Integer :: rowblock,i 
+        Integer :: rowblock,i
         real*8, Pointer, Dimension(:,:) :: mpointer
         mpointer => equation_set(mode,eqind)%mpointer
-        rowblock = equation_set(mode,eqind)%rowblock        
+        rowblock = equation_set(mode,eqind)%rowblock
         Do i = 1, ndim1*3
             Write(6,*)i, mpointer(rowblock+row,i)
         Enddo
@@ -789,9 +809,9 @@ Module Linear_Solve
 
     Subroutine print_column(mode,col,eqind)
         Integer, Intent(In) :: mode, col, eqind
-        Integer :: rowblock,i 
+        Integer :: rowblock,i
         real*8, Pointer, Dimension(:,:) :: mpointer
-        mpointer => equation_set(mode,eqind)%mpointer      
+        mpointer => equation_set(mode,eqind)%mpointer
         Do i = 1, ndim1*3
             Write(6,*)i, mpointer(i,col)
         Enddo
@@ -840,7 +860,7 @@ Module Linear_Solve
         Integer :: rowblock
         rowblock = equation_set(mode,eqind)%rowblock
         equation_set(mode,eqind)%mpointer(rowblock+row,:) = 0.0d0
-        
+
     End Subroutine Clear_Row
 
 
@@ -849,7 +869,7 @@ Module Linear_Solve
         Implicit None
         Class(Equation) :: self
 
-        Integer :: error, mtype, phase, mxfct, mnum, nrows 
+        Integer :: error, mtype, phase, mxfct, mnum, nrows
         Integer :: msglvl, nrhs
         Real*8, Allocatable :: faux_rhs(:,:), faux_x(:,:)
         self%mtype = 11
@@ -893,7 +913,7 @@ Module Linear_Solve
         Implicit None
         Class(Equation) :: self
 
-        Integer :: error, mtype, solver,phase, mxfct, mnum, nrows 
+        Integer :: error, mtype, solver,phase, mxfct, mnum, nrows
         Integer :: msglvl, nrhs
         self%nrows = self%nlinks*ndim1
         self%nrhs = size(self%rhs_pointer)/self%nrows
@@ -923,7 +943,7 @@ Module Linear_Solve
 
             !Write(6,*)'Checkcheck: ', self%iparm(3), self%iparm(6)
             self%iparm(3) = 1
-            self%iparm(6) = 1 
+            self%iparm(6) = 1
             !CALL pardiso (self%pt, self%mxfct, self%mnum, self%mtype, phase, self%nrows, &
             !            & self%sparse_mat, self%sparse_ia, self%sparse_ja, &
             !            & self%idum, self%nrhs, self%iparm, msglvl, self%ddum, &
@@ -992,7 +1012,7 @@ Module Linear_Solve
           Else
              ma = Size(mat,2)
           End If
-            
+
           If (Present(nb)) Then
              mb = nb
           Else
@@ -1002,11 +1022,11 @@ Module Linear_Solve
           End If
 
           lda = Size(mat,1)
-          
+
           kl = (lda - 1)/3
           ku = kl
         !  Call dgbtrs('N', ma, kl, ku, mb, mat, lda, pvt, rhs, Size(rhs,3), info)
-         
+
           Call dgbtrs('N', ma, kl, ku, mb, mat, lda, pvt, rhs, Size(rhs,1), info)
 
 
@@ -1025,7 +1045,7 @@ Module Linear_Solve
         Else
             ma = Size(mat,1)
         End If
-    
+
         If (Present(nb)) Then
             mb = nb
             Write(6,*)'mb specified: ', mb, Size(rhs)/Size(rhs,1)
@@ -1056,8 +1076,8 @@ Module Linear_Solve
                     nupper = cpgrid%max_npoly
                     Call Band_Load_Single(mode,equ,nupper) ! 3
                 Endif
-            
-            
+
+
             equation_set(mode,equ)%mpointer => equation_set(mode,equ)%lhs
             if (equation_set(mode,equ)%nlinks .gt. 1) Then
                 Do i = 1, equation_set(mode,equ)%nlinks
@@ -1077,7 +1097,7 @@ Module Linear_Solve
         ! Take a normal linked RHS and arrange it so the variables are interleaved
         nlinks = equation_set(1,k)%nlinks
         nrow = ndim1*nlinks
-        
+
         Do j = 1, n_modes_total
             Do i = 1, ndim2
                 Do r = 1, nrow
@@ -1102,7 +1122,7 @@ Module Linear_Solve
         ! Take a normal linked RHS and arrange it so the variables are interleaved
         nlinks = equation_set(1,k)%nlinks
         nrow = ndim1*nlinks
-        
+
         Do j = 1, n_modes_total
             Do i = 1, ndim2
                 Do r = 1, nrow
@@ -1166,12 +1186,12 @@ Module Linear_Solve
 
         sparse_mat(:) = 0.D0
         ja(:) = 0
-        ia(:) = 0 
+        ia(:) = 0
 
         rindex = 1
         s_offset = 0
         !Write(6,*)'INSIDE: ', eind, mind, nlinks
-        Do n = 1, nlinks        
+        Do n = 1, nlinks
             c_offset = 0
             Do i = 1, nsub
                 npoly = cpgrid%npoly(i)
@@ -1214,7 +1234,7 @@ Module Linear_Solve
                 Endif
                 rindex = rindex+1
                 ia(rindex) = s_offset+1
-                ! Next, load the interior rows   
+                ! Next, load the interior rows
                 Do k = 2, npoly-1
                     ia(rindex) = s_offset+1
 
@@ -1226,7 +1246,7 @@ Module Linear_Solve
                             & Equation_set(mind,eind)%LHS(rindex,mcind1:mcind2)
                         Do j = 1,npoly
                             ja(s_offset+j) = mcind1-1+j
-                        Enddo                   
+                        Enddo
                         s_offset = s_offset+npoly
                     Enddo
                     rindex = rindex+1
@@ -1245,7 +1265,7 @@ Module Linear_Solve
                             & Equation_set(mind,eind)%LHS(rindex,mcind1:mcind2)
                         Do j = 1,npoly
                             ja(s_offset+j) = mcind1-1+j
-                        Enddo    
+                        Enddo
 
                         s_offset = s_offset+npoly
                     Enddo
@@ -1271,10 +1291,10 @@ Module Linear_Solve
 
                 rindex = rindex+1
                 c_offset = c_offset+npoly
-            Enddo    
+            Enddo
         Enddo
         ia(rindex) = s_offset+1
-        !Write(6,*)'ROW CHECK: ', rindex-1, n_rows        
+        !Write(6,*)'ROW CHECK: ', rindex-1, n_rows
         if (s_offset .ne. element_count) Write(6,*)'ELEMENT COUNT INCONSISTENT', s_offset, element_count
 
         Equation_set(mind,eind)%sparse_mat(:) = sparse_mat(:)
@@ -1303,9 +1323,9 @@ Module Linear_Solve
           row_diag = n_lower+n_upper+1
           Allocate(band_matrix(2*n_lower+n_upper+1, N_Rows))
           band_matrix(:,:) = 0.D0
-            
+
             if (nlinks .gt. 1) Then
-                ! If we want to band solve a linked equation, we have to 
+                ! If we want to band solve a linked equation, we have to
                 ! intereave the rows and columns to make it banded
                 Allocate(temp_rows(1:N_Rows,1:N_rows))
 
@@ -1354,7 +1374,7 @@ Module Linear_Solve
         real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
 
         nsub = cpgrid%domain_count
-        
+
 
         r = cpgrid%npoly(1)         !Decide whether we are replacing rows at
         if (rind .eq. 1) r = r+1    !either the top or bottom of each domain
@@ -1365,7 +1385,7 @@ Module Linear_Solve
         Do hh = 1, nsub -1
             !write(6,*)'rcheck 2: ', r
             ! Clear this row completely
-            mpointer(r+row,:) = 0.0d0     
+            mpointer(r+row,:) = 0.0d0
 
             ! Load the left-side domain first (using its "upper" boundary values)
             ind = cpgrid%npoly(hh)
@@ -1373,7 +1393,7 @@ Module Linear_Solve
                 mpointer(row+r,col+n+offleft) = mpointer(row+r,col+n+offleft) &
                     &  + cpgrid%dcheby(hh)%data(ind,n,dorder)
             Enddo
-            
+
             !Load the right-side domain (using its "lower" boundary values)
             Do n = 1, cpgrid%rda(hh+1)-1
                 mpointer(row+r,col+n+offright) = mpointer(row+r,col+n+offright) &
@@ -1383,7 +1403,7 @@ Module Linear_Solve
             !Advance row and offset indices to next subdomain
 
 
-            r = r+cpgrid%npoly(hh+1) 
+            r = r+cpgrid%npoly(hh+1)
             offleft = offleft+cpgrid%npoly(hh)
             offright = offright+cpgrid%npoly(hh+1)
         Enddo

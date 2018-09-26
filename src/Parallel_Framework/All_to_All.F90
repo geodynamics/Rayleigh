@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 !////////////////////////////////////////////////////////////////////////////
 !   MODULE:  ALL_TO_ALL
 !
@@ -44,7 +64,7 @@ Contains
     ! INPUTS:
     !            send_buf - Double-Complex 1-D array that serves as the source for
     !                         the alltoallv operation
-    !                 grp - MPI communicator across which the REDUCE is conducted 
+    !                 grp - MPI communicator across which the REDUCE is conducted
     !                       (optional; default = MPI_COMM_WORLD)
     !            send_displ - array of send displacements for mpi_alltoallv
     !            recv_displ - array of receive displacements for mpi_alltoallv
@@ -77,7 +97,7 @@ Contains
     ! INPUTS:
     !            send_buf - Double-precision 1-D array that serves as the source for
     !                         the alltoallv operation
-    !                 grp - MPI communicator across which the REDUCE is conducted 
+    !                 grp - MPI communicator across which the REDUCE is conducted
     !                       (optional; default = MPI_COMM_WORLD)
     !            send_displ - array of send displacements for mpi_alltoallv
     !            recv_displ - array of receive displacements for mpi_alltoallv
@@ -106,13 +126,13 @@ Contains
     !////////////////////////////////////////////////////////////////////////////////////
     ! SUBROUTINE:  D_Tranpose_choose_1D
     !
-    ! DESCRIPTION:  Performs an AlltoALLv OR AlltoALL for a 1-D, 
+    ! DESCRIPTION:  Performs an AlltoALLv OR AlltoALL for a 1-D,
     !                 double-precision array across grp
     !
     ! INPUTS:
     !            send_buf - Double-precision 1-D array that serves as the source for
     !                         the alltoallv operation
-    !                 grp - MPI communicator across which the REDUCE is conducted 
+    !                 grp - MPI communicator across which the REDUCE is conducted
     !                       (optional; default = MPI_COMM_WORLD)
     !            send_displ - array of send displacements for mpi_alltoallv
     !            recv_displ - array of receive displacements for mpi_alltoallv

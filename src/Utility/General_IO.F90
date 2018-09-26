@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module General_IO
     Use Parallel_Framework, Only : pfi
     Use General_MPI, Only : BCAST2D, BCAST1D
@@ -15,7 +35,7 @@ Contains
         arrdims = shape(array_data)
         rcheck = arrdims(1)
         ccheck = arrdims(2)
-        
+
         If (pfi%gcomm%rank .eq. 0) Then
             !Only one processes actually opens the file
             !After that, the contents of the array are broadcast across columns and rows
@@ -34,8 +54,8 @@ Contains
                     Read(15)pi_integer
                 Endif
             Endif
-                    
-            If (pi_integer .eq. 314) Then 
+
+            If (pi_integer .eq. 314) Then
                 Read(15)nrows
                 Read(15)ncolumns
                 If ( (nrows*ncolumns) .gt. (rcheck*ccheck) ) Then
@@ -45,7 +65,7 @@ Contains
                     Write(6,*)'File nrows     : ', nrows
                     Write(6,*)'Array ncolumns : ', ccheck
                     Write(6,*)'Array nrows    : ', rcheck
-                    Write(6,*)'Setting array contents to zero.'              
+                    Write(6,*)'Setting array contents to zero.'
                     array_data(:,:) = 0.0d0
                 Else
                     Read(15)array_data(1:nrows,1:ncolumns)

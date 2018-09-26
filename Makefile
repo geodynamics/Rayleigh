@@ -43,12 +43,13 @@ clean:
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean
 
-
+.PHONY: install
 install:
 	@echo "Installing executables into: " $(PREFIX)"/bin"
 	@mkdir -p $(PREFIX)/bin
 	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
 
+.PHONY: distclean
 distclean:
 	rm -f $(BUILD)/compiled/rayleigh.*
 	rm -f $(BUILD)/*.F
