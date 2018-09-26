@@ -316,26 +316,26 @@ Contains
         !-------------------------------------
 
         ! Radial Pressure Flux of turbulent kinetic energy.
-        !    r_hat . F_TP = - P' u'_r
+        !    r_hat . F_TP = P' u'_r
         If (compute_quantity(rflux_pressure_pKE)) Then
             DO_PSI
-            qty(PSI) = -fbuffer(PSI,vr) * fbuffer(PSI,pvar)
+                qty(PSI) = fbuffer(PSI,vr) * fbuffer(PSI,pvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         ! Colatitudinal Pressure Flux of turbulent kinetic energy.
-        !    theta_hat . F_TP = - P' u'_theta
+        !    theta_hat . F_TP = P' u'_theta
         If (compute_quantity(thetaflux_pressure_pKE)) Then
             DO_PSI
-            qty(PSI) = -fbuffer(PSI,vtheta) * fbuffer(PSI,pvar)
+                qty(PSI) = fbuffer(PSI,vtheta) * fbuffer(PSI,pvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
 
         ! Radial Viscous Flux of turbulent kinetic energy.
-        !    r_hat . F_TV = r_hat . sigma'.u'
+        !    r_hat . F_TV = -r_hat . sigma'.u'
         If (compute_quantity(rflux_viscous_pKE)) Then
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
@@ -358,7 +358,7 @@ Contains
                     ! Radial component of the viscous stess contracted w/ the velocity: r_hat . sigma' . u'
                     htmp1 = 2D0*err*fbuffer(PSI,vr) + ert*fbuffer(PSI,vtheta) + erp*fbuffer(PSI,vphi)
                     htmp2 = 2D0*one_third * (err + ett + epp) * fbuffer(PSI,vr)
-                    qty(PSI) = mu * (htmp1 - htmp2)
+                    qty(PSI) = mu * (htmp2 - htmp1)
                 ENDDO
             END_DO2
             Call Add_Quantity(qty)
@@ -366,7 +366,7 @@ Contains
 
 
         ! Colatitudinal Viscous Flux of turbulent kinetic energy.
-        !    theta_hat . F_TV = theta_hat . sigma'.u'
+        !    theta_hat . F_TV = -theta_hat . sigma'.u'
         If (compute_quantity(thetaflux_viscous_pKE)) Then
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
@@ -389,7 +389,7 @@ Contains
                     ! Colatitudinal component of the viscous stess contracted w/ the velocity: theta_hat . sigma' . u'
                     htmp1 = 2D0*ett*fbuffer(PSI,vtheta) + ert*fbuffer(PSI,vr) + etp*fbuffer(PSI,vphi)
                     htmp2 = 2D0*one_third * (err + ett + epp) * fbuffer(PSI,vtheta)
-                    qty(PSI) = mu * (htmp1 - htmp2)
+                    qty(PSI) = mu * (htmp2 - htmp1)
                 ENDDO
             END_DO2
             Call Add_Quantity(qty)
@@ -397,11 +397,11 @@ Contains
 
 
         ! Radial Turbulent Advective Flux of turbulent kinetic energy.
-        !    r_hat . F_TA = -1/2 rho_bar |u'|**2 u'_r
+        !    r_hat . F_TA = 1/2 rho_bar |u'|**2 u'_r
         If (compute_quantity(rflux_turbadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vr)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vr)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -419,22 +419,22 @@ Contains
 
 
         ! Radial Mean Advective Flux of turbulent kinetic energy.
-        !    r_hat . F_MA = -1/2 rho_bar |u'|**2 U_r
+        !    r_hat . F_MA = 1/2 rho_bar |u'|**2 U_r
         If (compute_quantity(rflux_meanadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vr)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vr)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
 
         ! Colatitudinal Mean Advective Flux of turbulent kinetic energy.
-        !    theta_hat . F_MA = -1/2 rho_bar |u'|**2 U_theta
+        !    theta_hat . F_MA = 1/2 rho_bar |u'|**2 U_theta
         If (compute_quantity(thetaflux_meanadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vtheta)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vtheta)
             END_DO
             Call Add_Quantity(qty)
         Endif
