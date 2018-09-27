@@ -12,7 +12,7 @@ SET(src
     Diagnostics/Diagnostics_Current_Density.F90
     Diagnostics/Diagnostics_Custom.F90
     Diagnostics/Diagnostics_Energies.F90
-    Diagnostics/Diagnostics_Energy_Flux.F90
+#    Diagnostics/Diagnostics_Energy_Flux.F90
     Diagnostics/Diagnostics_Induction.F90
     Diagnostics/Diagnostics_Inertial_Forces.F90
     Diagnostics/Diagnostics_Interface.F90
@@ -62,7 +62,7 @@ SET(src
     Physics/Fields.F90
     Physics/Initial_Conditions.F90
     Physics/Input.F90
-    Physics/Linear_Terms_Cart.F90
+#    Physics/Linear_Terms_Cart.F90
     Physics/Main.F90
     Physics/ProblemSize.F90
     Physics/ReferenceState.F90
@@ -90,8 +90,12 @@ SET(src
 INCLUDE_DIRECTORIES(Include)
 
 # Set compiler flags for the Fortran files
-SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffixed-line-length-132")
+SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffixed-line-length-140")
 SET(CMAKE_Fortran_FLAGS_DEBUG "-fbounds-check -fbacktrace")
 
-# Define the executable in terms of the source files
+
+
+# Define the executable in terms of the source files, and ensure that
+# it links against the correct libraries.
 ADD_EXECUTABLE(${RayleighEXE} ${src})
+TARGET_LINK_LIBRARIES(${RayleighEXE} blas lapack fftw3)
