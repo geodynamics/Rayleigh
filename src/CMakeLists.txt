@@ -12,7 +12,6 @@ SET(src
     Diagnostics/Diagnostics_Current_Density.F90
     Diagnostics/Diagnostics_Custom.F90
     Diagnostics/Diagnostics_Energies.F90
-#    Diagnostics/Diagnostics_Energy_Flux.F90
     Diagnostics/Diagnostics_Induction.F90
     Diagnostics/Diagnostics_Inertial_Forces.F90
     Diagnostics/Diagnostics_Interface.F90
@@ -62,7 +61,6 @@ SET(src
     Physics/Fields.F90
     Physics/Initial_Conditions.F90
     Physics/Input.F90
-#    Physics/Linear_Terms_Cart.F90
     Physics/Main.F90
     Physics/ProblemSize.F90
     Physics/ReferenceState.F90
