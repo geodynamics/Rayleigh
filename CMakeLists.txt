@@ -5,7 +5,7 @@
 ##################################################
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
-PROJECT(RAYLEIGH Fortran)
+PROJECT(RAYLEIGH Fortran C)
 
 # Set the Rayleigh version
 SET(VERSION 0.9)
