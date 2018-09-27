@@ -89,5 +89,9 @@ SET(src
 # Make sure both C and Fortran compilers know where to find include files
 INCLUDE_DIRECTORIES(Include)
 
+# Set compiler flags for the Fortran files
+SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffixed-line-length-132")
+SET(CMAKE_Fortran_FLAGS_DEBUG "-fbounds-check -fbacktrace")
+
 # Define the executable in terms of the source files
 ADD_EXECUTABLE(${RayleighEXE} ${src})
