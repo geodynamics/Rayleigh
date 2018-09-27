@@ -4,6 +4,7 @@
 
 # Add the source files
 SET(src
+    # First all Fortran files
     Data_Structures/Structures.F90
     Diagnostics/Diagnostics_ADotGradB.F90
     Diagnostics/Diagnostics_Angular_Momentum.F90
@@ -38,7 +39,6 @@ SET(src
     Math_Layer/Fourier_Transform.F90
     Math_Layer/Legendre_Polynomials.F90
     Math_Layer/Legendre_Transforms.F90
-    Math_Layer/Legendre_Transforms_newlayout.F90
     Math_Layer/Linear_Solve.F90
     Math_Layer/Math_Constants.F90
     Math_Layer/Math_Utility.F90
@@ -80,7 +80,14 @@ SET(src
     Test_Suite/TestSuite.F90
     Utility/BufferedOutput.F90
     Utility/General_IO.F90
-    Utility/MakeDir.F90)
+    Utility/MakeDir.F90
+
+    # Then also the C files
+    Utility/cmkdir.c
+    )
+
+# Make sure both C and Fortran compilers know where to find include files
+INCLUDE_DIRECTORIES(Include)
 
 # Define the executable in terms of the source files
 ADD_EXECUTABLE(${RayleighEXE} ${src})
