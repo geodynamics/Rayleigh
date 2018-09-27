@@ -74,7 +74,8 @@ Subroutine d_dtheta_single(A,B)
         If (m .ne. lmax) Then
             Do k = 1, tnrl
                 Do l = m+1, lmax-1
-                    B(i)%data(l,k) = A(i)%data(l-1,k)*deriv_coefs(i)%data(1,l)   +   A(i)%data(l+1,k)*deriv_coefs(i)%data(2,l)
+                    B(i)%data(l,k) = A(i)%data(l-1,k)*deriv_coefs(i)%data(1,l)   +    &
+                                     A(i)%data(l+1,k)*deriv_coefs(i)%data(2,l)
                 Enddo
                 B(i)%data(m,k)    = A(i)%data(m+1   ,k)*deriv_coefs(i)%data(2,m)
                 B(i)%data(lmax,k) = A(i)%data(lmax-1,k)*deriv_coefs(i)%data(1,lmax)
@@ -100,7 +101,8 @@ Subroutine d_dtheta_buffer(A,fin,fout)
         m = mlocal(i)
         Do k = 1,tnrl
         Do l = m+1, lmax
-            A(i)%data(l,k+ind2) = A(i)%data(l-1,k+ind1)*deriv_coefs(i)%data(1,l)   +   A(i)%data(l+1,k+ind1)*deriv_coefs(i)%data(2,l)
+           A(i)%data(l,k+ind2) = A(i)%data(l-1,k+ind1)*deriv_coefs(i)%data(1,l)   +   &
+                                 A(i)%data(l+1,k+ind1)*deriv_coefs(i)%data(2,l)
         Enddo
         A(i)%data(m,k+ind2)    = A(i)%data(m+1   ,k+ind1)*deriv_coefs(i)%data(2,m)
         A(i)%data(lmax,k+ind2) = A(i)%data(lmax-1,k+ind1)*deriv_coefs(i)%data(1,lmax)
