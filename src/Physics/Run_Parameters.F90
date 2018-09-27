@@ -19,6 +19,7 @@
 !
 
 Module Run_Parameters
+
    Implicit None
 
    ! The format for each character variable is

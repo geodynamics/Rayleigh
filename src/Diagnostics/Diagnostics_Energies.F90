@@ -51,30 +51,30 @@ Contains
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+buffer(1:n_phi,:,:,vtheta)**2
             DO_PSI
                 qty(PSI) = qty(PSI)*dfact(r)
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_ke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*buffer(PSI,vr)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_ke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*buffer(PSI,vtheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_ke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*buffer(PSI,vphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         ! Energies associated with the mean velocity field
         If (compute_quantity(mkinetic_energy)) Then
@@ -83,30 +83,30 @@ Contains
                 qty(PSI) = qty(PSI)+m0_values(PSI2,vtheta)**2
                 qty(PSI) = qty(PSI)+m0_values(PSI2,vphi  )**2
                 qty(PSI) = qty(PSI)*dfact(r)
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_mke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*m0_values(PSI2,vr)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_mke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*m0_values(PSI2,vtheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_mke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*m0_values(PSI2,vphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
 
         ! Energies associated with the fluctuating velocity field
@@ -116,30 +116,30 @@ Contains
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+fbuffer(1:n_phi,:,:,vtheta)**2
             DO_PSI
                 qty(PSI) = qty(PSI)*dfact(r)
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_pke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*fbuffer(PSI,vr)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_pke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*fbuffer(PSI,vtheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_pke)) Then
             DO_PSI
                 qty(PSI) = dfact(r)*fbuffer(PSI,vphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
 
         ! And now the squared fields (without the (1/2) density factor)
@@ -148,30 +148,30 @@ Contains
             qty(1:n_phi,:,:) = buffer(1:n_phi,:,:,vphi)**2
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+buffer(1:n_phi,:,:,vr)**2
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+buffer(1:n_phi,:,:,vtheta)**2
-        
+
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_vsq)) Then
             DO_PSI
                 qty(PSI) = buffer(PSI,vr)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_vsq)) Then
             DO_PSI
                 qty(PSI) = buffer(PSI,vtheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_vsq)) Then
             DO_PSI
                 qty(PSI) = buffer(PSI,vphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         ! Squared mean velocity field
         If (compute_quantity(mvsq)) Then
@@ -179,30 +179,30 @@ Contains
                 qty(PSI) = m0_values(PSI2,vr    )**2
                 qty(PSI) = qty(PSI)+m0_values(PSI2,vtheta)**2
                 qty(PSI) = qty(PSI)+m0_values(PSI2,vphi  )**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_mvsq)) Then
             DO_PSI
                 qty(PSI) = m0_values(PSI2,vr)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_mvsq)) Then
             DO_PSI
                 qty(PSI) = m0_values(PSI2,vtheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_mvsq)) Then
             DO_PSI
                 qty(PSI) = m0_values(PSI2,vphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
 
         ! Squared fluctuating velocity field
@@ -210,30 +210,30 @@ Contains
             qty(1:n_phi,:,:) = fbuffer(1:n_phi,:,:,vphi)**2
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+fbuffer(1:n_phi,:,:,vr)**2
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+fbuffer(1:n_phi,:,:,vtheta)**2
-        
+
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_pvsq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,vr)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_pvsq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,vtheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_pvsq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,vphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
 
         DeAllocate(dfact)
@@ -258,30 +258,30 @@ Contains
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+buffer(1:n_phi,:,:,btheta)**2
             DO_PSI
                 qty(PSI) = qty(PSI)*mfact
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_me)) Then
             DO_PSI
                 qty(PSI) = mfact*buffer(PSI,br)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_me)) Then
             DO_PSI
                 qty(PSI) = mfact*buffer(PSI,btheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_me)) Then
             DO_PSI
                 qty(PSI) = mfact*buffer(PSI,bphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         ! Energies associated with the mean magnetic field
         If (compute_quantity(mmagnetic_energy)) Then
@@ -290,30 +290,30 @@ Contains
                 qty(PSI) = qty(PSI)+m0_values(PSI2,btheta)**2
                 qty(PSI) = qty(PSI)+m0_values(PSI2,bphi  )**2
                 qty(PSI) = qty(PSI)*mfact
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_mme)) Then
             DO_PSI
                 qty(PSI) = mfact*m0_values(PSI2,br)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_mme)) Then
             DO_PSI
                 qty(PSI) = mfact*m0_values(PSI2,btheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_mme)) Then
             DO_PSI
                 qty(PSI) = mfact*m0_values(PSI2,bphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
 
         ! Energies associated with the fluctuating magnetic field
@@ -323,30 +323,30 @@ Contains
             qty(1:n_phi,:,:) = qty(1:n_phi,:,:)+fbuffer(1:n_phi,:,:,btheta)**2
             DO_PSI
                 qty(PSI) = qty(PSI)*mfact
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(radial_pme)) Then
             DO_PSI
                 qty(PSI) = mfact*fbuffer(PSI,br)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(theta_pme)) Then
             DO_PSI
                 qty(PSI) = mfact*fbuffer(PSI,btheta)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(phi_pme)) Then
             DO_PSI
                 qty(PSI) = mfact*fbuffer(PSI,bphi)**2
-            END_DO              
+            END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
 
     End Subroutine Compute_Magnetic_Energy

@@ -55,19 +55,19 @@ Contains
     !    spatial second derivatives of the velocity components.  The ones needed are        !
     !    as follows (in Einstein notation for derivatives):                                 !
     !                                                                                       !
-    !    v_r,rr   ;  v_r,tt   ;   v_r,pp   ;   v_r,rt   ;   v_r,rp                          ! 
+    !    v_r,rr   ;  v_r,tt   ;   v_r,pp   ;   v_r,rt   ;   v_r,rp                          !
     !    v_t,rr   ;  v_t,tt   ;   v_t,pp   ;   v_t,tr   ;   v_t,tp                          !
     !    v_p,rr   ;  v_p,tt   ;   v_p,pp   ;   v_p,pr   ;   v_r,pt                          !
     !                                                                                       !
     !   where r = radius, t = theta (colatitude), and p = phi (longitude). The missing      !
-    !   combinations are few (v_r,tp ; v_t,rp ; v_p,rt).                                    !         
+    !   combinations are few (v_r,tp ; v_t,rp ; v_p,rt).                                    !
     !      I presume that the indices will will be identified using the following scheme    !
     !   to access this information in the buffers:                                          !
     !                                                                                       !
     !    u_r,rr -- dvrdrdr ,  u_r,rt -- dvrdrdt and so on                                   !
     !                                                                                       !
     !   For cross derivatives, r precedes t which precedes p. So, its dvrdrdt NOT dvrdtdr.  !
-    !                                                                                       !        
+    !                                                                                       !
     !=======================================================================================!
 
     Subroutine Compute_TurbulentKE_Budget(buffer)
@@ -79,6 +79,7 @@ Contains
         Real*8 :: one_over_rsin, ctn_over_r        ! spherical trig
         Real*8 :: Err,Ett,Epp, Ert,Erp,Etp        ! variables to store the components of the rate of strain
         Real*8 :: Lap_r, Lap_t, Lap_p            ! variables to store Laplacians
+        Real*8 :: divu                          ! divergence of the velocity
         Real*8 :: mu, dmudr                ! the dynamic viscosity and its radial derivativ
 
 
@@ -92,7 +93,7 @@ Contains
             DO_PSI
                 qty(PSI) = ref%Buoyancy_Coeff(r)*fbuffer(PSI,tvar)*fbuffer(PSI,vr)    ! Assuming ref%Buoyancy_Coeff = g rho / cp
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -114,7 +115,7 @@ Contains
 
                     ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
-                        + fbuffer(PSI,dvtdr)    
+                        + fbuffer(PSI,dvtdr)
                     erp = fbuffer(PSI,dvpdr) + one_over_rsin * fbuffer(PSI,dvrdp)        &
                         - one_over_r(r) * fbuffer(PSI,vphi)
                     etp = one_over_rsin * fbuffer(PSI,dvtdp) - ctn_over_r * fbuffer(PSI,vphi)    &
@@ -125,10 +126,11 @@ Contains
                     qty(PSI) = qty(PSI) + 0.5D0*(ert*ert + erp*erp + etp*etp)    ! + Off-Diagonal
 
                     ! Next add -(1/3) (div.u)^2 & multiply by 2 rho_bar nu
-                    qty(PSI) = 2D0*mu * (qty(PSI) - one_third*(err+ett+epp)**2)    ! Turbulent Viscous Dissipation        
+                    divu = -ref%dlnrho(r) * fbuffer(PSI,vr)               ! Assume anelasticity
+                    qty(PSI) = 2D0*mu * (qty(PSI) - one_third*divu**2)    ! Turbulent Viscous Dissipation        
                 ENDDO        ! End of phi loop
             END_DO2        ! End of theta & r loop
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -147,7 +149,7 @@ Contains
                 qty(PSI) = -(htmp1 + htmp2 + htmp3)
                 qty(PSI) = qty(PSI) + ref%dlnrho(r)*fbuffer(PSI,pvar)*fbuffer(PSI,vr)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -160,7 +162,7 @@ Contains
                 ctn_over_r = one_over_r(r) * cottheta(t)
                 mu = nu(r) * ref%density(r)
                 dmudr =  mu * (ref%dlnrho(r) + dlnu(r))
-        
+
                 DO k = 1, n_phi
                     ! Compute elements of the turbulent rate of strain tensor e'_ij
                     err = fbuffer(PSI,dvrdr)
@@ -170,7 +172,7 @@ Contains
 
                     ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
-                        + fbuffer(PSI,dvtdr)    
+                        + fbuffer(PSI,dvtdr)
                     erp = fbuffer(PSI,dvpdr) + one_over_rsin * fbuffer(PSI,dvrdp)        &
                         - one_over_r(r) * fbuffer(PSI,vphi)
                     etp = one_over_rsin * fbuffer(PSI,dvtdp) - ctn_over_r * fbuffer(PSI,vphi)    &
@@ -181,7 +183,8 @@ Contains
                     qty(PSI) = qty(PSI) + 0.5D0*(ert*ert + erp*erp + etp*etp)    ! + Off-Diagonal
 
                     ! Next add -(1/3) (div.u)^2 & multiply by 2 rho_bar nu
-                    qty(PSI) = 2D0*mu * (qty(PSI) - one_third*(err+ett+epp)**2)    ! Turbulent Viscous Dissipation
+                    divu = -ref%dlnrho(r) * fbuffer(PSI,vr)               ! Assume anelasticity
+                    qty(PSI) = 2D0*mu * (qty(PSI) - one_third*divu**2)    ! Turbulent Viscous Dissipation
 
 
                     ! Compute the Laplacians of the velocity components
@@ -215,35 +218,22 @@ Contains
                     Lap_p = Lap_p + one_over_rsin * (htmp1 + htmp2)            ! phi component (Lap u')_phi
 
          
-                    ! Compute  grad (div.u')
-                    htmp1 = d2_fbuffer(PSI,dvrdrdr)                            ! [Grad (div.u')]_r
-                    htmp1 = htmp1 + 2D0*one_over_r(r) * (fbuffer(PSI,dvrdr) - one_over_r(r)*fbuffer(PSI,vr))
-                    htmp1 = htmp1 + one_over_r(r)*(d2_fbuffer(PSI,dvtdrdt) - one_over_r(r)*fbuffer(PSI,dvtdt))
-                    htmp1 = htmp1 + ctn_over_r * (fbuffer(PSI,dvtdr) - one_over_r(r)*fbuffer(PSI,vtheta))
-                    htmp1 = htmp1 + one_over_rsin * (d2_fbuffer(PSI,dvpdrdp) - one_over_r(r)*fbuffer(PSI,dvpdp))
-
-                    htmp2 = d2_fbuffer(PSI,dvrdrdt) + 2D0*one_over_r(r) * fbuffer(PSI,dvrdt)        ! [Grad (div.u')]_theta
-                    htmp2 = htmp2 + one_over_r(r) * d2_fbuffer(PSI,dvtdtdt) + ctn_over_r * fbuffer(PSI,dvtdt)
-                    htmp2 = htmp2 - (one_over_rsin/sintheta(t))*fbuffer(PSI,vtheta)
-                    htmp2 = htmp2 + one_over_rsin * (d2_fbuffer(PSI,dvpdtdp) - cottheta(t) * fbuffer(PSI,dvpdp))
-                    htmp2 = one_over_r(r) * htmp2
-
-                    htmp3 = d2_fbuffer(PSI,dvrdrdp) + 2D0*one_over_r(r) * fbuffer(PSI,dvrdp)        ! [Grad (div.u')]_phi
-                    htmp3 = htmp3 + one_over_r(r) * d2_fbuffer(PSI,dvtdtdp) + ctn_over_r * fbuffer(PSI,dvtdp)
-                    htmp3 = htmp3 + one_over_rsin * d2_fbuffer(PSI,dvpdpdp)
-                    htmp3 = one_over_rsin*htmp3    
+                    ! Compute  grad (div.u') using anelasticity (thus avoiding the need for second derivatives)
+                    htmp1 = -ref%dlnrho(r) * fbuffer(PSI,dvrdr) - ref%d2lnrho(r) * fbuffer(PSI,vr)  ! [Grad (div.u')]_r
+                    htmp2 = -ref%dlnrho(r)*one_over_r(r) * fbuffer(PSI,dvrdt) ! [Grad (div.u')]_theta
+                    htmp3 = -ref%dlnrho(r)*one_over_rsin * fbuffer(PSI,dvrdp) ! [Grad (div.u')]_phi 
 
 
                     ! Compute viscous force: div . sigma'
-                        htmp1 = 2D0*one_third*dmudr*(2D0*err - ett - epp) + mu * (Lap_r + one_third*htmp1)    ! (div.sigma')_r
-                        htmp2 = 2D0*dmudr*ert + mu*(Lap_t + one_third*htmp2)                ! (div.sigma')_theta
-                        htmp3 = 2D0*dmudr*erp + mu*(Lap_p + one_third*htmp3)                ! (div.sigma')_phi
+                    htmp1 = 2D0*dmudr*(err - one_third*divu) + mu * (Lap_r + one_third*htmp1) ! (div.sigma')_r
+                    htmp2 = 2D0*dmudr*ert + mu*(Lap_t + one_third*htmp2)                ! (div.sigma')_theta
+                    htmp3 = 2D0*dmudr*erp + mu*(Lap_p + one_third*htmp3)                ! (div.sigma')_phi
 
-                            qty(PSI) = qty(PSI) + htmp1*fbuffer(PSI,vr) + htmp2*fbuffer(PSI,vtheta)
+                    qty(PSI) = qty(PSI) + htmp1*fbuffer(PSI,vr) + htmp2*fbuffer(PSI,vtheta)
                     qty(PSI) = qty(PSI) + htmp3*fbuffer(PSI,vphi) ! + (div.sigma).u'
                 ENDDO        ! End of phi loop
             END_DO2        ! End of r and theta loop
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -275,7 +265,7 @@ Contains
                     qty(PSI) = -ref%density(r)*qty(PSI)
                 ENDDO        ! End phi loop
             END_DO2        ! End r and theta loops
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -307,7 +297,7 @@ Contains
                     qty(PSI) = -ref%density(r)*qty(PSI)
                 ENDDO        ! End phi loop
             END_DO2        ! End r and theta loops
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -316,69 +306,66 @@ Contains
         !-------------------------------------
 
         ! Radial Pressure Flux of turbulent kinetic energy.
-        !    r_hat . F_TP = - P' u'_r
+        !    r_hat . F_TP = P' u'_r
         If (compute_quantity(rflux_pressure_pKE)) Then
             DO_PSI
-            qty(PSI) = -fbuffer(PSI,vr) * fbuffer(PSI,pvar)
+                qty(PSI) = fbuffer(PSI,vr) * fbuffer(PSI,pvar)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
         ! Colatitudinal Pressure Flux of turbulent kinetic energy.
-        !    theta_hat . F_TP = - P' u'_theta
+        !    theta_hat . F_TP = P' u'_theta
         If (compute_quantity(thetaflux_pressure_pKE)) Then
             DO_PSI
-            qty(PSI) = -fbuffer(PSI,vtheta) * fbuffer(PSI,pvar)
+                qty(PSI) = fbuffer(PSI,vtheta) * fbuffer(PSI,pvar)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
         ! Radial Viscous Flux of turbulent kinetic energy.
-        !    r_hat . F_TV = r_hat . sigma'.u'
+        !    r_hat . F_TV = -r_hat . sigma'.u'
         If (compute_quantity(rflux_viscous_pKE)) Then
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
                 ctn_over_r = one_over_r(r) * cottheta(t)
                     mu = nu(r) * ref%density(r)
-                
+
                 DO k = 1, n_phi
                     ! Compute elements of the turbulent rate of strain tensor e'_ij
                     err = fbuffer(PSI,dvrdr)
-                    ett = one_over_r(r) * (fbuffer(PSI,dvtdt) + fbuffer(PSI,vr))
-                    epp = one_over_rsin * fbuffer(PSI,dvpdp) + ctn_over_r * fbuffer(PSI,vtheta)    &
-                        + one_over_r(r) * fbuffer(PSI,vr)
 
                     ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
-                        + fbuffer(PSI,dvtdr)    
+                        + fbuffer(PSI,dvtdr)
                     erp = fbuffer(PSI,dvpdr) + one_over_rsin * fbuffer(PSI,dvrdp)        &
                         - one_over_r(r) * fbuffer(PSI,vphi)
 
                     ! Radial component of the viscous stess contracted w/ the velocity: r_hat . sigma' . u'
+                    divu = -ref%dlnrho(r) * fbuffer(PSI,vr)                       ! Assume anelasticity
                     htmp1 = 2D0*err*fbuffer(PSI,vr) + ert*fbuffer(PSI,vtheta) + erp*fbuffer(PSI,vphi)
-                    htmp2 = 2D0*one_third * (err + ett + epp) * fbuffer(PSI,vr)
+                    htmp2 = 2D0*one_third * divu * fbuffer(PSI,vr)
                     qty(PSI) = mu * (htmp1 - htmp2)
+
                 ENDDO
             END_DO2
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
         ! Colatitudinal Viscous Flux of turbulent kinetic energy.
-        !    theta_hat . F_TV = theta_hat . sigma'.u'
+        !    theta_hat . F_TV = -theta_hat . sigma'.u'
         If (compute_quantity(thetaflux_viscous_pKE)) Then
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
                 ctn_over_r = one_over_r(r) * cottheta(t)
                     mu = nu(r) * ref%density(r)
-                
+
                 DO k = 1, n_phi
                     ! Compute elements of the turbulent rate of strain tensor e'_ij
                     err = fbuffer(PSI,dvrdr)
                     ett = one_over_r(r) * (fbuffer(PSI,dvtdt) + fbuffer(PSI,vr))
-                    epp = one_over_rsin * fbuffer(PSI,dvpdp) + ctn_over_r * fbuffer(PSI,vtheta)    &
-                        + one_over_r(r) * fbuffer(PSI,vr)
 
                     ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
@@ -387,23 +374,25 @@ Contains
                         + one_over_r(r) * fbuffer(PSI,dvpdt)
 
                     ! Colatitudinal component of the viscous stess contracted w/ the velocity: theta_hat . sigma' . u'
+                    divu = -ref%dlnrho(r) * fbuffer(PSI,vr)                     ! Assume anelasticity
                     htmp1 = 2D0*ett*fbuffer(PSI,vtheta) + ert*fbuffer(PSI,vr) + etp*fbuffer(PSI,vphi)
-                    htmp2 = 2D0*one_third * (err + ett + epp) * fbuffer(PSI,vtheta)
+                    htmp2 = 2D0*one_third * divu * fbuffer(PSI,vtheta)
                     qty(PSI) = mu * (htmp1 - htmp2)
+
                 ENDDO
             END_DO2
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
         ! Radial Turbulent Advective Flux of turbulent kinetic energy.
-        !    r_hat . F_TA = -1/2 rho_bar |u'|**2 u'_r
+        !    r_hat . F_TA = 1/2 rho_bar |u'|**2 u'_r
         If (compute_quantity(rflux_turbadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vr)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vr)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
@@ -414,29 +403,29 @@ Contains
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
                 qty(PSI) = -0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vtheta)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
         ! Radial Mean Advective Flux of turbulent kinetic energy.
-        !    r_hat . F_MA = -1/2 rho_bar |u'|**2 U_r
+        !    r_hat . F_MA = 1/2 rho_bar |u'|**2 U_r
         If (compute_quantity(rflux_meanadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vr)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vr)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
 
         ! Colatitudinal Mean Advective Flux of turbulent kinetic energy.
-        !    theta_hat . F_MA = -1/2 rho_bar |u'|**2 U_theta
+        !    theta_hat . F_MA = 1/2 rho_bar |u'|**2 U_theta
         If (compute_quantity(thetaflux_meanadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vtheta)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vtheta)
             END_DO
-            Call Add_Quantity(qty)  
+            Call Add_Quantity(qty)
         Endif
 
     End Subroutine Compute_TurbulentKE_Budget

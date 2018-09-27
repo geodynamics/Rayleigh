@@ -71,7 +71,7 @@ Contains
             If (compute_quantity(test_y22_sq)) Then
                 DO_PSI
                     qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO  
+                END_DO
                 Call Add_Quantity(qty)
             Endif
         Endif

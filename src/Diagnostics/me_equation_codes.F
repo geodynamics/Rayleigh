@@ -1,10 +1,30 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
     !//////////////////////////////////////////////////////////////////////////
     !///////////////////////////////////////////////////
     !       Magnetic Energy Equation Terms
     !       Source terms and fluxes
     !       As far as the Reynold decomposition goes,
     !       Only those terms which contribute to a zonal mean are included here
-    Integer, Parameter :: meq_off = keq_off +100 ! :OFFSET CODE: 
+    Integer, Parameter :: meq_off = keq_off +100 ! :OFFSET CODE:
 
     ! This one's a little different in that we place the fluxes first
     Integer, Parameter :: ecrossb_r     = meq_off+1      ! :tex: $\left[\left(\boldsymbol{v}\times\boldsymbol{B}-\eta\boldsymbol{\mathcal{J}}\right)\times\boldsymbol{B}\right]_r$

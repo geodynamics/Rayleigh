@@ -264,7 +264,7 @@ Contains
 
             If (compute_quantity(vm_grad_vm_phi) .or. compute_quantity(samom_advec_mm) &
                 .or. compute_quantity(advec_work_mmm)) Then
- 
+
                 DO_PSI
                     qty(PSI) = cbuffer(PSI,3)*ref%density(r)
                 END_DO

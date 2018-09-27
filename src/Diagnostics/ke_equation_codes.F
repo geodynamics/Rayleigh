@@ -1,11 +1,31 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
     !//////////////////////////////////////////////////////////////////////////
     !///////////////////////////////////////////////////
     !       Kinetic Equation Terms
     !       Source terms and fluxes
     !       Only those terms which contribute to a zonal mean are included here
-    Integer, Parameter :: keq_off = amoff +100 ! :OFFSET CODE: 
+    Integer, Parameter :: keq_off = amoff +100 ! :OFFSET CODE:
 
-    ! First the source terms    
+    ! First the source terms
     Integer, Parameter :: press_work    = keq_off+1 ! :tex: $-c_3\mathrm{f}_1\boldsymbol{v}\cdot\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1}\right)$
     Integer, Parameter :: press_work_pp = keq_off+2 ! :tex: $-c_3\mathrm{f}_1\boldsymbol{v'}\cdot\boldsymbol{\nabla}\left(\frac{P'}{\mathrm{f}_1}\right)$
     Integer, Parameter :: press_work_mm = keq_off+3 ! :tex: $-c_3\mathrm{f}_1\overline{\boldsymbol{v}}\cdot\boldsymbol{\nabla}\left(\frac{\overline{P}}{\mathrm{f}_1}\right)$
@@ -77,4 +97,4 @@
     Integer, Parameter :: production_shear_ke  = keq_off+53 ! :tex: $ -- $
     Integer, Parameter :: production_shear_pke = keq_off+54 ! :tex: $ -- $
     Integer, Parameter :: production_shear_mke = keq_off+55 ! :tex: $ -- $
-    
+

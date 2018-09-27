@@ -49,7 +49,7 @@ Contains
                 Call Add_Quantity(qty)
             Endif
         Endif
-        
+
         If (compute_quantity(thermal_energy_p) .or. compute_quantity(thermal_energyp_sq)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,tvar)*ref%density(r)*ref%temperature(r)
