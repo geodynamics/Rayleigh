@@ -32,9 +32,9 @@
     Integer, Parameter :: phi_mke         = keoffset+8 ! :tex: $\frac{1}{2}\mathrm{f}_1\overline{v_\phi}^2$
 
     Integer, Parameter :: pkinetic_energy = keoffset+9  ! :tex: $\frac{1}{2}\mathrm{f}_1{\boldsymbol v'}^2$
-    Integer, Parameter :: radial_pke      = keoffset+10 ! :tex: $\frac{1}{2}\mathrm{f}_1{v_r'}^2
-    Integer, Parameter :: theta_pke       = keoffset+11 ! :tex: $\frac{1}{2}\mathrm{f}_1{v_\theta'}^2
-    Integer, Parameter :: phi_pke         = keoffset+12 ! :tex: $\frac{1}{2}\mathrm{f}_1{v_\phi'}^2
+    Integer, Parameter :: radial_pke      = keoffset+10 ! :tex: $\frac{1}{2}\mathrm{f}_1{v_r'}^2$
+    Integer, Parameter :: theta_pke       = keoffset+11 ! :tex: $\frac{1}{2}\mathrm{f}_1{v_\theta'}^2$
+    Integer, Parameter :: phi_pke         = keoffset+12 ! :tex: $\frac{1}{2}\mathrm{f}_1{v_\phi'}^2$
 
     !--- Since density varies with radius, it can be useful to output the
     !--- squared fields, sans density, as well.

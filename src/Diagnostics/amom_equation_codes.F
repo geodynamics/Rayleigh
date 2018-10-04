@@ -30,7 +30,7 @@
     Integer, Parameter :: samom_advec_pp = amoff+1 ! :tex: $r\,\mathrm{sin}\theta\mathrm{f}_1\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right]_\phi$
     Integer, Parameter :: samom_advec_mm = amoff+2 ! :tex: $r\,\mathrm{sin}\theta\mathrm{f}_1\left[\overline{\boldsymbol{v}}\cdot\boldsymbol{\nabla}\overline{\boldsymbol{v}}\right]_\phi$
 
-    Integer, Parameter :: samom_coriolis = amoff+3 ! :tex: $-c_1\mathrm{f}_1r\mathrm{sin}\theta \left(\mathrm{cos}\theta\, v_\theta + \mathrm{sin}\theta\, v_r\right)
+    Integer, Parameter :: samom_coriolis = amoff+3 ! :tex: $-c_1\mathrm{f}_1r\mathrm{sin}\theta \left(\mathrm{cos}\theta\, v_\theta + \mathrm{sin}\theta\, v_r\right)$
 
     Integer, Parameter :: samom_diffusion = amoff+4 ! :tex: $r\,\mathrm{sin}\theta\left[\boldsymbol{\nabla}\cdot\overline{\boldsymbol{\mathcal{D}}}\right]_\phi$
 
@@ -54,7 +54,7 @@
     Integer, Parameter :: famom_maxstr_r     = amoff+15 ! :tex:  $-r\mathrm{sin}\theta c_4\,B'_r\,B'_\phi$
     Integer, Parameter :: famom_maxstr_theta = amoff+16 ! :tex:  $-r\mathrm{sin}\theta c_4\,B'_\theta\,B'_\phi$
 
-    Integer, Parameter :: famom_magtor_r     = amoff+17 !:tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_r}\,\overline{B_\phi}$ -rsintheta <B_r><B_phi>*Lorentz_Coeff
-    Integer, Parameter :: famom_magtor_theta = amoff+18 ! :tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_\theta}\,\overline{B_\phi}$ -rsintheta <B_r><B_phi>*Lorentz_Coeff
+    Integer, Parameter :: famom_magtor_r     = amoff+17 !:tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_r}\,\overline{B_\phi}$
+    Integer, Parameter :: famom_magtor_theta = amoff+18 ! :tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_\theta}\,\overline{B_\phi}$
 
 
