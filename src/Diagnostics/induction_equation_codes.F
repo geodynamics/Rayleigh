@@ -101,15 +101,15 @@
     Integer, Parameter :: induct_shear_vpbp_r     = indoff+58 !  :tex: $\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right]_r$
     Integer, Parameter :: induct_comp_vpbp_r      = indoff+59 !  :tex: $-\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)B'_r$
     Integer, Parameter :: induct_advec_vpbp_r     = indoff+60 !  :tex: $-\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right]_r$
-    Integer, Parameter :: induct_vpbp_r           = indoff+61 !  :tex: $\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v}\times\boldsymbol{B'}\right)\right]_r$
+    Integer, Parameter :: induct_vpbp_r           = indoff+61 !  :tex: $\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right]_r$
 
     Integer, Parameter :: induct_shear_vpbp_theta = indoff+62 !  :tex: $\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right]_\theta$
     Integer, Parameter :: induct_comp_vpbp_theta  = indoff+63 !  :tex: $-\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)B'_\theta$
     Integer, Parameter :: induct_advec_vpbp_theta = indoff+64 !  :tex: $-\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right]_\theta$
-    Integer, Parameter :: induct_vpbp_theta       = indoff+65 !  :tex: $\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v}\times\boldsymbol{B'}\right)\right]_\theta$
+    Integer, Parameter :: induct_vpbp_theta       = indoff+65 !  :tex: $\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right]_\theta$
 
     Integer, Parameter :: induct_shear_vpbp_phi   = indoff+66 !  :tex: $\left[\boldsymbol{B'}\cdot\boldsymbol{\nabla}\boldsymbol{v'}\right]_\phi$
     Integer, Parameter :: induct_comp_vpbp_phi    = indoff+67 !  :tex: $-\left(\boldsymbol{\nabla}\cdot\boldsymbol{v'} \right)B'_\phi$
     Integer, Parameter :: induct_advec_vpbp_phi   = indoff+68 !  :tex: $-\left[\boldsymbol{v'}\cdot\boldsymbol{\nabla}\boldsymbol{B'}\right]_\phi$
-    Integer, Parameter :: induct_vpbp_phi         = indoff+69 !  :tex: $\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v}\times\boldsymbol{B'}\right)\right]_\phi$
+    Integer, Parameter :: induct_vpbp_phi         = indoff+69 !  :tex: $\left[\boldsymbol{\nabla}\times\left(\boldsymbol{v'}\times\boldsymbol{B'}\right)\right]_\phi$
 
