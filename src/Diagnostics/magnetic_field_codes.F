@@ -181,7 +181,7 @@
     !--------- theta-phi Second Derivatives --------
     ! Full
     Integer, Parameter :: db_r_d2tp      = boffset+100 ! :tex: $\frac{\partial^2 B_r}{\partial \theta \partial \phi}$
-    Integer, Parameter :: db_theta_d2tp  = boffset+101 ! :tex: $\frac{\partial^2 B_\theta}{\partial \theta \partial \phi}
+    Integer, Parameter :: db_theta_d2tp  = boffset+101 ! :tex: $\frac{\partial^2 B_\theta}{\partial \theta \partial \phi}$
     Integer, Parameter :: db_phi_d2tp    = boffset+102 ! :tex: $\frac{\partial^2 B_\phi}{\partial \theta \partial    \phi}$
     ! Fluctuating
     Integer, Parameter :: dbp_r_d2tp     = boffset+103 ! :tex: $\frac{\partial^2 B_r'}{\partial \theta \partial \phi}$

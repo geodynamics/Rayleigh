@@ -181,7 +181,7 @@
     !--------- theta-phi Second Derivatives --------
     ! Full
     Integer, Parameter :: dv_r_d2tp      = voffset+100 ! :tex: $\frac{\partial^2 v_r}{\partial \theta \partial \phi}$
-    Integer, Parameter :: dv_theta_d2tp  = voffset+101 ! :tex: $\frac{\partial^2 v_\theta}{\partial \theta \partial \phi}
+    Integer, Parameter :: dv_theta_d2tp  = voffset+101 ! :tex: $\frac{\partial^2 v_\theta}{\partial \theta \partial \phi}$
     Integer, Parameter :: dv_phi_d2tp    = voffset+102 ! :tex: $\frac{\partial^2 v_\phi}{\partial \theta \partial    \phi}$
     ! Fluctuating
     Integer, Parameter :: dvp_r_d2tp     = voffset+103 ! :tex: $\frac{\partial^2 v_r'}{\partial \theta \partial \phi}$

@@ -44,9 +44,9 @@
     Integer, Parameter :: vort_theta_sq  = vort_off+15  ! :tex: $\omega_\theta^2$
     Integer, Parameter :: vort_phi_sq    = vort_off+16  ! :tex: $\omega_\phi^2$
 
-    Integer, Parameter :: vortp_r_sq     = vort_off+17  ! :tex: $\omega_r^\prime^2$ 
-    Integer, Parameter :: vortp_theta_sq = vort_off+18  ! :tex: $\omega_\theta^\prime^2$
-    Integer, Parameter :: vortp_phi_sq   = vort_off+19  ! :tex: $\omega_\phi^\prime^2$
+    Integer, Parameter :: vortp_r_sq     = vort_off+17  ! :tex: ${\omega_r^\prime}^2$ 
+    Integer, Parameter :: vortp_theta_sq = vort_off+18  ! :tex: ${\omega_\theta^\prime}^2$
+    Integer, Parameter :: vortp_phi_sq   = vort_off+19  ! :tex: ${\omega_\phi^\prime}^2$
 
     Integer, Parameter :: vortm_r_sq     = vort_off+20  ! :tex: $\overline{\omega_r}^2$
     Integer, Parameter :: vortm_theta_sq = vort_off+21  ! :tex: $\overline{\omega_\theta}^2$
