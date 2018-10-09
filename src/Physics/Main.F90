@@ -44,7 +44,7 @@ Program Main!
     Use Fourier_Transform, Only : Initialize_FFTs
     Use Benchmarking, Only : Initialize_Benchmarking, Benchmark_Input_Reset
     Use Stable_Plugin
-    Use Run_Parameters, Only : Set_Run_Parameters
+    Use Run_Parameters, Only : Write_Run_Parameters
 
     Implicit None
 
@@ -61,7 +61,7 @@ Program Main!
         Call Test_Lib()
     Else
         Call Main_Initialization()
-        Call Set_Run_Parameters()
+        Call Write_Run_Parameters()
         Call Main_Loop_Sphere()
     Endif
     Call Finalization()

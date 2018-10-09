@@ -44,7 +44,7 @@ Module Run_Parameters
 
 Contains
 
-   Subroutine Set_Run_Parameters()
+   Subroutine Write_Run_Parameters()
 
       Use Controls, Only : my_path, magnetism
       Use ProblemSize, Only : my_rank, problemsize_namelist, ncpu, nprow, npcol, &
@@ -212,6 +212,6 @@ Contains
 
       Endif
 
-   End Subroutine Set_Run_Parameters
+   End Subroutine Write_Run_Parameters
 
 End Module Run_Parameters
