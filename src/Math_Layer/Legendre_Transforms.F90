@@ -29,7 +29,6 @@
 
 Module Legendre_Transforms
     Use Legendre_Polynomials
-    Use Timing
     Use Structures
     !Type, Public :: rmcontainer
     !    Real*8, Allocatable :: data(:,:)
