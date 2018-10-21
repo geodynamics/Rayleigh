@@ -26,6 +26,6 @@ POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o BoundaryC
         STABLE_plugin.o \
         Sphere_Spectral_Space.o Sphere_Hybrid_Space.o Sphere_Physical_Space.o Sphere_Driver.o
 TOBJ  = Test_SHT.o Test_Cheby.o TestSuite.o
-MAINOBJ = Input.o Main.o
+MAINOBJ = Run_Parameters.o Input.o Main.o
 
-OBJ = $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) Run_Parameters.o $(MAINOBJ)
+OBJ = $(DSOBJ) $(PFOBJ) $(MOBJ) $(IOOBJ) $(POBJ) $(TOBJ) $(MAINOBJ)

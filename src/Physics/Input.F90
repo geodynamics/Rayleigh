@@ -33,6 +33,7 @@ Module Input
     Use TransportCoefficients, Only : Transport_Namelist
     Use Parallel_Framework, Only : pfi
     Use Stable_Plugin, Only : stable_namelist
+    Use Run_Parameters, Only : write_run_parameters
     Implicit None
 
 Contains
@@ -61,6 +62,8 @@ Contains
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
 
+        ! write input parameters and other build information
+        Call Write_Run_Parameters()
 
     End Subroutine Main_Input
 
