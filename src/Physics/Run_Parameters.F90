@@ -46,12 +46,12 @@ Contains
 
    Subroutine Write_Run_Parameters()
 
-      Use Controls, Only : my_path, magnetism
+      Use Controls, Only : my_path, magnetism, jobinfo_file
+      Use Controls, Only : numerical_controls_namelist, physical_controls_namelist, &
+                           temporal_controls_namelist, io_controls_namelist
       Use ProblemSize, Only : my_rank, problemsize_namelist, ncpu, nprow, npcol, &
                               n_r, n_theta, l_max, rmin, rmax, &
                               ndomains, ncheby, dealias_by, domain_bounds
-      Use Controls, Only : numerical_controls_namelist, physical_controls_namelist, &
-                           temporal_controls_namelist, io_controls_namelist
       Use Spherical_IO, Only : output_namelist
       Use BoundaryConditions, Only : boundary_conditions_namelist
       Use Initial_Conditions, Only : initial_conditions_namelist
@@ -64,7 +64,6 @@ Contains
 
       Implicit None
 
-      Character(len=128) :: filename = "jobinfo.txt"
       Character(len=16 ) :: date, time, zone_in
       Integer :: values(8)
       Integer :: io, ierr, i
@@ -81,8 +80,8 @@ Contains
       1005 Format (a,ES11.4)
 
       If (my_rank .eq. 0) Then
-          Inquire(file=Trim(my_path)//Trim(filename), exist=file_exist)
-          Open(unit=io, file=Trim(my_path)//Trim(filename), form='formatted', &
+          Inquire(file=Trim(my_path)//Trim(jobinfo_file), exist=file_exist)
+          Open(unit=io, file=Trim(my_path)//Trim(jobinfo_file), form='formatted', &
                action='write', access='sequential', status='unknown', iostat=ierr)
           If (ierr .eq. 0) Then
              Write(io,*)
@@ -161,33 +160,33 @@ Contains
              Write(io,*)
              Write(io,*) "Reference State"
              If (reference_type .eq. 1) Then
-                 Write(io,1001) "  Reference type           : ", "Boussinesq (Non-dimensional)"
-                 Write(io,1005) "  Rayleigh Number          : ", Rayleigh_Number
-                 Write(io,1005) "  Ekman Number             : ", Ekman_Number
-                 Write(io,1005) "  Prandtl Number           : ", Prandtl_Number
+                 Write(io,1001) "    Reference type          : ", "Boussinesq (Non-dimensional)"
+                 Write(io,1005) "    Rayleigh Number         : ", Rayleigh_Number
+                 Write(io,1005) "    Ekman Number            : ", Ekman_Number
+                 Write(io,1005) "    Prandtl Number          : ", Prandtl_Number
                  If (magnetism) Then
-                     Write(io,1005) "  Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
+                     Write(io,1005) "    Magnetic Prandtl Number : ", Magnetic_Prandtl_Number
                  Endif
              Else If (reference_type .eq. 2) Then
-                 Write(io,1001) "  Reference type           : ", "Polytrope (Non-dimensional)"
-                 Write(io,1005) "  Modified Rayleigh Number : ", Rayleigh_Number
-                 Write(io,1005) "  Ekman Number             : ", Ekman_Number
-                 Write(io,1005) "  Prandtl Number           : ", Prandtl_Number
+                 Write(io,1001) "    Reference type           : ", "Polytrope (Non-dimensional)"
+                 Write(io,1005) "    Modified Rayleigh Number : ", Rayleigh_Number
+                 Write(io,1005) "    Ekman Number             : ", Ekman_Number
+                 Write(io,1005) "    Prandtl Number           : ", Prandtl_Number
                  If (magnetism) Then
-                     Write(io,1005) "  Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
+                     Write(io,1005) "    Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
                  Endif
-                 Write(io,1005) "  Polytropic Index         : ", poly_n
-                 Write(io,1005) "  Density Scaleheights     : ", poly_nrho
+                 Write(io,1005) "    Polytropic Index         : ", poly_n
+                 Write(io,1005) "    Density Scaleheights     : ", poly_nrho
              Else If (reference_type .eq. 3) Then
-                 Write(io,1001) "  Reference type                : ", "Polytrope (Dimensional)"
-                 Write(io,1005) "  Angular Velocity (rad/s)      : ", Angular_Velocity
-                 Write(io,1005) "  Inner-Radius Density (g/cm^3) : ", poly_rho_i
-                 Write(io,1005) "  Interior Mass (g)             : ", poly_mass
-                 Write(io,1005) "  Polytropic Index              : ", poly_n
-                 Write(io,1005) "  Density Scaleheights          : ", poly_nrho
-                 Write(io,1005) "  CP (erg g^-1 cm^-3 K^-1)      : ", pressure_specific_heat
+                 Write(io,1001) "    Reference type                : ", "Polytrope (Dimensional)"
+                 Write(io,1005) "    Angular Velocity (rad/s)      : ", Angular_Velocity
+                 Write(io,1005) "    Inner-Radius Density (g/cm^3) : ", poly_rho_i
+                 Write(io,1005) "    Interior Mass (g)             : ", poly_mass
+                 Write(io,1005) "    Polytropic Index              : ", poly_n
+                 Write(io,1005) "    Density Scaleheights          : ", poly_nrho
+                 Write(io,1005) "    CP (erg g^-1 cm^-3 K^-1)      : ", pressure_specific_heat
              Else If (reference_type .eq. 4) Then
-                 Write(io,1001) "  Reference type                : ", "Custom"
+                 Write(io,1001) "    Reference type                : ", "Custom"
              Endif
              Write(io,*)
 

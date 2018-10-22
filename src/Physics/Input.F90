@@ -24,7 +24,7 @@ Module Input
     Use Controls,     Only : temporal_controls_namelist, numerical_controls_namelist, &
                             & physical_controls_namelist, max_iterations, pad_alltoall, &
                             & multi_run_mode, nruns, rundirs, my_path, run_cpus, &
-                            & io_controls_namelist, new_iteration
+                            & io_controls_namelist, new_iteration, jobinfo_file
     Use Spherical_IO, Only : output_namelist
     Use BoundaryConditions, Only : boundary_conditions_namelist
     Use Initial_Conditions, Only : initial_conditions_namelist, alt_check
@@ -181,7 +181,7 @@ Contains
             ! Checks the command line for acceptable arguments.
             ! Specified values overwrite namelist inputs.
             Implicit None
-            Character*10 :: arg, arg2
+            Character*120 :: arg, arg2
             Integer :: i, itemp
             i = 1
             DO
@@ -244,6 +244,11 @@ Contains
                     else
                         alt_check = .false.
                     endif
+                Endif
+                If (arg .eq. '-jobinfo') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) jobinfo_file
                 Endif
               i = i+1
 
