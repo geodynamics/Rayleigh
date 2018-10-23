@@ -733,7 +733,7 @@ class Shell_Slices:
 
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
-        self.lut = get_lut(self.qv)
+        self.lut = get_lut(qv)
 
 
 
@@ -795,7 +795,7 @@ class Shell_Slices:
                 print(" Error: Quantity code not found")
                 print(" Specified quantity code: ", qind)
                 print(" Valid quantity codes: ")
-                print(" ", self.qv)
+                print(" ", qv)
                 print("---------------------------------------------------------")
                 print(" ")
                 error = True
