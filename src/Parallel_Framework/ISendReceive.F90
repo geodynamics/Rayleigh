@@ -21,7 +21,7 @@
 !////////////////////////////////////////////////////////////////////////////
 !   MODULE:  ISENDRECEIVE
 !
-!   DESCRIPTION:  Provides interface to and wrappers for calling 
+!   DESCRIPTION:  Provides interface to and wrappers for calling
 !                   MPI_ISEND/MPI_IRECEIVE
 !
 !   MEMBER SUBROUTINES:
@@ -47,7 +47,7 @@ Module ISendReceive
         Module Procedure D_ISend_1D, D_ISend_2D, D_ISend_3D, D_ISend_4D
         Module Procedure D_ISend_5D
         Module Procedure Z_ISend_1D, Z_ISend_2D, Z_ISend_3D
-    End Interface 
+    End Interface
 
     !////////////////////////////////////////////////////////////////////////
     !
@@ -60,7 +60,7 @@ Module ISendReceive
         Module Procedure D_IReceive_1D, D_IReceive_2D, D_IReceive_3D, D_IReceive_4D
         Module Procedure D_IReceive_5D
         Module Procedure Z_IReceive_1D, Z_IReceive_2D, Z_IReceive_3D
-    End Interface 
+    End Interface
 
   Integer :: mpi_err
 
@@ -69,14 +69,14 @@ Contains
     !/////////////////////////////////////////////////////////////////////
     ! SUBROUTINE:  IWait
     !
-    ! DESCRIPTION:  Wrapper to MPI_WAIT - blocks program until the process 
+    ! DESCRIPTION:  Wrapper to MPI_WAIT - blocks program until the process
     !                 associated with irq has completed.
     !
     ! INPUTS:
-    !            irq - Integer variable whose value is associated with 
-    !                    a non-blocking MPI process 
+    !            irq - Integer variable whose value is associated with
+    !                    a non-blocking MPI process
     !
-    !///////////////////////////////////////////////////////////////////// 
+    !/////////////////////////////////////////////////////////////////////
     Subroutine IWait(irq)
         Implicit None
         Integer :: irq, status(MPI_STATUS_SIZE), mpi_err
@@ -86,15 +86,15 @@ Contains
     !/////////////////////////////////////////////////////////////////////
     ! SUBROUTINE:  IWaitAll
     !
-    ! DESCRIPTION:  Wrapper to MPI_WAIT - blocks program until the processes 
+    ! DESCRIPTION:  Wrapper to MPI_WAIT - blocks program until the processes
     !                 associated with irq have completed.
     !
     ! INPUTS:
     !              n - number of requests to wait on/size of array irq
-    !            irq - Integer array whose values are associated with 
-    !                    multiple non-blocking MPI processes 
+    !            irq - Integer array whose values are associated with
+    !                    multiple non-blocking MPI processes
     !
-    !///////////////////////////////////////////////////////////////////// 
+    !/////////////////////////////////////////////////////////////////////
     Subroutine IWaitAll(n,irq)
         Integer :: irq(:)
         Integer, Intent(In) :: n
@@ -108,14 +108,14 @@ Contains
 
     !//////////////////////////////////////////////////////////////////////
     !  NOTE:        The send and receive routines follow the same calling pattern
-    !           with only minor differences related to the input/output 
-    !           parameters.  We provide a general description of their 
+    !           with only minor differences related to the input/output
+    !           parameters.  We provide a general description of their
     !           characteristics below
     !//////////////////////////////////////////////////////////////////////
     !  SUBROUTINE:  (X)_ISend_(Y)D
-    !               X:  Denotes the variable type for the send and 
+    !               X:  Denotes the variable type for the send and
     !                     receive buffers.  D indicates double precision.
-    !                     Z indicates double-complex precision. 
+    !                     Z indicates double-complex precision.
     !               Y:  The dimensionality of the send and receive buffers (1,2,3, etc.)
     !
     !  DESCRIPTION:  Performs a non-blocking send of array 'x' to MPI rank
@@ -124,7 +124,7 @@ Contains
     !             x          - Array of dimension Y and of datatype X to be sent to dest
     !             indstart   - Integer array of dimension Y indicating where within x
     !                          the send should initiate from.
-    !                          (optional; default value is 1,1,.. - (send initiates at x(1,1,...)         
+    !                          (optional; default value is 1,1,.. - (send initiates at x(1,1,...)
     !             n_elements - Number of elements from x to broadcast
     !                          (optional; default value is size(x))
     !             dest       - The MPI rank (within communicator grp) to which x is sent
@@ -139,9 +139,9 @@ Contains
 
     !//////////////////////////////////////////////////////////////////////
     !  SUBROUTINES:  (X)_IReceive_(Y)D
-    !               X:  Denotes the variable type for the send and 
+    !               X:  Denotes the variable type for the send and
     !                     receive buffers.  D indicates double precision.
-    !                     Z indicates double-complex precision. 
+    !                     Z indicates double-complex precision.
     !               Y:  The dimensionality of the send and receive buffers (1,2,3, etc.)
     !
     !  DESCRIPTION:  Performs a non-blocking receive of array 'x' from MPI rank
@@ -149,7 +149,7 @@ Contains
     !  INPUTS:
     !             indstart   - Integer array of dimension Y indicating where within x
     !                          the receive should initiate from.
-    !                          (optional; default value is 1,1,.. - (send initiates at x(1,1,...)         
+    !                          (optional; default value is 1,1,.. - (send initiates at x(1,1,...)
     !             n_elements - Number of elements within x to receive
     !                          (optional; default value is size(x))
     !             source     - The MPI rank (within communicator grp) from which x is received
@@ -171,7 +171,7 @@ Contains
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
         Integer :: p, n, comm2, tag2, ione
-    
+
         If (Present(n_elements)) Then
             n = n_elements
         Else
@@ -201,9 +201,9 @@ Contains
         Else
             ione = 1
         End if
-    
+
         Call mpi_isend(x(ione), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
-    
+
     End Subroutine D_ISend_1D
 
     Subroutine D_ISend_4D(x, irq,n_elements, dest, tag, grp, indstart)
@@ -246,7 +246,7 @@ Contains
             jstart = 1
             kstart = 1
             lstart = 1
-        Endif   
+        Endif
         Call mpi_isend(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_4D
@@ -294,7 +294,7 @@ Contains
             kstart = 1
             lstart = 1
         Endif
-        
+
         Call mpi_irecv(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_4D
@@ -342,7 +342,7 @@ Contains
             kstart = 1
             lstart = 1
             mstart = 1
-        Endif   
+        Endif
         Call mpi_isend(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_5D
@@ -392,7 +392,7 @@ Contains
             lstart = 1
             mstart = 1
         Endif
-        
+
         Call mpi_irecv(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_5D
@@ -403,7 +403,7 @@ Contains
         Type(communicator),Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
         Integer :: p, n, comm2, tag2, ione
-    
+
         If (Present(n_elements)) Then
             n = n_elements
         Else
@@ -433,9 +433,9 @@ Contains
         Else
             ione = 1
         End if
-    
+
         Call mpi_isend(x(ione), n, MPI_DOUBLE_COMPLEX, p, tag2, comm2, irq,mpi_err)
-    
+
     End Subroutine Z_ISend_1D
 
     Subroutine D_ISend_2D(x, irq,n_elements, dest, tag, grp,indstart)
@@ -457,7 +457,7 @@ Contains
         Else
            p = 0
         End If
-         
+
         If (Present(grp)) Then
            comm2 = grp%comm
         Else
@@ -478,7 +478,7 @@ Contains
             jone = 1
         Endif
         Call mpi_isend(x(ione,jone), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
-    
+
     End Subroutine D_ISend_2D
 
     Subroutine D_ISend_3D(x, irq,n_elements, dest, tag, grp, indstart)
@@ -520,7 +520,7 @@ Contains
             istart = 1
             jstart = 1
             kstart = 1
-        Endif   
+        Endif
         Call mpi_isend(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_3D
@@ -557,7 +557,7 @@ Contains
         End If
 
         Call mpi_isend(x(1,1), n, MPI_DOUBLE_COMPLEX, p, tag2, comm2, irq,mpi_err)
-    
+
     End Subroutine Z_ISend_2D
 
     Subroutine Z_ISend_3D(x, irq,n_elements, dest, tag, grp, indstart)
@@ -598,7 +598,7 @@ Contains
             istart = 1
             jstart = 1
             kstart = 1
-        Endif   
+        Endif
         Call mpi_isend(x(istart,jstart,kstart), n, MPI_DOUBLE_COMPLEX, p, tag2, comm2, irq,mpi_err)
 
       End Subroutine Z_ISend_3D
@@ -682,7 +682,7 @@ Contains
         Else
             ione = 1
         Endif
-        
+
         Call mpi_irecv(x(ione), n, MPI_DOUBLE_COMPLEX, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine Z_IReceive_1D

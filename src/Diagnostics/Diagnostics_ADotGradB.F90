@@ -23,10 +23,10 @@
 Module Diagnostics_ADotGradB
     Use Diagnostics_Base
 
-	Interface ADotGradB
-		Module Procedure ADotGradB_3D3D, ADotGradB_3D2D
+    Interface ADotGradB
+        Module Procedure ADotGradB_3D3D, ADotGradB_3D2D
         Module Procedure ADotGradB_2D3D, ADotGradB_2D2D
-	End Interface
+    End Interface
 
 Contains
     Subroutine ADotGradB_3D3D(abuff,bbuff,cbuff,aindices, bindices, cindices)
@@ -40,17 +40,17 @@ Contains
         !               on r,theta,phi grid
         !
         !Optional Inputs:
-        !   aindices,bindices, cindices --  These are optional arrays describing where the 
-        !                                   quantities above are located within their respective 
-        !                                   buffers.  If these arrays are provided, quantities 
-        !                                   are assumed to reside at default locations within 
+        !   aindices,bindices, cindices --  These are optional arrays describing where the
+        !                                   quantities above are located within their respective
+        !                                   buffers.  If these arrays are provided, quantities
+        !                                   are assumed to reside at default locations within
         !                                   each buffer (see below)
         !
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)   
-        Real*8, Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)   
+        Real*8, Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)
+        Real*8, Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)
         Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
@@ -124,25 +124,25 @@ Contains
         !--- Radial Component
 
         DO_PSI
-		    cbuff(PSI,icr) = abuff(PSI,iar) * bbuff(PSI,idbrdr)                    &
+            cbuff(PSI,icr) = abuff(PSI,iar) * bbuff(PSI,idbrdr)                    &
 
                 & + ( abuff(PSI,iatheta) * ( bbuff(PSI,idbrdt)-bbuff(PSI,ibtheta)) &
 
-			    & +   abuff(PSI,iaphi)   * ( bbuff(PSI,idbrdp)*csctheta(t)         &
-                &                           -bbuff(PSI,ibphi) ) )* one_over_r(r)  
+                & +   abuff(PSI,iaphi)   * ( bbuff(PSI,idbrdp)*csctheta(t)         &
+                &                           -bbuff(PSI,ibphi) ) )* one_over_r(r)
         END_DO
 
-        
+
         !--- Theta Component
 
         DO_PSI
-            cbuff(PSI,ictheta) = abuff(PSI,iar  ) *  bbuff(PSI,idbtdr)          & 
+            cbuff(PSI,ictheta) = abuff(PSI,iar  ) *  bbuff(PSI,idbtdr)          &
 
-                & + ( abuff(PSI,iatheta) * (bbuff(PSI,idbtdt) + bbuff(PSI,ibr)) & 
+                & + ( abuff(PSI,iatheta) * (bbuff(PSI,idbtdt) + bbuff(PSI,ibr)) &
 
-                & +   abuff(PSI,iaphi)   * ( bbuff(PSI,idbtdp)*csctheta(t)      & 
-			                                -bbuff(PSI,ibphi )*cottheta(t) ) )  & 
-                & *  one_over_r(r)     
+                & +   abuff(PSI,iaphi)   * ( bbuff(PSI,idbtdp)*csctheta(t)      &
+                                            -bbuff(PSI,ibphi )*cottheta(t) ) )  &
+                & *  one_over_r(r)
         END_DO
 
         !--- Phi Component
@@ -150,11 +150,11 @@ Contains
         DO_PSI
             cbuff(PSI,icphi) =  abuff(PSI,iar  ) *  bbuff(PSI,idbpdr)                       &
 
-                & + ( abuff(PSI,iatheta)*bbuff(PSI,idbpdt)  & 
+                & + ( abuff(PSI,iatheta)*bbuff(PSI,idbpdt)  &
 
                 & +  abuff(PSI,iaphi)*(bbuff(PSI,idbpdp)*csctheta(t) + bbuff(PSI,ibr) &
-                & +  bbuff(PSI,ibtheta)*cottheta(t) ) ) & 
-                & *  one_over_r(r)     
+                & +  bbuff(PSI,ibtheta)*cottheta(t) ) ) &
+                & *  one_over_r(r)
         END_DO
 
     End Subroutine ADotGradB_3D3D
@@ -171,17 +171,17 @@ Contains
         !               on r,theta grid
         !
         !Optional Inputs:
-        !   aindices,bindices, cindices --  These are optional arrays describing where the 
-        !                                   quantities above are located within their respective 
-        !                                   buffers.  If these arrays are provided, quantities 
-        !                                   are assumed to reside at default locations within 
+        !   aindices,bindices, cindices --  These are optional arrays describing where the
+        !                                   quantities above are located within their respective
+        !                                   buffers.  If these arrays are provided, quantities
+        !                                   are assumed to reside at default locations within
         !                                   each buffer (see below)
         !
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)   
-        Real*8, Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)   
+        Real*8, Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)
+        Real*8, Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)
         Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
@@ -255,25 +255,25 @@ Contains
         !--- Radial Component
 
         DO_PSI
-		    cbuff(PSI,icr) = abuff(PSI,iar) * bbuff(PSI2,idbrdr)                    &
+            cbuff(PSI,icr) = abuff(PSI,iar) * bbuff(PSI2,idbrdr)                    &
 
                 & + ( abuff(PSI,iatheta) * ( bbuff(PSI2,idbrdt)-bbuff(PSI2,ibtheta)) &
 
-			    & +   abuff(PSI,iaphi)   * ( bbuff(PSI2,idbrdp)*csctheta(t)         &
-                &                           -bbuff(PSI2,ibphi) ) )* one_over_r(r)  
+                & +   abuff(PSI,iaphi)   * ( bbuff(PSI2,idbrdp)*csctheta(t)         &
+                &                           -bbuff(PSI2,ibphi) ) )* one_over_r(r)
         END_DO
 
-        
+
         !--- Theta Component
 
         DO_PSI
-            cbuff(PSI,ictheta) = abuff(PSI,iar  ) *  bbuff(PSI2,idbtdr)          & 
+            cbuff(PSI,ictheta) = abuff(PSI,iar  ) *  bbuff(PSI2,idbtdr)          &
 
-                & + ( abuff(PSI,iatheta) * (bbuff(PSI2,idbtdt) + bbuff(PSI2,ibr)) & 
+                & + ( abuff(PSI,iatheta) * (bbuff(PSI2,idbtdt) + bbuff(PSI2,ibr)) &
 
-                & +   abuff(PSI,iaphi)   * ( bbuff(PSI2,idbtdp)*csctheta(t)      & 
-			                                -bbuff(PSI2,ibphi )*cottheta(t) ) )  & 
-                & *  one_over_r(r)     
+                & +   abuff(PSI,iaphi)   * ( bbuff(PSI2,idbtdp)*csctheta(t)      &
+                                            -bbuff(PSI2,ibphi )*cottheta(t) ) )  &
+                & *  one_over_r(r)
         END_DO
 
         !--- Phi Component
@@ -281,11 +281,11 @@ Contains
         DO_PSI
             cbuff(PSI,icphi) =  abuff(PSI,iar  ) *  bbuff(PSI2,idbpdr)                       &
 
-                & + (abuff(PSI,iatheta)*bbuff(PSI2,idbpdt)  & 
+                & + (abuff(PSI,iatheta)*bbuff(PSI2,idbpdt)  &
 
                 & +  abuff(PSI,iaphi)  *(bbuff(PSI2,idbpdp)*csctheta(t) + bbuff(PSI2,ibr ) &
-                & +  bbuff(PSI2,ibtheta)*cottheta(t)) ) & 
-                & *  one_over_r(r)     
+                & +  bbuff(PSI2,ibtheta)*cottheta(t)) ) &
+                & *  one_over_r(r)
         END_DO
 
     End Subroutine ADotGradB_3D2D
@@ -303,17 +303,17 @@ Contains
         !               on r,theta,phi grid
         !
         !Optional Inputs:
-        !   aindices,bindices, cindices --  These are optional arrays describing where the 
-        !                                   quantities above are located within their respective 
-        !                                   buffers.  If these arrays are provided, quantities 
-        !                                   are assumed to reside at default locations within 
+        !   aindices,bindices, cindices --  These are optional arrays describing where the
+        !                                   quantities above are located within their respective
+        !                                   buffers.  If these arrays are provided, quantities
+        !                                   are assumed to reside at default locations within
         !                                   each buffer (see below)
         !
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)   
-        Real*8, Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)   
+        Real*8, Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)
+        Real*8, Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)
         Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
@@ -387,25 +387,25 @@ Contains
         !--- Radial Component
 
         DO_PSI
-		    cbuff(PSI,icr) = abuff(PSI2,iar) * bbuff(PSI,idbrdr)                    &
+            cbuff(PSI,icr) = abuff(PSI2,iar) * bbuff(PSI,idbrdr)                    &
 
                 & + ( abuff(PSI2,iatheta) * ( bbuff(PSI,idbrdt)-bbuff(PSI,ibtheta)) &
 
-			    & +   abuff(PSI2,iaphi)   * ( bbuff(PSI,idbrdp)*csctheta(t)         &
-                &                           -bbuff(PSI,ibphi) ) )* one_over_r(r)  
+                & +   abuff(PSI2,iaphi)   * ( bbuff(PSI,idbrdp)*csctheta(t)         &
+                &                           -bbuff(PSI,ibphi) ) )* one_over_r(r)
         END_DO
 
-        
+
         !--- Theta Component
 
         DO_PSI
-            cbuff(PSI,ictheta) = abuff(PSI2,iar  ) *  bbuff(PSI,idbtdr)          & 
+            cbuff(PSI,ictheta) = abuff(PSI2,iar  ) *  bbuff(PSI,idbtdr)          &
 
-                & + ( abuff(PSI2,iatheta) * (bbuff(PSI,idbtdt) + bbuff(PSI,ibr)) & 
+                & + ( abuff(PSI2,iatheta) * (bbuff(PSI,idbtdt) + bbuff(PSI,ibr)) &
 
-                & +   abuff(PSI2,iaphi)   * ( bbuff(PSI,idbtdp)*csctheta(t)      & 
-			                                -bbuff(PSI,ibphi )*cottheta(t) ) )  & 
-                & *  one_over_r(r)     
+                & +   abuff(PSI2,iaphi)   * ( bbuff(PSI,idbtdp)*csctheta(t)      &
+                                            -bbuff(PSI,ibphi )*cottheta(t) ) )  &
+                & *  one_over_r(r)
         END_DO
 
         !--- Phi Component
@@ -413,11 +413,11 @@ Contains
         DO_PSI
             cbuff(PSI,icphi) =  abuff(PSI2,iar  ) *  bbuff(PSI,idbpdr)                       &
 
-                & + (abuff(PSI2,iatheta)*bbuff(PSI,idbpdt)  & 
+                & + (abuff(PSI2,iatheta)*bbuff(PSI,idbpdt)  &
 
                 & +  abuff(PSI2,iaphi)  *(bbuff(PSI,idbpdp)*csctheta(t) + bbuff(PSI,ibr ) &
-                & +  bbuff(PSI,ibtheta)*cottheta(t)) ) & 
-                & *  one_over_r(r)     
+                & +  bbuff(PSI,ibtheta)*cottheta(t)) ) &
+                & *  one_over_r(r)
         END_DO
 
     End Subroutine ADotGradB_2D3D
@@ -435,17 +435,17 @@ Contains
         !               on r,theta grid
         !
         !Optional Inputs:
-        !   aindices,bindices, cindices --  These are optional arrays describing where the 
-        !                                   quantities above are located within their respective 
-        !                                   buffers.  If these arrays are provided, quantities 
-        !                                   are assumed to reside at default locations within 
+        !   aindices,bindices, cindices --  These are optional arrays describing where the
+        !                                   quantities above are located within their respective
+        !                                   buffers.  If these arrays are provided, quantities
+        !                                   are assumed to reside at default locations within
         !                                   each buffer (see below)
         !
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)   
-        Real*8, Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)   
+        Real*8, Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)
+        Real*8, Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)
         Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
@@ -519,25 +519,25 @@ Contains
         !--- Radial Component
 
         DO_PSI2
-		    cbuff(:,PSI2,icr) = abuff(PSI2,iar) * bbuff(PSI2,idbrdr)                    &
+            cbuff(:,PSI2,icr) = abuff(PSI2,iar) * bbuff(PSI2,idbrdr)                    &
 
                 & + ( abuff(PSI2,iatheta) * ( bbuff(PSI2,idbrdt)-bbuff(PSI2,ibtheta)) &
 
-			    & +   abuff(PSI2,iaphi)   * ( bbuff(PSI2,idbrdp)*csctheta(t)         &
-                &                           -bbuff(PSI2,ibphi) ) )* one_over_r(r)  
+                & +   abuff(PSI2,iaphi)   * ( bbuff(PSI2,idbrdp)*csctheta(t)         &
+                &                           -bbuff(PSI2,ibphi) ) )* one_over_r(r)
         END_DO2
 
-        
+
         !--- Theta Component
 
         DO_PSI2
-            cbuff(:,PSI2,ictheta) = abuff(PSI2,iar  ) *  bbuff(PSI2,idbtdr)          & 
+            cbuff(:,PSI2,ictheta) = abuff(PSI2,iar  ) *  bbuff(PSI2,idbtdr)          &
 
-                & + ( abuff(PSI2,iatheta) * (bbuff(PSI2,idbtdt) + bbuff(PSI2,ibr)) & 
+                & + ( abuff(PSI2,iatheta) * (bbuff(PSI2,idbtdt) + bbuff(PSI2,ibr)) &
 
-                & +   abuff(PSI2,iaphi)   * ( bbuff(PSI2,idbtdp)*csctheta(t)      & 
-			                                -bbuff(PSI2,ibphi )*cottheta(t) ) )  & 
-                & *  one_over_r(r)     
+                & +   abuff(PSI2,iaphi)   * ( bbuff(PSI2,idbtdp)*csctheta(t)      &
+                                            -bbuff(PSI2,ibphi )*cottheta(t) ) )  &
+                & *  one_over_r(r)
         END_DO2
 
         !--- Phi Component
@@ -545,11 +545,11 @@ Contains
         DO_PSI2
             cbuff(:,PSI2,icphi) =  abuff(PSI2,iar  ) *  bbuff(PSI2,idbpdr)                       &
 
-                & + (abuff(PSI2,iatheta)*bbuff(PSI2,idbpdt)   &   
+                & + (abuff(PSI2,iatheta)*bbuff(PSI2,idbpdt)   &
 
                 & +  abuff(PSI2,iaphi)  *(bbuff(PSI2,idbpdp)*csctheta(t) + bbuff(PSI2,ibr )  &
-                & +  bbuff(PSI2,ibtheta)*cottheta(t) ) ) & 
-                & *  one_over_r(r)     
+                & +  bbuff(PSI2,ibtheta)*cottheta(t) ) ) &
+                & *  one_over_r(r)
         END_DO2
 
     End Subroutine ADotGradB_2D2D

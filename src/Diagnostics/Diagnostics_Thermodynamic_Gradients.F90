@@ -307,21 +307,21 @@ Contains
         !Pressure:  d_by_dr(P/rho_bar)
         If (compute_quantity(rhopressure_dr)) Then
             DO_PSI
-                qty(PSI) = buffer(PSI,dpdr)-buffer(PSI,pvar)*ref%dlnrho(r)       
+                qty(PSI) = buffer(PSI,dpdr)-buffer(PSI,pvar)*ref%dlnrho(r)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(rhopressurep_dr)) Then
             DO_PSI
-                qty(PSI) = fbuffer(PSI,dpdr)-fbuffer(PSI,pvar)*ref%dlnrho(r)       
+                qty(PSI) = fbuffer(PSI,dpdr)-fbuffer(PSI,pvar)*ref%dlnrho(r)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(rhopressurem_dr)) Then
             DO_PSI
-                qty(PSI) = m0_values(PSI2,dpdr)-m0_values(PSI2,pvar)*ref%dlnrho(r)       
+                qty(PSI) = m0_values(PSI2,dpdr)-m0_values(PSI2,pvar)*ref%dlnrho(r)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -336,21 +336,21 @@ Contains
         ! Radial second derivatives of
         ! Entropy/Temperature
         If (compute_quantity(entropy_d2r)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dtdrdr)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_p_d2r)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dtdrdr)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_m_d2r)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dtdrdr)
             END_DO
             Call Add_Quantity(qty)
@@ -358,21 +358,21 @@ Contains
 
         ! Pressure
         If (compute_quantity(pressure_d2r)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dpdrdr)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_p_d2r)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dpdrdr)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_m_d2r)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dpdrdr)
             END_DO
             Call Add_Quantity(qty)
@@ -383,21 +383,21 @@ Contains
 
         ! Entropy/Temperature
         If (compute_quantity(entropy_d2t)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dtdtdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_p_d2t)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dtdtdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_m_d2t)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dtdtdt)
             END_DO
             Call Add_Quantity(qty)
@@ -405,21 +405,21 @@ Contains
 
         ! Pressure
         If (compute_quantity(pressure_d2t)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dpdtdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_p_d2t)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dpdtdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_m_d2t)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dpdtdt)
             END_DO
             Call Add_Quantity(qty)
@@ -430,21 +430,21 @@ Contains
 
         ! Entropy/Temperature
         If (compute_quantity(entropy_d2p)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dtdpdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_p_d2p)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dtdpdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_m_d2p)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dtdpdp)
             END_DO
             Call Add_Quantity(qty)
@@ -452,21 +452,21 @@ Contains
 
         ! Pressure
         If (compute_quantity(pressure_d2p)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dpdpdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_p_d2p)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dpdpdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_m_d2p)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dpdpdp)
             END_DO
             Call Add_Quantity(qty)
@@ -477,21 +477,21 @@ Contains
 
         ! Entropy/Temperature
         If (compute_quantity(entropy_d2rt)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dtdrdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_p_d2rt)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dtdrdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_m_d2rt)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dtdrdt)
             END_DO
             Call Add_Quantity(qty)
@@ -499,21 +499,21 @@ Contains
 
         ! Pressure
         If (compute_quantity(pressure_d2rt)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dpdrdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_p_d2rt)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dpdrdt)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_m_d2rt)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dpdrdt)
             END_DO
             Call Add_Quantity(qty)
@@ -524,21 +524,21 @@ Contains
 
         ! Entropy/Temperature
         If (compute_quantity(entropy_d2rp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dtdrdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_p_d2rp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dtdrdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_m_d2rp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dtdrdp)
             END_DO
             Call Add_Quantity(qty)
@@ -546,21 +546,21 @@ Contains
 
         ! Pressure
         If (compute_quantity(pressure_d2rp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dpdrdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_p_d2rp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dpdrdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_m_d2rp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dpdrdp)
             END_DO
             Call Add_Quantity(qty)
@@ -571,21 +571,21 @@ Contains
 
         ! Entropy/Temperature
         If (compute_quantity(entropy_d2tp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dtdtdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_p_d2tp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dtdtdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(entropy_m_d2tp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dtdtdp)
             END_DO
             Call Add_Quantity(qty)
@@ -593,21 +593,21 @@ Contains
 
         ! Pressure
         If (compute_quantity(pressure_d2tp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = DDBUFF(PSI,dpdtdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_p_d2tp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_fbuffer(PSI,dpdtdp)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(pressure_m_d2tp)) Then
-            DO_PSI			
+            DO_PSI
                 qty(PSI) = d2_m0(PSI2,dpdtdp)
             END_DO
             Call Add_Quantity(qty)

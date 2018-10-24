@@ -64,7 +64,7 @@ Contains
     ! INPUTS:
     !            send_buf - Double-Complex 1-D array that serves as the source for
     !                         the alltoallv operation
-    !                 grp - MPI communicator across which the REDUCE is conducted 
+    !                 grp - MPI communicator across which the REDUCE is conducted
     !                       (optional; default = MPI_COMM_WORLD)
     !            send_displ - array of send displacements for mpi_alltoallv
     !            recv_displ - array of receive displacements for mpi_alltoallv
@@ -97,7 +97,7 @@ Contains
     ! INPUTS:
     !            send_buf - Double-precision 1-D array that serves as the source for
     !                         the alltoallv operation
-    !                 grp - MPI communicator across which the REDUCE is conducted 
+    !                 grp - MPI communicator across which the REDUCE is conducted
     !                       (optional; default = MPI_COMM_WORLD)
     !            send_displ - array of send displacements for mpi_alltoallv
     !            recv_displ - array of receive displacements for mpi_alltoallv
@@ -126,13 +126,13 @@ Contains
     !////////////////////////////////////////////////////////////////////////////////////
     ! SUBROUTINE:  D_Tranpose_choose_1D
     !
-    ! DESCRIPTION:  Performs an AlltoALLv OR AlltoALL for a 1-D, 
+    ! DESCRIPTION:  Performs an AlltoALLv OR AlltoALL for a 1-D,
     !                 double-precision array across grp
     !
     ! INPUTS:
     !            send_buf - Double-precision 1-D array that serves as the source for
     !                         the alltoallv operation
-    !                 grp - MPI communicator across which the REDUCE is conducted 
+    !                 grp - MPI communicator across which the REDUCE is conducted
     !                       (optional; default = MPI_COMM_WORLD)
     !            send_displ - array of send displacements for mpi_alltoallv
     !            recv_displ - array of receive displacements for mpi_alltoallv

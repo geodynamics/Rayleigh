@@ -1,13 +1,33 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
     !//////////////////////////////////////////////////////////////////////////
     !///////////////////////////////////////////////////
     !       Vorticity Outputs
-    Integer, Parameter :: vort_off = rhovoffset+100 ! :OFFSET CODE: 
+    Integer, Parameter :: vort_off = rhovoffset+100 ! :OFFSET CODE:
 
     Integer, Parameter :: vort_r      = vort_off+1  ! :tex: $\omega_r$
     Integer, Parameter :: vort_theta  = vort_off+2  ! :tex: $\omega_\theta$
     Integer, Parameter :: vort_phi    = vort_off+3  ! :tex: $\omega_\phi$
 
-    Integer, Parameter :: vortp_r     = vort_off+4  ! :tex: $\omega_r^\prime$    
+    Integer, Parameter :: vortp_r     = vort_off+4  ! :tex: $\omega_r^\prime$
     Integer, Parameter :: vortp_theta = vort_off+5  ! :tex: $\omega_\theta^\prime$
     Integer, Parameter :: vortp_phi   = vort_off+6  ! :tex: $\omega_\phi^\prime$
 
@@ -24,9 +44,9 @@
     Integer, Parameter :: vort_theta_sq  = vort_off+15  ! :tex: $\omega_\theta^2$
     Integer, Parameter :: vort_phi_sq    = vort_off+16  ! :tex: $\omega_\phi^2$
 
-    Integer, Parameter :: vortp_r_sq     = vort_off+17  ! :tex: $\omega_r^\prime^2$    
-    Integer, Parameter :: vortp_theta_sq = vort_off+18  ! :tex: $\omega_\theta^\prime^2$
-    Integer, Parameter :: vortp_phi_sq   = vort_off+19  ! :tex: $\omega_\phi^\prime^2$
+    Integer, Parameter :: vortp_r_sq     = vort_off+17  ! :tex: ${\omega_r^\prime}^2$ 
+    Integer, Parameter :: vortp_theta_sq = vort_off+18  ! :tex: ${\omega_\theta^\prime}^2$
+    Integer, Parameter :: vortp_phi_sq   = vort_off+19  ! :tex: ${\omega_\phi^\prime}^2$
 
     Integer, Parameter :: vortm_r_sq     = vort_off+20  ! :tex: $\overline{\omega_r}^2$
     Integer, Parameter :: vortm_theta_sq = vort_off+21  ! :tex: $\overline{\omega_\theta}^2$

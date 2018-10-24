@@ -104,7 +104,7 @@ Contains
                 qty(PSI) = qty(PSI)-tmp1(PSI)*buffer(PSI,br) ! E_theta B_r
             END_DO
 
-    
+
             Call Add_Quantity(qty)
         Endif
 
@@ -184,7 +184,7 @@ Contains
                 qty(PSI) = qty(PSI)-tmp1(PSI)*fbuffer(PSI,br) ! E_theta B_r
             END_DO
 
-    
+
             Call Add_Quantity(qty)
         Endif
 
@@ -264,7 +264,7 @@ Contains
                 qty(PSI) = qty(PSI)-tmp1(PSI)*m0_values(PSI2,br) ! E_theta B_r
             END_DO
 
-    
+
             Call Add_Quantity(qty)
         Endif
 
@@ -344,7 +344,7 @@ Contains
                 qty(PSI) = qty(PSI)-tmp1(PSI)*m0_values(PSI2,br) ! E_theta B_r
             END_DO
 
-    
+
             Call Add_Quantity(qty)
         Endif
 
@@ -424,7 +424,7 @@ Contains
                 qty(PSI) = qty(PSI)-tmp1(PSI)*fbuffer(PSI,br) ! E_theta B_r
             END_DO
 
-    
+
             Call Add_Quantity(qty)
         Endif
 
@@ -504,7 +504,7 @@ Contains
                 qty(PSI) = qty(PSI)-tmp1(PSI)*fbuffer(PSI,br) ! E_theta B_r
             END_DO
 
-    
+
             Call Add_Quantity(qty)
         Endif
     End Subroutine Compute_Poynting_Flux

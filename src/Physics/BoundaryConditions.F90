@@ -37,7 +37,7 @@ Module BoundaryConditions
     Logical :: Fix_poloidalfield_bottom = .False.
     Logical :: Impose_Dipole_Field = .False.
     Logical :: fix_tdt_bottom = .false.
- 
+
     Real*8  :: T_Bottom     = 1.0d0
     Real*8  :: T_Top        = 0.0d0
     Real*8  :: dTdr_Top     = 0.0d0
@@ -121,7 +121,7 @@ Contains
         Fix_poloidalfield_bottom = .False.
         Impose_Dipole_Field      = .False.
         fix_tdt_bottom           = .False.
-         
+
         T_Bottom     = 1.0d0
         T_Top        = 0.0d0
         dTdr_Top     = 0.0d0
@@ -136,6 +136,6 @@ Contains
         Dipole_Tilt_Degrees = 0.0d0
 
         Strict_L_Conservation = .false.
-        no_slip_boundaries = .false. 
+        no_slip_boundaries = .false.
     End Subroutine Restore_BoundaryCondition_Defaults
 End Module BoundaryConditions

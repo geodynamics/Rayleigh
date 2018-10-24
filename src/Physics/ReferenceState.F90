@@ -55,14 +55,14 @@ Module ReferenceState
         Real*8, Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
         Real*8, Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
         Real*8, Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
-        
+
         ! The following two terms are used to compute the ohmic and viscous heating
         Real*8, Allocatable :: ohmic_amp(:) !multiplied by {eta(r),H(r)}J^2 in dSdt eq.
         Real*8, Allocatable :: viscous_amp(:) !multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
 
         Real*8 :: script_N_Top ! If a nondimensional reference state is employed,
         Real*8 :: script_K_Top ! these are used in lieu of nu_top from the input file.
-        Real*8 :: script_H_Top ! {N:nu, K:kappa, H:eta} 
+        Real*8 :: script_H_Top ! {N:nu, K:kappa, H:eta}
 
     End Type ReferenceInfo
 
@@ -104,11 +104,11 @@ Module ReferenceState
     Integer :: custom_reference_type = 1
 
     ! These last two flags are deprecated.  They are retained for now to prevent crashes due to improper input
-    Logical :: Dimensional = .false., NonDimensional_Anelastic = .false. 
+    Logical :: Dimensional = .false., NonDimensional_Anelastic = .false.
 
     !//////////////////////////////////////////////////////////////////////
     ! Development Section
-    ! Everything below this line is related to in-development features. 
+    ! Everything below this line is related to in-development features.
     ! This is unsupported code.
     ! The code may well break if these variables are used in production.
     ! Email inquiries regarding these implementation or meaning of anything below this line
@@ -183,8 +183,8 @@ Contains
         Integer :: i
         Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
         Character*6  :: istr
-		Character*12 :: dstring
-    	Character*8 :: dofmt = '(ES12.5)'
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
         ! devel variables (see note at top regarding devel)
         Real*8 :: pafk
         Real*8, Allocatable :: sink(:), cosk(:)
@@ -244,7 +244,7 @@ Contains
         !Define the various equation coefficients
         ref%dpdr_w_term(:)        =  ref%density*pscaling
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
-        ref%Coriolis_Coeff        =  2.0d0/Ekman_Number          
+        ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
 
         If (devel_physics) Then
             Allocate(paf_v2(1:N_R), paf_gv2(1:N_R))
@@ -256,10 +256,10 @@ Contains
 
             paf_p2(:) = sin(pafk*radius)/pafk/radius
             paf_p2 = paf_p2*paf_p2
-            ! take derivative 
+            ! take derivative
             paf_gp2 = -2.0d0*paf_p2/radius
             paf_gp2 = paf_gp2+&
-                      2.0d0*sin(pafk*radius)*cos(pafk*radius)/pafk/(radius**3)    
+                      2.0d0*sin(pafk*radius)*cos(pafk*radius)/pafk/(radius**3)
 
             paf_v2 = sink*sink+(pafk**2)*r_squared*cosk*cosk
             paf_v2 = paf_v2 - two*pafk*radius*sink*cosk
@@ -267,12 +267,12 @@ Contains
             paf_v2 = paf_v2*OneOverRSquared*OneOverRSquared
 
 
-            
+
             paf_gv2 = -two*(pafk**3)*r_squared*cosk*sink +two*(pafk**2)*radius*sink*sink
             paf_gv2 = paf_gv2/(pafk**4)
             paf_gv2 = paf_gv2*OneOverRSquared*OneOverRSquared
-             
-            paf_gv2 = paf_gv2-4.0d0*paf_v2*One_Over_R  
+
+            paf_gv2 = paf_gv2-4.0d0*paf_v2*One_Over_R
 
             !renormalize (do gv2 first!)
             paf_gv2 = paf_gv2/maxval(paf_v2) *Rayleigh_Number
@@ -298,21 +298,21 @@ Contains
         If (magnetism) Then
             ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
             ref%script_H_Top     = 1.0d0/Magnetic_Prandtl_Number
-            ref%ohmic_amp(1:N_R) = ref%lorentz_coeff 
+            ref%ohmic_amp(1:N_R) = ref%lorentz_coeff
         Else
             ref%Lorentz_Coeff    = 0.0d0
             ref%script_H_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif            
-    
+        Endif
+
     End Subroutine Constant_Reference
     Subroutine Polytropic_ReferenceND()
         Implicit None
         Real*8 :: dtmp, otmp
         Real*8, Allocatable :: dtmparr(:)
         Character*6  :: istr
-		Character*12 :: dstring
-    	Character*8 :: dofmt = '(ES12.5)'
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
         Dimensional_Reference = .false.
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Non-dimensional)"))
@@ -349,12 +349,12 @@ Contains
         dtmparr = -Dissipation_Number*ref%gravity
         !Now, the logarithmic derivative of temperature
         ref%dlnt = dtmparr/ref%temperature
-        
+
         !And then logarithmic derivative of rho : dlnrho = n dlnT
         ref%dlnrho = poly_n*ref%dlnt
 
         !Now, the second logarithmic derivative of rho :  d2lnrho = (n/T)*d2Tdr2 - n*(dlnT^2)
-        ref%d2lnrho = -poly_n*(ref%dlnT**2)  
+        ref%d2lnrho = -poly_n*(ref%dlnT**2)
 
         dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*ref%gravity/radius) ! (n/T)*d2Tdr2
         ref%d2lnrho = ref%d2lnrho+dtmparr
@@ -365,7 +365,7 @@ Contains
         ref%dsdr(:) = 0.0d0
         ref%pressure(:) = ref%density*ref%temperature !  this is never used, might be missing a prefactor
         Call Initialize_Reference_Heating()
-        
+
 
         ref%Coriolis_Coeff = 2.0d0
         ref%dpdr_w_term(:) = ref%density
@@ -401,8 +401,8 @@ Contains
         Real*8 :: InnerRadius, OuterRadius
         Integer :: r
         Character*6  :: istr
-		Character*12 :: dstring
-    	Character*8 :: dofmt = '(ES12.5)'
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type                : "//trim(" Polytrope (Dimensional)"))
             Write(dstring,dofmt)Angular_Velocity
@@ -431,7 +431,7 @@ Contains
         ! Note that cp must also be specified.
         InnerRadius = Radius(N_r)
         OuterRadius = Radius(1)
-        
+
 
         One = 1.0d0
         !-----------------------------------------------------------
@@ -451,7 +451,7 @@ Contains
 
         Allocate(zeta(N_R))
 
-        d = OuterRadius - InnerRadius    
+        d = OuterRadius - InnerRadius
 
         zeta = c0 + c1 * d / Radius
 
@@ -463,7 +463,7 @@ Contains
         T_c = (poly_n+1.d0) * P_c / (Pressure_Specific_Heat * rho_c)
 
         !-----------------------------------------------------------
-        ! Initialize reference structure 
+        ! Initialize reference structure
         ref%gamma = (poly_n+1.0D0)/(poly_n)
 
         If (STABLE_flag) Then
@@ -549,7 +549,7 @@ Contains
         Endif
 
         !///////////////////////////////////////////////////////////
-        ! Next, compute a cooling function if desired and ADD it to 
+        ! Next, compute a cooling function if desired and ADD it to
         ! whatever's in reference heating.
         If (cooling_type .eq. 1) Then
             ! Here we generate a tanh cooling envelope for use with our drag constant
@@ -557,7 +557,7 @@ Contains
 
 
         If (cooling_type .eq. 2) Then
-            Call Tanh_Reference_Cooling()            
+            Call Tanh_Reference_Cooling()
         Endif
 
         ! Heating Q_H and cooling Q_C are normalized so that:
@@ -599,7 +599,7 @@ Contains
         ! rho T dSdt = rho T alpha : Energy deposition per unit volume is ~ Pressure
 
         ! Luminosity is specified as an input
-        ! Phi(r) is set to alpha such that 
+        ! Phi(r) is set to alpha such that
         ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
         Allocate(temp(1:N_R))
 
@@ -607,7 +607,7 @@ Contains
         Call Integrate_in_radius(temp,integral) !Int_rmin_rmax rho T r^2 dr
         integral = integral*4.0d0*pi  ! Int_V temp dV
 
-        
+
         alpha = 1.0d0/integral
 
 
@@ -625,12 +625,12 @@ Contains
         Character*120 :: heating_file
 
         ! Luminosity is specified as an input
-        ! Heating is set so that temp * 4 pi r^2 integrates to one Lsun 
+        ! Heating is set so that temp * 4 pi r^2 integrates to one Lsun
         ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
         Allocate(temp(1:N_R))
         Allocate(temp2(1:N_R))
         Allocate(x(1:N_R))
-        x = heating_factor*(radius-heating_r0)/ (maxval(radius)-minval(radius)) 
+        x = heating_factor*(radius-heating_r0)/ (maxval(radius)-minval(radius))
         ! x runs from zero to 1 if heating_r0 is min(radius)
         !Call tanh_profile(x,temp)
         Do i = 1, n_r
@@ -645,7 +645,7 @@ Contains
 
         integral = integral*4.0d0*pi
         alpha = 1.0d0/integral
-        
+
         ref%heating(:) = alpha*temp2/(ref%density*ref%temperature)
         If (my_rank .eq. 0) Then
             heating_file = Trim(my_path)//'reference_heating'
@@ -658,7 +658,7 @@ Contains
             Write(15)(ref%density(i), i = 1, n_r)
             Write(15)(ref%temperature(i), i = 1, n_r)
         Endif
-          
+
         DeAllocate(x,temp, temp2)
     End Subroutine Tanh_Reference_Heating
 
@@ -671,7 +671,7 @@ Contains
         Character*120 :: cooling_file
 
         ! Luminosity is specified as an input
-        ! Heating is set so that temp * 4 pi r^2 integrates to one Lsun 
+        ! Heating is set so that temp * 4 pi r^2 integrates to one Lsun
         ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
         Allocate(temp(1:N_R))
         Allocate(temp2(1:N_R))
@@ -693,7 +693,7 @@ Contains
 
         !/////////////////////
         ! The "Cooling" part comes in through the minus sign here - otherwise, this is identical to the heating function
-        Do i = 1, n_r        
+        Do i = 1, n_r
             ref%heating(i) = ref%heating(i)-alpha*temp2(i)/(ref%density(i)*ref%temperature(i))
         Enddo
         !temp2 = ref%heating*ref%density*ref%temperature
@@ -754,7 +754,7 @@ Contains
             Write(15)(ref%temperature(i),i=1,n_r)
             Write(15)(ref%dlnT(i),i=1,n_r)
             Write(15)(ref%dsdr(i),i=1,n_r)
-            Write(15)(ref%entropy(i),i=1,n_r)            
+            Write(15)(ref%entropy(i),i=1,n_r)
             Write(15)(ref%gravity(i),i=1,n_r)
             Close(15)
         Endif
@@ -792,7 +792,7 @@ Contains
         ! Put some logic here for unity functions and constants from command
         ! Read the functions
         ! Read the constants
-        
+
         ref%density(:) = rayleigh_functions(:,1)
         ref%dlnrho(:) = rayleigh_functions(:,8)
         ref%d2lnrho(:) = rayleigh_functions(:,9)
@@ -804,7 +804,7 @@ Contains
         ref%heating(:) = rayleigh_functions(:,6)/(ref%density*ref%temperature)
         !eta maps to function 7 times constant 7
 
-        ! Next, incorporate the constants        
+        ! Next, incorporate the constants
         ref%Coriolis_Coeff = rayleigh_constants(1)
         ref%dpdr_w_term(:) = rayleigh_constants(3)*rayleigh_functions(:,1)
         ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:)  ! Hadn't noticed this redundancy before...
@@ -815,7 +815,7 @@ Contains
     End Subroutine Get_Custom_Reference
 
 
-    
+
 
     Subroutine Read_Reference(filename,ref_arr)
         Character*120, Intent(In), Optional :: filename
@@ -846,8 +846,8 @@ Contains
                 Read(15)pi_integer
             Endif
         Endif
-                
-        If (pi_integer .eq. 314) Then 
+
+        If (pi_integer .eq. 314) Then
 
             Read(15)nr_ref
             Allocate(ref_arr_old(1:nr_ref,1:nqvals))  !10 quantities are stored in reference state
@@ -859,7 +859,7 @@ Contains
             Do k = 1, nqvals
                 Read(15)(ref_arr_old(i,k) , i=1 , nr_ref)
             Enddo
-               
+
 
             !Check to see if radius isn't reversed
             !If it is not, then reverse it
@@ -885,19 +885,19 @@ Contains
             Close(15)
 
 
-            If (nr_ref .ne. n_r) Then 
+            If (nr_ref .ne. n_r) Then
                 !Interpolate onto the current radial grid if necessary
                 !Note that the underlying assumption here is that same # of grid points
                 ! means same grid - come back to this later for generality
                 Allocate(rtmp2(1:n_r))
                 Allocate(rtmp(1:nr_ref))
-                
+
                 Do k = 1, nqvals
- 
+
                     rtmp(:) = ref_arr_old(:,k)
                     rtmp2(:) = 0.0d0
                     Call Spline_Interpolate(rtmp, old_radius, rtmp2, radius)
-                    ref_arr(1:n_r,k) = rtmp2 
+                    ref_arr(1:n_r,k) = rtmp2
                 Enddo
 
                 DeAllocate(rtmp,rtmp2)
@@ -912,7 +912,7 @@ Contains
         Endif
     End Subroutine Read_Reference
 
-    
+
 
 
 
@@ -944,13 +944,13 @@ Contains
                     Read(15)pi_integer
                 Endif
             Endif
-                    
-            If (pi_integer .eq. 314) Then 
+
+            If (pi_integer .eq. 314) Then
 
                 Read(15)nr_ref
                 Read(15)ncolumns
                 nqvals = ncolumns-1
-                Allocate(arr_old(1:nr_ref,1:nqvals))  
+                Allocate(arr_old(1:nr_ref,1:nqvals))
                 !10 quantities are stored in reference state
 
                 Allocate(old_radius(1:nr_ref))
@@ -958,11 +958,11 @@ Contains
                 Write(6,*)'nr_ref is: ', nr_ref
 
                 Read(15)(old_radius(i),i=1,nr_ref)
-                
+
                 Do k = 1, nqvals
                     Read(15)(arr_old(i,k) , i=1 , nr_ref)
                 Enddo
-                   
+
 
                 !Check to see if radius isn't reversed
                 !If it is not, then reverse it
@@ -988,19 +988,19 @@ Contains
                 Close(15)
 
 
-                If (nr_ref .ne. n_r) Then 
+                If (nr_ref .ne. n_r) Then
                     !Interpolate onto the current radial grid if necessary
                     !Note that the underlying assumption here is that same # of grid points
                     ! means same grid - come back to this later for generality
                     Allocate(rtmp2(1:n_r))
                     Allocate(rtmp(1:nr_ref))
-                    
+
                     Do k = 1, nqvals
-     
+
                         rtmp(:) = arr_old(:,k)
                         rtmp2(:) = 0.0d0
                         Call Spline_Interpolate(rtmp, old_radius, rtmp2, radius)
-                        arr(1:n_r,k) = rtmp2 
+                        arr(1:n_r,k) = rtmp2
                     Enddo
 
                     DeAllocate(rtmp,rtmp2)
@@ -1047,13 +1047,13 @@ Contains
 
 
         Angular_Velocity = 1.0d0
-    
+
         Rayleigh_Number         = 1.0d0
         Ekman_Number            = 1.0d0
         Prandtl_Number          = 1.0d0
         Magnetic_Prandtl_Number = 1.0d0
         gravity_power           = 0.0d0
-        Dimensional_Reference = .true.  
+        Dimensional_Reference = .true.
         custom_reference_file ='nothing'
         custom_reference_type = 1
 
@@ -1070,7 +1070,7 @@ Contains
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
         If (allocated(ref%Heating)) DeAllocate(ref%Heating)
 
-  
+
     End Subroutine Restore_Reference_Defaults
 
 End Module ReferenceState

@@ -64,7 +64,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         If (compute_quantity(famom_fluct_theta)) Then
 
@@ -74,7 +74,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
 
         If (compute_quantity(famom_dr_r)) Then
@@ -85,7 +85,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         If (compute_quantity(famom_dr_theta)) Then
 
@@ -95,18 +95,18 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         !These need to be adjusted to handle non-dimensionalization
         If (compute_quantity(famom_mean_r)) Then
-            
+
             DO_PSI
                 qty(PSI) = ref%density(r)*((radius(r)*sintheta(t))**2) &
                     & *(m0_values(PSI2,vr)*Angular_Velocity)
             END_DO
 
             Call Add_Quantity(qty)
-        Endif 
+        Endif
 
         If (compute_quantity(famom_mean_theta)) Then
 
@@ -116,7 +116,7 @@ Contains
             END_DO
 
             Call Add_Quantity(qty)
-        Endif           
+        Endif
 
 
         If (compute_quantity(famom_diff_r)) Then
@@ -166,7 +166,7 @@ Contains
 
 
         Endif
-        
+
     End Subroutine Compute_Angular_Momentum_Fluxes
 
 End Module Diagnostics_Angular_Momentum
