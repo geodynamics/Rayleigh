@@ -34,17 +34,17 @@ Contains
     !    The following code snippets compute terms (that once averaged in longitude)        !
     !   appear on the right hand side of the turbulent kinetic energy equation.             !
     !                                                                                       !
-    !    (d/dt) [(rho_bar/2) <|u'|**2>] = B_T + P_T - Phi_T + div.F_T                       !
+    !    (d/dt) [(rho_bar/2) <|u'|**2>] = B_T + P_T - Phi_T - div.F_T                       !
     !                                                                                       !
     !    F_T = F_TP + F_TV + F_MA + F_TA                Transport Flux                      !
     !                                                                                       !
     !    B_T = (g rho_bar / c_p) <S' w'>                Buoyant Production                  !
-    !    P_T = -rho_bar <u'u'> : <e>                Shear Production                        !
+    !    P_T = -rho_bar <u'u'> : <e>                    Shear Production                    !
     !    Phi_T = 2 rho_bar nu * [<e':e'> - (1/3) <(div.u')**2>]    Viscous Dissipation      !
-    !    F_TP = -<P'u'> +                      Pressure Transport                           !
-    !    F_TV = <sigma'.u'>                    Viscous Transport                            !
-    !    F_MA = -(1/2) rho_bar <|u'|**2> <u>            Advection by the Mean               !
-    !    F_TA = -(1/2) rho_bar <|u'|**2 u'>            Turbulent Advection                  !
+    !    F_TP = <P'u'> +                                Pressure Transport                  !
+    !    F_TV = -<sigma'.u'>                            Viscous Transport                   !
+    !    F_MA = (1/2) rho_bar <|u'|**2> <u>             Advection by the Mean               !
+    !    F_TA = (1/2) rho_bar <|u'|**2 u'>              Turbulent Advection                 !
     !                                                                                       !
     !   The means in the Reynolds decomposition are longitudinal averages.                  !
     !                                                                                       !
@@ -113,17 +113,20 @@ Contains
                     epp = one_over_rsin * fbuffer(PSI,dvpdp) + ctn_over_r * fbuffer(PSI,vtheta)    &
                         + one_over_r(r) * fbuffer(PSI,vr)
 
-                    ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
+                    ! The diagonal elements of the turbulent rate of strain tensor, e.g.,  ert = e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
                         + fbuffer(PSI,dvtdr)
+                    ert = 0.5D0 * ert 
                     erp = fbuffer(PSI,dvpdr) + one_over_rsin * fbuffer(PSI,dvrdp)        &
                         - one_over_r(r) * fbuffer(PSI,vphi)
+                    erp = 0.5D0 * erp 
                     etp = one_over_rsin * fbuffer(PSI,dvtdp) - ctn_over_r * fbuffer(PSI,vphi)    &
                         + one_over_r(r) * fbuffer(PSI,dvpdt)
+                    etp = 0.5D0 * etp 
 
                     ! First compute e'_ij e'_ij
                     qty(PSI) = err*err + ett*ett + epp*epp            ! Diagonal: e'_ii e'_ii
-                    qty(PSI) = qty(PSI) + 0.5D0*(ert*ert + erp*erp + etp*etp)    ! + Off-Diagonal
+                    qty(PSI) = qty(PSI) + 2D0*(ert*ert + erp*erp + etp*etp)    ! + Off-Diagonal
 
                     ! Next add -(1/3) (div.u)^2 & multiply by 2 rho_bar nu
                     divu = -ref%dlnrho(r) * fbuffer(PSI,vr)               ! Assume anelasticity
@@ -139,7 +142,7 @@ Contains
         !-------------------------------------
 
         ! Pressure Transport of turbulent kinetic energy.
-        !    div.F_TP = -div . (P' u')
+        !    -div.F_TP = -div . (P' u')
         If (compute_quantity(transport_pressure_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)*fbuffer(PSI,dpdr)
@@ -154,7 +157,7 @@ Contains
 
 
         ! Viscous Transport of turbulent kinetic energy.
-        !    div.F_TV = div.(sigma'.u') = (div.sigma').u' + Phi_T
+        !    -div.F_TV = div.(sigma'.u') = (div.sigma').u' + Phi_T
         If (compute_quantity(transport_viscous_pKE)) Then
             !Write(6,*)dvrdrdr, shape(d2_fbuffer)
             DO_PSI2
@@ -170,17 +173,20 @@ Contains
                     epp = one_over_rsin * fbuffer(PSI,dvpdp) + ctn_over_r * fbuffer(PSI,vtheta)    &
                         + one_over_r(r) * fbuffer(PSI,vr)
 
-                    ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
+                    ! The diagonal elements, e.g.,  ert = e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
                         + fbuffer(PSI,dvtdr)
+                    ert = 0.5D0 * ert
                     erp = fbuffer(PSI,dvpdr) + one_over_rsin * fbuffer(PSI,dvrdp)        &
                         - one_over_r(r) * fbuffer(PSI,vphi)
+                    erp = 0.5D0 * erp
                     etp = one_over_rsin * fbuffer(PSI,dvtdp) - ctn_over_r * fbuffer(PSI,vphi)    &
                         + one_over_r(r) * fbuffer(PSI,dvpdt)
+                    etp = 0.5D0 * etp
 
                     ! First compute e'_ij e'_ij
                     qty(PSI) = err*err + ett*ett + epp*epp            ! Diagonal: e'_ii e'_ii
-                    qty(PSI) = qty(PSI) + 0.5D0*(ert*ert + erp*erp + etp*etp)    ! + Off-Diagonal
+                    qty(PSI) = qty(PSI) + 2D0*(ert*ert + erp*erp + etp*etp)    ! + Off-Diagonal
 
                     ! Next add -(1/3) (div.u)^2 & multiply by 2 rho_bar nu
                     divu = -ref%dlnrho(r) * fbuffer(PSI,vr)               ! Assume anelasticity
@@ -238,7 +244,7 @@ Contains
 
 
         ! Turbulent Advective Transport of turbulent kinetic energy.
-        !    div.F_TA = -div . (1/2 rho_bar |u'|**2 u' ) = -(1/2) rho_bar (u'. grad) |u'|**2 = -rho_bar u'_i (u'. grad) u'_i
+        !    -div.F_TA = -div . (1/2 rho_bar |u'|**2 u' ) = -(1/2) rho_bar (u'. grad) |u'|**2 = -rho_bar u'_i (u'. grad) u'_i
         If (compute_quantity(transport_turbadvect_pKE)) Then
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
@@ -270,7 +276,7 @@ Contains
 
 
         ! Mean Advective Transport of turbulent kinetic energy.
-        !    div.F_MA = -div . (1/2 rho_bar |u'|**2 U ) = -(1/2) rho_bar (U.grad) |u'|**2 = -rho_bar u'_i (U . grad) u'_i
+        !    -div.F_MA = -div . (1/2 rho_bar |u'|**2 U ) = -(1/2) rho_bar (U.grad) |u'|**2 = -rho_bar u'_i (U . grad) u'_i
         If (compute_quantity(transport_meanadvect_pKE)) Then
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
@@ -336,17 +342,19 @@ Contains
                     ! Compute elements of the turbulent rate of strain tensor e'_ij
                     err = fbuffer(PSI,dvrdr)
 
-                    ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
+                    ! The diagonal elements, e.g.,  ert = e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
                         + fbuffer(PSI,dvtdr)
+                    ert = 0.5D0 * ert
                     erp = fbuffer(PSI,dvpdr) + one_over_rsin * fbuffer(PSI,dvrdp)        &
                         - one_over_r(r) * fbuffer(PSI,vphi)
+                    erp = 0.5D0 * erp
 
                     ! Radial component of the viscous stess contracted w/ the velocity: r_hat . sigma' . u'
                     divu = -ref%dlnrho(r) * fbuffer(PSI,vr)                       ! Assume anelasticity
-                    htmp1 = 2D0*err*fbuffer(PSI,vr) + ert*fbuffer(PSI,vtheta) + erp*fbuffer(PSI,vphi)
-                    htmp2 = 2D0*one_third * divu * fbuffer(PSI,vr)
-                    qty(PSI) = mu * (htmp1 - htmp2)
+                    htmp1 = 2D0 * (err*fbuffer(PSI,vr) + ert*fbuffer(PSI,vtheta) + erp*fbuffer(PSI,vphi))
+                    htmp2 = 2D0 * one_third * divu * fbuffer(PSI,vr)
+                    qty(PSI) = mu * (htmp2 - htmp1)
 
                 ENDDO
             END_DO2
@@ -367,17 +375,19 @@ Contains
                     err = fbuffer(PSI,dvrdr)
                     ett = one_over_r(r) * (fbuffer(PSI,dvtdt) + fbuffer(PSI,vr))
 
-                    ! Twice the diagonal elements, e.g.,  ert = 2 * e'_rt
+                    ! The diagonal elements, e.g.,  ert = e'_rt
                     ert = one_over_r(r) * (fbuffer(PSI,dvrdt) - fbuffer(PSI,vtheta))        &
                         + fbuffer(PSI,dvtdr)
+                    ert = 0.5D0 * ert
                     etp = one_over_rsin * fbuffer(PSI,dvtdp) - ctn_over_r * fbuffer(PSI,vphi)    &
                         + one_over_r(r) * fbuffer(PSI,dvpdt)
+                    etp = 0.5D0 * etp
 
                     ! Colatitudinal component of the viscous stess contracted w/ the velocity: theta_hat . sigma' . u'
                     divu = -ref%dlnrho(r) * fbuffer(PSI,vr)                     ! Assume anelasticity
-                    htmp1 = 2D0*ett*fbuffer(PSI,vtheta) + ert*fbuffer(PSI,vr) + etp*fbuffer(PSI,vphi)
-                    htmp2 = 2D0*one_third * divu * fbuffer(PSI,vtheta)
-                    qty(PSI) = mu * (htmp1 - htmp2)
+                    htmp1 = 2D0 * (ett*fbuffer(PSI,vtheta) + ert*fbuffer(PSI,vr) + etp*fbuffer(PSI,vphi))
+                    htmp2 = 2D0 * one_third * divu * fbuffer(PSI,vtheta)
+                    qty(PSI) = mu * (htmp2 - htmp1)
 
                 ENDDO
             END_DO2
@@ -397,11 +407,11 @@ Contains
 
 
         ! Colatitudinal Turbulent Advective Flux of turbulent kinetic energy.
-        !    theta_hat . F_TA = -1/2 rho_bar |u'|**2 u'_theta
+        !    theta_hat . F_TA = 1/2 rho_bar |u'|**2 u'_theta
         If (compute_quantity(thetaflux_turbadvect_pKE)) Then
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
-                qty(PSI) = -0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vtheta)
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vtheta)
             END_DO
             Call Add_Quantity(qty)
         Endif
