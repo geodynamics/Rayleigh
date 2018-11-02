@@ -492,6 +492,11 @@ class Point_Probes:
         self.phi_inds = np.reshape(swapread(fd,dtype='int32',count=nphi,swap=bs),(nphi), order = 'F')
 
 
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.rad_inds   = self.rad_inds - 1
+        self.theta_inds = self.theta_inds - 1
+        self.phi_inds   = self.phi_inds - 1
+
         #print 'rad inds: ', self.rad_inds
         #print 'theta inds: ', self.theta_inds
         #print 'phi_inds: ', self.phi_inds
@@ -572,6 +577,9 @@ class Meridional_Slices:
         self.phi_inds = np.reshape(swapread(fd,dtype='int32',count=nphi,swap=bs),(nphi), order = 'F')
         self.phi = np.zeros(nphi,dtype='float64')
       
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.phi_inds = self.phi_inds - 1
+
         dphi = (2*np.pi)/(ntheta*2)
         for i in range(nphi):
             self.phi[i] = self.phi_inds[i]*dphi
@@ -733,7 +741,7 @@ class Shell_Slices:
 
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
-        self.lut = get_lut(self.qv)
+        self.lut = get_lut(qv)
 
 
 
@@ -742,6 +750,9 @@ class Shell_Slices:
         inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.costheta = np.reshape(swapread(fd,dtype='float64',count=ntheta,swap=bs),(ntheta), order = 'F')
         self.sintheta = (1.0-self.costheta**2)**0.5
+
+        # convert from Fortran 1-based to Python 0-based indexing
+        inds = inds - 1
 
         if (len(slice_spec) == 3):
 
@@ -795,7 +806,7 @@ class Shell_Slices:
                 print(" Error: Quantity code not found")
                 print(" Specified quantity code: ", qind)
                 print(" Valid quantity codes: ")
-                print(" ", self.qv)
+                print(" ", qv)
                 print("---------------------------------------------------------")
                 print(" ")
                 error = True
@@ -895,6 +906,10 @@ class SPH_Modes:
         self.lvals = np.reshape(swapread(fd,dtype='int32',count=nell,swap=bs),(nell), order = 'F')
         lmax = np.max(self.lvals)
         nm = lmax+1
+
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.inds = self.inds - 1
+
         #print self.lvals
         #print lmax, nm
         #print self.inds
@@ -1024,6 +1039,10 @@ class Shell_Spectra:
         self.iters = np.zeros(nrec,dtype='int32')
         self.time  = np.zeros(nrec,dtype='float64')
         self.version = version
+
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.inds = self.inds - 1
+
         for i in range(nrec):
 
             tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
