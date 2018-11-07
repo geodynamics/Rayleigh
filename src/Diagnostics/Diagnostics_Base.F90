@@ -93,7 +93,7 @@ Module Diagnostics_Base
 
     !//////////////////////////////////////////////////////////
     !  Turbulent kinetic energy generation
-    Integer, Parameter :: turbke_offset = custom_offset+100
+    Integer, Parameter :: turbke_offset = custom_offset+500
 
 
     Integer, Parameter :: production_buoyant_pKE   = turbke_offset + 1    ! Buoyant Production of turbulent kinetic energy
