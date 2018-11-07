@@ -198,6 +198,32 @@ export FFTW_INC=/soft/libraries/alcf/current/xl/FFTW3/include
 --FFLAGS_DBG="-qfree=f90 -O0 -g -traceback  -qcheck  -C" \
 --nodirs
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III.f  Configuration on a Mac using brew package manager
+
+Perhaps the simplest way to compile Rayleigh on a Mac is to begin by installing
+the required compilers and libraries with Homebrew. Homebrew installs all the stuff
+you need that Apple didn't. To install Homebrew on your system, follow the instructions
+on this website: https://brew.sh/
+
+Next, install the GNU, MPI, and FFTW compilers and libraries with Homebrew as below.
+
+brew install gcc open-mpi fftw
+
+Working in a bash shell, the example below shows how to configure the code. To install
+Rayleigh, change the <install prefix> to an appropriate location on your machine.
+
+export FC=mpif90
+export CC=gcc
+export FFTWROOT=/usr/local
+export LAPACKROOT=/usr
+export BLASROOT=/usr
+export PREFIX=<installation prefix>
+
+./configure --FC=$FC --CC=$CC --with-fftw=$FFTWROOT --with-lapack=$LAPACKROOT --with-blas=$BLASROOT --prefix=$PREFIX
+make
+make install
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 IV
 
