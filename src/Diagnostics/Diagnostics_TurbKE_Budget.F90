@@ -375,7 +375,7 @@ Contains
         !    phi_hat . F_TP = P' u'_phi
         If (compute_quantity(phiflux_pressure_pKE)) Then
             DO_PSI
-                qty(PSI) = fbuffer(PSI,vp) * fbuffer(PSI,pvar)
+                qty(PSI) = fbuffer(PSI,vphi) * fbuffer(PSI,pvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
