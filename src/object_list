@@ -12,7 +12,7 @@ POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o BoundaryC
         Diagnostics_Velocity_Diffusion.o \
         Diagnostics_ADotGradB.o \
         Diagnostics_Velocity_Field.o Diagnostics_Magnetic_Field.o \
-        Diagnostics_Current_Density.o Diagnostics_Vorticity_Field.o \
+        Diagnostics_Current_Density.o Diagnostics_Vorticity_Field.o Diagnostics_Axial_Field.o \
         Diagnostics_Thermal_Energies.o Diagnostics_Thermal_Equation.o\
         Diagnostics_Thermodynamic_Gradients.o Diagnostics_Linear_Forces.o \
         Diagnostics_Energies.o \

@@ -67,9 +67,7 @@ Module Diagnostics_Base
     include "amom_equation_codes.F"
     include "ke_equation_codes.F"
     include "me_equation_codes.F"
-
-
-
+    
 
     ! We have some "known" outputs as well that allow us to verify that
     ! the spherical_io interface is functional
@@ -82,13 +80,16 @@ Module Diagnostics_Base
 
 
     !//////////////////////////////////////////////////////////
-    !  Custom Hydo Outputs:  range from 301 through 400
+    !  Custom Outputs:  range from ...
     Integer, Parameter :: custom_offset = dcheck_off+100 !2200
     Integer, Parameter :: cross_helicity      = custom_offset + 1 ! v dot B
     Integer, Parameter :: turb_cross_helicity = custom_offset+2
     Integer, Parameter :: ell0_vr = custom_offset+3
     Integer, Parameter :: ell0_tvar = custom_offset+4
     Integer, Parameter :: ell0_dpdr = custom_offset+5
+
+
+
 
     !//////////////////////////////////////////////////////////
     !  Turbulent kinetic energy generation
@@ -110,6 +111,8 @@ Module Diagnostics_Base
     Integer, Parameter :: thetaflux_viscous_pKE    = turbke_offset + 13    ! Colatitudinal Viscous Flux of turbulent kinetic energy
     Integer, Parameter :: thetaflux_turbadvect_pKE = turbke_offset + 14    ! Colatitudinal Turbulent Advective Flux of turbulent kinetic energy
     Integer, Parameter :: thetaflux_meanadvect_pKE = turbke_offset + 15    ! Colatitudinal Mean Advective Flux of turbulent kinetic energy
+
+    include "axial_field_codes.F"
 
 
     !///////////////////////////////////
