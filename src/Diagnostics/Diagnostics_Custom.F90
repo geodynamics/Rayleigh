@@ -1,23 +1,43 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 #include "indices.F"
 !///////////////////////////////////////////////////////////////////
 !               DIAGNOSTICS_CUSTOM
 !   This is where users can implement their own diagnostics
 !   Custom diagnostics are most easily formed using the contents of the buffer
-!   
+!
 !   That array is dimensioned as:
 !   buffer(1:n_phi+2, my_r%min:my_r%max, my_theta%min:my_theta%max,1:nvariables)
-! 
-!   The extra 2 in the first index is needed for the in-place FFTs.  Care should be taken
-!   to only loop over 1 to n_phi.   
 !
-!   Each index along the 4th dimension of buffer corresponds to a different variable.  
+!   The extra 2 in the first index is needed for the in-place FFTs.  Care should be taken
+!   to only loop over 1 to n_phi.
+!
+!   Each index along the 4th dimension of buffer corresponds to a different variable.
 !   These indices (left) and the variables they correspond to (right) are given below.
 !
 ! Field variables:
 !   vr      -- radial velocity
 !   vtheta  -- theta velocity
 !   vphi    -- phi velocity
-!   tvar    -- temperature or entropy 
+!   tvar    -- temperature or entropy
 !   pvar    -- pressure
 !   zvar    -- l(l+1)*Z/r^2  where Z is the toroidal streamfunction
 !
@@ -95,7 +115,7 @@ Contains
 
         If (compute_quantity(cross_helicity)) Then
             !Note the call to compute_quantity. This must always be done before adding a diagnostic.
-            !The function compute_quantity peforms two functions: 
+            !The function compute_quantity peforms two functions:
             !   1.  It returns True or False based on whether or not it's time to
             !       output this particular diagnostic.
             !   2.  It sets internal flags in the IO module that allow us to add the diagnostic.
@@ -107,8 +127,8 @@ Contains
             ! After we have assigned values to qty, we have to send that quantity to the IO
             ! module for processing (slicing, averaging, etc.)
             ! This is done with a call to Add_quantity as below.
-            Call Add_Quantity(qty)  
-        Endif        
+            Call Add_Quantity(qty)
+        Endif
 
         !  TUTORIAL EXAMPLE 2:
         !   Quantities in fbuffer are identical to those in buffer except
@@ -118,7 +138,7 @@ Contains
         !   a simple modification to the code above:
         If (compute_quantity(turb_cross_helicity)) Then
             !Note the call to compute_quantity. This must always be done before adding a diagnostic.
-            !The function compute_quantity peforms two functions: 
+            !The function compute_quantity peforms two functions:
             !   1.  It returns True or False based on whether or not it's time to
             !       output this particular diagnostic.
             !   2.  It sets internal flags in the IO module that allow us to add the diagnostic.
@@ -130,8 +150,8 @@ Contains
             ! After we have assigned values to qty, we have to send that quantity to the IO
             ! module for processing (slicing, averaging, etc.)
             ! This is done with a call to Add_quantity as below.
-            Call Add_Quantity(qty)  
-        Endif  
+            Call Add_Quantity(qty)
+        Endif
 
 
         !NOTE: we have made use of the macros defined at the top of this file.
@@ -147,7 +167,7 @@ Contains
         !    Enddo
         ! Enddo
         !
-        ! We highly encourage you to use the PSI macros.  
+        ! We highly encourage you to use the PSI macros.
         ! Doing so tends to lead to fewer bugs.
 
 
@@ -173,19 +193,19 @@ Contains
         Real*8 :: htmp1, htmp2, htmp3   ! temporary variables for use if needed
 
         ! Tutorial Exercise 2:
-        !   Uncomment and modify the code below to assign 
+        !   Uncomment and modify the code below to assign
         !   v dot grad {T or S} to qty and add it to the outputs.
         !
-        !   Note that dtdp and dtdt contain {1/r} d{T or S}/dphi 
+        !   Note that dtdp and dtdt contain {1/r} d{T or S}/dphi
         !   and {1/r} d {T or S}/dtheta respectively (see comments at the top).
         !
-        !   We begin by defining the phi-advection piece, 
+        !   We begin by defining the phi-advection piece,
         !   but note that this isn't added to the outputs yet.
         !
-        !   You will need to mimic the compute_quantity/add_quantity 
+        !   You will need to mimic the compute_quantity/add_quantity
         !   logic from custom_mhd_diagnostics to make this work.
 
-        !DO_PSI              
+        !DO_PSI
         !    qty(PSI) = wsp%p3a(PSI,vphi)*wsp%p3a(PSI,dtdp)*csctheta(t)  ! note
         !END_DO
 

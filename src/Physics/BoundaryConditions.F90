@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module BoundaryConditions
     Use Math_Constants
     Use ProblemSize
@@ -17,7 +37,7 @@ Module BoundaryConditions
     Logical :: Fix_poloidalfield_bottom = .False.
     Logical :: Impose_Dipole_Field = .False.
     Logical :: fix_tdt_bottom = .false.
- 
+
     Real*8  :: T_Bottom     = 1.0d0
     Real*8  :: T_Top        = 0.0d0
     Real*8  :: dTdr_Top     = 0.0d0
@@ -101,7 +121,7 @@ Contains
         Fix_poloidalfield_bottom = .False.
         Impose_Dipole_Field      = .False.
         fix_tdt_bottom           = .False.
-         
+
         T_Bottom     = 1.0d0
         T_Top        = 0.0d0
         dTdr_Top     = 0.0d0
@@ -116,6 +136,6 @@ Contains
         Dipole_Tilt_Degrees = 0.0d0
 
         Strict_L_Conservation = .false.
-        no_slip_boundaries = .false. 
+        no_slip_boundaries = .false.
     End Subroutine Restore_BoundaryCondition_Defaults
 End Module BoundaryConditions

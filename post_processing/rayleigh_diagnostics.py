@@ -1,9 +1,38 @@
+#
+#  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+#
+#  This file is part of RAYLEIGH.
+#
+#  RAYLEIGH is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3, or (at your option)
+#  any later version.
+#
+#  RAYLEIGH is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with RAYLEIGH; see the file LICENSE.  If not see
+#  <http://www.gnu.org/licenses/>.
+#
+
 from __future__ import print_function
 import numpy as np
 import os
 import glob
 
 maxq = 4000
+
+def get_lut(quantities):
+    """return the lookup table based on the quantity codes"""
+    nq = len(quantities)
+    lut = np.zeros(maxq) + maxq
+    for i,q in enumerate(quantities):
+        if ((0 <= q) and ( q <= maxq-1)): # quantity must be in [0, maxq-1]
+            lut[q] = i
+    return lut.astype('int32')
 
 class Spherical_3D:
     """Rayleigh Spherical_3D Structure
@@ -252,10 +281,7 @@ class G_Avgs:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 class Shell_Avgs:
@@ -334,10 +360,7 @@ class Shell_Avgs:
                 print('The 2nd, 3rd and 4th moments are set to zero')   
                 self.vals[:,1,:,:] = 0.0            
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 class AZ_Avgs:
@@ -397,10 +420,7 @@ class AZ_Avgs:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 class Point_Probes:
@@ -472,6 +492,11 @@ class Point_Probes:
         self.phi_inds = np.reshape(swapread(fd,dtype='int32',count=nphi,swap=bs),(nphi), order = 'F')
 
 
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.rad_inds   = self.rad_inds - 1
+        self.theta_inds = self.theta_inds - 1
+        self.phi_inds   = self.phi_inds - 1
+
         #print 'rad inds: ', self.rad_inds
         #print 'theta inds: ', self.theta_inds
         #print 'phi_inds: ', self.phi_inds
@@ -494,10 +519,7 @@ class Point_Probes:
         #print 'iters: ', self.iters
         #print 'times: ', self.time
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -555,6 +577,9 @@ class Meridional_Slices:
         self.phi_inds = np.reshape(swapread(fd,dtype='int32',count=nphi,swap=bs),(nphi), order = 'F')
         self.phi = np.zeros(nphi,dtype='float64')
       
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.phi_inds = self.phi_inds - 1
+
         dphi = (2*np.pi)/(ntheta*2)
         for i in range(nphi):
             self.phi[i] = self.phi_inds[i]*dphi
@@ -570,10 +595,7 @@ class Meridional_Slices:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -637,10 +659,7 @@ class Equatorial_Slices:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -722,11 +741,7 @@ class Shell_Slices:
 
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
-        lut_max = 1000
-        lut = np.zeros(maxq)+int(lut_max)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(qv):
-            self.lut[q] = i
+        self.lut = get_lut(qv)
 
 
 
@@ -735,6 +750,9 @@ class Shell_Slices:
         inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.costheta = np.reshape(swapread(fd,dtype='float64',count=ntheta,swap=bs),(ntheta), order = 'F')
         self.sintheta = (1.0-self.costheta**2)**0.5
+
+        # convert from Fortran 1-based to Python 0-based indexing
+        inds = inds - 1
 
         if (len(slice_spec) == 3):
 
@@ -788,7 +806,7 @@ class Shell_Slices:
                 print(" Error: Quantity code not found")
                 print(" Specified quantity code: ", qind)
                 print(" Valid quantity codes: ")
-                print(" ", self.qv)
+                print(" ", qv)
                 print("---------------------------------------------------------")
                 print(" ")
                 error = True
@@ -798,7 +816,7 @@ class Shell_Slices:
                 fd.close()
                 return
 
-            self.lut[:] = lut_max
+            self.lut[:] = maxq
             self.lut[qspec] = 0
             slice_size  = ntheta*nphi*8
             qsize       = nr*slice_size
@@ -888,6 +906,10 @@ class SPH_Modes:
         self.lvals = np.reshape(swapread(fd,dtype='int32',count=nell,swap=bs),(nell), order = 'F')
         lmax = np.max(self.lvals)
         nm = lmax+1
+
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.inds = self.inds - 1
+
         #print self.lvals
         #print lmax, nm
         #print self.inds
@@ -928,10 +950,7 @@ class SPH_Modes:
                             self.vals[m,:,j,q,k] = self.vals[m,:,j,q,k]/sqrttwo
 
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
 
@@ -1020,6 +1039,10 @@ class Shell_Spectra:
         self.iters = np.zeros(nrec,dtype='int32')
         self.time  = np.zeros(nrec,dtype='float64')
         self.version = version
+
+        # convert from Fortran 1-based to Python 0-based indexing
+        self.inds = self.inds - 1
+
         for i in range(nrec):
 
             tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
@@ -1042,10 +1065,7 @@ class Shell_Spectra:
                             self.vals[:,m,j,q,k] = self.vals[:,m,j,q,k]/sqrttwo
 
 
-        lut = np.zeros(maxq)+int(1000)
-        self.lut = lut.astype('int32')
-        for i,q in enumerate(self.qv):
-            self.lut[q] = i
+        self.lut = get_lut(self.qv)
         fd.close()
 
         self.lpower  = np.zeros((nell,nr,nq,nrec,3),dtype='float64')

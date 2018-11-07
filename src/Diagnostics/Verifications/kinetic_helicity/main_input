@@ -1,0 +1,65 @@
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.35d0
+ shell_depth = 1.0d0
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ benchmark_mode = 1
+ benchmark_integration_interval = 100
+ benchmark_report_interval = 5000
+ rotation  = .True.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 1.0d-4
+ max_iterations = 40000
+ checkpoint_interval = 100000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+
+meridional_values    = 324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,1,2,3,4,5,6,7,8,9,301,302,303,304,305,306,307,308,309
+meridional_frequency = 10
+meridional_nrec      = 10
+meridional_indices_nrm = 0.7
+
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+dtdr_bottom = 0.0d0
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 1    ! Benchmark init
+temp_amp = 1.0d1
+temp_w = 0.01d4
+restart_iter = -1
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 1.0d5
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/

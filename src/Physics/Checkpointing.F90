@@ -1,3 +1,23 @@
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
 Module Checkpointing
     Use Timers, Only : stopwatch
     Use ProblemSize
@@ -28,7 +48,7 @@ Module Checkpointing
 
     Integer :: checkpoint_iter = 0
     Real*8 :: checkpoint_dt, checkpoint_newdt
-    Real*8 :: checkpoint_time 
+    Real*8 :: checkpoint_time
     !//////////////////////////
     ! New variables for new checkpointing style
     Integer :: Noutputs_per_row, Nradii_per_output
@@ -43,7 +63,7 @@ Module Checkpointing
     Real*8  :: checkpoint_t0 = 0.0d0
     Real*8  :: checkpoint_elapsed = 0.0d0  ! Time elapsed since checkpoint_t0
     Real*8  :: quicksave_seconds = -1  ! Time between quick saves
-    
+
     Type(Cheby_Transform_Interface) :: cheby_info
 Contains
 
@@ -53,7 +73,7 @@ Contains
         Implicit None
         Integer :: nfs(6)
         Integer :: p, np, nl, m, mp, rextra
-        checkpoint_t0 = stopwatch(walltime)%elapsed 
+        checkpoint_t0 = stopwatch(walltime)%elapsed
         If (check_frequency .gt. 0) Then
             !this is for backwards compatibility
             !If specified, use check_frequency
@@ -84,7 +104,7 @@ Contains
         !Write(6,*)'NPOUT: ', npout
         Noutputs_per_row = npout! # of processors outputting within row
         If (Noutputs_per_row .gt. my_r%delta) Then
-            Noutputs_per_row = my_r%delta        
+            Noutputs_per_row = my_r%delta
         Endif
         If (Noutputs_per_row .gt. nprow) Then
                 Noutputs_per_row = nprow
@@ -93,7 +113,7 @@ Contains
         rextra = Mod(my_r%delta,Noutputs_per_row)           ! Remainder
         Allocate(nradii_at_rank(0:Noutputs_per_row-1))    ! Number of radii output by each rank
         Allocate(rstart_at_rank(0:Noutputs_per_row-1))    ! First radial index (local) this rank receives
-        Do p = 0, Noutputs_per_row -1 
+        Do p = 0, Noutputs_per_row -1
             Nradii_at_rank(p) = Nradii_per_output
             If (rextra .gt. 0) Then
                 If (p .lt. rextra) Then
@@ -115,12 +135,12 @@ Contains
         Allocate(mode_count(0:np-1))
         mode_count(:)  = 0    ! This is how many total l-m combinations rank p of a row owns
 
-        
-        
+
+
         nlm_total = 0            ! This is the total number of l-m combinations
         Do p = 0, np -1
             Do mp = pfi%all_3s(p)%min, pfi%all_3s(p)%max
-                m = m_values(mp)            
+                m = m_values(mp)
                 nl = l_max-m+1
                 mode_count(p) = mode_count(p)+nl
                 nlm_total = nlm_total+nl
@@ -175,7 +195,7 @@ Contains
         ! Next, each process stripes their s2a array into a true 2-D array
         dim2 = tnr*numfields*2
         Allocate(myarr(1:mode_count(my_row_rank),1:dim2))
-        offset =1 
+        offset =1
         Do mp = my_mp%min, my_mp%max
                 m = m_values(mp)
                 nl = l_max-m+1
@@ -193,7 +213,7 @@ Contains
         Enddo
         Call chktmp%deconstruct('s2a')
 
-        ! Everyone sends to then 0 process of each row, who organizes the data into one large strip for output.        
+        ! Everyone sends to then 0 process of each row, who organizes the data into one large strip for output.
 
 
         If (my_row_rank .ne. 0) Then
@@ -209,7 +229,7 @@ Contains
                 m = m_values(mp)
                 nl = l_max-m+1
                 lstart = lmstart(m)
-                rowstrip(lstart:lstart+nl-1,:) = myarr(offset:offset+nl-1,:)                
+                rowstrip(lstart:lstart+nl-1,:) = myarr(offset:offset+nl-1,:)
                 offset = offset+nl
             Enddo
             DeAllocate(myarr)
@@ -222,9 +242,9 @@ Contains
                         m = m_values(mp)
                         nl = l_max-m+1
                         lstart = lmstart(m)
-                        rowstrip(lstart:lstart+nl-1,:) = myarr(offset:offset+nl-1,:)                
+                        rowstrip(lstart:lstart+nl-1,:) = myarr(offset:offset+nl-1,:)
                         offset = offset+nl
-                    Enddo                                        
+                    Enddo
                     DeAllocate(myarr)
             Enddo
                 If (ItIsTimeForAQuickSave) Then
@@ -302,7 +322,7 @@ Contains
             Endif
         Endif
 
-        
+
     End Subroutine Write_Checkpoint
 
     Subroutine Read_Checkpoint(fields, abterms,iteration,read_pars)
@@ -350,8 +370,8 @@ Contains
                 Else
                     !Not a quicksave
                     old_pars(4) = last_iter
-                    Write(iterstring,'(i8.8)') last_iter  
-                    checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)                
+                    Write(iterstring,'(i8.8)') last_iter
+                    checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
                 Endif
 
                 Close(15)
@@ -362,8 +382,8 @@ Contains
                     Write(autostring,'(i2.2)')-checkpoint_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
             Else
-                Write(iterstring,'(i8.8)') iteration 
-                checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)   
+                Write(iterstring,'(i8.8)') iteration
+                checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
             Endif
 
 
@@ -385,10 +405,10 @@ Contains
                 Read(15)Checkpoint_iter
                 old_pars(4) = Checkpoint_iter
             Endif
-            Close(15)        
-    
+            Close(15)
+
             write(dstring,dofmt)checkpoint_time
-            call stdout%print(' ------ Checkpoint time is: '//trim(dstring)) 
+            call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
             old_pars(1) = n_r_old
             old_pars(2) = grid_type_old
             old_pars(3) = l_max_old
@@ -441,11 +461,11 @@ Contains
             checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
         Else
             !The prefix should reflect that this is a normal checkpoint file
-            Write(iterstring,'(i8.8)') checkpoint_iter  
-            checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)   
+            Write(iterstring,'(i8.8)') checkpoint_iter
+            checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
         Endif
 
-    
+
         !///////// Later we only want to do this if the grid is actually different
         If (my_rank .ne. 0) Then
             Allocate(old_radius(1:n_r_old))
@@ -482,8 +502,11 @@ Contains
 
 
         ! Rank zero from each row participates in the read
+        ! Rank zero within each row is responsible for reading in all l-m combinations
+        ! for the subset of radii that its row is responsible for
         If (my_row_rank .eq. 0) Then
             !If (nr_read .gt. 0) Then    ! SMALL BUG HERE RELATED TO MPI_IO Logic... -- Revist this
+
 
 
                 ! Column zero reads in the old checkpoint no matter what
@@ -506,14 +529,17 @@ Contains
                     my_in_disp = my_in_disp+pfi%all_1p(p-1)%delta
                 enddo
 
-                my_in_disp = my_in_disp*nlm_total_old 
+                my_in_disp = my_in_disp*nlm_total_old
                 full_in_disp = nlm_total_old*n_r_old
-            
 
-                Allocate( rowstrip(1:nlm_total_old, 1:tnr*numfields*2))    
+                ! tnr is the number of radial points for this row x 2 (for complex values)
+                ! In addition to holding each of the 4 (or 6 in MHD) fields, the rowstrip
+                ! array will also hold the Adams-Bashforth arrays associated with each field
+                ! (hence the ADDITIONAL factor of 2 below).
+                Allocate( rowstrip(1:nlm_total_old, 1:tnr*numfields*2))
                 rowstrip(:,:) = 0
 
-                If (read_hydro .eq. 1) Then                
+                If (read_hydro .eq. 1) Then
                     Call Read_Field(rowstrip,1,wchar, iteration,nr_read,nlm_total_old)
                     Call Read_Field(rowstrip,2,pchar, iteration,nr_read,nlm_total_old)
                     Call Read_Field(rowstrip,3,tchar, iteration,nr_read,nlm_total_old)
@@ -542,7 +568,7 @@ Contains
                 Endif
 
                 ! Now the head of each row owns all modes of each field at the
-                ! radii owned by that row.  The different modes now need to be 
+                ! radii owned by that row.  The different modes now need to be
                 ! distributed to their respect owners.
                 ! This is where horizontal interpolation or truncation is done (implicitly)
                 ! by only loading  appropriate modes into the send arrays
@@ -562,7 +588,7 @@ Contains
                 maxl = min(l_max,l_max_old)    ! Take care to only read in modes that are common
                                                         ! to the checkpoint & and the current simulation
 
-                ! First, each row-head pulls out their own modes            
+                ! First, each row-head pulls out their own modes
                 Do mp = my_mp%min, my_mp%max
                     m = m_values(mp)
                     chktmp%s2b(mp)%data(:,:,:,:) = 0.0d0
@@ -594,10 +620,10 @@ Contains
                             If (m .le. l_max_old) Then
                                 nl_load = maxl-m+1
                                 lstart = lmstart_old(m)
-                                sendarr(offset:offset+nl_load-1,:)    = rowstrip(lstart:lstart+nl_load-1,:)             
+                                sendarr(offset:offset+nl_load-1,:)    = rowstrip(lstart:lstart+nl_load-1,:)
                             Endif
                             offset = offset+nl
-                        Enddo                                        
+                        Enddo
                    Call send(sendarr, dest= p,tag=checkpoint_tag,grp = pfi%rcomm)
                         DeAllocate(sendarr)
                 Enddo
@@ -606,12 +632,12 @@ Contains
                 DeAllocate(lmstart_old)
                 DeAllocate(rowstrip)
             !Endif
-        Else            
+        Else
             ! Receive my modes
             !If (nr_read .gt. 0) Then
                 Allocate(myarr(1:mode_count(my_row_rank),1:dim2))
                 Call receive(myarr, source= 0,tag=checkpoint_tag,grp = pfi%rcomm)
-                offset =1 
+                offset =1
                 Do mp = my_mp%min, my_mp%max
                     m = m_values(mp)
                     nl = l_max-m+1
@@ -636,7 +662,7 @@ Contains
 
 
 
-        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and 
+        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
         ! fields.  Otherwise, we need to interpolate onto the current grid
         If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
             ! Interpolate
@@ -653,7 +679,7 @@ Contains
                 If (n_r_old .lt. n_r) Then
 
                     ! The fields are OK - they are already in chebyshev space
-                    fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields) 
+                    fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
 
                     ! The AB terms are stored in physical space (in radius).
                     ! They need to be transformed, coefficients copied, and transformed back..
@@ -678,9 +704,9 @@ Contains
                         chktmp2%p1a(1:n_r_old,:,:,i) = tempfield2(1:n_r_old,:,:,1)
                     Enddo
                     DeAllocate(tempfield1,tempfield2)
-                    
- 
-                    Call chktmp2%construct('p1b')                  
+
+
+                    Call chktmp2%construct('p1b')
                     !Normal transform(p1a,p1b)
                     Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
 
@@ -694,7 +720,7 @@ Contains
                 Write(6,*)'Interpolation for FD not supported yet'
             Endif
         Else
-        
+
             ! Interpolation is complete, now we just copy into the other arrays
             fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
             abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
@@ -715,13 +741,13 @@ Contains
                 Character*120 :: cfile
 
                 integer ierr, funit , v_offset1, v_offset2
-                integer(kind=MPI_OFFSET_KIND) disp1,disp2 
+                integer(kind=MPI_OFFSET_KIND) disp1,disp2
                 Integer :: mstatus(MPI_STATUS_SIZE)
 
 
 
                 cfile = Trim(my_path)//Trim(checkpoint_prefix)//'_'//Trim(tag)
-                 ! We have to be careful here.  Each processor does TWO writes. 
+                 ! We have to be careful here.  Each processor does TWO writes.
                 ! The first write places the real part of the field into the file.
                 ! The view then changes and advances to the appropriate location of the
                 ! imaginary part.  This step is crucial for checkpoints to work with
@@ -729,9 +755,9 @@ Contains
                  v_offset1 = (ind-1)*tnr+1
                 v_offset2 = v_offset1+my_r%delta
 
-                call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
-                       MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-                       MPI_INFO_NULL, funit, ierr) 
+                call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
+                       MPI_MODE_WRONLY + MPI_MODE_CREATE, &
+                       MPI_INFO_NULL, funit, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Opening File: ', pfi%ccomm%rank
                 Endif
@@ -744,8 +770,8 @@ Contains
                 If (ierr .ne. 0) Write(6,*)'Error Seeking 1: ', pfi%ccomm%rank
 
 
-                Call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
+                Call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, &
+                        mstatus, ierr)
                 If (ierr .ne. 0) Write(6,*)'Error Writing 1: ', pfi%ccomm%rank
 
 
@@ -753,18 +779,18 @@ Contains
                 If (ierr .ne. 0) Write(6,*)'Error Seeking 2: ', pfi%ccomm%rank
 
 
-                Call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
+                Call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, &
+                        mstatus, ierr)
                 If (ierr .ne. 0) Write(6,*)'Error Writing 2: ', pfi%ccomm%rank
 
 
-                Call MPI_FILE_CLOSE(funit, ierr) 
+                Call MPI_FILE_CLOSE(funit, ierr)
                 if (ierr .ne. 0) Write(6,*)'Error Closing File: ', pfi%ccomm%rank
 
-                 
 
-                                      
-                                          
+
+
+
     End Subroutine Write_Field
 
 
@@ -781,18 +807,18 @@ Contains
         Character*120 :: cfile
         Integer ::bsize_in
         integer ierr, funit , v_offset1, v_offset2
-        integer(kind=MPI_OFFSET_KIND) disp1,disp2 
+        integer(kind=MPI_OFFSET_KIND) disp1,disp2
         Integer :: mstatus(MPI_STATUS_SIZE)
         !write(iterstring,'(i8.8)') iter
         !cfile = Trim(my_path)//'Checkpoints/'//trim(iterstring)//'_'//trim(tag)
         cfile = Trim(checkpoint_prefix)//'_'//trim(tag)
-  
+
         v_offset1 = (ind-1)*tnr+1
         v_offset2 = v_offset1+my_r%delta
 
-        call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
-        MPI_MODE_RDONLY, & 
-        MPI_INFO_NULL, funit, ierr) 
+        call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
+        MPI_MODE_RDONLY, &
+        MPI_INFO_NULL, funit, ierr)
             if (ierr .ne. 0) Then
                 Write(6,*)'Error opening: ', pfi%ccomm%rank
             Endif
@@ -801,28 +827,28 @@ Contains
        ! If (nread .gt. 0) Then     !!! SET_VIEW OR _READ ARE BLOCKING APPRENTLY?...
             disp1 = my_in_disp*8
             disp2 = (my_in_disp+full_in_disp)*8
-            call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, & 
-                MPI_DOUBLE_PRECISION, 'native', & 
-                MPI_INFO_NULL, ierr) 
+            call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &
+                MPI_DOUBLE_PRECISION, 'native', &
+                MPI_INFO_NULL, ierr)
             if (ierr .ne. 0) Then
                 Write(6,*)'Error setting view1: ', pfi%ccomm%rank
             Endif
             If (nread .gt. 0) Then
-            call MPI_FILE_READ(funit, arr(1,v_offset1), bsize_in, MPI_DOUBLE_PRECISION, & 
-            mstatus, ierr) 
+            call MPI_FILE_READ(funit, arr(1,v_offset1), bsize_in, MPI_DOUBLE_PRECISION, &
+            mstatus, ierr)
             if (ierr .ne. 0) Then
                 Write(6,*)'Error reading1: ', pfi%ccomm%rank
             Endif
             Endif
-            call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, & 
-                MPI_DOUBLE_PRECISION, 'native', & 
-                MPI_INFO_NULL, ierr) 
+            call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, &
+                MPI_DOUBLE_PRECISION, 'native', &
+                MPI_INFO_NULL, ierr)
             if (ierr .ne. 0) Then
                 Write(6,*)'Error setting view2: ', pfi%ccomm%rank
             Endif
             If (nread .gt. 0) Then
-            call MPI_FILE_READ(funit, arr(1,v_offset2), bsize_in, MPI_DOUBLE_PRECISION, & 
-            mstatus, ierr) 
+            call MPI_FILE_READ(funit, arr(1,v_offset2), bsize_in, MPI_DOUBLE_PRECISION, &
+            mstatus, ierr)
             if (ierr .ne. 0) Then
                 Write(6,*)'Error reading2: ', pfi%ccomm%rank
             Endif
@@ -832,8 +858,8 @@ Contains
             If (my_rank .eq. 0) Then
                 Write(6,*)'File read error.  Associated array will contain only zeroes: ', cfile
             Endif
-        Endif                     
-        call MPI_FILE_CLOSE(funit, ierr)    
+        Endif
+        call MPI_FILE_CLOSE(funit, ierr)
         if (ierr .ne. 0) Then
                 Write(6,*)'Error closing file: ', pfi%ccomm%rank
         Endif
@@ -848,7 +874,7 @@ Contains
         If (Mod(iter,checkpoint_interval) .eq. 0) Then
             ItIsTimeForACheckpoint = .true.
             checkpoint_t0 = checkpoint_elapsed      ! quicksaves not written
-            checkpoint_elapsed = 0.0d0          
+            checkpoint_elapsed = 0.0d0
             !If the long interval check is satisfied, nothing,
             ! nothing related to the short interval is executed.
         Else
@@ -858,7 +884,7 @@ Contains
 
             If (quicksave_interval .gt. 0) Then
                 If (Mod(iter,quicksave_interval) .eq. 0) Then
-                    ItIsTimeForACheckpoint = .true. 
+                    ItIsTimeForACheckpoint = .true.
                     ItIsTimeForAQuickSave = .true.
                     quicksave_num = quicksave_num+1
                     quicksave_num = Mod(quicksave_num,num_quicksaves)
@@ -871,8 +897,8 @@ Contains
                 If (checkpoint_elapsed .gt. quicksave_seconds) Then
 
                     checkpoint_t0 = global_msgs(2)
-                    checkpoint_elapsed = 0.0d0          
-                    ItIsTimeForACheckpoint = .true. 
+                    checkpoint_elapsed = 0.0d0
+                    ItIsTimeForACheckpoint = .true.
                     ItIsTimeForAQuickSave = .true.
                     quicksave_num = quicksave_num+1
                     quicksave_num = Mod(quicksave_num,num_quicksaves)
@@ -882,7 +908,7 @@ Contains
             Endif
 
         Endif
-    End Subroutine 
+    End Subroutine
 
     Subroutine Write_Spectral_Field3D(arrin,ind,tag)
         ! Parallel Writing Routine For Fields in Spectral rlm configuration
@@ -905,8 +931,8 @@ Contains
                 Character*3, Intent(In) :: tag
                 Character*120 :: cfile
 
-                integer ierr, funit 
-                integer(kind=MPI_OFFSET_KIND) disp1,disp2 
+                integer ierr, funit
+                integer(kind=MPI_OFFSET_KIND) disp1,disp2
                 Integer :: mstatus(MPI_STATUS_SIZE)
             cfile = Trim(checkpoint_prefix)//'_'//trim(tag)
 
@@ -915,7 +941,7 @@ Contains
         If (I_Will_Output) Then
             my_nrad = nradii_at_rank(my_row_rank)
             Allocate( arr(1:nlm_total,1:my_nrad,2))
-            Allocate(tarr(1:nlm_total*my_nrad))        
+            Allocate(tarr(1:nlm_total*my_nrad))
 
             nrirq = nprow-1
             Allocate(rirqs(1:nrirq))
@@ -950,7 +976,7 @@ Contains
                 Enddo
 
 
-                ! Post sends to all output processes in my row    
+                ! Post sends to all output processes in my row
                 irq_ind = 1
                 Do p = 0, Noutputs_per_Row-1
                     If (p .ne. my_row_rank) Then
@@ -975,15 +1001,15 @@ Contains
                         m = m_values(mp)
                         nl = l_max-m+1
                         lstart = lmstart(m)
-                        arr(lstart:lstart+nl-1,r,i) = tarr(offset:offset+nl-1)                
+                        arr(lstart:lstart+nl-1,r,i) = tarr(offset:offset+nl-1)
                         offset = offset+nl
-                    Enddo                                        
                     Enddo
-                Enddo                
+                    Enddo
+                Enddo
 
                 Call IWaitAll(nsirq, sirqs)
 
-                
+
             Enddo
             DeAllocate(sirqs)
             DeAllocate(tarr)
@@ -994,42 +1020,42 @@ Contains
 
 
 
-             ! We have to be careful here.  Each processor does TWO writes. 
+             ! We have to be careful here.  Each processor does TWO writes.
             ! The first write places the real part of the field into the file.
             ! The view then changes and advances to the appropriate location of the
             ! imaginary part.  This step is crucial for checkpoints to work with
-            ! Different processor configurations.   The Real stuff sits at the 
+            ! Different processor configurations.   The Real stuff sits at the
             ! Beginning of the file.  The imaginary stuff sits at the end.
 
 
             !///// NEED TO SET THESE DISPLACEMENTS
 
-            Call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
-                MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-            MPI_INFO_NULL, funit, ierr) 
+            Call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
+                MPI_MODE_WRONLY + MPI_MODE_CREATE, &
+            MPI_INFO_NULL, funit, ierr)
             disp1 = my_check_disp2*8
             disp2 = (my_check_disp2+full_disp)*8
 
             Call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &     ! Real part
-              MPI_DOUBLE_PRECISION, 'native', & 
-              MPI_INFO_NULL, ierr) 
-            Call MPI_FILE_WRITE(funit, arr(1,1,1), buffsize2, MPI_DOUBLE_PRECISION, & 
-              mstatus, ierr) 
+              MPI_DOUBLE_PRECISION, 'native', &
+              MPI_INFO_NULL, ierr)
+            Call MPI_FILE_WRITE(funit, arr(1,1,1), buffsize2, MPI_DOUBLE_PRECISION, &
+              mstatus, ierr)
 
             Call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, &     ! Imaginary part
-              MPI_DOUBLE_PRECISION, 'native', & 
-              MPI_INFO_NULL, ierr) 
-            Call MPI_FILE_WRITE(funit, arr(1,1,2), buffsize2, MPI_DOUBLE_PRECISION, & 
-              mstatus, ierr) 
+              MPI_DOUBLE_PRECISION, 'native', &
+              MPI_INFO_NULL, ierr)
+            Call MPI_FILE_WRITE(funit, arr(1,1,2), buffsize2, MPI_DOUBLE_PRECISION, &
+              mstatus, ierr)
 
-            Call MPI_FILE_CLOSE(funit, ierr) 
+            Call MPI_FILE_CLOSE(funit, ierr)
 
 
             !////////////////////////////////
             DeAllocate(arr)
         Else
             ! This rank does not output
-            ! Post sends to all output processes in my row    
+            ! Post sends to all output processes in my row
             nsirq = Noutputs_per_row
             Allocate(sirqs(1:nsirq))
 
@@ -1047,7 +1073,7 @@ Contains
 
                 Call IWaitAll(nsirq, sirqs)
 
-                
+
             Enddo
             DeAllocate(sirqs)
         Endif
@@ -1080,7 +1106,7 @@ Contains
         ! Next, each process stripes their s2a array into a true 2-D array
         dim2 = tnr*numfields*2
         Allocate(myarr(1:mode_count(my_row_rank),1:dim2))
-        offset =1 
+        offset =1
         Do mp = my_mp%min, my_mp%max
                 m = m_values(mp)
                 nl = l_max-m+1
@@ -1171,7 +1197,7 @@ Contains
         Endif
 
 
-        
+
     End Subroutine Write_Checkpoint_Alt
 
     Subroutine Read_Spectral_Field3D(arrin,ind,tag)
@@ -1201,8 +1227,8 @@ Contains
         Character*3, Intent(In) :: tag
         Character*120 :: cfile
 
-        integer ierr, funit 
-        integer(kind=MPI_OFFSET_KIND) disp1,disp2 
+        integer ierr, funit
+        integer(kind=MPI_OFFSET_KIND) disp1,disp2
         Integer :: mstatus(MPI_STATUS_SIZE)
         !write(iterstring,'(i8.8)') iter
         cfile = trim(checkpoint_prefix)//'_'//trim(tag)
@@ -1212,27 +1238,27 @@ Contains
         If (I_Will_Output) Then
             my_nrad = nradii_at_rank(my_row_rank)
             Allocate( arr(1:nlm_total,1:my_nrad,2))
-            Allocate(tarr(1:nlm_total*my_nrad))        
+            Allocate(tarr(1:nlm_total*my_nrad))
 
-            Call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
-                MPI_MODE_RDONLY, & 
-            MPI_INFO_NULL, funit, ierr) 
+            Call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
+                MPI_MODE_RDONLY, &
+            MPI_INFO_NULL, funit, ierr)
             disp1 = my_check_disp2*8
             disp2 = (my_check_disp2+full_disp)*8
 
             Call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &     ! Real part
-              MPI_DOUBLE_PRECISION, 'native', & 
-              MPI_INFO_NULL, ierr) 
-            Call MPI_FILE_READ(funit, arr(1,1,1), buffsize2, MPI_DOUBLE_PRECISION, & 
-              mstatus, ierr) 
+              MPI_DOUBLE_PRECISION, 'native', &
+              MPI_INFO_NULL, ierr)
+            Call MPI_FILE_READ(funit, arr(1,1,1), buffsize2, MPI_DOUBLE_PRECISION, &
+              mstatus, ierr)
 
             Call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, &     ! Imaginary part
-              MPI_DOUBLE_PRECISION, 'native', & 
-              MPI_INFO_NULL, ierr) 
-            Call MPI_FILE_READ(funit, arr(1,1,2), buffsize2, MPI_DOUBLE_PRECISION, & 
-              mstatus, ierr) 
+              MPI_DOUBLE_PRECISION, 'native', &
+              MPI_INFO_NULL, ierr)
+            Call MPI_FILE_READ(funit, arr(1,1,2), buffsize2, MPI_DOUBLE_PRECISION, &
+              mstatus, ierr)
 
-            Call MPI_FILE_CLOSE(funit, ierr) 
+            Call MPI_FILE_CLOSE(funit, ierr)
 
 
             !////////////////////////////////
@@ -1251,12 +1277,12 @@ Contains
                         m = m_values(mp)
                         nl = l_max-m+1
                         lstart = lmstart(m)
-                        !arr(lstart:lstart+nl-1,r,i) = tarr(offset:offset+nl-1)                
+                        !arr(lstart:lstart+nl-1,r,i) = tarr(offset:offset+nl-1)
                         tarr(offset:offset+nl-1) = arr(lstart:lstart+nl-1,r,i)
                         offset = offset+nl
-                    Enddo                                        
                     Enddo
-                Enddo        
+                    Enddo
+                Enddo
                 ! Post receives
                 irq_ind = 1
                 Do p = 0, Noutputs_per_Row-1
@@ -1301,7 +1327,7 @@ Contains
             DeAllocate(arr)
         Else
             ! This rank does not output
-            ! Post sends to all output processes in my row    
+            ! Post sends to all output processes in my row
             nrirq = Noutputs_per_row
             Allocate(rirqs(1:nrirq))
 
@@ -1319,7 +1345,7 @@ Contains
 
                 Call IWaitAll(nrirq, rirqs)
 
-                
+
             Enddo
             DeAllocate(rirqs)
         Endif
@@ -1368,8 +1394,8 @@ Contains
                 Else
                     !Not a quicksave
                     old_pars(4) = last_iter
-                    Write(iterstring,'(i8.8)') last_iter  
-                    checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)                
+                    Write(iterstring,'(i8.8)') last_iter
+                    checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
                 Endif
 
                 Close(15)
@@ -1380,8 +1406,8 @@ Contains
                     Write(autostring,'(i2.2)')-checkpoint_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
             Else
-                Write(iterstring,'(i8.8)') iteration 
-                checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)   
+                Write(iterstring,'(i8.8)') iteration
+                checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
             Endif
 
 
@@ -1404,7 +1430,7 @@ Contains
                 old_pars(4) = Checkpoint_iter
             Endif
 
-            Close(15)                
+            Close(15)
             old_pars(1) = n_r_old
             old_pars(2) = grid_type_old
             old_pars(3) = l_max_old
@@ -1452,8 +1478,8 @@ Contains
             checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
         Else
             !The prefix should reflect that this is a normal checkpoint file
-            Write(iterstring,'(i8.8)') checkpoint_iter  
-            checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)   
+            Write(iterstring,'(i8.8)') checkpoint_iter
+            checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
         Endif
 
 
@@ -1515,7 +1541,7 @@ Contains
 
         Call chktmp%construct('s2b')
         chktmp%config = 's2b'
-        offset =1 
+        offset =1
         Do mp = my_mp%min, my_mp%max
                 m = m_values(mp)
                 nl = l_max-m+1
@@ -1537,7 +1563,7 @@ Contains
         !//////////////////////////
         Call chktmp%reform()    ! move to p1b
 
-        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and 
+        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
         ! fields.  Otherwise, we need to interpolate onto the current grid
         If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
             ! Interpolate
@@ -1551,7 +1577,7 @@ Contains
                 Write(6,*)'Current N_R:           ', n_r
             Endif
         Endif
-        
+
         ! Interpolation is complete, now we just copy into the other arrays
         fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
         abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
@@ -1579,12 +1605,12 @@ Contains
         Allocate(mode_count(0:np-1))
         mode_count(:)  = 0    ! This is how many total l-m combinations rank p of a row owns
 
-        
-        
+
+
         nlm_total = 0            ! This is the total number of l-m combinations
         Do p = 0, np -1
             Do mp = pfi%all_3s(p)%min, pfi%all_3s(p)%max
-                m = m_values(mp)            
+                m = m_values(mp)
                 nl = l_max-m+1
                 mode_count(p) = mode_count(p)+nl
                 nlm_total = nlm_total+nl
@@ -1618,13 +1644,13 @@ Contains
                 Character*120 :: cfile
 
                 integer ierr, funit , v_offset1, v_offset2
-                integer(kind=MPI_OFFSET_KIND) disp1,disp2 
+                integer(kind=MPI_OFFSET_KIND) disp1,disp2
                 Integer :: mstatus(MPI_STATUS_SIZE)
              write(iterstring,'(i8.8)') iter
             cfile = Trim(my_path)//'Checkpoints/'//trim(iterstring)//'_'//trim(tag)
 
 
-                 ! We have to be careful here.  Each processor does TWO writes. 
+                 ! We have to be careful here.  Each processor does TWO writes.
                 ! The first write places the real part of the field into the file.
                 ! The view then changes and advances to the appropriate location of the
                 ! imaginary part.  This step is crucial for checkpoints to work with
@@ -1632,9 +1658,9 @@ Contains
                  v_offset1 = (ind-1)*tnr+1
                 v_offset2 = v_offset1+my_r%delta
 
-                call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
-                       MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-                       MPI_INFO_NULL, funit, ierr) 
+                call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
+                       MPI_MODE_WRONLY + MPI_MODE_CREATE, &
+                       MPI_INFO_NULL, funit, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Opening File: ', pfi%ccomm%rank
                 Endif
@@ -1643,34 +1669,34 @@ Contains
                 disp2 = (my_check_disp+full_disp)*8
 
                 call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &     ! Real part
-                           MPI_DOUBLE_PRECISION, 'native', & 
-                           MPI_INFO_NULL, ierr) 
+                           MPI_DOUBLE_PRECISION, 'native', &
+                           MPI_INFO_NULL, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Setting View 1: ', pfi%ccomm%rank
                 Endif
-                call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
+                call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, &
+                        mstatus, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Writing 1: ', pfi%ccomm%rank
                 Endif
                 call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, &     ! Imaginary part
-                           MPI_DOUBLE_PRECISION, 'native', & 
-                           MPI_INFO_NULL, ierr) 
+                           MPI_DOUBLE_PRECISION, 'native', &
+                           MPI_INFO_NULL, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Setting View 2: ', pfi%ccomm%rank
                 Endif
-                call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
+                call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, &
+                        mstatus, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Writing 2: ', pfi%ccomm%rank
                 Endif
-                call MPI_FILE_CLOSE(funit, ierr) 
+                call MPI_FILE_CLOSE(funit, ierr)
                 if (ierr .ne. 0) Then
                     Write(6,*)'Error Closing File: ', pfi%ccomm%rank
                 Endif
-                 
 
-                                      
-                                          
+
+
+
     End Subroutine Write_Field_Orig
 End Module Checkpointing

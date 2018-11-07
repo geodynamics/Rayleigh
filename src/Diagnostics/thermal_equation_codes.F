@@ -1,4 +1,24 @@
-    Integer, Parameter :: te_eq_off = mom_eq_off+200 ! :OFFSET CODE:  
+!
+!  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+!
+!  This file is part of RAYLEIGH.
+!
+!  RAYLEIGH is free software; you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation; either version 3, or (at your option)
+!  any later version.
+!
+!  RAYLEIGH is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!
+!  You should have received a copy of the GNU General Public License
+!  along with RAYLEIGH; see the file LICENSE.  If not see
+!  <http://www.gnu.org/licenses/>.
+!
+
+    Integer, Parameter :: te_eq_off = mom_eq_off+200 ! :OFFSET CODE:
     ! Advection (Full)
     Integer, Parameter :: rhotv_grad_s   = te_eq_off+1 ! :tex: $\mathrm{f}_1\mathrm{f}_4\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta$
     Integer, Parameter :: rhotvp_grad_sp = te_eq_off+2 ! :tex: $\mathrm{f}_1\mathrm{f}_4\boldsymbol{v'}\cdot\boldsymbol{\nabla}\Theta'$
@@ -66,7 +86,7 @@
     Integer, Parameter :: rhot_vrp_sm = te_eq_off+42 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\overline{\Theta}$
     Integer, Parameter :: rhot_vrm_sp = te_eq_off+43 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\Theta'$
     Integer, Parameter :: rhot_vrm_sm = te_eq_off+44 ! :tex: $\mathrm{f}_1\mathrm{f}_4\,\overline{v_r}\,\overline{\Theta}$
-    
+
     Integer, Parameter :: rhot_vt_s   = te_eq_off+45 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta \Theta$
     Integer, Parameter :: rhot_vtp_sp = te_eq_off+46 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\Theta'$
     Integer, Parameter :: rhot_vtp_sm = te_eq_off+47 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_\theta'\overline{\Theta}$
