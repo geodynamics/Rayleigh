@@ -48,9 +48,6 @@ Contains
     !                                                                                       !
     !   The means in the Reynolds decomposition are longitudinal averages.                  !
     !                                                                                       !
-    !   Note: I am not sure where and how one_over_r, sintheta, costheta, radius, nu, and   !
-    !    viscous_heating_coef get defined.  But, presumably I can use them here freely.     !
-    !                                                                                       !
     !   Note: The computation of the turbulent viscous transport requires MOST of the       !
     !    spatial second derivatives of the velocity components.  The ones needed are        !
     !    as follows (in Einstein notation for derivatives):                                 !
@@ -97,6 +94,49 @@ Contains
         Endif
 
 
+        ! Shear Production of turbulent kinetic energy.
+        !       P_T = -rho_bar u'u' : <E>
+        If (compute_quantity(production_shear2_pKE)) Then
+            DO_PSI2
+                one_over_rsin = one_over_r(r) * csctheta(t)
+                ctn_over_r = one_over_r(r) * cottheta(t)
+
+                ! Compute elements of the mean rate of strain tensor E_ij
+                Err = m0_values(PSI2,dvrdr)
+                Ett = one_over_r(r) * (m0_values(PSI2,dvtdt) + m0_values(PSI2,vr))
+                Epp = one_over_rsin * m0_values(PSI2,dvpdp) + ctn_over_r*m0_values(PSI2,vtheta)    &
+                    + one_over_r(r) * m0_values(PSI2,vr)
+
+                ! The diagonal elements, e.g.,  Ert = E_rt
+                Ert = one_over_r(r) * (m0_values(PSI2,dvrdt) - m0_values(PSI2,vtheta))        &
+                    + m0_values(PSI2,dvtdr)
+                Ert = 0.5D0*Ert
+                Erp = m0_values(PSI2,dvpdr) + one_over_rsin * m0_values(PSI2,dvrdp)        &
+                    - one_over_r(r) * m0_values(PSI2,vphi)
+                Erp = 0.5D0*Erp
+                Etp = one_over_rsin * m0_values(PSI2,dvtdp) - ctn_over_r * m0_values(PSI2,vphi)    &
+                    + one_over_r(r) * m0_values(PSI2,dvpdt)
+                Etp = 0.5D0*Etp
+
+                ! Compute u'_i u'_j E_ij
+                DO k = 1, n_phi
+                    ! Compute diagonal elements of the double contraction
+                    htmp1 = fbuffer(PSI,vr)**2 * Err
+                    htmp2 = fbuffer(PSI,vtheta)**2 * Ett
+                    htmp3 = fbuffer(PSI,vphi)**2 * Epp
+                    qty(PSI) = htmp1 + htmp2 + htmp3
+
+                    ! Compute off-diagonal elements
+                    htmp1 = fbuffer(PSI,vr)*fbuffer(PSI,vtheta)*Ert
+                    htmp2 = fbuffer(PSI,vr)*fbuffer(PSI,vphi)*Erp
+                    htmp3 = fbuffer(PSI,vtheta)*fbuffer(PSI,vphi)*Etp
+                    qty(PSI) = qty(PSI) + 2D0*(htmp1 + htmp2 + htmp3)
+
+                    qty(PSI) = -ref%density(r) * qty(PSI)
+                ENDDO        ! End of phi loop
+            END_DO2        ! End of theta & r loop
+            Call Add_Quantity(qty)
+        Endif
 
 
         !Viscous Dissipation of turbulent kinetic energy.
@@ -320,11 +360,22 @@ Contains
             Call Add_Quantity(qty)
         Endif
 
+
         ! Colatitudinal Pressure Flux of turbulent kinetic energy.
         !    theta_hat . F_TP = P' u'_theta
         If (compute_quantity(thetaflux_pressure_pKE)) Then
             DO_PSI
                 qty(PSI) = fbuffer(PSI,vtheta) * fbuffer(PSI,pvar)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
+        ! Azimuthal Pressure Flux of turbulent kinetic energy.
+        !    phi_hat . F_TP = P' u'_phi
+        If (compute_quantity(phiflux_pressure_pKE)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vp) * fbuffer(PSI,pvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -395,6 +446,33 @@ Contains
         Endif
 
 
+        ! Azimuthal Viscous Flux of turbulent kinetic energy.
+        !    phi_hat . F_TV = -phi_hat . sigma'.u'
+        If (compute_quantity(phiflux_viscous_pKE)) Then
+            DO_PSI2
+                one_over_rsin = one_over_r(r) * csctheta(t)
+                ctn_over_r = one_over_r(r) * cottheta(t)
+                mu = nu(r) * ref%density(r)
+
+                DO k = 1, n_phi
+                    ! Compute elements of the turbulent rate of strain tensor
+                    ! e'_ij
+                    erp = 0.5D0*(one_over_rsin*fbuffer(PSI,dvrdp) - one_over_r(r)*fbuffer(PSI,vphi) + fbuffer(PSI,dvpdr))
+                    etp = 0.5D0*(one_over_rsin*fbuffer(PSI,dvtdp) - ctn_over_r*fbuffer(PSI,vphi) + one_over_r(r)*fbuffer(PSI,dvpdt))
+                    epp = one_over_rsin*fbuffer(PSI,dvpdp) + one_over_r(r)*fbuffer(PSI,vr) + ctn_over_r*fbuffer(PSI,vtheta)
+
+                    ! Zonal component of the viscous stess contracted w/ the velocity: phi_hat . sigma' . u'
+                    divu = -ref%dlnrho(r) * fbuffer(PSI,vr)                       ! Assume anelasticity
+                    htmp1 = erp*fbuffer(PSI,vr) + etp*fbuffer(PSI,vtheta) + epp*fbuffer(PSI,vphi)
+                    htmp2 = one_third * divu * fbuffer(PSI,vphi)
+                    qty(PSI) = 2D0*mu * (htmp2 - htmp1)
+
+                ENDDO
+            END_DO2
+            Call Add_Quantity(qty)
+        Endif
+
+
         ! Radial Turbulent Advective Flux of turbulent kinetic energy.
         !    r_hat . F_TA = 1/2 rho_bar |u'|**2 u'_r
         If (compute_quantity(rflux_turbadvect_pKE)) Then
@@ -417,6 +495,17 @@ Contains
         Endif
 
 
+        ! Azimuthal Turbulent Advective Flux of turbulent kinetic energy.
+        !    phi_hat . F_TA = 1/2 rho_bar |u'|**2 u'_phi
+        If (compute_quantity(phiflux_turbadvect_pKE)) Then
+            DO_PSI
+                htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * fbuffer(PSI,vphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
         ! Radial Mean Advective Flux of turbulent kinetic energy.
         !    r_hat . F_MA = 1/2 rho_bar |u'|**2 U_r
         If (compute_quantity(rflux_meanadvect_pKE)) Then
@@ -434,6 +523,17 @@ Contains
             DO_PSI
                 htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
                 qty(PSI) = 0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vtheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
+        ! Azimuthal Mean Advective Flux of turbulent kinetic energy.
+        !    phi_hat . F_MA = 1/2 rho_bar |u'|**2 U_phi
+        If (compute_quantity(phiflux_meanadvect_pKE)) Then
+            DO_PSI
+                htmp1 = fbuffer(PSI,vr)**2 + fbuffer(PSI,vtheta)**2 + fbuffer(PSI,vphi)**2
+                qty(PSI) = 0.5D0*ref%density(r) * htmp1 * m0_values(PSI2,vphi)
             END_DO
             Call Add_Quantity(qty)
         Endif
