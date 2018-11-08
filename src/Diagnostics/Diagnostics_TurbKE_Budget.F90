@@ -457,9 +457,12 @@ Contains
                 DO k = 1, n_phi
                     ! Compute elements of the turbulent rate of strain tensor
                     ! e'_ij
-                    erp = 0.5D0*(one_over_rsin*fbuffer(PSI,dvrdp) - one_over_r(r)*fbuffer(PSI,vphi) + fbuffer(PSI,dvpdr))
-                    etp = 0.5D0*(one_over_rsin*fbuffer(PSI,dvtdp) - ctn_over_r*fbuffer(PSI,vphi) + one_over_r(r)*fbuffer(PSI,dvpdt))
-                    epp = one_over_rsin*fbuffer(PSI,dvpdp) + one_over_r(r)*fbuffer(PSI,vr) + ctn_over_r*fbuffer(PSI,vtheta)
+                    erp = 0.5D0*(one_over_rsin*fbuffer(PSI,dvrdp) - one_over_r(r)*fbuffer(PSI,vphi)     &
+                        + fbuffer(PSI,dvpdr))
+                    etp = 0.5D0*(one_over_rsin*fbuffer(PSI,dvtdp) - ctn_over_r*fbuffer(PSI,vphi)        &
+                        + one_over_r(r)*fbuffer(PSI,dvpdt))
+                    epp = one_over_rsin*fbuffer(PSI,dvpdp) + one_over_r(r)*fbuffer(PSI,vr)              &
+                        + ctn_over_r*fbuffer(PSI,vtheta)
 
                     ! Zonal component of the viscous stess contracted w/ the velocity: phi_hat . sigma' . u'
                     divu = -ref%dlnrho(r) * fbuffer(PSI,vr)                       ! Assume anelasticity
