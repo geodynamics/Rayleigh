@@ -34,7 +34,8 @@ Contains
         Use Controls, Only : my_path, magnetism, jobinfo_file
         Use Controls, Only : numerical_controls_namelist, physical_controls_namelist, &
                            temporal_controls_namelist, io_controls_namelist
-        Use ProblemSize, Only : my_rank, problemsize_namelist, ncpu, nprow, npcol, &
+        Use Parallel_Framework, Only: pfi
+        Use ProblemSize, Only : my_rank, problemsize_namelist, nprow, npcol, &
                               n_r, n_theta, l_max, rmin, rmax, &
                               ndomains, ncheby, dealias_by, domain_bounds
         Use Spherical_IO, Only : output_namelist
@@ -120,7 +121,7 @@ Contains
                 Write(io,*) "Preamble Information"
                 Write(io,999)
                 Write(io,*) "MPI"
-                Write(io,1002) "    NCPU  : ", ncpu
+                Write(io,1002) "    NCPU  : ", pfi%wcomm%np
                 Write(io,1002) "    NPROW : ", nprow
                 Write(io,1002) "    NPCOL : ", npcol
                 Write(io,*)
