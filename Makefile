@@ -18,7 +18,6 @@ rayleigh:
 	@cp $(SRC)/Diagnostics/*.F $(BUILD)/.
 	@cp $(SRC)/Utility/*.F90 $(BUILD)/.
 	@cp $(SRC)/Utility/*.c $(BUILD)/.
-	@cp $(SRC)/Utility/*.py $(BUILD)/.
 	@cp $(SRC)/Include/*.F $(BUILD)/.
 	@cp $(SRC)/Makefile $(BUILD)/.
 	@cp $(SRC)/object_list $(BUILD)/.
