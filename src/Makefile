@@ -63,30 +63,7 @@ $(VERSION):
 	@echo '                  '$(DESC_$(VERSION))	
 	@echo ' '
 	@$(MAKENP) clean_obj
-	@cp ../Physics/Run_Parameters.F90 .
-	$(eval git_hash := $(shell git log -1 --pretty=format:"%H --- %cd"))
-	$(eval git_url := $(shell git config remote.origin.url))
-	$(eval git_branch := $(shell git rev-parse --abbrev-ref HEAD))
-	$(eval build_date := $(shell date))
-	$(eval build_machine := $(shell uname -a))
-	$(eval build_dir := $(shell pwd))
-	$(eval build_version := $(shell git describe --tags))
-	$(eval compiler_version := $(shell $(FC) --version))
-	$(eval compiler_location := $(shell which $(FC)))
-	@sed -i'' "s|\@\@git hash\@\@|$(git_hash)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@git url\@\@|$(git_url)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@git branch\@\@|$(git_branch)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@date\@\@|$(build_date)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@machine\@\@|$(build_machine)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@directory\@\@|$(build_dir)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@custom dir\@\@|$(CUSTOMROOT)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@build version\@\@|$(VERSION)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@fflags\@\@|$(FFLAGS_$(VERSION))|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@library\@\@|$(LIB_$(VERSION))|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@FC version\@\@|$(compiler_version)|g" Run_Parameters.F90
-	@sed -i'' "s|\@\@FC location\@\@|$(compiler_location)|g" Run_Parameters.F90
-	@python adjust_Run_Parameters.py Run_Parameters.F90 Run_Parameters.$(VERSION).F90
-	@cp Run_Parameters.$(VERSION).F90 Run_Parameters.F90
+	@cp Run_Param_Header.$(VERSION).F Run_Param_Header.F
 ifdef CUSTOMROOT
 	@cp $(CUSTOMROOT)/*.F90 . 2> /dev/null || :
 	@cp $(CUSTOMROOT)/*.F . 2> /dev/null || :
