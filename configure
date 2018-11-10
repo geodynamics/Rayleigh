@@ -276,7 +276,7 @@ do
       ;;
 
     --with-custom=*)
-      CUSTOMROOT=`expr "x$option" : "x-*with-custom=\(.*\)"`;
+      export CUSTOMROOT=`expr "x$option" : "x-*with-custom=\(.*\)"`;
       ;;
 
     -prefix=* | --prefix=*)
@@ -310,7 +310,7 @@ do
       ;;
 
     --FC=*)
-      FC=`expr "x$option" : "x-*FC=\(.*\)"`;
+      export FC=`expr "x$option" : "x-*FC=\(.*\)"`;
       ;;
 
     --nodirs | -nodirs )
@@ -369,7 +369,7 @@ do
       ;;
 
     --CC=*)
-      CC=`expr "x$option" : "x-*CC=\(.*\)"`;
+      export CC=`expr "x$option" : "x-*CC=\(.*\)"`;
       ;;
 
     --blank)
@@ -723,14 +723,14 @@ done
 echo $VLIST >> $OFILE
 echo $BORDER >> $OFILE
 
-###############################################################################################
+################################################################################
 #  IV.  Include flags
 echo "# IV.  Include Flags" >> $OFILE
 echo "" >> $OFILE
 echo "RAYLEIGH_INC = "$RAYLEIGH_INC >> $OFILE
 echo "" >> $OFILE
 echo $BORDER >> $OFILE
-###############################################################################################
+################################################################################
 #  V.  Optimization and Library flags
 echo "# V.  Optimization and Library Flags" >> $OFILE
 echo "" >> $OFILE
@@ -760,11 +760,27 @@ while [ $COUNTER -lt $nvers ]; do
   let COUNTER=COUNTER+1
 done
 
-###############################################################################################
-# VI.   Prepare the build directory
+
+
+#################################################################################
+# VI.   Generate a header file for inclusion in Run_Parameters.F90
 
 
 mkdir -p src/build/compiled
+
+COUNTER=0
+while [ $COUNTER -lt $nvers ]; do
+	HFILE=src/build/Run_Param_Header.${RVALUES[$COUNTER]}.F
+	./src/gen_header.sh $HFILE "${RVALUES[$COUNTER]}" "${FFLAGS[$COUNTER]}" "$FULL_LIB"
+	let COUNTER=COUNTER+1
+done
+
+
+#################################################################################
+# VII.   Prepare the build directory
+
+
+
 NOCOMM=src/build/machine.no_comments
 MACHDEF=src/build/Machine_Definitions
 rm -f $NOCOMM
@@ -792,6 +808,8 @@ then
 else
   echo "CUSTOMROOT = "$CUSTOMROOT >> make.inc
 fi
+
+
 
 echo " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo " Configuration is complete."
