@@ -51,6 +51,10 @@ all:
 rayleigh_exec: $(OBJ)
 	$(FC) $(FFLAGS) -o  $(PROG) $(OBJ) $(LIB)
 
+# the lines that contain
+#    cp $(CUSTOMROOT)/*.F . || :
+# are basically logical OR statements, but the ":" shell character is always True.
+# So the end result is to suppress any and all errors from a failed cp command
 $(VERSION):
 	@echo ' ' 
 	@echo '******************************************************************** ' 
@@ -59,6 +63,12 @@ $(VERSION):
 	@echo '                  '$(DESC_$(VERSION))	
 	@echo ' '
 	@$(MAKENP) clean_obj
+	@cp Run_Param_Header.$(VERSION).F Run_Param_Header.F
+ifdef CUSTOMROOT
+	@cp $(CUSTOMROOT)/*.F90 . 2> /dev/null || :
+	@cp $(CUSTOMROOT)/*.F . 2> /dev/null || :
+	@cp $(CUSTOMROOT)/*.c . 2> /dev/null || :
+endif
 	@$(MAKENP) rayleigh_exec FFLAGS="$(FFLAGS_$(VERSION))" PROG="compiled/rayleigh.$(VERSION)" LIB="$(LIB_$(VERSION))" PREFIX=$(PREFIX)
 
 .F90.o :
