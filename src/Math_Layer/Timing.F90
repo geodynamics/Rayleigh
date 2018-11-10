@@ -19,7 +19,7 @@
 !
 
 Module Timing
-USE MPI_BASE, Only : MPI_WTIME, MPI_WTICK
+USE RA_MPI_BASE, Only : MPI_WTIME, MPI_WTICK
 Type, Public :: Timer
     Real*8 :: delta, elapsed
     Real*8 :: t1

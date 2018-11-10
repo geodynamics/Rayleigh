@@ -34,7 +34,7 @@
 !       BCAST2D
 !////////////////////////////////////////////////////////////////////////////
 Module General_MPI
-    Use MPI_BASE
+    Use RA_MPI_BASE
     Implicit None
 Contains
 

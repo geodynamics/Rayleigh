@@ -27,7 +27,7 @@ Module Checkpointing
     Use SendReceive
     Use ISendReceive
     Use Controls
-    Use MPI_BASE
+    Use RA_MPI_BASE
     Use Chebyshev_Polynomials_Alt
 
     Use BufferedOutput
