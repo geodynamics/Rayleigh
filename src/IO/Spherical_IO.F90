@@ -550,7 +550,7 @@ Contains
     End Subroutine Get_Meridional_Slice
 
 	Subroutine Write_Meridional_Slices(this_iter,simtime)
-        USE MPI_BASE
+        USE RA_MPI_BASE
 		Implicit None
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
@@ -770,7 +770,7 @@ Contains
 
 
 	Subroutine Write_Point_Probes(this_iter,simtime)
-        USE MPI_BASE
+        USE RA_MPI_BASE
 		Implicit None
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
@@ -2147,7 +2147,7 @@ Contains
 
 
 	Subroutine Write_Shell_Slices(this_iter,simtime)
-        USE MPI_BASE
+        USE RA_MPI_BASE
 		Implicit None
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
@@ -2376,7 +2376,7 @@ Contains
 	Subroutine Write_Shell_Slices_MEM(this_iter,simtime)
         ! A "more" memory friendly version of write_shell_Slices.  
         ! Writes one quantity at a time
-        USE MPI_BASE
+        USE RA_MPI_BASE
 		Implicit None
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
@@ -2850,7 +2850,7 @@ Contains
 
 
 	Subroutine Write_Azimuthal_Average(this_iter,simtime)
-        USE MPI_BASE
+        USE RA_MPI_BASE
 		Implicit None
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
@@ -3173,7 +3173,7 @@ Contains
 	End Subroutine Write_Shell_Average
 
 	Subroutine Write_Full_3D(qty)
-		Use MPI_BASE ! Doing this here for now.  No other routine above sees MPI_Base, and I may want to keep it that way.
+		Use RA_MPI_BASE ! Doing this here for now.  No other routine above sees MPI_Base, and I may want to keep it that way.
 		Implicit None		
 		Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
 		Real*8, Allocatable :: my_shells(:,:,:), buff(:,:,:)
@@ -3581,7 +3581,7 @@ Contains
     Subroutine OpenFile_Par(self,iter,ierr)
         !Performs the same tasks as OpenFile, but uses MPI-IO
         ! Opens file, advances record count, writes header etc.
-        Use MPI_BASE
+        Use RA_MPI_BASE
         Implicit None
         Class(DiagnosticInfo) :: self
         Integer, Intent(In) :: iter
@@ -3680,7 +3680,7 @@ Contains
     End Subroutine CloseFile
 
     Subroutine CloseFile_Par(self)
-        USE MPI_BASE
+        USE RA_MPI_BASE
         Implicit None
         integer :: ierr, buffsize
         Integer :: mstatus(MPI_STATUS_SIZE)

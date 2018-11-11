@@ -19,16 +19,16 @@
 !
 
 Module SendReceive
-    Use MPI_BASE
-  Implicit None
-  Private
-  Integer :: mpi_err
-  Public :: send, receive
+    Use RA_MPI_BASE
+    Implicit None
+    Private
+    Integer :: mpi_err
+    Public :: send, receive
     Interface Send
         Module Procedure D_Send_5D, D_Send_4D, D_Send_3D, D_Send_2D, D_Send_1D
     End Interface
 
-     Interface Receive
+    Interface Receive
         Module Procedure D_Receive_4D, D_Receive_3D, D_Receive_2D, D_Receive_1D
         Module Procedure D_Receive_5D
     End Interface

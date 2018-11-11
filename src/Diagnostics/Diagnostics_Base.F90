@@ -88,9 +88,6 @@ Module Diagnostics_Base
     Integer, Parameter :: ell0_tvar = custom_offset+4
     Integer, Parameter :: ell0_dpdr = custom_offset+5
 
-
-
-
     include "turbKE_codes.F"
     include "axial_field_codes.F"
 
