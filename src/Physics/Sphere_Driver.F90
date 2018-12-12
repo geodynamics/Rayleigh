@@ -29,6 +29,12 @@ Module Sphere_Driver
     Use Controls
     Use Timers
     Use Fields
+
+    !sigterm...
+    USE IFPORT
+    Implicit NOne
+    Real*8 :: killsig
+    
 Contains
 
     Subroutine Initialize_TimeStepping(iter)
@@ -62,11 +68,18 @@ Contains
 
     Subroutine Main_Loop_Sphere()
         Implicit None
-        Integer ::  last_iteration, first_iteration,i
+        Integer ::  last_iteration, first_iteration,i,iret
         Real*8  :: captured_time, max_time_seconds
         Character*14 :: tmstr
         Character*8 :: istr, dtfmt ='(ES10.4)'
         Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
+        !sigterm
+        Do i = 1, 50
+            iret = SIGNAL(i, handle_sig, -1)
+        Enddo
+
+        killsig = 0.0d0
+    
         ! We enter the main loop assuming that the solve has just been performed
         ! and that the equation set structure's RHS contains our primary fields with
         ! radial dimension in-processor.
@@ -117,7 +130,8 @@ Contains
             !If so, we will want to transfer additional information within
             !The transpose buffers
             output_iteration = time_to_output(iteration)
-
+            global_msgs(3) = killsig
+            if (my_rank .eq. 0) write(6,*)'killsig: ', killsig
             Call Post_Solve() ! Linear Solve Configuration
 
 
@@ -154,6 +168,14 @@ Contains
             If (global_msgs(2) .gt. max_time_seconds) Then
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' User-specified maximum walltime exceeded.  Cleaning up.')
+                Endif
+                last_iteration = iteration !force loop to end
+            Endif
+
+            If (my_rank .eq. 0) Write(6,*)'chk: ', global_msgs(3)
+            If (global_msgs(3) .gt. 2.0 .and. global_msgs(3) .lt. 3.0) Then
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(' Kill signal caught.  Cleaning up.')
                 Endif
                 last_iteration = iteration !force loop to end
             Endif
@@ -234,5 +256,17 @@ Contains
         Endif
         Call Finalize_Timing(n_r,l_max,max_iterations)
     End Subroutine Main_Loop_Sphere
+
+	   INTEGER(4) FUNCTION handle_sig(sig_num)
+	       INTEGER(4) sig_num
+	       !DIR$ ATTRIBUTES DEFAULT :: h_abort
+	       If (my_rank .eq. 0) Then
+           WRITE(*,*) 'In signal handler function'
+	       WRITE(*,*) 'signum = ', sig_num
+	       handle_sig = 0
+           killsig = 2.5d0
+           Write(*,*) ' Cleaning up'
+           Endif
+	   END
 
 End Module Sphere_Driver
