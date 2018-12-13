@@ -82,6 +82,7 @@ Module Controls
     Real*8  :: max_time_minutes = 1d8           ! Maximum walltime to run the code (this should be ample...)
 
     Logical :: save_last_timestep = .true.
+    Logical :: save_on_sigterm = .false.       ! Rayleigh will attempt to checkpoint and exit upon termination request
     Integer :: check_frequency = -1            ! Number of iterations between checkpoint dumps
     Integer :: checkpoint_interval = 1000000   ! Same as check_frequency (check_frequency will be deprecated soon)
     Integer :: quicksave_interval =  -1        ! Number of iterations between quicksave dumps
@@ -98,7 +99,7 @@ Module Controls
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
                 & cflmax, cflmin, max_time_step,chk_type, diagnostic_reboot_interval, min_time_step, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
-                & max_time_minutes, save_last_timestep, new_iteration,read_chk_type
+                & max_time_minutes, save_last_timestep, new_iteration,read_chk_type, save_on_sigterm
 
 
 

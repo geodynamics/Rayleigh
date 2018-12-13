@@ -31,8 +31,10 @@ Module Sphere_Driver
     Use Fields
 
     !sigterm...
+#ifdef INTEL_COMPILER 
     USE IFPORT
-    Implicit NOne
+#endif
+    Implicit None
     Real*8 :: killsig
     
 Contains
@@ -68,17 +70,22 @@ Contains
 
     Subroutine Main_Loop_Sphere()
         Implicit None
-        Integer ::  last_iteration, first_iteration,i,iret
+        Integer ::  last_iteration, first_iteration,i,iret, sigflag
         Real*8  :: captured_time, max_time_seconds
         Character*14 :: tmstr
         Character*8 :: istr, dtfmt ='(ES10.4)'
         Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
-        !sigterm
-        Do i = 1, 50
-            iret = SIGNAL(i, handle_sig, -1)
-        Enddo
 
-        killsig = 0.0d0
+        ! Register handle_sig as the signal-handling 
+        ! function for SIGTERM (15) signals.
+        ! The calling syntax differs slightly between Intel and GNU
+#ifdef INTEL_COMPILER 
+        iret = SIGNAL(15, handle_sig,-1) 
+#endif 
+#ifdef GNU_COMPILER
+        iret = SIGNAL(15, handle_sig) 
+#endif        
+        killsig = 0.0d0  ! This will become 2.5 is SIGTERM is caught
     
         ! We enter the main loop assuming that the solve has just been performed
         ! and that the equation set structure's RHS contains our primary fields with
@@ -131,7 +138,7 @@ Contains
             !The transpose buffers
             output_iteration = time_to_output(iteration)
             global_msgs(3) = killsig
-            if (my_rank .eq. 0) write(6,*)'killsig: ', killsig
+
             Call Post_Solve() ! Linear Solve Configuration
 
 
@@ -172,12 +179,16 @@ Contains
                 last_iteration = iteration !force loop to end
             Endif
 
-            If (my_rank .eq. 0) Write(6,*)'chk: ', global_msgs(3)
+
             If (global_msgs(3) .gt. 2.0 .and. global_msgs(3) .lt. 3.0) Then
-                If (my_rank .eq. 0) Then
-                    Call stdout%print(' Kill signal caught.  Cleaning up.')
+                If (save_on_sigterm) Then
+                    If (my_rank .eq. 0) Then
+                        Call stdout%print(' ')
+                        Call stdout%print(' SIGTERM caught.  Checkpoint/exit sequence initiated.')
+                        Call stdout%print(' ')
+                    Endif
+                    last_iteration = iteration !force loop to end
                 Endif
-                last_iteration = iteration !force loop to end
             Endif
 
             If(iteration .eq. last_iteration) Then
@@ -257,16 +268,16 @@ Contains
         Call Finalize_Timing(n_r,l_max,max_iterations)
     End Subroutine Main_Loop_Sphere
 
-	   INTEGER(4) FUNCTION handle_sig(sig_num)
-	       INTEGER(4) sig_num
-	       !DIR$ ATTRIBUTES DEFAULT :: h_abort
-	       If (my_rank .eq. 0) Then
-           WRITE(*,*) 'In signal handler function'
-	       WRITE(*,*) 'signum = ', sig_num
-	       handle_sig = 0
-           killsig = 2.5d0
-           Write(*,*) ' Cleaning up'
-           Endif
-	   END
+    ! Signal handler function
+    INTEGER(4) FUNCTION handle_sig(sig_num)
+        INTEGER(4) sig_num
+        !DIR$ ATTRIBUTES DEFAULT :: h_abort
+        ! If this function is called, it means that
+        ! a SIGTERM signal has been sent to the process
+
+        handle_sig = 0
+        killsig = 2.5d0  ! Adjust to nonzero value between 2 and 3
+        
+    END
 
 End Module Sphere_Driver
