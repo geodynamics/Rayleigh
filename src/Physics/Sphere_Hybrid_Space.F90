@@ -459,11 +459,11 @@ Contains
         END_DO
 
         !/////////////////////////////////////////
-        ! dB r dr
+        ! dB r dr  (dbrdr_cb holds dcdr up until this point)
 
         DO_IDX2
             ASBUFFA(IDX2,dbrdr_cb) = l_l_plus1(m:l_max)* &
-                & SBUFFA(IDX2,dcdr)*OneOverRSquared(r)
+                & SBUFFA(IDX2,dbrdr_cb)*OneOverRSquared(r)
         END_DO
 
 
@@ -472,7 +472,7 @@ Contains
                 & SBUFFA(IDX2,br)*Two_Over_R(r)
         END_DO
 
-        ! sintheta dbrdr
+        ! sintheta dbrdt
         Call d_by_dtheta(wsp%s2a,br,ftemp1)
         DO_IDX2
             ASBUFFA(IDX2,dbrdt_cb) = ftemp1(mp)%data(IDX2)
@@ -490,6 +490,9 @@ Contains
             DO_IDX2
                 ASBUFFA(IDX2,avar_cb) = l_l_plus1(m:l_max)* &
                                         SBUFFA(IDX2,avar)*one_over_r(r)
+            END_DO
+            DO_IDX2
+                ASBUFFA(IDX2,dbrdr_cb) = SBUFFA(IDX2,dcdr)
             END_DO
         Endif
     End Subroutine Hybrid_Output_Initial
