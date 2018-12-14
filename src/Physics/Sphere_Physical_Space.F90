@@ -77,16 +77,20 @@ Contains
         Call Compute_dvtheta_by_dtheta()
         Call Compute_dvphi_by_dtheta()
 
-        If (output_iteration) Then
-            Call Diagnostics_Prep()
-        Endif
-
         If (magnetism) Then
             Call rsintheta_div(curlbtheta)
             Call rsintheta_div(curlbphi)
             Call rsintheta_div(Btheta)
             Call rsintheta_div(Bphi)
         Endif
+
+        If (output_iteration) Then
+            Call Diagnostics_Prep()
+        Endif
+
+
+
+
 
         Call StopWatch(sdiv_time)%increment()
 
@@ -924,7 +928,7 @@ Contains
 
         DO_IDX
             wsp%p3a(IDX,dbtdt) = - wsp%p3a(IDX,br)*2.0d0 &
-                                 - radius(r)*cobuffer%p3a(IDX,dvrdr) &
+                                 - radius(r)*wsp%p3a(IDX,dbrdr) &
                                  - wsp%p3a(IDX,btheta)*cottheta(t) &
                                  - wsp%p3a(IDX,dbpdp)*csctheta(t)
         END_DO
