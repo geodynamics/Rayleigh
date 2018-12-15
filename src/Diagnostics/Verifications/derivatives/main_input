@@ -1,5 +1,5 @@
 !/////////////////////////////////////////////////////
-! This Input file is designed for use with the 
+! This Input file is for use with the 
 ! Python notebook:  verify_derivatives.ipynb
 !
 ! That notebook provides a visual check on the derivatives
@@ -8,8 +8,10 @@
 !
 ! This input file is designed to continue from timtestep
 ! 100,000 of the Christen el al . case 1 (steady MHD)
-! Boussinesq dynamo benchmark.
-
+! Boussinesq dynamo benchmark.  
+!
+! Really, any input file that uses the same set of outputs
+! as those defined here should work with the notebook.
 
 &problemsize_namelist
  n_r = 64
@@ -43,7 +45,7 @@ meridional_frequency = 1
 meridional_nrec      = 2
 meridional_indices_nrm = 0.7
 
-!phi derivatives (1,2), theta-phi derivaties
+!phi derivatives (1,2), theta-phi derivatives
 shellslice_levels_nrm    = 0.9
 shellslice_values    = 1,2,3, 28, 29, 30, 73, 74, 75, 100, 101, 102,
                        501, 502, 519, 520, 549,550, 567, 568   
@@ -51,6 +53,7 @@ shellslice_values    = 1,2,3, 28, 29, 30, 73, 74, 75, 100, 101, 102,
 shellslice_frequency = 1
 shellslice_nrec      = 2
 
+! r-phi derivatives
 equatorial_values    = 1,2,3, 91,92,93,
                        501, 502, 561, 562,
                        801, 802, 803, 891, 892, 893  
