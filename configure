@@ -32,12 +32,12 @@ function opt_flags {
   #$1 --version
   if [[ $1 == "INTEL" ]]
   then
-    echo '-FR -fpp -r8 -O3 -shared-intel'
+    echo '-FR -fpp -r8 -O3 -shared-intel -DINTEL_COMPILER'
   fi
 
   if [[ $1 == "GNU" ]]
   then
-    echo '-O3 -ffixed-line-length-132'
+    echo '-O3 -ffixed-line-length-132 -DGNU_COMPILER'
   fi
 }
 
@@ -45,11 +45,11 @@ function dbg_flags {
   #$1 --version
   if [[ $1 == "INTEL" ]]
   then
-    echo '-FR -fpp -r8 -O0 -g -CB -traceback -shared-intel'
+    echo '-FR -fpp -r8 -O0 -g -CB -traceback -shared-intel -DINTEL_COMPILER'
   fi
   if [[ $1 == "GNU" ]]
   then
-    echo '-O0 -fbounds-check -fbacktrace -ffixed-line-length-132'
+    echo '-O0 -fbounds-check -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
   fi
 }
 
