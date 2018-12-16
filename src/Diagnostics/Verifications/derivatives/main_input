@@ -1,0 +1,80 @@
+!/////////////////////////////////////////////////////
+! This Input file is for use with the 
+! Python notebook:  verify_derivatives.ipynb
+!
+! That notebook provides a visual check on the derivatives
+! calculated by Rayleigh at output time (not during the
+! main calculation).
+!
+! This input file is designed to continue from timtestep
+! 100,000 of the Christen el al . case 1 (steady MHD)
+! Boussinesq dynamo benchmark.  
+!
+! Really, any input file that uses the same set of outputs
+! as those defined here should work with the notebook.
+
+&problemsize_namelist
+ n_r = 64
+ n_theta = 96
+ nprow = 2
+ npcol = 2
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ benchmark_mode = 2
+ benchmark_integration_interval = 100
+ benchmark_report_interval = 10000
+/
+&temporal_controls_namelist
+ max_iterations = 150000
+ checkpoint_interval = 100000
+ quicksave_interval = 10000
+ num_quicksaves = 2
+/
+&io_controls_namelist
+/
+&output_namelist
+
+! r-derivatives (1,2), theta-derivatives(1,2), and r/theta derivatives
+meridional_values    = 1,2,3,10,11,12,19, 20, 21, 55,56,57,64,65,66, 82,83,84 
+                       501,502,507,508,513,514, 537,538,543,544,555,556
+                       801,802,803,810,811,812, 819, 820, 821,  
+                       855,856,857, 864, 865, 866, 882, 883, 884
+meridional_frequency = 1
+meridional_nrec      = 2
+meridional_indices_nrm = 0.7
+
+!phi derivatives (1,2), theta-phi derivatives
+shellslice_levels_nrm    = 0.9
+shellslice_values    = 1,2,3, 28, 29, 30, 73, 74, 75, 100, 101, 102,
+                       501, 502, 519, 520, 549,550, 567, 568   
+                       801,802,803, 828, 829, 830, 873, 874, 875, 900, 901, 902   
+shellslice_frequency = 1
+shellslice_nrec      = 2
+
+! r-phi derivatives
+equatorial_values    = 1,2,3, 91,92,93,
+                       501, 502, 561, 562,
+                       801, 802, 803, 891, 892, 893  
+equatorial_frequency = 1
+equatorial_nrec      = 2
+
+
+
+
+/
+
+&Boundary_Conditions_Namelist
+/
+&Initial_Conditions_Namelist
+init_type=-1
+restart_iter=100000
+/
+&Test_Namelist
+/
+&Reference_Namelist
+/
+&Transport_Namelist
+/
+

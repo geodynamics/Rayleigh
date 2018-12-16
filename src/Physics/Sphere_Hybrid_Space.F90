@@ -37,7 +37,7 @@ Module Sphere_Hybrid_Space
     Implicit None
     Real*8, Allocatable :: over_rhor(:), over_rhorsq(:), drho_term(:)
 
-    Type(rmcontainer3D), Allocatable :: ftemp1(:), ftemp2(:),ftemp3(:)
+    Type(rmcontainer3D), Allocatable :: ftemp1(:), ftemp2(:),ftemp3(:), ftemp4(:)
 Contains
 
 
@@ -423,8 +423,8 @@ Contains
 
         !/////////////////////////////////
         ! sintheta dB theta dr
-        Call d_by_dtheta(wsp%s2a,d2cdr2,ftemp1)
-        Call d_by_dphi(wsp%s2a,dadr,    ftemp2)
+        Call d_by_dtheta(ftemp3,ftemp1)
+        Call d_by_dphi(ftemp4,    ftemp2)
 
 
         DO_IDX2
@@ -442,8 +442,8 @@ Contains
 
         !/////////////////////////////////
         ! sintheta dB phi dr
-        Call d_by_dphi(wsp%s2a,d2cdr2,ftemp1)
-        Call d_by_dtheta(wsp%s2a,dadr,    ftemp2)
+        Call d_by_dphi(ftemp3,ftemp1)
+        Call d_by_dtheta(ftemp4,    ftemp2)
 
         DO_IDX2
             ftemp1(mp)%data(IDX2) = ftemp1(mp)%data(IDX2)-ftemp2(mp)%data(IDX2)
@@ -459,11 +459,11 @@ Contains
         END_DO
 
         !/////////////////////////////////////////
-        ! dB r dr
+        ! dB r dr  (dbrdr_cb holds dcdr up until this point)
 
         DO_IDX2
             ASBUFFA(IDX2,dbrdr_cb) = l_l_plus1(m:l_max)* &
-                & SBUFFA(IDX2,dcdr)*OneOverRSquared(r)
+                & ASBUFFA(IDX2,dbrdr_cb)*OneOverRSquared(r)
         END_DO
 
 
@@ -472,7 +472,7 @@ Contains
                 & SBUFFA(IDX2,br)*Two_Over_R(r)
         END_DO
 
-        ! sintheta dbrdr
+        ! sintheta dbrdt
         Call d_by_dtheta(wsp%s2a,br,ftemp1)
         DO_IDX2
             ASBUFFA(IDX2,dbrdt_cb) = ftemp1(mp)%data(IDX2)
@@ -485,12 +485,29 @@ Contains
         Implicit None
         Integer :: r, l, m, mp, imi
         If (magnetism) Then
-            ! We need to grab avar before it's overwritten by b_theta
+            Call Allocate_rlm_Field(ftemp3)
+            Call Allocate_rlm_Field(ftemp4)
+            ! First we grab a copy of several variables whose
+            ! values will be overwritten in B and J are computed
+        
             ! Convert A to ell(ell+1) A/r^2  (i.e. [curl B]_r)
             DO_IDX2
                 ASBUFFA(IDX2,avar_cb) = l_l_plus1(m:l_max)* &
-                                        SBUFFA(IDX2,avar)*one_over_r(r)
+                                        SBUFFA(IDX2,avar)*OneOverRSquared(r)
             END_DO
+
+            DO_IDX2
+                ASBUFFA(IDX2,dbrdr_cb) = SBUFFA(IDX2,dcdr)
+            END_DO
+
+            DO_IDX2
+                ftemp3(mp)%data(IDX2)  = SBUFFA(IDX2,d2cdr2)
+            END_DO
+
+            DO_IDX2
+                ftemp4(mp)%data(IDX2) = SBUFFA(IDX2,dadr)
+            END_DO
+
         Endif
     End Subroutine Hybrid_Output_Initial
 
@@ -504,6 +521,8 @@ Contains
         If (magnetism) Then
             ! We compute some derivatives of B as well
             Call BField_Derivatives()
+            Call Deallocate_rlm_Field(ftemp3)
+            Call Deallocate_rlm_Field(ftemp4)
         Endif
         Call cobuffer%construct('p2a')
         cobuffer%config = 'p2a'

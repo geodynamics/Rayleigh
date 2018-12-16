@@ -41,7 +41,7 @@ Module Spectral_Derivatives
 
     Interface d_by_dphi
         Module Procedure d_by_dphi3D, d_by_dphi_buff2arr, d_by_dphi_rlmbuff, d_by_dphi3Dbuff
-        Module Procedure d_by_dphi_4dbuff2arr, d_by_dphi_rlmbuff4d
+        Module Procedure d_by_dphi_4dbuff2arr, d_by_dphi_rlmbuff4d, d_by_dphi_arr2arr
     End Interface
 
 Contains
@@ -349,6 +349,9 @@ Subroutine d_dtheta_4dbuff2arr(A,fin,arr)
     !$OMP END PARALLEL DO
 End Subroutine d_dtheta_4dbuff2arr
 
+
+
+
 Subroutine d_sdtheta_buff2arr(A,fin,arr)
     Type(rmcontainer), Intent(InOut) :: A(1:), arr(1:)
     Integer, Intent(In) :: fin
@@ -504,6 +507,22 @@ End Subroutine d_sdtheta_4dbuff2arr
         !$OMP END PARALLEL DO
 
     End Subroutine d_by_dphi_4dbuff2arr
+
+    Subroutine d_by_dphi_arr2arr(arr1, arr2)
+        Implicit None
+
+        Type(rmcontainer3d), Intent(InOut) :: arr1(1:), arr2(1:)
+
+        Integer :: i, m
+        !$OMP PARALLEL DO PRIVATE(i,m)
+        Do i = 1, nm_local
+                m = mlocal(i)
+                arr2(i)%data(:,:,1) = -m*arr1(i)%data(:,:,2)
+                arr2(i)%data(:,:,2) =  m*arr1(i)%data(:,:,1)
+        Enddo
+        !$OMP END PARALLEL DO
+
+    End Subroutine d_by_dphi_arr2arr
 
     !///////////////////////////////////////////////////////
     !  Computes phi derivative of variable from_ind stored in buff
