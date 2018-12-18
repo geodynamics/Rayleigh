@@ -195,6 +195,11 @@ Contains
         ref%viscous_amp(:)        = Zero
         ref%heating(:)            = Zero
 
+        ref%gamma = Zero
+        ref%Coriolis_Coeff = Zero
+        ref%Lorentz_Coeff = Zero
+        ref%script_N_Top
+
     End Subroutine Allocate_Reference_State
     Subroutine Constant_Reference()
         Implicit None
@@ -210,6 +215,7 @@ Contains
         Character*120 :: dvf
         Dimensional_Reference = .false.
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
+        ohmic_heating = .false.
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Boussinesq (Non-dimensional)"))
             Write(dstring,dofmt)Rayleigh_Number
