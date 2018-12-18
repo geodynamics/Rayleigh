@@ -209,6 +209,7 @@ class ReferenceState:
     self.dsdr        : entropy gradient (radial)
     self.entropy     : entropy
     self.gravity     : gravity
+    self.heating     : volumetric heating (Q)
     """
 
     def __init__(self,filename='none',path='./'):
@@ -224,7 +225,7 @@ class ReferenceState:
         bs = check_endian(fd,314,'int32')
         
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
-        tmp = np.reshape(swapread(fd,dtype='float64',count=10*nr,swap=bs),(nr,10), order = 'F')
+        tmp = np.reshape(swapread(fd,dtype='float64',count=11*nr,swap=bs),(nr,11), order = 'F')
         self.nr = nr
         self.radius      = tmp[:,0]
         self.density     = tmp[:,1]
@@ -236,9 +237,10 @@ class ReferenceState:
         self.dsdr        = tmp[:,7]
         self.entropy     = tmp[:,8]
         self.gravity     = tmp[:,9]
+        self.heating     = tmp[:,10]
         self.ref = tmp
         self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure', 'temperature',
-        'dlnt', 'dsdr','entropy','gravity']
+        'dlnt', 'dsdr','entropy','gravity', 'heating']
         fd.close()
 
 class G_Avgs:
