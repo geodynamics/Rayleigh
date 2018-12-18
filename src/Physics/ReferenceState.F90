@@ -195,10 +195,12 @@ Contains
         ref%viscous_amp(:)        = Zero
         ref%heating(:)            = Zero
 
-        ref%gamma = Zero
+        ref%gamma          = Zero
         ref%Coriolis_Coeff = Zero
-        ref%Lorentz_Coeff = Zero
-        ref%script_N_Top
+        ref%Lorentz_Coeff  = Zero
+        ref%script_N_Top   = Zero
+        ref%script_K_Top   = Zero
+        ref%script_H_Top   = Zero
 
     End Subroutine Allocate_Reference_State
     Subroutine Constant_Reference()
