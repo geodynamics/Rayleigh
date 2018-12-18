@@ -177,6 +177,24 @@ Contains
         Allocate(ref%pressure_dwdr_term(1:N_R))
         Allocate(ref%ohmic_amp(1:N_R))
         Allocate(ref%viscous_amp(1:N_R))
+        Allocate(ref%heating(1:N_R))
+
+        ref%density(:)            = Zero
+        ref%pressure(:)           = Zero        
+        ref%temperature(:)        = Zero
+        ref%entropy(:)            = Zero
+        ref%gravity(:)            = Zero
+        ref%dlnrho(:)             = Zero
+        ref%d2lnrho(:)            = Zero
+        ref%dlnt(:)               = Zero
+        ref%dsdr(:)               = Zero
+        ref%buoyancy_coeff(:)     = Zero
+        ref%dpdr_w_term(:)        = Zero
+        ref%pressure_dwdr_term(:) = Zero
+        ref%ohmic_amp(:)          = Zero
+        ref%viscous_amp(:)        = Zero
+        ref%heating(:)            = Zero
+
     End Subroutine Allocate_Reference_State
     Subroutine Constant_Reference()
         Implicit None
@@ -756,6 +774,7 @@ Contains
             Write(15)(ref%dsdr(i),i=1,n_r)
             Write(15)(ref%entropy(i),i=1,n_r)
             Write(15)(ref%gravity(i),i=1,n_r)
+            Write(15)(ref%heating(i),i=1,n_r)
             Close(15)
         Endif
     End Subroutine Write_Reference
