@@ -71,10 +71,12 @@ Contains
     Subroutine Main_Loop_Sphere()
         Implicit None
         Integer ::  last_iteration, first_iteration,i,iret, sigflag
+        Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
         Character*14 :: tmstr
         Character*8 :: istr, dtfmt ='(ES10.4)'
         Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
+        
 
         ! Register handle_sig as the signal-handling 
         ! function for SIGTERM (15) signals.
@@ -138,6 +140,7 @@ Contains
             !The transpose buffers
             output_iteration = time_to_output(iteration)
             global_msgs(3) = killsig
+            global_msgs(4) = simulation_time
 
             Call Post_Solve() ! Linear Solve Configuration
 
@@ -177,6 +180,27 @@ Contains
                     Call stdout%print(' User-specified maximum walltime exceeded.  Cleaning up.')
                 Endif
                 last_iteration = iteration !force loop to end
+            Endif
+
+            If (global_msgs(4) .gt. max_simulation_time) Then
+                last_iteration = iteration !force loop to end
+
+                If (my_rank .eq. 0) Then
+
+                    Call stdout%print(' ')
+                    Call stdout%print(' Maximum simulation time reached.  Checkpoint/exit sequence initiated.')
+                    Call stdout%print(' ')
+
+
+                    !////////////////////////////
+                    ! Write the completion file
+                    Open(unit=io, file=Trim(my_path)//'simulation_complete.txt', form='formatted', &
+                        & action='write', access='sequential', status='replace', iostat=ierr)
+                    If (ierr .eq. 0) Then
+                        Write(io,*) "Maximum simulation time reached."
+                        Close(unit=io)
+                    Endif
+                Endif
             Endif
 
 
@@ -264,6 +288,7 @@ Contains
 
             Call stdout%print('//////////////////////////////////////////////')
 
+            
         Endif
         Call Finalize_Timing(n_r,l_max,max_iterations)
     End Subroutine Main_Loop_Sphere
