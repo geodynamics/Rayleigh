@@ -49,7 +49,7 @@ var="$pref$val"
 ./src/format_var.sh "$var" $HFILE
 
 #Machine name
-pref="    Character(len=128) :: build_machine = \"---build machine---"
+pref="    Character(len=256) :: build_machine = \"---build machine---"
 val=$(uname -a)
 var="$pref$val"
 ./src/format_var.sh "$var" $HFILE
