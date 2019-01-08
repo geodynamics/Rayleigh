@@ -561,8 +561,9 @@ then
   echo " -- Sandy Bridge / Ivy Bridge cores :  AVX"
   echo " -- Haswell /Broadwell              :  AVX2 "
   echo " -- SkyLake / Knights Landing       :  AVX512 "
+  echo " -- Support for all of the above    :  FAT"
   echo ""
-    OPTIONS="SSE4.2 AVX AVX2 AVX512 ALL NONE"
+    OPTIONS="SSE4.2 AVX AVX2 AVX512 ALL FAT NONE"
     select opt in $OPTIONS; do
        if [ "$opt" = "SSE4.2" ]; then
         FFLAGS[0]=$OPT_FLAGS" -xSSE4.2"
@@ -574,7 +575,7 @@ then
         FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX2"
         break            
        elif [ "$opt" = "AVX512" ]; then
-        FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX512"
+        FFLAGS[0]=$OPT_FLAGS" -xCOMMON-AVX512 -axCORE-AVX512,MIC-AVX512"
         break      
        elif [ "$opt" = "ALL" ]; then
          DEFAULT='avx2'
@@ -583,15 +584,18 @@ then
          FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX2"
          FFLAGS[2]=$OPT_FLAGS" -xAVX"
          FFLAGS[3]=$OPT_FLAGS" -xSSE4.2"
-         FFLAGS[4]=$OPT_FLAGS" -xCORE-AVX512"
+         FFLAGS[4]=$OPT_FLAGS" -xCOMMON-AVX512 -axCORE-AVX512,MIC-AVX512"
          RVALUES[0]=$DEFAULT 
          RVALUES[2]=avx
          RVALUES[3]=sse
-         RVAKYES[4]=avx512
+         RVALUES[4]=avx512
          RVTAGS[2]="AVX"
          RVTAGS[3]="SSE"
          RVTAGS[4]="AVX512"
          break
+       elif [ "$opt" = "FAT" ]; then
+        FFLAGS[0]=$OPT_FLAGS" -xSSE4.2 -axAVX,CORE-AVX2,CORE-AVX512,MIC-AVX512"
+        break
        elif [ "$opt" == "NONE" ]; then
          FFLAGS[0]=$OPT_FLAGS
          break
