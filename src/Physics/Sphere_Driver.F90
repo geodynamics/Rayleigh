@@ -139,6 +139,11 @@ Contains
             !If so, we will want to transfer additional information within
             !The transpose buffers
             output_iteration = time_to_output(iteration)
+
+            ! Information relevant to ending the simulation is added here.
+            ! All processes contain the same (cpu-pool max) value
+            ! for global_msgs following the completion of AdvanceTime
+            global_msgs(2) = stopwatch(walltime)%elapsed 
             global_msgs(3) = killsig
             global_msgs(4) = simulation_time
 
@@ -174,7 +179,7 @@ Contains
             !////////////////////////////////////////////////////////////////////
             !   The final part of the loop just deals with cleaning up if it's
             !      time to end the run.
-            global_msgs(2) = stopwatch(walltime)%elapsed !/timer_ticklength
+            
             If (global_msgs(2) .gt. max_time_seconds) Then
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' User-specified maximum walltime exceeded.  Cleaning up.')
@@ -188,7 +193,7 @@ Contains
                 If (my_rank .eq. 0) Then
 
                     Call stdout%print(' ')
-                    Call stdout%print(' Maximum simulation time reached.  Checkpoint/exit sequence initiated.')
+                    Call stdout%print(' Maximum simulation time exceeded.  Cleaning up.')
                     Call stdout%print(' ')
 
 
@@ -197,7 +202,7 @@ Contains
                     Open(unit=io, file=Trim(my_path)//'simulation_complete.txt', form='formatted', &
                         & action='write', access='sequential', status='replace', iostat=ierr)
                     If (ierr .eq. 0) Then
-                        Write(io,*) "Maximum simulation time reached."
+                        Write(io,*) "Maximum simulation time exceeded."
                         Close(unit=io)
                     Endif
                 Endif
@@ -208,7 +213,7 @@ Contains
                 If (save_on_sigterm) Then
                     If (my_rank .eq. 0) Then
                         Call stdout%print(' ')
-                        Call stdout%print(' SIGTERM caught.  Checkpoint/exit sequence initiated.')
+                        Call stdout%print(' SIGTERM caught.  Cleaning up')
                         Call stdout%print(' ')
                     Endif
                     last_iteration = iteration !force loop to end
