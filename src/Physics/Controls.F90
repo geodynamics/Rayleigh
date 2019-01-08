@@ -80,7 +80,7 @@ Module Controls
     Real*8  :: alpha_implicit = 0.5d0       ! Crank Nicolson Implict/Explicit weighting factor (1.0 is fully implicit)
     Integer :: max_iterations = 1000000     ! The maximum number of iterations to be run in a given session
     Real*8  :: max_time_minutes = 1d8       ! Maximum walltime to run the code (this should be ample...)
-    Real*8  :: max_simulation_time = 1d20   ! Maximum simulation time to evolve the model for
+    Real*8  :: max_simulated_time = 1d20   ! Maximum simulation time to evolve the model for
 
     Logical :: save_last_timestep = .true.
     Logical :: save_on_sigterm = .false.       ! Rayleigh will attempt to checkpoint and exit upon termination request
@@ -101,7 +101,7 @@ Module Controls
                 & cflmax, cflmin, max_time_step,chk_type, diagnostic_reboot_interval, min_time_step, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
                 & max_time_minutes, save_last_timestep, new_iteration,read_chk_type, save_on_sigterm, &
-                & max_simulation_time
+                & max_simulated_time
 
 
 

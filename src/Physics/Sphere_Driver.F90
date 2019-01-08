@@ -187,13 +187,13 @@ Contains
                 last_iteration = iteration !force loop to end
             Endif
 
-            If (global_msgs(4) .gt. max_simulation_time) Then
+            If (global_msgs(4) .gt. max_simulated_time) Then
                 last_iteration = iteration !force loop to end
 
                 If (my_rank .eq. 0) Then
 
                     Call stdout%print(' ')
-                    Call stdout%print(' Maximum simulation time exceeded.  Cleaning up.')
+                    Call stdout%print(' Maximum simulated time exceeded.  Cleaning up.')
                     Call stdout%print(' ')
 
 
@@ -202,7 +202,7 @@ Contains
                     Open(unit=io, file=Trim(my_path)//'simulation_complete.txt', form='formatted', &
                         & action='write', access='sequential', status='replace', iostat=ierr)
                     If (ierr .eq. 0) Then
-                        Write(io,*) "Maximum simulation time exceeded."
+                        Write(io,*) "Maximum simulated time exceeded."
                         Close(unit=io)
                     Endif
                 Endif
