@@ -78,8 +78,9 @@ Module Controls
     !   Temporal Controls
     !   Flags that control details of the time-stepping (some relate to the numerics, but we keep the time-related things together).
     Real*8  :: alpha_implicit = 0.5d0       ! Crank Nicolson Implict/Explicit weighting factor (1.0 is fully implicit)
-    Integer :: max_iterations = 1000000         ! The maximum number of iterations to be run in a given session
-    Real*8  :: max_time_minutes = 1d8           ! Maximum walltime to run the code (this should be ample...)
+    Integer :: max_iterations = 1000000     ! The maximum number of iterations to be run in a given session
+    Real*8  :: max_time_minutes = 1d8       ! Maximum walltime to run the code (this should be ample...)
+    Real*8  :: max_simulated_time = 1d20   ! Maximum simulation time to evolve the model for
 
     Logical :: save_last_timestep = .true.
     Logical :: save_on_sigterm = .false.       ! Rayleigh will attempt to checkpoint and exit upon termination request
@@ -99,7 +100,8 @@ Module Controls
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
                 & cflmax, cflmin, max_time_step,chk_type, diagnostic_reboot_interval, min_time_step, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
-                & max_time_minutes, save_last_timestep, new_iteration,read_chk_type, save_on_sigterm
+                & max_time_minutes, save_last_timestep, new_iteration,read_chk_type, save_on_sigterm, &
+                & max_simulated_time
 
 
 
@@ -117,7 +119,7 @@ Module Controls
     ! full pool of processes
     Real*8, Allocatable :: global_msgs(:)
     Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
-    Integer :: nglobal_msgs = 3  ! timestep, elapsed since checkpoint, kill_signal/global message
+    Integer :: nglobal_msgs = 4  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time
 
 
     Integer :: nicknum = 5   ! DO NOT LEAVE THIS HERE -- TEMPORARY LOCATION (AND NAME)

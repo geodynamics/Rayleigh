@@ -71,10 +71,12 @@ Contains
     Subroutine Main_Loop_Sphere()
         Implicit None
         Integer ::  last_iteration, first_iteration,i,iret, sigflag
+        Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
         Character*14 :: tmstr
         Character*8 :: istr, dtfmt ='(ES10.4)'
         Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
+        
 
         ! Register handle_sig as the signal-handling 
         ! function for SIGTERM (15) signals.
@@ -137,7 +139,13 @@ Contains
             !If so, we will want to transfer additional information within
             !The transpose buffers
             output_iteration = time_to_output(iteration)
+
+            ! Information relevant to ending the simulation is added here.
+            ! All processes contain the same (cpu-pool max) value
+            ! for global_msgs following the completion of AdvanceTime
+            global_msgs(2) = stopwatch(walltime)%elapsed 
             global_msgs(3) = killsig
+            global_msgs(4) = simulation_time
 
             Call Post_Solve() ! Linear Solve Configuration
 
@@ -171,7 +179,7 @@ Contains
             !////////////////////////////////////////////////////////////////////
             !   The final part of the loop just deals with cleaning up if it's
             !      time to end the run.
-            global_msgs(2) = stopwatch(walltime)%elapsed !/timer_ticklength
+            
             If (global_msgs(2) .gt. max_time_seconds) Then
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' User-specified maximum walltime exceeded.  Cleaning up.')
@@ -179,12 +187,33 @@ Contains
                 last_iteration = iteration !force loop to end
             Endif
 
+            If (global_msgs(4) .gt. max_simulated_time) Then
+                last_iteration = iteration !force loop to end
+
+                If (my_rank .eq. 0) Then
+
+                    Call stdout%print(' ')
+                    Call stdout%print(' Maximum simulated time exceeded.  Cleaning up.')
+                    Call stdout%print(' ')
+
+
+                    !////////////////////////////
+                    ! Write the completion file
+                    Open(unit=io, file=Trim(my_path)//'simulation_complete.txt', form='formatted', &
+                        & action='write', access='sequential', status='replace', iostat=ierr)
+                    If (ierr .eq. 0) Then
+                        Write(io,*) "Maximum simulated time exceeded."
+                        Close(unit=io)
+                    Endif
+                Endif
+            Endif
+
 
             If (global_msgs(3) .gt. 2.0 .and. global_msgs(3) .lt. 3.0) Then
                 If (save_on_sigterm) Then
                     If (my_rank .eq. 0) Then
                         Call stdout%print(' ')
-                        Call stdout%print(' SIGTERM caught.  Checkpoint/exit sequence initiated.')
+                        Call stdout%print(' SIGTERM caught.  Cleaning up')
                         Call stdout%print(' ')
                     Endif
                     last_iteration = iteration !force loop to end
@@ -264,6 +293,7 @@ Contains
 
             Call stdout%print('//////////////////////////////////////////////')
 
+            
         Endif
         Call Finalize_Timing(n_r,l_max,max_iterations)
     End Subroutine Main_Loop_Sphere
