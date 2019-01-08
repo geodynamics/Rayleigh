@@ -29,7 +29,8 @@ Module Input
     Use BoundaryConditions, Only : boundary_conditions_namelist
     Use Initial_Conditions, Only : initial_conditions_namelist, alt_check
     Use TestSuite, Only : test_namelist
-    Use ReferenceState, Only : reference_namelist
+    Use ReferenceState, Only : reference_namelist, Prandtl_Number, Rayleigh_Number, &
+                               Magnetic_Prandtl_Number, Ekman_Number
     Use TransportCoefficients, Only : Transport_Namelist
     Use Parallel_Framework, Only : pfi
     Use Stable_Plugin, Only : stable_namelist
@@ -250,6 +251,32 @@ Contains
                     arg2 = TRIM(AdjustL(arg))
                   Read (arg2,*) jobinfo_file
                 Endif
+
+                ! Physical control parameters
+                If (arg .eq. '-Ra') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) Rayleigh_Number
+                Endif
+
+                If (arg .eq. '-E') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) Ekman_Number
+                Endif
+
+                If (arg .eq. '-Pr') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) Prandtl_Number
+                Endif
+
+                If (arg .eq. '-Pm') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) Magnetic_Prandtl_Number
+                Endif
+
               i = i+1
 
           END DO
