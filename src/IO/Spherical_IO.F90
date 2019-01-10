@@ -3565,8 +3565,11 @@ Contains
 
             Call self%update_position                                ! save current position
             Read(self%file_unit,POS = 9)self%current_rec             ! read previous record #
+#ifdef INTEL_COMPILER 
+            fstat=fseek(self%file_unit, self%file_position, 0) ! return to end of file 
+#else
             Call fseek(self%file_unit, self%file_position, 0, fstat) ! return to end of file 
-
+#endif
 
             self%current_rec = self%current_rec+1
             If (errcheck .ne. 0) Then
