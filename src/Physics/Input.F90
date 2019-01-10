@@ -27,7 +27,7 @@ Module Input
                             & io_controls_namelist, new_iteration, jobinfo_file
     Use Spherical_IO, Only : output_namelist
     Use BoundaryConditions, Only : boundary_conditions_namelist
-    Use Initial_Conditions, Only : initial_conditions_namelist, alt_check
+    Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, magnetic_init_type
     Use TestSuite, Only : test_namelist
     Use ReferenceState, Only : reference_namelist, Prandtl_Number, Rayleigh_Number, &
                                Magnetic_Prandtl_Number, Ekman_Number
@@ -275,6 +275,18 @@ Contains
                     CALL get_command_argument(i+1, arg)
                     arg2 = TRIM(AdjustL(arg))
                   Read (arg2,*) Magnetic_Prandtl_Number
+                Endif
+
+                If (arg .eq. '-init') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) init_type
+                Endif
+
+                If (arg .eq. '-mag-init') then
+                    CALL get_command_argument(i+1, arg)
+                    arg2 = TRIM(AdjustL(arg))
+                  Read (arg2,*) magnetic_init_type
                 Endif
 
               i = i+1
