@@ -1,4 +1,4 @@
 make distclean
-./configure -devel $1
+./configure -devel
 make
 make install
