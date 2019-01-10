@@ -28,6 +28,9 @@ Module Spherical_IO
     Use Legendre_Transforms, Only : Legendre_Transform
     Use BufferedOutput
     Use Math_Constants
+#ifdef INTEL_COMPILER 
+    USE IFPORT
+#endif
 	Implicit None
 	! This module contains routines for outputing spherical data as:
 	! 1. Slices of sphere
