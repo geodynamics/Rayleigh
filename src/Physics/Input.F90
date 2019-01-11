@@ -37,6 +37,11 @@ Module Input
     Use Run_Parameters, Only : write_run_parameters
     Implicit None
 
+    Interface Read_CMD_Line
+        Module Procedure Read_CMD_Integer, Read_CMD_Double, Read_CMD_Logical
+        Module Procedure Read_CMD_String
+    End Interface
+
 Contains
 
     Subroutine Main_Input()
@@ -184,114 +189,110 @@ Contains
             Implicit None
             Character*120 :: arg, arg2
             Integer :: i, itemp
-            i = 1
-            DO
-              CALL get_command_argument(i, arg)
-             IF (LEN_TRIM(arg) == 0) EXIT
 
-                arg2 = TRIM(AdjustL(arg))
-                If (arg .eq. '-new_iter') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                    Read (arg2,*) new_iteration
-                Endif
+            Call Read_CMD_Line('-new_iter' , new_iteration)
+            Call Read_CMD_Line('-nprow'    , nprow)
+            Call Read_CMD_Line('-npcol'    , npcol)
 
-                If (arg .eq. '-nprow') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) nprow
-                Endif
-                If (arg .eq. '-npcol') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) npcol
-                Endif
-                If (arg .eq. '-npout') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) npout
-                Endif
-                If (arg .eq. '-niter') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) max_iterations
-                Endif
-                If (arg .eq. '-nr') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) n_r
-                Endif
-                If (arg .eq. '-ntheta') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) n_theta
-                Endif
-                If (arg .eq. '-pata') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) itemp
-                    if (itemp .eq. 1) then
-                        pad_alltoall = .true.
-                    else
-                        pad_alltoall = .false.
-                    endif
-                Endif
-                If (arg .eq. '-altc') Then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) itemp
-                    if (itemp .eq. 1) then
-                        alt_check = .true.
-                    else
-                        alt_check = .false.
-                    endif
-                Endif
-                If (arg .eq. '-jobinfo') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) jobinfo_file
-                Endif
+            Call Read_CMD_Line('-npout'  , npout)
+            Call Read_CMD_Line('-niter'  , max_iterations)
+            Call Read_CMD_Line('-nr'     , n_r)
+            Call Read_CMD_Line('-ntheta' , n_theta)
 
-                ! Physical control parameters
-                If (arg .eq. '-Ra') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) Rayleigh_Number
-                Endif
+            Call Read_CMD_Line('-pata' , pad_alltoall)
+            Call Read_CMD_Line('-altc' , alt_check)
 
-                If (arg .eq. '-E') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) Ekman_Number
-                Endif
+            Call Read_CMD_Line('-jobinfo' , jobinfo_file)               
 
-                If (arg .eq. '-Pr') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) Prandtl_Number
-                Endif
+            Call Read_CMD_Line('-Ra' , Rayleigh_Number)
+            Call Read_CMD_Line('-E'  , Ekman_Number)
+            Call Read_CMD_Line('-Pr' , Prandtl_Number)
+            Call Read_CMD_Line('-Pm' , Magnetic_Prandtl_Number)
 
-                If (arg .eq. '-Pm') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) Magnetic_Prandtl_Number
-                Endif
+            Call Read_CMD_Line('-init'     , init_type)
+            Call Read_CMD_Line('-mag-init' , magnetic_init_type)
 
-                If (arg .eq. '-init') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) init_type
-                Endif
-
-                If (arg .eq. '-mag-init') then
-                    CALL get_command_argument(i+1, arg)
-                    arg2 = TRIM(AdjustL(arg))
-                  Read (arg2,*) magnetic_init_type
-                Endif
-
-              i = i+1
-
-          END DO
     End Subroutine CheckArgs
+
+    !////////////////////////////////////////////////////////////
+    ! The following subroutines are members of the Read_CMD_Line
+    ! interface. Each routine sets the value of ivar to the value 
+    ! following istring if it is specified at the command line.  
+    ! The one exception is Read_CMD_Logical, which sets ivar to .true.
+    ! if the value following istring is 1.  Ivar is set to .false.
+    ! otherwise.
+
+    Subroutine Read_CMD_String(istring, ivar)
+        Implicit None
+        Character(*),Intent(In) :: istring
+        Character(*), Intent(InOut) :: ivar
+        Integer :: i, n
+        Character*1024 :: argname, argval, argshift
+        n = command_argument_count()
+        Do i = 1, n,2
+            Call get_command_argument(i,argname)
+            Call get_command_argument(i+1,argval)
+            If (istring .eq. argname) Then
+                argshift = TRIM(AdjustL(argval))
+                Read(argshift,*) ivar
+            Endif
+        Enddo
+    End Subroutine Read_CMD_String
+
+    Subroutine Read_CMD_Logical(istring, ivar)
+        Implicit None
+        Character(*),Intent(In) :: istring
+        Logical, Intent(InOut) :: ivar
+        Integer :: i, n, itemp
+        Character*1024 :: argname, argval, argshift
+        n = command_argument_count()
+        Do i = 1, n,2
+            Call get_command_argument(i,argname)
+            Call get_command_argument(i+1,argval)
+            If (istring .eq. argname) Then
+                argshift = TRIM(AdjustL(argval))
+                Read(argshift,*) itemp
+                If (itemp .eq. 1) Then
+                    ivar = .true.
+                Else
+                    ivar = .false.
+                Endif
+            Endif
+        Enddo
+    End Subroutine Read_CMD_Logical
+
+    Subroutine Read_CMD_Integer(istring, ivar)
+        Implicit None
+        Character(*),Intent(In) :: istring
+        Integer, Intent(InOut) :: ivar
+        Integer :: i, n
+        Character*1024 :: argname, argval, argshift
+        n = command_argument_count()
+        Do i = 1, n,2
+            Call get_command_argument(i,argname)
+            Call get_command_argument(i+1,argval)
+            If (istring .eq. argname) Then
+                argshift = TRIM(AdjustL(argval))
+                Read(argshift,*) ivar
+            Endif
+        Enddo
+    End Subroutine Read_CMD_Integer
+
+    Subroutine Read_CMD_Double(istring, ivar)
+        Implicit None
+        Character(*),Intent(In) :: istring
+        Real*8, Intent(InOut) :: ivar
+        Integer :: i, n
+        Character*1024 :: argname, argval, argshift
+        n = command_argument_count()
+        Do i = 1, n,2
+            Call get_command_argument(i,argname)
+            Call get_command_argument(i+1,argval)
+            If (istring .eq. argname) Then
+                argshift = TRIM(AdjustL(argval))
+                Read(argshift,*) ivar
+            Endif
+        Enddo
+    End Subroutine Read_CMD_Double
 
 End Module Input
