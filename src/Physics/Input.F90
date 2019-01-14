@@ -20,7 +20,7 @@
 
 Module Input
     Use ProblemSize,  Only : problemsize_namelist, nprow, npcol, n_r,n_theta, npout, global_rank, &
-                             & ncpu_global
+                             & ncpu_global, aspect_ratio, l_max
     Use Controls,     Only : temporal_controls_namelist, numerical_controls_namelist, &
                             & physical_controls_namelist, max_iterations, pad_alltoall, &
                             & multi_run_mode, nruns, rundirs, my_path, run_cpus, &
@@ -198,6 +198,8 @@ Contains
             Call Read_CMD_Line('-niter'  , max_iterations)
             Call Read_CMD_Line('-nr'     , n_r)
             Call Read_CMD_Line('-ntheta' , n_theta)
+            Call Read_CMD_Line('-aspect' , aspect_ratio)
+            Call Read_CMD_Line('-lmax' , l_max)
 
             Call Read_CMD_Line('-pata' , pad_alltoall)
             Call Read_CMD_Line('-altc' , alt_check)
