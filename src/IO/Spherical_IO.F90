@@ -28,6 +28,9 @@ Module Spherical_IO
     Use Legendre_Transforms, Only : Legendre_Transform
     Use BufferedOutput
     Use Math_Constants
+#ifdef INTEL_COMPILER 
+    USE IFPORT
+#endif
 	Implicit None
 	! This module contains routines for outputing spherical data as:
 	! 1. Slices of sphere
@@ -3529,9 +3532,8 @@ Contains
         Character*8 :: iterstring,istr
         Character*120 :: filename, omsg
         Integer :: modcheck, imod, file_iter, next_iter, ibelong
-        ! Note - we should do something to make sure that the file has been started before we start writing to it...
-        ! possibly look at self%rec_count*self%frequency
-        ! otherwise, if someone output with a strange cadence relative to
+        Integer :: fstat
+
         modcheck = self%frequency*self%rec_per_file
         imod = Mod(iter,modcheck) 
 
@@ -3545,9 +3547,6 @@ Contains
 
         If ( (imod .eq. self%frequency) .or. (self%rec_per_file .eq. 1) ) Then   ! time to begin a new file 
 
-            !omsg = ' Creating Filename: '//trim(filename)
-            !Write(6,*)'Creating Filename: ', filename
-            !Call stdout%print(omsg)
             Call stdout%print(' Creating Filename: '//trim(filename))
             Open(unit=self%file_unit,file=filename,form='unformatted', status='replace',access='stream',iostat = errcheck)
             Write(self%file_unit)endian_tag
@@ -3558,21 +3557,29 @@ Contains
                 next_iter =file_iter+modcheck
                 call stdout%print(' Unable to create file!!: '//trim(filename))
             Endif
+
         Else
+
             Open(unit=self%file_unit,file=filename,form='unformatted', status='old',access='stream', &
                 & iostat = errcheck, POSITION = 'APPEND')    
 
-            ! This looks redundant, but it allows partial files to be continued following restart
-            !Read(self%file_unit,POS = 9)self%current_rec  
+            Call self%update_position                                ! save current position
+            Read(self%file_unit,POS = 9)self%current_rec             ! read previous record #
+#ifdef INTEL_COMPILER 
+            fstat=fseek(self%file_unit, self%file_position, 0) ! return to end of file 
+#else
+            Call fseek(self%file_unit, self%file_position, 0, fstat) ! return to end of file 
+#endif
+
             self%current_rec = self%current_rec+1
             If (errcheck .ne. 0) Then
                 next_iter =file_iter+modcheck
                 Call stdout%print(' --Failed to find needed file: '//trim(filename))
                 Call stdout%print(' --Partial diagnostic files are not currently supported.')
                 Write(istr,'(i8.8)')ibelong+self%frequency
-               !Write(6,*)'No data will be written until a new file is created at iteration: ', ibelong+self%frequency
                 Call stdout%print(' --No data will be written until a new file is created at iteration: '//trim(istr))
             Endif
+
         Endif
 
     End Subroutine OpenFile
@@ -3648,12 +3655,11 @@ Contains
                  MPI_INFO_NULL, funit, ierr) 
             self%file_unit = funit
 
-            !disp = 8
-            !Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
-            !Read the current record
-
-            !call MPI_FILE_READ(self%file_unit, self%current_rec, 1, MPI_INTEGER, & 
-            !mstatus, ierr)
+            !Read the previous record number / advance record
+            disp = 8
+            Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
+            Call MPI_FILE_READ(self%file_unit, self%current_rec, 1, MPI_INTEGER, & 
+                & mstatus, ierr)
 
             self%current_rec = self%current_rec+1+self%cc
 
@@ -3710,7 +3716,8 @@ Contains
     Subroutine Update_Position(self)
         Implicit None
         Class(DiagnosticInfo) :: self
-        INQUIRE(UNIT=self%file_unit, POS=self%file_position)
+        !INQUIRE(UNIT=self%file_unit, POS=self%file_position)
+        self%file_position=ftell(self%file_unit)
     End Subroutine Update_Position
 
     Subroutine getq_now(self,yesno)
