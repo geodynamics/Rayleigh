@@ -146,7 +146,49 @@ Contains
 
         Call Transport_Dependencies()
 
+        Call Write_Transport()
+
     End Subroutine Initialize_Transport_Coefficients
+
+    Subroutine Write_Transport(filename)
+        Implicit None
+        Character*120, Optional, Intent(In) :: filename
+        Character*120 :: transport_file
+        Integer :: i, sig=314
+        if (present(filename)) then
+            transport_file = Trim(my_path)//filename
+        else
+            transport_file = Trim(my_path)//'transport'
+        endif
+
+        If (my_rank .eq. 0) Then
+            Open(unit=15, file=transport_file, form='unformatted', status='replace', access='stream')
+            Write(15) sig
+            Write(15) n_r
+            If (magnetism) Then
+            ! Indicate whether or not there is magnetism
+            ! (Determines size of output data file)
+                Write(15) 1
+            Else
+                Write(15) 0
+            Endif
+
+            Write(15) (radius(i), i=1,n_r)
+
+            Write(15) (nu(i),i=1, n_r)
+            Write(15) (dlnu(i),i=1, n_r)
+
+            Write(15) (kappa(i),i=1, n_r)
+            Write(15) (dlnkappa(i),i=1, n_r)
+
+            If (magnetism) Then
+                Write(15) (eta(i),i=1,n_r)
+                Write(15) (dlneta(i),i=1,n_r)
+            Endif
+
+            Close(15)
+        Endif
+    End Subroutine Write_Transport
 
     Subroutine Transport_Dependencies()
         Implicit None

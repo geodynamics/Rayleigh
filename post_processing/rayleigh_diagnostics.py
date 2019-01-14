@@ -243,6 +243,55 @@ class ReferenceState:
         'dlnt', 'dsdr','entropy','gravity', 'heating']
         fd.close()
 
+class TransportCoeffs:
+    """Rayleigh Transport Coefficients Structure
+    ----------------------------------
+    self.n_r         : number of radial points
+    self.radius      : radial coordinates
+    self.nu          : momentum diffusivity (kinematic viscosity)
+    self.dlnu        : logarithmic derivative of the viscosity
+    self.kappa       : temperature diffusivity (thermometric conductivity)
+    self.eta :       : magnetic diffusivity 
+    self.dlneta      : logarithmic derivative of magnetic diffusivity
+    """
+
+    def __init__(self,filename='none',path='./'):
+        """filename  : The reference state file to read.
+           path      : The directory where the file is located (if full path not in filename
+        """
+        if (filename == 'none'):
+            the_file = path+'transport'
+        else:
+            the_file = path+filename
+        fd = open(the_file, 'rb')
+        # We read an integer to assess which endian the file was written in...
+        bs = check_endian(fd, 314, 'int32')
+        
+        nr = swapread(fd, dtype='int32', count=1, swap=bs)
+        mag_flag = swapread(fd, dtype='int32', count=1, swap=bs)
+        if (mag_flag == 0):
+            tmp = np.reshape(swapread(fd, dtype='float64', count=5*nr, swap=bs),(nr,5), order = 'F')
+        elif (mag_flag == 1):
+            tmp = np.reshape(swapread(fd, dtype='float64', count=7*nr, swap=bs),(nr,7), order = 'F')
+
+        self.nr = nr
+        self.radius      = tmp[:, 0]
+        self.nu          = tmp[:, 1]
+        self.dlnu        = tmp[:, 2]
+        self.kappa       = tmp[:, 3]
+        self.dlnkappa    = tmp[:, 4]
+        if (mag_flag == 1):
+            self.eta         = tmp[:, 5]
+            self.dlneta      = tmp[:, 6]
+
+        self.transport = tmp
+        if (mag_flag == 1):
+            self.names = ['nr', 'radius', 'nu', 'dlnu', 'kappa', 'dlnkappa', 'eta', 'dlneta']
+        elif (mag_flag == 0):
+            self.names = ['nr', 'radius', 'nu', 'dlnu', 'kappa', 'dlnkappa']
+
+        fd.close()
+
 class G_Avgs:
     """Rayleigh GlobalAverage Structure
     ----------------------------------
