@@ -44,6 +44,7 @@ Program Main!
     Use Fourier_Transform, Only : Initialize_FFTs
     Use Benchmarking, Only : Initialize_Benchmarking, Benchmark_Input_Reset
     Use Stable_Plugin
+    Use Run_Parameters, Only : write_run_parameters
 
     Implicit None
 
@@ -54,6 +55,7 @@ Program Main!
 
     Call Main_Input()
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
+    Call Write_Run_Parameters()  ! write input parameters and other build information
 
     If (test_mode) Then
         Call Init_ProblemSize()
@@ -132,7 +134,7 @@ Contains
 
     Subroutine Finalization()
         If (.not. test_mode) Then
-         If (my_rank .eq. 0) Call stdout%finalize()
+            If (my_rank .eq. 0) Call stdout%finalize()
         Endif
         Call pfi%exit()
     End Subroutine Finalization

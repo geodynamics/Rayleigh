@@ -34,7 +34,7 @@ Module Input
     Use TransportCoefficients, Only : Transport_Namelist
     Use Parallel_Framework, Only : pfi
     Use Stable_Plugin, Only : stable_namelist
-    Use Run_Parameters, Only : write_run_parameters
+
     Implicit None
 
     Interface Read_CMD_Line
@@ -62,14 +62,10 @@ Contains
         Read(unit=20, nml=test_namelist)
         Read(unit=20, nml=reference_namelist)
         Read(unit=20, nml=Transport_Namelist)
-        !Read(unit=20, nml=Stable_Namelist)
         Close(20)
 
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
-
-        ! write input parameters and other build information
-        Call Write_Run_Parameters()
 
     End Subroutine Main_Input
 
