@@ -3716,7 +3716,6 @@ Contains
     Subroutine Update_Position(self)
         Implicit None
         Class(DiagnosticInfo) :: self
-        !INQUIRE(UNIT=self%file_unit, POS=self%file_position)
         self%file_position=ftell(self%file_unit)
     End Subroutine Update_Position
 
