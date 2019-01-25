@@ -209,7 +209,7 @@ class ReferenceState:
     self.dsdr        : entropy gradient (radial)
     self.entropy     : entropy
     self.gravity     : gravity
-    self.heating     : volumetric heating (Q)
+    self.heating     : volumetric heating (Q) (only after Jan 2019)
     """
 
     def __init__(self,filename='none',path='./'):
@@ -225,7 +225,14 @@ class ReferenceState:
         bs = check_endian(fd,314,'int32')
         
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
-        tmp = np.reshape(swapread(fd,dtype='float64',count=11*nr,swap=bs),(nr,11), order = 'F')
+        heating_written = True # First assume heating was written (as it will be from here on out
+        try:
+            tmp = np.reshape(swapread(fd,dtype='float64',count=11*nr,swap=bs),(nr,11), order = 'F')
+        except: # Heating was not written (different-size binary 'reference')
+            fd.close() # close and reopen the file to start from the beginning
+            fd = open(the_file,'rb')
+            tmp = np.reshape(swapread(fd,dtype='float64',count=10*nr,swap=bs),(nr,10), order = 'F')
+            heating_written = False
         self.nr = nr
         self.radius      = tmp[:,0]
         self.density     = tmp[:,1]
@@ -237,10 +244,15 @@ class ReferenceState:
         self.dsdr        = tmp[:,7]
         self.entropy     = tmp[:,8]
         self.gravity     = tmp[:,9]
-        self.heating     = tmp[:,10]
+        if heating_written:
+            self.heating     = tmp[:,10]
         self.ref = tmp
-        self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure', 'temperature',
+        if heating_written:
+            self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure', 'temperature',
         'dlnt', 'dsdr','entropy','gravity', 'heating']
+        else:
+            self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure', 'temperature',
+        'dlnt', 'dsdr','entropy','gravity']
         fd.close()
 
 class TransportCoeffs:
