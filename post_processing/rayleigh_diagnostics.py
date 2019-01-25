@@ -253,6 +253,7 @@ class ReferenceState:
         else:
             self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure', 'temperature',
         'dlnt', 'dsdr','entropy','gravity']
+        fd.close()
 
 class TransportCoeffs:
     """Rayleigh Transport Coefficients Structure
