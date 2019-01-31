@@ -230,7 +230,10 @@ class ReferenceState:
             tmp = np.reshape(swapread(fd,dtype='float64',count=11*nr,swap=bs),(nr,11), order = 'F')
         except: # Heating was not written (different-size binary 'reference')
             fd.close() # close and reopen the file to start from the beginning
+            # Read in two ints first to make sure the float arrays read in start at the right place!
             fd = open(the_file,'rb')
+            dummy = swapread(fd, dtype='int32',count=1,swap=bs)
+            dummy = swapread(fd, dtype='int32',count=1,swap=bs)
             tmp = np.reshape(swapread(fd,dtype='float64',count=10*nr,swap=bs),(nr,10), order = 'F')
             heating_written = False
         self.nr = nr
