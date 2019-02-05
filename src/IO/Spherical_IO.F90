@@ -83,10 +83,17 @@ Module Spherical_IO
 
         Integer :: frequency = reallybig ! How often we write this diagnostic type
         Integer :: rec_per_file =1     ! How many of these records we write to a file
-        Integer :: current_rec = 1       ! Which record we are on within a file
-        Integer :: file_header_size =0 ! Size of file header in bytes
-        Integer :: file_record_size = 0 ! Size of each record in bytes
-        Integer :: file_position = 1   ! Keep track of where we are (byte-wise) within the file
+
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ! These variables control file opening and positioning
+        Integer :: current_rec = 1        ! Which record we are on within a file
+        Integer :: file_header_size =0    ! Size of file header in bytes
+        Integer :: file_record_size = 0   ! Size of each record in bytes
+        Integer :: file_position = 1      ! Keep track of where we are (byte-wise) within the file
+        Logical :: file_open = .false.    ! Was the file opened successfully?
+        Logical :: write_header = .false. ! Do we need to write header information
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         Integer :: avg_level = 0       ! global_averages = 3, shell_averages = 1, az_averages = 1, all others = 0
 
         Integer :: ind = 1              ! index of current diagnostic being stored (advances throughout an output calculation)
@@ -3064,17 +3071,17 @@ Contains
 
             Call Global_Averages%OpenFile(this_iter, error)
             If (error .eq. 0) Then
-                If (Global_Averages%current_rec .eq. 1) Then
+                Write(6,*)'error 0 at : ', this_iter
+                If (Global_Averages%write_header) Then
                     Write(funit)nq_globav
                     Write(funit)(Global_Averages%oqvals(i),i=1,nq_globav)
                     Call Global_Averages%update_position
                 Endif
-                file_pos = Global_Averages%file_position
 
                 Write(funit)(full_avg(i),i=1,nq_globav)
                 Write(funit)simtime
                 Write(funit)this_iter
-                Call Global_Averages%CloseFile 
+                Call Global_Averages%CloseFile() 
             Endif
 
         Endif
@@ -3154,19 +3161,21 @@ Contains
         If (myid .eq. io_node) Then ! Rank Zero writes the file
             Call Shell_Averages%OpenFile(this_iter, error)
             If (error .eq. 0) Then
-                If (Shell_Averages%current_rec .eq. 1) Then
+                If (Shell_Averages%write_header) Then
                     Write(funit)nr,nq_shellav
                     Write(funit)(Shell_Averages%oqvals(i),i=1,nq_shellav)
                     Write(funit)(radius(i),i=1,nr)
                     Call Shell_Averages%update_position()
                 Endif
-                    Write(funit)(((full_shellavg(k,m,i),i=1,nr),m=1,4),k=1,nq_shellav)
+
+                Write(funit)(((full_shellavg(k,m,i),i=1,nr),m=1,4),k=1,nq_shellav)
                 Write(funit) simtime
 
                 Write(funit)this_iter
 
 
-                Call Shell_Averages%CloseFile
+                Call Shell_Averages%CloseFile()
+
                 DeAllocate(full_shellavg)
             Endif
 		Endif
@@ -3533,53 +3542,78 @@ Contains
         Character*120 :: filename, omsg
         Integer :: modcheck, imod, file_iter, next_iter, ibelong
         Integer :: fstat
+        Logical :: create_file
+        Logical :: file_exists
 
+        create_file = .false.
+        file_exists = .false.
+
+        self%file_open    = .false.
+        self%write_header = .false.
+
+        ! Determine which file # this data belongs to
         modcheck = self%frequency*self%rec_per_file
         imod = Mod(iter,modcheck) 
-
-        if (imod .eq. 0) then
+        If (imod .eq. 0) Then
             ibelong = iter
-        else
-            ibelong = iter-imod+modcheck    ! This iteration belongs in a file with number= ibelong
-        endif
-        write(iterstring,i_ofmt) ibelong
+        Else
+            ibelong = iter-imod+modcheck    ! Data belongs to file #ibelong
+        Endif
+
+        Write(iterstring,i_ofmt) ibelong
         filename = trim(local_file_path)//trim(self%file_prefix)//trim(iterstring)
 
-        If ( (imod .eq. self%frequency) .or. (self%rec_per_file .eq. 1) ) Then   ! time to begin a new file 
-
-            Call stdout%print(' Creating Filename: '//trim(filename))
-            Open(unit=self%file_unit,file=filename,form='unformatted', status='replace',access='stream',iostat = errcheck)
-            Write(self%file_unit)endian_tag
-            Write(self%file_unit)self%output_version
-            Write(self%file_unit)integer_zero ! We write zero initially - only update nrec after the data is actually written
-            self%current_rec = 1            
-            If (errcheck .ne. 0) Then
-                next_iter =file_iter+modcheck
-                call stdout%print(' Unable to create file!!: '//trim(filename))
-            Endif
-
+        If ( (imod .eq. self%frequency) .or. (self%rec_per_file .eq. 1) ) Then   
+            ! Time to begin a new file 
+            create_file = .true.
         Else
+            ! We are either:
+            ! (a)  Appending to an existing file or
+            ! (b)  The user has changed the output cadence in between checkpoints.
+            !      In that case, we're "off-cycle" and need to create the file.
+            Inquire(File=filename, Exist=file_exists)
+            If (.not. file_exists) create_file = .true.
+        Endif
 
+        
+        If (create_file) Then
+            Call stdout%print(' Creating Filename: '//trim(filename))
+            Open(unit=self%file_unit,file=filename,form='unformatted', &
+                & status='replace',access='stream',iostat = errcheck)
+
+            self%write_header = .true.            
+        Else
             Open(unit=self%file_unit,file=filename,form='unformatted', status='old',access='stream', &
                 & iostat = errcheck, POSITION = 'APPEND')    
+            self%write_header = .false.
+        Endif
 
-            Call self%update_position                                ! save current position
-            Read(self%file_unit,POS = 9)self%current_rec             ! read previous record #
+        If (errcheck .eq. 0) Then
+            self%file_open = .true.
+        Else
+            Call stdout%print(' Unable to open file: '//trim(filename))
+        Endif
+        
+        If (self%file_open) Then
+
+            If (self%write_header) Then
+
+                Write(self%file_unit)endian_tag
+                Write(self%file_unit)self%output_version
+                ! We write zero initially - only update nrec after the data is actually written
+                Write(self%file_unit)integer_zero 
+                self%current_rec = 1            
+            Else
+
+                Call self%update_position                    ! save current position
+                Read(self%file_unit,POS = 9)self%current_rec ! read previous record #
+                self%current_rec = self%current_rec+1
 #ifdef INTEL_COMPILER 
-            fstat=fseek(self%file_unit, self%file_position, 0) ! return to end of file 
+                fstat=fseek(self%file_unit, self%file_position, 0) ! return to end of file 
 #else
-            Call fseek(self%file_unit, self%file_position, 0, fstat) ! return to end of file 
+                Call fseek(self%file_unit, self%file_position, 0, fstat) ! return to end of file 
 #endif
-
-            self%current_rec = self%current_rec+1
-            If (errcheck .ne. 0) Then
-                next_iter =file_iter+modcheck
-                Call stdout%print(' --Failed to find needed file: '//trim(filename))
-                Call stdout%print(' --Partial diagnostic files are not currently supported.')
-                Write(istr,'(i8.8)')ibelong+self%frequency
-                Call stdout%print(' --No data will be written until a new file is created at iteration: '//trim(istr))
             Endif
-
         Endif
 
     End Subroutine OpenFile
