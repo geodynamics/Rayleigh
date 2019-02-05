@@ -3070,8 +3070,8 @@ Contains
         If (myid .eq. io_node) Then
 
             Call Global_Averages%OpenFile(this_iter, error)
+
             If (error .eq. 0) Then
-                Write(6,*)'error 0 at : ', this_iter
                 If (Global_Averages%write_header) Then
                     Write(funit)nq_globav
                     Write(funit)(Global_Averages%oqvals(i),i=1,nq_globav)
