@@ -1704,7 +1704,7 @@ Contains
                 Enddo
 
             Enddo
-            call spectra_buffer%deconstruct('s2b')
+            Call spectra_buffer%deconstruct('s2b')
 
 
         Endif
@@ -1793,12 +1793,12 @@ Contains
 
 
 
-        If (responsible .eq. 1) Then   
+        If ( (responsible .eq. 1) .and. (Shell_Spectra%file_open) ) Then   
             !Write(6,*)'I am responsible: ', my_column_rank
             funit = shell_spectra%file_unit
             current_rec = Shell_Spectra%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (current_rec .eq. 1) .and. (shell_spectra%master) ) Then                
-                !Write(6,*)'I am master: ', my_column_rank
+            If  ( (Shell_Spectra%write_header) .and. (Shell_Spectra%master) ) Then                
+
                 dims(1) =  lmax
                 dims(2) =  nlevels
                 dims(3) =  nq_shell
@@ -1824,7 +1824,7 @@ Contains
 
             Endif
 
-            ! I might really (really) want to look into file views later.
+
             ! Depending on the offset size mpi type, disp will crap out past 2GB
             hdisp = 24 ! dimensions+endian+version+record count
             hdisp = hdisp+nq_shell*4 ! nq
@@ -1859,10 +1859,10 @@ Contains
 
             disp = hdisp+rec_size*(current_rec-1)
 
-            !new_disp = disp+my_rdisp
+
             Do p = 1, 2
                 new_disp = disp+my_rdisp +(p-1)*qsize*nq_shell
-                !write(6,*)'new_disp: ', new_disp, my_column_rank
+
                 Do i = 1, nq_shell
                          
           
@@ -1889,10 +1889,12 @@ Contains
             Endif
 
 
-			DeAllocate(all_spectra)
-        Endif  ! Responsible
 
-        If (my_row_rank .eq. 0) Call shell_spectra%closefile_par()
+        Endif  ! Responsible & File Open
+
+        If (responsible .eq. 1) DeAllocate(all_spectra)
+
+        If (my_row_rank .eq. 0) Call Shell_Spectra%Closefile_Par()
 
 	End Subroutine Write_Shell_Spectra
 
@@ -1980,33 +1982,33 @@ Contains
 
         If (my_row_rank .eq. 0) Call Shell_Spectra%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then
+        If ( (responsible .eq. 1) .and. (Shell_Spectra%file_open) ) Then
             ! Processes that take part in the write have some extra work to do
-            funit = shell_spectra%file_unit
+            funit = Shell_Spectra%file_unit
             current_rec = Shell_Spectra%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (current_rec .eq. 1) .and. (shell_spectra%master) ) Then                
-                !Write(6,*)'I am master: ', my_column_rank
+            If  ( ( Shell_Spectra%write_header ) .and. ( shell_spectra%master ) ) Then                
+
                 dims(1) =  lmax
                 dims(2) =  nlevels
                 dims(3) =  nq_shell
                 buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
                 buffsize = nq_shell
-                call MPI_FILE_WRITE(funit,Shell_Spectra%oqvals, buffsize, MPI_INTEGER, & 
+                Call MPI_FILE_WRITE(funit,Shell_Spectra%oqvals, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
-                allocate(out_radii(1:nlevels))
+                Allocate(out_radii(1:nlevels))
                 Do i = 1, nlevels
                     out_radii(i) = radius(Shell_Spectra%levels(i))
                 Enddo
                 buffsize = nlevels
-	            call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
+	            Call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
                     mstatus, ierr) 
                 DeAllocate(out_radii)
                 
-	            call MPI_FILE_WRITE(funit, Shell_Spectra%levels, buffsize, MPI_INTEGER, & 
+	            Call MPI_FILE_WRITE(funit, Shell_Spectra%levels, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
             Endif
@@ -2017,9 +2019,13 @@ Contains
             
             rcount = 0
             Do p = 1, Shell_Spectra%nshell_r_ids
-                if (Shell_Spectra%shell_r_ids(p) .lt. my_column_rank) Then
-                    rcount = rcount+ Shell_Spectra%nshells_at_rid(p)
+
+                If (Shell_Spectra%shell_r_ids(p) .lt. my_column_rank) Then
+
+                    rcount = rcount + Shell_Spectra%nshells_at_rid(p)
+
                 Endif
+
             Enddo
             my_rdisp = rcount*nmodes*8
 
@@ -2105,13 +2111,18 @@ Contains
                 Enddo
 
                 !Write the slice we just received
-                Do p = 1, 2
-                    new_disp = disp+my_rdisp +(p-1)*qsize*nq_shell +(qindex-1)*qsize        
-                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                    
-                    Call MPI_FILE_WRITE(funit, all_spectra(0,0,1,1,p), buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Enddo
+                If (Shell_Spectra%file_open) Then
+
+                    Do p = 1, 2
+
+                        new_disp = disp+my_rdisp +(p-1)*qsize*nq_shell +(qindex-1)*qsize        
+                        Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                        
+                        Call MPI_FILE_WRITE(funit, all_spectra(0,0,1,1,p), buffsize, & 
+                               MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Enddo
+
+                Endif
 
             Else
 			    !  Non-responsible nodes send their info
@@ -2127,24 +2138,30 @@ Contains
         If (responsible .eq. 1) Then
             disp = hdisp+rec_size*current_rec
             disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-            If (shell_spectra%master) Then
+            If (Shell_Spectra%file_open) Then
 
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (Shell_Spectra%master) Then
+
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
 
             DeAllocate(all_spectra)
             DeAllocate(buff)
             DeAllocate(rirqs)
+
         Endif
 
 
-        If (my_row_rank .eq. 0) Call shell_spectra%closefile_par()
+        If (my_row_rank .eq. 0) Call Shell_Spectra%Closefile_Par()
         If (my_nlevels .gt. 0) Then 
             DeAllocate(sendbuffer, bsendbuffer)
         Endif
@@ -2412,6 +2429,7 @@ Contains
             Write(6,*)"A size of 4 bytes means that shell slices files are effectively limited to 2 GB in size."
             Endif
         Endif 
+
         nq_shell = Shell_Slices%nq
         shell_slice_tag = Shell_Slices%mpi_tag
         
