@@ -1490,60 +1490,68 @@ Contains
         ! Parallel Write amongst all processes in column 0
         If (responsible .eq. 1) Then
 
-            CALL Equatorial_Slices%OpenFile_Par(this_iter, error)
+            Call Equatorial_Slices%OpenFile_Par(this_iter, error)
 
             current_rec = Equatorial_Slices%current_rec
             funit = Equatorial_Slices%file_unit
-            IF ( (my_column_rank .eq. 0) .and. (current_rec .eq. 1) ) THEN
-                dims(1) =  nphi
-                dims(2) =  nr
-                dims(3) =  nq_eqs
-                buffsize = 3
-                CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
 
-                buffsize = nq_eqs
-                CALL MPI_FILE_WRITE(funit,Equatorial_Slices%oqvals, buffsize, &
-                    & MPI_INTEGER, mstatus, ierr) 
+            If (Equatorial_Slices%file_open) Then
 
-                buffsize = nr
-                CALL MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                If ( (my_column_rank .eq. 0) .and. (Equatorial_Slices%write_header) ) Then
+                    dims(1) =  nphi
+                    dims(2) =  nr
+                    dims(3) =  nq_eqs
+                    buffsize = 3
+                    CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-            ENDIF
-            hdisp = 24 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_eqs*4 ! nq
-            hdisp = hdisp+nr*8  ! The radius array
+                    buffsize = nq_eqs
+                    CALL MPI_FILE_WRITE(funit,Equatorial_Slices%oqvals, buffsize, &
+                        & MPI_INTEGER, mstatus, ierr) 
 
-            qdisp = nphi*nr*8
-            full_disp = qdisp*nq_eqs+12  ! 12 is for the simtime+iteration at the end
-            disp = hdisp+full_disp*(current_rec-1)
-            
-            buffsize = my_nr*nphi
-            ! The file is striped with time step slowest, followed by q
+                    buffsize = nr
+                    CALL MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-            my_rdisp = (my_rmin-1)*nphi*8
-            Do i = 1, nq_eqs
-                new_disp = disp+qdisp*(i-1)+my_rdisp                
-                Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                Endif
+
+                hdisp = 24 ! dimensions+endian+version+record count
+                hdisp = hdisp+nq_eqs*4 ! nq
+                hdisp = hdisp+nr*8  ! The radius array
+
+                qdisp = nphi*nr*8
+                full_disp = qdisp*nq_eqs+12  ! 12 is for the simtime+iteration at the end
+                disp = hdisp+full_disp*(current_rec-1)
                 
-                Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Enddo
+                buffsize = my_nr*nphi
+                ! The file is striped with time step slowest, followed by q
 
-            disp = hdisp+full_disp*current_rec
-            disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+                my_rdisp = (my_rmin-1)*nphi*8
+                Do i = 1, nq_eqs
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
 
-            If (my_column_rank .eq. 0) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
+
             Call Equatorial_Slices%closefile_par()
-            DEALLOCATE(buff)
+            Deallocate(buff)
+
         Endif
         
 
