@@ -656,44 +656,45 @@ Contains
             Allocate(buff(1:nphi_grab, 1:ntheta,my_rmin:my_rmax, 1:nq_merid))
             Do k = 1, ntheta
                 Do j = 1, nq_merid
-                    DO ii = 1, nphi_grab
+                    Do ii = 1, nphi_grab
                     Do i = my_rmin, my_rmax    
                         buff(ii,k,i,j) = all_slices(i,ii,j,k)
                     Enddo
-                    ENDDO
+                    Enddo
                 Enddo
             Enddo        
             DeAllocate(all_slices)
             
 
-            If ((my_column_rank .eq. 0) .and. (current_rec .eq. 1) ) Then            
-                ! Rank 0 in column and row writes the header
-                dims(1) =  nr
-                dims(2) =  ntheta
-                dims(3) =  nphi_grab
-                dims(4) =  nq_merid
-                buffsize = 4
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+            If ( (my_column_rank .eq. 0) .and. (Meridional_Slices%write_header) ) Then
+                If (Meridional_Slices%file_open) Then
+                    ! Rank 0 in column and row writes the header
+                    dims(1) =  nr
+                    dims(2) =  ntheta
+                    dims(3) =  nphi_grab
+                    dims(4) =  nq_merid
+                    buffsize = 4
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                buffsize = nq_merid
-                call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+                    buffsize = nq_merid
+                    Call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                buffsize = nr
-                call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                    buffsize = nr
+                    Call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-                buffsize = ntheta
-                call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                    buffsize = ntheta
+                    Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-                buffsize = nphi_grab
-                call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
-                    MPI_INTEGER, mstatus, ierr) 
+                    buffsize = nphi_grab
+                    Call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
+                        MPI_INTEGER, mstatus, ierr) 
+                Endif
 
             Endif
-
 
             hdisp = 28 ! dimensions+endian+version+record count
             hdisp = hdisp+nq_merid*4 ! nq
@@ -710,29 +711,34 @@ Contains
 
             my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
 
-            Do i = 1, nq_merid
-                new_disp = disp+qdisp*(i-1)+my_rdisp                
-                Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                
-                Call MPI_FILE_WRITE(funit, buff(1,1,my_rmin,i), buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Enddo
+            If (Meridional_Slices%file_open) Then
 
-            disp = hdisp+full_disp*current_rec
-            disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+                Do i = 1, nq_merid
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
 
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-            If (my_column_rank .eq. 0) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
 
 			DeAllocate(buff)
-            Call Meridional_Slices%closefile_par()
+
+            Call Meridional_Slices%Closefile_Par()
+
         Endif  ! Responsible
 
 	End Subroutine Write_Meridional_slices
