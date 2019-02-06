@@ -934,7 +934,7 @@ Contains
  
         if (my_row_rank .eq. 0) Call Point_Probes%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then   
+        If ( (responsible .eq. 1) .and. (Point_Probes%file_open) ) Then   
             funit = Point_Probes%file_unit
             If (Point_Probes%current_rec .eq. ncache) Then                
                 
@@ -946,26 +946,26 @@ Contains
                     dims(4) = nq
 
                     buffsize = 4
-                    CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
                         mstatus, ierr) 
 
                     buffsize = nq
-                    CALL MPI_FILE_WRITE(funit,Point_Probes%oqvals, buffsize, MPI_INTEGER, & 
+                    Call MPI_FILE_WRITE(funit,Point_Probes%oqvals, buffsize, MPI_INTEGER, & 
                         mstatus, ierr) 
 
                     ! Radial grid -----------------------------------
                     nvals = max(probe_nr,probe_nt)
                     nvals = max(nvals,probe_np)
-                    ALLOCATE(probe_vals(1:nvals))
+                    Allocate(probe_vals(1:nvals))
                     probe_vals(:) = 0
                     Do i = 1, probe_nr
                         probe_vals(i) = radius(Point_Probes%probe_r_global(i))                       
                     Enddo
                     buffsize = probe_nr
 
-                    call MPI_FILE_WRITE(funit, probe_vals, buffsize, MPI_DOUBLE_PRECISION, & 
+                    Call MPI_FILE_WRITE(funit, probe_vals, buffsize, MPI_DOUBLE_PRECISION, & 
                         mstatus, ierr) 
-                    call MPI_FILE_WRITE(funit, Point_Probes%probe_r_global, buffsize, MPI_INTEGER, & 
+                    Call MPI_FILE_WRITE(funit, Point_Probes%probe_r_global, buffsize, MPI_INTEGER, & 
                         mstatus, ierr) 
 
 
@@ -1048,9 +1048,10 @@ Contains
 
                 disp = disp+full_disp 
             Enddo
-			DeAllocate(row_probes)
+
         Endif  ! Responsible
 
+        If (responsible .eq. 1) DeAllocate(row_probes)
         If (my_row_rank .eq. 0) Call Point_Probes%closefile_par()
 
 	End Subroutine Write_Point_Probes
