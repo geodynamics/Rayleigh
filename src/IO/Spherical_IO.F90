@@ -917,10 +917,8 @@ Contains
 			    CALL Isend(probe_outputs,sirq,n_elements = nelem,dest = 0, &
                     tag=probe_tag, grp = pfi%rcomm, indstart = inds)            
                 CALL IWait(sirq)
-                If (allocated(probe_outputs)) DEALLOCATE(probe_outputs)
+                If (allocated(probe_outputs)) Deallocate(probe_outputs)
             ENDIF
-
-
 
 		Endif
 
@@ -932,13 +930,13 @@ Contains
 
         ! For the moment, every process in column 0 participates in the mpi file-open operation
  
-        if (my_row_rank .eq. 0) Call Point_Probes%OpenFile_Par(this_iter, error)
+        If (my_row_rank .eq. 0) Call Point_Probes%OpenFile_Par(this_iter, error)
 
         If ( (responsible .eq. 1) .and. (Point_Probes%file_open) ) Then   
             funit = Point_Probes%file_unit
             If (Point_Probes%current_rec .eq. ncache) Then                
                 
-                If (Point_Probes%master) Then    !           
+                If ( (Point_Probes%master) .and. (Point_Probes%write_header) ) Then    !           
                     ! The master rank (whoever owns the first radius output) writes the header
                     dims(1) = probe_nr
                     dims(2) = probe_nt
