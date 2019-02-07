@@ -1187,11 +1187,11 @@ Contains
 
         If (my_row_rank .eq. 0) Call SPH_Mode_Samples%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then
+        If ( (responsible .eq. 1) .and. (SPH_Mode_Samples%file_open) ) Then
             ! Processes that take part in the write have some extra work to do
             funit = SPH_Mode_Samples%file_unit
             current_rec = SPH_Mode_Samples%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (current_rec .eq. 1) .and. (SPH_Mode_Samples%master) ) Then                
+            If  ( (SPH_Mode_Samples%write_header) .and. (SPH_Mode_Samples%master) ) Then                
 
                 dims(1) =  sph_mode_nell
                 dims(2) =  nlevels
@@ -1321,22 +1321,23 @@ Contains
 
 
 
-
-                Do p = 1, 2
-                    new_disp = disp+  (qindex-1)*qsize*2 +(p-1)*qsize +my_rdisp  
-                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                    Do r = 1, my_nlevels
-                    Do lv = 1, SPH_MODE_NELL                    
-                        lval = SPH_MODE_ELL(lv)
-                        buffsize = lval+1
-                        !if ((lval .eq. 0)) Then
-                        !    Write(6,*)p, myid, my_rdisp, all_spectra(0,lval,r,1,p)
-                        !Endif
-                        Call MPI_FILE_WRITE(funit, all_spectra(0,lval,r,1,p), buffsize, & 
-                               MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    ENDDO
+                If (SPH_Mode_Samples%file_open) Then
+                    Do p = 1, 2
+                        new_disp = disp+  (qindex-1)*qsize*2 +(p-1)*qsize +my_rdisp  
+                        Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                        Do r = 1, my_nlevels
+                        Do lv = 1, SPH_MODE_NELL                    
+                            lval = SPH_MODE_ELL(lv)
+                            buffsize = lval+1
+                            !if ((lval .eq. 0)) Then
+                            !    Write(6,*)p, myid, my_rdisp, all_spectra(0,lval,r,1,p)
+                            !Endif
+                            Call MPI_FILE_WRITE(funit, all_spectra(0,lval,r,1,p), buffsize, & 
+                                   MPI_DOUBLE_PRECISION, mstatus, ierr)
+                        Enddo
+                        Enddo
                     Enddo
-                Enddo
+                Endif
 
             Else
 			    !  Non-responsible nodes send their info
@@ -1349,18 +1350,22 @@ Contains
 
         Enddo  ! Q-LOOP
 
-        If (responsible .eq. 1) Then
+        If ( (responsible .eq. 1) ) Then
             disp = hdisp+rec_size*current_rec
             disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-            If (SPH_Mode_Samples%master) Then
+            If (SPH_Mode_Samples%file_open) Then
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                If (SPH_Mode_Samples%master) Then
+
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
 
             DeAllocate(all_spectra)
