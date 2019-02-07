@@ -529,7 +529,6 @@ Contains
         fdir = 'Spherical_3D/'
         Call Full_3D%set_file_info(full3d_version,shellslice_nrec,full3d_frequency,fdir)    
 
-        !Write(6,*)'Shell F: ', Shell_Slices%frequency
    End Subroutine Initialize_Spherical_IO
 
     Subroutine Get_Meridional_Slice(qty)
@@ -3710,9 +3709,12 @@ Contains
             !      In that case, we're "off-cycle" and need to create the file.
 
             ! This sort of filesystem inquiry should be done by only one rank
-            ! (If self%master ... )
-            Inquire(File=filename, Exist=file_exists)
-            If (.not. file_exists) create_file = .true.
+            If (self%orank .eq. 0) Then
+                Inquire(File=filename, Exist=file_exists)
+                If (.not. file_exists) create_file = .true.
+            Endif
+
+            Call MPI_Bcast(create_file, 1, MPI_LOGICAL, 0, self%ocomm, ierr)
 
         Endif
 
@@ -3750,7 +3752,7 @@ Contains
 
                 If (self%master) Then     
 
-                    Write(6,*)'Creating Filename: ', filename      
+
                     buffsize = 1
                     Call MPI_FILE_WRITE(self%file_unit, endian_tag, buffsize, &
                         & MPI_INTEGER, mstatus, ierr)
@@ -3784,9 +3786,6 @@ Contains
         Endif
 
     End Subroutine OpenFile_Par
-
-
-
 
     Subroutine CloseFile(self)
         Implicit None
