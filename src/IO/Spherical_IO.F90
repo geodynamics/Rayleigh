@@ -2998,6 +2998,8 @@ Contains
 
         If (responsible .eq. 1) Then   
             Call AZ_Averages%OpenFile_Par(this_iter, error)
+
+
             current_rec = AZ_Averages%current_rec
             funit = AZ_Averages%file_unit
             !before we do anything else, we need to restripe the data yet again (might be able to work around this later)
@@ -3012,65 +3014,66 @@ Contains
             Enddo        
             DeAllocate(all_azavgs)
             
+            If (AZ_Averages%file_open) Then
+                If ((my_column_rank .eq. 0) .and. (AZ_Averages%write_header) ) Then            
+                    ! Rank 0 in column and row writes the header
+                    dims(1) =  nr
+                    dims(2) =  ntheta
+                    dims(3) =  nq_azav
+                    buffsize = 3
+                    call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-            If ((my_column_rank .eq. 0) .and. (current_rec .eq. 1) ) Then            
-                ! Rank 0 in column and row writes the header
-                dims(1) =  nr
-                dims(2) =  ntheta
-                dims(3) =  nq_azav
-                buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+                    buffsize = nq_azav
+                    call MPI_FILE_WRITE(funit,AZ_Averages%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                buffsize = nq_azav
-                call MPI_FILE_WRITE(funit,AZ_Averages%oqvals, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+                    buffsize = nr
+                    call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-                buffsize = nr
-                call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
-
-                buffsize = ntheta
-                call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
-            Endif
+                    buffsize = ntheta
+                    call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+                Endif
 
 
-            hdisp = 24 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_azav*4 ! nq
-            hdisp = hdisp+nr*8  ! The radius array
-            hdisp = hdisp+ ntheta*8  ! costheta
+                hdisp = 24 ! dimensions+endian+version+record count
+                hdisp = hdisp+nq_azav*4 ! nq
+                hdisp = hdisp+nr*8  ! The radius array
+                hdisp = hdisp+ ntheta*8  ! costheta
 
-            qdisp = ntheta*nr*8
-            full_disp = qdisp*nq_azav+12  ! 12 is for the simtime+iteration at the end
-            disp = hdisp+full_disp*(current_rec-1)
-            
-            buffsize = my_nr*ntheta
-            ! The file is striped with time step slowest, followed by q
-
-            my_rdisp = (my_rmin-1)*ntheta*8
-
-            Do i = 1, nq_azav
-                new_disp = disp+qdisp*(i-1)+my_rdisp                
-                Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                qdisp = ntheta*nr*8
+                full_disp = qdisp*nq_azav+12  ! 12 is for the simtime+iteration at the end
+                disp = hdisp+full_disp*(current_rec-1)
                 
-                Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Enddo
+                buffsize = my_nr*ntheta
+                ! The file is striped with time step slowest, followed by q
 
-            disp = hdisp+full_disp*current_rec
-            disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+                my_rdisp = (my_rmin-1)*ntheta*8
+
+                Do i = 1, nq_azav
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
+
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
 
-            If (my_column_rank .eq. 0) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
-
 			DeAllocate(buff)
             Call AZ_Averages%closefile_par()
         Endif  ! Responsible
