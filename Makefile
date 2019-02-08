@@ -62,6 +62,6 @@ distclean:
 	rm -f $(BUILD)/Makefile
 	rm -f $(BUILD)/Machine_Definitions
 	rm -f $(BUILD)/machine.no_comments
-	@rm -f $(PREFIX)/rayleigh.*
+	@rm -f $(PREFIX)/bin/rayleigh.*
 	@rm -f make.inc
 	@echo "#Following configure, this file contains the definition of the PREFIX variable" >> make.inc
