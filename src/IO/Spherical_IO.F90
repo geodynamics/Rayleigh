@@ -529,7 +529,6 @@ Contains
         fdir = 'Spherical_3D/'
         Call Full_3D%set_file_info(full3d_version,shellslice_nrec,full3d_frequency,fdir)    
 
-        !Write(6,*)'Shell F: ', Shell_Slices%frequency
    End Subroutine Initialize_Spherical_IO
 
     Subroutine Get_Meridional_Slice(qty)
@@ -656,44 +655,45 @@ Contains
             Allocate(buff(1:nphi_grab, 1:ntheta,my_rmin:my_rmax, 1:nq_merid))
             Do k = 1, ntheta
                 Do j = 1, nq_merid
-                    DO ii = 1, nphi_grab
+                    Do ii = 1, nphi_grab
                     Do i = my_rmin, my_rmax    
                         buff(ii,k,i,j) = all_slices(i,ii,j,k)
                     Enddo
-                    ENDDO
+                    Enddo
                 Enddo
             Enddo        
             DeAllocate(all_slices)
             
 
-            If ((my_column_rank .eq. 0) .and. (current_rec .eq. 1) ) Then            
-                ! Rank 0 in column and row writes the header
-                dims(1) =  nr
-                dims(2) =  ntheta
-                dims(3) =  nphi_grab
-                dims(4) =  nq_merid
-                buffsize = 4
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+            If ( (my_column_rank .eq. 0) .and. (Meridional_Slices%write_header) ) Then
+                If (Meridional_Slices%file_open) Then
+                    ! Rank 0 in column and row writes the header
+                    dims(1) =  nr
+                    dims(2) =  ntheta
+                    dims(3) =  nphi_grab
+                    dims(4) =  nq_merid
+                    buffsize = 4
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                buffsize = nq_merid
-                call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+                    buffsize = nq_merid
+                    Call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                buffsize = nr
-                call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                    buffsize = nr
+                    Call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-                buffsize = ntheta
-                call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                    buffsize = ntheta
+                    Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-                buffsize = nphi_grab
-                call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
-                    MPI_INTEGER, mstatus, ierr) 
+                    buffsize = nphi_grab
+                    Call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
+                        MPI_INTEGER, mstatus, ierr) 
+                Endif
 
             Endif
-
 
             hdisp = 28 ! dimensions+endian+version+record count
             hdisp = hdisp+nq_merid*4 ! nq
@@ -710,29 +710,34 @@ Contains
 
             my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
 
-            Do i = 1, nq_merid
-                new_disp = disp+qdisp*(i-1)+my_rdisp                
-                Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                
-                Call MPI_FILE_WRITE(funit, buff(1,1,my_rmin,i), buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Enddo
+            If (Meridional_Slices%file_open) Then
 
-            disp = hdisp+full_disp*current_rec
-            disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+                Do i = 1, nq_merid
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
 
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-            If (my_column_rank .eq. 0) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
 
 			DeAllocate(buff)
-            Call Meridional_Slices%closefile_par()
+
+            Call Meridional_Slices%Closefile_Par()
+
         Endif  ! Responsible
 
 	End Subroutine Write_Meridional_slices
@@ -911,10 +916,8 @@ Contains
 			    CALL Isend(probe_outputs,sirq,n_elements = nelem,dest = 0, &
                     tag=probe_tag, grp = pfi%rcomm, indstart = inds)            
                 CALL IWait(sirq)
-                If (allocated(probe_outputs)) DEALLOCATE(probe_outputs)
+                If (allocated(probe_outputs)) Deallocate(probe_outputs)
             ENDIF
-
-
 
 		Endif
 
@@ -926,13 +929,13 @@ Contains
 
         ! For the moment, every process in column 0 participates in the mpi file-open operation
  
-        if (my_row_rank .eq. 0) Call Point_Probes%OpenFile_Par(this_iter, error)
+        If (my_row_rank .eq. 0) Call Point_Probes%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then   
+        If ( (responsible .eq. 1) .and. (Point_Probes%file_open) ) Then   
             funit = Point_Probes%file_unit
             If (Point_Probes%current_rec .eq. ncache) Then                
                 
-                If (Point_Probes%master) Then    !           
+                If ( (Point_Probes%master) .and. (Point_Probes%write_header) ) Then    !           
                     ! The master rank (whoever owns the first radius output) writes the header
                     dims(1) = probe_nr
                     dims(2) = probe_nt
@@ -940,26 +943,26 @@ Contains
                     dims(4) = nq
 
                     buffsize = 4
-                    CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
                         mstatus, ierr) 
 
                     buffsize = nq
-                    CALL MPI_FILE_WRITE(funit,Point_Probes%oqvals, buffsize, MPI_INTEGER, & 
+                    Call MPI_FILE_WRITE(funit,Point_Probes%oqvals, buffsize, MPI_INTEGER, & 
                         mstatus, ierr) 
 
                     ! Radial grid -----------------------------------
                     nvals = max(probe_nr,probe_nt)
                     nvals = max(nvals,probe_np)
-                    ALLOCATE(probe_vals(1:nvals))
+                    Allocate(probe_vals(1:nvals))
                     probe_vals(:) = 0
                     Do i = 1, probe_nr
                         probe_vals(i) = radius(Point_Probes%probe_r_global(i))                       
                     Enddo
                     buffsize = probe_nr
 
-                    call MPI_FILE_WRITE(funit, probe_vals, buffsize, MPI_DOUBLE_PRECISION, & 
+                    Call MPI_FILE_WRITE(funit, probe_vals, buffsize, MPI_DOUBLE_PRECISION, & 
                         mstatus, ierr) 
-                    call MPI_FILE_WRITE(funit, Point_Probes%probe_r_global, buffsize, MPI_INTEGER, & 
+                    Call MPI_FILE_WRITE(funit, Point_Probes%probe_r_global, buffsize, MPI_INTEGER, & 
                         mstatus, ierr) 
 
 
@@ -1042,9 +1045,10 @@ Contains
 
                 disp = disp+full_disp 
             Enddo
-			DeAllocate(row_probes)
+
         Endif  ! Responsible
 
+        If (responsible .eq. 1) DeAllocate(row_probes)
         If (my_row_rank .eq. 0) Call Point_Probes%closefile_par()
 
 	End Subroutine Write_Point_Probes
@@ -1182,11 +1186,11 @@ Contains
 
         If (my_row_rank .eq. 0) Call SPH_Mode_Samples%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then
+        If ( (responsible .eq. 1) .and. (SPH_Mode_Samples%file_open) ) Then
             ! Processes that take part in the write have some extra work to do
             funit = SPH_Mode_Samples%file_unit
             current_rec = SPH_Mode_Samples%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (current_rec .eq. 1) .and. (SPH_Mode_Samples%master) ) Then                
+            If  ( (SPH_Mode_Samples%write_header) .and. (SPH_Mode_Samples%master) ) Then                
 
                 dims(1) =  sph_mode_nell
                 dims(2) =  nlevels
@@ -1316,22 +1320,23 @@ Contains
 
 
 
-
-                Do p = 1, 2
-                    new_disp = disp+  (qindex-1)*qsize*2 +(p-1)*qsize +my_rdisp  
-                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                    Do r = 1, my_nlevels
-                    Do lv = 1, SPH_MODE_NELL                    
-                        lval = SPH_MODE_ELL(lv)
-                        buffsize = lval+1
-                        !if ((lval .eq. 0)) Then
-                        !    Write(6,*)p, myid, my_rdisp, all_spectra(0,lval,r,1,p)
-                        !Endif
-                        Call MPI_FILE_WRITE(funit, all_spectra(0,lval,r,1,p), buffsize, & 
-                               MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    ENDDO
+                If (SPH_Mode_Samples%file_open) Then
+                    Do p = 1, 2
+                        new_disp = disp+  (qindex-1)*qsize*2 +(p-1)*qsize +my_rdisp  
+                        Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                        Do r = 1, my_nlevels
+                        Do lv = 1, SPH_MODE_NELL                    
+                            lval = SPH_MODE_ELL(lv)
+                            buffsize = lval+1
+                            !if ((lval .eq. 0)) Then
+                            !    Write(6,*)p, myid, my_rdisp, all_spectra(0,lval,r,1,p)
+                            !Endif
+                            Call MPI_FILE_WRITE(funit, all_spectra(0,lval,r,1,p), buffsize, & 
+                                   MPI_DOUBLE_PRECISION, mstatus, ierr)
+                        Enddo
+                        Enddo
                     Enddo
-                Enddo
+                Endif
 
             Else
 			    !  Non-responsible nodes send their info
@@ -1344,18 +1349,22 @@ Contains
 
         Enddo  ! Q-LOOP
 
-        If (responsible .eq. 1) Then
+        If ( (responsible .eq. 1) ) Then
             disp = hdisp+rec_size*current_rec
             disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-            If (SPH_Mode_Samples%master) Then
+            If (SPH_Mode_Samples%file_open) Then
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                If (SPH_Mode_Samples%master) Then
+
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
 
             DeAllocate(all_spectra)
@@ -1484,60 +1493,68 @@ Contains
         ! Parallel Write amongst all processes in column 0
         If (responsible .eq. 1) Then
 
-            CALL Equatorial_Slices%OpenFile_Par(this_iter, error)
+            Call Equatorial_Slices%OpenFile_Par(this_iter, error)
 
             current_rec = Equatorial_Slices%current_rec
             funit = Equatorial_Slices%file_unit
-            IF ( (my_column_rank .eq. 0) .and. (current_rec .eq. 1) ) THEN
-                dims(1) =  nphi
-                dims(2) =  nr
-                dims(3) =  nq_eqs
-                buffsize = 3
-                CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
 
-                buffsize = nq_eqs
-                CALL MPI_FILE_WRITE(funit,Equatorial_Slices%oqvals, buffsize, &
-                    & MPI_INTEGER, mstatus, ierr) 
+            If (Equatorial_Slices%file_open) Then
 
-                buffsize = nr
-                CALL MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                If ( (my_column_rank .eq. 0) .and. (Equatorial_Slices%write_header) ) Then
+                    dims(1) =  nphi
+                    dims(2) =  nr
+                    dims(3) =  nq_eqs
+                    buffsize = 3
+                    CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-            ENDIF
-            hdisp = 24 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_eqs*4 ! nq
-            hdisp = hdisp+nr*8  ! The radius array
+                    buffsize = nq_eqs
+                    CALL MPI_FILE_WRITE(funit,Equatorial_Slices%oqvals, buffsize, &
+                        & MPI_INTEGER, mstatus, ierr) 
 
-            qdisp = nphi*nr*8
-            full_disp = qdisp*nq_eqs+12  ! 12 is for the simtime+iteration at the end
-            disp = hdisp+full_disp*(current_rec-1)
-            
-            buffsize = my_nr*nphi
-            ! The file is striped with time step slowest, followed by q
+                    buffsize = nr
+                    CALL MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-            my_rdisp = (my_rmin-1)*nphi*8
-            Do i = 1, nq_eqs
-                new_disp = disp+qdisp*(i-1)+my_rdisp                
-                Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                Endif
+
+                hdisp = 24 ! dimensions+endian+version+record count
+                hdisp = hdisp+nq_eqs*4 ! nq
+                hdisp = hdisp+nr*8  ! The radius array
+
+                qdisp = nphi*nr*8
+                full_disp = qdisp*nq_eqs+12  ! 12 is for the simtime+iteration at the end
+                disp = hdisp+full_disp*(current_rec-1)
                 
-                Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Enddo
+                buffsize = my_nr*nphi
+                ! The file is striped with time step slowest, followed by q
 
-            disp = hdisp+full_disp*current_rec
-            disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+                my_rdisp = (my_rmin-1)*nphi*8
+                Do i = 1, nq_eqs
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
 
-            If (my_column_rank .eq. 0) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
+
             Call Equatorial_Slices%closefile_par()
-            DEALLOCATE(buff)
+            Deallocate(buff)
+
         Endif
         
 
@@ -1704,7 +1721,7 @@ Contains
                 Enddo
 
             Enddo
-            call spectra_buffer%deconstruct('s2b')
+            Call spectra_buffer%deconstruct('s2b')
 
 
         Endif
@@ -1793,12 +1810,12 @@ Contains
 
 
 
-        If (responsible .eq. 1) Then   
+        If ( (responsible .eq. 1) .and. (Shell_Spectra%file_open) ) Then   
             !Write(6,*)'I am responsible: ', my_column_rank
             funit = shell_spectra%file_unit
             current_rec = Shell_Spectra%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (current_rec .eq. 1) .and. (shell_spectra%master) ) Then                
-                !Write(6,*)'I am master: ', my_column_rank
+            If  ( (Shell_Spectra%write_header) .and. (Shell_Spectra%master) ) Then                
+
                 dims(1) =  lmax
                 dims(2) =  nlevels
                 dims(3) =  nq_shell
@@ -1824,7 +1841,7 @@ Contains
 
             Endif
 
-            ! I might really (really) want to look into file views later.
+
             ! Depending on the offset size mpi type, disp will crap out past 2GB
             hdisp = 24 ! dimensions+endian+version+record count
             hdisp = hdisp+nq_shell*4 ! nq
@@ -1859,10 +1876,10 @@ Contains
 
             disp = hdisp+rec_size*(current_rec-1)
 
-            !new_disp = disp+my_rdisp
+
             Do p = 1, 2
                 new_disp = disp+my_rdisp +(p-1)*qsize*nq_shell
-                !write(6,*)'new_disp: ', new_disp, my_column_rank
+
                 Do i = 1, nq_shell
                          
           
@@ -1889,10 +1906,12 @@ Contains
             Endif
 
 
-			DeAllocate(all_spectra)
-        Endif  ! Responsible
 
-        If (my_row_rank .eq. 0) Call shell_spectra%closefile_par()
+        Endif  ! Responsible & File Open
+
+        If (responsible .eq. 1) DeAllocate(all_spectra)
+
+        If (my_row_rank .eq. 0) Call Shell_Spectra%Closefile_Par()
 
 	End Subroutine Write_Shell_Spectra
 
@@ -1980,33 +1999,33 @@ Contains
 
         If (my_row_rank .eq. 0) Call Shell_Spectra%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then
+        If ( (responsible .eq. 1) .and. (Shell_Spectra%file_open) ) Then
             ! Processes that take part in the write have some extra work to do
-            funit = shell_spectra%file_unit
+            funit = Shell_Spectra%file_unit
             current_rec = Shell_Spectra%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (current_rec .eq. 1) .and. (shell_spectra%master) ) Then                
-                !Write(6,*)'I am master: ', my_column_rank
+            If  ( ( Shell_Spectra%write_header ) .and. ( shell_spectra%master ) ) Then                
+
                 dims(1) =  lmax
                 dims(2) =  nlevels
                 dims(3) =  nq_shell
                 buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
                 buffsize = nq_shell
-                call MPI_FILE_WRITE(funit,Shell_Spectra%oqvals, buffsize, MPI_INTEGER, & 
+                Call MPI_FILE_WRITE(funit,Shell_Spectra%oqvals, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
-                allocate(out_radii(1:nlevels))
+                Allocate(out_radii(1:nlevels))
                 Do i = 1, nlevels
                     out_radii(i) = radius(Shell_Spectra%levels(i))
                 Enddo
                 buffsize = nlevels
-	            call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
+	            Call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
                     mstatus, ierr) 
                 DeAllocate(out_radii)
                 
-	            call MPI_FILE_WRITE(funit, Shell_Spectra%levels, buffsize, MPI_INTEGER, & 
+	            Call MPI_FILE_WRITE(funit, Shell_Spectra%levels, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
             Endif
@@ -2017,9 +2036,13 @@ Contains
             
             rcount = 0
             Do p = 1, Shell_Spectra%nshell_r_ids
-                if (Shell_Spectra%shell_r_ids(p) .lt. my_column_rank) Then
-                    rcount = rcount+ Shell_Spectra%nshells_at_rid(p)
+
+                If (Shell_Spectra%shell_r_ids(p) .lt. my_column_rank) Then
+
+                    rcount = rcount + Shell_Spectra%nshells_at_rid(p)
+
                 Endif
+
             Enddo
             my_rdisp = rcount*nmodes*8
 
@@ -2105,13 +2128,18 @@ Contains
                 Enddo
 
                 !Write the slice we just received
-                Do p = 1, 2
-                    new_disp = disp+my_rdisp +(p-1)*qsize*nq_shell +(qindex-1)*qsize        
-                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                    
-                    Call MPI_FILE_WRITE(funit, all_spectra(0,0,1,1,p), buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Enddo
+                If (Shell_Spectra%file_open) Then
+
+                    Do p = 1, 2
+
+                        new_disp = disp+my_rdisp +(p-1)*qsize*nq_shell +(qindex-1)*qsize        
+                        Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                        
+                        Call MPI_FILE_WRITE(funit, all_spectra(0,0,1,1,p), buffsize, & 
+                               MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Enddo
+
+                Endif
 
             Else
 			    !  Non-responsible nodes send their info
@@ -2127,24 +2155,30 @@ Contains
         If (responsible .eq. 1) Then
             disp = hdisp+rec_size*current_rec
             disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
-            If (shell_spectra%master) Then
+            If (Shell_Spectra%file_open) Then
 
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (Shell_Spectra%master) Then
+
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
 
             DeAllocate(all_spectra)
             DeAllocate(buff)
             DeAllocate(rirqs)
+
         Endif
 
 
-        If (my_row_rank .eq. 0) Call shell_spectra%closefile_par()
+        If (my_row_rank .eq. 0) Call Shell_Spectra%Closefile_Par()
         If (my_nlevels .gt. 0) Then 
             DeAllocate(sendbuffer, bsendbuffer)
         Endif
@@ -2287,51 +2321,53 @@ Contains
 
         ! For the moment, every process in column 0 participates in the mpi operation
         ! The plan is to tune this later so that 
-        if (my_row_rank .eq. 0) Call Shell_Slices%OpenFile_Par(this_iter, error)
+        If (my_row_rank .eq. 0) Call Shell_Slices%OpenFile_Par(this_iter, error)
 
-        If (responsible .eq. 1) Then   
-           funit = shell_slices%file_unit
-        If (Shell_Slices%current_rec .eq. 1) Then                
-            
-            If (shell_slices%master) Then            
-                ! The master rank (whoever owns the first output shell level) writes the header
-                dims(1) = ntheta
-                dims(2) = Shell_Slices%nlevels
-                dims(3) =  nq_shell
-                buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+        If ( (responsible .eq. 1) .and. (shell_slices%file_open) ) Then   
 
-                buffsize = nq_shell
-                call MPI_FILE_WRITE(funit,Shell_Slices%oqvals, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+            funit = shell_slices%file_unit
 
-                allocate(out_radii(1:Shell_Slices%nlevels))
-                Do i = 1, Shell_Slices%nlevels
-                    out_radii(i) = radius(Shell_Slices%levels(i))
-                Enddo
-                buffsize = Shell_Slices%nlevels
-	            call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
-                DeAllocate(out_radii)
+            If (Shell_Slices%write_header) Then                
                 
+                If (Shell_Slices%master) Then            
+                    ! The master rank (whoever owns the first output shell level) writes the header
+                    dims(1) = ntheta
+                    dims(2) = Shell_Slices%nlevels
+                    dims(3) =  nq_shell
+                    buffsize = 3
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                allocate(level_inds(1:Shell_Slices%nlevels))
-                Do i = 1, Shell_Slices%nlevels
-                    level_inds(i) = Shell_Slices%levels(i)
-                Enddo
+                    buffsize = nq_shell
+                    Call MPI_FILE_WRITE(funit,Shell_Slices%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-	            call MPI_FILE_WRITE(funit, Shell_Slices%levels, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
-                DeAllocate(level_inds)
-                buffsize = ntheta
-	            call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
+                    Allocate(out_radii(1:Shell_Slices%nlevels))
+                    Do i = 1, Shell_Slices%nlevels
+                        out_radii(i) = radius(Shell_Slices%levels(i))
+                    Enddo
+                    buffsize = Shell_Slices%nlevels
+	                Call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+                    DeAllocate(out_radii)
+                    
 
+                    Allocate(level_inds(1:Shell_Slices%nlevels))
+                    Do i = 1, Shell_Slices%nlevels
+                        level_inds(i) = Shell_Slices%levels(i)
+                    Enddo
+
+	                Call MPI_FILE_WRITE(funit, Shell_Slices%levels, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
+                    DeAllocate(level_inds)
+                    buffsize = ntheta
+	                Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+
+                Endif
             Endif
-        Endif
 
-            ! I might really (really) want to look into file views later.
+            ! Maybe look into file views later.
             ! Depending on the offset size mpi type, disp will crap out past 2GB
             hdisp = 24 ! dimensions+endian+version+record count
             hdisp = hdisp+nq_shell*4 ! nq
@@ -2344,7 +2380,6 @@ Contains
             
             buffsize = Shell_Slices%my_nlevels*ntheta*nphi
             ! The file is striped with time step slowest, followed by q
-
 
             rcount = 0
             Do p = 1, Shell_Slices%nshell_r_ids
@@ -2377,7 +2412,7 @@ Contains
 			DeAllocate(all_shell_slices)
         Endif  ! Responsible
 
-        If (my_row_rank .eq. 0) Call shell_slices%closefile_par()
+        If (my_row_rank .eq. 0) Call Shell_Slices%Closefile_Par()
 
 
 	End Subroutine Write_Shell_Slices
@@ -2404,13 +2439,14 @@ Contains
 		integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_rdisp, new_disp, qdisp, full_disp
 		Integer :: mstatus(MPI_STATUS_SIZE)
         sizecheck = sizeof(disp)
-        if (sizecheck .lt. 8) Then
+        If (sizecheck .lt. 8) Then
             if (myid .eq. 0) Then
             Write(6,*)"Warning, MPI_OFFSET_KIND is less than 8 bytes on your system."
             Write(6,*)"Your size (in bytes) is: ", sizecheck
             Write(6,*)"A size of 4 bytes means that shell slices files are effectively limited to 2 GB in size."
             Endif
-        endif 
+        Endif 
+
         nq_shell = Shell_Slices%nq
         shell_slice_tag = Shell_Slices%mpi_tag
         
@@ -2438,7 +2474,7 @@ Contains
                 ! The file is striped with time step slowest, followed by q
                 rcount = 0
                 Do p = 1, Shell_Slices%nshell_r_ids
-                    if (Shell_Slices%shell_r_ids(p) .lt. my_column_rank) Then
+                    If (Shell_Slices%shell_r_ids(p) .lt. my_column_rank) Then
                         rcount = rcount+ Shell_Slices%nshells_at_rid(p)
                     Endif
                 Enddo
@@ -2456,37 +2492,37 @@ Contains
         funit = Shell_Slices%file_unit
         !////////////////////////////
         !Write a header
-        If (Shell_Slices%current_rec .eq. 1) Then                
+        If (Shell_Slices%file_open) Then                
             
-            If (shell_slices%master .and. (responsible .eq. 1)) Then            
+            If (shell_slices%master .and. shell_slices%write_header) Then            
                 ! The master rank (whoever owns the first output shell level) writes the header
                 dims(1) = ntheta
                 dims(2) = Shell_Slices%nlevels
                 dims(3) =  nq_shell
                 buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
                 buffsize = nq_shell
-                call MPI_FILE_WRITE(funit,Shell_Slices%oqvals, buffsize, MPI_INTEGER, & 
+                Call MPI_FILE_WRITE(funit,Shell_Slices%oqvals, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
 
-                allocate(out_radii(1:Shell_Slices%nlevels))
+                Allocate(out_radii(1:Shell_Slices%nlevels))
                 Do i = 1, Shell_Slices%nlevels
                     out_radii(i) = radius(Shell_Slices%levels(i))
                 Enddo
                 buffsize = Shell_Slices%nlevels
-	            call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
+	            Call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
                     mstatus, ierr) 
                 DeAllocate(out_radii)
                 
 
-                allocate(level_inds(1:Shell_Slices%nlevels))
+                Allocate(level_inds(1:Shell_Slices%nlevels))
                 Do i = 1, Shell_Slices%nlevels
                     level_inds(i) = Shell_Slices%levels(i)
                 Enddo
 
-	            call MPI_FILE_WRITE(funit, Shell_Slices%levels, buffsize, MPI_INTEGER, & 
+	            Call MPI_FILE_WRITE(funit, Shell_Slices%levels, buffsize, MPI_INTEGER, & 
                     mstatus, ierr) 
                 DeAllocate(level_inds)
                 buffsize = ntheta
@@ -2572,7 +2608,7 @@ Contains
 
             ! Communication is complete.  Write this q-value using MPI-IO
 
-            If (responsible .eq. 1) Then   
+            If ( (responsible .eq. 1) .and. (Shell_Slices%file_open) ) Then   
 
                 new_disp = disp+qdisp*(qindex-1)+my_rdisp                
                 Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
@@ -2588,18 +2624,23 @@ Contains
             DeAllocate(rirqs)
             disp = hdisp+full_disp*Shell_Slices%current_rec
             disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
+            If (Shell_Slices%file_open) Then
 
-            If (shell_slices%master) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (Shell_Slices%master) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
+
         Endif
-        If (my_row_rank .eq. 0) Call shell_slices%closefile_par()
+        If (my_row_rank .eq. 0) Call Shell_Slices%CloseFile_Par()
         If (Shell_Slices%my_nlevels .gt. 0) Then
             DeAllocate(shell_slice_outputs)
             DeAllocate(buff)
@@ -2956,6 +2997,8 @@ Contains
 
         If (responsible .eq. 1) Then   
             Call AZ_Averages%OpenFile_Par(this_iter, error)
+
+
             current_rec = AZ_Averages%current_rec
             funit = AZ_Averages%file_unit
             !before we do anything else, we need to restripe the data yet again (might be able to work around this later)
@@ -2970,65 +3013,66 @@ Contains
             Enddo        
             DeAllocate(all_azavgs)
             
+            If (AZ_Averages%file_open) Then
+                If ((my_column_rank .eq. 0) .and. (AZ_Averages%write_header) ) Then            
+                    ! Rank 0 in column and row writes the header
+                    dims(1) =  nr
+                    dims(2) =  ntheta
+                    dims(3) =  nq_azav
+                    buffsize = 3
+                    call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-            If ((my_column_rank .eq. 0) .and. (current_rec .eq. 1) ) Then            
-                ! Rank 0 in column and row writes the header
-                dims(1) =  nr
-                dims(2) =  ntheta
-                dims(3) =  nq_azav
-                buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+                    buffsize = nq_azav
+                    call MPI_FILE_WRITE(funit,AZ_Averages%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
 
-                buffsize = nq_azav
-                call MPI_FILE_WRITE(funit,AZ_Averages%oqvals, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
+                    buffsize = nr
+                    call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
 
-                buffsize = nr
-                call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
-
-                buffsize = ntheta
-                call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
-            Endif
+                    buffsize = ntheta
+                    call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+                Endif
 
 
-            hdisp = 24 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_azav*4 ! nq
-            hdisp = hdisp+nr*8  ! The radius array
-            hdisp = hdisp+ ntheta*8  ! costheta
+                hdisp = 24 ! dimensions+endian+version+record count
+                hdisp = hdisp+nq_azav*4 ! nq
+                hdisp = hdisp+nr*8  ! The radius array
+                hdisp = hdisp+ ntheta*8  ! costheta
 
-            qdisp = ntheta*nr*8
-            full_disp = qdisp*nq_azav+12  ! 12 is for the simtime+iteration at the end
-            disp = hdisp+full_disp*(current_rec-1)
-            
-            buffsize = my_nr*ntheta
-            ! The file is striped with time step slowest, followed by q
-
-            my_rdisp = (my_rmin-1)*ntheta*8
-
-            Do i = 1, nq_azav
-                new_disp = disp+qdisp*(i-1)+my_rdisp                
-                Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                qdisp = ntheta*nr*8
+                full_disp = qdisp*nq_azav+12  ! 12 is for the simtime+iteration at the end
+                disp = hdisp+full_disp*(current_rec-1)
                 
-                Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Enddo
+                buffsize = my_nr*ntheta
+                ! The file is striped with time step slowest, followed by q
 
-            disp = hdisp+full_disp*current_rec
-            disp = disp-12
-            Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+                my_rdisp = (my_rmin-1)*ntheta*8
+
+                Do i = 1, nq_azav
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
+
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
 
 
-            If (my_column_rank .eq. 0) Then
-                buffsize = 1
-                Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                       MPI_INTEGER, mstatus, ierr)
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
             Endif
-
 			DeAllocate(buff)
             Call AZ_Averages%closefile_par()
         Endif  ! Responsible
@@ -3633,83 +3677,115 @@ Contains
         Integer :: buffsize, funit
         Integer :: mstatus(MPI_STATUS_SIZE)
         integer(kind=MPI_OFFSET_KIND) :: disp
+        Logical :: create_file
+        Logical :: file_exists
 
+        create_file = .false.
+        file_exists = .false.
 
+        self%file_open    = .false.
+        self%write_header = .false.
+
+        ! Determine which file # this data belongs to
         modcheck = self%frequency*self%rec_per_file
-
-
         icomp = iter - (self%cache_size-1)*self%frequency
-
-
         imod = Mod(icomp,modcheck) 
-
-        if (imod .eq. 0) then
+        If (imod .eq. 0) Then
             ibelong = iter
-        else
-            ibelong = icomp-imod+modcheck    ! This iteration belongs in a file with number= ibelong
-        endif
+        Else
+            ibelong = icomp-imod+modcheck    ! Data belongs to file #ibelong
+        Endif
 
-        write(iterstring,i_ofmt) ibelong
+        Write(iterstring,i_ofmt) ibelong
         filename = trim(local_file_path)//trim(self%file_prefix)//trim(iterstring)
 
+        If ( (imod .eq. self%frequency) .or. (self%rec_per_file .eq. 1) ) Then   
+            ! Time to begin a new file 
+            create_file = .true.
+        Else
+            ! We are either:
+            ! (a)  Appending to an existing file or
+            ! (b)  The user has changed the output cadence in between checkpoints.
+            !      In that case, we're "off-cycle" and need to create the file.
 
-        If ( (imod .eq. self%frequency) .or. (self%rec_per_file .eq. 1) ) Then   ! time to begin a new file 
+            ! This sort of filesystem inquiry should be done by only one rank
+            If (self%orank .eq. 0) Then
+                Inquire(File=filename, Exist=file_exists)
+                If (.not. file_exists) create_file = .true.
+            Endif
 
-            
+            Call MPI_Bcast(create_file, 1, MPI_LOGICAL, 0, self%ocomm, ierr)
 
+        Endif
+
+        If (create_file) Then
+
+            If (self%master) Call stdout%print(' Creating Filename: '//trim(filename))
     	    Call MPI_FILE_OPEN(self%ocomm, filename, & 
                  MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
                  MPI_INFO_NULL, funit, ierr) 
+
             self%file_unit = funit
-            If (self%master) Then     
-                Write(6,*)'Creating Filename: ', filename      
-                buffsize = 1
-                call MPI_FILE_WRITE(self%file_unit, endian_tag, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr)
+            self%write_header = .true.            
 
-                buffsize = 1
-                call MPI_FILE_WRITE(self%file_unit, self%Output_Version, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr)
-                buffsize = 1
-                call MPI_FILE_WRITE(self%file_unit, integer_zero, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) ! We write zero initially - only update nrec after the data is actually written
-            Endif
-
-            
-            self%current_rec = 1+self%cc
-            
-                       
-            If (ierr .ne. 0) Then
-                next_iter =file_iter+modcheck
-                if (self%master) Write(6,*)'Unable to create file!!: ',filename
-            Endif
         Else
-    		call MPI_FILE_OPEN(self%ocomm, filename, & 
+
+    		Call MPI_FILE_OPEN(self%ocomm, filename, & 
                  MPI_MODE_RDWR, & 
                  MPI_INFO_NULL, funit, ierr) 
+
             self%file_unit = funit
+            self%write_header = .false.
 
-            !Read the previous record number / advance record
-            disp = 8
-            Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
-            Call MPI_FILE_READ(self%file_unit, self%current_rec, 1, MPI_INTEGER, & 
-                & mstatus, ierr)
-
-            self%current_rec = self%current_rec+1+self%cc
-
-            If (ierr .ne. 0) Then
-                next_iter =file_iter+modcheck
-                if (self%master) Then
-                Write(6,*)'Failed to find needed file: ', filename
-                Write(6,*)'Partial diagnostic files are not currently supported.'
-                Write(6,*)'No data will be written until a new file is created at iteration: ', ibelong+self%frequency
-                Endif
-            Endif
         Endif
+
+        If (ierr .eq. 0) Then
+            self%file_open = .true.
+        Else
+            Call stdout%print(' Unable to open file: '//trim(filename))
+        Endif
+
+
+        If (self%file_open) Then
+
+            If (self%write_header) Then
+
+                If (self%master) Then     
+
+
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(self%file_unit, endian_tag, buffsize, &
+                        & MPI_INTEGER, mstatus, ierr)
+
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(self%file_unit, self%Output_Version, & 
+                        buffsize, MPI_INTEGER, mstatus, ierr)
+
+                    ! We write zero initially --
+                    ! update nrec only after the data is actually written.
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(self%file_unit, integer_zero, &
+                        & buffsize, MPI_INTEGER, mstatus, ierr) 
+                Endif
+                
+                self%current_rec = 1+self%cc
+
+            Else
+
+                !Read the previous record number / advance record
+                disp = 8
+                Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
+                Call MPI_FILE_READ(self%file_unit, self%current_rec, 1, &
+                    & MPI_INTEGER, mstatus, ierr)
+
+                self%current_rec = self%current_rec+1+self%cc
+
+
+            Endif
+
+        Endif
+
     End Subroutine OpenFile_Par
-
-
-
 
     Subroutine CloseFile(self)
         Implicit None
