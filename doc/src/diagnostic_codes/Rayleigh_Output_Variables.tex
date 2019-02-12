@@ -287,7 +287,6 @@ Output quantities related to the velocity field, its gradients, and its associat
 \input{./table_header.tex}
 \input{./velocity_field_table0.tex}
 \input{./velocity_field_table1.tex}
-\input{./velocity_field_table2.tex}
 \input{./table_footer.tex}
 The table below contains all available quantities related to the mass flux $\ff_1\boldsymbol{v}$.
 \input{./table_header.tex}
@@ -325,7 +324,7 @@ Codes associated with the thermal variables $\Theta$ and $P$, and their gradient
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 %% Thermal energy
-\subsection{thermal energy}
+\subsection{Thermal Energy}
 Codes associated with the thermal energy density and the enthalpy are defined here. 
 \input{./table_header.tex}
 \input{./thermal_energy_table0.tex}
@@ -338,23 +337,23 @@ Codes associated with the magnetic field $\boldsymbol{B}$ and its gradients appe
 \input{./table_header.tex}
 \input{./magnetic_field_table0.tex}
 \input{./magnetic_field_table1.tex}
-\input{./magnetic_field_table2.tex}
 \input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Curl of B
+\subsection{Current Density $\boldsymbol{\nabla}\times\boldsymbol{B}$}
 We use the shorthand $\boldsymbol{\mathcal{J}}$ to denote the curl of $\boldsymbol{B}$, namely
 \begin{equation}
-    \boldsymbol{\mathcal{J}}\equiv\boldsymbol{\nabla}\times\boldsymbol{B}.
+\boldsymbol{\mathcal{J}}\equiv\boldsymbol{\nabla}\times\boldsymbol{B}.
 \end{equation}
-\subsection{Current density $\boldsymbol{\nabla}\times\boldsymbol{B}$}
+
 \input{./table_header.tex}
 \input{./current_density_table0.tex}
 \input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Magnetic Energy
-\subsection{Magnetic Energy Density}
+\subsection{Magnetic Energy}
 Output codes related to the generalized magnetic energy density, $\frac{1}{2}c_4\boldsymbol{B}^2$, are defined here.
 \input{./table_header.tex}
 \input{./magnetic_energy_table0.tex}
@@ -366,31 +365,31 @@ Output codes related to the generalized magnetic energy density, $\frac{1}{2}c_4
 All terms from the momentum equation, and their Reynolds decomposition, are defined here.
 \input{./table_header.tex}
 \input{./momentum_equation_table0.tex}
-\input{./momentum_equation_table1.tex}
 \input{./table_footer.tex}
 
+\input{./table_header_single_column.tex}
+\input{./momentum_equation_table1.tex}
+\input{./table_footer.tex}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Thermal Energy Equation
 \subsection{Thermal Energy Equation}
 Terms from the thermal energy equation, and their Reynolds decomposition, are defined here.
-\input{./table_header.tex}
+\input{./table_header_single_column.tex}
 \input{./thermal_equation_table0.tex}
-\input{./thermal_equation_table1.tex}
 \input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Induction Equation}
 Terms from the induction equation, and their Reynolds decomposition, are described here.
-\input{./table_header.tex}
+\input{./table_header_single_column.tex}
 \input{./induction_equation_table0.tex}
-\input{./induction_equation_table1.tex}
 \input{./table_footer.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Mean Angular Momentum Equation
 \subsection{Angular Momentum}
 Terms from the angular momentum equation and their associated fluxes are defined here.  Only those terms contributing to the axisymmetric mean are calculated.  Terms of form $a'\,\overline{a}$, which do not contribute to the mean, are omitted.
-\input{./table_header.tex}
+\input{./table_header_single_column.tex}
 \input{./amom_equation_table0.tex}
 \input{./table_footer.tex}
 
@@ -407,9 +406,8 @@ Terms appearing in the kinetic energy equation ($\boldsymbol{v}\cdot\frac{\parti
 %% Magnetic Energy Equation
 \subsection{Magnetic Energy Equation}
 Terms appearing in the Magnetic energy equation ($\boldsymbol{B}\cdot\frac{\partial \boldsymbol{B}}{\partial t}$) are described here.
-\input{./table_header.tex}
+\input{./table_header_single_column.tex}
 \input{./me_equation_table0.tex}
-\input{./me_equation_table1.tex}
 \input{./table_footer.tex}
 
 \end{document}
