@@ -350,6 +350,58 @@ class TransportCoeffs:
 
         fd.close()
 
+class GridInfo:
+    """Rayleigh Grid Structure
+    ----------------------------------
+    self.n_r        : number of radial points
+    self.n_theta    : number of latitudinal points
+    self.n_phi      : number of zonal points
+    self.radius     : radial coordinates
+    self.rweights   : radial integration weights
+    self.theta      : (co)latitudinal coordinates
+    self.costheta   : cos(theta)
+    self.sintheta   : sin(theta)
+    self.tweights   : latitudinal integration weights
+    self.phi        : zonal coordinates
+    self.dphi       : zonal integration weight(s) (all 2*PI/n_phi)
+    """
+
+    def __init__(self, filename='none', path='./'):
+        """filename  : The reference state file to read.
+           path      : The directory where the file is located \
+                   (if full path not in filename
+        """
+        if (filename == 'none'):
+            the_file = path + 'grid_info'
+        else:
+            the_file = path+filename
+        fd = open(the_file, 'rb')
+        # We read an integer to assess which endian the file was 
+        # written in...
+        bs = check_endian(fd, 314, 'int32')
+        nr = swapread(fd, dtype='int32', count=1, swap=bs)
+        ntheta = swapread(fd, dtype='int32', count=1, swap=bs)
+        nphi = swapread(fd, dtype='int32', count=1, swap=bs)
+        self.nr = nr
+        self.ntheta = ntheta
+        self.nphi = nphi
+        self.radius = swapread(fd, dtype='float64', count=nr, swap=bs)
+        self.rweights = swapread(fd, dtype='float64', count=nr, swap=bs)
+        self.theta = swapread(fd, dtype='float64', count=ntheta, swap=bs)
+        self.costheta = swapread(fd, dtype='float64', count=ntheta,\
+                swap=bs)
+        self.sintheta = swapread(fd, dtype='float64', count=ntheta,\
+                swap=bs)
+        self.tweights = swapread(fd, dtype='float64', count=ntheta,\
+                swap=bs)
+        self.phi = swapread(fd, dtype='float64', count=nphi,\
+                swap=bs)
+        self.dphi = swapread(fd, dtype='float64', count=1, swap=bs)
+        self.names = ['nr', 'ntheta', 'nphi', 'radius', 'rweights',\
+                'theta', 'costheta', 'sintheta', 'tweights', 'phi',\
+                'dphi']        
+
+        fd.close()
 class G_Avgs:
     """Rayleigh GlobalAverage Structure
     ----------------------------------
