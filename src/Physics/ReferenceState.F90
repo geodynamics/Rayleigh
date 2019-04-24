@@ -817,7 +817,7 @@ Contains
         ! the current grid.  NO INTERPOLATION will be performed here.
 
         ! Put some logic here for unity functions and constants from command
-        ! Read the functions
+        Read the functions
         ! Read the constants
 
         ref%density(:) = rayleigh_functions(:,1)
