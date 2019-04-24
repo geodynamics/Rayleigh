@@ -813,17 +813,29 @@ Contains
         !Real*8, Allocatable :: Rayleigh_functions(:,:)
         !Real*8 :: rayleigh_constants(1:7)
         Allocate(rayleigh_functions(1:N_R,1:10))
+        Allocate(temp_constants(1:7))
         ! This reference state is assumed to have been calculated on
         ! the current grid.  NO INTERPOLATION will be performed here.
 
         ! Put some logic here for unity functions and constants from command
         Read the functions
-        ! Read the constants
+        Read the constants
+        Read cset switches
+
+        ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
+        ! The logic below allows a constant to be set in the reference
+        ! file and in main_input.  
+        Do i = 1, nconst
+            !ra_const(i) = (1-cset(i))*ra_const(i) + cset(i)*input_const(i)
+            If (.not. override_constants) then
+                ra_const(i) = ra_const(i) + cset(i)*(input_const(i)-ra_const(i))
+            Endif
+        Enddo
 
         ref%density(:) = rayleigh_functions(:,1)
         ref%dlnrho(:) = rayleigh_functions(:,8)
         ref%d2lnrho(:) = rayleigh_functions(:,9)
-        ref%buoyancy_coeff(:) = rayleigh_constants(2)*rayleigh_functions(:,2)
+        ref%buoyancy_coeff(:) = ra_const(2)*rayleigh_functions(:,2)
         !viscosity maps to function 3 times constant 5
         ref%temperature(:) = rayleigh_functions(:,4)
         ref%dlnT(:) = rayleigh_functions(:,10)
@@ -832,11 +844,13 @@ Contains
         !eta maps to function 7 times constant 7
 
         ! Next, incorporate the constants
-        ref%Coriolis_Coeff = rayleigh_constants(1)
-        ref%dpdr_w_term(:) = rayleigh_constants(3)*rayleigh_functions(:,1)
+
+        
+        ref%Coriolis_Coeff = ra_const(1)
+        ref%dpdr_w_term(:) = ra_const(3)*rayleigh_functions(:,1)
         ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:)  ! Hadn't noticed this redundancy before...
         ref%viscous_amp(:) = 2.0/ref%temperature(:)
-        ref%Lorentz_Coeff = rayleigh_constants(4)
+        ref%Lorentz_Coeff = ra_const(4)
         ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
         DeAllocate(rayleigh_functions)
     End Subroutine Get_Custom_Reference
