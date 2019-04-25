@@ -66,10 +66,17 @@ Module ReferenceState
 
     End Type ReferenceInfo
 
-    Real*8 :: rayleigh_constants(1:7)
-    Real*8, Allocatable :: rayleigh_functions(:,:)
+    ! Custom reference state variables
+    Integer, Parameter  :: n_ra_constants = 9
+    Integer, Parameter  :: n_ra_functions = 13
+    Logical             :: override_constants = .false.
+    Logical             :: override_constant(1:n_ra_constants) = .false.
+    Real*8              :: ra_constants(1:n_ra_constants) = 0.0d0
+    Real*8, Allocatable :: ra_functions(:,:)
+    Character*120 :: custom_reference_file ='nothing'    
 
     Real*8, Allocatable :: s_conductive(:)
+
 
     Integer :: reference_type =1
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
@@ -100,8 +107,8 @@ Module ReferenceState
     Real*8 :: Dissipation_Number      = 0.0d0
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
     Logical :: Dimensional_Reference = .false.  ! Changed depending on reference state specified
-    Character*120 :: custom_reference_file ='nothing'
-    Integer :: custom_reference_type = 1
+
+
 
     ! These last two flags are deprecated.  They are retained for now to prevent crashes due to improper input
     Logical :: Dimensional = .false., NonDimensional_Anelastic = .false.
@@ -120,12 +127,13 @@ Module ReferenceState
 
 
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
-            & pressure_specific_heat, heating_type, luminosity, Angular_Velocity, &
+            & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
-            & gravity_power, heating_factor, heating_r0, custom_reference_file, &
-            & custom_reference_type, cooling_type, cooling_r0, cooling_factor, &
-            & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral, &
-            & Dimensional, NonDimensional_Anelastic
+            & gravity_power, heating_factor, heating_r0, custom_reference_file,       &
+            & cooling_type, cooling_r0, cooling_factor,        &
+            & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
+            & Dimensional, NonDimensional_Anelastic, override_constants ,             &
+            & override_constant, ra_constants
 Contains
 
     Subroutine Initialize_Reference()
@@ -149,9 +157,7 @@ Contains
         Endif
 
         If (reference_type .eq. 4) Then
-            If (custom_reference_type .eq. 1) Then
-                Call Get_Custom_Reference()
-            Endif
+            Call Get_Custom_Reference()
         Endif
         If (my_rank .eq. 0) Then
             Call stdout%print(" -- Reference State initialized.")
@@ -810,53 +816,214 @@ Contains
 
     Subroutine Get_Custom_Reference()
         Implicit None
+
+        !    Integer, Parameter :: n_ra_constants = 7
+        !    Integer, Parameter :: n_ra_functions = 10
+        !    Logical :: override_constants = .false.
+        !    Logical :: override_constant(1:n_ra_constants) = .false.
+        !    Integer :: constant_set(1:n_ra_constants) = 0
+        !    Real*8 :: ra_constants(1:n_ra_constants) = 0.0d0
+        !    Real*8, Allocatable :: ra_functions(:,:)
+
         !Real*8, Allocatable :: Rayleigh_functions(:,:)
         !Real*8 :: rayleigh_constants(1:7)
-        Allocate(rayleigh_functions(1:N_R,1:10))
-        Allocate(temp_constants(1:7))
-        ! This reference state is assumed to have been calculated on
-        ! the current grid.  NO INTERPOLATION will be performed here.
+        Allocate(ra_functions(1:N_R,1:n_ra_functions))
 
-        ! Put some logic here for unity functions and constants from command
-        Read the functions
-        Read the constants
-        Read cset switches
+        Call Read_Custom_Reference_File(custom_reference_file)
 
-        ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
-        ! The logic below allows a constant to be set in the reference
-        ! file and in main_input.  
-        Do i = 1, nconst
-            !ra_const(i) = (1-cset(i))*ra_const(i) + cset(i)*input_const(i)
-            If (.not. override_constants) then
-                ra_const(i) = ra_const(i) + cset(i)*(input_const(i)-ra_const(i))
-            Endif
-        Enddo
 
-        ref%density(:) = rayleigh_functions(:,1)
-        ref%dlnrho(:) = rayleigh_functions(:,8)
-        ref%d2lnrho(:) = rayleigh_functions(:,9)
-        ref%buoyancy_coeff(:) = ra_const(2)*rayleigh_functions(:,2)
+        ref%density(:) = ra_functions(:,1)
+        ref%dlnrho(:) = ra_functions(:,8)
+        ref%d2lnrho(:) = ra_functions(:,9)
+        ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+
         !viscosity maps to function 3 times constant 5
-        ref%temperature(:) = rayleigh_functions(:,4)
-        ref%dlnT(:) = rayleigh_functions(:,10)
+
+        ref%temperature(:) = ra_functions(:,4)
+        ref%dlnT(:) = ra_functions(:,10)
+
         !kappa maps to function 5 times constant 6
-        ref%heating(:) = rayleigh_functions(:,6)/(ref%density*ref%temperature)
+        ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)
         !eta maps to function 7 times constant 7
 
         ! Next, incorporate the constants
 
         
-        ref%Coriolis_Coeff = ra_const(1)
-        ref%dpdr_w_term(:) = ra_const(3)*rayleigh_functions(:,1)
+        ref%Coriolis_Coeff = ra_constants(1)
+        ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
         ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:)  ! Hadn't noticed this redundancy before...
         ref%viscous_amp(:) = 2.0/ref%temperature(:)
-        ref%Lorentz_Coeff = ra_const(4)
+        ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
-        DeAllocate(rayleigh_functions)
+        !DeAllocate(rayleigh_functions)
     End Subroutine Get_Custom_Reference
 
 
+    Subroutine Read_Custom_Reference_File(filename)
+        Character*120, Intent(In), Optional :: filename
+        Character*120 :: ref_file
+        Integer :: pi_integer,nr_ref
+        Integer :: i, k
+        Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
+        Real*8  :: input_constants(1:n_ra_constants)
+        Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
+        Real*8, Allocatable :: old_radius(:)
 
+        cset(:) = 0
+        input_constants(:) = 0.0d0
+
+        If (present(filename)) Then
+            ref_file = Trim(my_path)//filename
+        Else
+            ref_file = 'reference'
+        Endif
+
+        Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream')
+
+        !Verify Endianness
+        Read(15)pi_integer
+        If (pi_integer .ne. 314) Then
+            close(15)
+            Open(unit=15,file=ref_file,form='unformatted', status='old', &
+                 CONVERT = 'BIG_ENDIAN' , access='stream')
+            Read(15)pi_integer
+            If (pi_integer .ne. 314) Then
+                Close(15)
+                Open(unit=15,file=ref_file,form='unformatted', status='old', &
+                 CONVERT = 'LITTLE_ENDIAN' , access='stream')
+                Read(15)pi_integer
+            Endif
+        Endif
+
+        If (pi_integer .eq. 314) Then
+
+            ! Read in constants and their 'set' flags
+            Read(15)cset(1:n_ra_constants)
+            Read(15)fset(1:n_ra_functions)
+            Read(15)input_constants(1:n_ra_constants)
+            
+            ! Decide which constants, if any, overwrite those
+            ! specified in main_input
+
+            ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
+            ! The logic below allows a constant to be set in the reference
+            ! file and in main_input.  
+            Do i = 1, n_ra_constants
+                If ( (.not. override_constants) .and. (.not. override_constant(i)) ) then
+                    ra_constants(i) = ra_constants(i) + cset(i)*(input_constants(i)-ra_constants(i))
+                Endif
+            Enddo
+
+
+
+            Read(15)nr_ref
+            Allocate(ref_arr_old(1:nr_ref,1:n_ra_functions)) 
+            Allocate(old_radius(1:nr_ref))
+
+            Write(6,*)'nr_ref is: ', nr_ref
+
+            Read(15)(old_radius(i),i=1,nr_ref)
+            Do k = 1, n_ra_functions
+                Read(15)(ref_arr_old(i,k) , i=1 , nr_ref)
+            Enddo
+
+
+            !Check to see if radius is tabulated in ascending or descending order.
+            !If it is found to be in ascending order, reverse the radius and the 
+            !input array of functions
+            If (old_radius(1) .lt. old_radius(nr_ref)) Then
+                Write(6,*)'Reversing Radial Indices in Custom Ref File!'
+                Allocate(rtmp(1:nr_ref))
+
+                Do i = 1, nr_ref
+                    old_radius(i) = rtmp(nr_ref-i+1)
+                Enddo
+
+                Do k = 1, n_ra_functions
+                    rtmp(:) = ref_arr_old(:,k)
+                    Do i = 1, nr_ref
+                        ref_arr_old(i,k) = rtmp(nr_ref-i+1)
+                    Enddo
+                Enddo
+
+                DeAllocate(rtmp)
+
+            Endif
+
+            Close(15)
+
+
+            If (nr_ref .ne. n_r) Then
+                !Interpolate onto the current radial grid if necessary
+                !Note that the underlying assumption here is that same # of grid points
+                ! means same grid - come back to this later for generality
+                Allocate(rtmp2(1:n_r))
+                Allocate( rtmp(1:nr_ref))
+
+                Do k = 1, n_ra_functions
+
+                    rtmp(:) = ref_arr_old(:,k)
+                    rtmp2(:) = 0.0d0
+                    Call Spline_Interpolate(rtmp, old_radius, rtmp2, radius)
+                    ra_functions(1:n_r,k) = rtmp2
+                Enddo
+
+                DeAllocate(rtmp,rtmp2)
+            Else
+                ! Bit redundant here, but may want to do filtering on ref_arr array
+                ra_functions(1:n_r,1:n_ra_functions) = &
+                       ref_arr_old(1:n_r,1:n_ra_functions)
+
+            Endif
+            DeAllocate(ref_arr_old,old_radius)
+            
+            ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, and eta were
+            ! not specified, then we compute them here+
+           
+            If (fset(8)  .eq. 0) Call log_deriv(ra_functions(:,1), ra_functions(:,8)) ! dlnrho
+            If (fset(9)  .eq. 0) Call log_deriv(ra_functions(:,8), ra_functions(:,9), no_log=.true.) !d2lnrho
+            If (fset(10) .eq. 0) Call log_deriv(ra_functions(:,4), ra_functions(:,10)) !dlnT
+            If (fset(11) .eq. 0) Call log_deriv(ra_functions(:,3), ra_functions(:,11)) !dlnnu
+            If (fset(12) .eq. 0) Call log_deriv(ra_functions(:,5), ra_functions(:,12)) !dlnkappa
+            If (fset(13) .eq. 0) Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
+        Endif
+
+
+
+    End Subroutine Read_Custom_Reference_File
+
+    Subroutine log_deriv(arr1,arr2, no_log)
+        Implicit None
+        Real*8, Intent(In)    :: arr1(:)
+        Real*8, Intent(InOut) :: arr2(:)
+        Real*8, Allocatable   :: dtemp(:,:,:,:),dtemp2(:,:,:,:)
+        Logical, Optional     :: no_log
+
+        ! Take radial derivative
+        ! This is a bit cumbersome
+
+        Allocate(dtemp(1:n_r,1,1,2))
+        Allocate(dtemp2(1:n_r,1,1,2))
+        dtemp(:,:,:,:) = 0.0d0
+        dtemp2(:,:,:,:) = 0.0d0
+        dtemp(1:n_r,1,1,1) = arr2(1:n_r)
+        Call gridcp%to_Spectral(dtemp,dtemp2)
+        dtemp2((n_r*2)/3:n_r,1,1,1) = 0.0d0
+        Call gridcp%d_by_dr_cp(1,2,dtemp2,1)
+        dtemp2((n_r*2)/3:n_r,1,1,2) = 0.0d0  ! de-alias
+        !transform back to physical
+        Call gridcp%From_Spectral(dtemp2,dtemp)
+        arr2(:) = dtemp(:,1,1,2)
+        DeAllocate(dtemp,dtemp2)
+
+
+
+
+        ! convert to logarithmic derivative
+        If (.not. present(no_log)) Then
+            arr2(:) = arr2(:)/arr1(:)
+        Endif
+    End Subroutine log_deriv
 
     Subroutine Read_Reference(filename,ref_arr)
         Character*120, Intent(In), Optional :: filename
@@ -1096,7 +1263,6 @@ Contains
         gravity_power           = 0.0d0
         Dimensional_Reference = .true.
         custom_reference_file ='nothing'
-        custom_reference_type = 1
 
         If (allocated(s_conductive)) DeAllocate(s_conductive)
         If (allocated(ref%Density)) DeAllocate(ref%density)
