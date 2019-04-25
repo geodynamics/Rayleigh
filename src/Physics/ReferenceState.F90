@@ -927,12 +927,23 @@ Contains
                 Read(15)(ref_arr_old(i,k) , i=1 , nr_ref)
             Enddo
 
+            Do k = 1, n_ra_functions
+                If (my_rank .eq. 0) Then
+                    Write(6,*)'f: ', k+1,ref_arr_old(21,k), ref_arr_old(1001,k)
+                Endif
+            Enddo
+
+            Do k = 1, n_ra_constants
+                If (my_rank .eq. 0) Then
+                    Write(6,*)'c: ', k, ra_constants(k)
+                Endif
+            Enddo
 
             !Check to see if radius is tabulated in ascending or descending order.
             !If it is found to be in ascending order, reverse the radius and the 
             !input array of functions
             If (old_radius(1) .lt. old_radius(nr_ref)) Then
-                Write(6,*)'Reversing Radial Indices in Custom Ref File!'
+                If (my_rank .eq. 0) Write(6,*)'Reversing Radial Indices in Custom Ref File!'
                 Allocate(rtmp(1:nr_ref))
 
                 Do i = 1, nr_ref
@@ -945,6 +956,7 @@ Contains
                         ref_arr_old(i,k) = rtmp(nr_ref-i+1)
                     Enddo
                 Enddo
+
 
                 DeAllocate(rtmp)
 
