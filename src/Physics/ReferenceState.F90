@@ -67,8 +67,8 @@ Module ReferenceState
     End Type ReferenceInfo
 
     ! Custom reference state variables
-    Integer, Parameter  :: n_ra_constants = 9
-    Integer, Parameter  :: n_ra_functions = 13
+    Integer, Parameter  :: n_ra_constants = 10
+    Integer, Parameter  :: n_ra_functions = 16
     Logical             :: override_constants = .false.
     Logical             :: override_constant(1:n_ra_constants) = .false.
     Real*8              :: ra_constants(1:n_ra_constants) = 0.0d0
@@ -856,6 +856,11 @@ Contains
         ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
         !DeAllocate(rayleigh_functions)
+
+        ref%dsdr(:)     = ra_functions(:,14)
+        ref%entropy(:)  = ra_functions(:,15)
+        ref%pressure(:) = ra_functions(:,16)
+
     End Subroutine Get_Custom_Reference
 
 
@@ -927,11 +932,11 @@ Contains
                 Read(15)(ref_arr_old(i,k) , i=1 , nr_ref)
             Enddo
 
-            Do k = 1, n_ra_functions
-                If (my_rank .eq. 0) Then
-                    Write(6,*)'f: ', k+1,ref_arr_old(21,k), ref_arr_old(1001,k)
-                Endif
-            Enddo
+            !Do k = 1, n_ra_functions
+            !    If (my_rank .eq. 0) Then
+            !        Write(6,*)'f: ', k+1,ref_arr_old(21,k), ref_arr_old(1001,k)
+            !    Endif
+            !Enddo
 
             Do k = 1, n_ra_constants
                 If (my_rank .eq. 0) Then
@@ -1013,7 +1018,7 @@ Contains
 
         ! Take radial derivative
         ! This is a bit cumbersome
-
+        if (my_rank .eq. 0) Write(6,*)'log deriv'
         Allocate(dtemp(1:n_r,1,1,2))
         Allocate(dtemp2(1:n_r,1,1,2))
         dtemp(:,:,:,:) = 0.0d0
