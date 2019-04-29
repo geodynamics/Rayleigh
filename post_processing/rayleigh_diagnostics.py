@@ -1776,38 +1776,3 @@ def streamfunction(vr,vt,r,cost,order=0):
     return psi
 
 
-class equation_coefficients:
-    """ equation coeff class  """
-    nconst = 10
-    nfunc = 16
-    nr = 0
-    functions = np.zeros((nfunc,1)   , dtype='float64' )
-    radius = np.zeros(1,dtype='float64')
-    constants = np.zeros(nconst     , dtype='float64' )
-    cset   = np.zeros(nconst     , dtype='int32'   )
-    fset   = np.zeros(nfunc      , dtype='int32'   )
-    def __init__(self,radius):
-        nr = len(radius)
-        self.nr = nr
-        self.radius = np.zeros(nr,dtype='float64')
-        self.radius[:] = radius[:]
-        self.functions  = np.zeros((self.nfunc,nr) , dtype='float64' )
-    def set_function(self,y,fi):
-        self.functions[fi-1,:] = y[:]
-        self.fset[fi-1] = 1
-    def set_constant(self,c,ci):
-        self.constants[ci-1] = c
-        self.cset[ci-1] = 1
-
-    def write(self, filename='ecoefs.dat'):
-        pi = np.array([314],dtype='int32')
-        nr = np.array([self.nr],dtype='int32')
-        fd = open(filename,'wb')
-        pi.tofile(fd)
-        self.cset.tofile(fd)
-        self.fset.tofile(fd)
-        self.constants.tofile(fd)
-        nr.tofile(fd)
-        self.radius.tofile(fd)
-        self.functions.tofile(fd)
-        fd.close() 
