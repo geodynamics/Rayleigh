@@ -845,7 +845,8 @@ Contains
         ref%dlnT(:) = ra_functions(:,10)
 
         !kappa maps to function 5 times constant 6
-        ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)
+        ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
+        !Write(6,*)ref%heating
         !eta maps to function 7 times constant 7
 
         ! Next, incorporate the constants
@@ -862,6 +863,9 @@ Contains
         ref%dsdr(:)     = ra_functions(:,14)
         ref%entropy(:)  = ra_functions(:,15)
         ref%pressure(:) = ra_functions(:,16)
+
+
+        pressure_specific_heat  = 0.0d0
 
     End Subroutine Get_Custom_Reference
 
@@ -1013,9 +1017,7 @@ Contains
             ! not specified, then we compute them here+
            
             If (fset(8)  .eq. 0) Call log_deriv(ra_functions(:,1), ra_functions(:,8)) ! dlnrho
-            if (my_rank .eq. 0) Write(6,*)'one'
             If (fset(9)  .eq. 0) Call log_deriv(ra_functions(:,8), ra_functions(:,9), no_log=.true.) !d2lnrho
-            if (my_rank .eq. 0) Write(6,*)'two'
             If (fset(10) .eq. 0) Call log_deriv(ra_functions(:,4), ra_functions(:,10)) !dlnT
             If (fset(11) .eq. 0) Call log_deriv(ra_functions(:,3), ra_functions(:,11)) !dlnnu
             If (fset(12) .eq. 0) Call log_deriv(ra_functions(:,5), ra_functions(:,12)) !dlnkappa
