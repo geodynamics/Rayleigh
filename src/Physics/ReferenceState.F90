@@ -89,7 +89,7 @@ Module ReferenceState
     Real*8  :: cooling_factor = 0.0d0, cooling_r0 = 0.0d0  ! heating and cooling
     Type(ReferenceInfo) :: ref
 
-    Real*8 :: pressure_specific_heat  = 0.0d0 ! CP (not CV)
+    Real*8 :: pressure_specific_heat  = 1.0d0 ! CP (not CV)
     Real*8 :: poly_n = 0.0d0    !polytropic index
     Real*8 :: poly_Nrho = 0.0d0
     Real*8 :: poly_mass = 0.0d0
@@ -817,16 +817,7 @@ Contains
     Subroutine Get_Custom_Reference()
         Implicit None
 
-        !    Integer, Parameter :: n_ra_constants = 7
-        !    Integer, Parameter :: n_ra_functions = 10
-        !    Logical :: override_constants = .false.
-        !    Logical :: override_constant(1:n_ra_constants) = .false.
-        !    Integer :: constant_set(1:n_ra_constants) = 0
-        !    Real*8 :: ra_constants(1:n_ra_constants) = 0.0d0
-        !    Real*8, Allocatable :: ra_functions(:,:)
 
-        !Real*8, Allocatable :: Rayleigh_functions(:,:)
-        !Real*8 :: rayleigh_constants(1:7)
         Allocate(ra_functions(1:N_R,1:n_ra_functions))
 
         Call Read_Custom_Reference_File(custom_reference_file)
@@ -865,7 +856,6 @@ Contains
         ref%pressure(:) = ra_functions(:,16)
 
 
-        pressure_specific_heat  = 0.0d0
 
     End Subroutine Get_Custom_Reference
 
@@ -919,20 +909,20 @@ Contains
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
             ! The logic below allows a constant to be set in the reference
             ! file and in main_input.  
-            if (my_rank .eq. 0) Write(6,*)'Check: ', ra_constants(2)
+            !if (my_rank .eq. 0) Write(6,*)'Check: ', ra_constants(2)
             Do i = 1, n_ra_constants
                 If ( (.not. override_constants) .and. (.not. override_constant(i)) ) then
                     ra_constants(i) = ra_constants(i) + cset(i)*(input_constants(i)-ra_constants(i))
                 Endif
             Enddo
-            if (my_rank .eq. 0) Write(6,*)'Check2: ', ra_constants(2)
+            !if (my_rank .eq. 0) Write(6,*)'Check2: ', ra_constants(2)
 
 
             Read(15)nr_ref
             Allocate(ref_arr_old(1:nr_ref,1:n_ra_functions)) 
             Allocate(old_radius(1:nr_ref))
 
-            Write(6,*)'nr_ref is: ', nr_ref
+            !Write(6,*)'nr_ref is: ', nr_ref
 
             Read(15)(old_radius(i),i=1,nr_ref)
             Do k = 1, n_ra_functions
