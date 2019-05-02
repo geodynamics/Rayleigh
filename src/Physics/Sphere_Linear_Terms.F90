@@ -139,6 +139,10 @@ Contains
                 ! T equation
                 Call Initialize_Equation_Coefficients(teq,tvar, 2,lp)
 
+                If (advect_reference_state) Then
+                    Call Initialize_Equation_Coefficients(teq,wvar, 0,lp)
+                Endif
+
                 ! Z equation
                 Call Initialize_Equation_Coefficients(zeq,zvar, 2,lp)
 
