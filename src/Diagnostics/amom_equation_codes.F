@@ -57,4 +57,9 @@
     Integer, Parameter :: famom_magtor_r     = amoff+17 !:tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_r}\,\overline{B_\phi}$
     Integer, Parameter :: famom_magtor_theta = amoff+18 ! :tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_\theta}\,\overline{B_\phi}$
 
+    ! Fluxes
+
+    ! Angular momentum (z)
+    Integer, Parameter :: amom_z = amoff+19 ! :tex:  $z angular momentum$
+
 

@@ -45,21 +45,16 @@ Contains
             If (strict_L_conservation) Then
                 Allocate(Lconservation_weights(1:N_R))
                 Lconservation_weights(1:N_R) = 0.0d0
-                If (chebyshev) Then
-                    amp = Pi / (N_R*1.0d0)
-                    do n = 1, N_R
-                        do r = 1, N_R
-                            arg = (n-1.d0) * (r-1.d0+0.5d0) * amp
-                            T = Cos(arg)
-                            Lconservation_weights(n) = Lconservation_weights(n) + radial_integral_weights(r) * T
-                        enddo
-                    enddo
-                    Lconservation_weights(1) = Lconservation_weights(1)*0.5d0
-                    Lconservation_weights(N_R) = Lconservation_weights(N_r)*0.5d0
-                    Lconservation_weights( (2*N_R)/3+1: ) = 0.0d0  ! De-Alias here for now
-                Else
-                    Lconservation_weights(1:N_R) = radial_integral_weights(1:N_R)
-                Endif
+
+                Do n = 1, N_R
+                    Do r = 1, N_R
+                        T = gridcp%dcheby(1)%data(r,n,0) !Cos(arg)
+                        Lconservation_weights(n) = Lconservation_weights(n) + radial_integral_weights(r) * T
+                    Enddo
+                Enddo
+
+                Lconservation_weights( (2*N_R)/3+1: ) = 0.0d0  ! De-Alias here for now
+
             Endif
         Endif
 
