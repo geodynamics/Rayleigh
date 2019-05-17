@@ -830,26 +830,21 @@ Contains
 
         ref%gravity = ref%buoyancy_coeff
 
-        !viscosity maps to function 3 times constant 5
 
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
 
-        !kappa maps to function 5 times constant 6
-        ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
-        !Write(6,*)ref%heating
-        !eta maps to function 7 times constant 7
 
-        ! Next, incorporate the constants
+        ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
 
         
         ref%Coriolis_Coeff = ra_constants(1)
         ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
-        ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:)  ! Hadn't noticed this redundancy before...
+        ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:) 
         ref%viscous_amp(:) = 2.0/ref%temperature(:)
         ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
-        !DeAllocate(rayleigh_functions)
+
 
         ref%dsdr(:)     = ra_functions(:,14)
         ref%entropy(:)  = ra_functions(:,15)
