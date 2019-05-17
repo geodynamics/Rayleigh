@@ -34,11 +34,28 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
 
+        Call Compute_Angular_Momentum(buffer)
         Call Compute_Angular_Momentum_Sources(buffer)
         Call Compute_Angular_Momentum_Fluxes(buffer)
 
     End Subroutine Compute_Angular_Momentum_Balance
 
+    Subroutine Compute_Angular_Momentum(buffer)
+        Implicit None
+        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Integer :: r,k, t
+
+        If (compute_quantity(amom_z)) Then
+
+            DO_PSI
+                qty(PSI) = ref%density(r)*radius(r)*sintheta(t) &
+                    & *buffer(PSI,vphi)
+            END_DO
+
+            Call Add_Quantity(qty)
+        Endif
+
+    End Subroutine Compute_Angular_Momentum
 
     Subroutine Compute_Angular_Momentum_Sources(buffer)
         Implicit None
