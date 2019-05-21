@@ -57,5 +57,19 @@
     Integer, Parameter :: famom_magtor_r     = amoff+17 !:tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_r}\,\overline{B_\phi}$
     Integer, Parameter :: famom_magtor_theta = amoff+18 ! :tex:  $-r\mathrm{sin}\theta c_4\,\overline{B_\theta}\,\overline{B_\phi}$
 
-    ! Angular momentum (z)
+    ! Angular momentum 
+    ! Full
     Integer, Parameter :: amom_z = amoff+19 ! :tex:  $\mathrm{f}_1r\mathrm{sin}\theta v_\phi $
+    Integer, Parameter :: amom_x = amoff+20 ! :tex:  $\mathrm{f}_1r(-\mathrm{sin}\theta v_\phi - \mathrm{cos}\phi v_\theta)$
+    Integer, Parameter :: amom_y = amoff+21 ! :tex:  $\mathrm{f}_1r(-\mathrm{cos}\theta v_\phi + \mathrm{cos}\phi v_\theta)$
+
+    ! Fluctuating
+    Integer, Parameter :: amomp_z = amoff+22 ! :tex:  $\mathrm{f}_1r\mathrm{sin}\theta v_\phi' $
+    Integer, Parameter :: amomp_x = amoff+23 ! :tex:  $\mathrm{f}_1r(-\mathrm{sin}\theta v_\phi' - \mathrm{cos}\phi v_\theta')$
+    Integer, Parameter :: amomp_y = amoff+24 ! :tex:  $\mathrm{f}_1r(-\mathrm{cos}\theta v_\phi' + \mathrm{cos}\phi v_\theta')$
+
+    ! Mean
+    Integer, Parameter :: amomm_z = amoff+25 ! :tex:  $\mathrm{f}_1r\mathrm{sin}\theta \overline{v_\phi} $
+    Integer, Parameter :: amomm_x = amoff+26 ! :tex:  $\mathrm{f}_1r(-\mathrm{sin}\theta \overline{v_\phi} - \mathrm{cos}\phi \overline{v_\theta'}$
+    Integer, Parameter :: amomm_y = amoff+27 ! :tex:  $\mathrm{f}_1r(-\mathrm{cos}\theta\overline{v_\phi} + \mathrm{cos}\phi \overline{v_\theta})$
+
