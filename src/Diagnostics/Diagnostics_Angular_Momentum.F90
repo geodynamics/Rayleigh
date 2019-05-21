@@ -58,8 +58,9 @@ Contains
         If (compute_quantity(amom_x)) Then
 
             DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*(-costheta(t) &
-                    & *buffer(PSI,vphi) - sinphi(k)*buffer(PSI,vtheta))
+                qty(PSI) = ref%density(r)*radius(r)*&
+                    & (-costheta(t)*cosphi(k)*buffer(PSI,vphi) -&
+                   & sinphi(k)*buffer(PSI,vtheta))
             END_DO
 
             Call Add_Quantity(qty)
@@ -68,8 +69,9 @@ Contains
         If (compute_quantity(amom_y)) Then
 
             DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*(-costheta(t) &
-                    & *buffer(PSI,vphi) + cosphi(k)*buffer(PSI,vtheta))
+                qty(PSI) = ref%density(r)*radius(r)*&
+                    (-costheta(t)*sinphi(k)*buffer(PSI,vphi) +&
+                   &cosphi(k)*buffer(PSI,vtheta))
             END_DO
 
             Call Add_Quantity(qty)
@@ -88,8 +90,9 @@ Contains
         If (compute_quantity(amomp_x)) Then
 
             DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*(-costheta(t) &
-                    & *fbuffer(PSI,vphi) - sinphi(k)*fbuffer(PSI,vtheta))
+                qty(PSI) = ref%density(r)*radius(r)*&
+                    &(-costheta(t)*cosphi(k)*fbuffer(PSI,vphi) -&
+                   &sinphi(k)*fbuffer(PSI,vtheta))
             END_DO
 
             Call Add_Quantity(qty)
@@ -98,8 +101,9 @@ Contains
         If (compute_quantity(amomp_y)) Then
 
             DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*(-costheta(t) &
-                    & *fbuffer(PSI,vphi) + cosphi(k)*fbuffer(PSI,vtheta))
+                qty(PSI) = ref%density(r)*radius(r)*&
+                    &(-costheta(t)*sinphi(k)*fbuffer(PSI,vphi) +&
+                   &cosphi(k)*fbuffer(PSI,vtheta))
             END_DO
 
             Call Add_Quantity(qty)
@@ -118,8 +122,9 @@ Contains
         If (compute_quantity(amomm_x)) Then
 
             DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*(-costheta(t) &
-                    & *m0_values(PSI2,vphi) - sinphi(k)*m0_values(PSI2,vtheta))
+                qty(PSI) = ref%density(r)*radius(r)*&
+                    &(-costheta(t)*cosphi(k)*m0_values(PSI2,vphi) -&
+                   &sinphi(k)*m0_values(PSI2,vtheta))
             END_DO
 
             Call Add_Quantity(qty)
@@ -128,8 +133,9 @@ Contains
         If (compute_quantity(amomm_y)) Then
 
             DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*(-costheta(t) &
-                    & *m0_values(PSI2,vphi) + cosphi(k)*m0_values(PSI2,vtheta))
+                qty(PSI) = ref%density(r)*radius(r)*&
+                    &(-costheta(t)*sinphi(k)*m0_values(PSI2,vphi) +&
+                   &cosphi(k)*m0_values(PSI2,vtheta))
             END_DO
 
             Call Add_Quantity(qty)

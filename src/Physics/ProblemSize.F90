@@ -314,9 +314,11 @@ Contains
 	! The range of 0 to just below 2*pi (increasing) agrees with the Meridional
 	! and Equatorial Slices
         delta_phi = two_pi/n_phi
-        phivals = (/(k*delta_phi, k=0,n_phi-1)/)
-        cosphi = cos(phivals)
-        sinphi = sin(phivals)
+        Do k = 1, n_phi
+            phivals(k) = (k-1)*delta_phi
+            cosphi(k) = cos(phivals(k))
+            sinphi(k) = sin(phivals(k))
+        Enddo
 
         Allocate(l_l_plus1(0:l_max))
         Allocate(over_l_l_plus1(0:l_max))
