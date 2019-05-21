@@ -47,8 +47,10 @@ Module ProblemSize
     Integer, Allocatable :: m_values(:)
     Real*8, Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
     Real*8, Allocatable  :: costheta(:), sintheta(:), cos2theta(:), sin2theta(:), cottheta(:), csctheta(:)
+    Real*8, Allocatable  :: phivals(:), cosphi(:), sinphi(:)
+    Real*8               :: delta_phi
+    Integer              :: k
     Type(Load_Config)    :: my_mp,  my_theta
-
 
     !//////////////////////////////////////////////////////////////
     !  Radial Grid Variables
@@ -301,12 +303,20 @@ Contains
         Allocate(costheta(1:n_theta),cos2theta(1:n_theta))
         Allocate(sintheta(1:n_theta),sin2theta(1:n_theta))
         Allocate(csctheta(1:n_theta), cottheta(1:n_theta))
+        Allocate(phivals(1:n_phi), cosphi(1:n_phi), sinphi(1:n_phi))
         costheta  = coloc    ! coloc computed in init_legendre
         cos2theta = costheta*costheta
         sin2theta = 1-cos2theta
         sintheta  = sqrt(sin2theta)
         csctheta = 1/sintheta
         cottheta = costheta/sintheta
+        ! Calculate spacing of equally distributed phi points, then the phi grid
+	! The range of 0 to just below 2*pi (increasing) agrees with the Meridional
+	! and Equatorial Slices
+        delta_phi = two_pi/n_phi
+        phivals = (/(k*delta_phi, k=0,n_phi-1)/)
+        cosphi = cos(phivals)
+        sinphi = sin(phivals)
 
         Allocate(l_l_plus1(0:l_max))
         Allocate(over_l_l_plus1(0:l_max))
