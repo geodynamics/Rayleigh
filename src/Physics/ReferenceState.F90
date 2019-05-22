@@ -66,8 +66,6 @@ Module ReferenceState
 
     End Type ReferenceInfo
 
-    Real*8 :: rayleigh_constants(1:7)
-    Real*8, Allocatable :: rayleigh_functions(:,:)
 
     Real*8, Allocatable :: s_conductive(:)
 
@@ -809,42 +807,75 @@ Contains
 
 
     Subroutine Get_Custom_Reference()
+        ! NOTE: most of this routine is a wrapper around the routine
+        ! Read_Reference() below
         Implicit None
-        !Real*8, Allocatable :: Rayleigh_functions(:,:)
-        !Real*8 :: rayleigh_constants(1:7)
-        Allocate(rayleigh_functions(1:N_R,1:10))
-        ! This reference state is assumed to have been calculated on
-        ! the current grid.  NO INTERPOLATION will be performed here.
+        Real*8, Allocatable :: ref_arr(:,:)
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
+        Dimensional_Reference = .true. 
+        If (my_rank .eq. 0) Then
+            Call stdout%print(" ---- Reference type                : "//trim(" Custom (Dimensional)"))
+            Call stdout%print(" ---- Custom reference file         : "//trim(custom_reference_file))            
+            Write(dstring,dofmt)Angular_Velocity            
+            Call stdout%print(" ---- Angular Velocity (rad/s)      : "//trim(dstring))
+            Write(dstring,dofmt)pressure_specific_heat
+            Call stdout%print(" ---- CP (erg g^-1 cm^-3 K^-1)      : "//trim(dstring))
+        Endif        
+        Allocate(ref_arr(1:n_r,1:9))
+        If (my_rank .eq. 0) Then
+            Call Read_Reference(custom_reference_file, ref_arr)
+        Endif
+        If (my_row_rank .eq. 0) Then
+            ! Broadcast along the column
+            Call BCAST2D(ref_arr, grp=pfi%ccomm)
+        Endif
+        Call BCAST2D(ref_arr, grp=pfi%rcomm)
 
-        ! Put some logic here for unity functions and constants from command
-        ! Read the functions
-        ! Read the constants
 
-        ref%density(:) = rayleigh_functions(:,1)
-        ref%dlnrho(:) = rayleigh_functions(:,8)
-        ref%d2lnrho(:) = rayleigh_functions(:,9)
-        ref%buoyancy_coeff(:) = rayleigh_constants(2)*rayleigh_functions(:,2)
-        !viscosity maps to function 3 times constant 5
-        ref%temperature(:) = rayleigh_functions(:,4)
-        ref%dlnT(:) = rayleigh_functions(:,10)
-        !kappa maps to function 5 times constant 6
-        ref%heating(:) = rayleigh_functions(:,6)/(ref%density*ref%temperature)
-        !eta maps to function 7 times constant 7
+        ref%density(:) = ref_arr(:,1)
+        ref%dlnrho(:) = ref_arr(:,2) 
+        ref%d2lnrho(:) = ref_arr(:,3)
+        ref%pressure(:) = ref_arr(:,4)
+        ref%temperature(:) = ref_arr(:,5)
+        ref%dlnT(:) = ref_arr(:,6)
+        ref%dsdr(:) = ref_arr(:,7)
+        ref%entropy(:) = ref_arr(:,8)            
+        ref%gravity(:) = ref_arr(:,9)
+        ref%Buoyancy_Coeff(:) = ref%gravity/Pressure_Specific_Heat*ref%density
+        DeAllocate(ref_arr)
 
-        ! Next, incorporate the constants
-        ref%Coriolis_Coeff = rayleigh_constants(1)
-        ref%dpdr_w_term(:) = rayleigh_constants(3)*rayleigh_functions(:,1)
-        ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:)  ! Hadn't noticed this redundancy before...
-        ref%viscous_amp(:) = 2.0/ref%temperature(:)
-        ref%Lorentz_Coeff = rayleigh_constants(4)
-        ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
-        DeAllocate(rayleigh_functions)
+        Call Initialize_Reference_Heating()
+        
+        ref%gamma = 5.0/3.0
+        ref%Coriolis_Coeff        = 2.0d0*Angular_velocity
+        ref%dpdr_w_term(:)        = ref%density
+        ref%pressure_dwdr_term(:) = -1.0d0*ref%density
+        ref%viscous_amp(1:N_R)    = 2.0d0/ref%temperature(1:N_R)
+        If (magnetism) Then
+            ref%Lorentz_Coeff = 1.0d0/four_pi
+            ref%ohmic_amp(1:N_R) = ref%lorentz_coeff/ref%density(1:N_R)/ref%temperature(1:N_R)
+        Else
+            ref%Lorentz_Coeff = 0.0d0
+            ref%ohmic_amp(1:N_R) = 0.0d0
+        Endif
     End Subroutine Get_Custom_Reference
 
 
 
 
     Subroutine Read_Reference(filename,ref_arr)
+        ! To create a custom reference file [filename], first write the
+        ! two int32 binary numbers (unformatted): 314 and YOUR_n_r. 
+        ! Then write 10*(YOUR_N_R) float64 numbers, representing 
+        ! (in order):
+        ! radius, density, dlnrho, d2lnrho, pressure, 
+        ! temperature dlnT, dsdr, entropy, gravity
+        ! YOUR_N_R must be an integer >> N_R from Rayleigh so that
+        ! Rayleigh can interpolate your possibly fine-structured 
+        ! reference state onto its grid
+        ! The routine in python_util/write_reference should work well
+        ! on most platforms
         Character*120, Intent(In), Optional :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref
@@ -893,11 +924,14 @@ Contains
             If (old_radius(1) .lt. old_radius(nr_ref)) Then
                 Write(6,*)'Reversing Radial Indices in Custom Ref File!'
                 Allocate(rtmp(1:nr_ref))
-
+                
+                ! reverse the radius array
+                rtmp(:) = old_radius(:)
                 Do i = 1, nr_ref
                     old_radius(i) = rtmp(nr_ref-i+1)
                 Enddo
 
+                ! reverse each radial profile array
                 Do k = 1, nqvals
                     rtmp(:) = ref_arr_old(:,k)
                     Do i = 1, nr_ref

@@ -116,11 +116,6 @@ Contains
             kappa_top = ref%script_K_top
         Endif
 
-        If (reference_type .eq. 4) Then
-            nu_top = rayleigh_constants(5)*rayleigh_functions(1,3)
-            kappa_top = rayleigh_constants(6)*rayleigh_functions(1,5)
-        Endif
-
         Call Initialize_Nu()    ! Viscosity
         Call Initialize_Kappa() ! Thermal Diffusivity
 
@@ -133,7 +128,6 @@ Contains
 
         If (magnetism) Then
             If (.not. Dimensional_Reference) eta_top   = ref%script_H_top
-            If (reference_type .eq. 4) eta_top = rayleigh_constants(7)*rayleigh_functions(1,7)
             Call Initialize_Eta()    ! Magnetic Diffusivity
             If (ohmic_heating) Then
                 Allocate(ohmic_heating_coeff(1:N_R))
@@ -243,11 +237,6 @@ Contains
                 dlnu(:) = 0.0d0
             Case(2)
                 Call vary_with_density(nu,dlnu,nu_top, nu_power)
-            Case(3)
-                !Call get_custom_profile(nu,dlnu,custom_nu_file)
-                nu(:) = rayleigh_constants(5)*rayleigh_functions(:,3)
-                dlnu(:) = rayleigh_functions(:,11)
-                nu_top = nu(1)
 
         End Select
     End Subroutine Initialize_Nu
@@ -259,11 +248,6 @@ Contains
                 dlnkappa(:) = 0.0d0
             Case(2)
                 Call vary_with_density(kappa,dlnkappa,kappa_top, kappa_power)
-            Case(3)
-                !Call get_custom_profile(kappa,dlnkappa,custom_kappa_file)
-                kappa(:) = rayleigh_constants(5)*rayleigh_functions(:,5)
-                dlnkappa(:) = rayleigh_functions(:,12)
-                kappa_top = kappa(1)
         End Select
     End Subroutine Initialize_Kappa
 
@@ -276,24 +260,6 @@ Contains
                 dlneta(:) = 0.0d0
             Case(2)
                 Call vary_with_density(eta,dlneta,eta_top, eta_power)
-            Case(3)
-
-                !Call get_custom_profile(eta,dlneta,custom_eta_file)
-                !eta(:) = eta(:)*eta_top !this assume profile is 1 at the top
-
-                eta(:) = rayleigh_constants(7)*rayleigh_functions(:,7)
-                dlneta(:) = rayleigh_functions(:,13)
-                eta_top = eta(1)
-
-                If (my_rank .eq. 0) then
-                    Allocate(tmp_arr(1:N_R,1:3))
-                    tmp_arr(:,1) = radius(:)
-                    tmp_arr(:,2) = eta(:)
-                    tmp_arr(:,3) = dlneta(:)
-                    Call Write_Profile(tmp_arr,eta_file)
-                    DeAllocate(tmp_arr)
-                Endif
-
         End Select
     End Subroutine Initialize_Eta
 
