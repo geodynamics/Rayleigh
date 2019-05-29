@@ -841,7 +841,7 @@ Contains
         ref%Coriolis_Coeff = ra_constants(1)
         ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
         ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:) 
-        ref%viscous_amp(:) = 2.0/ref%temperature(:)
+        ref%viscous_amp(:) = 2.0/ref%temperature(:)*ra_constants(8)
         ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
 
