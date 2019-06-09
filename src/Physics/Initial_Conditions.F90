@@ -27,6 +27,7 @@ Module Initial_Conditions
     Use SendReceive
     Use Math_Constants
     Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
+    Use GenericInput, Only : read_input
     Use Controls
     Use Timers
     Use General_MPI, Only : BCAST2D
@@ -59,11 +60,13 @@ Module Initial_Conditions
     Real*8  :: tvar_scale = 1.0d0
     Real*8  :: pressure_scale = 1.0d0
     Real*8  :: mdelta = 0.0d0  ! mantle convection benchmark delta
+    Character*120 :: t_init_file = 'nothing'
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
             & magnetic_init_type,alt_check, mag_amp, conductive_profile, rescale_velocity, &
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
-            & rescale_pressure, tvar_scale, pressure_scale, mdelta
+            & rescale_pressure, tvar_scale, pressure_scale, mdelta, &
+            & t_init_file
 Contains
 
     Subroutine Initialize_Fields()
@@ -154,6 +157,13 @@ Contains
                 Call stdout%print(" ---- Hydro Init Type    : Random Thermal Field ")
             Endif
             call random_thermal_init()
+        Endif
+
+        if (init_type .eq. 8) then
+            If (my_rank .eq. 0) Then
+                call stdout%print(" ---- Hydro Init Type    : Input File ")
+            Endif
+            call file_init()
         Endif
 
 
@@ -513,6 +523,23 @@ Contains
         Call sbuffer%deconstruct('p1b')
 
     End Subroutine Random_Thermal_Init
+
+    subroutine file_init()
+        implicit none
+        integer :: fcount(3,2)
+        type(SphericalBuffer) :: tempfield
+ 
+        if (trim(t_init_file) .ne. 'nothing') then
+            fcount(:,:) = 1
+            call tempfield%init(field_count = fcount, config = 'p1b')
+            call tempfield%construct('p1b')
+            call read_input(t_init_file, 1, tempfield)
+            call set_rhs(teq, tempfield%p1b(:,:,:,1))
+            call tempfield%deconstruct('p1b')
+        end if
+
+    end subroutine file_init
+
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Diffusion Init (for linear solve development)
