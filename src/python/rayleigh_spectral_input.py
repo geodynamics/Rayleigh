@@ -122,12 +122,20 @@ class SpectralInput(object):
         if np.isscalar(n): n = [n]
       if np.isscalar(coeff): coeff = [coeff]
       coeff = np.asarray(coeff, dtype='complex')
-      # Check lengths
+      # Check lengths and indices
       if not len(l) == len(m) == len(n) == len(coeff): raise Exception("Length of l, m, n (if supplied) and coeff lists must match.")
+      for i in range(len(l)):
+        if n[i] < 0 or l[i] < 0 or m[i] < 0: raise Exception("All indicies must be non-negative.")
+        if m[i] > l[i]: raise Exception("At i = {0}, m[i] ({1}) > l[i] ({2}), which is not allowed".format(i, m[i], l[i]))
       return coeff, l, m, n
 
     def check_dims(coeff):
       """Check dimensions are consistent with multi-dimensional addition."""
+      # we assume we've been given a full array of coefficients
+      # and that if ndim is 2, n dependence has been dropped
+      # i.e. l, m and n are ignored
+      if not (l is None and m is None and n is None): 
+        raise Warning("l, m and n arguments will be ignored for rank > 1 arrays (assumed to be ordered).")
       coeff = np.asarray(coeff, dtype='complex')
       # Get dimensions of coeff
       l_maxp1, m_maxp1 = coeff.shape[-2:]
@@ -151,7 +159,7 @@ class SpectralInput(object):
         # i.e. l, m and n are ignored
         coeff, l_maxp1, m_maxp1, n_maxp1 = check_dims(coeff)
         for mj in range(m_maxp1):
-          for lj in range(l_maxp1):
+          for lj in range(mj, l_maxp1):
             for nj in range(n_maxp1):
               nlm = (nj, lj, mj)
               i = None
@@ -197,11 +205,6 @@ class SpectralInput(object):
     else:
       # multi-dimensional coeffs
       if np.ndim(coeff) > 1:
-        # we assume we've been given a full array of coefficients
-        # and that if ndim is 2, n dependence has been dropped
-        # i.e. l, m and n are ignored
-        if not (l is None and m is None and n is None): 
-          raise Warning("l, m and n arguments will be ignored for rank > 1 arrays (assumed to be ordered).")
         coeff, l_maxp1, m_maxp1, n_maxp1 = check_dims(coeff)
         if n_maxp1 > self.coeffs.shape[0] \
            or l_maxp1 > self.coeffs.shape[1] \
