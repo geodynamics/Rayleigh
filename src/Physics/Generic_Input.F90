@@ -18,7 +18,7 @@
 !  <http://www.gnu.org/licenses/>.
 !
 
-module genericinput
+module Generic_Input
 
   use RA_MPI_BASE
   use Parallel_Framework
@@ -317,5 +317,5 @@ contains
   end subroutine read_input
 
 
-end module genericinput
+end module Generic_Input
 

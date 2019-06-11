@@ -27,7 +27,7 @@ Module Initial_Conditions
     Use SendReceive
     Use Math_Constants
     Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
-    Use GenericInput, Only : read_input
+    Use Generic_Input, Only : read_input
     Use Controls
     Use Timers
     Use General_MPI, Only : BCAST2D
