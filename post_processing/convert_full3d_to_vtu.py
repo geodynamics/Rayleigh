@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #
 #  Copyright (C) 2018 by the authors of the RAYLEIGH code.
 #
@@ -18,13 +20,12 @@
 #  <http://www.gnu.org/licenses/>.
 #
 
-#!/usr/bin/env python
 
 ###############################################
 #
 #  Converts Spherical_3D output to vtus for visualization in paraview
 
-from rayleigh_diagnostics import Spherical_3D
+from rayleigh_diagnostics import Spherical_3D_multi
 import vtk
 import numpy as np
 import glob
@@ -44,7 +45,7 @@ files = [f for f in files if (args.initial is None or int(f.split("_")[0]) >= ar
                           and (args.final is None or int(f.split("_")[0]) <= args.final)]
 files = sorted(files, key = lambda f: int(f.split("_")[0]))
 
-f3d = Spherical_3D(files[0])
+f3d = Spherical_3D_multi(files[0])
 ntheta = f3d.ntheta
 nphi = f3d.nphi
 nr = f3d.nr
@@ -62,7 +63,7 @@ points = vtk.vtkPoints()
 points.SetDataTypeToDouble()
 index = 0
 
-xyzToNode = [[[] for j in xrange(ntheta)] for i in xrange(nr)]
+xyzToNode = [[[] for j in range(ntheta)] for i in range(nr)]
 for i, r in enumerate(rs):
   for j, theta in enumerate(thetas):
     for k, phi in enumerate(phis[:-1]):
@@ -71,16 +72,16 @@ for i, r in enumerate(rs):
                              r*np.cos(theta))
       xyzToNode[i][j].append(index)
       index += 1
-for i in xrange(nr):
-  for j in xrange(ntheta):
+for i in range(nr):
+  for j in range(ntheta):
     xyzToNode[i][j].append(xyzToNode[i][j][0])
 
 ugrid.SetPoints(points)
 
 # Add the volume elements
-for i in xrange(nr-1):
-  for j in xrange(ntheta-1):
-    for k in xrange(nphi):
+for i in range(nr-1):
+  for j in range(ntheta-1):
+    for k in range(nphi):
       idList = vtk.vtkIdList()
       idList.InsertNextId(xyzToNode[i][j][k])
       idList.InsertNextId(xyzToNode[i][j+1][k])
@@ -99,9 +100,9 @@ pointdata = ugrid.GetPointData()
 
 for f in files:
 
-  f3d = Spherical_3D(f)
+  f3d = Spherical_3D_multi(f)
 
-  for index, vals in f3d.vals.iteritems():
+  for index, vals in f3d.vals.items():
     data = vtk.vtkDoubleArray()
     data.SetNumberOfValues(len(vals))
     data.SetName('f'+index)
