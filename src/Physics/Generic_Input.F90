@@ -40,16 +40,15 @@ contains
     character*120, intent(in) :: filename
     type(SphericalBuffer), intent(inout) :: field
     
-    integer :: l_endian_tag, version, fmode, n_lmn, l_l_max, l_n_max, k_lm_owner
+    integer :: l_endian_tag, version, fmode, n_lmn, l_l_max, l_n_max, k_lm_owner, l_max_n
     integer :: i, j, k, l, m, n, lm, mp, j1, jc, jf, jn, jo, ji, p, col_np, col_mp_min
-    integer :: start_count, end_count, my_lmn_count, total_lmn_count
+    integer :: start_count, end_count, my_lmn_count, total_lmn_count, col_lmn_n, col_lmn_i, l_lm_count
     integer :: int_size, real_size, offset, ierr, funit
     integer(kind=MPI_OFFSET_KIND) :: disp1, disp2
     integer, dimension(3) :: pars
     integer, dimension(MPI_STATUS_SIZE) :: mstatus
     integer, allocatable, dimension(:) :: ls, ms, ns
     integer, allocatable, dimension(:) :: proc_lmn_count, col_lmn_count, col_lmn_ind1, col_coeffs_ind1, sendarri
-    integer, dimension(3,2) :: fcount
     integer, allocatable, dimension(:,:) :: my_lmn_inds, lmn_inds, sendarri2
     real*8, allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
 
@@ -63,7 +62,7 @@ contains
       open(unit=15,file=trim(filename),form='unformatted',status='old',access='stream')
       read(15)l_endian_tag   ! endian tag - FIXME: not currently used
       read(15)version        ! version - not needed (yet)
-      read(15)fmode           ! fmode - tells us whether this file uses sparse (0) or dense (1) storage
+      read(15)fmode          ! fmode - tells us whether this file uses sparse (0) or dense (1) storage
       pars(1) = fmode
       if (fmode == 0) then
         ! sparse storage, process 0 needs to read in the indices
@@ -75,11 +74,10 @@ contains
         read(15)(ms(i),i=1,n_lmn)
       else if (fmode == 1) then
         ! dense storage, no indices to read but need to know the number of coefficients
-        read(15)l_l_max      ! l_max
-        pars(2) = l_l_max
         read(15)l_n_max      ! n_max
-        pars(3) = l_n_max
-        n_lmn = l_n_max*(l_l_max+1)*(l_l_max+2)/2
+        pars(2) = l_n_max
+        read(15)l_l_max      ! l_max
+        pars(3) = l_l_max
       else
         n_lmn = 0
         write(6,*)'Unknown generic input file mode: ', fmode
@@ -95,14 +93,15 @@ contains
     call MPI_Bcast(pars, 3, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
     fmode = pars(1)
 
+    ! get min mp indices that this column owns
+    col_mp_min = pfi%my_3s%min
+
     if (fmode == 0) then
+      n_lmn = pars(2)       ! expected total number of coefficients
 
       if (my_column_rank .eq. 0) then
         ! sparse file storage... need to only read coefficients that exist
-        ! get min mp indices that this column owns
-        col_mp_min = pfi%my_3s%min
 
-        n_lmn = pars(2)       ! expected total number of coefficients
         if (my_rank .ne. 0) then
           allocate(ls(n_lmn), ms(n_lmn), ns(n_lmn))
         end if
@@ -292,7 +291,6 @@ contains
       
       if (allocated(field%p1b)) then
         ! place the coeffs into a spherical buffer
-        fcount(:,:) = 1
         field%p1b(:,:,:,field_ind) = 0.0
         do i = 1, my_lmn_count
           lm = my_lmn_inds(i,1) - my_lm_min + 1
@@ -307,10 +305,151 @@ contains
       deallocate(my_lmn_coeffs)
 
     else if (fmode == 1) then
-      l_l_max = pars(2)
-      l_n_max = pars(3)
-      !col_m_max = maxval(pfi%inds_3s(col_mp_min:col_mp_max))
+      l_n_max = pars(2)
+      l_l_max = pars(3)
+      n_lmn = (l_n_max+1)*(l_l_max+1)*(l_l_max+2)/2
+      l_max_n = min(l_n_max, n_r - 1)
+
+      if (my_column_rank .eq. 0) then
+
+        total_lmn_count = 0
+        do i = 1, pfi%my_3s%delta
+          mp = col_mp_min + i - 1
+          m = pfi%inds_3s(mp)
+          total_lmn_count = total_lmn_count + (l_n_max+1)*max(l_l_max - m + 1, 0)
+        end do
+
+        ! now we know how many coefficients we want for our column we need to open the file and read them (and only them) in
+        allocate(col_coeffs(total_lmn_count,2))
+        allocate(col_coeffs_ind1(pfi%my_3s%delta))  ! just a cumulative sum of col_lmn_ns
+        col_coeffs(:,:) = 0.0
+        col_coeffs_ind1(:) = -1
+        ! open the file
+        call MPI_FILE_OPEN(pfi%rcomm%comm, trim(filename), &
+                           MPI_MODE_RDONLY, MPI_INFO_NULL, &
+                           funit, ierr)
+        if (ierr .eq. 0) then
+          ! calculate the offset of the integer header
+          disp1 = 5*int_size  ! just 5 parameters
+          offset = 1
+          ! loop over all the values of m that we know this column owns
+          ! and read in all coeffs associated with that m value
+          ! NOTE: assuming that real and imaginary parts are split into separate sections of the file
+          do i = 1, pfi%my_3s%delta
+            mp = col_mp_min + i - 1
+            m = pfi%inds_3s(mp)
+            col_lmn_n = (l_n_max+1)*max(l_l_max - m + 1, 0)
+            if (col_lmn_n .gt. 0) then
+              col_coeffs_ind1(i) = offset
+              col_lmn_i = (l_n_max+1)*m*(2*l_l_max + 3 - m)/2
+              disp2 = disp1 + col_lmn_i*real_size
+              call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
+              call MPI_FILE_READ(funit, col_coeffs(offset,1), col_lmn_n, &
+                                 MPI_DOUBLE_PRECISION, &
+                                 mstatus, ierr)  ! real
+              disp2 = disp1 + (n_lmn+col_lmn_i)*real_size
+              call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
+              call MPI_FILE_READ(funit, col_coeffs(offset,2), col_lmn_n, &
+                                 MPI_DOUBLE_PRECISION, &
+                                 mstatus, ierr) ! imaginary
+              offset = offset + col_lmn_n
+            end if
+          end do
+        else
+          write(6,*)'Error opening generic input file: ', pfi%rcomm%rank
+        end if
+        call MPI_FILE_CLOSE(funit, ierr)
+
+        ! We've now read in all the coefficients for this column but they're currently ordered in (n,l,m) sets such that n varies
+        ! fastest.  This isn't very useful for distributing them to the processes of the column as they are subdivided in lm pairs
+        ! with m varying fastest non-sequentially.  Let's reorder all the coefficients so they can be packaged for the processes.
+
+        col_np = pfi%ccomm%np     ! number of processes in this column
+        allocate(proc_lmn_count(0:col_np-1))
+        allocate(lmn_coeffs(total_lmn_count,2)) ! size may be an overestimate as we drop ls and ns that are not in range
+        proc_lmn_count(:) = 0     ! how many total (n,l,m) combinations rank p of a col owns
+        lmn_coeffs(:,:) = 0.0     ! re-ordered coefficients, now m is ordered according to mp ordering (not necessarily sequential)
+        ! loop over the lm modes in the order they are stored and partitioned and reorder those we've just read from the file to
+        ! match
+        jn = 1
+        do k = 1, lm_count
+          k_lm_owner = lm_owner(k) ! because of how each column is partitioned this will be sequential with the order of lms
+          m = m_lm_values(k)
+          l = l_lm_values(k)
+          if ((m .lt. l_l_max + 1) .and. (l .lt. l_l_max + 1)) then
+            mp = mp_lm_values(k)
+            i = mp - col_mp_min + 1
+            j1 = col_coeffs_ind1(i) + (l - m)*(l_n_max + 1)
+            proc_lmn_count(k_lm_owner) = proc_lmn_count(k_lm_owner) + l_max_n + 1
+            lmn_coeffs(jn:jn+l_max_n,1) = col_coeffs(j1:j1+l_max_n,1)
+            lmn_coeffs(jn:jn+l_max_n,2) = col_coeffs(j1:j1+l_max_n,2)
+            jn = jn + l_max_n + 1
+          end if
+        end do
+        ! because we've now gone through lm pairs in the order they're partitioned, lmn_coeffs should be contiguous 
+        ! by process
+
+        deallocate(col_coeffs)
+        deallocate(col_coeffs_ind1)
+      end if
         
+      ! communicate the number of coeffs
+      if (my_column_rank .eq. 0) then
+        my_lmn_count = proc_lmn_count(0)
+        ! send sizes
+        allocate(sendarri(1))
+        do p = 1, col_np-1
+          sendarri = proc_lmn_count(p)
+          call send(sendarri, dest=p, tag=genericinput_tag, grp=pfi%ccomm)
+        end do
+        deallocate(sendarri)
+
+      else
+        allocate(sendarri(1))
+        call receive(sendarri, source=0, tag=genericinput_tag, grp=pfi%ccomm)
+        my_lmn_count = sendarri(1)
+        deallocate(sendarri)
+      end if
+
+      ! allocate an array to temporarily store the coeffs
+      allocate(my_lmn_coeffs(my_lmn_count,2))
+
+      ! communicate the coeffs
+      if (my_column_rank .eq. 0) then
+
+        my_lmn_coeffs(:,:) = lmn_coeffs(1:proc_lmn_count(0),:)
+        start_count = proc_lmn_count(0)
+        do p = 1, col_np-1
+          if (proc_lmn_count(p) .gt. 0) then
+            allocate(sendarr2(proc_lmn_count(p),2))
+            end_count = start_count + proc_lmn_count(p)
+            sendarr2(1:proc_lmn_count(p),:) = lmn_coeffs(start_count+1:end_count,:)
+            call send(sendarr2, dest=p, tag=genericinput_tag, grp = pfi%ccomm)
+            deallocate(sendarr2)
+            start_count = end_count
+          end if
+        end do
+        deallocate(lmn_coeffs)
+        deallocate(proc_lmn_count)
+      else
+        if (my_lmn_count .gt. 0) then
+          call receive(my_lmn_coeffs, source=0, tag=genericinput_tag, grp=pfi%ccomm)
+        end if
+      end if
+      
+      if (allocated(field%p1b)) then
+        ! place the coeffs into a spherical buffer
+        field%p1b(:,:,:,field_ind) = 0.0
+        l_lm_count = my_lmn_count/(l_max_n+1)
+        do k = 1, l_lm_count
+          field%p1b(1:l_max_n+1, 1, k, field_ind) = my_lmn_coeffs((k-1)*(l_max_n+1)+1:k*(l_max_n+1), 1)
+          field%p1b(1:l_max_n+1, 2, k, field_ind) = my_lmn_coeffs((k-1)*(l_max_n+1)+1:k*(l_max_n+1), 2)
+        end do
+      else
+        write(6,*)'field%p1b not allocated in genericinput read_input!'
+      end if
+      deallocate(my_lmn_coeffs)
+
 
     end if
 

@@ -522,7 +522,19 @@ class SpectralInput(object):
       self.coeffs.real.tofile(fd)
       self.coeffs.imag.tofile(fd)
     else:
-      raise Exception("Writing multidim coeffs not implemented.")
+      flatcoeffs = np.asarray([self.coeffs[n,l,m] for m in range(self.lm_max+1) \
+                                                  for l in range(m,self.lm_max+1) \
+                                                  for n in range(self.n_max)])
+      header = np.ndarray((5), dtype='int32')
+      header[0] = 314          # endian tag
+      header[1] = self.version # file version (hard-coded above)
+      header[2] = 1            # mode
+      header[3] = self.n_max
+      header[4] = self.lm_max
+      header.tofile(fd)
+      flatcoeffs.real.tofile(fd)
+      flatcoeffs.imag.tofile(fd)
+
     fd.close()
     
 
