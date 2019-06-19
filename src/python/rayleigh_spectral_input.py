@@ -524,7 +524,7 @@ class SpectralInput(object):
     else:
       flatcoeffs = np.asarray([self.coeffs[n,l,m] for m in range(self.lm_max+1) \
                                                   for l in range(m,self.lm_max+1) \
-                                                  for n in range(self.n_max)])
+                                                  for n in range(self.n_max+1)])
       header = np.ndarray((5), dtype='int32')
       header[0] = 314          # endian tag
       header[1] = self.version # file version (hard-coded above)
