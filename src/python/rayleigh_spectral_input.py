@@ -43,6 +43,20 @@ def dealias_g2m(g):
   if m_max < 0: m_max = 0
   return m_max
 
+def radial_extents(rmin=None, rmax=None, aspect_ratio=None, shell_depth=None):
+  """
+  Return rmin and rmax if they aren't set using aspect_ratio and shell_depth.
+  """
+  if rmax is None:
+    if shell_depth is None or aspect_ratio is None:
+      raise Exception("Must supply shell_depth and aspect_ratio if rmax is not set.")
+    rmax = shell_depth/(1.-aspect_ratio)
+  if rmin is None:
+    if aspect_ratio is None:
+      raise Exception("Must supply aspect_ratio if rmin is not set.")
+    rmin = rmax*aspect_ratio
+  return rmin, rmax
+
 class SpectralInput(object):
   """
   Rayleigh class describing and writing generic spectral input for boundary/initial conditions.
@@ -59,12 +73,12 @@ class SpectralInput(object):
     """
     Optional arguments:
       - `n_theta` : Number of co-latitudinal grid points.
-                    Ignored if lm_max is supplied.
+                    Ignored if `lm_max` is supplied.
+                    If this or `lm_max` is supplied a multidimensional coefficient array is allocated, otherwise a sparse list structure will be used.
       - `n_r`     : Number of radial grid point.
-                    Ignored if n_max is supplied.
+                    Ignored if `n_max` is supplied.
       - `lm_max`  : Maximum Legendre order and degree.
-                    If supplied a multidimensional coefficient array is allocated, otherwise a sparse list structure will be used.
-
+                    If this or `n_theta` is supplied a multidimensional coefficient array is allocated, otherwise a sparse list structure will be used.
       - `n_max`   : Maximum Chebyshev polynomial degree.
                     Ignored if `lm_max` is not supplied.  
                     Assumed to be 0 if not supplied.
@@ -281,46 +295,37 @@ class SpectralInput(object):
 
     # some sanity checks that we have enough info for the radial domain
     if func_radius:
-      if rmax is None:
-        if shell_depth is None or aspect_ratio is None:
-          raise Exception("Must supply shell_depth and aspect_ratio if rmax is not set.")
-        rmax = shell_depth/(1.-aspect_ratio)
-      if rmin is None:
-        if aspect_ratio is None:
-          raise Exception("Must supply aspect_ratio if rmin is not set.")
-        rmin = rmax*aspect_ratio
+      rmin, rmax = radial_extents(rmin, rmax, aspect_ratio, shell_depth)
     else:
-      rmax = None
       rmin = None
+      rmax = None
 
     # work out the number of points...
-    lm_max = self.lm_max
     if func_theta or func_phi:
       # theta (co-latitude)
       if n_theta is None:
-        if lm_max is None:
+        if self.lm_max is None:
           raise Exception("Cannot evaluate n_theta (or n_phi) unless lm_max is set.  Supply n_theta or set lm_max.")
-        n_theta = dealias_m2g(lm_max)
+        n_theta = dealias_m2g(self.lm_max)
       # phi (longitude)
-      if func_phi and n_phi is None: n_phi = n_theta*2
-      if lm_max is None: lm_max = dealias_g2m(n_theta)
+      if n_phi is None:
+        if func_phi: 
+          n_phi = n_theta*2
+        else:
+          n_phi = 1
       if not func_theta: n_theta = 1
     else:
       n_theta = 1
       n_phi = 1
-      lm_max = 0
 
-    n_max = self.n_max
     if func_radius:
       # radius (if we care about it)
       if n_r is None:
-        if n_max is None: 
+        if self.n_max is None: 
           raise Exception("Cannot evaluate n_r unless n_max is set.  Supply n_r or set n_max.")
-        n_r = dealias_m2g(n_max)
-      if n_max is None: n_max = dealias_g2m(n_r)
+        n_r = dealias_m2g(self.n_max)
     else:
       n_r = 1
-      n_max = 0
     
     # get Legendre Gauss integration points and weights
     # (we do this regardless of whether func_theta is true)
@@ -395,11 +400,14 @@ class SpectralInput(object):
     n_theta = data_rtp.shape[1]
     n_phi = data_rtp.shape[2]
 
-    # work out lm_max & n_max
+    # work out lm_max, l_max, m_max & n_max
     lm_max = self.lm_max
     if lm_max is None: lm_max = dealias_g2m(n_theta)
+    l_max = min(lm_max, n_theta)
+    m_max = min(lm_max, n_phi)
     n_max = self.n_max
     if n_max is None: n_max = dealias_g2m(n_r)
+    n_max = min(n_max, n_r)
 
     # get Legendre Gauss integration points and weights
     if costheta is None or weights is None:
@@ -425,19 +433,19 @@ class SpectralInput(object):
 
     # compute the spherical harmonics
     plms = compute_plms(lm_max, costheta)
-    data_rlm = np.zeros((n_r, lm_max+1, lm_max+1), dtype='complex')
+    data_rlm = np.zeros((n_r, l_max+1, m_max+1), dtype='complex')
     # Legendre transform: theta -> l
-    for l in range(lm_max+1):
-      for m in range(l+1):
+    for l in range(l_max+1):
+      for m in range(min(l+1, m_max)):
         for r in range(n_r):
           data_rlm[r, l, m] = sum(2.*np.pi*data_rtm[r, :, m]*plms[m, l, :]*weights)
 
     # compute the Chebyshev polynomials
     tns = compute_tns(n_max, gamma)
-    data_nlm = np.zeros((n_max+1, lm_max+1, lm_max+1), dtype='complex')
+    data_nlm = np.zeros((n_max+1, l_max+1, m_max+1), dtype='complex')
     # Chebyshev transform: radius -> n
-    for l in range(lm_max+1):
-      for m in range(l+1):
+    for l in range(l_max+1):
+      for m in range(min(l+1, m_max)):
         for n in range(n_max+1):
           data_nlm[n, l, m] = (2./n_r)*sum(data_rlm[:, l, m]*tns[n, :])
     
@@ -536,7 +544,211 @@ class SpectralInput(object):
       flatcoeffs.imag.tofile(fd)
 
     fd.close()
+
+def main(fformat=None, n_theta=None, lm_max=None, n_r=None, n_max=None, n_phi=None, \
+                       rmin=None, rmax=None, aspect_ratio=None, shell_depth=None, \
+                       modes=None, expressions=None, filename=None):
+  """
+  Main function to process and write spectral input to file.
+  """
+  if fformat == "dense":
+    si = SpectralInput(n_theta=n_theta, lm_max=lm_max, n_r=n_r, n_max=n_max)
+  elif fformat == "sparse":
+    si = SpectralInput()
+  else:
+    raise Exception("Unknown file format: {:s}".format(fformat,))
+
+  # deal with individual modes
+  if modes is not None:
+    for index, coeff in modes:
+      si.add_mode(coeff, n=index[0], l=index[1], m=index[2])
+
+  # deal with any expressions provided
+  if expressions is not None:
+    import ast, os
+
+    rmin, rmax = radial_extents(rmin, rmax, aspect_ratio, shell_depth)
     
+    # from https://stackoverflow.com/questions/39379331/python-exec-a-code-block-and-eval-the-last-line
+    def exec_then_eval(theta=None, phi=None, radius=None, \
+                       rmin=None, rmax=None, aspect_ratio=None, shell_depth=None, \
+                       code=None):
+      block = ast.parse(code, mode='exec')
 
+      # assumes last node is an expression
+      last = ast.Expression(block.body.pop().value)
 
+      _globals = {'theta':theta, 'phi':phi, 'radius':radius,\
+                  'rmin':rmin, 'rmax':rmax, \
+                  'aspect_ratio':aspect_ratio, 'shell_depth':shell_depth}
+      _locals = {}
+      exec(compile(block, '<string>', mode='exec'), _globals, _locals)
+      return eval(compile(last, '<string>', mode='eval'), _globals, _locals)
+
+    func_kwargs = {'rmin':rmin, 'rmax':rmax, 'aspect_ratio':aspect_ratio, 'shell_depth':shell_depth}
+    for expr in expressions:
+      func_kwargs['code'] = expr
+
+      func_args = []
+      if expr.find('theta') >= 0: func_args.append("theta")
+      if expr.find('phi') >= 0: func_args.append("phi")
+      if expr.find('radius') >= 0: func_args.append("radius")
+      func_argstr, exec_argstr = "", ""
+      if len(func_args) > 0: 
+        func_argstr = ", ".join([fa+"=None" for fa in func_args])+", "
+        exec_argstr = ", ".join([fa+"="+fa for fa in func_args])+", "
+      # from https://stackoverflow.com/questions/1409295/set-function-signature-in-python
+      func_str = "def func({:s}**kwargs):".format(func_argstr)+os.linesep+\
+                 "  return exec_then_eval({:s}**kwargs)".format(exec_argstr)+os.linesep
+      _globals, _locals = {'exec_then_eval': exec_then_eval}, {}
+      exec(compile(func_str, '<string>', mode='exec'), _globals, _locals)
+      func = _locals["func"]
+
+      si.transform_from_rtp_function(func, n_theta=n_theta, n_r=n_r, \
+                                     rmin=rmin, rmax=rmax, aspect_ratio=aspect_ratio, shell_depth=shell_depth,
+                                     func_kwargs=func_kwargs)
+
+  si.write(filename)
+
+###################################
+# main script below               #
+###################################
+if __name__ == "__main__":
+  import argparse
+  import re, os
+
+  def parse_mode(modein):
+    modestr = " ".join(modein)
+    # regular expression to split up values string into a list
+    # the list may be comma(,), semicolon(;), space ( ) or newline (\n) delimited
+    # if the list is of bracketed items (e.g. tuples) then any delimiters within 
+    # the brackets are preserved
+    # brackets may be (), [] or {}
+    #NODE                     EXPLANATION
+    #--------------------------------------------------------------------------------
+    #  (?:                      group, but do not capture (1 or more times
+    #                           (matching the most amount possible)):
+    #--------------------------------------------------------------------------------
+    #    [^,; \n([{]              any character except: ',', ';', ' ',
+    #                             '\n' (newline), '(', '[', '{'
+    #--------------------------------------------------------------------------------
+    #   |                        OR
+    #--------------------------------------------------------------------------------
+    #    \(                       '('
+    #--------------------------------------------------------------------------------
+    #    [^)]*                    any character except: ')' (0 or more
+    #                             times (matching the most amount
+    #                             possible))
+    #--------------------------------------------------------------------------------
+    #    \)                       ')'
+    #--------------------------------------------------------------------------------
+    #   |                        OR
+    #--------------------------------------------------------------------------------
+    #    \[                       '['
+    #--------------------------------------------------------------------------------
+    #    [^]]*                    any character except: ']' (0 or more
+    #                             times (matching the most amount
+    #                             possible))
+    #--------------------------------------------------------------------------------
+    #    \]                       ']'
+    #--------------------------------------------------------------------------------
+    #   |                        OR
+    #--------------------------------------------------------------------------------
+    #    \{                       '{'
+    #--------------------------------------------------------------------------------
+    #    [^}]*                    any character except: '}' (0 or more
+    #                             times (matching the most amount
+    #                             possible))
+    #--------------------------------------------------------------------------------
+    #    \}                       '}'
+    #--------------------------------------------------------------------------------
+    #  )+                       end of grouping
+    # - from http://rick.measham.id.au/paste/explain.pl
+    r = re.compile(r'(?:[^,; '+os.linesep+'([{]|\([^)]*\)|\[[^]]*\]|\{[^}]*\})+')
+    modelist = r.findall(modestr)
+    for index in modelist[:min(3,len(modelist)-1)]:
+      if not index.isdigit():
+        raise argparse.ArgumentTypeError("Expected non-negative integer as index, not {:s}.".format(index,))
+    modecoeff = complex(modelist[-1])
+    modeindex = [0]*3
+    if len(modelist) == 2:
+      # interpret this as a Chebyshev mode, with only radial dependence
+      # the first entry is then interpretted as a mode index (int) and the second the coefficient value (complex)
+      modeindex[0] = int(modelist[0])
+    elif len(modelist) == 3:
+      # interpret this as a spherical mode, with only (theta, phi) dependence
+      # the first two entries are l and m and the third the coefficient value (complex)
+      modeindex[1:] = [int(index) for index in modelist[:2]]
+    elif len(modelist) == 4:
+      # interpret this as a mode with both radial and spherical dependence
+      # the first three entries are n, l and m and the fourth the coefficient value (complex)
+      modeindex[:] = [int(index) for index in modelist[:3]]
+    else:
+      raise argparse.ArgumentTypeError("Expected 2 (radial), 3 (spherical) or 4 (radial & spherical) arguments describing a mode, "
+                                       "got {:d} ({:s}).".format(len(modelist), modestr))
+    return (tuple(modeindex), modecoeff)
+
+  parser = argparse.ArgumentParser( \
+                         description="""Generate generic spectral input for Rayleigh.""")
+  parser.add_argument("-m", "--mode", nargs='+', type=str, dest='modes', metavar='mode', default=None, action='append', required=False,
+                      help='''Add a mode to the spectral input.  This should be formatted as "-m index coefficient"
+                              where index is either 1, 2 or 3 integers depending on the desired mode (see below).
+                              The coefficient should be parseable as a complex number.  
+                              For a pure Chebyshev mode supply 1 integer as the n index followed by the coefficient value, 
+                              e.g. "-m 0 1.+1.j".  
+                              For a purely spherical harmonic mode supply 2 integers representing the l and m degree and order
+                              respectively, followed by the coefficient value, e.g. "-m 0 0 1.+1.j".  
+                              For a mode with both radial and spherical dependence supply 3 integers representing n, l and m Chebyshev
+                              index and spherical harmonic degree and order respectively, followed by the coefficient value,
+                              e.g. "-m 0 0 0 1.+1.j".  
+                              All three examples here add the coefficient 1.+1.j to the mode (n,l,m) = (0,0,0).  Multiple modes can
+                              be added by using "-m index coefficient" repeatedly.''')
+  parser.add_argument("-e", "--expr", type=str, dest='expressions', metavar='expr', default=None, action='append', required=False,
+                      help='''Transform the given expression into Chebyshev-spectral space.  The expression can depend on any
+                              combination (or none) of the variables `radius`, `theta` (co-latitude), `phi` (longitude).  
+                              In addition it may use `rmin`, `rmax`, `aspect_ratio` and
+                              `shell_depth`.  The expression should return the field value at the given radius, theta and phi.  
+                              It may be vectorized to process multiple radii, thetas and phis at once.  If multiple expressions are
+                              supplied their modes will be added.  Similarly any modes supplied (-m) will be added.''')
+  parser.add_argument("-rn", "--rmin", type=float, dest='rmin', default=None, action='store', required=False,
+                      help='''Supply the minimum radius of the domain.  Required if transforming from an expression that depends on
+                              radius and `aspect_ratio` is not supplied along with either `rmax` or `shell_depth`.  Ignored if no
+                              expression supplied (-e) or the expression does not depend on radius.''')
+  parser.add_argument("-rx", "--rmax", type=float, dest='rmax', default=None, action='store', required=False,
+                      help='''Supply the maximum radius of the domain.  Required if transforming from an expression that depends on
+                              radius and `aspect_ratio` and `shell_depth` are not supplied.  Ignored if no
+                              expression supplied (-e) or the expression does not depend on radius.''')
+  parser.add_argument("-sd", "--shell_depth", type=float, dest='shell_depth', default=None, action='store', required=False,
+                      help='''Supply the shell depth of the domain.  Required if transforming from an expression that depends on
+                              radius and `rmax` is not supplied.  Ignored if no
+                              expression supplied (-e) or the expression does not depend on radius.''')
+  parser.add_argument("-ar", "--aspect_ratio", type=float, dest='aspect_ratio', default=None, action='store', required=False,
+                      help='''Supply the shell depth of the domain.  Required if transforming from an expression that depends on
+                              radius and `rmax` and `rmin` are not supplied.  Ignored if no
+                              expression supplied (-e) or the expression does not depend on radius.''')
+  parser.add_argument("-nt", "--n_theta", type=int, dest='n_theta', default=None, action='store', required=False,
+                      help='''Specify the number of co-latitudinal grid points.  Required if `lm_max` is not supplied and either
+                              a dense format is requested or an expression that depends on theta is supplied.''')
+  parser.add_argument("-np", "--n_phi", type=int, dest='n_phi', default=None, action='store', required=False,
+                      help='''Specify the number of longitudinal grid points.  Not required.  Set from `n_theta` if not
+                              supplied.''')
+  parser.add_argument("-nr", "--n_r", type=int, dest='n_r', default=None, action='store', required=False,
+                      help='''Specify the number of radial grid points.  Required if an expression that depends on radius is
+                              supplied and n_max is not specified.''')
+  parser.add_argument("-lm", "--lm_max", type=int, dest='lm_max', default=None, action='store', required=False,
+                      help='''Specify the maximum Legendre order and degree.  Required if `n_theta` is not supplied and either a
+                              dense format is requested or an expression that depends on theta is supplied.''')
+  parser.add_argument("-nm", "--n_max", type=int, dest='n_r', default=None, action='store', required=False,
+                      help='''Specify the maximum Chebyshev polynomial degree.  Required if an expression that depends on radius is
+                              supplied.''')
+  parser.add_argument("-f", "--format", type=str, choices=["dense", "sparse"], dest='fformat', default="sparse", action='store', required=False,
+                      help='''Storage format, either "dense" or "sparse".  Defaults to "sparse".''')
+  parser.add_argument("-o", "--output", type=str, dest='filename', required=True, action='store',
+                      help='''Specify the filename of the output file.''')
+  args = parser.parse_args()
+
+  dargs = vars(args)
+  dargs['modes'] = [parse_mode(mode) for mode in args.modes]
+
+  main(**dargs)
 
