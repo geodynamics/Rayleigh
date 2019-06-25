@@ -1,3 +1,24 @@
+#!/usr/bin/env python
+
+#
+#  Copyright (C) 2018 by the authors of the RAYLEIGH code.
+#
+#  This file is part of RAYLEIGH.
+#
+#  RAYLEIGH is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3, or (at your option)
+#  any later version.
+#
+#  RAYLEIGH is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with RAYLEIGH; see the file LICENSE.  If not see
+#  <http://www.gnu.org/licenses/>.
+#
 
 import numpy as np
 import scipy.special as scisp
@@ -691,8 +712,33 @@ if __name__ == "__main__":
                                        "got {:d} ({:s}).".format(len(modelist), modestr))
     return (tuple(modeindex), modecoeff)
 
+  epilog = '''
+EXAMPLES
+To write a single constant mode, (n,l,m)=(0,0,0), with coefficient 1.+0.j, 
+to the file `example` run:
+
+ > %(prog)s -m 0 0 0 1.+0.j -o example
+
+or:
+
+ > %(prog)s -m 0 0 1.+0.j -o example
+
+where n is assumed to be 0 when not supplied, or:
+
+ > %(prog)s -m 0 1.+0.j -o example
+
+where (l,m) is assumed to be (0,0) when not supplied.
+
+To write spectral input matching the Christensen et al. 2001 hydrodynamic 
+benchmark initial condition to the file `example`, run:
+              
+ > %(prog)s -ar 0.35 -sd 1.0 -nt 96 -nr 64 -o example \\
+    -e 'import numpy as np; x = 2*radius - rmin - rmax; 
+rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)'
+
+           '''
   parser = argparse.ArgumentParser( \
-                         description="""Generate generic spectral input for Rayleigh.""")
+                         description="""Generate generic spectral input for Rayleigh.""", epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument("-m", "--mode", nargs='+', type=str, dest='modes', metavar='mode', default=[], action='append', required=False,
                       help='''Add a mode to the spectral input.  This should be formatted as "-m index coefficient"
                               where index is either 1, 2 or 3 integers depending on the desired mode (see below).
@@ -745,7 +791,7 @@ if __name__ == "__main__":
                       help='''Specify the maximum Chebyshev polynomial degree.  Required if an expression that depends on radius is
                               supplied.''')
   parser.add_argument("-f", "--format", type=str, choices=["dense", "sparse"], dest='fformat', default="sparse", action='store', required=False,
-                      help='''Storage format, either "dense" or "sparse".  Defaults to "sparse".''')
+                      help='''Storage format, either `dense` or `sparse`.  Defaults to `%(default)s`.''')
   parser.add_argument("-o", "--output", type=str, dest='filename', required=True, action='store',
                       help='''Specify the filename of the output file.''')
   args = parser.parse_args()
