@@ -436,7 +436,7 @@ class SpectralInput(object):
     data_rlm = np.zeros((n_r, l_max+1, m_max+1), dtype='complex')
     # Legendre transform: theta -> l
     for l in range(l_max+1):
-      for m in range(min(l+1, m_max)):
+      for m in range(min(l+1, m_max+1)):
         for r in range(n_r):
           data_rlm[r, l, m] = sum(2.*np.pi*data_rtm[r, :, m]*plms[m, l, :]*weights)
 
@@ -445,7 +445,7 @@ class SpectralInput(object):
     data_nlm = np.zeros((n_max+1, l_max+1, m_max+1), dtype='complex')
     # Chebyshev transform: radius -> n
     for l in range(l_max+1):
-      for m in range(min(l+1, m_max)):
+      for m in range(min(l+1, m_max+1)):
         for n in range(n_max+1):
           data_nlm[n, l, m] = (2./n_r)*sum(data_rlm[:, l, m]*tns[n, :])
     
@@ -552,7 +552,9 @@ def main(fformat=None, n_theta=None, lm_max=None, n_r=None, n_max=None, n_phi=No
   Main function to process and write spectral input to file.
   """
   if fformat == "dense":
-    si = SpectralInput(n_theta=n_theta, lm_max=lm_max, n_r=n_r, n_max=n_max)
+    l_lm_max = lm_max
+    if lm_max is None and n_theta is None: l_lm_max = 0
+    si = SpectralInput(n_theta=n_theta, lm_max=l_lm_max, n_r=n_r, n_max=n_max)
   elif fformat == "sparse":
     si = SpectralInput()
   else:
@@ -567,8 +569,6 @@ def main(fformat=None, n_theta=None, lm_max=None, n_r=None, n_max=None, n_phi=No
   if expressions is not None:
     import ast, os
 
-    rmin, rmax = radial_extents(rmin, rmax, aspect_ratio, shell_depth)
-    
     # from https://stackoverflow.com/questions/39379331/python-exec-a-code-block-and-eval-the-last-line
     def exec_then_eval(theta=None, phi=None, radius=None, \
                        rmin=None, rmax=None, aspect_ratio=None, shell_depth=None, \
@@ -592,7 +592,10 @@ def main(fformat=None, n_theta=None, lm_max=None, n_r=None, n_max=None, n_phi=No
       func_args = []
       if expr.find('theta') >= 0: func_args.append("theta")
       if expr.find('phi') >= 0: func_args.append("phi")
-      if expr.find('radius') >= 0: func_args.append("radius")
+      if expr.find('radius') >= 0:
+        func_args.append("radius")
+        if func_kwargs['rmin'] is None or func_kwargs['rmax'] is None:
+          func_kwargs['rmin'], func_kwargs['rmax'] = radial_extents(rmin, rmax, aspect_ratio, shell_depth)
       func_argstr, exec_argstr = "", ""
       if len(func_args) > 0: 
         func_argstr = ", ".join([fa+"=None" for fa in func_args])+", "
@@ -690,7 +693,7 @@ if __name__ == "__main__":
 
   parser = argparse.ArgumentParser( \
                          description="""Generate generic spectral input for Rayleigh.""")
-  parser.add_argument("-m", "--mode", nargs='+', type=str, dest='modes', metavar='mode', default=None, action='append', required=False,
+  parser.add_argument("-m", "--mode", nargs='+', type=str, dest='modes', metavar='mode', default=[], action='append', required=False,
                       help='''Add a mode to the spectral input.  This should be formatted as "-m index coefficient"
                               where index is either 1, 2 or 3 integers depending on the desired mode (see below).
                               The coefficient should be parseable as a complex number.  
