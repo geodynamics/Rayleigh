@@ -40,6 +40,8 @@ pipeline {
           # This export avoids a warning about
           # a discovered, but unconnected infiniband network.
           mpirun -np 4 ../../bin/rayleigh.dbg
+
+          cd ..
           git diff > changes.diff
         '''
 
