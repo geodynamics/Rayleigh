@@ -41,7 +41,7 @@ Rayleigh requires the the following compilers and libraries:
 
     OR
 
-3a. BLAS
+3a. BLAS.46
 3b. LAPack
 3c. FFTW (version 3.x)
 
