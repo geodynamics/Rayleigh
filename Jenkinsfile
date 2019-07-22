@@ -2,8 +2,8 @@
 
 pipeline {
   agent {
-    docker {
-      image 'geodynamics/rayleigh-buildenv-bionic:latest'
+    dockerfile {
+      dir 'docker/rayleigh-buildenv-bionic'
     }
   }
 
@@ -42,8 +42,6 @@ pipeline {
         sh '''
           sed \
             --in-place \
-            -e 's/nprow = 2/nprow = 1/' \
-            -e 's/npcol = 2/npcol = 1/' \
             -e 's/max_iterations = 40000/max_iterations = 400/' \
             main_input
         '''
@@ -51,8 +49,7 @@ pipeline {
         sh '''
           # This export avoids a warning about
           # a discovered, but unconnected infiniband network.
-          export OMPI_MCA_btl=self,tcp
-          ./bin/rayleigh.dbg
+          mpirun -np 4 ./bin/rayleigh.dbg
         '''
       }
     }
