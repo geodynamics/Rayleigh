@@ -3,7 +3,7 @@ Quantity Codes
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Below are tables enumerating the menu codes necessary to specify diagonstic outputs in Rayleigh.
 
    velocity_field
    mass_flux

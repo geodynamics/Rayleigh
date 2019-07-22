@@ -220,7 +220,7 @@ for iii, inpref in enumerate(inprefs):
     
     tfcnt=0
     ofile=inpref[0]+'_table'+str(tfcnt)+'.tex'
-    ofile="source/"+inpref[0]+".rst"
+    ofile="source/diagnostic_codes/"+inpref[0]+".rst"
     myfile= open(ofile,"w")
     nrows = 0
     ncol=inpref[1]
