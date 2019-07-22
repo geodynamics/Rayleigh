@@ -95,7 +95,7 @@ def parse_offset_line(codeline):
         mydict[this_vname]=offset
     #Check to see if we have a
     return (this_vname,rel_offset,rel_vname)
-Rayleigh_Dir='/home/feathern/devel/forks/me/Rayleigh'
+Rayleigh_Dir='../'
 indir=Rayleigh_Dir+'/src/Diagnostics'
 inprefs=[]
 inprefs.append(['velocity_field'     ,2])
