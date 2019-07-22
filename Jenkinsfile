@@ -12,6 +12,19 @@ pipeline {
   }
 
   stages {
+    stage('Build documentation') {
+      options {
+        timeout(time: 15, unit: 'MINUTES')
+      }
+      steps {
+        sh '''
+          cd doc
+          make html
+          make latexpdf
+        '''
+      }
+    }
+
     stage('Build') {
       options {
         timeout(time: 15, unit: 'MINUTES')
