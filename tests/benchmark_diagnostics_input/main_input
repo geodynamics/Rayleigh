@@ -7,8 +7,8 @@
 &problemsize_namelist
  n_r = 48
  n_theta = 64
- nprow = 1
- npcol = 1
+ nprow = 2
+ npcol = 2
  aspect_ratio = 0.35d0
  shell_depth = 1.0d0
 /
