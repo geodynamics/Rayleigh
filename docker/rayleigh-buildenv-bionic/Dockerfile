@@ -13,7 +13,15 @@ RUN apt update && \
     libmpich-dev \
     make \
     nano \
-    wget
+    wget \
+    sphinx-common \
+    texlive-base \
+    texlive-generic-extra \
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    lmodern \
+    latexmk
 
 # Export compilers
 ENV CC mpicc
