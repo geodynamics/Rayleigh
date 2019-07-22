@@ -35,7 +35,7 @@ pipeline {
       }
       steps {
         sh '''
-          cd tests/benchmark_diagnostics_input
+          cd tests/c2001_case0
 
           # This export avoids a warning about
           # a discovered, but unconnected infiniband network.
