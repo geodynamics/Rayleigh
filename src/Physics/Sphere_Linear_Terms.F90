@@ -720,20 +720,83 @@ Contains
 
     End Subroutine Set_Boundary_Conditions
 
-    Subroutine Enforce_Boundary_Conditions_New()
+    Subroutine Enforce_Boundary_Conditions
         Implicit None
         Real*8 :: bc_val
         Integer :: uind, lind
         Integer :: real_ind, imag_ind
 
-        !Call Apply_Boundary_Mask(bc_values)
+        Call Apply_Boundary_Mask(bc_values)
+        Call Domain_Continuity()
+
+    End Subroutine Enforce_Boundary_Conditions
+
+    Subroutine Domain_Continuity()
+        Implicit None
+        Integer :: l, indx, ii,lp, j, k,n
+        ! start applying the boundary and continuity conditions by setting
+        ! the appropriate right hand sides.
+
+        ! Will wrap this more into Linear_Solve.F90 soon
+        ii = 2*N_R
 
 
-    End Subroutine Enforce_Boundary_Conditions_New
+        indx = 1
+
+        Do lp = 1, my_nl_lm
+            n_m = my_nm_lm(lp)-1    ! really n_m, but the indexing below is from the old implicit solv
+            l = my_lm_lval(lp)
+
+            If (chebyshev) Then
+                ! Apply continuity conditions across the subdomains
+
+                j = 0
+                do n = 1, ndomains-1
+                    j = j+gridcp%npoly(n)
+                    equation_set(1,weq)%RHS(      j, : , indx:indx+n_m) = 0.0d0
+                    equation_set(1,weq)%RHS(2*N_R+j, : , indx:indx+n_m) = 0.0d0
+                    if (l .ne. 0) then
+                        equation_set(1,zeq)%RHS(      j, : , indx:indx+n_m) = 0.0d0
+                        equation_set(1,weq)%RHS(N_R  +j, : , indx:indx+n_m) = 0.0d0 ! dpdr continuity - only for ell =/ 0
+                    endif
+                Enddo
 
 
+                j = 1
+                Do n = 1, ndomains-1
+                    j = j+gridcp%npoly(n)
+                    equation_set(1,weq)%RHS(      j  ,:, indx:indx+n_m) = 0.0d0
+                    equation_set(1,weq)%RHS(  N_R+j  ,:, indx:indx+n_m) = 0.0d0
+                    equation_set(1,weq)%RHS(2*N_R+j  ,:, indx:indx+n_m) = 0.0d0
+                    if (l .ne. 0) equation_set(1,zeq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
+                Enddo
 
-    Subroutine Enforce_Boundary_Conditions()
+                If (Magnetism) Then
+                    if (l .ne. 0) then
+                        j = 0
+                        Do n = 1, ndomains-1
+                            j = j+gridcp%npoly(n)
+                            equation_set(1,aeq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
+                            equation_set(1,ceq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
+                        Enddo
+
+                        j = 1
+                        Do n = 1, ndomains-1
+                            j = j+gridcp%npoly(n)
+                            equation_set(1,aeq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
+                            equation_set(1,ceq)%RHS(      j,: , indx:indx+n_m) = 0.0d0
+                        Enddo
+                    endif
+                Endif
+
+
+            Endif
+
+            indx = indx + n_m + 1
+        Enddo
+    End Subroutine Domain_Continuity
+
+    Subroutine Enforce_Boundary_Conditions_Old()
         Implicit None
         Integer :: l, indx, ii,lp, j, k,n
         ! start applying the boundary and continuity conditions by setting
@@ -911,6 +974,6 @@ Contains
 
             indx = indx + n_m + 1
         Enddo
-    End Subroutine Enforce_Boundary_Conditions
+    End Subroutine Enforce_Boundary_Conditions_Old
 
 End Module Sphere_Linear_Terms
