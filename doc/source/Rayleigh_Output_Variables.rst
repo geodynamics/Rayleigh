@@ -1,15 +1,3 @@
-.. raw:: latex
-
-   \maketitle
-
-.. raw:: latex
-
-   \tableofcontents
-
-.. raw:: latex
-
-   \clearpage
-
 Overview of Diagnostic Outputs in Rayleigh
 ==========================================
 

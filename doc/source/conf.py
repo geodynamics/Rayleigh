@@ -64,18 +64,11 @@ latex_elements = {
 # Additional stuff for the LaTeX preamble.
 'preamble': r'''
 \usepackage{graphicx}
-\usepackage{amsmath}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{5pt}
 \usepackage{textpos}
 
-% use a larger page size; otherwise, it is difficult to have complete
-% code listings and output on a single page
-\usepackage{fullpage}
-
-
-% use the listings package for code snippets. define keywords for prm files
-% and for gnuplot
+% use the listings package for code snippets
 \usepackage{listings}
 \lstset{frame=tb,
   language=Fortran,
@@ -135,13 +128,9 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 
 %MAIN PICTURE%
 \begin{textblock*}{0in}(0.0in,0.0in)
-% FILL: image height
-% e.g. height=6.5in
 \begin{center}
 \vspace{3em}
 \includegraphics[height=4.0in]
-% FILL: image file name of your software
-% e.g. cover_image.png
 {../../src/user_guide/rayleigh_manual_image_300dpi.jpeg}
 \hspace{1em}
 \end{center}
@@ -163,7 +152,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \color{dark_grey}
 {\fontfamily{\sfdefault}\selectfont
 \large
-\vspace{0.58in}
+\vspace{0.3in}
 \noindent with contributions by: \\
     Kyle Augustson, Wolfgang Bangerth, Rene Gassm\"oller, Sebastian Glane, Brad Hindman, Lorraine Hwang, Hiro Matsui, Ryan Orvedahl, Krista Soderlund, Cian Wilson, Maria Weber, Rakesh Yadav
     \\
@@ -182,6 +171,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 }
 
 %COPYRIGHT STATEMENT
+\vspace{-1.5em}
 \textcopyright Copyright 2018, Regents of the University of California
 
 }
