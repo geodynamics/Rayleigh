@@ -43,6 +43,11 @@ clean:
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean
 
+IPYNB = $(shell find . -iname '*.ipynb')
+
+clear_ipynb: $(IPYNB)
+	nbstripout $^
+
 .PHONY: install
 install:
 	@echo "Installing executables into: " $(PREFIX)"/bin"
