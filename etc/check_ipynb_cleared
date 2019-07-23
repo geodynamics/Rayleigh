@@ -1,0 +1,14 @@
+#!/bin/sh
+
+ERR=0
+IPYNB="$(find . -iname '*.ipynb')"
+for x in ${IPYNB}
+do
+        if ! nbstripout < "$x" | diff -q - "$x" > /dev/null
+        then
+                echo "$x" still contains output
+                ERR=1
+        fi
+done
+
+return $ERR
