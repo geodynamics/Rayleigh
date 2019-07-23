@@ -15,3 +15,4 @@ Rayliegh User Manual
    diagnostics
    io_redirection
    ensemble_mode
+   publications

@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:installation:
+.. _sec:Overview:
 
 Overview
 ==========
@@ -45,15 +45,14 @@ Please cite the code as:
 
 .. code-block::
 
-  @Software{nicholas_featherstone_2018_1158290,
-  author = "Featherstone, N.",
-  title="Rayleigh Version 0.9.0",
-  year="2018",
-  organization="Computational Infrastructure for Geodynamics",
-  address="Davis, CA",
-  optkeywords="Rayleigh",
-  doi="http://doi.org/10.5281/zenodo.1158290",
-  opturl="https://doi.org/10.5281/zenodo.1158290"}
+  @Software{nicholas_featherstone_2018_1236565,
+	author = "Featherstone, N.",
+	title="Rayleigh 0.9.1",
+	year="2018",
+	organization="",
+	optkeywords="Rayleigh",
+	doi="http://doi.org/10.5281/zenodo.1236565",
+	opturl="https://doi.org/10.5281/zenodo.1236565"}
 
 Please also cite the following reference:
 
