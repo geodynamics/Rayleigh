@@ -380,7 +380,7 @@ thermal anomoly :math:`\Theta` should be interpreted as entropy
 :math:`s`. The symbol Ra\ :math:`^*` is the modified Rayleigh number,
 given by
 
-.. math:: \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}   %\frac{\partial \Theta}{\partial r}|_{r=rmin}
+.. math:: \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}
 
 Those Reference_Namelist variables that must be set for this model are
 indicated in Table table_anelastic_nd_. As
