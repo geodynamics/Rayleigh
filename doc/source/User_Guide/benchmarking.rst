@@ -86,82 +86,76 @@ this condition is satisfied, your installation is working correctly.
 
 .. _table_benchmark:
 
-**Table. Benchmark.** Benchmark-input examples useful for verifying Rayleigh’s installation.
+.. centered:: **Table. Benchmark.**
+
+Benchmark-input examples useful for verifying Rayleigh’s installation.
 Those from Christensen et al. (2001)
 are Boussinesq. Those from Jones et al. (2011) are anelastic. Examples are found
 in the directory: Rayleigh/etc/input_examples/
 
- +-----------------------+-----------------+--------------------------------+
- | Paper                 | Benchmark       | Input File                     |
- +=======================+=================+================================+
- | Christensen et al.    | Case 0          | c2001_case0_minimal            |
- +-----------------------+-----------------+--------------------------------+
- | Christensen et al.    | Case 1(MHD)     | c2001_case1_minimal            |
- +-----------------------+-----------------+--------------------------------+
- | Jones et al. 2011     | Steady Hydro    | j2011_steady_hydro_minimal     |
- +-----------------------+-----------------+--------------------------------+
- | Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       |
- +-----------------------+-----------------+--------------------------------+
++-----------------------+-----------------+--------------------------------+
+| Paper                 | Benchmark       | Input File                     |
++=======================+=================+================================+
+| Christensen et al.    | Case 0          | c2001_case0_minimal            |
++-----------------------+-----------------+--------------------------------+
+| Christensen et al.    | Case 1(MHD)     | c2001_case1_minimal            |
++-----------------------+-----------------+--------------------------------+
+| Jones et al. 2011     | Steady Hydro    | j2011_steady_hydro_minimal     |
++-----------------------+-----------------+--------------------------------+
+| Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       |
++-----------------------+-----------------+--------------------------------+
 
 
 .. _table_benchmark_low:
 
-**Table. Benchmark Low.**
+.. centered:: **Table. Benchmark Low.**
+
 Rayleigh benchmark report for Christensen
 et al. (2001) case 0 when run with nr=48 and ntheta=64. Run time was
-approximately 3 minutes when run on 32 Intel Haswell cores. Run command:
-mpiexec -np 32 ./rayleigh.opt -nprow 4 -npcol 8 -nr 48 -ntheta 64
+approximately 3 minutes when run on 32 Intel Haswell cores.
 
-   +-----------------+------------+------------+--------------+-----------+
-   | Observable      | Measured   | Suggested  | % Difference | Std. Dev. |
-   +=================+============+============+==============+===========+
-   | Kinetic Energy  | 58.347827  | 58.348000  | -0.000297    | 0.000000  |
-   +-----------------+------------+------------+--------------+-----------+
-   | Temperature     | 0.427416   | 0.428120   | -0.164525    | 0.000090  |
-   +-----------------+------------+------------+--------------+-----------+
-   | Vphi            | -10.118053 | -10.157100 | -0.384434    | 0.012386  |
-   +-----------------+------------+------------+--------------+-----------+
-   | Drift Frequency | 0.183272   | 0.182400   | 0.477962     | 0.007073  |
-   +-----------------+------------+------------+--------------+-----------+
+Run command:
+
+.. code-block::
+
+ mpiexec -np 32 ./rayleigh.opt -nprow 4 -npcol 8 -nr 48 -ntheta 64
+
++-----------------+------------+------------+--------------+-----------+
+| Observable      | Measured   | Suggested  | % Difference | Std. Dev. |
++=================+============+============+==============+===========+
+| Kinetic Energy  | 58.347827  | 58.348000  | -0.000297    | 0.000000  |
++-----------------+------------+------------+--------------+-----------+
+| Temperature     | 0.427416   | 0.428120   | -0.164525    | 0.000090  |
++-----------------+------------+------------+--------------+-----------+
+| Vphi            | -10.118053 | -10.157100 | -0.384434    | 0.012386  |
++-----------------+------------+------------+--------------+-----------+
+| Drift Frequency | 0.183272   | 0.182400   | 0.477962     | 0.007073  |
++-----------------+------------+------------+--------------+-----------+
 
 
 .. _table_benchmark_high:
 
-**Table. Benchmark High.**
+
+.. centered:: **Table. Benchmark High.**
+
 Rayleigh benchmark report for Christensen
 et al. (2001) case 0 when run with nr=64 and ntheta=96. Run time was
-approximately 12 minutes when run on 32 Intel Haswell cores. Run
-command: mpiexec -np 32 ./rayleigh.opt -nprow 4 -npcol 8 -nr 64 -ntheta
-96
+approximately 12 minutes when run on 32 Intel Haswell cores.
 
-.. note this is implemented different then the above tables.
+Run command:
 
-.. list-table:: Benchmark High
-   :widths: 50 30 30 30 30
-   :header-rows: 1
+.. code-block::
 
-   * - Observable
-     - Measured
-     - Suggested
-     - % Difference
-     - Std. Dev.
-   * - Kinetic Energy
-     - 58.347829
-     - 58.348000
-     - -0.000294
-     - 0.000000
-   * - Temperature
-     - 0.427786
-     - 0.428120
-     - -0.077927
-     - 0.000043
-   * - Vphi
-     - -10.140183
-     - -10.157100
-     - -0.166551
-     - 0.005891
-   * - Drift Frequency
-     - 0.182276
-     - 0.182400
-     - -0.067994
-     - 0.004877
+  mpiexec -np 32 ./rayleigh.opt -nprow 4 -npcol 8 -nr 64 -ntheta 96
+
++-----------------+------------+------------+--------------+-----------+
+| Observable      | Measured   | Suggested  | % Difference | Std. Dev. |
++=================+============+============+==============+===========+
+| Kinetic Energy  | 58.347829  | 58.348000  | -0.000294    | 0.000000  |
++-----------------+------------+------------+--------------+-----------+
+| Temperature     | 0.427786   | 0.428120   | -0.077927    | 0.000043  |
++-----------------+------------+------------+--------------+-----------+
+| Vphi            | -10.140183 | -10.157100 | -0.166551    | 0.005891  |
++-----------------+------------+------------+--------------+-----------+
+| Drift Frequency | 0.182276   | 0.182400   | -0.067994    | 0.004877  |
++-----------------+------------+------------+--------------+-----------+
