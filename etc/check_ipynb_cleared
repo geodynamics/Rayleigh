@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ERR=0
-IPYNB="$(find . -iname '*.ipynb')"
+IPYNB="$(git ls-files|grep '\.ipynb$')"
 for x in ${IPYNB}
 do
         if ! nbstripout < "$x" | diff -q - "$x" > /dev/null
