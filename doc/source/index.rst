@@ -10,9 +10,10 @@ Welcome to Rayleigh's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   User_Guide/index.rst
+   User_Guide/index.rst   
+   Rayleigh_Output_Variables
+   diagnostic_codes/qcodes
    stream
-   qcodes
    vids
 
 
