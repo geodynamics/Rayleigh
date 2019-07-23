@@ -1,4 +1,4 @@
 make distclean
-./configure -devel
+./configure -devel $1 $2 $3 $4 $5 $6
 make
 make install

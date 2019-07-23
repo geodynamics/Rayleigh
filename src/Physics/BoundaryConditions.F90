@@ -112,6 +112,74 @@ Contains
 
     End Subroutine Initialize_Boundary_Conditions
 
+    Subroutine Generate_Boundary_Mask()
+        Implicit None
+        Real*8 :: bc_val
+        Integer :: uind, lind
+        Integer :: real_ind, imag_ind
+        uind = 1   ! Upper boundary in BC array
+        lind = 2   ! Lower boundary in BC array
+        real_ind = 1 ! real index in BC array
+        imag_ind = 2 ! imaginary index in BC array
+
+        ! BC_Array(:,:,:,:) = Zero  **Need to think on this**
+
+        !BC's are specified in physical space, but enforced in spectral space.
+        !Need to multiply by sqrt(4pi) for ell=0 BCs as a result.
+
+        If (fix_tvar_top) Then
+            bc_val= T_Top*sqrt(four_pi)
+            Call Set_BC(bc_val,0,0, teq,real_ind, uind)
+        Endif
+
+        If (fix_tvar_bottom) Then
+            bc_val= T_bottom*sqrt(four_pi)
+            Call Set_BC(bc_val,0,0, teq,real_ind, lind)
+        Endif
+
+        If (fix_dtdr_top) Then
+            bc_val= dtdr_top*sqrt(four_pi)
+            Call Set_BC(bc_val,0,0, teq,real_ind, uind)
+        Endif
+
+        If (fix_dtdr_bottom) Then
+            bc_val= dtdr_bottom*sqrt(four_pi)
+            Call Set_BC(bc_val,0,0, teq,real_ind, lind)
+        Endif
+
+        If (fix_poloidalfield_top) Then
+            Call Set_BC(C10_top ,1,0,ceq,real_ind,uind)
+            Call Set_BC(C11_top ,1,1,ceq,real_ind,uind)
+            Call Set_BC(C1m1_top,1,1,ceq,imag_ind,uind)
+        Endif        
+
+        If (fix_poloidalfield_bottom) Then
+            Call Set_BC(C10_bottom ,1,0,ceq,real_ind,lind)
+            Call Set_BC(C11_bottom ,1,1,ceq,real_ind,lind)
+            Call Set_BC(C1m1_bottom,1,1,ceq,imag_ind,lind)
+        Endif   
+
+
+    End Subroutine Generate_Boundary_Mask
+
+    Subroutine Set_BC(inval,ellval,emval,eqval,imi,bound_ind)
+        Implicit None
+        Real*8 , Intent(In) :: inval
+        Integer, Intent(In) :: ellval, emval, eqval,bound_ind, imi
+        Integer :: this_l, this_m, lp
+        ! Probably more efficient to have a support array / reverse lookup table
+        ! In practice, this will still be short loop because
+        ! There are typically only a few lm values in this config
+        Do lp = 1, my_num_lm
+            this_l = l_lm_values(lp)
+            this_m = m_lm_values(lp)
+            If ( (this_l .eq. ellval) .and. (this_m .eq. emval) ) Then
+                bc_values(bound_ind , imi , lp,  eqval ) = inval
+            Endif
+        Enddo        
+    End Subroutine Set_BC
+
+
     Subroutine Restore_BoundaryCondition_Defaults()
         Implicit None
         Fix_Tvar_Top    = .True.

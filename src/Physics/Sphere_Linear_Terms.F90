@@ -720,6 +720,17 @@ Contains
 
     End Subroutine Set_Boundary_Conditions
 
+    Subroutine Enforce_Boundary_Conditions_New()
+        Implicit None
+        Real*8 :: bc_val
+        Integer :: uind, lind
+        Integer :: real_ind, imag_ind
+
+        !Call Apply_Boundary_Mask(bc_values)
+
+
+    End Subroutine Enforce_Boundary_Conditions_New
+
 
 
     Subroutine Enforce_Boundary_Conditions()
