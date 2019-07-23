@@ -183,10 +183,10 @@ respectively. The evolution of :math:`\Theta` is described
    :label: theta_evol
 
    \mathrm{f}_1(r)\,\mathrm{f}_4(r)\left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] =
-       c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
-        + c_{10}\mathrm{f}_6(r)   % Internal heating
+       c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right] 
+        + c_{10}\mathrm{f}_6(r)   
         + c_8\Phi(r,\theta,\phi)
-        + c_9\mathrm{f}_7(r)\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2,  % Ohmic Heating
+        + c_9\mathrm{f}_7(r)\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2,
 
 where the viscous heating :math:`\Phi` is given by
 
@@ -410,7 +410,7 @@ given by
 .. math:: 
    :label: Ra
 
-   \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}   %\frac{\partial \Theta}{\partial r}|_{r=rmin}
+   \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L} 
 
 We arrive at the following nondimensionalized equations:
 
