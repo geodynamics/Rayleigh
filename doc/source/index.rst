@@ -10,6 +10,7 @@ Welcome to Rayleigh's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   User_Guide/index.rst
    stream
    qcodes
    vids
