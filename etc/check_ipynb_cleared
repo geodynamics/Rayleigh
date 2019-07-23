@@ -49,4 +49,4 @@ do
         fi
 done
 
-return $ERR
+exit $ERR
