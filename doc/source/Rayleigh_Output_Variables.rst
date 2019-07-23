@@ -104,16 +104,16 @@ zonally-averaged value, and a fluctuation about that average. The
 average is indicated by an overbar, such that
 
 .. math::
-
-   \label{eq:avging}
+   :label: avging
+  
        \overline{a}\equiv \frac{1}{2\pi}\int_{0}^{2\pi} a(r,\theta,\phi)\, \mathrm{d}\phi.
 
 Fluctations about that average are indicated by a *prime* superscript,
 such that
 
 .. math::
+   :label: prime
 
-   \label{eq:prime}
        a'(r,\theta,\phi)\equiv a(r,\theta,\phi)-\overline{a}(r,\theta)
 
 Finally, some quantities are averaged over the full sphere. These are
@@ -121,8 +121,8 @@ indicated by a double-zero subscript (i.e. :math:`\ell=0,\,m=0`), such
 that
 
 .. math::
-
-   \label{eq:fullsph}
+   :label: fullsph
+   
    a_{00}\equiv \frac{1}{4\pi}\int_{0}^{2\pi}\int_{0}^{\pi} a(r,\theta,\phi)\, r\mathrm{sin}\,\theta\mathrm{d}\theta\mathrm{d}\phi.
 
 The Equation Sets Solved by Rayleigh
@@ -136,15 +136,14 @@ nondimensional anelastic formulations (based on a polytropic reference
 state) are provided as part of Rayleigh. The user may employ alternative
 formulations via the custom Reference-state interface. To do so, they
 must specify the functions :math:`\mathrm{f}_i` and the constants
-:math:`c_i` in equations
-`[eq:momentum] <#eq:momentum>`__–`[eq:induction] <#eq:induction>`__ at
+:math:`c_i` in Equations :eq:`momentum`-:eq:`induction` at
 input time (*in development*).
 
 The general form of the momentum equation solved by Rayleigh is given by
 
 .. math::
-
-   \label{eq:momentum}
+   :label: momentum  
+ 
        \mathrm{f}_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
         + c_1\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  = % Coriolis
        c_2\,\mathrm{f}_2(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
@@ -154,7 +153,10 @@ The general form of the momentum equation solved by Rayleigh is given by
 
 where the stress tensor :math:`\mathcal{D}` is given by
 
-.. math:: \mathcal{D}_{ij} = 2\mathrm{f}_1(r)\,\mathrm{f}_3(r)\left[e_{ij} - \frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right].
+.. math:: 
+   :label: stress_tensor
+
+       \mathcal{D}_{ij} = 2\mathrm{f}_1(r)\,\mathrm{f}_3(r)\left[e_{ij} - \frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right].
 
 The velocity field is denoted by :math:`\boldsymbol{v}`, the thermal
 anomoly by :math:`\Theta`, the pressure by :math:`P`, and the magnetic
@@ -163,42 +165,47 @@ field by :math:`\boldsymbol{B}`. All four of these quantities are
 coefficient functions :math:`\mathrm{f}_i`. The velocity and magnetic
 fields are subject to the constraints
 
-.. math:: \boldsymbol{\nabla}\cdot\left(\mathrm{f}_1(r)\,\boldsymbol{v}\right) = 0
+.. math::
+   :label: v_constrain
+ 
+       \boldsymbol{\nabla}\cdot\left(\mathrm{f}_1(r)\,\boldsymbol{v}\right) = 0
 
 and
 
-.. math:: \boldsymbol{\nabla}\cdot\boldsymbol{B}=0
+.. math::
+   :label: divB
+ 
+       \boldsymbol{\nabla}\cdot\boldsymbol{B}=0
 
 respectively. The evolution of :math:`\Theta` is described
 
 .. math::
+   :label: theta_evol
 
    \mathrm{f}_1(r)\,\mathrm{f}_4(r)\left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] =
        c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
-        + \mathrm{f}_6(r)   % Internal heating
+        + c_{10}\mathrm{f}_6(r)   % Internal heating
         + c_8\Phi(r,\theta,\phi)
         + c_9\mathrm{f}_7(r)\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2,  % Ohmic Heating
 
 where the viscous heating :math:`\Phi` is given by
 
 .. math::
+   :label: vischeat
 
-   \label{eq:vischeat}
        \Phi(r,\theta,\phi) = 2\,\mathrm{f}_1(r)\mathrm{f}_3(r)\left[e_{ij}e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right].
 
 Finally, the evolution of :math:`\boldsymbol{B}` is described by the
 induction equation
 
 .. math::
+   :label: induction
 
-   \label{eq:induction}
        \frac{\partial \boldsymbol{B}}{\partial t} = \boldsymbol{\nabla}\times\left(\,\boldsymbol{v}\times\boldsymbol{B} - c_7\,\mathrm{f}_7(r)\boldsymbol{\nabla}\times\boldsymbol{B}\,\right).
 
-Equations
-`[eq:momentum] <#eq:momentum>`__–`[eq:induction] <#eq:induction>`__
-could have been formulated in other ways. For instance, we could combine
-:math:`\mathrm{f}_1` and :math:`\mathrm{f}_4` into a single function in
-Equation `[eq:vischeat] <#eq:vischeat>`__. The form of the equations
+Equations :eq:`momentum`-:eq:`induction` could have been formulated in other ways. For instance, we could combine
+:math:`\mathrm{f}_1` and :math:`\mathrm{f}_3` into a single function in
+Equation :eq:`vischeat`. The form of the equations
 presented here has been chosen to reflect that actually used in the
 code, which was originally written dimensionally. We now describe the
 dimensional anelastic and nondimensional Boussinesq formulations used in
@@ -220,8 +227,9 @@ When run in dimensional, anelastic mode (cgs units; **reference_type=2**
        \mathrm{f}_4(r) &\rightarrow \hat{T}(r)\; &c_4 &\rightarrow \frac{1}{4\pi} \\
        \mathrm{f}_5(r) &\rightarrow \kappa(r)\; &c_5 &\rightarrow 1 \\
        \mathrm{f}_6(r) &\rightarrow Q(r)\; &c_6 &\rightarrow 1  \\
-       \mathrm{f}_7(r) &\rightarrow \eta(r)\; &c_7 &\rightarrow 1. \\
-       c_8&\rightarrow 1 &c_9 &\rightarrow \frac{1}{4\pi}.\end{aligned}
+       \mathrm{f}_7(r) &\rightarrow \eta(r)\; &c_7 &\rightarrow 1 \\
+       c_8&\rightarrow 1 &c_9 &\rightarrow \frac{1}{4\pi} \\
+       c_{10}&\rightarrow 1.\end{aligned}
 
 Here, :math:`\hat{\rho}` and :math:`\hat{T}` are the reference-state
 density and temperature respectively. :math:`g` is the gravitational
@@ -233,9 +241,7 @@ function; it might represent radiative heating or heating due to nuclear
 fusion, for instance. Note that in the anelastic formulation, the
 thermal variable :math:`\Theta` is interpreted is as entropy :math:`s`,
 rather than temperature :math:`T`. When these substitutions are made,
-Equations
-`[eq:momentum] <#eq:momentum>`__–`[eq:induction] <#eq:induction>`__
-transform as follows.
+Equations :eq:`momentum`-:eq:`induction` transform as follows.
 
 .. math::
 
@@ -280,7 +286,7 @@ employed is as follows:
        \mathrm{Length} &\rightarrow L &\;\;\;\; \mathrm{(Shell\; Depth)} \\
        \mathrm{Time} &\rightarrow   \frac{L^2}{\nu} &\;\;\;\; \mathrm{(Viscous\; Timescale)}\\
        \mathrm{Temperature} &\rightarrow \Delta T&\;\;\;\; \mathrm{(Temperature\; Contrast\; Across\; Shell)} \\
-       \mathrm{Magnetic Field} &\rightarrow \sqrt{\rho\mu\eta\Omega_0},\end{aligned}
+       \mathrm{Magnetic\; Field} &\rightarrow \sqrt{\rho\mu\eta\Omega_0},\end{aligned}
 
 where :math:`\Omega_0` is the rotation rate of the frame, :math:`\rho`
 is the (constant) density of the fluid, :math:`\mu` is the magnetic
@@ -310,8 +316,9 @@ assigning values to :math:`\mathrm{f}_i` and the constants :math:`c_i`:
    \mathrm{f}_4(r) &\rightarrow 1\; &c_4 &\rightarrow \frac{1}{E\,Pm} \\
    \mathrm{f}_5(r) &\rightarrow 1\; &c_5 &\rightarrow 0 \\
    \mathrm{f}_6(r) &\rightarrow 0\; &c_6 &\rightarrow \frac{1}{Pr}  \\
-   \mathrm{f}_7(r) &\rightarrow 1\; &c_7 &\rightarrow \frac{1}{Pm}. \\
-   c_8&\rightarrow 0 &c_9 &\rightarrow 0.\end{aligned}
+   \mathrm{f}_7(r) &\rightarrow 1\; &c_7 &\rightarrow \frac{1}{Pm} \\
+   c_8&\rightarrow 0 &c_9 &\rightarrow 0 \\ 
+   c_{10}&\rightarrow 0.\end{aligned}
 
 Note that our choice of :math:`\mathrm{f}_2(r)` allows gravity to vary
 with radius based on the value of the exponent :math:`n`, which has a
@@ -323,8 +330,7 @@ meaning of :math:`Ra` in our equation set changes, with :math:`Ra`
 denoting a flux Rayleigh number instead. In addition, ohmic and viscous
 heating, which do not appear in the Boussinesq formulation, are turned
 off when this nondimensionalization is specified at runtime. When these
-substitutions are made, Equations
-`[eq:momentum] <#eq:momentum>`__–`[eq:induction] <#eq:induction>`__
+substitutions are made, Equations :eq:`momentum`-:eq:`induction`
 transform as follows.
 
 .. math::
@@ -356,8 +362,8 @@ To run in nondimensional anelastic mode, you must set
 assumed to be polytropic with a :math:`\frac{1}{r^2}` profile for
 gravity. Transport coefficients :math:`\nu`, :math:`\kappa`,
 :math:`\eta` are assumed to be constant in radius. When this mode is
-active, the following nondimensionalization is used (following Heimpel
-et al., 2016, *Nat. Geo*, 9, 19):
+active, the following nondimensionalization is used 
+(following `Heimpel et al., 2016, Nat. Geo., 9, 19 <https://www.nature.com/articles/ngeo2601/>`_ ):
 
 .. math::
 
@@ -384,12 +390,16 @@ choices result in the functions :math:`\mathrm{f}_i` and the constants
        \mathrm{f}_5(r) &\rightarrow 1\; &c_5 &\rightarrow \mathrm{E} \\
        \mathrm{f}_6(r) &\rightarrow Q(r)\; &c_6 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pr}}  \\
        \mathrm{f}_7(r) &\rightarrow 1 \; &c_7 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pm}} \\
-       c_8&\rightarrow \frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*} &c_9 &\rightarrow \frac{\mathrm{E}^2\,\mathrm{Di}}{\mathrm{Pm}^2\mathrm{Ra}^*}.\end{aligned}
+       c_8&\rightarrow \frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*} &c_9 &\rightarrow \frac{\mathrm{E}^2\,\mathrm{Di}}{\mathrm{Pm}^2\mathrm{Ra}^*} \\
+       c_{10}&\rightarrow 1.\end{aligned}
 
 Two new nondimensional numbers appear in our equations. Di, the
 dissipation number, is defined by
 
-.. math:: \mathrm{Di}= \frac{g_o\,\mathrm{L}}{c_\mathrm{P}\,T_o},
+.. math::
+   :label: Di
+ 
+       \mathrm{Di}= \frac{g_o\,\mathrm{L}}{c_\mathrm{P}\,T_o},
 
 where :math:`g_o` and :math:`T_o` are the gravitational acceleration
 and temperature at the outer boundary respectively. Once more, the
@@ -397,7 +407,10 @@ thermal anomaly :math:`\Theta` should be interpreted as entropy
 :math:`s`. The symbol Ra\ :math:`^*` is the modified Rayleigh number,
 given by
 
-.. math:: \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}   %\frac{\partial \Theta}{\partial r}|_{r=rmin}
+.. math:: 
+   :label: Ra
+
+   \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}   %\frac{\partial \Theta}{\partial r}|_{r=rmin}
 
 We arrive at the following nondimensionalized equations:
 

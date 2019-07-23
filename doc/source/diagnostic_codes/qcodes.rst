@@ -3,7 +3,7 @@ Quantity Codes
 
 .. toctree::
    :maxdepth: 2
-   :caption: Below are tables enumerating the menu codes necessary to specify diagonstic outputs in Rayleigh.
+   :caption: Below are tables enumerating the menu codes necessary to specify diagonstic outputs in Rayleigh. 
 
    velocity_field
    mass_flux
@@ -22,4 +22,5 @@ Quantity Codes
    me_equation
    turbKE
    axial_field
-   
+
+Note that we use the shorthand :math:`{\boldsymbol{\mathcal{J}}}` to denote the curl of :math:`{\boldsymbol{B}}`, namely :math:`{\boldsymbol{\mathcal{J}}\equiv\boldsymbol{\nabla}\times\boldsymbol{B}}`.   
