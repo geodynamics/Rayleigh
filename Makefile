@@ -43,10 +43,8 @@ clean:
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean
 
-IPYNB = $(shell find . -iname '*.ipynb')
-
-clear_ipynb: $(IPYNB)
-	nbstripout $^
+clear_ipynb:
+	etc/check_ipynb_cleared -c $^
 
 .PHONY: install
 install:
