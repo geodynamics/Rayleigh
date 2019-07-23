@@ -56,7 +56,7 @@ html_static_path = []
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
 'papersize': 'letterpaper',
-'babel': '\usepackage[english]{babel}',
+'babel': '\\usepackage[english]{babel}',
 
 # The font size ('10pt', '11pt' or '12pt').
 'pointsize': '11pt',
