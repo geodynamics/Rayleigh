@@ -4,7 +4,7 @@ ERR=0
 IPYNB="$(git ls-files|grep '\.ipynb$')"
 for x in ${IPYNB}
 do
-        if ! nbstripout < "$x" | diff -q - "$x" > /dev/null
+        if ! nbstripout < "$x" | diff - "$x" > /dev/null
         then
                 echo "$x" still contains output
                 ERR=1
