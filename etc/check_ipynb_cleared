@@ -3,7 +3,7 @@
 if ! type nbstripout > /dev/null
 then
         echo "You need to install the nbstripout command."
-        echo "Use can the Python package manager of your choice (pip, conda, ...)."
+        echo "Use the Python package manager of your choice (pip, conda, ...)."
         echo "Example: pip install --user nbstripout"
         exit 1
 fi
