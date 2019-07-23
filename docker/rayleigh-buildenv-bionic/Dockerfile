@@ -14,6 +14,7 @@ RUN apt update && \
     make \
     nano \
     wget \
+    python3-pip \
     sphinx-common \
     texlive-base \
     texlive-generic-extra \
@@ -24,7 +25,7 @@ RUN apt update && \
     python3-pip \
     latexmk
 
-RUN pip3 install sphinxcontrib-bibtex
+RUN pip3 install sphinxcontrib-bibtex nbstripout
 
 # Export compilers
 ENV CC mpicc
