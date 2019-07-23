@@ -63,6 +63,7 @@ distclean:
 	rm -f $(BUILD)/*.mod
 	rm -f $(BUILD)/object_list
 	rm -f $(BUILD)/Makefile
+	rm -f $(BUILD)/Makefile.fdeps
 	rm -f $(BUILD)/Machine_Definitions
 	rm -f $(BUILD)/machine.no_comments
 	@rm -f $(PREFIX)/bin/rayleigh.*

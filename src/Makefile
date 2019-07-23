@@ -7,7 +7,7 @@ include object_list  #List of object files and associated variables
 
 ######################################################
 
-MAKENP  = $(MAKE) --no-print-directory
+MAKEFLAGSS  += --no-print-directory
 .SUFFIXES: .o .F90 .f .F .c
 
 # White-space-separated list of all acceptable goals for this makefile
@@ -40,11 +40,11 @@ endif
 
 
 default:
-	@$(MAKENP) $(DEFAULT) VERSION=$(DEFAULT) PREFIX=$(PREFIX)
+	@$(MAKE) $(DEFAULT) VERSION=$(DEFAULT) PREFIX=$(PREFIX)
 
 all: 
 	@for i in $(VERSIONS) ; do \
-		$(MAKENP) $$i VERSION=$$i PREFIX=$(PREFIX); \
+		$(MAKE) $$i VERSION=$$i PREFIX=$(PREFIX); \
 		echo ' ' ; \
 	done
 
@@ -62,17 +62,23 @@ $(VERSION):
 	@echo ' '
 	@echo '                  '$(DESC_$(VERSION))	
 	@echo ' '
-	@$(MAKENP) clean_obj
+	@$(MAKE) clean_obj
 	@cp Run_Param_Header.$(VERSION).F Run_Param_Header.F
 ifdef CUSTOMROOT
 	@cp $(CUSTOMROOT)/*.F90 . 2> /dev/null || :
 	@cp $(CUSTOMROOT)/*.F . 2> /dev/null || :
 	@cp $(CUSTOMROOT)/*.c . 2> /dev/null || :
 endif
-	@$(MAKENP) rayleigh_exec FFLAGS="$(FFLAGS_$(VERSION))" PROG="compiled/rayleigh.$(VERSION)" LIB="$(LIB_$(VERSION))" PREFIX=$(PREFIX)
+	@$(MAKE) rayleigh_exec FFLAGS="$(FFLAGS_$(VERSION))" PROG="compiled/rayleigh.$(VERSION)" LIB="$(LIB_$(VERSION))" PREFIX=$(PREFIX)
 
 .F90.o :
 	$(FC) $(FFLAGS) -c $<
+
+Makefile.fdeps: $(wildcard *.F90 *.F)
+	makedepf90 $^ > $@
+
+include Makefile.fdeps
+
 .cc.o:
 	$(CC) $(CFLAGS) -c *.cc
 
@@ -83,5 +89,5 @@ clean_obj:
 	@echo "Cleaning up compiled object files..."
 	@rm -f *.o *.mod
 clean: 
-	@$(MAKENP) clean_obj
+	@$(MAKE) clean_obj
 
