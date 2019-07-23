@@ -40,8 +40,8 @@ part using Rayleigh.  To cite other versions of the code, please see: https://ge
 
 Please cite the code as:
 
-  Featherstone, N. (2018), Rayleigh Version 0.9.0, Computational Infrastructure for Geodynamics,
-  doi: 10.5281/zenodo.1158290, url: https://doi.org/10.5281/zenodo.1158290
+  Featherstone, N. (2018), Rayleigh Version 0.9.1, Computational Infrastructure for Geodynamics,
+  DOI: 10.5281/zenodo.1236565
 
 .. code-block::
 
@@ -54,20 +54,22 @@ Please cite the code as:
 	doi="http://doi.org/10.5281/zenodo.1236565",
 	opturl="https://doi.org/10.5281/zenodo.1236565"}
 
-Please also cite the following reference:
+Please also cite the following references:
 
   Featherstone, N.A.; Hindman, B.W. (2016), The spectral
   amplitude of stellar convection and its scaling in the
-  high-rayleigh-number regime, The Astrophysical Journal, 818 (1) ,
-  32, doi: 10.3847/0004-637X/818/1/32,
-  url: http://stacks.iop.org/0004-637X/818/i=1/a=32?key=crossref.a90f82507dd0eeb7a6e7562d1e4b0210
+  high-rayleigh-number regime, *The Astrophysical Journal*, 818 (1) ,
+  32, DOI: 10.3847/0004-637X/818/1/32
+
+  Matsui, H. et al., 2016, Performance benchmarks for
+  a next generation numerical dynamo model, *Geochem., Geophys., Geosys.*, 17,1586
+  DOI: 10.1002/2015GC006159
 
 .. code-block::
 
   @Article{,
   author = "Featherstone, N.A. and Hindman, B.W.",
-  title="The Spectral Amplitude Of Stellar Convection And Its
-  Scaling In The High-Rayleigh-Number Regime",
+  title="The Spectral Amplitude Of Stellar Convection And Its Scaling In The High-Rayleigh-Number Regime",
   year="2016",
   journal="The Astrophysical Journal",
   volume="818",
@@ -78,6 +80,21 @@ Please also cite the following reference:
   doi="http://doi.org/10.3847/0004-637X/818/1/32",
   opturl="http://stacks.iop.org/0004-637X/818/i=1/a=32?key=
   crossref.a90f82507dd0eeb7a6e7562d1e4b0210"}
+
+  @Article{Matsui_etal_2016,
+  author = "Matsui, H. and Heien, E. and Aubert, J. and Aurnou, J.M. and Avery, M. and Brown, B. and Buffett, B.A. and Busse, F. and Christensen, U.R. and Davies, C.J. and Featherstone, N. and Gastine, T. and Glatzmaier, G.A. and Gubbins, D. and Guermond, J.-L. and Hayashi, Y.-Y. and Hollerbach, R. and Hwang, L.J. and Jackson, A. and Jones, C.A. and Jiang, W. and Kellogg, L.H. and Kuang, W. and Landeau, M. and Marti, P.H. and Olson, P. and Ribeiro, A. and Sasaki, Y. and Schaeffer, N. and Simitev, R.D. and Sheyko, A. and Silva, L. and Stanley, S. and Takahashi, F. and Takehiro, S.-ichi and Wicht, J. and Willis, A.P.",
+  title="Performance benchmarks for a next generation numerical dynamo model",
+  year="2016",
+  journal="Geochemistry, Geophysics, Geosystems",
+  volume="17",
+  number="5",
+  pages="1586-1607",
+  optkeywords="Calypso",
+  issn="1525-2027",
+  doi="http://doi.org/10.1002/2015GC006159",
+  opturl="http://doi.wiley.com/10.1002/2015GC006159"
+  }
+
 
 Acknowledging
 -------------
