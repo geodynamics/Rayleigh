@@ -21,6 +21,8 @@
 Module BoundaryConditions
     Use Math_Constants
     Use ProblemSize
+    Use Fields
+    Use Load_Balance
     !Use ReferenceState
     !Use TransportCoefficients
     Implicit None
@@ -56,6 +58,7 @@ Module BoundaryConditions
     Logical :: stress_free_top = .true., stress_free_bottom = .true.
     Logical :: no_slip_top = .false., no_slip_bottom = .false.
 
+    Real*8, allocatable, dimension(:,:,:,:) :: bc_values  ! a 4-D array: (top/bottom, real/imag, my_num_lm, n_equations)
 
     Namelist /Boundary_Conditions_Namelist/ Fix_Tvar_Top, Fix_Tvar_Bottom, T_Bottom, T_Top, dTdr_top, dTdr_bottom, &
         fix_dtdr_bottom, fix_dtdr_top, fix_divrt_top, fix_divt_top, fix_divrfc_top, fix_divfc_top, &
@@ -71,6 +74,8 @@ Contains
         Real*8 :: tilt_angle_radians,a,b
         Real*8 :: fsun
 
+        allocate(bc_values(2, 2, my_num_lm, n_equations))
+        bc_values = 0.0
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom

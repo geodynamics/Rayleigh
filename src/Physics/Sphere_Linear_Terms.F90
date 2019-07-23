@@ -77,21 +77,14 @@ Contains
 
     Subroutine Initialize_Linear_System
         Implicit None
-        Integer :: neq, nvar,lp, l, nlinks
+        Integer :: lp, l, nlinks
         Integer, Allocatable :: eq_links(:), var_links(:)
         Type(Cheby_Grid), Pointer :: gridpointer
-        If (magnetism) Then
-            neq  = 6
-            nvar = 6
-        Else
-            neq  = 4
-            nvar = 4
-        Endif
         nullify(gridpointer)
         gridpointer => gridcp
         If (chebyshev) Call Use_Chebyshev(gridpointer)    ! Turns chebyshev mode to "on" for the linear solve
 
-        Call Initialize_Equation_Set(neq,nvar,N_R,my_nl_lm, my_nm_lm,2)
+        Call Initialize_Equation_Set(n_equations,n_variables,N_R,my_nl_lm, my_nm_lm,2)
 
         Do lp = 1, my_nl_lm
             l = my_lm_lval(lp)

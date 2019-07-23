@@ -53,6 +53,8 @@ Module Fields
     Type(Field_Indexer) :: wsp_indices, co_indices
 
     !////////////////////////////////////////////////////////////////////////////
+    Integer, Save :: n_equations, n_variables    ! Number of variables and equations to be solved
+
     ! Variable locations in the global field meta data buffer
     Integer :: wvar, pvar, tvar, zvar
     Integer :: dpdr1  ! We reserve dpdr for the final location at output time
@@ -148,8 +150,16 @@ Contains
         Implicit None
         Character*3 :: config
 
+        ! Starting out we record the number of variables and equations we are expecting.
+        If (magnetism) Then
+            n_equations  = 6
+            n_variables = 6
+        Else
+            n_equations  = 4
+            n_variables = 4
+        Endif
 
-        !This routine serves two purposes:
+        !The remainder of this routine serves two purposes:
         ! 1 - It assigns values to each of our field reference integers
         ! 2 - It tallies the number of fields added to the buffer in
         !     in each configuration, so that the necessary buffer size
