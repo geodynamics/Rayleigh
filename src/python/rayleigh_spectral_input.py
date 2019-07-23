@@ -378,21 +378,23 @@ class SpectralInput(object):
       if func_radius: coord[2] = radius
       thetag, phig, radiusg = np.meshgrid(*coord)
       coordg = {}
+      coordg.update(func_kwargs)
       if func_theta:  coordg['theta']  = thetag
       if func_phi:    coordg['phi']    = phig
       if func_radius: coordg['radius'] = radiusg
-      data_rtp = func(**{**coordg, **func_kwargs}).transpose()
+      data_rtp = func(**coordg).transpose()
     except:
       # more annoying but maybe more forgiving...
       data_rtp = np.zeros((n_r, n_theta, n_phi))
       coordg = {}
+      coordg.update(func_kwargs)
       for t in range(n_theta):
         if func_theta: coordg['theta'] = theta[t]
         for p in range(n_phi):
           if func_phi: coordg['phi'] = phi[p]
           for r in range(n_r):
             if func_radius: coordg['radius'] = radius[r]
-            data_rtp[r,t,p] = func(**{**coordg, **func_kwargs})
+            data_rtp[r,t,p] = func(**coordg)
 
     self.transform_from_rtp_data(data_rtp, \
                                  gamma=gamma, costheta=costheta, weights=legweights, \
