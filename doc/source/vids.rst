@@ -1,4 +1,4 @@
-Some videos
+Video Gallery
 =============
 
 .. raw:: html
