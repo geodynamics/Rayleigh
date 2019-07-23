@@ -20,7 +20,9 @@ table_checkpoints_.
 
   .. _table_checkpoints:
 
-**Table. Checkpoints.** Example checkpoint file collection for a
+.. centered:: **Table. Checkpoints.**
+
+Example checkpoint file collection for a
 time step 10,000. File contents are indicated.
 
    +-----------------------------------+-----------------------------------+

@@ -89,7 +89,9 @@ indicated in brackets.
 
 .. _table_anelastic:
 
-**Table. Anelastic.** Variables in the Reference_Namelist that
+.. centered:: **Table. Anelastic.**
+
+Variables in the Reference_Namelist that
 must be specified when running in dimensional anelastic mode. In
 addition, reference_type=2 must also be specified.
 
@@ -117,7 +119,9 @@ addition, reference_type=2 must also be specified.
    .. _table_anelastic_trans:
 
 
-**Table. Anelastic Transport.** Variables in the Transport_Namelist
+.. centered:: **Table. Anelastic Transport.**
+
+Variables in the Transport_Namelist
 that must be specified when running in dimensional anelastic mode. In
 addition, reference_type=2 must also be specified in the
 Reference_Namelist.
@@ -287,7 +291,9 @@ nu_top, kappa_top, or eta_top.
 
    .. _table_boussinesq:
 
-**Table. Boussinesq.** Variables in the Reference_Namelist that
+.. centered:: **Table. Boussinesq.**
+
+Variables in the Reference_Namelist that
 must be specified when running in nondimensional Boussinesq mode. In
 addition, reference_type=1 must also be specified.
 
@@ -395,7 +401,9 @@ index and number of density scale heights.
 
    .. _table_anelastic_nd:
 
-**Table. Anelastic_nd.** Variables in the Reference_Namelist that
+.. centered:: **Table. Anelastic_nd.**
+
+Variables in the Reference_Namelist that
 must be specified when running in nondimensional anelastic mode. In
 addition, reference_type=3 must also be specified.
 
@@ -495,7 +503,9 @@ values indicated in brackets.
 
   .. _table_logicals:
 
-**Table. Logicals.** Variables in the Physical_Controls_Namelist
+.. centered:: **Table. Logicals.**
+
+Variables in the Physical_Controls_Namelist
 that may be specified to control run behavior (defaults indicated in
 brackets)
 
