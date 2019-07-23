@@ -13,13 +13,10 @@ Welcome to Rayleigh's documentation!
    User_Guide/index.rst   
    Rayleigh_Output_Variables
    diagnostic_codes/qcodes
-   stream
    vids
 
 
 Indices and tables
-==================
+------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
