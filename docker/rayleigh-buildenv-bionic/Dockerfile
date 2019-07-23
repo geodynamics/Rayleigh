@@ -10,10 +10,18 @@ RUN apt update && \
     libblas-dev \
     libfftw3-dev \
     liblapack-dev \
-    libopenmpi-dev \
+    libmpich-dev \
     make \
     nano \
-    wget
+    wget \
+    sphinx-common \
+    texlive-base \
+    texlive-generic-extra \
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    lmodern \
+    latexmk
 
 # Export compilers
 ENV CC mpicc
