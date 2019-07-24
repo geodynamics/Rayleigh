@@ -23,8 +23,16 @@
 Video Gallery
 =============
 
+
 Rotating
 --------
+.. ADD A URL so the link will print in the pdf version since the videos do not
+
+.. raw:: latex
+
+    \url{https://www.youtube.com/embed/3iRggdo3i0I}
+    \url{https://www.youtube.com/embed/1KArtuLYUmY}
+    \url{https://www.youtube.com/embed/OUICRNiFhpU}
 
 .. Place videos 3 across separated by 2 non-breaking white space.
 .. Insert a blank line between rows.
