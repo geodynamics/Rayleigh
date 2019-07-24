@@ -1,4 +1,7 @@
-.. |space| unicode:: U+0020 .. space
+.. raw:: latex
+
+   \clearpage
+
 .. |nbspc| unicode:: U+00A0 .. non-breaking space
 
 .. ADDING YOUR VIDEOS
@@ -27,7 +30,3 @@ Rotating
 .. Insert a blank line between rows.
 
 |Feathern1|  |nbspc| |nbspc| |Feathern2| |nbspc| |nbspc| |Feathern3|
-
-
-Non-Rotating
-------------
