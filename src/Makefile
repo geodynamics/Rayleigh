@@ -7,11 +7,10 @@ include object_list  #List of object files and associated variables
 
 ######################################################
 
-MAKENP  = $(MAKE) --no-print-directory
 .SUFFIXES: .o .F90 .f .F .c
 
 # White-space-separated list of all acceptable goals for this makefile
-VALIDGOALS = $(VERSIONS) rayleigh_exec all default clean clean_obj clean_exec .F90.o .cc.o
+VALIDGOALS = $(VERSIONS) rayleigh_exec all default clean clean_obj clean_exec fdeps .F90.o .cc.o
 
 #Check to see if the  user has specified a valid goal
 #GOALCHECK will be an empty string if  MAKECMDGOALS is not found within VALIDGOALS
@@ -40,11 +39,11 @@ endif
 
 
 default:
-	@$(MAKENP) $(DEFAULT) VERSION=$(DEFAULT) PREFIX=$(PREFIX)
+	@$(MAKE) $(DEFAULT) VERSION=$(DEFAULT) PREFIX=$(PREFIX)
 
 all: 
 	@for i in $(VERSIONS) ; do \
-		$(MAKENP) $$i VERSION=$$i PREFIX=$(PREFIX); \
+		$(MAKE) $$i VERSION=$$i PREFIX=$(PREFIX); \
 		echo ' ' ; \
 	done
 
@@ -62,17 +61,27 @@ $(VERSION):
 	@echo ' '
 	@echo '                  '$(DESC_$(VERSION))	
 	@echo ' '
-	@$(MAKENP) clean_obj
+	@$(MAKE) clean_obj
 	@cp Run_Param_Header.$(VERSION).F Run_Param_Header.F
 ifdef CUSTOMROOT
 	@cp $(CUSTOMROOT)/*.F90 . 2> /dev/null || :
 	@cp $(CUSTOMROOT)/*.F . 2> /dev/null || :
 	@cp $(CUSTOMROOT)/*.c . 2> /dev/null || :
 endif
-	@$(MAKENP) rayleigh_exec FFLAGS="$(FFLAGS_$(VERSION))" PROG="compiled/rayleigh.$(VERSION)" LIB="$(LIB_$(VERSION))" PREFIX=$(PREFIX)
+	@$(MAKE) rayleigh_exec FFLAGS="$(FFLAGS_$(VERSION))" PROG="compiled/rayleigh.$(VERSION)" LIB="$(LIB_$(VERSION))" PREFIX=$(PREFIX)
 
 .F90.o :
 	$(FC) $(FFLAGS) -c $<
+
+# We explicitly do not use the actual filename here to only rebuild dependencies manually.
+# The sort and removal of Run_Param_Header.F is for reproducibility.
+.PHONY: fdeps
+fdeps: $(filter-out Run_Param_Header.F,$(wildcard *.F90 *.F))
+	@if ! type makedepf90 > /dev/null; then echo "\nYou need to install the makedepf90 tool to update the Fortran dependency file.\n"; exit 1; fi
+	makedepf90 $^ | sort | sed -e "s/ Run_Param_Header.F//" > Makefile.fdeps
+
+include Makefile.fdeps
+
 .cc.o:
 	$(CC) $(CFLAGS) -c *.cc
 
@@ -83,5 +92,5 @@ clean_obj:
 	@echo "Cleaning up compiled object files..."
 	@rm -f *.o *.mod
 clean: 
-	@$(MAKENP) clean_obj
+	@$(MAKE) clean_obj
 
