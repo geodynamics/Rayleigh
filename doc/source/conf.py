@@ -53,6 +53,9 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
+html_logo = 'rayleigh_manual_image_logo.jpeg'
+latex_logo = 'rayleigh_manual_image_300dpi.jpeg'
+
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
 'papersize': 'letterpaper',
@@ -131,7 +134,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \begin{center}
 \vspace{3em}
 \includegraphics[height=4.0in]
-{../../src/user_guide/rayleigh_manual_image_300dpi.jpeg}
+{rayleigh_manual_image_300dpi.jpeg}
 \hspace{1em}
 \end{center}
 \end{textblock*}
