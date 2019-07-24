@@ -1,4 +1,4 @@
-include make.inc
+-include make.inc
 SRC=src
 BUILD=$(SRC)/build
 

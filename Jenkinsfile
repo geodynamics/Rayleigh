@@ -17,6 +17,10 @@ pipeline {
         timeout(time: 15, unit: 'MINUTES')
       }
       steps {
+        // First make sure notebooks do not contain output
+        sh 'make clear_ipynb && git diff --exit-code --name-only'
+
+        // Now build the new documentation
         sh '''
           cd doc
           make html
