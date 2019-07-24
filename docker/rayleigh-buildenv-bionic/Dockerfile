@@ -24,7 +24,7 @@ RUN apt update && \
     lmodern \
     latexmk
 
-RUN pip3 install sphinxcontrib-bibtex nbstripout
+RUN pip3 install sphinxcontrib-bibtex nbstripout recommonmark
 
 # Export compilers
 ENV CC mpicc
