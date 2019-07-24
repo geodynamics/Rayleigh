@@ -147,15 +147,7 @@ Contains
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
 
-        If (compute_quantity(amom_z)) Then
 
-            DO_PSI
-                qty(PSI) = ref%density(r)*radius(r)*sintheta(t) &
-                    & *buffer(PSI,vphi)
-            END_DO
-
-            Call Add_Quantity(qty)
-        Endif
     End Subroutine Compute_Angular_Momentum_Sources
 
 
