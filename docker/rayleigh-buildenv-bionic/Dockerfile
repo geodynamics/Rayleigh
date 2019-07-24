@@ -10,10 +10,21 @@ RUN apt update && \
     libblas-dev \
     libfftw3-dev \
     liblapack-dev \
-    libopenmpi-dev \
+    libmpich-dev \
     make \
     nano \
-    wget
+    wget \
+    python3-pip \
+    sphinx-common \
+    texlive-base \
+    texlive-generic-extra \
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    lmodern \
+    latexmk
+
+RUN pip3 install sphinxcontrib-bibtex nbstripout
 
 # Export compilers
 ENV CC mpicc

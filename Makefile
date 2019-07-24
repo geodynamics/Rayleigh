@@ -1,4 +1,4 @@
-include make.inc
+-include make.inc
 SRC=src
 BUILD=$(SRC)/build
 
@@ -42,6 +42,9 @@ endif
 clean:
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean
+
+clear_ipynb:
+	etc/check_ipynb_cleared -c $^
 
 .PHONY: install
 install:

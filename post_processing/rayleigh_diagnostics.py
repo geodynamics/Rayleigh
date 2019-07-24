@@ -165,7 +165,7 @@ class RayleighProfile:
 
     def __init__(self,filename='none'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename != 'none'):
             
@@ -201,7 +201,7 @@ class RayleighArray:
 
     def __init__(self,filename ='none'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
 
         if (filename == 'none'):
@@ -257,7 +257,7 @@ class ReferenceState:
 
     def __init__(self,filename='none',path='./'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'reference'
@@ -315,7 +315,7 @@ class TransportCoeffs:
 
     def __init__(self,filename='none',path='./'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'transport'
@@ -350,6 +350,62 @@ class TransportCoeffs:
 
         fd.close()
 
+class GridInfo:
+    """Rayleigh Grid Structure
+    ----------------------------------
+    self.n_r        : number of radial points
+    self.n_theta    : number of latitudinal points
+    self.n_phi      : number of zonal points
+    self.radius     : radial coordinates
+    self.rweights   : radial integration weights: to average over radius with weighting r^2,
+    	i.e. sum(f(radius(i))*rweights(i)) = 
+    			int_(rmin)^(rmax) f(r) r^2 dr / ((1/3)(rmax^3 - rmin^3))
+    self.theta      : (co)latitudinal coordinates
+    self.costheta   : cos(theta)
+    self.sintheta   : sin(theta)
+    self.tweights   : latitudinal integration weights: to average over colatitude with 
+    	weighting sin(theta), i.e. sum(f(theta(i))*tweights(i)) = 
+    	int_0^pi f(theta) sin(theta) dtheta / 2   														
+    self.phi        : zonal coordinates
+    self.pweights   : zonal integration weight(s) (all 1/n_phi, since uniform grid)
+    """
+
+    def __init__(self, filename='none', path='./'):
+        """filename  : The reference state file to read.
+           path      : The directory where the file is located (if full path not in filename)
+        """
+        if (filename == 'none'):
+            the_file = path + 'grid_info'
+        else:
+            the_file = path+filename
+        fd = open(the_file, 'rb')
+        # We read an integer to assess which endian the file was 
+        # written in...
+        bs = check_endian(fd, 314, 'int32')
+        nr = swapread(fd, dtype='int32', count=1, swap=bs)
+        ntheta = swapread(fd, dtype='int32', count=1, swap=bs)
+        nphi = swapread(fd, dtype='int32', count=1, swap=bs)
+        self.nr = nr
+        self.ntheta = ntheta
+        self.nphi = nphi
+        self.radius = swapread(fd, dtype='float64', count=nr, swap=bs)
+        self.rweights = swapread(fd, dtype='float64', count=nr, swap=bs)
+        self.theta = swapread(fd, dtype='float64', count=ntheta, swap=bs)
+        self.costheta = swapread(fd, dtype='float64', count=ntheta,\
+                swap=bs)
+        self.sintheta = swapread(fd, dtype='float64', count=ntheta,\
+                swap=bs)
+        self.tweights = swapread(fd, dtype='float64', count=ntheta,\
+                swap=bs)
+        self.phi = swapread(fd, dtype='float64', count=nphi,\
+                swap=bs)
+        self.pweights = swapread(fd, dtype='float64', count=nphi, swap=bs)
+        self.names = ['nr', 'ntheta', 'nphi', 'radius', 'rweights',\
+                'theta', 'costheta', 'sintheta', 'tweights', 'phi',\
+                'dphi']        
+
+        fd.close()
+        
 class G_Avgs:
     """Rayleigh GlobalAverage Structure
     ----------------------------------
@@ -365,7 +421,7 @@ class G_Avgs:
 
     def __init__(self,filename='none',path='G_Avgs/'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -416,7 +472,7 @@ class Shell_Avgs:
     """
     def __init__(self,filename='none',path='Shell_Avgs/',ntheta=0):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -493,7 +549,7 @@ class AZ_Avgs:
 
     def __init__(self,filename='none',path='AZ_Avgs/'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -556,7 +612,7 @@ class Point_Probes:
 
     def __init__(self,filename='none',path='Point_Probes/'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -656,7 +712,7 @@ class Meridional_Slices:
 
     def __init__(self,filename='none',path='Meridional_Slices/'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -729,7 +785,7 @@ class Equatorial_Slices:
 
     def __init__(self,filename='none',path='Equatorial_Slices/'):
         """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -817,7 +873,7 @@ class Shell_Slices:
 
     def __init__(self,filename='none',path='Shell_Slices/',slice_spec = [], rec0 = False):
         """filename   : The reference state file to read.
-           path       : The directory where the file is located (if full path not in filename
+           path       : The directory where the file is located (if full path not in filename)
            slice_spec : Optional list of [time index, quantity code, radial index].  If 
                         specified, only a single shell is read.  time indexing and radial 
                         indexing start at 0
@@ -988,7 +1044,7 @@ class SPH_Modes:
     def __init__(self,filename='none',path='SPH_Modes/'):
         """
            filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -1114,7 +1170,7 @@ class Shell_Spectra:
     def __init__(self,filename='none',path='Shell_Spectra/'):
         """
            filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename
+           path      : The directory where the file is located (if full path not in filename)
         """
         if (filename == 'none'):
             the_file = path+'00000001'

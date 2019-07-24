@@ -1,7 +1,7 @@
     !//////////////////////////////////////////////////////////////////////////
     !///////////////////////////////////////////////////
     !       Turbulent KE Outputs
-    Integer, Parameter :: turbke_offset = custom_offset+500
+    Integer, Parameter :: turbke_offset = meq_off+700 ! :OFFSET CODE:
 
     Integer, Parameter :: production_buoyant_pKE   = turbke_offset + 1  ! :tex: $\mathrm{f}_2{\Theta^\prime}{v^\prime}_r$
     Integer, Parameter :: production_shear2_pKE    = turbke_offset + 2  ! :tex: $-\mathrm{f}_1{v^\prime_i}{v^\prime_j}\overline{e}_{ij}$
