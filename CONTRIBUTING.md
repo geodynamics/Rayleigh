@@ -75,6 +75,12 @@ changes to the code at once). Please do
 not hesitate to ask questions about the workflow on the mailing list if you are
 not sure what to do.
 
+If you add new Fortran files or change the module structure of Rayleigh, the
+dependencies in the makefile. This is done by running `make fdeps` from the
+main repository directory, which modifies the file `src/Makefile.fdeps`. Commit
+this file along with your changes. You need the `makedepf90` tool on your
+development machine to perform this update.
+
 *This is a placeholder for a paragraph about coding conventions*
 
 If you are new to the project then we will work with you to ensure your
