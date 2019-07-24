@@ -326,8 +326,7 @@ Anelastic Mode (nondimensional)
 
 When running in nondimensional anelastic mode, you must set
 **reference_type=3** in the Reference_Namelist. When this parameter is
-set, the following nondimensionalization is used (following Heimpel et
-al., 2016, *Nat. Geo*, 9, 19):
+set, the following nondimensionalization is used (following :cite:`Heimpel_etal2016`):
 
 .. math::
 
