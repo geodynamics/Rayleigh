@@ -950,7 +950,6 @@ Contains
 
             Close(15)
 
-
             If (nr_ref .ne. n_r) Then
                 !Interpolate onto the current radial grid if necessary
                 !Note that the underlying assumption here is that same # of grid points
@@ -970,6 +969,7 @@ Contains
 
                 DeAllocate(rtmp,rtmp2)
             Else
+
                 ! Bit redundant here, but may want to do filtering on ref_arr array
                 ra_functions(1:n_r,1:n_ra_functions) = &
                        ref_arr_old(1:n_r,1:n_ra_functions)
@@ -987,8 +987,6 @@ Contains
             If (fset(12) .eq. 0) Call log_deriv(ra_functions(:,5), ra_functions(:,12)) !dlnkappa
             If (fset(13) .eq. 0) Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
         Endif
-
-
 
     End Subroutine Read_Custom_Reference_File
 
