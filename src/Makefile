@@ -11,7 +11,7 @@ MAKEFLAGSS  += --no-print-directory
 .SUFFIXES: .o .F90 .f .F .c
 
 # White-space-separated list of all acceptable goals for this makefile
-VALIDGOALS = $(VERSIONS) rayleigh_exec all default clean clean_obj clean_exec .F90.o .cc.o
+VALIDGOALS = $(VERSIONS) rayleigh_exec all default clean clean_obj clean_exec fdeps .F90.o .cc.o
 
 #Check to see if the  user has specified a valid goal
 #GOALCHECK will be an empty string if  MAKECMDGOALS is not found within VALIDGOALS
@@ -74,8 +74,11 @@ endif
 .F90.o :
 	$(FC) $(FFLAGS) -c $<
 
-Makefile.fdeps: $(wildcard *.F90 *.F)
-	makedepf90 $^ > $@
+# We explicitly do not use the actual filename here to only rebuild dependencies manually.
+# The sort is for reproducibility
+.PHONY: fdeps
+fdeps: $(wildcard *.F90 *.F)
+	makedepf90 $^ | sort > Makefile.fdeps
 
 include Makefile.fdeps
 
