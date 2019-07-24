@@ -812,31 +812,29 @@ Contains
         Endif
     End Subroutine Write_Profile
 
-
-
     Subroutine Get_Custom_Reference()
         Implicit None
 
-
         Allocate(ra_functions(1:N_R,1:n_ra_functions))
+
+        If (my_rank .eq. 0) Then
+            Write(6,*)'Custom reference state specified.'
+            Write(6,*)'Reading from: ', custom_reference_file
+        Endif
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
-
         ref%density(:) = ra_functions(:,1)
-        ref%dlnrho(:) = ra_functions(:,8)
+        ref%dlnrho(:)  = ra_functions(:,8)
         ref%d2lnrho(:) = ra_functions(:,9)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
 
         ref%gravity = ref%buoyancy_coeff
 
-
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
 
-
         ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
-
         
         ref%Coriolis_Coeff = ra_constants(1)
         ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
@@ -845,12 +843,9 @@ Contains
         ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ref%lorentz_coeff/(ref%density(:)*ref%temperature(:))
 
-
         ref%dsdr(:)     = ra_functions(:,14)
         ref%entropy(:)  = ra_functions(:,15)
         ref%pressure(:) = ra_functions(:,16)
-
-
 
     End Subroutine Get_Custom_Reference
 
@@ -894,53 +889,45 @@ Contains
         If (pi_integer .eq. 314) Then
 
             ! Read in constants and their 'set' flags
-            Read(15)cset(1:n_ra_constants)
-            Read(15)fset(1:n_ra_functions)
-            Read(15)input_constants(1:n_ra_constants)
+            Read(15) cset(1:n_ra_constants)
+            Read(15) fset(1:n_ra_functions)
+            Read(15) input_constants(1:n_ra_constants)
             
-            ! Decide which constants, if any, overwrite those
-            ! specified in main_input
-
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
-            ! The logic below allows a constant to be set in the reference
-            ! file and in main_input.  
-            !if (my_rank .eq. 0) Write(6,*)'Check: ', ra_constants(2)
+            ! The logic below deals with a constant set in both the reference
+            ! file and in main_input.  Main_input values take precedence if
+            ! override_constant(s) is set or if the reference file constant 
+            ! was not set.
             Do i = 1, n_ra_constants
-                If ( (.not. override_constants) .and. (.not. override_constant(i)) ) then
+                If ( (.not. override_constants) .and. (.not. override_constant(i)) ) Then
                     ra_constants(i) = ra_constants(i) + cset(i)*(input_constants(i)-ra_constants(i))
                 Endif
             Enddo
-            !if (my_rank .eq. 0) Write(6,*)'Check2: ', ra_constants(2)
 
-
-            Read(15)nr_ref
-            Allocate(ref_arr_old(1:nr_ref,1:n_ra_functions)) 
-            Allocate(old_radius(1:nr_ref))
-
-            !Write(6,*)'nr_ref is: ', nr_ref
-
-            Read(15)(old_radius(i),i=1,nr_ref)
-            Do k = 1, n_ra_functions
-                Read(15)(ref_arr_old(i,k) , i=1 , nr_ref)
-            Enddo
-
-            !Do k = 1, n_ra_functions
-            !    If (my_rank .eq. 0) Then
-            !        Write(6,*)'f: ', k+1,ref_arr_old(21,k), ref_arr_old(1001,k)
-            !    Endif
-            !Enddo
-
+            ! Print the values of the constants
             Do k = 1, n_ra_constants
                 If (my_rank .eq. 0) Then
                     Write(6,*)'c: ', k, ra_constants(k)
                 Endif
             Enddo
 
+            ! Read the reference file's radial grid
+            Read(15) nr_ref
+            Allocate(ref_arr_old(1:nr_ref,1:n_ra_functions)) 
+            Allocate(old_radius(1:nr_ref))
+
+            Read(15)(old_radius(i),i=1,nr_ref)
+            Do k = 1, n_ra_functions
+                Read(15)(ref_arr_old(i,k) , i=1 , nr_ref)
+            Enddo
+
             !Check to see if radius is tabulated in ascending or descending order.
             !If it is found to be in ascending order, reverse the radius and the 
             !input array of functions
             If (old_radius(1) .lt. old_radius(nr_ref)) Then
+
                 If (my_rank .eq. 0) Write(6,*)'Reversing Radial Indices in Custom Ref File!'
+
                 Allocate(rtmp(1:nr_ref))
 
                 rtmp = old_radius
@@ -955,9 +942,10 @@ Contains
                     Enddo
                 Enddo
 
-
                 DeAllocate(rtmp)
 
+            Else
+                Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
             Endif
 
             Close(15)
@@ -975,16 +963,7 @@ Contains
                     rtmp(:) = ref_arr_old(:,k)
                     rtmp2(:) = 0.0d0
 
-
-
                     Call Spline_Interpolate(rtmp, old_radius, rtmp2, radius)
-
-                    if (my_rank .eq. 0) then
-                    if (k .eq. 1) then
-                        write(6,*)' '
-                        !Write(6,*)'rtmp2 ', rtmp2
-                    endif
-                    endif
 
                     ra_functions(1:n_r,k) = rtmp2
                 Enddo
@@ -999,7 +978,7 @@ Contains
             DeAllocate(ref_arr_old,old_radius)
             
             ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, and eta were
-            ! not specified, then we compute them here+
+            ! not specified, then we compute them here.
            
             If (fset(8)  .eq. 0) Call log_deriv(ra_functions(:,1), ra_functions(:,8)) ! dlnrho
             If (fset(9)  .eq. 0) Call log_deriv(ra_functions(:,8), ra_functions(:,9), no_log=.true.) !d2lnrho
@@ -1013,16 +992,17 @@ Contains
 
     End Subroutine Read_Custom_Reference_File
 
-    Subroutine log_deriv(arr1,arr2, no_log)
+    Subroutine Log_Deriv(arr1,arr2, no_log)
         Implicit None
         Real*8, Intent(In)    :: arr1(:)
         Real*8, Intent(InOut) :: arr2(:)
         Real*8, Allocatable   :: dtemp(:,:,:,:),dtemp2(:,:,:,:)
         Logical, Optional     :: no_log
 
-        ! Take radial derivative
-        ! This is a bit cumbersome
-
+        ! Computes logarithmic derivative of arr1 with respect to radius.
+        ! Result is stored in arr2.
+        ! Arr1 is assumed to be in physical space.
+        ! Set no_log = .true. to take normal derivative.
 
         Allocate(dtemp(1:n_r,1,1,2))
         Allocate(dtemp2(1:n_r,1,1,2))
@@ -1031,25 +1011,27 @@ Contains
         dtemp2(:,:,:,:) = 0.0d0
         dtemp(1:n_r,1,1,1) = arr1(1:n_r)
 
+        ! Transform to spectral space & de-alias
         Call gridcp%to_Spectral(dtemp,dtemp2)
         dtemp2((n_r*2)/3:n_r,1,1,1) = 0.0d0
 
+        ! Take the derivative & de-alias
         Call gridcp%d_by_dr_cp(1,2,dtemp2,1)
-        dtemp2((n_r*2)/3:n_r,1,1,2) = 0.0d0  ! de-alias
+        dtemp2((n_r*2)/3:n_r,1,1,2) = 0.0d0 
 
-        !transform back to physical
+        !Transform back to physical space.
         Call gridcp%From_Spectral(dtemp2,dtemp)
         arr2(:) = dtemp(:,1,1,2)
         
-
-
-        ! convert to logarithmic derivative
+        ! If desired, convert to logarithmic derivative (default)
         If (.not. present(no_log)) Then
 
             arr2(:) = arr2(:)/arr1(:)
             if (my_rank .eq. 0) write(6,*)'log deriv: ', arr1(n_r/2), arr2(n_r/2)
         Endif
+
         DeAllocate(dtemp,dtemp2)
+
     End Subroutine log_deriv
 
     Subroutine Read_Reference(filename,ref_arr)
