@@ -6,8 +6,10 @@ import sys
 
 base = Spherical_3D('00000001_0501', path='base/Spherical_3D/')
 script = Spherical_3D('00000001_0501', path='script/Spherical_3D/')
-if np.abs(base.vals - script.vals).max() > 1.e-16:
-  print("ERROR: init_type 1 and init_type 8 produced different initial conditions!")
+maxabsdiff = np.abs(base.vals - script.vals).max() 
+print("Maximum difference = {}".format(maxabsdiff,))
+if maxabsdiff > 1.e-10:
+  print("ERROR: init_type 1 and init_type 8 produced different initial conditions (within a tolerance of 1.e-10)!")
   sys.exit(1)
 sys.exit(0)
 
