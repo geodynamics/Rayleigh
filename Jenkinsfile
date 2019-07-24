@@ -41,6 +41,9 @@ pipeline {
             --with-lapack='/usr'
         '''
 
+        // Check that the Fortran dependencies have not changed
+        sh 'make fdeps && git diff --exit-code --name-only'
+
         sh 'make'
         sh 'make install'
       }
