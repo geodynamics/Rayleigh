@@ -51,7 +51,8 @@ these commands:
 #. **./configure** – See Rayleigh/INSTALL or run ./configure --help to
    see relevant options.
 
-#. **make** – This produces the code.
+#. **make** – This produces the code. You can run **make -j** to build several
+   files in parallel and speed up the build this way.
 
 #. **make install** – This places the Rayleigh executables in
    Rayleigh/bin. If you would like to place them in (say)
