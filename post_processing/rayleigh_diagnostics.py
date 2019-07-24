@@ -1830,5 +1830,3 @@ def streamfunction(vr,vt,r,cost,order=0):
             psi=0.5*(psi+psi2)
             
     return psi
-
-
