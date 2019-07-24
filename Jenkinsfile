@@ -42,7 +42,7 @@ pipeline {
         '''
 
         // Check that the Fortran dependencies have not changed
-        sh 'make fdeps && git diff --exit-code --name-only'
+        sh 'make fdeps && git diff --exit-code'
 
         sh 'make -j'
         sh 'make install'
