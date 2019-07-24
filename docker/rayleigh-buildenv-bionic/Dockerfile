@@ -22,7 +22,11 @@ RUN apt update && \
     texlive-latex-recommended \
     texlive-latex-extra \
     lmodern \
-    latexmk
+    latexmk \
+    python-numpy \
+    python3-numpy \
+    python-scipy \
+    python3-scipy
 
 RUN pip3 install sphinxcontrib-bibtex nbstripout
 
