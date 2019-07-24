@@ -76,7 +76,7 @@ not hesitate to ask questions about the workflow on the mailing list if you are
 not sure what to do.
 
 If you add new Fortran files or change the module structure of Rayleigh, the
-dependencies in the makefile. This is done by running `make fdeps` from the
+dependencies in the makefile have to be updated. This is done by running `make fdeps` from the
 main repository directory, which modifies the file `src/Makefile.fdeps`. Commit
 this file along with your changes. You need the `makedepf90` tool on your
 development machine to perform this update.
