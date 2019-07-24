@@ -39,8 +39,9 @@ Fourier_Derivatives.o : Fourier_Derivatives.F90
 Fourier_Transform.o : Fourier_Transform.F90 Parallel_Framework.o 
 General_IO.o : General_IO.F90 General_MPI.o Parallel_Framework.o 
 General_MPI.o : General_MPI.F90 Ra_MPI_Base.o 
+Generic_Input.o : Generic_Input.F90 ProblemSize.o SendReceive.o Load_Balance.o Spherical_Buffer.o Parallel_Framework.o Ra_MPI_Base.o 
 ISendReceive.o : ISendReceive.F90 Ra_MPI_Base.o 
-Initial_Conditions.o : Initial_Conditions.F90 Load_Balance.o BufferedOutput.o Math_Utility.o Linear_Solve.o TransportCoefficients.o ClockInfo.o BoundaryConditions.o ReferenceState.o General_MPI.o Timers.o Controls.o Checkpointing.o Math_Constants.o SendReceive.o Legendre_Transforms.o Fourier_Transform.o Parallel_Framework.o Fields.o ProblemSize.o 
+Initial_Conditions.o : Initial_Conditions.F90 Load_Balance.o BufferedOutput.o Math_Utility.o Linear_Solve.o TransportCoefficients.o ClockInfo.o BoundaryConditions.o ReferenceState.o General_MPI.o Timers.o Controls.o Generic_Input.o Checkpointing.o Math_Constants.o SendReceive.o Legendre_Transforms.o Fourier_Transform.o Parallel_Framework.o Fields.o ProblemSize.o 
 Input.o : Input.F90 STABLE_plugin.o Parallel_Framework.o TransportCoefficients.o ReferenceState.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o Controls.o ProblemSize.o 
 Legendre_Polynomials.o : Legendre_Polynomials.F90 
 Legendre_Transforms.o : Legendre_Transforms.F90 Structures.o Legendre_Polynomials.o 
