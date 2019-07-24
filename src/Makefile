@@ -75,11 +75,11 @@ endif
 	$(FC) $(FFLAGS) -c $<
 
 # We explicitly do not use the actual filename here to only rebuild dependencies manually.
-# The sort is for reproducibility
+# The sort and removal of Run_Param_Header.F is for reproducibility.
 .PHONY: fdeps
-fdeps: $(wildcard *.F90 *.F)
+fdeps: $(filter-out Run_Param_Header.F,$(wildcard *.F90 *.F))
 	@if ! type makedepf90 > /dev/null; then echo "\nYou need to install the makedepf90 tool to update the Fortran dependency file.\n"; exit 1; fi
-	makedepf90 $^ | sort > Makefile.fdeps
+	makedepf90 $^ | sort | sed -e "s/ Run_Param_Header.F//" > Makefile.fdeps
 
 include Makefile.fdeps
 
