@@ -2,6 +2,9 @@
 SRC=src
 BUILD=$(SRC)/build
 
+# LC_COLLATE is set because sort is locale dependent otherwise.
+export LC_COLLATE=C
+
 # make the CUSTOMROOT variable available to sub-make processes
 export CUSTOMROOT
 
