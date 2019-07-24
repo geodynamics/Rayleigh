@@ -22,7 +22,7 @@
 
 import numpy as np
 import scipy.special as scisp
-import inspect
+import funcsigs
 import math
 
 def compute_plms(lm_max, costheta):
@@ -300,7 +300,7 @@ class SpectralInput(object):
                          or "add", which adds, to existing entries
                          of the same order and degree.
     """
-    func_param = inspect.signature(func).parameters
+    func_param = funcsigs.signature(func).parameters
     # check what our function is a function of
     func_theta = False
     if 'theta' in func_param: func_theta = True

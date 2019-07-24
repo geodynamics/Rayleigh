@@ -26,7 +26,9 @@ RUN apt update && \
     python-numpy \
     python3-numpy \
     python-scipy \
-    python3-scipy
+    python3-scipy \
+    python-funcsigs \
+    python3-funcsigs
 
 RUN pip3 install sphinxcontrib-bibtex nbstripout
 
