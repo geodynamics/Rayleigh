@@ -22,17 +22,13 @@ Parallelization
 -----------------------------
 The pseudo-spectral nature of Rayleigh means that its parallelization necessarily relies heavily on *global communication* patterns.  That said, Rayleigh's parallelization is based around a 2-D domain decomposition and large-message-size all-to-alls.  These features allow the code to overcome many of the obstacles that traditionally limit the scalability of spectral methods.   The end result is a pseudo-spectral code optimized for petascale machines.  Rayleigh's pure-MPI mode has demonstrated highly efficient strong scaling on  131,000 cores of the Mira Blue Gene/Q supercomputer for problems with approximately 2048^3 grid points (2048 spherical harmonics).  Performance numbers from Mira are shown below.  A summary of Rayleigh's performance and how it compares against other popular dynamo codes (albeit at at smaller process counts) may be found in the recent performance benchmark results of [Matsui et al. (2016)](http://onlinelibrary.wiley.com/doi/10.1002/2015GC006159/full).
  
- Getting Started
- ----------------
-The following documents form the initial Rayleigh documentation.  Note that the html version of the Diagnostics_Plotting document, which is automatically generated from a Jupyter notebook, is more cleanly formatted than the pdf version.
+Getting Started
+----------------
+The following documents form the Rayleigh documentation.
 
 | Document | Description |
 |----------|-------------|
-| INSTALL | in-depth installation instructions |
-| doc/Rayleigh_User_Guide.pdf |  Overview of compiling and running Rayleigh |
-| doc/Diagnostic_Plotting.{html,pdf} | Guide to generating and plotting Rayleigh output (text version) |
-| etc/analysis/Diagnostic_Plotting.ipynb | Same as above (interactive Jupyter notebook) |
-| doc/Rayleigh_Output_Variables.pdf |  Tables of Rayleigh output menu codes |
+| [INSTALL](INSTALL) | in-depth installation instructions |
 | https://rayleigh-documentation.readthedocs.io/en/latest/ | A combined online documentation |
 | https://rayleigh-documentation.readthedocs.io/en/latest/diagnostic_codes/qcodes.html | Online tables of Rayleigh output menu codes |
 
