@@ -271,7 +271,7 @@ Contains
 
     Subroutine Initialize_Diagnostics()
         Implicit None
-        Integer :: i, isize, n_phi, sig=314
+        Integer :: i, isize, n_phi, sig_pi = 314
         Real*8 :: delr
         Character*120 :: grid_file
 
@@ -302,7 +302,7 @@ Contains
             grid_file = Trim(my_path)//'grid_info'
             Open(unit=15, file=grid_file, form='unformatted',&
                &status='replace', access='stream')
-            Write(15) sig
+            Write(15) sig_pi
             Write(15) n_r
             Write(15) n_theta 
             n_phi = 2*n_theta
@@ -317,8 +317,8 @@ Contains
             ! renormalize tweights to sum to 2. (integral of sin(theta)
             ! from theta=0 to theta=pi
             ! Write out the phi grid for completeness
-            Write(15) ((i-1)*two_pi/n_phi - pi, i=1, n_phi)
-            Write(15) (two_pi/n_phi)
+            Write(15) ((i-1)*two_pi/n_phi, i=1, n_phi)
+            Write(15) (1.0d0/n_phi, i=1, n_phi)
             Close(15)
         Endif
 
