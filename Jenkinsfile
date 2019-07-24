@@ -51,6 +51,7 @@ pipeline {
         timeout(time: 90, unit: 'MINUTES')
       }
       steps {
+        // Benchmark regression test
         sh '''
           cd tests/c2001_case0
 
@@ -64,6 +65,9 @@ pipeline {
 
           archiveArtifacts artifacts: 'tests/changes.diff', fingerprint: true
           sh 'git diff --exit-code --name-only'
+
+        // Generic input test
+        sh './tests/generic_input/run_test.sh'
       }
     }
   }
