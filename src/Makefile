@@ -78,6 +78,7 @@ endif
 # The sort is for reproducibility
 .PHONY: fdeps
 fdeps: $(wildcard *.F90 *.F)
+	@if ! type makedepf90 > /dev/null; then echo "\nYou need to install the makedepf90 tool to update the Fortran dependency file.\n"; exit 1; fi
 	makedepf90 $^ | sort > Makefile.fdeps
 
 include Makefile.fdeps
