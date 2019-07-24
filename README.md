@@ -33,6 +33,8 @@ The following documents form the initial Rayleigh documentation.  Note that the 
 | doc/Diagnostic_Plotting.{html,pdf} | Guide to generating and plotting Rayleigh output (text version) |
 | etc/analysis/Diagnostic_Plotting.ipynb | Same as above (interactive Jupyter notebook) |
 | doc/Rayleigh_Output_Variables.pdf |  Tables of Rayleigh output menu codes |
+| https://rayleigh-documentation.readthedocs.io/en/latest/ | A combined online documentation |
+| https://rayleigh-documentation.readthedocs.io/en/latest/diagnostic_codes/qcodes.html | Online tables of Rayleigh output menu codes |
 
 Authors
 --------

@@ -2,8 +2,8 @@
 
 pipeline {
   agent {
-    docker {
-      image 'geodynamics/rayleigh-buildenv-bionic:latest'
+    dockerfile {
+      dir 'docker/rayleigh-buildenv-bionic'
     }
   }
 
@@ -12,6 +12,23 @@ pipeline {
   }
 
   stages {
+    stage('Build documentation') {
+      options {
+        timeout(time: 15, unit: 'MINUTES')
+      }
+      steps {
+        // First make sure notebooks do not contain output
+        sh 'make clear_ipynb && git diff --exit-code --name-only'
+
+        // Now build the new documentation
+        sh '''
+          cd doc
+          make html
+          make latexpdf
+        '''
+      }
+    }
+
     stage('Build') {
       options {
         timeout(time: 15, unit: 'MINUTES')
@@ -34,26 +51,19 @@ pipeline {
         timeout(time: 90, unit: 'MINUTES')
       }
       steps {
-        sh 'cp input_examples/benchmark_diagnostics_input main_input'
-
-        // This model expects 4 MPI processes, but MPI does not work
-        // inside the container at the moment, so instead run in serial
-        // also reduce runtime of the model for fast testing
         sh '''
-          sed \
-            --in-place \
-            -e 's/nprow = 2/nprow = 1/' \
-            -e 's/npcol = 2/npcol = 1/' \
-            -e 's/max_iterations = 40000/max_iterations = 400/' \
-            main_input
-        '''
+          cd tests/c2001_case0
 
-        sh '''
           # This export avoids a warning about
           # a discovered, but unconnected infiniband network.
-          export OMPI_MCA_btl=self,tcp
-          ./bin/rayleigh.dbg
+          mpirun -np 4 ../../bin/rayleigh.dbg
+
+          cd ..
+          git diff > changes.diff
         '''
+
+          archiveArtifacts artifacts: 'tests/changes.diff', fingerprint: true
+          sh 'git diff --exit-code --name-only'
       }
     }
   }

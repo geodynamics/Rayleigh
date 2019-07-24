@@ -69,5 +69,8 @@ fd_notes.dvi
 .project
 RemoteSystemsTempFiles/
 
+# MacOS desktop file
+.DS_Store
 
-
+# Jupyter notebook checkpoints
+.ipynb_checkpoints

@@ -1,0 +1,52 @@
+#!/bin/sh
+
+if ! type nbstripout > /dev/null
+then
+        echo "You need to install the nbstripout command."
+        echo "Use the Python package manager of your choice (pip, conda, ...)."
+        echo "Example: pip install --user nbstripout"
+        exit 1
+fi
+
+CLEAR=0
+
+while getopts hc f
+do
+        case "$f" in
+           h)
+                   echo "usage: $(basename "$0") [-c]"
+                   echo "Checks if outputs are cleared from Jupyter notebook and"
+                   echo "returns non-zero exit status if not."
+                   echo
+                   echo "  -c    clear output from Jupyter notebooks"
+                   exit 0
+                   ;;
+           c)
+                   CLEAR=1
+                   ;;
+           *)
+                   exit 1
+                   ;;
+   esac
+done
+shift $((OPTIND - 1))
+
+IPYNB="$(git ls-files|grep '\.ipynb$')"
+
+ERR=0
+for x in ${IPYNB}
+do
+        if ! nbstripout < "$x" | diff - "$x" > /dev/null
+        then
+                if [ "$CLEAR" -ne 0 ]
+                then
+                        echo "clearing output from $x"
+                        nbstripout "$x"
+                else
+                        echo "$x" still contains output
+                        ERR=1
+                fi
+        fi
+done
+
+exit $ERR
