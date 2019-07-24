@@ -1,4 +1,4 @@
-Rayliegh User Manual
+Rayleigh User Manual
 =====================
 
 .. toctree::
