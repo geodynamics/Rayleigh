@@ -14,7 +14,7 @@
 /
 &physical_controls_namelist
  rotation  = .True.
- magnetism = .false.
+ magnetism = .true.
  viscous_heating = .false.
  ohmic_heating = .false.
 /
@@ -31,7 +31,7 @@
 &io_controls_namelist
 /
 &output_namelist
-full3d_values = 501
+full3d_values = 501,801,802,803
 full3d_frequency = 1
 /
 
@@ -44,8 +44,11 @@ fix_tvar_top = .true.
 fix_tvar_bottom = .true.
 /
 &Initial_Conditions_Namelist
-init_type = 8 ! Benchmark init
+init_type = 8 ! File init
 t_init_file = 'bench_t_init'
+magnetic_init_type = 8 ! File init
+c_init_file = 'bench_c_init'
+a_init_file = 'bench_a_init'
 /
 &Test_Namelist
 /
