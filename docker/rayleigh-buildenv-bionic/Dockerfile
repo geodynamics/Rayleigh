@@ -22,6 +22,7 @@ RUN apt update && \
     texlive-latex-recommended \
     texlive-latex-extra \
     lmodern \
+    makedepf90 \
     latexmk \
     python-numpy \
     python3-numpy \
