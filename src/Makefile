@@ -7,7 +7,6 @@ include object_list  #List of object files and associated variables
 
 ######################################################
 
-MAKEFLAGSS  += --no-print-directory
 .SUFFIXES: .o .F90 .f .F .c
 
 # White-space-separated list of all acceptable goals for this makefile
