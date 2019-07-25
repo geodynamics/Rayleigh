@@ -89,5 +89,5 @@ for f in files:
         lonvar[:] = 0.5 * (lonbnds[1:] + lonbnds[:-1])
 
         for v in sp.vals:
-            var = d.createVariable(v, np.float32, dimensions=dims)
+            var = d.createVariable('f' + v, np.float32, dimensions=dims)
             var[:] = np.swapaxes(sp.vals[v][:, ::-1, ::-1], 0, 2)
