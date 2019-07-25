@@ -23,7 +23,13 @@ RUN apt update && \
     texlive-latex-extra \
     lmodern \
     makedepf90 \
-    latexmk
+    latexmk \
+    python-numpy \
+    python3-numpy \
+    python-scipy \
+    python3-scipy \
+    python-funcsigs \
+    python3-funcsigs
 
 RUN pip3 install sphinxcontrib-bibtex nbstripout
 
