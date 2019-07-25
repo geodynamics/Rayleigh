@@ -2,3 +2,5 @@ sphinxcontrib-bibtex
 ipykernel
 nbsphinx
 pandoc
+numpy
+matplotlib
