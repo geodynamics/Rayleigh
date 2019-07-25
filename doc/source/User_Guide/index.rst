@@ -12,6 +12,7 @@ Rayleigh User Manual
    physics
    checkpointing
    cookbooks
+   custom_reference_states
    diagnostics
    io_redirection
    ensemble_mode

@@ -24,6 +24,7 @@ RUN apt update && \
     lmodern \
     makedepf90 \
     latexmk \
+    pandoc \
     python-numpy \
     python3-numpy \
     python-scipy \
@@ -31,7 +32,7 @@ RUN apt update && \
     python-funcsigs \
     python3-funcsigs
 
-RUN pip3 install sphinxcontrib-bibtex nbstripout
+RUN pip3 install sphinxcontrib-bibtex nbstripout nbsphinx jupyter-client ipykernel
 
 # Export compilers
 ENV CC mpicc
