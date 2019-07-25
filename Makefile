@@ -1,12 +1,31 @@
-include make.inc
+-include make.inc
 SRC=src
 BUILD=$(SRC)/build
+
+# LC_COLLATE is set because sort is locale dependent otherwise.
+export LC_COLLATE=C
 
 # make the CUSTOMROOT variable available to sub-make processes
 export CUSTOMROOT
 
-rayleigh:
+rayleigh: prepare_directory
+	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
+	@$(MAKE) --no-print-directory --directory=$(BUILD) all
+	@echo ""
+	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	@echo "Compilation is complete."
+	@echo " "
+	@echo " "
+	@echo "Run 'make install' to install the rayleigh executables into: "
+	@echo $(PREFIX)"/bin"
+	@echo ""
+fdeps: prepare_directory
+	$(MAKE) --no-print-directory --directory=$(BUILD) fdeps
+	cp $(BUILD)/Makefile.fdeps $(SRC)/.
+.PHONY: prepare_directory
+prepare_directory:
 	@mkdir -p $(BUILD)/compiled
+	@cp $(SRC)/Makefile.fdeps $(BUILD)/.
 	@cp $(SRC)/Parallel_Framework/*.F90 $(BUILD)/.
 	@cp $(SRC)/Data_Structures/*.F90 $(BUILD)/.
 	@cp $(SRC)/Math_Layer/*.F90 $(BUILD)/.
@@ -29,19 +48,12 @@ ifdef CUSTOMROOT
 	@echo Any files from $(CUSTOMROOT) will overwrite standard Rayleigh source files.
 	@cp $(CUSTOMROOT)/* $(BUILD)/. 2>/dev/null || :
 endif
-	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
-	@$(MAKE) --no-print-directory --directory=$(BUILD) all
-	@echo ""
-	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-	@echo "Compilation is complete."
-	@echo " "
-	@echo " "
-	@echo "Run 'make install' to install the rayleigh executables into: "
-	@echo $(PREFIX)"/bin"
-	@echo ""
 clean:
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean
+
+clear_ipynb:
+	etc/check_ipynb_cleared -c $^
 
 .PHONY: install
 install:
@@ -60,6 +72,7 @@ distclean:
 	rm -f $(BUILD)/*.mod
 	rm -f $(BUILD)/object_list
 	rm -f $(BUILD)/Makefile
+	rm -f $(BUILD)/Makefile.fdeps
 	rm -f $(BUILD)/Machine_Definitions
 	rm -f $(BUILD)/machine.no_comments
 	@rm -f $(PREFIX)/bin/rayleigh.*
