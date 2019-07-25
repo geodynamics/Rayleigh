@@ -23,9 +23,10 @@ RUN apt update && \
     texlive-latex-extra \
     lmodern \
     makedepf90 \
-    latexmk
+    latexmk \
+    pandoc
 
-RUN pip3 install sphinxcontrib-bibtex nbstripout
+RUN pip3 install sphinxcontrib-bibtex nbstripout nbsphinx jupyter-client ipykernel
 
 # Export compilers
 ENV CC mpicc

@@ -15,7 +15,6 @@ Welcome to Rayleigh's documentation!
    publications/publications
    vids
 
-
 Indices and tables
 ------------------
 
