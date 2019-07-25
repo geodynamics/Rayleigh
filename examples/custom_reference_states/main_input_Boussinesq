@@ -1,0 +1,117 @@
+! This main_input file corresponds to the non-dimensional Boussinesq setup
+! in the custom reference state notebook  "Boussinesq_CZ.ipynb"
+&problemsize_namelist
+ n_r = 128
+ n_theta = 256
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.7d0
+ shell_depth = 1.0d0
+
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ rotation  = .true.
+ magnetism = .false.
+ advect_reference_state =.false.
+ viscous_heating = .false.
+/
+
+&temporal_controls_namelist
+ max_time_step = 3.18d-5  ! timescale is 1/Omega, fastest wave is 1/2 that - divide by 10 to be safe
+ max_iterations = 4000000
+ check_frequency = 100000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+ quicksave_interval =  10000
+ num_quicksaves = 3 
+ save_last_timestep = .true.
+/
+&io_controls_namelist
+/
+&output_namelist
+
+meridional_values    = 1,2,3 ! radial and phi components of velocity; temperature
+meridional_frequency = 20000
+meridional_nrec      = 2
+meridional_indices_nrm = 0.7
+
+
+! velocity, temperature, energy fluxes, and Kinetic Energy
+shellavg_values = 1,2,3,501,507, 1440, 1435, 1455, 1470, 1923, 1938,1935
+shellavg_frequency = 200
+shellavg_nrec = 50
+
+! Kinetic energy, Mean KE, Diff-Rot KE, and Convective KE
+globalavg_values = 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412
+globalavg_frequency = 100
+globalavg_nrec = 100
+
+shellslice_levels_nrm    = 0.3, 0.7,0.9
+shellslice_values    = 1,2,3 ! velocity components
+shellslice_frequency = 1000
+shellslice_nrec      = 2
+
+
+/
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .false.
+strict_L_Conservation = .true.
+dtdr_bottom = 0.0d0
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+
+
+&Initial_Conditions_Namelist
+init_type = 7
+magnetic_init_type = 7
+mag_amp = 1.0d0
+temp_amp = 0.01d0
+temp_w = 0.01d4
+restart_iter =0
+
+
+
+/
+&test_namelist
+/
+
+&Reference_Namelist
+reference_type = 4
+custom_reference_file='input.dat'
+
+
+/
+&Transport_Namelist
+
+/
+
+!Not used here, they are read through the input.dat file
+!override_constants=T
+
+!override_constant(1)= T
+!ra_constants(1) = 1.0d0  ! 
+
+!override_constant(2)= T
+!ra_constants(2)=1.0d0 ! 
+
+
+!override_constant(3)= T
+!ra_constants(3)= 1.0d0 ! 
+
+!override_constant(5)= T
+!ra_constants(5)= 1.0d0 ! 
+
+!override_constant(6)= T
+!ra_constants(6)= 0.0d0 ! 
+
+
+!override_constant(8)= T
+!ra_constants(8) = 0.0d0  ! 
+
+!override_constant(10)= T
+!ra_constants(10) = 1.0d0  ! 
