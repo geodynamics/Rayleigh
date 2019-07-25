@@ -15,21 +15,12 @@ parser.add_argument('-v', '--verbose', action='store_true', help='print processe
 parser.add_argument('files', metavar='filename', nargs='*', help='files to convert')
 args = parser.parse_args()
 
-
-def indexonly(f):
-    fsplit = os.path.basename(f).split('_')
-    if len(fsplit) > 1:
-        fsplit = fsplit[:-1]
-    return os.path.join(os.path.dirname(f), ''.join(fsplit))
-
 if args.all:
-    files = glob.glob('Spherical_3D/*_0*') + args.files
+    files = glob.glob('Spherical_3D/*_grid') + args.files
 else:
     files = []
 files += args.files
-
-files = [indexonly(x) for x in files]
-files = list(set(filter(indexonly, files)))
+files = list(set(files)) # filter out duplicates
 files.sort()
 
 if len(files) == 0:
