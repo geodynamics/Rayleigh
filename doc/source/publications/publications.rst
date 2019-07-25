@@ -43,3 +43,12 @@ Publications by Year
 
 
 .. bibliography:: publications2016.bib
+
+Co-Author Network
+-----------------
+
+Network diagram illustrates the relationship between authors of the above publications.
+
+.. figure:: author_plot.png
+    :width: 95%
+    :align: center
