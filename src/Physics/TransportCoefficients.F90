@@ -116,15 +116,13 @@ Contains
             kappa_top = ref%script_K_top
         Endif
 
-        If (reference_type .eq. 4) Then
-            nu_top = ra_constants(5)*ra_functions(1,3)
-            kappa_top = ra_constants(6)*ra_functions(1,5)
-        Endif
+        If ((.not. custom_reference_read) .and. &
+            ((nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3))) Then
+            Call Read_Custom_Reference_File(custom_reference_file)
+        EndIf
 
-        Call Initialize_Nu()    ! Viscosity
-        Call Initialize_Kappa() ! Thermal Diffusivity
-
-
+        Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
+        Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
 
         If (viscous_heating) Then
             Allocate(viscous_heating_coeff(1:N_R))
@@ -134,13 +132,12 @@ Contains
         If (magnetism) Then
             If (.not. Dimensional_Reference) eta_top   = ref%script_H_top
             If (reference_type .eq. 4) eta_top = ra_constants(7)*ra_functions(1,7)
-            Call Initialize_Eta()    ! Magnetic Diffusivity
+            Call Initialize_Diffusivity(eta,dlneta,eta_top,eta_type,eta_power,7,7,13)
             If (ohmic_heating) Then
                 Allocate(ohmic_heating_coeff(1:N_R))
                 ohmic_heating_coeff(1:N_R) = ref%ohmic_amp(1:N_R)*eta(1:N_R)
             Endif
         Endif
-
 
         Call Compute_Diffusion_Coefs()
 
@@ -236,66 +233,49 @@ Contains
         Endif
     End Subroutine Allocate_Transport_Coefficients
 
-    Subroutine Initialize_Nu()
-        Select Case(nu_type)
-            Case(1)    ! Constant nu
-                nu(:) = nu_top
-                dlnu(:) = 0.0d0
-            Case(2)
-                Call vary_with_density(nu,dlnu,nu_top, nu_power)
-            Case(3)
-                !Call get_custom_profile(nu,dlnu,custom_nu_file)
-                nu(:) = ra_constants(5)*ra_functions(:,3)
-                dlnu(:) = ra_functions(:,11)
-                nu_top = nu(1)
+    Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
+	Implicit None
+	Real*8, Intent(InOut) :: x(:), dlnx(:)
+	Real*8, Intent(InOut) :: xtop
+	Integer, Intent(In) :: ci, fi, dlnfi, xtype
+	Real*8, Intent(In) :: xpower
+        Character(len=8) :: ind
 
-        End Select
-    End Subroutine Initialize_Nu
-
-    Subroutine Initialize_Kappa()
-        Select Case(kappa_type)
-            Case(1)    ! Constant Kappa
-                kappa(:) = kappa_top
-                dlnkappa(:) = 0.0d0
-            Case(2)
-                Call vary_with_density(kappa,dlnkappa,kappa_top, kappa_power)
-            Case(3)
-                !Call get_custom_profile(kappa,dlnkappa,custom_kappa_file)
-                kappa(:) = ra_constants(5)*ra_functions(:,5)
-                dlnkappa(:) = ra_functions(:,12)
-                kappa_top = kappa(1)
-        End Select
-    End Subroutine Initialize_Kappa
-
-    Subroutine Initialize_Eta()
-        Real*8, Allocatable :: tmp_arr(:,:)
-        Character*120 :: eta_file = 'Eta_variation'
-        Select Case(eta_type)
-            Case(1)    ! Constant Eta
-                eta(:) = eta_top
-                dlneta(:) = 0.0d0
-            Case(2)
-                Call vary_with_density(eta,dlneta,eta_top, eta_power)
-            Case(3)
-
-                !Call get_custom_profile(eta,dlneta,custom_eta_file)
-                !eta(:) = eta(:)*eta_top !this assume profile is 1 at the top
-
-                eta(:) = ra_constants(7)*ra_functions(:,7)
-                dlneta(:) = ra_functions(:,13)
-                eta_top = eta(1)
-
-                If (my_rank .eq. 0) then
-                    Allocate(tmp_arr(1:N_R,1:3))
-                    tmp_arr(:,1) = radius(:)
-                    tmp_arr(:,2) = eta(:)
-                    tmp_arr(:,3) = dlneta(:)
-                    Call Write_Profile(tmp_arr,eta_file)
-                    DeAllocate(tmp_arr)
+        If (reference_type .eq. 4) Then
+            If (ra_constant_set(ci) .eq. 0) Then
+                If (my_rank .eq. 0) Then
+                    write(ind, '(I8)') ci
+                    Call stdout%print('Error: c_'//Trim(ind)//' not specified')
                 Endif
+            Else
+                xtop = ra_constants(ci)
+            Endif
+        Endif
+
+        Select Case(xtype)
+            Case(1)
+                x(:) = xtop
+                dlnx(:) = 0.0d0
+            Case(2)
+                Call vary_with_density(x,dlnx,xtop, xpower)
+            Case(3)
+                If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
+                    x(:) = ra_constants(ci)*ra_functions(:,fi)
+                    dlnx(:) = ra_functions(:,dlnfi)
+                    xtop = x(1)
+                ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
+                    x(:) = xtop*ra_functions(:,fi)
+                    dlnx(:) = ra_functions(:,dlnfi)
+                    xtop = x(1)
+                Else
+                    If (my_rank .eq. 0) Then
+                        write(ind, '(I8)') fi
+                        Call stdout%print('Error: Need to specify f_'//Trim(ind))
+                    EndIf
+                EndIf
 
         End Select
-    End Subroutine Initialize_Eta
+    End Subroutine Initialize_Diffusivity
 
     Subroutine Get_Custom_Profile(coeff, dln, coeff_file)
         Real*8, Intent(InOut) :: coeff(:), dln(:)
@@ -383,4 +363,34 @@ Contains
         custom_kappa_file = 'nothing'
 
     End Subroutine Restore_Transport_Defaults
+
+    Subroutine Finalize_Equation_Coefficients()
+        ra_constants(1) = ref%coriolis_coeff
+        ra_constants(2) = 1.0d0 ! buoyancy coefficient
+        ra_constants(3) = 1.0d0 ! dpdr_w
+        ra_constants(4) = ref%lorentz_coeff
+        ra_constants(5) = 1.0d0 ! multiplies nu
+        ra_constants(6) = 1.0d0 ! multiplies kappa
+        ra_constants(7) = 1.0d0 ! multiplies eta
+        ra_constants(8) = 1.0d0 ! multiplies viscous heating
+        ra_constants(9) = 1.0d0 ! multiplies ohmic heating
+        ra_constants(10) = 1.0d0 ! multiplies volumetric heating
+
+        ra_functions(:,1) = ref%density(:)
+        ra_functions(:,2) = ref%buoyancy_coeff(:)
+        ra_functions(:,3) = nu(:)
+        ra_functions(:,4) = ref%temperature(:)
+        ra_functions(:,5) = kappa(:)
+        ra_functions(:,6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
+        ra_functions(:,7) = eta(:)
+        ra_functions(:,8) = ref%dlnrho(:)
+        ra_functions(:,9) = ref%d2lnrho(:)
+        ra_functions(:,10) = ref%dlnT(:)
+        ra_functions(:,11) = dlnu(:)
+        ra_functions(:,12) = dlnkappa(:)
+        ra_functions(:,13) = dlneta(:)
+        ra_functions(:,14) = ref%dsdr(:)
+
+    End Subroutine Finalize_Equation_Coefficients
+
 End Module TransportCoefficients

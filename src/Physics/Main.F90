@@ -86,6 +86,8 @@ Contains
         Call Initialize_Boundary_Conditions()
         Call Initialize_Transport_Coefficients()
 
+        Call Finalize_Equation_Coefficients()
+
         !====================== STABLE
         If (stable_flag) Then
             Call Initialize_MeanFLows()
