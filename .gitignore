@@ -3,6 +3,8 @@ make.inc
 /src/build/
 /src/build/compile
 
+/doc/build
+
 *~
 
 *.mod

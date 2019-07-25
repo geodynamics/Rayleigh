@@ -68,6 +68,7 @@ Contains
         Integer :: mode_remember, integration_remember, report_remember
         Integer :: init_remember, restart_remember, minit_remember
         Integer :: ref_remember
+        Character*120 :: file_remember
         ! This routine re-initializes input values to their benchmark values
 
         If (benchmark_mode .gt. 0) Then
@@ -79,6 +80,7 @@ Contains
             restart_remember = restart_iter
             minit_remember = magnetic_init_type
             ref_remember = reference_type
+            file_remember = custom_reference_file
             Call Restore_Transport_Defaults()
             Call Restore_InitialCondition_Defaults()
             Call Restore_BoundaryCondition_Defaults()
@@ -306,7 +308,8 @@ Contains
 
         If (ref_remember .eq. 4) Then
             reference_type = 4
-            If (my_rank .eq. 0) Then
+            custom_reference_file = file_remember
+            If (global_rank .eq. 0) Then
                 Write(6,*)'Reference Type 4 set for Benchmark Mode.'
             Endif
         Endif
