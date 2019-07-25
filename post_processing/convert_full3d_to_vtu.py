@@ -103,6 +103,7 @@ for f in files:
   f3d = Spherical_3D_multi(f)
 
   for index, vals in f3d.vals.items():
+    vals = vals.flatten(order='F')
     data = vtk.vtkDoubleArray()
     data.SetNumberOfValues(len(vals))
     data.SetName('f'+index)
