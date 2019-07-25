@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 import sys
 import os
+import argparse
+import glob
 import numpy as np
 import netCDF4 as nc
 
 import rayleigh_diagnostics as rd
 
-if len(sys.argv) < 2:
-    exe = os.path.basename(sys.argv[0])
-    print("{} [Spherical_3D files to convert]".format(exe))
-    print("converts Spherical_3D output to netCDF4 files with CF convections for spherical coordinates")
-    print("example call:")
-    print("    {} Spherical_3D/*_0*".format(sys.argv[0]))
+parser = argparse.ArgumentParser(description="Converts Spherical_3D output to netCDF4 files according to CF convections for spherical coordinates.")
+parser.add_argument('-a', '--all', action='store_true', help='run on all files in Spherical_3D')
+parser.add_argument('-u', '--update', action='store_true', help='forces update on already existing files')
+parser.add_argument('-v', '--verbose', action='store_true', help='print processed files')
+parser.add_argument('files', metavar='filename', nargs='*', help='files to convert')
+args = parser.parse_args()
+
 
 def indexonly(f):
     fsplit = os.path.basename(f).split('_')
@@ -19,16 +22,34 @@ def indexonly(f):
         fsplit = fsplit[:-1]
     return os.path.join(os.path.dirname(f), ''.join(fsplit))
 
-files = [indexonly(x) for x in sys.argv[1:]]
-files = list(set(files))
+if args.all:
+    files = glob.glob('Spherical_3D/*_0*') + args.files
+else:
+    files = []
+files += args.files
+
+files = [indexonly(x) for x in files]
+files = list(set(filter(indexonly, files)))
 files.sort()
+
+if len(files) == 0:
+    parser.print_help()
+    parser.exit()
 
 dims = ('rad', 'lat', 'lon')
 
 for f in files:
-    print('processing ' + f)
     # The prefix is needed for automatic file grouping in ParaView.
     ncfile = os.path.join(os.path.dirname(f), 'spherical.' + os.path.basename(f) + '.nc')
+
+    if not args.update and os.path.exists(ncfile):
+        if args.verbose:
+            print('skipping already existing file ' + f)
+        continue
+
+    if args.verbose:
+        print('processing ' + f)
+
     with nc.Dataset(ncfile, mode='w', format='NETCDF4') as d:
         sp = rd.Spherical_3D_multi(os.path.basename(f), os.path.dirname(f) + '/')
         d.createDimension('rad', sp.nr)
