@@ -1,6 +1,5 @@
 Overview of Diagnostic Outputs in Rayleigh
-******************************************
-
+-------------------------------------------
 The purpose of this document is to describe Rayleigh’s internal menu
 system used for specifying diagnostic outputs. Rayleigh’s design
 includes an onboard diagnostics package that allows a user to output a
@@ -42,10 +41,10 @@ A few points to keep in mind are
    already available.
 
 Definitions and Conventions
-===========================
+---------------------------
 
 Vector and Tensor Notation
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All vector quantities are represented in bold italics. Components of a
 vector are indicated in non-bold italics, along with a subscript
@@ -75,7 +74,7 @@ non-bold, and with directional subscripts (i.e.,
 :math:`\mathcal{D}_{r\theta}`).
 
 Reference-State Values
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 The *hat* notation is also used to indicate reference-state quantities.
 These quantities are scalar, and they are not written in bold font. They
@@ -85,7 +84,7 @@ vary only in radius and have no :math:`\theta`-dependence or
 :math:`\hat{T}`, for instance.
 
 Averaged and Fluctuating Values
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Most of the output variables have been decomposed into a
 zonally-averaged value, and a fluctuation about that average. The
@@ -93,7 +92,7 @@ average is indicated by an overbar, such that
 
 .. math::
    :label: avging
-  
+
        \overline{a}\equiv \frac{1}{2\pi}\int_{0}^{2\pi} a(r,\theta,\phi)\, \mathrm{d}\phi.
 
 Fluctations about that average are indicated by a *prime* superscript,
@@ -110,11 +109,11 @@ that
 
 .. math::
    :label: fullsph
-   
+
    a_{00}\equiv \frac{1}{4\pi}\int_{0}^{2\pi}\int_{0}^{\pi} a(r,\theta,\phi)\, r\mathrm{sin}\,\theta\mathrm{d}\theta\mathrm{d}\phi.
 
 The Equation Sets Solved by Rayleigh
-====================================
+------------------------------------
 
 Rayleigh solves the Boussinesq or anelastic MHD equations in spherical
 geometry. Both the equations that Rayleigh solves and its diagnostics
@@ -130,9 +129,9 @@ input time (*in development*).
 The general form of the momentum equation solved by Rayleigh is given by
 
 .. math::
-   :label: momentum  
- 
-       \mathrm{f}_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+   :label: momentum
+
+       \mathrm{f}_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
         + c_1\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  = % Coriolis
        c_2\,\mathrm{f}_2(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
         - c_3\,\mathrm{f}_1(r)\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1(r)}\right) % pressure
@@ -141,7 +140,7 @@ The general form of the momentum equation solved by Rayleigh is given by
 
 where the stress tensor :math:`\mathcal{D}` is given by
 
-.. math:: 
+.. math::
    :label: stress_tensor
 
        \mathcal{D}_{ij} = 2\mathrm{f}_1(r)\,\mathrm{f}_3(r)\left[e_{ij} - \frac{1}{3}\boldsymbol{\nabla}\cdot\boldsymbol{v}\right].
@@ -155,14 +154,14 @@ fields are subject to the constraints
 
 .. math::
    :label: v_constrain
- 
+
        \boldsymbol{\nabla}\cdot\left(\mathrm{f}_1(r)\,\boldsymbol{v}\right) = 0
 
 and
 
 .. math::
    :label: divB
- 
+
        \boldsymbol{\nabla}\cdot\boldsymbol{B}=0
 
 respectively. The evolution of :math:`\Theta` is described
@@ -171,8 +170,8 @@ respectively. The evolution of :math:`\Theta` is described
    :label: theta_evol
 
    \mathrm{f}_1(r)\,\mathrm{f}_4(r)\left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta \right] =
-       c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right] 
-        + c_{10}\mathrm{f}_6(r)   
+       c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right]
+        + c_{10}\mathrm{f}_6(r)
         + c_8\Phi(r,\theta,\phi)
         + c_9\mathrm{f}_7(r)\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2,
 
@@ -200,7 +199,7 @@ dimensional anelastic and nondimensional Boussinesq formulations used in
 the code.
 
 Dimensional Anelastic Formulation of the MHD Equations
-------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When run in dimensional, anelastic mode (cgs units; **reference_type=2**
 ), the following values are assigned to the functions
@@ -234,7 +233,7 @@ Equations :eq:`momentum`-:eq:`induction` transform as follows.
 .. math::
 
    \begin{aligned}
-       \hat{\rho}(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+       \hat{\rho}(r)\left[\frac{\partial \boldsymbol{v}}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
        +2\Omega_0\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
        \frac{\hat{\rho}(r)}{c_P}g(r)\Theta\,\boldsymbol{\hat{r}} % buoyancy
        +\hat{\rho}(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) % pressure
@@ -262,7 +261,7 @@ Equations :eq:`momentum`-:eq:`induction` transform as follows.
        \boldsymbol{\nabla}\cdot\boldsymbol{B}&=0 &\mathrm{Solenoidal\; Magnetic\; Field}\end{aligned}
 
 Nondimensional Boussinesq Formulation of the MHD Equations
-----------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Rayleigh can also be run using a nondimensional, Boussinesq formulation
 of the MHD equations (**reference_type=1**). The nondimensionalization
@@ -305,7 +304,7 @@ assigning values to :math:`\mathrm{f}_i` and the constants :math:`c_i`:
    \mathrm{f}_5(r) &\rightarrow 1\; &c_5 &\rightarrow 0 \\
    \mathrm{f}_6(r) &\rightarrow 0\; &c_6 &\rightarrow \frac{1}{Pr}  \\
    \mathrm{f}_7(r) &\rightarrow 1\; &c_7 &\rightarrow \frac{1}{Pm} \\
-   c_8&\rightarrow 0 &c_9 &\rightarrow 0 \\ 
+   c_8&\rightarrow 0 &c_9 &\rightarrow 0 \\
    c_{10}&\rightarrow 0.\end{aligned}
 
 Note that our choice of :math:`\mathrm{f}_2(r)` allows gravity to vary
@@ -324,7 +323,7 @@ transform as follows.
 .. math::
 
    \begin{aligned}
-       \left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+       \left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
         + \frac{2}{E}\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
        \frac{Ra}{Pr}\left(\frac{r}{r_o}\right)^n\Theta\,\boldsymbol{\hat{r}} % buoyancy
         - \frac{1}{E}\boldsymbol{\nabla}P % pressure
@@ -343,14 +342,14 @@ transform as follows.
        \boldsymbol{\nabla}\cdot\boldsymbol{B}&=0 &\mathrm{Solenoidal\; Magnetic\; Field}\end{aligned}
 
 Nondimensional Anelastic MHD Equations
---------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To run in nondimensional anelastic mode, you must set
 **reference_type=3** in the Reference_Namelist. The reference state is
 assumed to be polytropic with a :math:`\frac{1}{r^2}` profile for
 gravity. Transport coefficients :math:`\nu`, :math:`\kappa`,
 :math:`\eta` are assumed to be constant in radius. When this mode is
-active, the following nondimensionalization is used 
+active, the following nondimensionalization is used
 (following `Heimpel et al., 2016, Nat. Geo., 9, 19 <https://www.nature.com/articles/ngeo2601/>`_ ):
 
 .. math::
@@ -386,7 +385,7 @@ dissipation number, is defined by
 
 .. math::
    :label: Di
- 
+
        \mathrm{Di}= \frac{g_o\,\mathrm{L}}{c_\mathrm{P}\,T_o},
 
 where :math:`g_o` and :math:`T_o` are the gravitational acceleration
@@ -395,17 +394,17 @@ thermal anomaly :math:`\Theta` should be interpreted as entropy
 :math:`s`. The symbol Ra\ :math:`^*` is the modified Rayleigh number,
 given by
 
-.. math:: 
+.. math::
    :label: Ra
 
-   \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L} 
+   \mathrm{Ra}^*=\frac{g_o}{c_\mathrm{P}\Omega_0^2}\frac{\Delta s}{L}
 
 We arrive at the following nondimensionalized equations:
 
 .. math::
 
    \begin{aligned}
-       \frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection 
+       \frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
         + 2\boldsymbol{\hat{z}}\times\boldsymbol{v}  &= % Coriolis
        \mathrm{Ra}^*\frac{r_\mathrm{max}^2}{r^2}\Theta\,\boldsymbol{\hat{r}} % buoyancy
         + \boldsymbol{\nabla}\left(\frac{P}{\tilde{\rho}(r)}\right) % pressure
