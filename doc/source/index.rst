@@ -9,9 +9,10 @@ Welcome to Rayleigh's documentation!
 .. toctree::
    :maxdepth: 2
 
-   User_Guide/index.rst   
-   Output Variables <Rayleigh_Output_Variables>
+   User_Guide/index.rst
+   diagnostic_values/index
    diagnostic_codes/qcodes
+   publications/publications
    vids
 
 

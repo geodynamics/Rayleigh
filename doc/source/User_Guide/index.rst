@@ -16,4 +16,3 @@ Rayleigh User Manual
    io_redirection
    ensemble_mode
    references
-   publications
