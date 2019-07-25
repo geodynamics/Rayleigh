@@ -11,16 +11,30 @@ class equation_coefficients:
     constants = numpy.zeros(nconst     , dtype='float64' )
     cset      = numpy.zeros(nconst     , dtype='int32'   )
     fset      = numpy.zeros(nfunc      , dtype='int32'   )
+    c_dict    = {'two_omega':1, 'buoy_fact':2, 'p_fact':3, 'lorentz_fact':4, 'visc_fact':5,
+                 'diff_fact':6, 'resist_fact':7, 'nu_heat_fact':8, 'ohm_heat_fact':9,
+                 'luminosity':10}
+    f_dict    = {'density':1, 'buoy':2, 'nu':3, 'temperature':4, 'kappa':5, 'heating':6,
+                 'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
+                 'd_ln_eta':13, 'ds_dr':14}
     def __init__(self,radius):
         nr = len(radius)
         self.nr = nr
         self.radius = numpy.zeros(nr,dtype='float64')
         self.radius[:] = radius[:]
         self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
-    def set_function(self,y,fi):
+    def set_function(self,y,f_name):
+        if (isinstance(f_name,str)):
+            fi = self.f_dict[f_name]
+        else:
+            fi = f_name
         self.functions[fi-1,:] = y[:]
         self.fset[fi-1] = 1
-    def set_constant(self,c,ci):
+    def set_constant(self,c,c_name):
+        if (isinstance(c_name,str)):
+            ci = self.c_dict[c_name]
+        else:
+            ci = c_name
         self.constants[ci-1] = c
         self.cset[ci-1] = 1
 
@@ -105,6 +119,7 @@ def compute_heating_profile(hpars, radius, htype=0, pressure = 0):
          
          Q(r) is normalized such that:
              integral_rmin_rmax { Q(r)*r^2 * 4pi } = 1
+
          Profiles:
                  htype = 0:
                      Q(r) = (pressure-pressure[nr-1]) * fil(r),
@@ -208,4 +223,4 @@ def gen_poly(radius,n,nrho,mass,rhoi,gconst,cp,rb):
     new_poly = background_state(radius, pressure = pressure, temperature = temperature,
                                 entropy = entropy, entropy_gradient=dsdr, 
                                 pressure_gradient= dpdr, density=density)
-    return new_poly           
+    return new_poly
