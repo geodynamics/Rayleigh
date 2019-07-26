@@ -49,7 +49,7 @@ function dbg_flags {
   fi
   if [[ $1 == "GNU" ]]
   then
-    echo '-O0 -fbounds-check -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
+    echo '-O0 -g -fbounds-check -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
   fi
 }
 
