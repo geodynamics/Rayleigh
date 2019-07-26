@@ -14,6 +14,7 @@ RUN apt update && \
     make \
     nano \
     wget \
+    python-pip \
     python3-pip \
     sphinx-common \
     texlive-base \
@@ -26,15 +27,11 @@ RUN apt update && \
     latexmk \
     pandoc \
     python-numpy \
-    python3-numpy \
     python-scipy \
-    python3-scipy \
-    python-funcsigs \
-    python3-funcsigs \
-    python-vtk6 \
-    python3-vtk7
+    python-funcsigs
 
 RUN pip3 install sphinxcontrib-bibtex nbstripout nbsphinx jupyter-client ipykernel
+RUN pip2 install vtk
 
 # Export compilers
 ENV CC mpicc
