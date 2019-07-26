@@ -273,6 +273,13 @@ Contains
         Br_bottom = 0.0d0
         Dipole_Tilt_Degrees = 0.0d0
 
+        T_top_file       = '__nothing__'
+        T_bottom_file    = '__nothing__'
+        dTdr_top_file    = '__nothing__'
+        dTdr_bottom_file = '__nothing__'
+        C_top_file       = '__nothing__'
+        C_bottom_file    = '__nothing__'
+
         Strict_L_Conservation = .false.
         no_slip_boundaries = .false.
     End Subroutine Restore_BoundaryCondition_Defaults
