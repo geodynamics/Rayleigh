@@ -1,0 +1,51 @@
+#!/bin/bash
+
+#Command line options:
+#First argument $1 is directory with the data.
+#Second argument $2 is the timestep number.
+#Third argument $3 is the size of the data cubes (ncube from interpolator).
+#Fourth argument is optional and only passes additional flags to raw2vdf 
+#    such as -nthread, -dbl [for double precision data], and -swap for byte swapping
+#    be sure to enclose the entire string in quotes.
+
+
+#Source your vapor-setup.sh (fix directory name), only required if not sourced at startup.
+#On Macs this is:
+#source /Applications/VAPOR/VAPOR.app/Contents/MacOS/vapor-setup.sh
+#source /your/vapor/bin/directory/goes/here/vapor-setup.sh
+
+source /shared/vapor-2.3.0/bin/vapor-setup.sh
+
+#Change to data directory
+cd $1
+
+#Set vdf file name here.
+vdfname=("$2.vdf")
+
+#Create vdf metadata.
+cmd=("vdfcreate -dimension $3x$3x$3 -extents -1:-1:-1:1:1:1 -vars3d Vr:Vt:Vp:Vx:Vy:Vz:KE:Wx:Wy:Wz:Wm:Br:Bt:Bp:Bx:By:Bz:ME:Jx:Jy:Jz:Jm $vdfname")
+echo $cmd
+eval $cmd
+
+#Feel free to add more variables here when desired.
+#Variables in the vdf metadata file
+declare -a vnames=("Vr" "Vt" "Vp" "Vx" "Vy" "Vz" "KE" "Wx" "Wy" "Wz" "Wm" "Br" "Bt" "Bp" "Bx" "By" "Bz" "ME" "Jx" "Jy" "Jz" "Jm")
+
+#Variables from ASH and interpolator output
+declare -a qnames=("Vr" "Vtheta" "Vphi" "Vx" "Vy" "Vz" "KE" "Wx" "Wy" "Wz" "Wm" "Br" "Btheta" "Bphi" "Bx" "By" "Bz" "ME" "Jx" "Jy" "Jz" "Jm")
+
+#Get number of array elements.
+nvar=${#vnames[@]}
+
+#Loop over variable names for raw2vdf.
+for ((i=0; i<${nvar}; i++));
+do
+    #Build file name
+    filename=("$2_${qnames[$i]}_cube")
+    #Build command string
+    cmd=("raw2vdf $4 -varname ${vnames[$i]} $vdfname $filename")
+    #Show command string
+    echo $cmd
+    #Execute command string
+    eval $cmd
+done

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#declare -a names=("Vr" "Vtheta" "Vphi" "Vx" "Vy" "Vz" "KE" "Br" "Btheta" "Bphi" "Bx" "By" "Bz" "ME" "Wr" "Wt" "Wp" "Wx" "Wy" "Wz" "Wm" "Jr" "Jt" "Jp" "Jx" "Jy" "Jz" "Jm")
+
+declare -a names=("Vr" "Vtheta" "Vphi" "Br" "Btheta" "Bphi")
+
+for i in "${names[@]}"
+do
+	echo $i
+	`/home2/augustso/Desktop/general_interpolator/interpolator.wes $i > tmp`
+	output=$(<tmp)
+	echo $output
+done
