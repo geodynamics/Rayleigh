@@ -200,13 +200,17 @@ Contains
         Implicit None
         Real*8 , Intent(In) :: inval
         Integer, Intent(In) :: ellval, emval, eqval,bound_ind, imi
-        Integer :: this_l, this_m, lp
+        Integer :: this_l, this_m, lp, lpi
         ! Probably more efficient to have a support array / reverse lookup table
         ! In practice, this will still be short loop because
         ! There are typically only a few lm values in this config
         Do lp = 1, my_num_lm
-            this_l = l_lm_values(lp)
-            this_m = m_lm_values(lp)
+            ! This loop is over the locally owned lm modes but the indexing arrays
+            ! below are over the l and m indices of this entire radial group
+            ! so we have to index into them using my_lm_min
+            lpi = my_lm_min + lp - 1
+            this_l = l_lm_values(lpi)
+            this_m = m_lm_values(lpi)
             If ( (this_l .eq. ellval) .and. (this_m .eq. emval) ) Then
                 bc_values(bound_ind , imi , lp,  eqval ) = inval
             Endif
