@@ -239,7 +239,7 @@ Contains
         call gridcp%from_spectral(tempfield%p1b, tempfield%p1a)
         call tempfield%deconstruct('p1b')
 
-        bc_values(bound_ind,:,:,teq) = tempfield%p1a(r_ind,:,:,1)
+        bc_values(bound_ind,:,:,eqval) = tempfield%p1a(r_ind,:,:,1)
         call tempfield%deconstruct('p1a')
 
     End Subroutine Set_BC_from_file
