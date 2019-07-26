@@ -10,10 +10,8 @@ guide on the process of contributing to an open-source project
 [here](https://opensource.guide/how-to-contribute/).
 
 ## Asking and answering questions about Rayleigh
-The Rayleigh community maintains an active mailing list hosted by CIG
-[here](https://lists.geodynamics.org/cgi-bin/mailman/listinfo/geodyn). The
-mailing list is for questions about geodynamo models at all levels, including
-Rayleigh.
+The Rayleigh community maintains an active forum hosted by CIG
+[here](https://community.geodynamics.org/c/rayleigh).
 
 ## Bug reports
 It is a great help to the community if you report any bugs that you
