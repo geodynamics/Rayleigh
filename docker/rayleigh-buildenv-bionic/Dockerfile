@@ -30,7 +30,9 @@ RUN apt update && \
     python-scipy \
     python3-scipy \
     python-funcsigs \
-    python3-funcsigs
+    python3-funcsigs \
+    python-vtk6 \
+    python3-vtk7
 
 RUN pip3 install sphinxcontrib-bibtex nbstripout nbsphinx jupyter-client ipykernel
 
