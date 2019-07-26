@@ -34,7 +34,7 @@ The following documents form the Rayleigh documentation.
 
 Authors
 --------
-Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Please see the *ACKNOWLEDGEMENT* file for citation information.
+Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Please see the [ACKNOWLEDGE](ACKNOWLEDGE) file for citation information.
 
 License
 -------
