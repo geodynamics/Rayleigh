@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:io:
+.. _io:
 
 I/O Redirection
 ===============

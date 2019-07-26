@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:running:
+.. _running:
 
 Running the Code
 ================
@@ -52,7 +52,7 @@ from. Copy one of the sample input files from the
 Rayleigh/etc/input_examples/ into your run directory, and rename it to
 main_input. The file named *benchmark_diagnostics_input* can be used to
 generate output for the diagnostics plotting tutorial (see
-§\ `[sec:diagnostics] <#sec:diagnostics>`__).
+§\ :ref:`diagnostics`).
 
 Finally, Rayleigh has some OpenMP-related logic that is still in
 development. We do not support Rayleigh’s OpenMP mode at this time, but
@@ -195,7 +195,7 @@ and aspect ratio (:math:`rmin/rmax`) in lieu of :math:`rmin` and
 
 Note that the interpretation of :math:`rmin` and :math:`rmax` depends on
 whether your simulation is dimensional or nondimensional. We discuss
-these alternative formulations in §\ `[sec:physics] <#sec:physics>`__
+these alternative formulations in §\ :ref:`physics`
 
 Controlling Run Length & Time Stepping
 --------------------------------------

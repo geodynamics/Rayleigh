@@ -1,4 +1,4 @@
-.. _sec:diagnostics:
+.. _diagnostics:
 
 Diagnostic Outputs
 ==================

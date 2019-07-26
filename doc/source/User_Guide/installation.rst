@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:installation:
+.. _installation:
 
 Compiling and Installing Rayleigh
 =================================
@@ -84,6 +84,5 @@ Verifying Your Installation
 Rayleigh comes with a benchmarking mode that helps you verify that the
 installation is performing correctly. If you are running Rayleigh for
 the first time, or running on a new machine, follow along with the
-example in §\ `[sec:benchmarking] <#sec:benchmarking>`__, and verify
-that you receive an accurate benchmark report before running a custom
+example in §\ :ref:`benchmarking`, that you receive an accurate benchmark report before running a custom
 model.
