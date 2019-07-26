@@ -677,8 +677,8 @@ else
         FFTWLINK="-L$FFTWROOT/lib -lfftw3"
     fi
 
-    LIB_FLAGS="\$(BLASLINK) \$(LAPACKLINK) \$(FFTWLINK) -lstdc++"
-    FULL_LIB="$BLASLINK $LAPACKLINK $FFTWLINK -lstdc++"
+    LIB_FLAGS="\$(LAPACKLINK) \$(FFTWLINK) \$(BLASLINK) -lstdc++"
+    FULL_LIB="$LAPACKLINK $FFTWLINK $BLASLINK -lstdc++"
 fi
 
 if [ "$CUSTOMLIB" == "TRUE" ]
