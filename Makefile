@@ -63,8 +63,8 @@ install:
 
 .PHONY: doc
 doc:
-	@sphinx-build -M html "." "build-doc"
-	@sphinx-build -M latexpdf "." "build-doc"
+	@sphinx-build -M html "." "doc/build"
+	@sphinx-build -M latexpdf "." "doc/build"
 
 .PHONY: distclean
 distclean:
@@ -82,5 +82,5 @@ distclean:
 	rm -f $(BUILD)/machine.no_comments
 	@rm -f $(PREFIX)/bin/rayleigh.*
 	@rm -f make.inc
-	@rm -rf build-doc
+	@rm -rf doc/build
 	@echo "#Following configure, this file contains the definition of the PREFIX variable" >> make.inc
