@@ -461,14 +461,14 @@ may also be set using generic spectral input.  As with initial conditions (see :
 this is done by generating a generic input file using the **rayleigh_spectral_input.py** script.
 The file output from this script can then be applied using:
 
--  **fix_Tvar_top** and **T_top_file** (instead of **T_top** for a constant boundary condition)
+-  **fix_Tvar_top** and **T_top_file** (overrides **T_top** for a constant boundary condition)
    to set a fixed upper :math:`T` boundary condition
--  **fix_dTdr_top** and **dTdr_top_file** (instead of **dTdr_top**) to set a fixed upper :math:`T` gradient boundary condition
--  **fix_Tvar_bottom** and **T_bottom_file** (instead of **T_bottom**) to set a fixed lower :math:`T` boundary condition
--  **fix_dTdr_bottom** and **dTdr_bottom_file** (instead of **dTdr_bottom**) to set a fixed lower :math:`T` gradient boundary
+-  **fix_dTdr_top** and **dTdr_top_file** (overrides **dTdr_top**) to set a fixed upper :math:`T` gradient boundary condition
+-  **fix_Tvar_bottom** and **T_bottom_file** (overrides **T_bottom**) to set a fixed lower :math:`T` boundary condition
+-  **fix_dTdr_bottom** and **dTdr_bottom_file** (overrides **dTdr_bottom**) to set a fixed lower :math:`T` gradient boundary
    condition
--  **fix_poloidal_top** and **C_top_file** to set a fixed upper :math:`C` boundary condition
--  **fix_poloidal_bottom** and **C_bottom_file** to set a fixed lower :math:`C` boundary condition
+-  **fix_poloidal_top** and **C_top_file** (overrides **impose_dipole_field**) to set a fixed upper :math:`C` boundary condition
+-  **fix_poloidal_bottom** and **C_bottom_file** (overrides **impose_dipole_field**) to set a fixed lower :math:`C` boundary condition
 
 For example, to set a :math:`C` boundary condition on both boundaries with modes (l,m) = (1,0) and (1,1) set to pre-calculated
 values run:
