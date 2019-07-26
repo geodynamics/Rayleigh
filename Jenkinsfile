@@ -41,7 +41,10 @@ pipeline {
             --with-lapack='/usr'
         '''
 
-        sh 'make'
+        // Check that the Fortran dependencies have not changed
+        sh 'make fdeps && git diff --exit-code'
+
+        sh 'make -j'
         sh 'make install'
       }
     }
@@ -51,6 +54,7 @@ pipeline {
         timeout(time: 90, unit: 'MINUTES')
       }
       steps {
+        // Benchmark regression test
         sh '''
           cd tests/c2001_case0
 
@@ -64,6 +68,9 @@ pipeline {
 
           archiveArtifacts artifacts: 'tests/changes.diff', fingerprint: true
           sh 'git diff --exit-code --name-only'
+
+        // Generic input test
+        sh './tests/generic_input/run_test.sh'
       }
     }
   }

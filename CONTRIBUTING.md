@@ -10,10 +10,8 @@ guide on the process of contributing to an open-source project
 [here](https://opensource.guide/how-to-contribute/).
 
 ## Asking and answering questions about Rayleigh
-The Rayleigh community maintains an active mailing list hosted by CIG
-[here](https://lists.geodynamics.org/cgi-bin/mailman/listinfo/geodyn). The
-mailing list is for questions about geodynamo models at all levels, including
-Rayleigh.
+The Rayleigh community maintains an active forum hosted by CIG
+[here](https://community.geodynamics.org/c/rayleigh).
 
 ## Bug reports
 It is a great help to the community if you report any bugs that you
@@ -74,6 +72,12 @@ coordinate changes to the code (and there are usually several people making
 changes to the code at once). Please do
 not hesitate to ask questions about the workflow on the mailing list if you are
 not sure what to do.
+
+If you add new Fortran files or change the module structure of Rayleigh, the
+dependencies in the makefile have to be updated. This is done by running `make fdeps` from the
+main repository directory, which modifies the file `src/Makefile.fdeps`. Commit
+this file along with your changes. You need the `makedepf90` tool on your
+development machine to perform this update. `makedepf90` is available in most package managers.
 
 *This is a placeholder for a paragraph about coding conventions*
 

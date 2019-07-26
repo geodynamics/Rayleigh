@@ -49,7 +49,7 @@ function dbg_flags {
   fi
   if [[ $1 == "GNU" ]]
   then
-    echo '-O0 -fbounds-check -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
+    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
   fi
 }
 
@@ -172,6 +172,12 @@ function displayhelp {
     echo "      Depending on the value of --static-blas, Rayleigh will be"
     echo "      linked against either <BLAS ROOT>/lib/libopenblas.so or"
     echo "      <BLAS ROOT>/lib/libopenblas.a"
+    echo ""
+
+    echo "  --mpi-f77 ; -mpi-f77:"
+    echo "      Set this flag to use mpif.h instead of the MPI F90 module."
+    echo "      This can be useful on systems where the current compiler does not"
+    echo "      match the one used to compile MPI."
     echo ""
 
     echo "  --prefix=<RAYLEIGH PREFIX>: "
@@ -352,6 +358,10 @@ do
       USEOPENBLAS="TRUE";
       ;;
 
+    --mpi-f77 | -mpi-f77 )
+      USEMPIF77="TRUE";
+      ;;
+
     --with-lapack=*)
       LPROOT=`expr "x$option" : "x-*with-lapack=\(.*\)"`;
       ;;
@@ -435,6 +445,12 @@ else
 
   OPT_FLAGS=$(opt_flags $FVERSION)
   DBG_FLAGS=$(dbg_flags $FVERSION)
+
+  if [ "$USEMPIF77" == "TRUE" ]
+  then
+          OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F77_BINDINGS"
+          DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F77_BINDINGS"
+  fi
 
   if [ "$CUSTOMOPT" == "TRUE" ]
   then
@@ -677,8 +693,8 @@ else
         FFTWLINK="-L$FFTWROOT/lib -lfftw3"
     fi
 
-    LIB_FLAGS="\$(BLASLINK) \$(LAPACKLINK) \$(FFTWLINK) -lstdc++"
-    FULL_LIB="$BLASLINK $LAPACKLINK $FFTWLINK -lstdc++"
+    LIB_FLAGS="\$(LAPACKLINK) \$(FFTWLINK) \$(BLASLINK) -lstdc++"
+    FULL_LIB="$LAPACKLINK $FFTWLINK $BLASLINK -lstdc++"
 fi
 
 if [ "$CUSTOMLIB" == "TRUE" ]

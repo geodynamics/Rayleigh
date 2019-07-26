@@ -1,5 +1,5 @@
-Rayliegh User Manual
-=====================
+Rayleigh User Manual
+********************
 
 .. toctree::
    :maxdepth: 2
@@ -12,7 +12,8 @@ Rayliegh User Manual
    physics
    checkpointing
    cookbooks
+   custom_reference_states
    diagnostics
    io_redirection
    ensemble_mode
-   publications
+   references

@@ -27,6 +27,7 @@ Module Initial_Conditions
     Use SendReceive
     Use Math_Constants
     Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
+    Use Generic_Input, Only : read_input
     Use Controls
     Use Timers
     Use General_MPI, Only : BCAST2D
@@ -59,11 +60,19 @@ Module Initial_Conditions
     Real*8  :: tvar_scale = 1.0d0
     Real*8  :: pressure_scale = 1.0d0
     Real*8  :: mdelta = 0.0d0  ! mantle convection benchmark delta
+    Character*120 :: t_init_file = '__nothing__'
+    Character*120 :: w_init_file = '__nothing__'
+    Character*120 :: p_init_file = '__nothing__'
+    Character*120 :: z_init_file = '__nothing__'
+    Character*120 :: c_init_file = '__nothing__'
+    Character*120 :: a_init_file = '__nothing__'
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
             & magnetic_init_type,alt_check, mag_amp, conductive_profile, rescale_velocity, &
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
-            & rescale_pressure, tvar_scale, pressure_scale, mdelta
+            & rescale_pressure, tvar_scale, pressure_scale, mdelta, &
+            & t_init_file, w_init_file, p_init_file, z_init_file, &
+            & c_init_file, a_init_file
 Contains
 
     Subroutine Initialize_Fields()
@@ -156,6 +165,13 @@ Contains
             call random_thermal_init()
         Endif
 
+        if (init_type .eq. 8) then
+            If (my_rank .eq. 0) Then
+                call stdout%print(" ---- Hydro Init Type    : Input File ")
+            Endif
+            call file_init()
+        Endif
+
 
         If (magnetism) Then
             ! Initialize the magnetic variables
@@ -169,6 +185,12 @@ Contains
                 call random_init_Mag()
                 If (my_rank .eq. 0) Then
                     Call stdout%print(" ---- Magnetic Init Type : Random Field")
+                Endif
+            Endif
+            If (magnetic_init_type .eq. 8) Then
+                call magnetic_file_init()
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(" ---- Magnetic Init Type : Input File ")
                 Endif
             Endif
             If (magnetic_init_type .eq. 10) Then
@@ -513,6 +535,63 @@ Contains
         Call sbuffer%deconstruct('p1b')
 
     End Subroutine Random_Thermal_Init
+
+    subroutine file_init()
+        ! initialize hydrodynamic variables from generic input files
+        implicit none
+        integer :: fcount(3,2)
+        type(SphericalBuffer) :: tempfield
+        fcount(:,:) = 1
+        call tempfield%init(field_count = fcount, config = 'p1b')
+        call tempfield%construct('p1b')
+
+        if (trim(w_init_file) .ne. '__nothing__') then
+            call read_input(w_init_file, 1, tempfield)
+            call set_rhs(weq, tempfield%p1b(:,:,:,1))
+        end if
+ 
+        if (trim(p_init_file) .ne. '__nothing__') then
+            call read_input(p_init_file, 1, tempfield)
+            call set_rhs(peq, tempfield%p1b(:,:,:,1))
+        end if
+ 
+        if (trim(t_init_file) .ne. '__nothing__') then
+            call read_input(t_init_file, 1, tempfield)
+            call set_rhs(teq, tempfield%p1b(:,:,:,1))
+        end if
+
+        if (trim(z_init_file) .ne. '__nothing__') then
+            call read_input(z_init_file, 1, tempfield)
+            call set_rhs(zeq, tempfield%p1b(:,:,:,1))
+        end if
+
+        call tempfield%deconstruct('p1b')
+
+    end subroutine file_init
+
+    subroutine magnetic_file_init()
+        ! initialize magnetic variables from generic input files
+        implicit none
+        integer :: fcount(3,2)
+        type(SphericalBuffer) :: tempfield
+        fcount(:,:) = 1
+        call tempfield%init(field_count = fcount, config = 'p1b')
+        call tempfield%construct('p1b')
+
+        if (trim(c_init_file) .ne. '__nothing__') then
+            call read_input(c_init_file, 1, tempfield)
+            call set_rhs(ceq, tempfield%p1b(:,:,:,1))
+        end if
+ 
+        if (trim(a_init_file) .ne. '__nothing__') then
+            call read_input(a_init_file, 1, tempfield)
+            call set_rhs(aeq, tempfield%p1b(:,:,:,1))
+        end if
+ 
+        call tempfield%deconstruct('p1b')
+
+    end subroutine magnetic_file_init
+
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Diffusion Init (for linear solve development)

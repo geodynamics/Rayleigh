@@ -8,19 +8,14 @@ Running a Benchmark
 ===================
 
 Rayleigh has been programmed with internal testing suite so that its
-results may be compared against benchmarks described in the following
-two papers:
-
-#. Christensen, U.R., et al. 2001, *A Numerical Dynamo Benchmark*,
-   *PEPI*, 128, 25
-
-#. Jones, C.A., et al., 2011, *Anelastic-Convective-Driven Dynamo
-   Benchmarks*, *Icarus*, 216, 120
+results may be compared against benchmarks described in Christensen et al. (2001)
+:cite:`CHRISTENSEN200125` and Jones et al. (2011)
+:cite:`JONES2011120`
 
 We recommend running a benchmark whenever running Rayleigh on a new
 machine for the first time, or after recompiling the code. The
-Christensen et al. (2001) reference describes two Boussinesq tests that
-Rayleigh’s results may be compared against. The Jones et al. (2011)
+Christensen et al. (2001) :cite:`CHRISTENSEN200125` reference describes two Boussinesq tests that
+Rayleigh’s results may be compared against. The Jones et al. (2011) :cite:`JONES2011120`
 reference describes anelastic tests. Rayleigh has been tested
 successfully against two benchmarks from each of these papers. Input
 files for these different tests are enumerated in Table table_benchmark_
@@ -43,7 +38,7 @@ benchmark-appropriate values.
 verification**. Algorithmically, there is little difference between the
 MHD, non-MHD, Boussinesq, and anelastic modes of Rayleigh. As a result,
 when installing the code on a new machine, it is normally sufficient to
-run the cheapest benchmark, case 0 from Christensen 2001.
+run the cheapest benchmark, case 0 from Christensen 2001 :cite:`CHRISTENSEN200125`.
 
 To run this benchmark, create a directory from within which to run your
 benchmark, and follow along with the commands below. Modify the
@@ -89,8 +84,8 @@ this condition is satisfied, your installation is working correctly.
 .. centered:: **Table. Benchmark.**
 
 Benchmark-input examples useful for verifying Rayleigh’s installation.
-Those from Christensen et al. (2001)
-are Boussinesq. Those from Jones et al. (2011) are anelastic. Examples are found
+Those from Christensen et al. (2001) :cite:`CHRISTENSEN200125`
+are Boussinesq. Those from Jones et al. (2011) :cite:`JONES2011120` are anelastic. Examples are found
 in the directory: Rayleigh/etc/input_examples/
 
 +-----------------------+-----------------+--------------------------------+
@@ -111,7 +106,7 @@ in the directory: Rayleigh/etc/input_examples/
 .. centered:: **Table. Benchmark Low.**
 
 Rayleigh benchmark report for Christensen
-et al. (2001) case 0 when run with nr=48 and ntheta=64. Run time was
+et al. (2001) :cite:`CHRISTENSEN200125` case 0 when run with nr=48 and ntheta=64. Run time was
 approximately 3 minutes when run on 32 Intel Haswell cores.
 
 Run command:
@@ -139,7 +134,7 @@ Run command:
 .. centered:: **Table. Benchmark High.**
 
 Rayleigh benchmark report for Christensen
-et al. (2001) case 0 when run with nr=64 and ntheta=96. Run time was
+et al. (2001) :cite:`CHRISTENSEN200125` case 0 when run with nr=64 and ntheta=96. Run time was
 approximately 12 minutes when run on 32 Intel Haswell cores.
 
 Run command:

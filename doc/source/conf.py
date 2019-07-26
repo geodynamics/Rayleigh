@@ -27,8 +27,9 @@ author = 'Nick Featherstone'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.mathjax', 'sphinxcontrib.bibtex','recommonmark'
+extensions = ['sphinx.ext.mathjax', 'sphinxcontrib.bibtex','recommonmark','nbsphinx'
 ]
+
 
 master_doc = 'index'
 
@@ -38,8 +39,8 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
-
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
+nbsphinx_allow_errors = True
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -52,6 +53,9 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+html_logo = 'rayleigh_manual_image_logo.jpeg'
+latex_logo = 'rayleigh_manual_image_300dpi.jpeg'
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
@@ -131,7 +135,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \begin{center}
 \vspace{3em}
 \includegraphics[height=4.0in]
-{../../src/user_guide/rayleigh_manual_image_300dpi.jpeg}
+{rayleigh_manual_image_300dpi.jpeg}
 \hspace{1em}
 \end{center}
 \end{textblock*}

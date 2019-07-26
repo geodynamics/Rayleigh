@@ -19,7 +19,11 @@
 !
 
 Module Ra_MPI_Base
+#ifdef USE_MPI_F77_BINDINGS
+    Include 'mpif.h'
+#else
     Use MPI
+#endif
 
     Type communicator
         Integer :: comm    ! The mpi handle for this group
