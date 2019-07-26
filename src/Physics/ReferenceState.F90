@@ -60,6 +60,8 @@ Module ReferenceState
 
     End Type ReferenceInfo
 
+    Integer, Parameter  :: eqn_coeff_version = 1
+
     ! Custom reference state variables
     Integer, Parameter  :: n_ra_constants = 10
     Integer, Parameter  :: n_ra_functions = 14
@@ -78,7 +80,6 @@ Module ReferenceState
     Character*120 :: custom_reference_file ='nothing'    
 
     Real*8, Allocatable :: s_conductive(:)
-
 
     Integer :: reference_type =1
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
@@ -109,8 +110,6 @@ Module ReferenceState
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
     Logical :: Dimensional_Reference = .false.  ! Changed depending on reference state specified
 
-
-
     !//////////////////////////////////////////////////////////////////////
     ! Development Section
     ! Everything below this line is related to in-development features.
@@ -123,7 +122,6 @@ Module ReferenceState
     Real*8, Allocatable :: paf_p2(:)
     Real*8, Allocatable :: paf_gp2(:)
 
-
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
@@ -131,7 +129,7 @@ Module ReferenceState
             & cooling_type, cooling_r0, cooling_factor,        &
             & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
             & override_constants, override_constant, ra_constants, with_custom_constants, &
-            & with_custom_functions
+            & with_custom_functions, with_custom_reference
 Contains
 
     Subroutine Initialize_Reference()
@@ -208,6 +206,7 @@ Contains
         ref%script_H_Top   = Zero
 
     End Subroutine Allocate_Reference_State
+
     Subroutine Constant_Reference()
         Implicit None
         Integer :: i
@@ -294,8 +293,6 @@ Contains
             paf_v2 = paf_v2/(pafk**4)
             paf_v2 = paf_v2*OneOverRSquared*OneOverRSquared
 
-
-
             paf_gv2 = -two*(pafk**3)*r_squared*cosk*sink +two*(pafk**2)*radius*sink*sink
             paf_gv2 = paf_gv2/(pafk**4)
             paf_gv2 = paf_gv2*OneOverRSquared*OneOverRSquared
@@ -318,7 +315,6 @@ Contains
             DeAllocate(sink, cosk)
         Endif
 
-
         ref%script_N_top       = 1.0d0
         ref%script_K_top       = 1.0d0/Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0
@@ -333,7 +329,36 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
+        If (with_custom_reference) Then
+
+            If (my_rank .eq. 0) Then
+                Call stdout%print('Reference Type 1 with be augmented.')
+                Call stdout%print('Only heating and buoyancy may be modified.')
+                Call stdout%print('Heating requires both c_10 and f_6 to be set.')
+                Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
+                Call stdout%print('Reading from: '//Trim(custom_reference_file))
+            Endif
+
+            Call Read_Custom_Reference_File(custom_reference_file)
+
+            If (use_custom_constant(10) .and. use_custom_function(6)) Then
+                Call stdout%print('Heating has been set to:')
+                Call stdout%print('f_6*c_10 / (rho*T)')
+                Call stdout%print(' ')
+                ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
+            Endif
+
+            If (use_custom_constant(2) .and. use_custom_function(2)) Then
+                Call stdout%print('Buoyancy_coeff (rho*g/cp) has been set to:')
+                Call stdout%print('f_2*c_2')
+                Call stdout%print(' ')
+                ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+            Endif
+
+        Endif
+
     End Subroutine Constant_Reference
+
     Subroutine Polytropic_ReferenceND()
         Implicit None
         Real*8 :: dtmp, otmp
@@ -414,6 +439,33 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
+        If (with_custom_reference) Then
+
+            If (my_rank .eq. 0) Then
+                Call stdout%print('Reference Type 3 with be augmented.')
+                Call stdout%print('Only heating and buoyancy may be modified.')
+                Call stdout%print('Heating requires both c_10 and f_6 to be set.')
+                Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
+                Call stdout%print('Reading from: '//Trim(custom_reference_file))
+            Endif
+
+            Call Read_Custom_Reference_File(custom_reference_file)
+
+            If (use_custom_constant(10) .and. use_custom_function(6)) Then
+                Call stdout%print('Heating has been set to:')
+                Call stdout%print('f_6*c_10 / (rho*T)')
+                Call stdout%print(' ')
+                ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
+            Endif
+
+            If (use_custom_constant(2) .and. use_custom_function(2)) Then
+                Call stdout%print('Buoyancy_coeff (rho*g/cp) has been set to:')
+                Call stdout%print('f_2*c_2')
+                Call stdout%print(' ')
+                ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+            Endif
+
+        Endif
 
     End Subroutine Polytropic_ReferenceND
 
@@ -423,7 +475,7 @@ Contains
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
         Real*8, Allocatable :: zeta(:), gravity(:)
-        Real*8 :: One, ee
+        Real*8 :: One
         Real*8 :: InnerRadius, OuterRadius
         Integer :: r
         Character*6  :: istr
@@ -550,7 +602,6 @@ Contains
 
     End Subroutine Polytropic_Reference
 
-
     Subroutine Initialize_Reference_Heating()
         Implicit None
         ! This is where a volumetric heating function Phi(r) is computed
@@ -630,10 +681,7 @@ Contains
         Call Integrate_in_radius(temp,integral) !Int_rmin_rmax rho T r^2 dr
         integral = integral*4.0d0*pi  ! Int_V temp dV
 
-
         alpha = 1.0d0/integral
-
-
 
         ref%heating(:) = alpha
         DeAllocate(temp)
@@ -684,7 +732,6 @@ Contains
 
         DeAllocate(x,temp, temp2)
     End Subroutine Tanh_Reference_Heating
-
 
     Subroutine Tanh_Reference_Cooling()
         Implicit None
@@ -753,7 +800,6 @@ Contains
 
     End Subroutine Integrate_in_radius
 
-
     Subroutine Write_Reference(filename)
         Implicit None
         Character*120, Optional, Intent(In) :: filename
@@ -784,7 +830,6 @@ Contains
     Subroutine Write_Profile(arr,filename)
         Implicit None
         Character*120, Optional, Intent(In) :: filename
-        Character*120 :: ref_file
         Integer :: i,j,nq,sig = 314, nx
         Real*8, Intent(In) :: arr(1:,1:)
         nx = size(arr,1)
@@ -831,6 +876,36 @@ Contains
 
     End Subroutine Get_Custom_Reference
 
+    Subroutine Write_Equation_Coefficents_File(filename)
+        Character*120, Intent(In), Optional :: filename
+        Character*120 :: ref_file
+        Integer :: i, k, pi_integer=314
+
+        If (present(filename)) Then
+            ref_file = Trim(my_path)//filename
+        Else
+            ref_file = 'reference'
+        Endif
+
+        If (my_rank .eq. 0) Then
+            Open(unit=15, file=ref_file, form='unformatted', status='replace', access='stream')
+
+            Write(15) pi_integer
+            Write(15) eqn_coeff_version
+
+            Write(15) (ra_constant_set(i), i=1,n_ra_constants)
+            Write(15) (ra_function_set(i), i=1,n_ra_functions)
+            Write(15) (ra_constants(i), i=1,n_ra_constants)
+            Write(15) n_r
+            Write(15) (radius(i), i=1,n_r)
+            Do k=1, n_ra_functions
+                Write(15) (ra_functions(i,k), i=1,n_r)
+            Enddo
+
+            Close(15)
+        Endif
+
+    End Subroutine Write_Equation_Coefficents_File
 
     Subroutine Read_Custom_Reference_File(filename)
         Character*120, Intent(In), Optional :: filename
@@ -883,6 +958,14 @@ Contains
             Do i = 1, n_ra_constants
                 If ( (.not. override_constants) .and. (.not. override_constant(i)) ) Then
                     ra_constants(i) = ra_constants(i) + cset(i)*(input_constants(i)-ra_constants(i))
+                Endif
+            Enddo
+
+            ! determine which functions/constants were set by the user
+            ra_function_set(:) = fset(:)
+            Do i = 1, n_ra_constants
+                If ((cset(i) .eq. 1) .or. override_constant(i) .or. override_constants) Then
+                    ra_constant_set(i) = 1
                 Endif
             Enddo
 
@@ -1040,7 +1123,6 @@ Contains
         heating_factor = 0.0d0
         heating_r0 = 0.0d0
 
-
         pressure_specific_heat = 0.0d0 ! CP (not CV)
         poly_n = 0.0d0
         poly_Nrho = 0.0d0
@@ -1066,7 +1148,6 @@ Contains
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
         If (allocated(ref%Heating)) DeAllocate(ref%Heating)
-
 
     End Subroutine Restore_Reference_Defaults
 

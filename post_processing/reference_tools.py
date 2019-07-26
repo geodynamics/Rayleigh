@@ -4,7 +4,7 @@ import numpy
 class equation_coefficients:
     """ equation coeff class  """
     nconst = 10
-    nfunc = 16
+    nfunc = 14
     nr = 0
     functions = numpy.zeros((nfunc,1)  , dtype='float64' )
     radius    = numpy.zeros(1          , dtype='float64' )

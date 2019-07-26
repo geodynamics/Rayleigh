@@ -41,11 +41,6 @@ Module TransportCoefficients
     Integer :: kappa_type =1, nu_type = 1, eta_type = 1
     Real*8 :: nu_top = 1.0d0, kappa_top = 1.0d0, eta_top = 1.0d0
     Real*8 :: nu_power = 0, eta_power = 0, kappa_power = 0
-    Real*8 :: eta_amp = 1.0d0
-
-    Character*120 :: custom_eta_file = 'nothing'
-    Character*120 :: custom_nu_file = 'nothing'
-    Character*120 :: custom_kappa_file = 'nothing'
 
     Logical :: hyperdiffusion = .false.
     Real*8  :: hyperdiffusion_beta = 0.0d0
@@ -53,8 +48,7 @@ Module TransportCoefficients
 
 
     Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, nu_power, kappa_power, eta_power, &
-            & nu_top, kappa_top, eta_top, custom_nu_file, custom_eta_file, custom_kappa_file, &
-              eta_amp, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
+            & nu_top, kappa_top, eta_top, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
 
 
 Contains
@@ -130,8 +124,7 @@ Contains
         Endif
 
         If (magnetism) Then
-            If (.not. Dimensional_Reference) eta_top   = ref%script_H_top
-            If (reference_type .eq. 4) eta_top = ra_constants(7)*ra_functions(1,7)
+            If (.not. Dimensional_Reference) eta_top = ref%script_H_top
             Call Initialize_Diffusivity(eta,dlneta,eta_top,eta_type,eta_power,7,7,13)
             If (ohmic_heating) Then
                 Allocate(ohmic_heating_coeff(1:N_R))
@@ -220,7 +213,6 @@ Contains
          Endif
     End Subroutine Transport_Dependencies
 
-
     Subroutine Allocate_Transport_Coefficients()
         Allocate(nu(1:N_r))
         Allocate(dlnu(1:N_r))
@@ -277,38 +269,6 @@ Contains
         End Select
     End Subroutine Initialize_Diffusivity
 
-    Subroutine Get_Custom_Profile(coeff, dln, coeff_file)
-        Real*8, Intent(InOut) :: coeff(:), dln(:)
-        Real*8, Allocatable :: tmp_arr(:,:),dtemp(:,:,:,:),dtemp2(:,:,:,:)
-        Integer :: dcheck(2)
-        Character*120, Intent(In) :: coeff_file
-        ! Reads density from a Rayleigh Profile File
-        Allocate(tmp_arr(1:N_R,1:3))
-        tmp_arr(:,:) = 0.0d0
-        Call Read_Rayleigh_Array(coeff_file,tmp_arr,dims = dcheck)
-        !Radius is assumed to be in tmp_arr(:,1)
-        coeff(:) = tmp_arr(:,2)
-        If (dcheck(2) >2) Then
-            dln(:) = tmp_arr(:,3)
-        Else
-            Allocate(dtemp(1:n_r,1,1,2))
-            Allocate(dtemp2(1:n_r,1,1,2))
-            dtemp(:,:,:,:) = 0.0d0
-            dtemp2(:,:,:,:) = 0.0d0
-            dtemp(1:n_r,1,1,1) = coeff(1:n_r)
-            Call gridcp%to_Spectral(dtemp,dtemp2)
-            dtemp2((n_r*2)/3:n_r,1,1,1) = 0.0d0
-            Call gridcp%d_by_dr_cp(1,2,dtemp2,1)
-            dtemp2((n_r*2)/3:n_r,1,1,2) = 0.0d0  ! de-alias
-            !transform back to physical
-            Call gridcp%From_Spectral(dtemp2,dtemp)
-            dln(:) = dtemp(:,1,1,2)/coeff
-            DeAllocate(dtemp,dtemp2)
-        Endif
-        DeAllocate(tmp_arr)
-    End Subroutine Get_Custom_Profile
-
-
     Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
         Real*8, Intent(InOut) :: coeff(:), dln(:)
         Real*8, Intent(In) :: coeff_top, coeff_power
@@ -356,15 +316,11 @@ Contains
         eta_power = 0
         kappa_power = 0
 
-        eta_amp = 1.0d0
-
-        custom_eta_file = 'nothing'
-        custom_nu_file = 'nothing'
-        custom_kappa_file = 'nothing'
-
     End Subroutine Restore_Transport_Defaults
 
     Subroutine Finalize_Equation_Coefficients()
+        Character*120 :: filename
+
         ra_constants(1) = ref%coriolis_coeff
         ra_constants(2) = 1.0d0 ! buoyancy coefficient
         ra_constants(3) = 1.0d0 ! dpdr_w
@@ -390,6 +346,10 @@ Contains
         ra_functions(:,12) = dlnkappa(:)
         ra_functions(:,13) = dlneta(:)
         ra_functions(:,14) = ref%dsdr(:)
+
+        filename = Trim(my_path)//"equation_coefficients"
+
+        Call Write_Equation_Coefficients_File(filename)
 
     End Subroutine Finalize_Equation_Coefficients
 
