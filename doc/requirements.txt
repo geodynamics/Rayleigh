@@ -3,4 +3,5 @@ ipykernel
 nbsphinx
 pandoc
 numpy
+scipy
 matplotlib
