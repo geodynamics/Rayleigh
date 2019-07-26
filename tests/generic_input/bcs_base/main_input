@@ -15,8 +15,8 @@
  ohmic_heating = .false.
 /
 &temporal_controls_namelist
- max_time_step = 0.0
- min_time_step = 0.0
+ max_time_step = 2.e-13
+ min_time_step = 1.e-13
  max_iterations = 2
  checkpoint_interval = 10000
  cflmin = 0.4d0
