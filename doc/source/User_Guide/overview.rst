@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:Overview:
+.. _Overview:
 
 Overview
 ==========
@@ -17,8 +17,7 @@ for the linear terms, and the Adams-Bashforth method for the nonlinear terms.
 Both methods are second-order in time.
 
 This document serves as a guide to installation and running Rayleigh.
-Rayleigh's diagnostics package is discussed in the companion document
-Rayleigh/doc/Diagnostic_Plotting.
+Rayleigh's diagnostics package is discussed in the companion document :ref:`DValues2`.
 
 Referencing
 -----------

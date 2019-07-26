@@ -1,3 +1,4 @@
+
 Overview of Diagnostic Outputs in Rayleigh
 -------------------------------------------
 The purpose of this document is to describe Rayleigh’s internal menu

@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:checkpointing:
+.. _checkpointing:
 
 Checkpointing
 =============
@@ -141,7 +141,7 @@ assigning a value of zero to init_type:
 In this case, Rayleigh reads the **last_checkpoint** file (found within
 the Checkpoints directory) to determine which checkpoint it reads.
 
-.. _sec:quicksaves:
+.. _quicksaves:
 
 Quicksaves
 ----------
@@ -189,7 +189,7 @@ files beginning with prefix quicksave_02 will be generated. Following
 that, at time step 30,000, another checkpoint will be generated, *but it
 will overwrite the existing quicksave_01 files*. At time step 40,000,
 the quicksave_02 files will be overwritten, and so forth. Because the
-**num_quicsaves** was set to 2, filenames with prefix quicksave_03 will
+**num_quicksaves** was set to 2, filenames with prefix quicksave_03 will
 never be generated.
 
 Note that checkpoints beginning with an 8-digit prefix (e.g., 00035000)

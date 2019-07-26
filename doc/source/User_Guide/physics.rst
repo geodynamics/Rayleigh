@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:physics:
+.. _physics:
 
 Physics Controls
 ================
@@ -180,7 +180,7 @@ formulation.
 
    \clearpage
 
-.. _sec:physics_boussinesq_nondimensional:
+.. _physics_boussinesq_nondimensional:
 
 Boussinesq Mode (nondimensional)
 --------------------------------
@@ -284,7 +284,7 @@ temperature gradient at that boundary is 1. For example:
    /
 
 Boundary conditions and internal heating are discussed in
-§\ `1.4 <#sec:boundary_conditions>`__. Finally, in Boussinesq mode, the
+§\ :ref:`boundary_conditions`. Finally, in Boussinesq mode, the
 namelist variables **nu_type**, **kappa_type**, and **eta_type** should
 be set to 1. Their values will be determined by Pr and Pm, instead of
 nu_top, kappa_top, or eta_top.
@@ -425,7 +425,7 @@ addition, reference_type=3 must also be specified.
    |                                   | spanning the domain               |
    +-----------------------------------+-----------------------------------+
 
-.. _sec:boundary_conditions:
+.. _boundary_conditions:
 
 Boundary Conditions & Internal Heating
 --------------------------------------
@@ -531,7 +531,7 @@ Initializing a Model
 
 A Rayleigh simulation may be initialized with a random thermal and/or
 magnetic field, or it may be restarted from an existing checkpoint file
-(see §\ `[sec:checkpointing] <#sec:checkpointing>`__ for a detailed
+(see §\ :ref:`checkpointing` for a detailed
 discussion of checkpointing). This behavior is controlled through the
 **initial_conditions_namelist** and the **init_type** and
 **magnetic_init_type** variables. The init_type variable controls the
@@ -645,10 +645,10 @@ a script or imported as a python class.
 The available generic initial conditions options are
 
 ::
-   
+
    &initial_conditions_namelist
    init_type=8
-   T_init_file = '<filename>'  !! Temperature 
+   T_init_file = '<filename>'  !! Temperature
    W_init_file = '<filename>'  !! Poloidal velocity potential
    Z_init_file = '<filename>'  !! Toroidal velocity potential
    P_init_file = '<filename>'  !! `Pressure` potential
@@ -668,29 +668,29 @@ only initialized from file if `magnetic_init_type=8`.
 To generate a generic initial condition input file, for example, if a user wanted to specify a single mode in that input file then they could just run the script:
 
 ::
-   
+
    rayleigh_spectral_input.py -m 0 0 0 1.+0.j -o example
 
-   
+
 to specify (n,l,m) = (0,0,0) to have a coefficient 1.+0.j and output it to the file example.
 
 This could also be done using the python as a module. In a python
 shell this would look like:
 
 ::
-   
+
    from rayleigh_spectral_input import *
    si = SpectralInput()
    si.add_mode(1., n=0, l=0, m=0)
    si.write('example')
-   
+
 
 For a more complicated example, e.g. the hydrodynamic benchmark from
 Christensen et al. 2001, the user can specify functions of theta, phi
 and radius that the python will convert to spectral:
 
 ::
-   
+
    rayleigh_spectral_input.py -ar 0.35 -sd 1.0 -nt 96 -nr 64 -o example \
     -e 'import numpy as np; x = 2*radius - rmin - rmax;
     rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) -
@@ -701,7 +701,7 @@ in "script" mode.
 Alternatively, in "module" mode in a python shell:
 
 ::
-   
+
    from rayleigh_spectral_input import *
    si = SpectralInput(n_theta=96, n_r=64)
    rmin, rmax = radial_extents(aspect_ratio=0.35, shell_depth=1.0)

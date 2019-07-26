@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:benchmarking:
+.. _benchmarking:
 
 Running a Benchmark
 ===================
