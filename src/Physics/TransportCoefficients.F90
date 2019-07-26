@@ -43,6 +43,14 @@ Module TransportCoefficients
     Real*8 :: nu_power = 0, eta_power = 0, kappa_power = 0
     Real*8 :: eta_amp = 1.0d0
 
+    !PASSIVE:  Add diffusion information for svar
+    !          NOTE:  need to describe diffusivity AND its derivatives
+    Integer :: kappa_s_type = 1
+    Real*8 :: kappa_s_power = 1.0d0, kappa_s_top = 1.0d0
+    Real*8, Allocatable :: kappa_s(:), dlnkappa_s(:)
+    Real*8, Allocatable :: Svar_Diffusion_Coefs_1(:)  ! needed for matrix (CN Scheme)
+
+
     Character*120 :: custom_eta_file = 'nothing'
     Character*120 :: custom_nu_file = 'nothing'
     Character*120 :: custom_kappa_file = 'nothing'
@@ -54,7 +62,8 @@ Module TransportCoefficients
 
     Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, nu_power, kappa_power, eta_power, &
             & nu_top, kappa_top, eta_top, custom_nu_file, custom_eta_file, custom_kappa_file, &
-              eta_amp, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
+              eta_amp, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha, &
+              kappa_s_type, kappa_s_top, kappa_s_power    ! PASSIVE -- add to namelist
 
 
 Contains
@@ -89,6 +98,12 @@ Contains
         ! S Coefficients for S Equation
         Allocate(S_Diffusion_Coefs_1(1:N_R))
         S_diffusion_Coefs_1 = kappa*(dlnkappa+ref%dlnrho+ref%dlnT)
+
+        !/////////////////////////////////
+        ! Svar CN Coefficients
+        Allocate(Svar_Diffusion_Coefs_1(1:N_R))
+        Svar_diffusion_Coefs_1 = kappa_s*(dlnkappa_s)
+
         !//////////////////////////////////////// +
         ! Z Coefficients for the Z Equation
         Allocate(Z_Diffusion_Coefs_0(1:N_R))
@@ -124,7 +139,8 @@ Contains
         Call Initialize_Nu()    ! Viscosity
         Call Initialize_Kappa() ! Thermal Diffusivity
 
-
+        ! PASSIVE:  Need to intialize kappa_s here
+        Call Initialize_Kappa_s()
 
         If (viscous_heating) Then
             Allocate(viscous_heating_coeff(1:N_R))
@@ -229,6 +245,8 @@ Contains
         Allocate(dlnu(1:N_r))
         Allocate(kappa(1:N_r))
         Allocate(dlnkappa(1:N_r))
+        Allocate(kappa_s(1:N_r))     ! PASSIVE:  Allocate
+        Allocate(dlnkappa_s(1:N_r))
 
         If (magnetism) Then
             Allocate(eta(1:N_R))
@@ -251,6 +269,19 @@ Contains
 
         End Select
     End Subroutine Initialize_Nu
+
+    Subroutine Initialize_Kappa_s()   ! PASSIVE
+        Select Case(kappa_s_type)
+            Case(1)    ! Constant kappa_s
+                kappa_s(:) = kappa_s_top
+                dlnkappa_s(:) = 0.0d0
+            Case(2)
+                Call vary_with_density(kappa_s,dlnkappa_s,kappa_s_top, kappa_s_power)
+
+
+        End Select
+    End Subroutine Initialize_kappa_s
+
 
     Subroutine Initialize_Kappa()
         Select Case(kappa_type)

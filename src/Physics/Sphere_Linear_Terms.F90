@@ -81,11 +81,11 @@ Contains
         Integer, Allocatable :: eq_links(:), var_links(:)
         Type(Cheby_Grid), Pointer :: gridpointer
         If (magnetism) Then
-            neq  = 6
-            nvar = 6
+            neq  = 6 +1 ! PASSIVE
+            nvar = 6 +1
         Else
-            neq  = 4
-            nvar = 4
+            neq  = 4 +1
+            nvar = 4 +1
         Endif
         nullify(gridpointer)
         gridpointer => gridcp
@@ -117,6 +117,7 @@ Contains
                 Call Initialize_Equation_Coefficients(peq, pvar, 1,lp)
                 Call Initialize_Equation_Coefficients(peq, tvar, 0,lp)
                 Call Initialize_Equation_Coefficients(teq, tvar, 2,lp)
+                Call Initialize_Equation_Coefficients(seq, svar, 2,lp)     ! PASSIVE:  highest derivaitve of s is 2nd order in seq
 
                 DeAllocate(eq_links)
                 DeAllocate(var_links)
@@ -136,6 +137,9 @@ Contains
 
                 ! T equation
                 Call Initialize_Equation_Coefficients(teq,tvar, 2,lp)
+
+                ! Svar equation - same as above -- PASSIVE
+                Call Initialize_Equation_Coefficients(seq,svar, 2,lp)
 
                 If (advect_reference_state) Then
                     Call Initialize_Equation_Coefficients(teq,wvar, 0,lp)
@@ -228,6 +232,20 @@ Contains
                 Call add_implicit_term(weq, wvar, 0, amp,lp, static = .true.)            ! --- any maybe here
 
                 !  If band solve, do redefinition here
+
+                ! Svar  -- ell = 0 (almost same as other ells) -- PASSIVE
+                amp = 1.0d0
+                Call add_implicit_term(seq,svar, 0, amp,lp, static = .true.)    ! Time independent part
+
+                amp = 2.0d0/radius*kappa_s
+                Call add_implicit_term(seq,svar, 1, amp,lp)
+
+                amp = 1.0d0*kappa_s
+                Call add_implicit_term(seq,svar, 2, amp,lp)
+
+                amp = Svar_Diffusion_Coefs_1  ! grad kappa_s term
+                Call add_implicit_term(seq,svar,1,amp,lp)
+
             Else
 
                 !==================================================
@@ -343,6 +361,23 @@ Contains
                     Call add_implicit_term(teq,wvar,0,amp,lp)
                 Endif
 
+
+                !SVAR equation ---- PASSIVE  (no ell =0)
+                amp = 1.0d0
+                Call add_implicit_term(seq,svar, 0, amp,lp, static = .true.)    ! Time independent part
+
+                amp = 2.0d0/radius*kappa_s*diff_Factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
+                Call add_implicit_term(seq,svar, 1, amp,lp)
+
+                amp = 1.0d0*kappa_s*diff_factor
+                Call add_implicit_term(seq,svar, 2, amp,lp)
+
+                amp = Svar_Diffusion_Coefs_1*diff_Factor  ! grad kappa_s term
+                Call add_implicit_term(seq,svar,1,amp,lp)
+
+                amp = H_Laplacian*kappa_s*diff_factor
+                Call add_implicit_term(seq,svar, 0, amp,lp)
+
                 !=====================================================
                 !    Z Equation
 
@@ -401,6 +436,9 @@ Contains
                 Call Sparse_Load(weq,lp)
                 !Write(6,*)'matrix: ', zeq,lp,my_rank, l
                 Call Sparse_Load(zeq,lp)
+
+                Call Sparse_Load(seq,lp)  ! PASSIVE
+
                 If (magnetism) Then
                     Call Sparse_Load(aeq,lp)
                     Call Sparse_Load(ceq,lp)
@@ -411,6 +449,7 @@ Contains
             If (bandsolve) Then
                 Call Band_Arrange(weq,lp)
                 Call Band_Arrange(zeq,lp)
+                Call Band_Arrange(seq, lp)   ! PASSIVe
                 If (magnetism) Then
                     Call Band_Arrange(aeq,lp)
                     Call Band_Arrange(ceq,lp)
@@ -440,6 +479,9 @@ Contains
             Call Clear_Row(peq,lp,1)            ! Pressure only has one boundary condition
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
+
+            Call Clear_Row(seq,lp,1)            ! Need to clear matrix rows before adding boundary condition PASSIVE
+            Call Clear_Row(seq,lp,N_R)
 
             ! "1" denotes linking at index 1, starting in domain 2
             ! "2" denotes linking at index npoly, starting in domain 1
@@ -472,6 +514,23 @@ Contains
                 Call Load_BC(lp,N_R-1,teq,tvar,one,0)
             Endif
 
+            ! PASSIVE
+            r = 1
+            If (fix_svar_top) Then
+                Call Load_BC(lp,r,seq,svar,one,0)    !upper boundary
+            Endif
+            If (fix_dsvardr_top) Then
+                Call Load_BC(lp,r,seq,svar,one,1)
+            Endif
+
+            r = N_R
+            If (fix_svar_bottom) Then
+                Call Load_BC(lp,r,seq,svar,one,0)    !lower boundary
+            Endif
+            If (fix_dsvardr_bottom) Then
+                Call Load_BC(lp,r,seq,svar,one,1)
+            Endif
+
 
             ! The ell=0 pressure is really a diagnostic of the system.
             ! It doesn't drive anything.  The simplist boundary condition
@@ -490,6 +549,8 @@ Contains
             Call Clear_Row(peq,lp,N_R)
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
+            Call Clear_Row(seq,lp,1)   ! PASSIVE
+            Call Clear_Row(seq,lp,N_R)
             Call Clear_Row(zeq,lp,1)
             Call Clear_Row(zeq,lp,N_R)
 
@@ -529,6 +590,24 @@ Contains
             Endif
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
+            Endif
+
+            ! Svar BC   PASSIVE
+            ! PASSIVE
+            r = 1
+            If (fix_svar_top) Then
+                Call Load_BC(lp,r,seq,svar,one,0)    !upper boundary
+            Endif
+            If (fix_dsvardr_top) Then
+                Call Load_BC(lp,r,seq,svar,one,1)
+            Endif
+
+            r = N_R
+            If (fix_svar_bottom) Then
+                Call Load_BC(lp,r,seq,svar,one,0)    !lower boundary
+            Endif
+            If (fix_dsvardr_bottom) Then
+                Call Load_BC(lp,r,seq,svar,one,1)
             Endif
 
             !///////////////////////////////////////////////////////////////////
@@ -762,7 +841,8 @@ Contains
                 equation_set(1,zeq)%RHS(1  ,:,indx:indx+n_m)    = Zero
                 equation_set(1,zeq)%RHS(N_R,:,indx:indx+n_m)    = Zero
 
-
+                equation_set(1,seq)%RHS(1  ,:,indx:indx+n_m)    = Zero  ! PASSIVE
+                equation_set(1,seq)%RHS(N_R,:,indx:indx+n_m)    = Zero
 
                 If (Magnetism) Then
                     equation_set(1,ceq)%RHS(1,:,indx:indx+n_m) = Zero
@@ -830,6 +910,31 @@ Contains
                 Endif
                 equation_set(1,weq)%rhs(1:N_R,:,indx) = zero                ! ell =0 W is zero
                 equation_set(1,weq)%rhs(N_R+1,1,indx) = zero    ! Pressure node
+
+                ! PASSIVE
+                If (fix_svar_top) Then
+                    !Top temperature (in spectral space, but BC's specified in physical space
+                    !    so multiply by sqrt4pi)
+                    equation_set(1,seq)%RHS(1,1,indx)   = Svar_Top*sqrt(4.0D0*Pi)
+                Endif
+                If (fix_dsvardr_top) Then
+                    !Top temperature (in spectral space, but BC's specified in physical space
+                    !    so multiply by sqrt4pi)
+                    equation_set(1,seq)%RHS(1,1,indx)   = dsvardr_Top*sqrt(4.0D0*Pi)
+                Endif
+
+                If (fix_svar_bottom) Then
+                    !Bottom Temperature
+                    equation_set(1,seq)%RHS(N_R,1,indx) = svar_Bottom*sqrt(4.0D0*Pi)
+                Endif
+
+                If (fix_dsvardr_bottom) Then
+                    !Top temperature (in spectral space, but BC's specified in physical space
+                    !    so multiply by sqrt4pi)
+                    equation_set(1,seq)%RHS(N_R,1,indx)   = dsvardr_bottom*sqrt(4.0D0*Pi)
+                Endif
+
+                ! PASSIVE
 
 
                 If (fix_tvar_top) Then

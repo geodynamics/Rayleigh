@@ -67,6 +67,11 @@ Module Fields
 
     Integer :: br,btheta,bphi, curlbr,curlbtheta,curlbphi
     Integer :: emfr,emftheta,emfphi
+
+    ! PASSIVE
+    ! Passive scalar variables.
+    ! These are what we need to calculate advection
+    Integer :: svar, dsvardr, dsvardt, dsvardp, d2svardr2
     !///////////////////////////////////////////////////////////////////////////
 
 
@@ -76,7 +81,8 @@ Module Fields
     !                FOR LINEAR Solve
     !==============================================================================
     Integer, parameter :: weq = 1,  peq = 2,  teq = 3
-    Integer, parameter :: zeq = 4,  ceq = 5,  aeq = 6
+    Integer, parameter :: zeq = 4,  seq = 5             !  PASSIVE:   make spae for seq
+    Integer, Parameter :: ceq = 6,  aeq = 7
 
 
 
@@ -169,6 +175,8 @@ Contains
         !  First, we need an accounting of all fields that will be stored
         !  (even temporarily) in the p1a buffer.  We will assume that
         !  These fields persist out to p3a for now
+        !  This is where RADIAL Derivatives are computed & where the SOLVE
+        !  takes place
 
 
         config = 'p1a'
@@ -183,6 +191,7 @@ Contains
         Call wsp_indices%Add_Field(Pvar , config)
         Call wsp_indices%Add_Field(Tvar , config)
         Call wsp_indices%Add_Field(Zvar , config)
+        Call wsp_indices%Add_Field(Svar , config)   ! PASSIVE: seq must agree with svar
         If (magnetism) Then
           Call wsp_indices%Add_Field(cvar , config)
           Call wsp_indices%Add_field(avar , config)
@@ -192,7 +201,8 @@ Contains
         Call wsp_indices%Add_Field(dPdr1  , config)
         Call wsp_indices%Add_field(d2Zdr2 , config)
         Call wsp_indices%Add_Field(d2Wdr2 , config)
-
+        Call wsp_indices%Add_Field(dsvardr, config)  ! PASSIVE:  make space for dsdr
+        Call wsp_indices%Add_Field(d2svardr2, config)  ! PASSIVE:  make space for dsdr
 
         If (magnetism) Then
           Call wsp_indices%Add_field(dcdr   , config)
@@ -203,11 +213,13 @@ Contains
 
         !//////////////////////////////////////////////////////////
         !  Next, we want to account for fields that we build in s2a/p2a (many are d by dtheta fields)
+        !  In configuration p2a, we are in r l/theta m space.  Take theta derivatives.
         config = 'p2a'
         Call wsp_indices%Add_Field(vtheta , config)
         Call wsp_indices%Add_Field(vphi   , config)
         Call wsp_indices%Add_Field(dvtdr  , config)
         Call wsp_indices%Add_Field(dvpdr  , config)
+        Call wsp_indices%Add_Field(dsvardt   , config)  !PASSIVE:  make space for dsdtheta
         If (magnetism) Then
 
             Call wsp_indices%Add_Field(curlbr     ,config)
@@ -216,6 +228,7 @@ Contains
         !///////////////////////////////////////////////////////
         !  Next we have fields of the d_by_dphi variety
         !  that we add to the p3a buffer
+        !  This is r theta (phi,m) space
         config = 'p3a'
         Call wsp_indices%Add_Field(dvrdp,config)
         Call wsp_indices%Add_field(dvtdp,config)
@@ -223,6 +236,7 @@ Contains
         Call wsp_indices%Add_Field(dvtdt,config)
         Call wsp_indices%Add_field(dvpdt,config)
         Call wsp_indices%Add_field(dtdp,config)
+        Call wsp_indices%Add_Field(dsvardp,config)  !PASSIVE:  make space for phi derivative
 
         !//////////////////////////////////////////////////////////
         !   Throughout the forward loop, many variables are replaced
@@ -231,6 +245,7 @@ Contains
         !   the buffer size.
 
         d2Tdr2 = dPdr1
+
         dWdr   = d3Wdr3
         dTdr   = dPdr1 !replaces d2tdr2, which replaced dpdr1
         dZdr   = d2Zdr2
@@ -254,6 +269,11 @@ Contains
         ! we have a count of how large the buffer needs to be in each
         ! configuration
 
+        !PASSIVE:  (not just passive);  wsfcount = workspace field count
+        !  wsfcount({1,2,3},1) is number of fields in configuration {1,2,3}
+        !  during forward loop (spectral to physical).
+        !  {1,2,3},2 refers to same configurations when going from physical to spectral for solve
+
         wsfcount(1,1) = wsp_indices%c1a_counter
         wsfcount(2,1) = wsp_indices%c2a_counter
         wsfcount(3,1) = wsp_indices%c3a_counter
@@ -265,17 +285,18 @@ Contains
         ! we need to send it back to spectral space.
 
         ! These following code should pretty much never be modified by the user.
+        ! PASSIVE:  we are going to increment all by 1 (though we should pretty much never do this)
         if (.not. magnetism) then
-            wsfcount(1,2) = 4        ! four RHS's go back for the solve
-            wsfcount(2,2) = 4
-            wsfcount(3,2) = 4
+            wsfcount(1,2) = 4 +1        ! four RHS's go back for the solve
+            wsfcount(2,2) = 4 +1
+            wsfcount(3,2) = 4 +1
         else
             emfr     = avar
             emftheta = cvar
             emfphi   = avar+1
-            wsfcount(1,2) = 7        ! seven RHS's go back for the solve (1 field is differentiated and combined at the end)
-            wsfcount(2,2) = 7
-            wsfcount(3,2) = 7
+            wsfcount(1,2) = 7 +1        ! seven RHS's go back for the solve (1 field is differentiated and combined at the end)
+            wsfcount(2,2) = 7 +1        ! Actually 8 RHS's with PASSIVE
+            wsfcount(3,2) = 7 +1
         endif
         !Write(6,*)'Fields initialized'
         !Write(6,*)'c1a_counter is: ', wsp_indices%c1a_counter

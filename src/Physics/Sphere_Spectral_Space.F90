@@ -93,6 +93,15 @@ Contains
             ctemp%nf1b = 5
         Endif
         Call ctemp%construct('p1a')
+        !Svar PASSIVE  (need 1st and 2nd radial derivatives)
+        ! Take first derivative of field in index svar in p1a
+        ! store result in field in index dsvardr
+        ! Everything HERE is in n-cheby space.
+        ! BUT RHS is in RADIAL space due to collocation scheme
+        ! further down, we tranform and add to the RHS
+        Call gridcp%d_by_dr_cp(svar,dsvardr,wsp%p1a,1)
+        Call gridcp%d_by_dr_cp(svar,d2svardr2,wsp%p1a,2)
+
         ! W..
         Call gridcp%d_by_dr_cp(wvar,d3wdr3,wsp%p1a,3)
         ctemp%p1a(:,:,:,1) = wsp%p1a(:,:,:,d3wdr3)
@@ -170,6 +179,7 @@ Contains
 
 
 
+
         !//////////////////////////////
         !  P Terms
 
@@ -184,14 +194,16 @@ Contains
         Call Add_Derivative(teq,tvar,0, wsp%p1b,wsp%p1a,tvar)
         Call Add_Derivative(weq,tvar,0, wsp%p1b,wsp%p1a,tvar)    ! gravity
 
-        ! Convert temperature to temperature/r (will take derivatives of this for advection)
-        ! As of April 30, 2017, we multiply by 1/r in physical space instead
-        !Do m = 1, my_num_lm
-        !    Do i = 1, 2
-        !        wsp%p1a(:,i,m,tvar) = wsp%p1a(:,i,m,tvar)/radius(:)
-        !    Enddo
-        !Enddo
-
+        !////////////////////////////////////
+        ! Svar  PASSIVE
+        ! Need to add '0th', 1st and 2nd derivatives of svar to RHS
+        ! How to read this:
+        !   To Seq, and its svar block, add 0th derivative coefficient
+        !   from svar field index of p1a -- store in p1b
+        ! p1b contains the RHS that will be loaded into RHS solve config
+        Call Add_Derivative(seq,svar,0,wsp%p1b,wsp%p1a,svar)       
+        Call Add_Derivative(seq,svar,1,wsp%p1b,wsp%p1a,dsvardr)   
+        Call Add_Derivative(seq,svar,2,wsp%p1b,wsp%p1a,d2svardr2)   
 
         !///////////////////////////////
         !  Z Terms

@@ -29,6 +29,12 @@ Module BoundaryConditions
     Logical :: Fix_Tvar_Bottom = .True.
     Logical :: Fix_dTdr_Top    = .False.
     Logical :: Fix_dTdr_Bottom = .False.
+
+    Logical :: Fix_Svar_Top    = .True.  ! PASSIVE
+    Logical :: Fix_Svar_Bottom = .True.
+    Logical :: Fix_dSvardr_Top    = .False.
+    Logical :: Fix_dSvardr_Bottom = .False.
+
     Logical :: Fix_divrt_top = .False.
     Logical :: Fix_divt_top = .False.
     Logical :: Fix_divrfc_top = .False.
@@ -42,6 +48,12 @@ Module BoundaryConditions
     Real*8  :: T_Top        = 0.0d0
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
+
+    Real*8  :: svar_Bottom     = 1.0d0  ! PASSIVE
+    Real*8  :: svar_Top        = 0.0d0
+    Real*8  :: dsvardr_Top     = 0.0d0
+    Real*8  :: dsvardr_Bottom  = 0.0d0
+
     Real*8  :: C10_bottom = 0.0d0
     Real*8  :: C10_top = 0.0d0
     Real*8  :: C11_bottom = 0.0d0
@@ -62,7 +74,8 @@ Module BoundaryConditions
         no_slip_boundaries, strict_L_Conservation, fix_poloidalfield_top, fix_poloidalfield_bottom, &
         C10_bottom, C10_top, C11_bottom, C11_top, C1m1_bottom, C1m1_top, Br_bottom, &
         dipole_tilt_degrees, impose_dipole_field, fix_tdt_bottom, no_slip_top, no_slip_bottom, &
-        stress_free_top, stress_free_bottom
+        stress_free_top, stress_free_bottom, Fix_svar_Top, Fix_svar_Bottom, svar_Bottom, svar_Top, &
+        dsvardr_top, dsvardr_bottom, fix_dsvardr_bottom, fix_dsvardr_top  ! PASSIVE
 
 Contains
 
@@ -75,6 +88,8 @@ Contains
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
 
+        fix_svar_top = .not. fix_dsvardr_top  ! PASSIVE
+        fix_svar_bottom = .not. fix_dsvardr_bottom
 
         If (no_slip_boundaries) Then
             no_slip_top = .true.
