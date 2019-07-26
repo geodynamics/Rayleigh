@@ -8,13 +8,12 @@ Welcome to Rayleigh's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-   User_Guide/index.rst   
-   Rayleigh_Output_Variables
+   User_Guide/index.rst
+   diagnostic_values/index
    diagnostic_codes/qcodes
+   publications/publications
    vids
-
 
 Indices and tables
 ------------------
