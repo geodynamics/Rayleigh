@@ -5,13 +5,9 @@ class equation_coefficients:
     """ equation coeff class  """
     nconst = 10
     nfunc = 14
-    nr = 0
     version=1
-    functions = numpy.zeros((nfunc,1)  , dtype='float64' )
-    radius    = numpy.zeros(1          , dtype='float64' )
-    constants = numpy.zeros(nconst     , dtype='float64' )
-    cset      = numpy.zeros(nconst     , dtype='int32'   )
-    fset      = numpy.zeros(nfunc      , dtype='int32'   )
+
+
     def __init__(self,radius=[], file=None):
         if (len(radius) != 0):
             nr = len(radius)
@@ -19,6 +15,10 @@ class equation_coefficients:
             self.radius = numpy.zeros(nr,dtype='float64')
             self.radius[:] = radius[:]
             self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
+            
+            self.constants = numpy.zeros(self.nconst     , dtype='float64' )
+            self.cset      = numpy.zeros(self.nconst     , dtype='int32'   )
+            self.fset      = numpy.zeros(self.nfunc      , dtype='int32'   )
         elif (file != None):
             self.read(filename=file)
             
