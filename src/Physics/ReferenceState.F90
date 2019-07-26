@@ -876,7 +876,7 @@ Contains
 
     End Subroutine Get_Custom_Reference
 
-    Subroutine Write_Equation_Coefficents_File(filename)
+    Subroutine Write_Equation_Coefficients_File(filename)
         Character*120, Intent(In), Optional :: filename
         Character*120 :: ref_file
         Integer :: i, k, pi_integer=314
@@ -905,12 +905,12 @@ Contains
             Close(15)
         Endif
 
-    End Subroutine Write_Equation_Coefficents_File
+    End Subroutine Write_Equation_Coefficients_File
 
     Subroutine Read_Custom_Reference_File(filename)
         Character*120, Intent(In), Optional :: filename
         Character*120 :: ref_file
-        Integer :: pi_integer,nr_ref
+        Integer :: pi_integer,nr_ref, eqversion
         Integer :: i, k, j
         Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
         Real*8  :: input_constants(1:n_ra_constants)
@@ -946,6 +946,7 @@ Contains
         If (pi_integer .eq. 314) Then
 
             ! Read in constants and their 'set' flags
+            Read(15) eqversion
             Read(15) cset(1:n_ra_constants)
             Read(15) fset(1:n_ra_functions)
             Read(15) input_constants(1:n_ra_constants)
@@ -1011,6 +1012,7 @@ Contains
 
             Else
                 Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
+                Write(6,*)'Pi integer: ', pi_integer
             Endif
 
             Close(15)

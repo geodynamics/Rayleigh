@@ -218,11 +218,9 @@ Contains
         Allocate(dlnu(1:N_r))
         Allocate(kappa(1:N_r))
         Allocate(dlnkappa(1:N_r))
+        Allocate(eta(1:N_R))
+        Allocate(dlneta(1:N_R))
 
-        If (magnetism) Then
-            Allocate(eta(1:N_R))
-            Allocate(dlneta(1:N_R))
-        Endif
     End Subroutine Allocate_Transport_Coefficients
 
     Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
