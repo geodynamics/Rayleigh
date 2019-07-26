@@ -8,6 +8,11 @@ export LC_COLLATE=C
 # make the CUSTOMROOT variable available to sub-make processes
 export CUSTOMROOT
 
+.PHONY: doc
+doc:
+	@sphinx-build -M html "." "build-doc"
+	@sphinx-build -M latexpdf "." "build-doc"
+
 rayleigh: prepare_directory
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) all
