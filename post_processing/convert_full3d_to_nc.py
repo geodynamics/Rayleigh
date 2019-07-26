@@ -41,7 +41,7 @@ parser.add_argument('files', metavar='filename', nargs='*', help='files to conve
 args = parser.parse_args()
 
 if args.all:
-    files = glob.glob('Spherical_3D/*_grid') + args.files
+    files = glob.glob('Spherical_3D/*_grid')
 else:
     files = []
 files += args.files
