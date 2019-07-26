@@ -6,17 +6,22 @@ class equation_coefficients:
     nconst = 10
     nfunc = 14
     nr = 0
+    version=1
     functions = numpy.zeros((nfunc,1)  , dtype='float64' )
     radius    = numpy.zeros(1          , dtype='float64' )
     constants = numpy.zeros(nconst     , dtype='float64' )
     cset      = numpy.zeros(nconst     , dtype='int32'   )
     fset      = numpy.zeros(nfunc      , dtype='int32'   )
-    def __init__(self,radius):
-        nr = len(radius)
-        self.nr = nr
-        self.radius = numpy.zeros(nr,dtype='float64')
-        self.radius[:] = radius[:]
-        self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
+    def __init__(self,radius=[], file=None):
+        if (len(radius) != 0):
+            nr = len(radius)
+            self.nr = nr
+            self.radius = numpy.zeros(nr,dtype='float64')
+            self.radius[:] = radius[:]
+            self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
+        elif (file != None):
+            self.read(filename=file)
+            
     def set_function(self,y,fi):
         self.functions[fi-1,:] = y[:]
         self.fset[fi-1] = 1
@@ -27,8 +32,10 @@ class equation_coefficients:
     def write(self, filename='ecoefs.dat'):
         pi = numpy.array([314],dtype='int32')
         nr = numpy.array([self.nr],dtype='int32')
+        version = numpy.array([self.version],dtype='int32')
         fd = open(filename,'wb')
         pi.tofile(fd)
+        version.tofile(fd)
         self.cset.tofile(fd)
         self.fset.tofile(fd)
         self.constants.tofile(fd)
@@ -36,6 +43,21 @@ class equation_coefficients:
         self.radius.tofile(fd)
         self.functions.tofile(fd)
         fd.close() 
+        
+    def read(self, filename='equation_coefficients'):
+
+        fd = open(filename,'rb')
+        picheck = numpy.fromfile(fd,dtype='int32',count=1)[0]
+       
+        self.version = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        self.cset = numpy.fromfile(fd,dtype='int32',count=self.nconst)
+        self.fset = numpy.fromfile(fd,dtype='int32',count=self.nfunc)
+        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)
+        self.nr = numpy.fromfile(fd,dtype='int32',count=1)[0]
+        self.radius = numpy.fromfile(fd,dtype='float64',count=self.nr)
+        functions=numpy.fromfile(fd,dtype='float64',count=self.nr*self.nfunc)
+        self.functions = numpy.reshape(functions, (self.nfunc,self.nr))
+        fd.close()
 
 
 
