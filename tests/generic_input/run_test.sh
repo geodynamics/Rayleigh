@@ -6,6 +6,7 @@ cd tests/generic_input
 # for the Christensen et al., 2001 benchmark case 1
 cd base
 mpirun -np 4 ../../../bin/rayleigh.dbg
+../../../post_processing/convert_full3d_to_vtu.py
 cd ..
 
 # next we run the same thing but using generic input files to set the initial conditions
@@ -18,6 +19,7 @@ cd script
 PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_magnetic_input.py
 # finally we run Rayleigh
 mpirun -np 4 ../../../bin/rayleigh.dbg
+../../../post_processing/convert_full3d_to_vtu.py
 cd ..
 
 # after both versions have run, we test the output for errors
