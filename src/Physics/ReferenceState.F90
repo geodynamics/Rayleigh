@@ -164,6 +164,8 @@ Contains
             Call stdout%print(" ")
         Endif
 
+
+        If (with_custom_reference) Call Augment_Reference()  
         Call Write_Reference()
 
     End Subroutine Initialize_Reference
@@ -329,34 +331,6 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
-        If (with_custom_reference) Then
-
-            If (my_rank .eq. 0) Then
-                Call stdout%print('Reference Type 1 with be augmented.')
-                Call stdout%print('Only heating and buoyancy may be modified.')
-                Call stdout%print('Heating requires both c_10 and f_6 to be set.')
-                Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
-                Call stdout%print('Reading from: '//Trim(custom_reference_file))
-            Endif
-
-            Call Read_Custom_Reference_File(custom_reference_file)
-
-            If (use_custom_constant(10) .and. use_custom_function(6)) Then
-                Call stdout%print('Heating has been set to:')
-                Call stdout%print('f_6*c_10 / (rho*T)')
-                Call stdout%print(' ')
-                ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
-            Endif
-
-            If (use_custom_constant(2) .and. use_custom_function(2)) Then
-                Call stdout%print('Buoyancy_coeff (rho*g/cp) has been set to:')
-                Call stdout%print('f_2*c_2')
-                Call stdout%print(' ')
-                ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
-            Endif
-
-        Endif
-
     End Subroutine Constant_Reference
 
     Subroutine Polytropic_ReferenceND()
@@ -439,33 +413,7 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
-        If (with_custom_reference) Then
 
-            If (my_rank .eq. 0) Then
-                Call stdout%print('Reference Type 3 with be augmented.')
-                Call stdout%print('Only heating and buoyancy may be modified.')
-                Call stdout%print('Heating requires both c_10 and f_6 to be set.')
-                Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
-                Call stdout%print('Reading from: '//Trim(custom_reference_file))
-            Endif
-
-            Call Read_Custom_Reference_File(custom_reference_file)
-
-            If (use_custom_constant(10) .and. use_custom_function(6)) Then
-                Call stdout%print('Heating has been set to:')
-                Call stdout%print('f_6*c_10 / (rho*T)')
-                Call stdout%print(' ')
-                ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
-            Endif
-
-            If (use_custom_constant(2) .and. use_custom_function(2)) Then
-                Call stdout%print('Buoyancy_coeff (rho*g/cp) has been set to:')
-                Call stdout%print('f_2*c_2')
-                Call stdout%print(' ')
-                ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
-            Endif
-
-        Endif
 
     End Subroutine Polytropic_ReferenceND
 
@@ -572,33 +520,7 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
-        If (with_custom_reference) Then
 
-            If (my_rank .eq. 0) Then
-                Call stdout%print('Reference Type 2 with be augmented.')
-                Call stdout%print('Only heating and buoyancy may be modified.')
-                Call stdout%print('Heating requires both c_10 and f_6 to be set.')
-                Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
-                Call stdout%print('Reading from: '//Trim(custom_reference_file))
-            Endif
-
-            Call Read_Custom_Reference_File(custom_reference_file)
-
-            If (use_custom_constant(10) .and. use_custom_function(6)) Then
-                Call stdout%print('Heating has been set to:')
-                Call stdout%print('f_6*c_10 / (rho*T)')
-                Call stdout%print(' ')
-                ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
-            Endif
-
-            If (use_custom_constant(2) .and. use_custom_function(2)) Then
-                Call stdout%print('Buoyancy_coeff (rho*g/cp) has been set to:')
-                Call stdout%print('f_2*c_2')
-                Call stdout%print(' ')
-                ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
-            Endif
-
-        Endif
 
     End Subroutine Polytropic_Reference
 
@@ -655,6 +577,36 @@ Contains
             Endif
         Endif
     End Subroutine Initialize_Reference_Heating
+
+    Subroutine Augment_Reference()
+        Implicit None
+
+        If (my_rank .eq. 0) Then
+            Call stdout%print('Reference state will be augmented.')
+            Call stdout%print('Only heating and buoyancy may be modified.')
+            Call stdout%print('Heating requires both c_10 and f_6 to be set.')
+            Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
+            Call stdout%print('Reading from: '//Trim(custom_reference_file))
+        Endif
+
+        Call Read_Custom_Reference_File(custom_reference_file)
+
+        If (use_custom_constant(10) .and. use_custom_function(6)) Then
+            Call stdout%print('Heating has been set to:')
+            Call stdout%print('f_6*c_10' )
+            Call stdout%print(' ')
+            ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
+        Endif
+
+        If (use_custom_constant(2) .and. use_custom_function(2)) Then
+            Call stdout%print('Buoyancy_coeff has been set to:')
+            Call stdout%print('f_2*c_2')
+            Call stdout%print(' ')
+            ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+        Endif
+
+
+    End Subroutine Augment_Reference
 
     Subroutine Constant_Energy_Heating()
         Implicit None
@@ -879,7 +831,8 @@ Contains
     Subroutine Write_Equation_Coefficients_File(filename)
         Character*120, Intent(In), Optional :: filename
         Character*120 :: ref_file
-        Integer :: i, k, pi_integer=314
+        Integer :: i, k, pi_integer
+        pi_integer = 314
 
         If (present(filename)) Then
             ref_file = Trim(my_path)//filename
@@ -892,7 +845,8 @@ Contains
 
             Write(15) pi_integer
             Write(15) eqn_coeff_version
-
+            ra_constant_set(:) = 1
+            ra_function_set(:) = 1
             Write(15) (ra_constant_set(i), i=1,n_ra_constants)
             Write(15) (ra_function_set(i), i=1,n_ra_functions)
             Write(15) (ra_constants(i), i=1,n_ra_constants)
@@ -932,14 +886,17 @@ Contains
         Read(15)pi_integer
         If (pi_integer .ne. 314) Then
             close(15)
+            Write(6,*)'Trying to convert.  pi = : ', pi_integer
             Open(unit=15,file=ref_file,form='unformatted', status='old', &
                  CONVERT = 'BIG_ENDIAN' , access='stream')
             Read(15)pi_integer
             If (pi_integer .ne. 314) Then
                 Close(15)
+                Write(6,*)'Trying to convert again.  pi is now: ', pi_integer
                 Open(unit=15,file=ref_file,form='unformatted', status='old', &
                  CONVERT = 'LITTLE_ENDIAN' , access='stream')
                 Read(15)pi_integer
+                Write(6,*)'My final value of pi is: ', pi_integer
             Endif
         Endif
 
@@ -1010,9 +967,6 @@ Contains
 
                 DeAllocate(rtmp)
 
-            Else
-                Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
-                Write(6,*)'Pi integer: ', pi_integer
             Endif
 
             Close(15)
@@ -1042,6 +996,9 @@ Contains
                 ra_functions(1:n_r,1:n_ra_functions) = &
                        ref_arr_old(1:n_r,1:n_ra_functions)
 
+                If (my_rank .eq. 0) Then
+                    call stdout%print("WARNING:  nr = nr_old.  Assuming grids are the same.")
+                Endif
             Endif
             DeAllocate(ref_arr_old,old_radius)
             
@@ -1054,14 +1011,28 @@ Contains
             If (fset(11) .eq. 0) Call log_deriv(ra_functions(:,3), ra_functions(:,11)) !dlnnu
             If (fset(12) .eq. 0) Call log_deriv(ra_functions(:,5), ra_functions(:,12)) !dlnkappa
             If (fset(13) .eq. 0) Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
+        Else
+            Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
+            Write(6,*)'Pi integer: ', pi_integer
         Endif
+
 
         ! only used if user wants to change reference_type=1,2,3
         If (with_custom_reference) Then
             Do i=1,n_ra_constants
                 j = with_custom_constants(i)
                 If ((j .gt. 0) .and. (j .le. n_ra_constants)) Then
-                    use_custom_constant(j) = .true.
+                    If (ra_constant_set(j) .eq. 1) Then
+                        use_custom_constant(j) = .true.
+                    Else
+                        If (my_rank .eq. 0) Then
+                            Write(6,*)' '
+                            Write(6,*)'You set with_custom_constant: ', j
+                            Write(6,*)'But this constant was not set in either main_input or '
+                            Write(6,*)'the custom reference file.  Selection will be ignored.'
+                            Write(6,*)' '
+                        Endif
+                    Endif
                 Endif
             Enddo
 
@@ -1069,6 +1040,17 @@ Contains
                 j = with_custom_functions(i)
                 If ((j .gt. 0) .and. (j .le. n_ra_functions)) Then
                     use_custom_function(j) = .true.
+                    If (ra_function_set(j) .eq. 1) Then
+                        use_custom_function(j) = .true.
+                    Else
+                        If (my_rank .eq. 0) Then
+                            Write(6,*)' '
+                            Write(6,*)'You set with_custom_function: ', j
+                            Write(6,*)'But this function was not set in either main_input or '
+                            Write(6,*)'the custom reference file.  Selection will be ignored.'
+                            Write(6,*)' '
+                        Endif
+                    Endif
                 Endif
             Enddo
         Endif
