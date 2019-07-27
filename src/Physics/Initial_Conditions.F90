@@ -1136,5 +1136,12 @@ Contains
         mag_amp  = 1.0d0
         conductive_profile = .false.
 
+        t_init_file = '__nothing__'
+        w_init_file = '__nothing__'
+        p_init_file = '__nothing__'
+        z_init_file = '__nothing__'
+        c_init_file = '__nothing__'
+        a_init_file = '__nothing__'
+
     End Subroutine Restore_InitialCondition_Defaults
 End Module Initial_Conditions

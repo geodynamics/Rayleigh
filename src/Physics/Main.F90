@@ -83,6 +83,8 @@ Contains
         Call Initialize_FFts()
         Call Initialize_Reference()
 
+        Call Initialize_Field_Structure()
+
         Call Initialize_Boundary_Conditions()
         Call Initialize_Transport_Coefficients()
 
@@ -95,7 +97,6 @@ Contains
         Endif
         !=================== STABLE
 
-        Call Initialize_Field_Structure()
         Call Initialize_Diagnostics()
 
         Call Full_Barrier()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from rayleigh_diagnostics import Spherical_3D_multi
+from rayleigh_diagnostics import Spherical_3D_multi, Shell_Slices
 import numpy as np
 import sys
 import vtk
@@ -50,9 +50,30 @@ if maxabsdiff > 1.e-10:
   print("ERROR: [magnetic_]init_type 1 and [magnetic_]init_type 8 produced different initial vtks (within a tolerance of 1.e-10)!")
   error = True
 
+# test bcs using generic input and hard coded values
+bcs_base = Shell_Slices('00000002', path='bcs_base/Shell_Slices/')
+bcs_script = Shell_Slices('00000002', path='bcs_script/Shell_Slices/')
+
+maxabsdiff = 0.0
+for k in bcs_base.qv:
+  i_b = bcs_base.lut[k]
+  i_s = bcs_script.lut[k]
+  for ri in range(2):
+    maxabsdiffk = np.abs(bcs_base.vals[:,:,ri,i_b,0] - bcs_script.vals[:,:,ri,i_s,0]).max()
+    print("Maximum bc {} difference from base ({}) = {}".format(ri, k, maxabsdiffk,))
+    maxabsdiff = max(maxabsdiff, maxabsdiffk)
+    if k == 501:
+      if ri == 0:
+        maxabsdiffk = np.abs(bcs_script.vals[:,:,ri,i_s,0] + 5.).max()
+      else:
+        maxabsdiffk = np.abs(bcs_script.vals[:,:,ri,i_s,0] - 5.).max()
+      print("Maximum T bc {} difference from input ({}) = {}".format(ri, k, maxabsdiffk,))
+
+if maxabsdiff > 1.e-10:
+  print("ERROR: generic input bc produced an unexpected result (within a tolerance of 1.e-10)!")
+  error = True
+
 if error:
   sys.exit(1)
 sys.exit(0)
-
-
 
