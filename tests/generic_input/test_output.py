@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from rayleigh_diagnostics import Spherical_3D_multi, Shell_Slices
+from rayleigh_spectral_input import SpectralInput, radial_extents
 import numpy as np
 import sys
 import vtk
@@ -71,6 +72,40 @@ for k in bcs_base.qv:
 
 if maxabsdiff > 1.e-10:
   print("ERROR: generic input bc produced an unexpected result (within a tolerance of 1.e-10)!")
+  error = True
+
+# test spectral input reading and inverse transforming
+maxabsdiff = 0.0
+
+si_w = SpectralInput()
+def five():
+  return 5.0
+si_w.transform_from_rtp_function(five)
+si_r = SpectralInput()
+si_r.read('bcs_script/five_init_bc')
+maxabsdiffk = np.abs(si_r.coeffs-si_w.coeffs).max()
+print("Maximum difference on sparse coefficient read in = {}".format(maxabsdiffk,))
+maxabsdiff = max(maxabsdiff, maxabsdiffk)
+maxabsdiffk = np.abs(si_r.inverse_transform() - 5.0).max()
+print("Maximum difference on sparse coefficient read in and inverse transform = {}".format(maxabsdiffk,))
+maxabsdiff = max(maxabsdiff, maxabsdiffk)
+
+si_w = SpectralInput(n_theta=64, n_r=48)
+ar = 0.35
+sd = 1.0
+rmin, rmax = radial_extents(aspect_ratio=ar, shell_depth=sd)
+def t_bench(radius, theta, phi):
+  x = 2*radius - rmin - rmax
+  return rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)
+si_w.transform_from_rtp_function(t_bench, aspect_ratio=ar, shell_depth=sd)
+si_r = SpectralInput(n_theta=64, n_r=48)
+si_r.read('script/bench_t_init')
+maxabsdiffk = np.abs(si_w.coeffs-si_r.coeffs).max()
+print("Maximum difference on dense coefficient read in = {}".format(maxabsdiffk,))
+maxabsdiff = max(maxabsdiff, maxabsdiffk)
+
+if maxabsdiff > 1.e-10:
+  print("ERROR: generic input read in produced an unexpected result (within a tolerance of 1.e-10)!")
   error = True
 
 if error:
