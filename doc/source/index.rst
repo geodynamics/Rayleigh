@@ -10,6 +10,7 @@ Welcome to Rayleigh's documentation!
    :maxdepth: 2
 
    User_Guide/index.rst
+   CONTRIBUTING.md
    diagnostic_values/index
    diagnostic_codes/qcodes
    publications/publications
