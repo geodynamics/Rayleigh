@@ -1,0 +1,64 @@
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.35d0
+ shell_depth = 1.0d0
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ rotation  = .True.
+ magnetism = .True.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 2.e-13
+ min_time_step = 1.e-13
+ max_iterations = 2
+ checkpoint_interval = 10000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+shellslice_levels    = 1,48
+shellslice_values    = 501,801,802,803
+shellslice_frequency = 2
+shellslice_nrec      = 1
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+T_top_file = 'mfive_init_bc'
+T_bottom_file = 'five_init_bc'
+fix_poloidalfield_top = .true.
+fix_poloidalfield_bottom = .true.
+C_top_file = 'ctop_init_bc'
+C_bottom_file = 'cbottom_init_bc'
+/
+&Initial_Conditions_Namelist
+init_type = 8
+t_init_file = 'zero_init_vol'
+magnetic_init_type = 8
+c_init_file = 'zero_init_vol'
+a_init_file = 'zero_init_vol'
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 1.0d5
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/

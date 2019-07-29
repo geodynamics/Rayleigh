@@ -438,8 +438,8 @@ boundaries, set **no_slip_boundaries = .true.**. If you wish to set
 no-slip conditions at only one boundary, set **no_slip_top=.true.** or
 **no_slip_bottom=.true.** in the Boundary_Conditions_Namelist.
 
-Magnetic boundary conditions are set to match to a potential field at
-each boundary. There are no supported alternatives at this time.
+By default, magnetic boundary conditions are set to match to a potential field at
+each boundary.
 
 By default, the thermal anomoly :math:`\Theta` is set to a fixed value
 at each boundary. The upper and lower boundary-values are specified by
@@ -452,6 +452,45 @@ Alternatively, you may specify a constant value of
 by setting the variables **fix_dTdr_top** and **fix_dTdr_bottom**.
 Values of the gradient may be enforced by setting the namelist variables
 **dTdr_top** and **dTdr_bottom**. Both default to a value of zero.
+
+Generic Boundary Conditions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Boundary conditions for temperature, :math:`T`, and the magnetic poloidal potential, :math:`C`,
+may also be set using generic spectral input.  As with initial conditions (see :ref:`sec:generic_ic`)
+this is done by generating a generic input file using the **rayleigh_spectral_input.py** script.
+The file output from this script can then be applied using:
+
+-  **fix_Tvar_top** and **T_top_file** (overrides **T_top** for a constant boundary condition)
+   to set a fixed upper :math:`T` boundary condition
+-  **fix_dTdr_top** and **dTdr_top_file** (overrides **dTdr_top**) to set a fixed upper :math:`T` gradient boundary condition
+-  **fix_Tvar_bottom** and **T_bottom_file** (overrides **T_bottom**) to set a fixed lower :math:`T` boundary condition
+-  **fix_dTdr_bottom** and **dTdr_bottom_file** (overrides **dTdr_bottom**) to set a fixed lower :math:`T` gradient boundary
+   condition
+-  **fix_poloidal_top** and **C_top_file** (overrides **impose_dipole_field**) to set a fixed upper :math:`C` boundary condition
+-  **fix_poloidal_bottom** and **C_bottom_file** (overrides **impose_dipole_field**) to set a fixed lower :math:`C` boundary condition
+
+For example, to set a :math:`C` boundary condition on both boundaries with modes (l,m) = (1,0) and (1,1) set to pre-calculated
+values run:
+
+::
+   
+   rayleigh_spectral_input.py -m 1 0 2.973662220170157 -m 1 1 0.5243368809294343+0.j -o ctop_init_bc
+   rayleigh_spectral_input.py -m 1 0 8.496177771914736 -m 1 1 1.4981053740840984+0.j -o cbottom_init_bc
+
+which will generate generic spectral input files `ctop_init_bc` and `cbottom_init_bc`.  Set these to be used as the boundary
+conditions in `main_input` using:
+
+::
+
+   &Boundary_Conditions_Namelist
+   fix_poloidalfield_top = .true.
+   fix_poloidalfield_bottom = .true.
+   C_top_file = 'ctop_init_bc'
+   C_bottom_file = 'cbottom_init_bc'
+   /
+
+This can be seen being applied in `tests/generic_input`.
 
 Internal Heating
 ~~~~~~~~~~~~~~~~
@@ -634,6 +673,7 @@ contain something similar to:
    /
 
 
+.. _sec:generic_ic:
 
 Generic Initial Conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
