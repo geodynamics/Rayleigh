@@ -134,7 +134,6 @@ Contains
 
     Subroutine Initialize_Reference()
         Implicit None
-        Integer :: i,j
 
         If (my_rank .eq. 0) Then
             Call stdout%print(" -- Initalizing Reference State...")
@@ -163,7 +162,6 @@ Contains
             Call stdout%print(" -- Reference State initialized.")
             Call stdout%print(" ")
         Endif
-
 
         If (with_custom_reference) Call Augment_Reference()  
         Call Write_Reference()
@@ -213,7 +211,6 @@ Contains
         Implicit None
         Integer :: i
         Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
-        Character*6  :: istr
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         ! devel variables (see note at top regarding devel)
@@ -337,7 +334,6 @@ Contains
         Implicit None
         Real*8 :: dtmp, otmp
         Real*8, Allocatable :: dtmparr(:), gravity(:)
-        Character*6  :: istr
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         Dimensional_Reference = .false.
@@ -425,8 +421,6 @@ Contains
         Real*8, Allocatable :: zeta(:), gravity(:)
         Real*8 :: One
         Real*8 :: InnerRadius, OuterRadius
-        Integer :: r
-        Character*6  :: istr
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         If (my_rank .eq. 0) Then
@@ -592,16 +586,20 @@ Contains
         Call Read_Custom_Reference_File(custom_reference_file)
 
         If (use_custom_constant(10) .and. use_custom_function(6)) Then
-            Call stdout%print('Heating has been set to:')
-            Call stdout%print('f_6*c_10' )
-            Call stdout%print(' ')
+            If (my_rank .eq. 0) Then
+                Call stdout%print('Heating has been set to:')
+                Call stdout%print('f_6*c_10')
+                Call stdout%print(' ')
+            Endif
             ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
         Endif
 
         If (use_custom_constant(2) .and. use_custom_function(2)) Then
-            Call stdout%print('Buoyancy_coeff has been set to:')
-            Call stdout%print('f_2*c_2')
-            Call stdout%print(' ')
+            If (my_rank .eq. 0) Then
+                Call stdout%print('Buoyancy_coeff has been set to:')
+                Call stdout%print('f_2*c_2')
+                Call stdout%print(' ')
+            Endif
             ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
         Endif
 
@@ -799,6 +797,7 @@ Contains
 
     Subroutine Get_Custom_Reference()
         Implicit None
+        Integer :: i
 
         If (my_rank .eq. 0) Then
             Write(6,*)'Custom reference state specified.'
@@ -806,6 +805,14 @@ Contains
         Endif
 
         Call Read_Custom_Reference_File(custom_reference_file)
+
+        Do i=1,7
+            If (ra_function_set(i) .eq. 0) Then
+                If (my_rank .eq. 0) Then
+                    Write(6,*) "ERROR: function f_i must be set in the custom reference file",i
+                Endif
+            Endif
+        Enddo
 
         ref%density(:) = ra_functions(:,1)
         ref%dlnrho(:)  = ra_functions(:,8)
@@ -1004,18 +1011,28 @@ Contains
             
             ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, and eta were
             ! not specified, then we compute them here.
-           
-            If (fset(8)  .eq. 0) Call log_deriv(ra_functions(:,1), ra_functions(:,8)) ! dlnrho
-            If (fset(9)  .eq. 0) Call log_deriv(ra_functions(:,8), ra_functions(:,9), no_log=.true.) !d2lnrho
-            If (fset(10) .eq. 0) Call log_deriv(ra_functions(:,4), ra_functions(:,10)) !dlnT
-            If (fset(11) .eq. 0) Call log_deriv(ra_functions(:,3), ra_functions(:,11)) !dlnnu
-            If (fset(12) .eq. 0) Call log_deriv(ra_functions(:,5), ra_functions(:,12)) !dlnkappa
-            If (fset(13) .eq. 0) Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
+            If ((fset(8)  .eq. 0) .and. (fset(1) .eq. 1)) Then
+                Call log_deriv(ra_functions(:,1), ra_functions(:,8)) ! dlnrho
+            Endif
+            If ((fset(9)  .eq. 0) .and. (fset(8) .eq. 1)) Then
+                Call log_deriv(ra_functions(:,8), ra_functions(:,9), no_log=.true.) !d2lnrho
+            Endif
+            If ((fset(10) .eq. 0) .and. (fset(4) .eq. 1)) Then
+                Call log_deriv(ra_functions(:,4), ra_functions(:,10)) !dlnT
+            Endif
+            If ((fset(11) .eq. 0) .and. (fset(3) .eq. 1)) Then
+                Call log_deriv(ra_functions(:,3), ra_functions(:,11)) !dlnnu
+            Endif
+            If ((fset(12) .eq. 0) .and. (fset(5) .eq. 1)) Then
+                Call log_deriv(ra_functions(:,5), ra_functions(:,12)) !dlnkappa
+            Endif
+            If ((fset(13) .eq. 0) .and. (fset(7) .eq. 1)) Then
+                Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
+            Endif
         Else
             Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
             Write(6,*)'Pi integer: ', pi_integer
         Endif
-
 
         ! only used if user wants to change reference_type=1,2,3
         If (with_custom_reference) Then
