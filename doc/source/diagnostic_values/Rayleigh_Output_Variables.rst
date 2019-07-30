@@ -299,10 +299,10 @@ assigning values to :math:`\mathrm{f}_i` and the constants :math:`c_i`:
 
    \begin{aligned}
    \mathrm{f}_1(r) &\rightarrow 1\; &c_1 &\rightarrow \frac{2}{E} \\
-   \mathrm{f}_2(r) &\rightarrow \left(\frac{r}{r_o}\right)^n \; &c_2 &\rightarrow \frac{Ra}{E\,Pr} \\
+   \mathrm{f}_2(r) &\rightarrow \left(\frac{r}{r_o}\right)^n \; &c_2 &\rightarrow \frac{Ra}{Pr} \\
    \mathrm{f}_3(r) &\rightarrow 1\; &c_3 &\rightarrow \frac{1}{E}\\
    \mathrm{f}_4(r) &\rightarrow 1\; &c_4 &\rightarrow \frac{1}{E\,Pm} \\
-   \mathrm{f}_5(r) &\rightarrow 1\; &c_5 &\rightarrow 0 \\
+   \mathrm{f}_5(r) &\rightarrow 1\; &c_5 &\rightarrow 1 \\
    \mathrm{f}_6(r) &\rightarrow 0\; &c_6 &\rightarrow \frac{1}{Pr}  \\
    \mathrm{f}_7(r) &\rightarrow 1\; &c_7 &\rightarrow \frac{1}{Pm} \\
    c_8&\rightarrow 0 &c_9 &\rightarrow 0 \\
