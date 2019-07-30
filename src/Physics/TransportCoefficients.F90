@@ -130,6 +130,9 @@ Contains
                 Allocate(ohmic_heating_coeff(1:N_R))
                 ohmic_heating_coeff(1:N_R) = ref%ohmic_amp(1:N_R)*eta(1:N_R)
             Endif
+        Else
+            eta(:)    = 0.0d0 ! eta was already allocated, but never initialized since this
+            dlneta(:) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
         Endif
 
         Call Compute_Diffusion_Coefs()
@@ -229,12 +232,12 @@ Contains
 	Real*8, Intent(InOut) :: xtop
 	Integer, Intent(In) :: ci, fi, dlnfi, xtype
 	Real*8, Intent(In) :: xpower
-        Character(len=8) :: ind
+        Character(len=2) :: ind
 
         If (reference_type .eq. 4) Then
             If (ra_constant_set(ci) .eq. 0) Then
                 If (my_rank .eq. 0) Then
-                    write(ind, '(I8)') ci
+                    write(ind, '(I2)') ci
                     Call stdout%print('Error: c_'//Trim(ind)//' not specified')
                 Endif
             Else
@@ -259,7 +262,7 @@ Contains
                     xtop = x(1)
                 Else
                     If (my_rank .eq. 0) Then
-                        write(ind, '(I8)') fi
+                        write(ind, '(I2)') fi
                         Call stdout%print('Error: Need to specify f_'//Trim(ind))
                     EndIf
                 EndIf
