@@ -387,7 +387,6 @@ Contains
         ref%dsdr(:) = 0.0d0
         Call Initialize_Reference_Heating()
 
-
         ref%Coriolis_Coeff = 2.0d0
         ref%dpdr_w_term(:) = ref%density
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
@@ -408,8 +407,6 @@ Contains
             ref%script_H_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
-
-
 
     End Subroutine Polytropic_ReferenceND
 
@@ -451,7 +448,6 @@ Contains
         ! Note that cp must also be specified.
         InnerRadius = Radius(N_r)
         OuterRadius = Radius(1)
-
 
         One = 1.0d0
         !-----------------------------------------------------------
@@ -513,8 +509,6 @@ Contains
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
-
-
 
     End Subroutine Polytropic_Reference
 
@@ -602,7 +596,6 @@ Contains
             Endif
             ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
         Endif
-
 
     End Subroutine Augment_Reference
 
@@ -1011,10 +1004,12 @@ Contains
             
             ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, and eta were
             ! not specified, then we compute them here.
-            If ((fset(8)  .eq. 0) .and. (fset(1) .eq. 1)) Then
+            ! only calculate the log derivative if the function was set, otherwise there
+            ! are divide by zero issues
+            If ((fset(8) .eq. 0) .and. (fset(1) .eq. 1)) Then
                 Call log_deriv(ra_functions(:,1), ra_functions(:,8)) ! dlnrho
             Endif
-            If ((fset(9)  .eq. 0) .and. (fset(8) .eq. 1)) Then
+            If ((fset(9) .eq. 0) .and. (fset(8) .eq. 1)) Then
                 Call log_deriv(ra_functions(:,8), ra_functions(:,9), no_log=.true.) !d2lnrho
             Endif
             If ((fset(10) .eq. 0) .and. (fset(4) .eq. 1)) Then
