@@ -10,4 +10,4 @@ Plotting Examples
 .. toctree::
   :titlesonly:
 
-  ../post_processing/Diagnostic_Plotting.ipynb
+  ../../../post_processing/Diagnostic_Plotting.ipynb
