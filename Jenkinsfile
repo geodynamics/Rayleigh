@@ -22,9 +22,7 @@ pipeline {
 
         // Now build the new documentation
         sh '''
-          cd doc
-          make html
-          make latexpdf
+          make doc
         '''
       }
     }
