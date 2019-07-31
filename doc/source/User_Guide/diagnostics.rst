@@ -12,11 +12,11 @@ refer the user to :
 
 #. The diagnostics plotting manual, provided in two formats:
 
-   -  Rayleigh/doc/source/postprocessing/Diagnostic_Plotting.ipynb (Jupyter Python
+   -  Rayleigh/post_processing/Diagnostic_Plotting.ipynb (Jupyter Python
       notebook format; recommended for interactive use)
 
-   -  Rayleigh/doc/Diagnostics_Plotting.html (recommended for optimal
-      viewing; generated from the .ipynb file) `[html] <../post_processing/Diagnostic_Plotting.ipynb>`_
+   -  Rayleigh/post_processing/Diagnostics_Plotting.html (recommended for optimal
+      viewing; generated from the .ipynb file) `[html] <../../../post_processing/Diagnostic_Plotting.ipynb>`_
 
 
 #. :ref:`DValues2` – This companion documentation

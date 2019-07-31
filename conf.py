@@ -54,8 +54,8 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
-html_logo = 'rayleigh_manual_image_logo.jpeg'
-latex_logo = 'rayleigh_manual_image_300dpi.jpeg'
+html_logo = 'doc/source/rayleigh_manual_image_logo.jpeg'
+latex_logo = 'doc/source/rayleigh_manual_image_300dpi.jpeg'
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
