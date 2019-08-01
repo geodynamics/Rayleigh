@@ -20,7 +20,6 @@
 
 Module Fields
     Use Parallel_Framework
-    Use ProblemSize
     Use Controls
     Use Spherical_Buffer
     !///////////////////////////////////////////////////////////

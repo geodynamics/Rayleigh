@@ -22,7 +22,10 @@ Module BoundaryConditions
     Use Math_Constants
     Use ProblemSize
     Use Fields
-    Use Load_Balance
+    Use Load_Balance, Only : mp_lm_values, l_lm_values, my_num_lm, &
+                             m_lm_values, my_lm_min, my_nl_lm, my_nm_lm, &
+                             my_lm_lval, my_lm_max, lm_count, lm_owner
+
     Use Generic_Input
     !Use ReferenceState
     !Use TransportCoefficients
