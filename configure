@@ -157,6 +157,13 @@ function displayhelp {
     echo "      variable is undefined, call configure with the --with-mkl flag."
     echo ""
 
+    echo "  -conda-mkl:     " 
+    echo "      Use this flag in conjunction with -mkl or -with-mkl to account"
+    echo "      for the conda-provided MKL directory structure."
+    echo "      Usage Example 1:  ./configure -mkl -conda-mkl             "
+    echo "      Usage Example 2:  ./configure --with-mkl='/my/mkl/root' -conda-mkl "
+    echo ""
+
     echo "  --nodirs ; -nodirs: "
     echo "      Causes Make to compile Rayleigh without directory creation support."
     echo "      This is intended ONLY for machines where the make process fails when "
@@ -265,6 +272,7 @@ RAYLEIGHROOT=$PWD
 PREFIX=$RAYLEIGHROOT
 NEED_HELP=no
 USE_MKL="FALSE"
+CONDAMKL="FALSE"
 CUSTOMROOT="none"
 
 
@@ -325,6 +333,10 @@ do
 
     --devel | -devel)
       DEVELMODE="TRUE";
+      ;;
+
+    -conda-mkl)
+      CONDAMKL="TRUE";
       ;;
 
     -mkl)
@@ -631,7 +643,12 @@ fi
 MKLFFTW=$USE_MKL
 if [[ $MKLFFTW == "TRUE" ]]
 then
-    RAYLEIGH_INC="-I$RAMKLROOT/include -I$RAMKLROOT/include/fftw"
+    if [[ $CONDAMKL == "TRUE" ]]
+    then
+        RAYLEIGH_INC="-I$RAMKLROOT/include"
+    else
+        RAYLEIGH_INC="-I$RAMKLROOT/include -I$RAMKLROOT/include/fftw"
+    fi
 else
     RAYLEIGH_INC=-I$FFTWROOT/include
 fi
@@ -651,9 +668,16 @@ then
     fi
     if [[ $FVERSION == "GNU" ]]
     then
-        MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-        LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-        FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lsdc++"
+        if [[ $CONDAMKL == "TRUE" ]]
+        then
+            MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+            LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+            FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lsdc++"
+        else
+            MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+            LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lsdc++"
+        fi
     fi
 else
 
