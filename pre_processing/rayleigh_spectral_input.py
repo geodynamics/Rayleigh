@@ -78,6 +78,40 @@ def radial_extents(rmin=None, rmax=None, aspect_ratio=None, shell_depth=None):
     rmin = rmax*aspect_ratio
   return rmin, rmax
 
+def swapwrite(vals,fd,byteswap=False):
+  """
+  Write to file handle fd with the option of byteswapping.
+  """
+  # this is a tidied up copy of post_processing/rayleigh_diagnostics.py
+  # reproduced here to avoid dependency on post_processing and to tidy it up without conflict
+  # FIXME: unify python routines to avoid this duplication
+  valsout = vals
+  if byteswap: valsout = vals.newbyteorder()
+  valsout.tofile(fd)
+
+def swapread(fd,dtype='float64',count=1,byteswap=False):
+  """
+  Read from file handle fd with the option of byteswapping.
+  """
+  # this is a tidied up copy of post_processing/rayleigh_diagnostics.py
+  # reproduced here to avoid dependency on post_processing and to tidy it up without conflict
+  # FIXME: unify python routines to avoid this duplication
+  vals = np.fromfile(fd, dtype=dtype, count=count)
+  if byteswap: vals.byteswap()
+  return vals
+
+def check_byteswap(fd):
+  """
+  Check endianess of file fd by reading an integer 314 and testing it matches.  
+  Returns True if byteswapping is necessary.
+  """
+  # this is a tidied up copy of post_processing/rayleigh_diagnostics.py
+  # reproduced here to avoid dependency on post_processing and to tidy it up without conflict
+  # FIXME: unify python routines to avoid this duplication
+  chk = np.fromfile(fd, dtype='int32', count=1)
+  if (chk == 314): return False
+  return True
+
 class SpectralInput(object):
   """
   Rayleigh class describing and writing generic spectral input for boundary/initial conditions.
@@ -536,6 +570,9 @@ class SpectralInput(object):
   def write(self, filename, byteswap=False):
     """
     Write spectral coefficients to file `filename`.
+
+    Optional arguments:
+      - byteswap: byte swap the data being written to switch endianness (default: False)
     """
     # FIXME: byteswap currently does nothing
     fd = open(filename, 'wb')
@@ -549,9 +586,9 @@ class SpectralInput(object):
       header[2] = 0            # mode
       header[3] = len(self.indices)
       header[4:] = [i for nlm in zip(*self.indices) for i in nlm]
-      header.tofile(fd)
-      self.coeffs.real.tofile(fd)
-      self.coeffs.imag.tofile(fd)
+      swapwrite(header, fd, byteswap)
+      swapwrite(self.coeffs.real, fd, byteswap)
+      swapwrite(self.coeffs.imag, fd, byteswap)
     else:
       flatcoeffs = np.asarray([self.coeffs[n,l,m] for m in range(self.lm_max+1) \
                                                   for l in range(m,self.lm_max+1) \
@@ -562,11 +599,42 @@ class SpectralInput(object):
       header[2] = 1            # mode
       header[3] = self.n_max
       header[4] = self.lm_max
-      header.tofile(fd)
-      flatcoeffs.real.tofile(fd)
-      flatcoeffs.imag.tofile(fd)
+      swapwrite(header, fd, byteswap)
+      swapwrite(flatcoeffs.real, fd, byteswap)
+      swapwrite(flatcoeffs.imag, fd, byteswap)
 
     fd.close()
+
+  def read(self, filename, mode='add'):
+    """
+    Read spectral coefficients from file `filename`.  Assumed to be in spectral input format.
+
+    Optional arguments:
+      - mode: either 'add' to or 'replace' existing coefficients (default: 'add')
+    """
+
+    fd = open(filename, 'rb')
+    bs = check_byteswap(fd)
+    version = swapread(fd,dtype='int32',count=1,byteswap=bs)[0]
+    fmode   = swapread(fd,dtype='int32',count=1,byteswap=bs)[0]
+    if fmode == 0:
+      f_n_lmn = swapread(fd,dtype='int32',count=1,byteswap=bs)[0]
+      f_ns = swapread(fd,dtype='int32',count=f_n_lmn,byteswap=bs)
+      f_ls = swapread(fd,dtype='int32',count=f_n_lmn,byteswap=bs)
+      f_ms = swapread(fd,dtype='int32',count=f_n_lmn,byteswap=bs)
+    elif fmode == 1:
+      f_n_max = swapread(fd,dtype='int32',count=1,byteswap=bs)[0]
+      f_lm_max = swapread(fd,dtype='int32',count=1,byteswap=bs)[0]
+      f_n_lmn = int((f_n_max+1)*(f_lm_max+1)*(f_lm_max+2)/2)
+      f_flatindices = [(n,l,m) for m in range(f_lm_max+1) \
+                               for l in range(m,f_lm_max+1) \
+                               for n in range(f_n_max+1)]
+      f_ns, f_ls, f_ms = [i for i in zip(*f_flatindices)]
+    else:
+      raise Exception("Unknown file mode in read: {:d}".format(fmode,))
+    f_flatcoeffs = swapread(fd,dtype='float64',count=f_n_lmn,byteswap=bs).astype('complex')
+    f_flatcoeffs.imag = swapread(fd,dtype='float64',count=f_n_lmn,byteswap=bs)
+    self.add_mode(f_flatcoeffs, n=f_ns, l=f_ls, m=f_ms, mode=mode)
 
 def main(fformat=None, n_theta=None, lm_max=None, n_r=None, n_max=None, n_phi=None, \
                        rmin=None, rmax=None, aspect_ratio=None, shell_depth=None, \
