@@ -23,7 +23,10 @@ module Generic_Input
   use RA_MPI_BASE
   use Parallel_Framework
   use Spherical_Buffer
-  use Load_Balance
+  use Load_Balance, Only : mp_lm_values, l_lm_values, my_num_lm, m_lm_values, &
+                           my_lm_min, my_nl_lm, my_nm_lm, my_lm_lval, my_lm_max, &
+                           lm_count, lm_owner
+
   use SendReceive
   use ProblemSize
 
