@@ -61,6 +61,11 @@ install:
 	@mkdir -p $(PREFIX)/bin
 	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
 
+.PHONY: doc
+doc:
+	@sphinx-build -M html "." "doc/build"
+	@sphinx-build -M latexpdf "." "doc/build"
+
 .PHONY: distclean
 distclean:
 	rm -f $(BUILD)/compiled/rayleigh.*
@@ -77,4 +82,5 @@ distclean:
 	rm -f $(BUILD)/machine.no_comments
 	@rm -f $(PREFIX)/bin/rayleigh.*
 	@rm -f make.inc
+	@rm -rf doc/build
 	@echo "#Following configure, this file contains the definition of the PREFIX variable" >> make.inc

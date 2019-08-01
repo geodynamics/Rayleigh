@@ -278,6 +278,15 @@ Module Linear_Solve
             Allocate(var_set(k)%in_equation(1:n_modes,1:n_equations,0:j))
             var_set(k)%in_equation(:,:,:) = .false.
         Enddo
+
+        ! It is useful for compact code in apply_boundary_mask 
+        ! if non-linked equations register as linked to themselves
+        Do k = 1, n_equations
+            If (equation_set(1,k)%nlinks .eq. 1) Then
+                Allocate(equation_set(1,k)%links(1:1))
+                equation_set(1,k)%links(1) = k
+            Endif
+        Enddo
     End Subroutine Finalize_Equations
 
     Subroutine DeAllocate_LHS(mode_ind)
@@ -389,7 +398,25 @@ Module Linear_Solve
         Enddo
     End Subroutine DeAllocate_RHS
 
+    Subroutine Apply_Boundary_Mask(bcmask)
+        Implicit None
+        Integer :: j, k, eqind
+        Real*8, Intent(In) :: bcmask(:,:,:,:)
 
+
+        Do k = 1, n_equations
+
+            If (equation_set(1,k)%primary) Then
+                Do j = 1, equation_set(1,k)%nlinks
+                    eqind = equation_set(1,k)%links(j)
+                    equation_set(1,k)%RHS(1+(j-1)*ndim1,:,:) = bcmask(1,:,:,eqind) ! Upper boundary
+                    equation_set(1,k)%RHS(ndim1*j,:,:) = bcmask(2,:,:,eqind)       ! Lower boundary
+                Enddo
+            Endif
+
+        Enddo
+    End Subroutine Apply_Boundary_Mask
+    
 
     !===========================
     !  Matrix Solve Routine

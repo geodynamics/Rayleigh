@@ -46,7 +46,7 @@ your ensemble run-directories, namely run1, run2, and run3.
 
 ::
 
-   user@machinename ~runs/ensemble $ more run_list 
+   user@machinename ~runs/ensemble $ more run_list
    run1
    run2
    run3
@@ -61,7 +61,7 @@ simulation needs by examining the main_input files:
 
 ::
 
-   user@machinename ~runs/ensemble $ head run1/main_input 
+   user@machinename ~runs/ensemble $ head run1/main_input
    &problemsize_namelist
     n_r = 128
     n_theta = 192
@@ -69,7 +69,7 @@ simulation needs by examining the main_input files:
     npcol = 16
    /
 
-   user@machinename ~runs/ensemble $ head run2/main_input 
+   user@machinename ~runs/ensemble $ head run2/main_input
    &problemsize_namelist
     n_r = 128
     n_theta = 384
@@ -77,7 +77,7 @@ simulation needs by examining the main_input files:
     npcol = 16
    /
 
-   user@machinename ~runs/ensemble $ head run3/main_input 
+   user@machinename ~runs/ensemble $ head run3/main_input
    &problemsize_namelist
     n_r = 64
     n_theta = 192
@@ -94,7 +94,7 @@ three simulations, and so the relevant call to Rayleigh would be:
 
 **Closing Notes:** When running in ensemble mode, it is *strongly
 recommended* that you redirect standard output for each simulation to a
-text file (see §\ `[sec:io] <#sec:io>`__). Otherwise, all simulations
+text file (see §\ :ref:`io`). Otherwise, all simulations
 write to the same default (machine-dependent) log file, making it
 difficult to read. Moreover, some machines such as NASA Pleiades will
 terminate a run if the log file becomes too long. This is easy to do

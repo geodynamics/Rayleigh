@@ -235,8 +235,26 @@ If the configure process fails to create Machine_Definitions, your build is a ch
 one.  Run './configure --blank' to generate a template that you may edit as needed.  
 IMPORTANT:  Ensure that whitespace is removed at the end of each line in this file.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+V Building the documentation
 
+If you plan to modify the documentation you may want to build it locally to
+check your changes before submission. To do so you need a number of additional
+dependencies that are not required to build the Rayleigh executable. In
+particular you need the following packages:
 
+sphinx (including its dependencies)
+pandoc
+python
+numpy
+scipy
+sphinxcontrib-bibtex
+nbsphinx
+jupyter-client
+ipykernel
 
-
-
+In order to build the documentation navigate to the doc/ directory, and start
+the sphinx build with 'make html' to build the html documentation, or 'make
+latexpdf' to build the pdf manual. The generated files will be placed in
+'doc/build/html' or 'doc/build/latex' respectively. Note that the design of the
+html documentation will deviate slightly from the online version.

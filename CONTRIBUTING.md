@@ -10,10 +10,8 @@ guide on the process of contributing to an open-source project
 [here](https://opensource.guide/how-to-contribute/).
 
 ## Asking and answering questions about Rayleigh
-The Rayleigh community maintains an active mailing list hosted by CIG
-[here](https://lists.geodynamics.org/cgi-bin/mailman/listinfo/geodyn). The
-mailing list is for questions about geodynamo models at all levels, including
-Rayleigh.
+The Rayleigh community maintains an active forum hosted by CIG
+[here](https://community.geodynamics.org/c/rayleigh).
 
 ## Bug reports
 It is a great help to the community if you report any bugs that you
@@ -60,6 +58,10 @@ feature branch) on which you do your modifications.
 - You can propose that your branch be merged into the Rayleigh
 code by opening a [pull request](https://guides.github.com/introduction/flow/).
 This will give others a chance to review your code. 
+
+If you want to modify the documentation and preview your changes locally, you
+can find instructions for compiling the documentation in the [INSTALL](INSTALL)
+file.
 
 We follow the philosophy that no pull request (independent of the author) is
 merged without a review from one other member of the community, and approval of

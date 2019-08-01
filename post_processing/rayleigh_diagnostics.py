@@ -119,7 +119,7 @@ class Spherical_3D_multi:
           if index == "grid": continue
           fd = open(path+var_file, 'rb')
           self.vals[index] = swapread(fd,dtype='float64',count=nphi*ntheta*nr,swap=bs)
-
+          self.vals[index] = np.reshape(self.vals[index],(nphi,ntheta,nr), order = 'F')
 
 
 class RayleighTiming:
