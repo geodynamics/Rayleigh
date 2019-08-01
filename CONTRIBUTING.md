@@ -59,6 +59,10 @@ feature branch) on which you do your modifications.
 code by opening a [pull request](https://guides.github.com/introduction/flow/).
 This will give others a chance to review your code. 
 
+If you want to modify the documentation and preview your changes locally, you
+can find instructions for compiling the documentation in the [INSTALL](INSTALL)
+file.
+
 We follow the philosophy that no pull request (independent of the author) is
 merged without a review from one other member of the community, and approval of
 one of the maintainers. This applies to maintainers as well as to first-time
