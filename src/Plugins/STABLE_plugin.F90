@@ -810,7 +810,7 @@ Contains
     s0 = 2.d0 * Angular_Velocity * pressure_specific_heat
     DO_IDX
         !grad_su%p3b(IDX,2) = s0 * (Radius(r)*cottheta(t)*dVmean_pdr(r,t) - dVmean_pdt(r,t))/ref%gravity(r)  !ds_dtheta
-        grad_su%p3b(IDX,2) = s0 * (Radius(r)*cottheta(t)*dVmean_pdr(IDX2) - dVmean_pdt(IDX2))/ref%gravity(r)  !ds_dtheta
+        grad_su%p3b(IDX,2) = s0 * (Radius(r)*cottheta(t)*dVmean_pdr(IDX2) - dVmean_pdt(IDX2))
         !print*,'88888888',grad_su%p3b(IDX,2)
     END_DO
     !$OMP END PARALLEL DO
