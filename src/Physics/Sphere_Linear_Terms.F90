@@ -43,7 +43,7 @@ Contains
  
             Call Initialize_Linear_System()
 
-            If (strict_L_conservation) Then
+            If (strict_L_conservation .or. gentle_L_conservation) Then
 
                 Allocate(Lconservation_weights(1:N_R))
                 Lconservation_weights(1:N_R) = 0.0d0
