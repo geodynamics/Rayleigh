@@ -45,8 +45,8 @@ Contains
         Use ReferenceState, Only : reference_namelist, reference_type, Rayleigh_Number, &
                                  Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
                                  Modified_Rayleigh_Number, poly_n, poly_nrho, poly_mass, &
-                                 Angular_Velocity, poly_rho_i, pressure_specific_heat
-        Use TransportCoefficients, Only : transport_namelist
+                                 Angular_Velocity, poly_rho_i, pressure_specific_heat, &
+                                 Transport_Namelist
 
         Implicit None
 

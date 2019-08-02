@@ -30,7 +30,6 @@ Module Diagnostics_Base
     Use Fields
     Use Math_Constants
     Use ReferenceState
-    Use TransportCoefficients
 
     Implicit None
 

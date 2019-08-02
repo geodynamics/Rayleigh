@@ -26,7 +26,7 @@ Module Diagnostics_Interface
     Use Fields
     Use Legendre_Polynomials, Only : gl_weights
     Use ReferenceState
-    Use TransportCoefficients
+
     Use Math_Constants
     Use Diagnostics_Base
 

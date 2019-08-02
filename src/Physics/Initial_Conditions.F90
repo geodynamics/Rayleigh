@@ -31,12 +31,11 @@ Module Initial_Conditions
     Use Controls
     Use Timers
     Use General_MPI, Only : BCAST2D
-    Use ReferenceState, Only : s_conductive, heating_type,ref
+    Use ReferenceState, Only : s_conductive, heating_type,ref, kappa, dlnkappa
     Use BoundaryConditions, Only : T_top, T_bottom, fix_tvar_Top, fix_tvar_bottom,&
          & fix_dtdr_top, fix_dtdr_bottom, dtdr_top, dtdr_bottom, &
          & C10_bottom, C11_bottom, C1m1_bottom
     Use ClockInfo, Only : Euler_Step
-    Use TransportCoefficients, Only : kappa, dlnkappa
     Use Linear_Solve
     Use Math_Utility
     Use BufferedOutput

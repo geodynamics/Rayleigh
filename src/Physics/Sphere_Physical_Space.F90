@@ -33,7 +33,6 @@ Module Sphere_Physical_Space
     Use Timers
     Use ClockInfo
     Use ReferenceState
-    Use TransportCoefficients
     Use Math_Constants
     Use Benchmarking, Only : benchmark_checkup
     Implicit None
