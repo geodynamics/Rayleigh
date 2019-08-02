@@ -83,13 +83,11 @@ Module ReferenceState
 
     Integer :: reference_type =1
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
-    Integer :: cooling_type = 0 ! 0 means no reference cooling.  > 0 will ADD to any exisiting reference heating
     Real*8  :: Luminosity = 0.0d0 ! specifies the integral of the heating function
     Real*8  :: Heating_Integral = 0.0d0  !same as luminosity (for non-star watchers)
     Real*8  :: Heating_EPS = 1.0D-12  !Small number to test whether luminosity specified
     Logical :: adjust_reference_heating = .false.  ! Flag used to decide if luminosity determined via boundary conditions
-    Real*8  :: heating_factor = 0.0d0, heating_r0 = 0.0d0  ! scaling and shifting factors for
-    Real*8  :: cooling_factor = 0.0d0, cooling_r0 = 0.0d0  ! heating and cooling
+
     Type(ReferenceInfo) :: ref
 
     Real*8 :: pressure_specific_heat  = 1.0d0 ! CP (not CV)
@@ -115,8 +113,7 @@ Module ReferenceState
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
-            & gravity_power, heating_factor, heating_r0, custom_reference_file,       &
-            & cooling_type, cooling_r0, cooling_factor,        &
+            & gravity_power, custom_reference_file,       &
             & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
             & override_constants, override_constant, ra_constants, with_custom_constants, &
             & with_custom_functions, with_custom_reference
@@ -464,7 +461,7 @@ Contains
         ! Phi(r) may represent internal heating of any type.  For stars, this heating would be
         ! associated with temperature diffusion of the reference state and/or nuclear burning.
 
-        If ( (heating_type .gt. 0) .or. (cooling_type .gt. 0) )Then
+        If ( heating_type .gt. 0)Then
             If (.not. Allocated(ref%heating)) Allocate(ref%heating(1:N_R))
             ref%heating(:) = 0.0d0
         Endif
@@ -473,30 +470,20 @@ Contains
             Call Constant_Entropy_Heating()
         Endif
 
-        If (heating_type .eq. 2) Then
-            Call Tanh_Reference_Heating()
-        Endif
-
         If (heating_type .eq. 4) Then
             Call  Constant_Energy_Heating()
         Endif
 
-        !///////////////////////////////////////////////////////////
-        ! Next, compute a cooling function if desired and ADD it to
-        ! whatever's in reference heating.
-        If (cooling_type .eq. 2) Then
-            Call Tanh_Reference_Cooling()
-        Endif
 
-        ! Heating Q_H and cooling Q_C are normalized so that:
-        ! Int_volume rho T Q_H dV = 1 and Int_volume rho T Q_C dV = 1
+        ! Heating Q_H is normalized so that:
+        ! Int_volume rho T Q_H dV = 1 
 
         !If luminosity or heating_integral has been set,
         !we set the integral of ref%heating using that.
 
         !Otherwise, we will use the boundary thermal flux
         !To establish the integral
-        If ( (heating_type .gt. 0) .or. (cooling_type .gt. 0) )Then
+        If (heating_type .gt. 0)Then
             adjust_reference_heating = .true.
             If (abs(Luminosity) .gt. heating_eps) Then
                 adjust_reference_heating = .false.
@@ -575,102 +562,6 @@ Contains
         !Note that in the boussinesq limit, alpha = Luminosity/Volume
     End Subroutine Constant_Entropy_Heating
 
-    Subroutine Tanh_Reference_Heating()
-        Implicit None
-        Real*8 :: integral, alpha
-        Real*8, Allocatable :: temp(:), x(:), temp2(:)
-          Integer :: i
-        Character*120 :: heating_file
-
-        ! Luminosity is specified as an input
-        ! Heating is set so that temp * 4 pi r^2 integrates to one Lsun
-        ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
-        Allocate(temp(1:N_R))
-        Allocate(temp2(1:N_R))
-        Allocate(x(1:N_R))
-        x = heating_factor*(radius-heating_r0)/ (maxval(radius)-minval(radius))
-        ! x runs from zero to 1 if heating_r0 is min(radius)
-        !Call tanh_profile(x,temp)
-        Do i = 1, n_r
-            temp2(i) = 0.5d0*(1.0d0-tanh(x(i))*tanh(x(i)))*heating_factor/(maxval(radius)-minval(radius))
-        Enddo
-
-        !temp2 = heating_factor*(1-(temp*temp))/ (maxval(radius)-minval(radius))
-
-        temp2 = -temp2/(4*pi*radius*radius)
-
-        Call Integrate_in_radius(temp2,integral)
-
-        integral = integral*4.0d0*pi
-        alpha = 1.0d0/integral
-
-        ref%heating(:) = alpha*temp2/(ref%density*ref%temperature)
-        If (my_rank .eq. 0) Then
-            heating_file = Trim(my_path)//'reference_heating'
-            Open(unit=15,file=heating_file,form='unformatted', status='replace',access='stream')
-            Write(15)n_r
-            Write(15)(radius(i),i=1,n_r)
-            Write(15)(ref%heating(i), i = 1, n_r)
-            Write(15)(temp(i), i = 1, n_r)
-            Write(15)(temp2(i), i = 1, n_r)
-            Write(15)(ref%density(i), i = 1, n_r)
-            Write(15)(ref%temperature(i), i = 1, n_r)
-        Endif
-
-        DeAllocate(x,temp, temp2)
-    End Subroutine Tanh_Reference_Heating
-
-    Subroutine Tanh_Reference_Cooling()
-        Implicit None
-        Real*8 :: integral, alpha
-        Real*8, Allocatable :: temp(:), x(:), temp2(:), cool_arr(:,:)
-          Integer :: i
-        Character*120 :: cooling_file
-
-        ! Luminosity is specified as an input
-        ! Heating is set so that temp * 4 pi r^2 integrates to one Lsun
-        ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
-        Allocate(temp(1:N_R))
-        Allocate(temp2(1:N_R))
-        Allocate(x(1:N_R))
-        x = cooling_factor*(radius-cooling_r0)/ (maxval(radius)-minval(radius)) ! x runs from zero to 1 if heating_r0 is min(radius)
-        !Call tanh_profile(x,temp)
-        Do i = 1, n_r
-            temp2(i) = 0.5d0*(1.0d0-tanh(x(i))*tanh(x(i)))*cooling_factor/(maxval(radius)-minval(radius))
-        Enddo
-
-        !temp2 = heating_factor*(1-(temp*temp))/ (maxval(radius)-minval(radius))
-
-        temp2 = -temp2/(4*pi*radius*radius)
-
-        Call Integrate_in_radius(temp2,integral)
-
-        integral = integral*4.0d0*pi
-        alpha = 1.0d0/integral
-
-        !/////////////////////
-        ! The "Cooling" part comes in through the minus sign here - otherwise, this is identical to the heating function
-        Do i = 1, n_r
-            ref%heating(i) = ref%heating(i)-alpha*temp2(i)/(ref%density(i)*ref%temperature(i))
-        Enddo
-        !temp2 = ref%heating*ref%density*ref%temperature
-        !Call Integrate_in_radius(temp2,integral)
-        !write(6,*)'integral:  ', integral*4.0*pi
-
-        cooling_file = Trim(my_path)//'reference_heating'
-        Allocate(cool_arr(1:n_r,1:6))
-        cool_arr(:,1) = radius
-        cool_arr(:,2) = ref%heating
-        cool_arr(:,3) = temp
-        cool_arr(:,4) = temp2
-        cool_arr(:,5) = ref%density
-        cool_arr(:,6) = ref%temperature
-
-        Call Write_Profile(cool_arr,cooling_file)
-        DeAllocate(cool_arr)
-        DeAllocate(x,temp, temp2)
-    End Subroutine Tanh_Reference_Cooling
-
     Subroutine Integrate_in_radius(func,int_func)
         Implicit None
         Real*8, Intent(In) :: func(1:)
@@ -713,24 +604,6 @@ Contains
             Close(15)
         Endif
     End Subroutine Write_Reference
-
-    Subroutine Write_Profile(arr,filename)
-        Implicit None
-        Character*120, Optional, Intent(In) :: filename
-        Integer :: i,j,nq,sig = 314, nx
-        Real*8, Intent(In) :: arr(1:,1:)
-        nx = size(arr,1)
-        nq = size(arr,2)
-        If (my_rank .eq. 0) Then
-            Open(unit=15,file=filename,form='unformatted', status='replace',access='stream')
-            Write(15)sig
-            Write(15)nx
-            Write(15)nq
-            Write(15)((arr(i,j),i=1,nx),j = 1, nq)
-
-            Close(15)
-        Endif
-    End Subroutine Write_Profile
 
     Subroutine Get_Custom_Reference()
         Implicit None
@@ -1060,8 +933,6 @@ Contains
         reference_type =1
         heating_type = 0
         Luminosity =0.0d0
-        heating_factor = 0.0d0
-        heating_r0 = 0.0d0
 
         pressure_specific_heat = 0.0d0 ! CP (not CV)
         poly_n = 0.0d0
