@@ -32,6 +32,10 @@ Module ReferenceState
     Use Math_Utility
     Use General_MPI, Only : BCAST2D
     Implicit None
+
+    !///////////////////////////////////////////////////////////
+    ! I.  Variables describing the background reference state
+
     Type ReferenceInfo
         Real*8, Allocatable :: Density(:)
         Real*8, Allocatable :: dlnrho(:)
@@ -120,7 +124,7 @@ Module ReferenceState
 
 
     !///////////////////////////////////////////////////////////////////////////////////////
-    ! Variables Related to the Transport Coefficients
+    ! II.  Variables Related to the Transport Coefficients
 
     Real*8, Allocatable :: nu(:), kappa(:), eta(:)
     Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlneta(:)
@@ -146,6 +150,9 @@ Module ReferenceState
 
 
 Contains
+
+    !/////////////////////////////////////////////////////////////////
+    ! III.  Subroutines used to define the background reference state
 
     Subroutine Initialize_Reference()
         Implicit None
@@ -992,7 +999,8 @@ Contains
 
 
     !//////////////////////////////////////////////////////////////////////////
-    !Routines related to the Transport Coefficients
+    ! IV.  Subroutines used to define the transport coefficients
+
     Subroutine Initialize_Transport_Coefficients()
         Call Allocate_Transport_Coefficients
         If (.not. Dimensional_Reference) Then
