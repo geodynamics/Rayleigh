@@ -61,7 +61,6 @@ Module BoundaryConditions
     Character*120 :: C_top_file       = '__nothing__'
     Character*120 :: C_bottom_file    = '__nothing__'
 
-    Logical :: Gentle_L_Conservation = .false.
     Logical :: Strict_L_Conservation = .false.         ! (In-Progress) Turn on to enforce angular momentum conservation abous x,y, and z-axes
     Logical :: no_slip_boundaries = .false. ! Set to true to use no-slip boundaries.  Stree-free boundaries are the default.
     Logical :: stress_free_top = .true., stress_free_bottom = .true.
@@ -75,7 +74,7 @@ Module BoundaryConditions
         C10_bottom, C10_top, C11_bottom, C11_top, C1m1_bottom, C1m1_top, Br_bottom, &
         dipole_tilt_degrees, impose_dipole_field, fix_tdt_bottom, no_slip_top, no_slip_bottom, &
         stress_free_top, stress_free_bottom, T_top_file, T_bottom_file, dTdr_top_file, dTdr_bottom_file, &
-        C_top_file, C_bottom_file, Gentle_L_Conservation
+        C_top_file, C_bottom_file
 
 Contains
 
@@ -281,7 +280,6 @@ Contains
         C_top_file       = '__nothing__'
         C_bottom_file    = '__nothing__'
 
-        Gentle_L_Conservation = .false.
         Strict_L_Conservation = .false.
         no_slip_boundaries = .false.
     End Subroutine Restore_BoundaryCondition_Defaults
