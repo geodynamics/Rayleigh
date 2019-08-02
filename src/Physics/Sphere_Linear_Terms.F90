@@ -37,30 +37,29 @@ Contains
     Subroutine Linear_Init()
         Implicit None
         Real*8 :: amp, T,arg
-        Integer :: n, r
+        Integer :: n, r, m, nm
         !Depending on process layout, some ranks may not participate in the solve
-        If (my_num_lm .gt. 0) Then
-
+        If (my_num_lm .gt. 0) Then 
+ 
             Call Initialize_Linear_System()
 
             If (strict_L_conservation) Then
 
                 Allocate(Lconservation_weights(1:N_R))
                 Lconservation_weights(1:N_R) = 0.0d0
-
-                Do n = 1, N_R
-                    Do r = 1, N_R
-                        T = gridcp%dcheby(1)%data(r,n,0)
-                        Lconservation_weights(n) = Lconservation_weights(n) + radial_integral_weights(r) * T
+                nm = 0
+                Do m = 1, gridcp%domain_count
+                    Do n = 1, gridcp%npoly(m)
+                        Do r = 1, gridcp%npoly(m)
+                            T = gridcp%dcheby(m)%data(r,n,0)
+                            Lconservation_weights(n+nm) = Lconservation_weights(n+nm) + radial_integral_weights(r+nm) * T
+                        Enddo
                     Enddo
+                    Lconservation_weights( nm+(2*gridcp%npoly(m))/3+1:nm+gridcp%npoly(m) ) = 0.0d0  ! De-Alias
+                    nm = nm + gridcp%npoly(m)
                 Enddo
-
-                Lconservation_weights( (2*N_R)/3+1: ) = 0.0d0  ! De-Alias
-
             Endif
-
         Endif
-
     End Subroutine Linear_Init
 
     Subroutine Reset_Linear_Equations()
