@@ -110,17 +110,7 @@ Module ReferenceState
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
     Logical :: Dimensional_Reference = .false.  ! Changed depending on reference state specified
 
-    !//////////////////////////////////////////////////////////////////////
-    ! Development Section
-    ! Everything below this line is related to in-development features.
-    ! This is unsupported code.
-    ! The code may well break if these variables are used in production.
-    ! Email inquiries regarding these implementation or meaning of anything below this line
-    ! will be politely ignored.
-    Real*8, Allocatable :: paf_v2(:)
-    Real*8, Allocatable :: paf_gv2(:)
-    Real*8, Allocatable :: paf_p2(:)
-    Real*8, Allocatable :: paf_gp2(:)
+
 
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
@@ -213,11 +203,7 @@ Contains
         Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
-        ! devel variables (see note at top regarding devel)
-        Real*8 :: pafk
-        Real*8, Allocatable :: sink(:), cosk(:)
-        Real*8, Allocatable :: array2d(:,:)
-        Character*120 :: dvf
+
         Dimensional_Reference = .false.
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
         ohmic_heating = .false.
@@ -271,48 +257,6 @@ Contains
         ref%dpdr_w_term(:)        =  ref%density*pscaling
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
         ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
-
-        If (devel_physics) Then
-            Allocate(paf_v2(1:N_R), paf_gv2(1:N_R))
-            Allocate(paf_p2(1:N_R), paf_gp2(1:N_R))
-            Allocate(sink(1:N_R), cosk(1:N_R) )
-            pafk = 4.49d0/radius(1)  ! 4.49 is possibly a control parameter...possibly.
-            sink = sin(pafk*radius)
-            cosk = cos(pafk*radius)
-
-            paf_p2(:) = sin(pafk*radius)/pafk/radius
-            paf_p2 = paf_p2*paf_p2
-            ! take derivative
-            paf_gp2 = -2.0d0*paf_p2/radius
-            paf_gp2 = paf_gp2+&
-                      2.0d0*sin(pafk*radius)*cos(pafk*radius)/pafk/(radius**3)
-
-            paf_v2 = sink*sink+(pafk**2)*r_squared*cosk*cosk
-            paf_v2 = paf_v2 - two*pafk*radius*sink*cosk
-            paf_v2 = paf_v2/(pafk**4)
-            paf_v2 = paf_v2*OneOverRSquared*OneOverRSquared
-
-            paf_gv2 = -two*(pafk**3)*r_squared*cosk*sink +two*(pafk**2)*radius*sink*sink
-            paf_gv2 = paf_gv2/(pafk**4)
-            paf_gv2 = paf_gv2*OneOverRSquared*OneOverRSquared
-
-            paf_gv2 = paf_gv2-4.0d0*paf_v2*One_Over_R
-
-            !renormalize (do gv2 first!)
-            paf_gv2 = paf_gv2/maxval(paf_v2) *Rayleigh_Number
-            paf_v2 = paf_v2/maxval(paf_v2) * Rayleigh_Number
-
-            Allocate(array2d(1:N_R,5))
-            array2d(:,1) = radius(:)
-            array2d(:,2) = paf_v2(:)
-            array2d(:,3) = paf_gv2(:)
-            array2d(:,4) = paf_p2(:)
-            array2d(:,5) = paf_gp2(:)
-            dvf = 'paf.dat'
-            Call Write_Profile(array2d,dvf)
-            DeAllocate(array2d)
-            DeAllocate(sink, cosk)
-        Endif
 
         ref%script_N_top       = 1.0d0
         ref%script_K_top       = 1.0d0/Prandtl_Number
