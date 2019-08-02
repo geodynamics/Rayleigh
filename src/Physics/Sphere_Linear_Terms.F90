@@ -27,7 +27,7 @@ Module Sphere_Linear_Terms
     Use BoundaryConditions
     Use Timers
     Use ClockInfo
-    Use ReferenceState
+    Use PDE_Coefficients
     Use Math_Constants
     Implicit None
     Real*8, Allocatable :: Lconservation_weights(:)

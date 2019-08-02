@@ -25,7 +25,7 @@ Module Diagnostics_Interface
     Use Spherical_IO
     Use Fields
     Use Legendre_Polynomials, Only : gl_weights
-    Use ReferenceState
+    Use PDE_Coefficients
 
     Use Math_Constants
     Use Diagnostics_Base

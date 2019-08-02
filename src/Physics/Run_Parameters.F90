@@ -42,7 +42,7 @@ Contains
         Use BoundaryConditions, Only : boundary_conditions_namelist
         Use Initial_Conditions, Only : initial_conditions_namelist
         Use TestSuite, Only : test_namelist
-        Use ReferenceState, Only : reference_namelist, reference_type, Rayleigh_Number, &
+        Use PDE_Coefficients, Only : reference_namelist, reference_type, Rayleigh_Number, &
                                  Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
                                  Modified_Rayleigh_Number, poly_n, poly_nrho, poly_mass, &
                                  Angular_Velocity, poly_rho_i, pressure_specific_heat, &

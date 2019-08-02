@@ -29,7 +29,7 @@ Module Diagnostics_Base
     Use Spherical_IO
     Use Fields
     Use Math_Constants
-    Use ReferenceState
+    Use PDE_Coefficients
 
     Implicit None
 

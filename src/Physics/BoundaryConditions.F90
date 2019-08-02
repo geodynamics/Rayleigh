@@ -27,7 +27,7 @@ Module BoundaryConditions
                              my_lm_lval, my_lm_max, lm_count, lm_owner
 
     Use Generic_Input
-    Use ReferenceState
+    Use PDE_Coefficients
 
     Implicit None
 

@@ -32,7 +32,7 @@ Module Sphere_Physical_Space
     Use General_MPI, Only : global_max
     Use Timers
     Use ClockInfo
-    Use ReferenceState
+    Use PDE_Coefficients
     Use Math_Constants
     Use Benchmarking, Only : benchmark_checkup
     Implicit None

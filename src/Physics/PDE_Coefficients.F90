@@ -18,14 +18,20 @@
 !  <http://www.gnu.org/licenses/>.
 !
 
-! REFERENCE STATE MODULE
-! Contains routines for initializing the reference state structure
-! Reference state structure contains all information related to background
-! stratification.  It DOES NOT contain transport variable (e.g. nu, kappa) information
+! This module defines the constant and nonconstant coefficients
+! that appear in the system of PDEs solved by Rayleigh.
+! These coefficients are broadly classified into two groups:
+! 1.  The reference (or thermodynamic background) state
+! 2.  Transport coefficients (nu, kappa, eta).
 
+! This module is divided into four sections.  Search on any of the
+! phrases below to jump to that section.
+! I.  Variables describing the background reference state
+! II.  Variables Related to the Transport Coefficients
+! III.  Subroutines used to define the background reference state
+! IV.  Subroutines used to define the transport coefficients
 
-
-Module ReferenceState
+Module PDE_Coefficients
     Use ProblemSize
     Use Controls
     Use Math_Constants
@@ -57,10 +63,6 @@ Module ReferenceState
         ! The following two terms are used to compute the ohmic and viscous heating
         Real*8, Allocatable :: ohmic_amp(:) !multiplied by {eta(r),H(r)}J^2 in dSdt eq.
         Real*8, Allocatable :: viscous_amp(:) !multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
-
-        Real*8 :: script_N_Top ! If a nondimensional reference state is employed,
-        Real*8 :: script_K_Top ! these are used in lieu of nu_top from the input file.
-        Real*8 :: script_H_Top ! {N:nu, K:kappa, H:eta}
 
     End Type ReferenceInfo
 
@@ -110,7 +112,6 @@ Module ReferenceState
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
-    Logical :: Dimensional_Reference = .false.  ! Changed depending on reference state specified
 
 
 
@@ -223,9 +224,6 @@ Contains
 
         ref%Coriolis_Coeff = Zero
         ref%Lorentz_Coeff  = Zero
-        ref%script_N_Top   = Zero
-        ref%script_K_Top   = Zero
-        ref%script_H_Top   = Zero
 
     End Subroutine Allocate_Reference_State
 
@@ -236,7 +234,7 @@ Contains
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
 
-        Dimensional_Reference = .false.
+
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
         ohmic_heating = .false.
         If (my_rank .eq. 0) Then
@@ -290,17 +288,17 @@ Contains
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
         ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
 
-        ref%script_N_top       = 1.0d0
-        ref%script_K_top       = 1.0d0/Prandtl_Number
+        nu_top       = 1.0d0
+        kappa_top       = 1.0d0/Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0
 
         If (magnetism) Then
             ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
-            ref%script_H_Top     = 1.0d0/Magnetic_Prandtl_Number
+            eta_Top     = 1.0d0/Magnetic_Prandtl_Number
             ref%ohmic_amp(1:N_R) = ref%lorentz_coeff
         Else
             ref%Lorentz_Coeff    = 0.0d0
-            ref%script_H_Top     = 0.0d0
+            eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
@@ -312,7 +310,7 @@ Contains
         Real*8, Allocatable :: dtmparr(:), gravity(:)
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
-        Dimensional_Reference = .false.
+
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Non-dimensional)"))
             Write(dstring,dofmt)Modified_Rayleigh_Number
@@ -367,20 +365,20 @@ Contains
         ref%dpdr_w_term(:) = ref%density
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
 
-        ref%script_N_top   = Ekman_Number
-        ref%script_K_top   = Ekman_Number/Prandtl_Number
+        nu_top   = Ekman_Number
+        kappa_top   = Ekman_Number/Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
                                  & Dissipation_Number/Modified_Rayleigh_Number
 
         If (magnetism) Then
             ref%Lorentz_Coeff    = Ekman_Number/(Magnetic_Prandtl_Number)
-            ref%script_H_top     = Ekman_Number/Magnetic_Prandtl_Number
+            eta_top     = Ekman_Number/Magnetic_Prandtl_Number
 
             otmp = (Dissipation_Number*Ekman_Number**2)/(Modified_Rayleigh_Number*Magnetic_Prandtl_Number**2)
             ref%ohmic_amp(1:N_R) = otmp/ref%density(1:N_R)/ref%temperature(1:N_R)
         Else
             ref%Lorentz_Coeff    = 0.0d0
-            ref%script_H_Top     = 0.0d0
+            eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
@@ -411,8 +409,6 @@ Contains
             Write(dstring,dofmt)pressure_specific_heat
             Call stdout%print(" ---- CP (erg g^-1 cm^-3 K^-1)      : "//trim(dstring))
         Endif
-
-        Dimensional_Reference = .true. ! This is actually the default
 
         ! Adiabatic, Polytropic Reference State (see, e.g., Jones et al. 2011)
         ! The following parameters are read from the input file.
@@ -982,7 +978,7 @@ Contains
         Prandtl_Number          = 1.0d0
         Magnetic_Prandtl_Number = 1.0d0
         gravity_power           = 0.0d0
-        Dimensional_Reference = .true.
+
         custom_reference_file ='nothing'
 
         If (allocated(s_conductive)) DeAllocate(s_conductive)
@@ -1003,12 +999,6 @@ Contains
 
     Subroutine Initialize_Transport_Coefficients()
         Call Allocate_Transport_Coefficients
-        If (.not. Dimensional_Reference) Then
-            ! nu,kappa, and eta are based on the non-dimensionalization employed
-            ! and are not read from the main_input file.
-            nu_top    = ref%script_N_top
-            kappa_top = ref%script_K_top
-        Endif
 
         If ((.not. custom_reference_read) .and. &
             ((nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3))) Then
@@ -1024,7 +1014,7 @@ Contains
         Endif
 
         If (magnetism) Then
-            If (.not. Dimensional_Reference) eta_top = ref%script_H_top
+
             Call Initialize_Diffusivity(eta,dlneta,eta_top,eta_type,eta_power,7,7,13)
             If (ohmic_heating) Then
                 Allocate(ohmic_heating_coeff(1:N_R))
@@ -1229,4 +1219,4 @@ Contains
 
     End Subroutine Compute_Diffusion_Coefs
 
-End Module ReferenceState
+End Module PDE_Coefficients

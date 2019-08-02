@@ -33,7 +33,7 @@ Module Benchmarking
     Use Spherical_IO
     Use Fields
     Use Legendre_Polynomials, Only : gl_weights
-    Use ReferenceState
+    Use PDE_Coefficients
     Use Math_Constants
     Use BoundaryConditions
     Use Initial_Conditions
@@ -131,8 +131,6 @@ Contains
             Prandtl_Number = 1.0d0
             heating_type = 0
             gravity_power = 1.0d0
-            !dimensional_reference = .false.
-
 
         Endif
 
@@ -182,9 +180,6 @@ Contains
             reference_type = 1
             heating_type = 0
             gravity_power = 1.0d0
-            !dimensional_reference = .false.
-
-
 
         Endif
 
