@@ -36,7 +36,7 @@ Module TransportCoefficients
     Real*8, Allocatable :: W_Diffusion_Coefs_0(:), W_Diffusion_Coefs_1(:)
     Real*8, Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
     Real*8, Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
-    Real*8, Allocatable ::  A_Diffusion_Coefs_1(:)
+    Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
 
     Integer :: kappa_type =1, nu_type = 1, eta_type = 1
     Real*8 :: nu_top = 1.0d0, kappa_top = 1.0d0, eta_top = 1.0d0
@@ -46,14 +46,13 @@ Module TransportCoefficients
     Real*8  :: hyperdiffusion_beta = 0.0d0
     Real*8  :: hyperdiffusion_alpha = 1.0d0
 
-
     Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, nu_power, kappa_power, eta_power, &
             & nu_top, kappa_top, eta_top, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
-
 
 Contains
 
     Subroutine Compute_Diffusion_Coefs()
+        Implicit None
         ! These coefficients are nonzero only when nu and/or rho vary in radius
         ! The formulas here have been verified against my notes
         ! and against those implemented in ASH (which are slightly different from Brun et al. 2004
@@ -73,7 +72,6 @@ Contains
         Allocate(DW_Diffusion_Coefs_2(1:N_R))
         DW_Diffusion_Coefs_2 = dlnu-ref%dlnrho
         DW_Diffusion_Coefs_1 = ref%d2lnrho+(2.0d0)/radius*ref%dlnrho+2.0d0/radius*dlnu+dlnu*ref%dlnrho
-        !DW_Diffusion_Coefs_0 = 2.0d0/radius+2.0d0*ref%dlnrho/3.0d0+dlnu
         DW_Diffusion_Coefs_0 = 2.0d0*ref%dlnrho/3.0d0+dlnu      !pulled out 2/r since that doesn't depend on rho or nu
             !include the factor of nu in these coefficients (and add minus sign for coefs 1 and 0)
         DW_Diffusion_Coefs_2 =  DW_Diffusion_Coefs_2*nu
@@ -97,7 +95,6 @@ Contains
             Allocate(A_Diffusion_Coefs_1(1:N_R))
             A_Diffusion_Coefs_1 = eta*dlneta
         Endif
-
 
     End Subroutine Compute_Diffusion_Coefs
 
@@ -148,6 +145,7 @@ Contains
         Character*120, Optional, Intent(In) :: filename
         Character*120 :: transport_file
         Integer :: i, sig=314
+
         if (present(filename)) then
             transport_file = Trim(my_path)//filename
         else
@@ -186,7 +184,8 @@ Contains
     Subroutine Transport_Dependencies()
         Implicit None
         Real*8 :: fsun, lum_top, lum_bottom
-        !Any odd boundary conditions that need the reference state
+
+        ! Any odd boundary conditions that need the reference state
         ! or nu/kappa etc. can be set here
         ! As can any reference state quanitities, such as heating, that
         ! might depend on nu and kappa
@@ -217,6 +216,8 @@ Contains
     End Subroutine Transport_Dependencies
 
     Subroutine Allocate_Transport_Coefficients()
+        Implicit None
+
         Allocate(nu(1:N_r))
         Allocate(dlnu(1:N_r))
         Allocate(kappa(1:N_r))
@@ -227,11 +228,11 @@ Contains
     End Subroutine Allocate_Transport_Coefficients
 
     Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
-	Implicit None
-	Real*8, Intent(InOut) :: x(:), dlnx(:)
-	Real*8, Intent(InOut) :: xtop
-	Integer, Intent(In) :: ci, fi, dlnfi, xtype
-	Real*8, Intent(In) :: xpower
+	    Implicit None
+	    Real*8, Intent(InOut) :: x(:), dlnx(:)
+	    Real*8, Intent(InOut) :: xtop
+	    Integer, Intent(In) :: ci, fi, dlnfi, xtype
+	    Real*8, Intent(In) :: xpower
         Character(len=2) :: ind
 
         If (reference_type .eq. 4) Then
@@ -268,16 +269,20 @@ Contains
                 EndIf
 
         End Select
+
     End Subroutine Initialize_Diffusivity
 
     Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
+        Implicit None
         Real*8, Intent(InOut) :: coeff(:), dln(:)
         Real*8, Intent(In) :: coeff_top, coeff_power
+
         ! Computes a transport coefficient and its logarithmic derivative
         ! using a density-dependent form for the coefficient:
         !        coeff = coeff_top*(rho/rho_top)**coeff_power
         coeff = coeff_top*(ref%density/ref%density(1))**coeff_power
         dln = coeff_power*ref%dlnrho
+
     End Subroutine Vary_With_Density
 
     Subroutine Restore_Transport_Defaults
@@ -290,20 +295,19 @@ Contains
         If (Allocated(dlnkappa)) DeAllocate(dlnkappa)
         If (Allocated(dlneta))   DeAllocate(dlneta)
 
-        If (allocated  (W_Diffusion_Coefs_0)) DeAllocate( W_Diffusion_Coefs_0)
-        If (allocated  (W_Diffusion_Coefs_1)) DeAllocate( W_Diffusion_Coefs_1)
+        If (allocated(W_Diffusion_Coefs_0) ) DeAllocate( W_Diffusion_Coefs_0)
+        If (allocated(W_Diffusion_Coefs_1) ) DeAllocate( W_Diffusion_Coefs_1)
 
-        If (allocated (dW_Diffusion_Coefs_0)) DeAllocate(dW_Diffusion_Coefs_0)
-        If (allocated (dw_Diffusion_Coefs_1)) DeAllocate(dW_Diffusion_Coefs_1)
-        If (allocated (dW_diffusion_coefs_2)) DeAllocate(dW_Diffusion_Coefs_2)
+        If (allocated(dW_Diffusion_Coefs_0)) DeAllocate(dW_Diffusion_Coefs_0)
+        If (allocated(dw_Diffusion_Coefs_1)) DeAllocate(dW_Diffusion_Coefs_1)
+        If (allocated(dW_diffusion_coefs_2)) DeAllocate(dW_Diffusion_Coefs_2)
 
-        If (allocated(S_Diffusion_Coefs_1)) DeAllocate(S_Diffusion_Coefs_1)
+        If (allocated(S_Diffusion_Coefs_1) ) DeAllocate( S_Diffusion_Coefs_1)
 
-        If (allocated(Z_Diffusion_Coefs_1)) DeAllocate(Z_Diffusion_Coefs_1)
-        If (allocated(Z_Diffusion_Coefs_0)) DeAllocate(Z_Diffusion_Coefs_0)
+        If (allocated(Z_Diffusion_Coefs_1) ) DeAllocate( Z_Diffusion_Coefs_1)
+        If (allocated(Z_Diffusion_Coefs_0) ) DeAllocate( Z_Diffusion_Coefs_0)
 
-        If (allocated(A_Diffusion_Coefs_1)) DeAllocate(A_Diffusion_Coefs_1)
-
+        If (allocated(A_Diffusion_Coefs_1) ) DeAllocate( A_Diffusion_Coefs_1)
 
         kappa_type =1
         nu_type = 1
@@ -320,6 +324,7 @@ Contains
     End Subroutine Restore_Transport_Defaults
 
     Subroutine Finalize_Equation_Coefficients()
+        Implicit None
         Character*120 :: filename
 
         ra_constants(1) = ref%coriolis_coeff
