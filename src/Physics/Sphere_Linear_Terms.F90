@@ -660,42 +660,6 @@ Contains
                     Call Load_BC(lp,r,aeq,avar,one,0)
                 Endif
 
-                !=============== STABLE =============================
-
-                If (STABLE_flag) Then
-
-
-                   ! Radial field at the top
-
-                   r = 1
-
-                   Call Clear_Row(aeq,lp,1)
-
-                   Call Clear_Row(ceq,lp,1)
-
-                   Call Load_BC(lp,r,aeq,avar,one,0)
-
-                   Call Load_BC(lp,r,ceq,cvar,one,1)
-
-
-                   ! Horizontal field at the bottom
-
-                   r = N_R
-
-                   Call Clear_Row(aeq,lp,N_R)
-
-                   Call Clear_Row(ceq,lp,N_R)
-
-                   Call Load_BC(lp,r,aeq,avar,one,1)
-
-                   Call Load_BC(lp,r,ceq,cvar,one,0)
-
-
-                EndIf
-
-                !=============== STABLE =============================
-
-
             Endif    ! Magnetism
 
 
