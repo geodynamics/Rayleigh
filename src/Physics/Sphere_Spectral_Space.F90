@@ -38,8 +38,9 @@ Contains
 
     Subroutine Post_Solve()
         Implicit None
-        Integer :: m, i
+        Integer :: m, i, lp, l, n, nn
         Character*12 :: tstring, otstring
+        Real*8 :: integral
 
         ! wsp%p1b is assumed to be allocated
         Call StopWatch(psolve_time)%startclock()
@@ -82,6 +83,20 @@ Contains
 
         Call gridcp%dealias_buffer(wsp%p1a)    ! de-alias
 
+        ! Non-Boundary application of L_conservation
+        If (gentle_L_conservation) then
+            Do lp = 1, my_num_lm
+                l = my_lm_lval(lp)
+                if (l .eq. 1) then 
+                    integral = SUM(wsp%p1a(:,1,lp,zvar)*Lconservation_weights)/Lconservation_weights(1)
+                    nn = 1
+                    Do n = 1, gridcp%domain_count
+                        wsp%p1a(nn,1,lp,zvar) = wsp%p1a(nn,1,lp,zvar)-integral
+                        nn = nn + gridcp%npoly(n)
+                    enddo
+                endif
+            enddo
+        endif
 
         ! This is terribly inefficient, but I just want to test the stability of Chebyshev vs. FD for not..
         ! We'll create a new buffer.  ctemp
