@@ -29,7 +29,7 @@ prepare_directory:
 	@cp $(SRC)/Parallel_Framework/*.F90 $(BUILD)/.
 	@cp $(SRC)/Data_Structures/*.F90 $(BUILD)/.
 	@cp $(SRC)/Math_Layer/*.F90 $(BUILD)/.
-	@cp $(SRC)/Plugins/*.F90 $(BUILD)/.
+	@cp $(SRC)/Plugins/*.F90 $(BUILD)/.  2>/dev/null || :
 	@cp $(SRC)/IO/*.F90 $(BUILD)/.
 	@cp $(SRC)/Test_Suite/*.F90 $(BUILD)/.
 	@cp $(SRC)/Physics/*.F90 $(BUILD)/.

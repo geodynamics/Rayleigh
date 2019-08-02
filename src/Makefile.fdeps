@@ -42,14 +42,14 @@ General_MPI.o : General_MPI.F90 Ra_MPI_Base.o
 Generic_Input.o : Generic_Input.F90 ProblemSize.o SendReceive.o Load_Balance.o Spherical_Buffer.o Parallel_Framework.o Ra_MPI_Base.o 
 ISendReceive.o : ISendReceive.F90 Ra_MPI_Base.o 
 Initial_Conditions.o : Initial_Conditions.F90 Load_Balance.o BufferedOutput.o Math_Utility.o Linear_Solve.o TransportCoefficients.o ClockInfo.o BoundaryConditions.o ReferenceState.o General_MPI.o Timers.o Controls.o Generic_Input.o Checkpointing.o Math_Constants.o SendReceive.o Legendre_Transforms.o Fourier_Transform.o Parallel_Framework.o Fields.o ProblemSize.o 
-Input.o : Input.F90 STABLE_plugin.o Parallel_Framework.o TransportCoefficients.o ReferenceState.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o Controls.o ProblemSize.o 
+Input.o : Input.F90 Parallel_Framework.o TransportCoefficients.o ReferenceState.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o Controls.o ProblemSize.o 
 Legendre_Polynomials.o : Legendre_Polynomials.F90 
 Legendre_Transforms.o : Legendre_Transforms.F90 Structures.o Legendre_Polynomials.o 
 Linear_Solve.o : Linear_Solve.F90 Chebyshev_Polynomials.o Finite_Difference.o 
 Linear_Terms_Cart.o : Linear_Terms_Cart.F90 TransportCoefficients.o ReferenceState.o ClockInfo.o Timers.o BoundaryConditions.o Fields.o Linear_Solve.o ProblemSize.o Controls.o Load_Balance.o 
 Load_Balance.o : Load_Balance.F90 MPI_LAYER.o 
 MPI_LAYER.o : MPI_LAYER.F90 All_to_All.o Ra_MPI_Base.o 
-Main.o : Main.F90 Run_Parameters.o STABLE_plugin.o Benchmarking.o Fourier_Transform.o Timers.o Sphere_Driver.o Sphere_Linear_Terms.o Checkpointing.o TestSuite.o Diagnostics_Interface.o Input.o ProblemSize.o Parallel_Framework.o Initial_Conditions.o Fields.o Controls.o MakeDir.o 
+Main.o : Main.F90 Run_Parameters.o Benchmarking.o Fourier_Transform.o Timers.o Sphere_Driver.o Sphere_Linear_Terms.o Checkpointing.o TestSuite.o Diagnostics_Interface.o Input.o ProblemSize.o Parallel_Framework.o Initial_Conditions.o Fields.o Controls.o MakeDir.o 
 MakeDir.o : MakeDir.F90 
 Math_Constants.o : Math_Constants.F90 
 Math_Utility.o : Math_Utility.F90 
@@ -58,15 +58,13 @@ ProblemSize.o : ProblemSize.F90 Timers.o BufferedOutput.o Math_Constants.o Cheby
 Ra_MPI_Base.o : Ra_MPI_Base.F90 
 ReferenceState.o : ReferenceState.F90 General_MPI.o Math_Utility.o Math_Constants.o Controls.o ProblemSize.o 
 Run_Param_Header.dbg.o : Run_Param_Header.dbg.F 
-Run_Param_Header.opt.o : Run_Param_Header.opt.F 
 Run_Parameters.o : Run_Parameters.F90 TransportCoefficients.o ReferenceState.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o ProblemSize.o Parallel_Framework.o Controls.o 
-STABLE_plugin.o : STABLE_plugin.F90 Fourier_Transform.o Spherical_Buffer.o Spectral_Derivatives.o Legendre_Transforms.o General_MPI.o TransportCoefficients.o ReferenceState.o Math_Constants.o ProblemSize.o 
 SendReceive.o : SendReceive.F90 Ra_MPI_Base.o 
 Spectral_Derivatives.o : Spectral_Derivatives.F90 Structures.o 
 Sphere_Driver.o : Sphere_Driver.F90 Fields.o Timers.o Controls.o Checkpointing.o Spherical_IO.o Diagnostics_Interface.o Sphere_Spectral_Space.o Sphere_Physical_Space.o Sphere_Hybrid_Space.o ClockInfo.o 
 Sphere_Hybrid_Space.o : Sphere_Hybrid_Space.F90 indices.F ReferenceState.o ClockInfo.o Timers.o Fields.o Spectral_Derivatives.o Legendre_Transforms.o Legendre_Polynomials.o ProblemSize.o Controls.o Parallel_Framework.o Load_Balance.o 
 Sphere_Linear_Terms.o : Sphere_Linear_Terms.F90 Math_Constants.o TransportCoefficients.o ReferenceState.o ClockInfo.o Timers.o BoundaryConditions.o Fields.o Linear_Solve.o ProblemSize.o Controls.o Load_Balance.o 
-Sphere_Physical_Space.o : Sphere_Physical_Space.F90 indices.F STABLE_plugin.o Benchmarking.o Math_Constants.o TransportCoefficients.o ReferenceState.o ClockInfo.o Timers.o General_MPI.o Diagnostics_Interface.o Fields.o Spectral_Derivatives.o Fourier_Transform.o ProblemSize.o Controls.o Parallel_Framework.o 
+Sphere_Physical_Space.o : Sphere_Physical_Space.F90 indices.F Benchmarking.o Math_Constants.o TransportCoefficients.o ReferenceState.o ClockInfo.o Timers.o General_MPI.o Diagnostics_Interface.o Fields.o Spectral_Derivatives.o Fourier_Transform.o ProblemSize.o Controls.o Parallel_Framework.o 
 Sphere_Spectral_Space.o : Sphere_Spectral_Space.F90 Sphere_Linear_Terms.o Timers.o ClockInfo.o BoundaryConditions.o Fields.o Linear_Solve.o Finite_Difference.o ProblemSize.o Controls.o Parallel_Framework.o Load_Balance.o 
 Spherical_Buffer.o : Spherical_Buffer.F90 General_MPI.o Load_Balance.o Structures.o Parallel_Framework.o MPI_LAYER.o 
 Spherical_IO.o : Spherical_IO.F90 Ra_MPI_Base.o Math_Constants.o BufferedOutput.o Legendre_Transforms.o Fourier_Transform.o General_MPI.o ISendReceive.o SendReceive.o Parallel_Framework.o Spherical_Buffer.o 

@@ -67,10 +67,9 @@ Module Controls
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
-    Logical, Public, Save :: Stable_flag =.false.
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
-                & benchmark_integration_interval, benchmark_report_interval, stable_flag, &
+                & benchmark_integration_interval, benchmark_report_interval, &
                 & momentum_advection, inertia
 
     !///////////////////////////////////////////////////////////////////////////

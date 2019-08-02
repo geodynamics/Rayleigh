@@ -33,7 +33,6 @@ Module Input
                                Magnetic_Prandtl_Number, Ekman_Number
     Use TransportCoefficients, Only : Transport_Namelist
     Use Parallel_Framework, Only : pfi
-    Use Stable_Plugin, Only : stable_namelist
 
     Implicit None
 

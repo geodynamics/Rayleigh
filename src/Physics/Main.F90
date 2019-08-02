@@ -43,7 +43,6 @@ Program Main!
     Use Timers
     Use Fourier_Transform, Only : Initialize_FFTs
     Use Benchmarking, Only : Initialize_Benchmarking, Benchmark_Input_Reset
-    Use Stable_Plugin
     Use Run_Parameters, Only : write_run_parameters
 
     Implicit None
@@ -89,15 +88,6 @@ Contains
         Call Initialize_Transport_Coefficients()
 
         Call Finalize_Equation_Coefficients()
-
-        !====================== STABLE
-        If (stable_flag) Then
-            Call Initialize_MeanFLows()
-            Call STABLE_eta()
-            Call Init_Poloidal_Source()
-            Call Compute_SU()
-        Endif
-        !=================== STABLE
 
         Call Initialize_Diagnostics()
 

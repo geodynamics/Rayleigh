@@ -24,7 +24,6 @@ POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o ReferenceState.o Fields.o 
         Diagnostics_Mean_Correction.o \
         Diagnostics_Interface.o \
         Benchmarking.o Sphere_Linear_Terms.o \
-        STABLE_plugin.o \
         Sphere_Spectral_Space.o Sphere_Hybrid_Space.o Sphere_Physical_Space.o Sphere_Driver.o
 TOBJ  = Test_SHT.o Test_Cheby.o TestSuite.o
 MAINOBJ = Run_Parameters.o Input.o Main.o
