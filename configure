@@ -158,11 +158,17 @@ function displayhelp {
     echo ""
 
     echo "  -conda-mkl:     " 
-    echo "      Use this flag in conjunction with -mkl or -with-mkl to account"
+    echo "      Use this flag in place of -mkl and, if desired, alonside -with-mkl to account"
     echo "      for the conda-provided MKL directory structure."
-    echo "      Usage Example 1:  ./configure -mkl -conda-mkl             "
+    echo "      Usage Example 1:  ./configure -conda-mkl             "
     echo "      Usage Example 2:  ./configure --with-mkl='/my/mkl/root' -conda-mkl "
     echo ""
+
+    echo "  -mac-mkl:     " 
+    echo "      Link to MKL's FFTW, LAPack, and BLAS routines using syntax appropriate for Mac."
+    echo "      This flag may be used in conjunction with -conda-mkl."
+    echo "      (NOTE:  This feature is currently only supported when -conda-mkl is also used.)"
+    echo ""    
 
     echo "  --nodirs ; -nodirs: "
     echo "      Causes Make to compile Rayleigh without directory creation support."
@@ -336,7 +342,33 @@ do
       ;;
 
     -conda-mkl)
-      CONDAMKL="TRUE";
+      if [ ! -z "$MKLROOT" ]
+      then
+        CONDAMKL="TRUE"
+        USE_MKL="TRUE"
+        RAMKLROOT=$MKLROOT
+      else
+        echo "Error Code 5: "
+        echo "MKLROOT is not defined"
+        echo "MKLROOT must be defined in your environment to use the -mkl flag."
+        echo "exiting..."
+        exit 5
+      fi 
+      ;;
+
+    -mac-mkl)
+      if [ ! -z "$MKLROOT" ]
+      then
+        MACMKL="TRUE"
+        USE_MKL="TRUE"
+        RAMKLROOT=$MKLROOT
+      else
+        echo "Error Code 5: "
+        echo "MKLROOT is not defined"
+        echo "MKLROOT must be defined in your environment to use the -mkl flag."
+        echo "exiting..."
+        exit 5
+      fi 
       ;;
 
     -mkl)
@@ -670,13 +702,20 @@ then
     then
         if [[ $CONDAMKL == "TRUE" ]]
         then
-            MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-            LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-            FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lsdc++"
+            if [[ $MACMKL == "TRUE" ]]
+            then
+                MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+                LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+            else
+                MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+                LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+            fi
         else
             MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
             LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lsdc++"
+            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
         fi
     fi
 else
