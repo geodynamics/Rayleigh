@@ -125,7 +125,7 @@ In this case, the values of constants :math:`c_2` and :math:`c_{10}` will be tak
 
 Augmenting a Rayleigh-Provided Reference State
 ---------------------------------------------------------
-When augumenting one of Rayleigh's internal reference-state types, set the with_custom_reference, with_custom_constants, and with_custom_functions flag in the Reference Namelist.  As an example, to modify the heating and buoyancy profiles using entirely information provided through the equation coefficients file, main_input would contain the following
+When augumenting one of Rayleigh's internal reference-state types, set the with_custom_reference flag (Reference_Namelist) to true in main_input.   In addition, assign a list of values to with_custom_constants and with_custom_functions.  As an example, to modify the heating and buoyancy profiles using entirely information provided through the equation coefficients file, main_input would contain the following
 ::
 
    &Reference_Namelist
@@ -155,36 +155,38 @@ These flags can be used in tandem with the override flags to specify values via 
 
 
 
-Case 2:  Augumenting a Rayleigh-provided Reference State
-...........................................................
-Even more words
+Specifing an Entire Custom Reference State
+-----------------------------------------------------
+To specify a full set of custom equation coefficients, set reference_type to 4.  Constant coefficients
+may be overridden, if desired, and as described above.  Note that you must fully specify nonconstant coefficients :math:`f_1-f_7`.
+If desired, you may also specify their logarithmic derivatives on the fine mesh (see the anelastic notebooks below).  This is optional,
+however, as Rayleigh will compute those funtions if not provided.
 
-Case 3:  Specifying Custom Transport-Coefficient Profiles
-...........................................................
-
-
-Constants are first read in from main_input.
-Constants default to zero if not set in main_input.
-Constants my be set in main_input by specifying:
 ::
 
    &Reference_Namelist
-    ra_constants(1) = 1.0d0
+    ...
+    reference_type = 4
+    custom_reference_file='mycoeffs.dat'
+    override_constant( 2) = T
+    override_constant(10) = T
+    ra_constants( 2) = 1.0
+    ra_constants(10) = 14.0
+    ...
    /
 
-Constants set in custom reference file take precedence over main_input unless:
-override_constants = T
-or
-override_constant(x) = T
 
 
+Behavior of Transport Coefficients
+...........................................................
+Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`here <physics>`.
+If you wish to specify a custom diffusivity profile, set the corresponding type to 3.  In that case, the corresponding nonconstant coefficient MUST be set in the equation coefficients file.  Moreover, if reference_type=4, these corresponding constant must be set in either the coefficients file or in main_input (regardless of the diffusion type specified).  
 
-::
+For diffusion types 2 and 3, if the reference_type is not 4, the value of {nu,kappa,eta}_top normally used by that reference_type will be invoked if the corresponding constant coefficient is not set.
 
-   &problemsize_namelist
-    n_r = 48
-    n_theta = 96
-   /
+A Note on Volumetric Heating
+---------------------------------
+Finally, if specifying a custom form for the volumetric heating, please ensure that heating_type is set to a positive, nonzero value in the reference_namelist.  Otherwise, reference heating will be deactivated.  Any Rayleigh-initialization of the heating function that takes place initially will be overridden by the with_custom_reference or reference_type=4 flags. 
 
 
 Example Notebooks
