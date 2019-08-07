@@ -187,7 +187,6 @@ Contains
         Endif
 
         If (with_custom_reference) Call Augment_Reference()  
-        Call Write_Reference()
 
     End Subroutine Initialize_Reference
 
@@ -608,33 +607,6 @@ Contains
         int_func = int_func*rcube
 
     End Subroutine Integrate_in_radius
-
-    Subroutine Write_Reference(filename)
-        Implicit None
-        Character*120, Optional, Intent(In) :: filename
-        Character*120 :: ref_file
-        Integer :: i,sig = 314
-        if (present(filename)) then
-            ref_file = Trim(my_path)//filename
-        else
-            ref_file = Trim(my_path)//'reference'
-        endif
-
-        If (my_rank .eq. 0) Then
-            Open(unit=15,file=ref_file,form='unformatted', status='replace',access='stream')
-            Write(15)sig
-            Write(15)n_r
-            Write(15)(radius(i),i=1,n_r)
-            Write(15)(ref%density(i),i=1,n_r)
-            Write(15)(ref%dlnrho(i),i=1,n_r)
-            Write(15)(ref%d2lnrho(i),i=1,n_r)
-            Write(15)(ref%temperature(i),i=1,n_r)
-            Write(15)(ref%dlnT(i),i=1,n_r)
-            Write(15)(ref%dsdr(i),i=1,n_r)
-            Write(15)(ref%heating(i),i=1,n_r)
-            Close(15)
-        Endif
-    End Subroutine Write_Reference
 
     Subroutine Get_Custom_Reference()
         Implicit None
