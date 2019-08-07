@@ -18,20 +18,30 @@
 !  <http://www.gnu.org/licenses/>.
 !
 
-! REFERENCE STATE MODULE
-! Contains routines for initializing the reference state structure
-! Reference state structure contains all information related to background
-! stratification.  It DOES NOT contain transport variable (e.g. nu, kappa) information
+! This module defines the constant and nonconstant coefficients
+! that appear in the system of PDEs solved by Rayleigh.
+! These coefficients are broadly classified into two groups:
+! 1.  The reference (or thermodynamic background) state
+! 2.  Transport coefficients (nu, kappa, eta).
 
+! This module is divided into four sections.  Search on any of the
+! phrases below to jump to that section.
+! I.  Variables describing the background reference state
+! II.  Variables Related to the Transport Coefficients
+! III.  Subroutines used to define the background reference state
+! IV.  Subroutines used to define the transport coefficients
 
-
-Module ReferenceState
+Module PDE_Coefficients
     Use ProblemSize
     Use Controls
     Use Math_Constants
     Use Math_Utility
     Use General_MPI, Only : BCAST2D
     Implicit None
+
+    !///////////////////////////////////////////////////////////
+    ! I.  Variables describing the background reference state
+
     Type ReferenceInfo
         Real*8, Allocatable :: Density(:)
         Real*8, Allocatable :: dlnrho(:)
@@ -53,10 +63,6 @@ Module ReferenceState
         ! The following two terms are used to compute the ohmic and viscous heating
         Real*8, Allocatable :: ohmic_amp(:) !multiplied by {eta(r),H(r)}J^2 in dSdt eq.
         Real*8, Allocatable :: viscous_amp(:) !multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
-
-        Real*8 :: script_N_Top ! If a nondimensional reference state is employed,
-        Real*8 :: script_K_Top ! these are used in lieu of nu_top from the input file.
-        Real*8 :: script_H_Top ! {N:nu, K:kappa, H:eta}
 
     End Type ReferenceInfo
 
@@ -106,7 +112,6 @@ Module ReferenceState
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
-    Logical :: Dimensional_Reference = .false.  ! Changed depending on reference state specified
 
 
 
@@ -117,7 +122,38 @@ Module ReferenceState
             & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
             & override_constants, override_constant, ra_constants, with_custom_constants, &
             & with_custom_functions, with_custom_reference
+
+
+    !///////////////////////////////////////////////////////////////////////////////////////
+    ! II.  Variables Related to the Transport Coefficients
+
+    Real*8, Allocatable :: nu(:), kappa(:), eta(:)
+    Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlneta(:)
+
+    Real*8, Allocatable :: ohmic_heating_coeff(:)
+    Real*8, Allocatable :: viscous_heating_coeff(:)
+
+    Real*8, Allocatable :: W_Diffusion_Coefs_0(:), W_Diffusion_Coefs_1(:)
+    Real*8, Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
+    Real*8, Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
+    Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
+
+    Integer :: kappa_type =1, nu_type = 1, eta_type = 1
+    Real*8  :: nu_top = 1.0d0, kappa_top = 1.0d0, eta_top = 1.0d0
+    Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0
+
+    Logical :: hyperdiffusion = .false.
+    Real*8  :: hyperdiffusion_beta = 0.0d0
+    Real*8  :: hyperdiffusion_alpha = 1.0d0
+
+    Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, nu_power, kappa_power, eta_power, &
+            & nu_top, kappa_top, eta_top, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
+
+
 Contains
+
+    !/////////////////////////////////////////////////////////////////
+    ! III.  Subroutines used to define the background reference state
 
     Subroutine Initialize_Reference()
         Implicit None
@@ -151,7 +187,6 @@ Contains
         Endif
 
         If (with_custom_reference) Call Augment_Reference()  
-        Call Write_Reference()
 
     End Subroutine Initialize_Reference
 
@@ -188,9 +223,6 @@ Contains
 
         ref%Coriolis_Coeff = Zero
         ref%Lorentz_Coeff  = Zero
-        ref%script_N_Top   = Zero
-        ref%script_K_Top   = Zero
-        ref%script_H_Top   = Zero
 
     End Subroutine Allocate_Reference_State
 
@@ -201,7 +233,7 @@ Contains
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
 
-        Dimensional_Reference = .false.
+
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
         ohmic_heating = .false.
         If (my_rank .eq. 0) Then
@@ -255,17 +287,17 @@ Contains
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
         ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
 
-        ref%script_N_top       = 1.0d0
-        ref%script_K_top       = 1.0d0/Prandtl_Number
+        nu_top       = 1.0d0
+        kappa_top       = 1.0d0/Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0
 
         If (magnetism) Then
             ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
-            ref%script_H_Top     = 1.0d0/Magnetic_Prandtl_Number
+            eta_Top     = 1.0d0/Magnetic_Prandtl_Number
             ref%ohmic_amp(1:N_R) = ref%lorentz_coeff
         Else
             ref%Lorentz_Coeff    = 0.0d0
-            ref%script_H_Top     = 0.0d0
+            eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
@@ -277,7 +309,7 @@ Contains
         Real*8, Allocatable :: dtmparr(:), gravity(:)
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
-        Dimensional_Reference = .false.
+
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Non-dimensional)"))
             Write(dstring,dofmt)Modified_Rayleigh_Number
@@ -332,20 +364,20 @@ Contains
         ref%dpdr_w_term(:) = ref%density
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
 
-        ref%script_N_top   = Ekman_Number
-        ref%script_K_top   = Ekman_Number/Prandtl_Number
+        nu_top   = Ekman_Number
+        kappa_top   = Ekman_Number/Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
                                  & Dissipation_Number/Modified_Rayleigh_Number
 
         If (magnetism) Then
             ref%Lorentz_Coeff    = Ekman_Number/(Magnetic_Prandtl_Number)
-            ref%script_H_top     = Ekman_Number/Magnetic_Prandtl_Number
+            eta_top     = Ekman_Number/Magnetic_Prandtl_Number
 
             otmp = (Dissipation_Number*Ekman_Number**2)/(Modified_Rayleigh_Number*Magnetic_Prandtl_Number**2)
             ref%ohmic_amp(1:N_R) = otmp/ref%density(1:N_R)/ref%temperature(1:N_R)
         Else
             ref%Lorentz_Coeff    = 0.0d0
-            ref%script_H_Top     = 0.0d0
+            eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
@@ -376,8 +408,6 @@ Contains
             Write(dstring,dofmt)pressure_specific_heat
             Call stdout%print(" ---- CP (erg g^-1 cm^-3 K^-1)      : "//trim(dstring))
         Endif
-
-        Dimensional_Reference = .true. ! This is actually the default
 
         ! Adiabatic, Polytropic Reference State (see, e.g., Jones et al. 2011)
         ! The following parameters are read from the input file.
@@ -577,33 +607,6 @@ Contains
         int_func = int_func*rcube
 
     End Subroutine Integrate_in_radius
-
-    Subroutine Write_Reference(filename)
-        Implicit None
-        Character*120, Optional, Intent(In) :: filename
-        Character*120 :: ref_file
-        Integer :: i,sig = 314
-        if (present(filename)) then
-            ref_file = Trim(my_path)//filename
-        else
-            ref_file = Trim(my_path)//'reference'
-        endif
-
-        If (my_rank .eq. 0) Then
-            Open(unit=15,file=ref_file,form='unformatted', status='replace',access='stream')
-            Write(15)sig
-            Write(15)n_r
-            Write(15)(radius(i),i=1,n_r)
-            Write(15)(ref%density(i),i=1,n_r)
-            Write(15)(ref%dlnrho(i),i=1,n_r)
-            Write(15)(ref%d2lnrho(i),i=1,n_r)
-            Write(15)(ref%temperature(i),i=1,n_r)
-            Write(15)(ref%dlnT(i),i=1,n_r)
-            Write(15)(ref%dsdr(i),i=1,n_r)
-            Write(15)(ref%heating(i),i=1,n_r)
-            Close(15)
-        Endif
-    End Subroutine Write_Reference
 
     Subroutine Get_Custom_Reference()
         Implicit None
@@ -947,7 +950,7 @@ Contains
         Prandtl_Number          = 1.0d0
         Magnetic_Prandtl_Number = 1.0d0
         gravity_power           = 0.0d0
-        Dimensional_Reference = .true.
+
         custom_reference_file ='nothing'
 
         If (allocated(s_conductive)) DeAllocate(s_conductive)
@@ -962,4 +965,230 @@ Contains
 
     End Subroutine Restore_Reference_Defaults
 
-End Module ReferenceState
+
+    !//////////////////////////////////////////////////////////////////////////
+    ! IV.  Subroutines used to define the transport coefficients
+
+    Subroutine Initialize_Transport_Coefficients()
+        Call Allocate_Transport_Coefficients
+
+        If ((.not. custom_reference_read) .and. &
+            ((nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3))) Then
+            Call Read_Custom_Reference_File(custom_reference_file)
+        EndIf
+
+        Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
+        Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
+
+        If (viscous_heating) Then
+            Allocate(viscous_heating_coeff(1:N_R))
+            viscous_heating_coeff(1:N_R) = ref%viscous_amp(1:N_R)*nu(1:N_R)
+        Endif
+
+        If (magnetism) Then
+
+            Call Initialize_Diffusivity(eta,dlneta,eta_top,eta_type,eta_power,7,7,13)
+            If (ohmic_heating) Then
+                Allocate(ohmic_heating_coeff(1:N_R))
+                ohmic_heating_coeff(1:N_R) = ref%ohmic_amp(1:N_R)*eta(1:N_R)
+            Endif
+        Else
+            eta(:)    = 0.0d0 ! eta was already allocated, but never initialized since this
+            dlneta(:) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
+        Endif
+
+        Call Compute_Diffusion_Coefs()
+
+    End Subroutine Initialize_Transport_Coefficients
+
+    Subroutine Allocate_Transport_Coefficients()
+        Implicit None
+
+        Allocate(nu(1:N_r))
+        Allocate(dlnu(1:N_r))
+        Allocate(kappa(1:N_r))
+        Allocate(dlnkappa(1:N_r))
+        Allocate(eta(1:N_R))
+        Allocate(dlneta(1:N_R))
+
+    End Subroutine Allocate_Transport_Coefficients
+
+    Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
+	    Implicit None
+	    Real*8, Intent(InOut) :: x(:), dlnx(:)
+	    Real*8, Intent(InOut) :: xtop
+	    Integer, Intent(In) :: ci, fi, dlnfi, xtype
+	    Real*8, Intent(In) :: xpower
+        Character(len=2) :: ind
+
+        If (reference_type .eq. 4) Then
+            If (ra_constant_set(ci) .eq. 0) Then
+                If (my_rank .eq. 0) Then
+                    write(ind, '(I2)') ci
+                    Call stdout%print('Error: c_'//Trim(ind)//' not specified')
+                Endif
+            Else
+                xtop = ra_constants(ci)
+            Endif
+        Endif
+
+        Select Case(xtype)
+            Case(1)
+                x(:) = xtop
+                dlnx(:) = 0.0d0
+            Case(2)
+                Call vary_with_density(x,dlnx,xtop, xpower)
+            Case(3)
+                If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
+                    x(:) = ra_constants(ci)*ra_functions(:,fi)
+                    dlnx(:) = ra_functions(:,dlnfi)
+                    xtop = x(1)
+                ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
+                    x(:) = xtop*ra_functions(:,fi)
+                    dlnx(:) = ra_functions(:,dlnfi)
+                    xtop = x(1)
+                Else
+                    If (my_rank .eq. 0) Then
+                        write(ind, '(I2)') fi
+                        Call stdout%print('Error: Need to specify f_'//Trim(ind))
+                    EndIf
+                EndIf
+
+        End Select
+
+    End Subroutine Initialize_Diffusivity
+
+    Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
+        Implicit None
+        Real*8, Intent(InOut) :: coeff(:), dln(:)
+        Real*8, Intent(In) :: coeff_top, coeff_power
+
+        ! Computes a transport coefficient and its logarithmic derivative
+        ! using a density-dependent form for the coefficient:
+        !        coeff = coeff_top*(rho/rho_top)**coeff_power
+        coeff = coeff_top*(ref%density/ref%density(1))**coeff_power
+        dln = coeff_power*ref%dlnrho
+
+    End Subroutine Vary_With_Density
+
+    Subroutine Restore_Transport_Defaults
+        Implicit None
+
+        If (Allocated(nu))       DeAllocate(nu)
+        If (Allocated(kappa))    DeAllocate(kappa)
+        If (Allocated(eta))      DeAllocate(eta)
+        If (Allocated(dlnu))     DeAllocate(dlnu)
+        If (Allocated(dlnkappa)) DeAllocate(dlnkappa)
+        If (Allocated(dlneta))   DeAllocate(dlneta)
+
+        If (allocated(W_Diffusion_Coefs_0) ) DeAllocate( W_Diffusion_Coefs_0)
+        If (allocated(W_Diffusion_Coefs_1) ) DeAllocate( W_Diffusion_Coefs_1)
+
+        If (allocated(dW_Diffusion_Coefs_0)) DeAllocate(dW_Diffusion_Coefs_0)
+        If (allocated(dw_Diffusion_Coefs_1)) DeAllocate(dW_Diffusion_Coefs_1)
+        If (allocated(dW_diffusion_coefs_2)) DeAllocate(dW_Diffusion_Coefs_2)
+
+        If (allocated(S_Diffusion_Coefs_1) ) DeAllocate( S_Diffusion_Coefs_1)
+
+        If (allocated(Z_Diffusion_Coefs_1) ) DeAllocate( Z_Diffusion_Coefs_1)
+        If (allocated(Z_Diffusion_Coefs_0) ) DeAllocate( Z_Diffusion_Coefs_0)
+
+        If (allocated(A_Diffusion_Coefs_1) ) DeAllocate( A_Diffusion_Coefs_1)
+
+        kappa_type =1
+        nu_type = 1
+        eta_type = 1
+
+        nu_top = 1.0d0
+        kappa_top = 1.0d0
+        eta_top = 1.0d0
+
+        nu_power = 0
+        eta_power = 0
+        kappa_power = 0
+
+    End Subroutine Restore_Transport_Defaults
+
+    Subroutine Finalize_Equation_Coefficients()
+        Implicit None
+        Character*120 :: filename
+
+        ra_constants(1) = ref%coriolis_coeff
+        ra_constants(2) = 1.0d0 ! buoyancy coefficient
+        ra_constants(3) = 1.0d0 ! dpdr_w
+        ra_constants(4) = ref%lorentz_coeff
+        ra_constants(5) = 1.0d0 ! multiplies nu
+        ra_constants(6) = 1.0d0 ! multiplies kappa
+        ra_constants(7) = 1.0d0 ! multiplies eta
+        ra_constants(8) = 1.0d0 ! multiplies viscous heating
+        ra_constants(9) = 1.0d0 ! multiplies ohmic heating
+        ra_constants(10) = 1.0d0 ! multiplies volumetric heating
+
+        ra_functions(:,1) = ref%density(:)
+        ra_functions(:,2) = ref%buoyancy_coeff(:)
+        ra_functions(:,3) = nu(:)
+        ra_functions(:,4) = ref%temperature(:)
+        ra_functions(:,5) = kappa(:)
+        ra_functions(:,6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
+        ra_functions(:,7) = eta(:)
+        ra_functions(:,8) = ref%dlnrho(:)
+        ra_functions(:,9) = ref%d2lnrho(:)
+        ra_functions(:,10) = ref%dlnT(:)
+        ra_functions(:,11) = dlnu(:)
+        ra_functions(:,12) = dlnkappa(:)
+        ra_functions(:,13) = dlneta(:)
+        ra_functions(:,14) = ref%dsdr(:)
+
+        filename = Trim(my_path)//"equation_coefficients"
+
+        Call Write_Equation_Coefficients_File(filename)
+
+    End Subroutine Finalize_Equation_Coefficients
+
+    Subroutine Compute_Diffusion_Coefs()
+        Implicit None
+        ! These coefficients are nonzero only when nu and/or rho vary in radius
+        ! They multiply derivatives of the field variables when
+        ! constructing the diffusion terms in Sphere_Linear_Terms.F90.
+        !////////////////////////////////////////+
+        ! W Coefficients for W Equation
+        Allocate(W_Diffusion_Coefs_0(1:N_R))
+        Allocate(W_Diffusion_Coefs_1(1:N_R))
+        W_Diffusion_Coefs_0 =     -nu*(4.0d0/3.0d0)*( dlnu*ref%dlnrho + ref%d2lnrho + ref%dlnrho/radius + &
+            & 3.0d0*dlnu/radius )
+        W_Diffusion_Coefs_1 = nu*(2.0d0*dlnu-ref%dlnrho/3.0d0)
+
+        !/////////////////////////////////////
+        ! W Coefficients for dWdr equation
+        Allocate(DW_Diffusion_Coefs_0(1:N_R))
+        Allocate(DW_Diffusion_Coefs_1(1:N_R))
+        Allocate(DW_Diffusion_Coefs_2(1:N_R))
+        DW_Diffusion_Coefs_2 = dlnu-ref%dlnrho
+        DW_Diffusion_Coefs_1 = ref%d2lnrho+(2.0d0)/radius*ref%dlnrho+2.0d0/radius*dlnu+dlnu*ref%dlnrho
+        DW_Diffusion_Coefs_0 = 2.0d0*ref%dlnrho/3.0d0+dlnu      !pulled out 2/r since that doesn't depend on rho or nu
+            !include the factor of nu in these coefficients (and add minus sign for coefs 1 and 0)
+        DW_Diffusion_Coefs_2 =  DW_Diffusion_Coefs_2*nu
+        DW_Diffusion_Coefs_1 = -DW_Diffusion_Coefs_1*nu
+        DW_Diffusion_Coefs_0 = -DW_Diffusion_Coefs_0*nu
+        !//////////////////////////////////////// +
+        ! S Coefficients for S Equation
+        Allocate(S_Diffusion_Coefs_1(1:N_R))
+        S_diffusion_Coefs_1 = kappa*(dlnkappa+ref%dlnrho+ref%dlnT)
+        !//////////////////////////////////////// +
+        ! Z Coefficients for the Z Equation
+        Allocate(Z_Diffusion_Coefs_0(1:N_R))
+        Allocate(Z_Diffusion_Coefs_1(1:N_R))
+        Z_Diffusion_Coefs_0 = -nu*( 2.0d0*dlnu/radius + ref%dlnrho*dlnu + &
+            & ref%d2lnrho+2.0d0*ref%dlnrho/radius)
+        Z_Diffusion_Coefs_1 = nu*(dlnu-ref%dlnrho)
+
+        !////////////////////////////////////////
+        ! A (vector potential) Coefficients
+        If (magnetism) Then
+            Allocate(A_Diffusion_Coefs_1(1:N_R))
+            A_Diffusion_Coefs_1 = eta*dlneta
+        Endif
+
+    End Subroutine Compute_Diffusion_Coefs
+
+End Module PDE_Coefficients

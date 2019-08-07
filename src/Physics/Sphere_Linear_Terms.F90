@@ -27,8 +27,7 @@ Module Sphere_Linear_Terms
     Use BoundaryConditions
     Use Timers
     Use ClockInfo
-    Use ReferenceState
-    Use TransportCoefficients
+    Use PDE_Coefficients
     Use Math_Constants
     Implicit None
     Real*8, Allocatable :: Lconservation_weights(:)
@@ -441,11 +440,6 @@ Contains
             Endif
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
-            Endif
-            If (fix_tdt_bottom) Then
-                Call Load_BC(lp,r,teq,tvar,one,1)
-                Call Clear_Row(teq,lp,N_R-1)
-                Call Load_BC(lp,N_R-1,teq,tvar,one,0)
             Endif
 
 

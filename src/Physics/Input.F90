@@ -29,9 +29,8 @@ Module Input
     Use BoundaryConditions, Only : boundary_conditions_namelist
     Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, magnetic_init_type
     Use TestSuite, Only : test_namelist
-    Use ReferenceState, Only : reference_namelist, Prandtl_Number, Rayleigh_Number, &
-                               Magnetic_Prandtl_Number, Ekman_Number
-    Use TransportCoefficients, Only : Transport_Namelist
+    Use PDE_Coefficients, Only : reference_namelist, Prandtl_Number, Rayleigh_Number, &
+                               Magnetic_Prandtl_Number, Ekman_Number, Transport_Namelist
     Use Parallel_Framework, Only : pfi
 
     Implicit None

@@ -27,8 +27,8 @@ Module BoundaryConditions
                              my_lm_lval, my_lm_max, lm_count, lm_owner
 
     Use Generic_Input
-    !Use ReferenceState
-    !Use TransportCoefficients
+    Use PDE_Coefficients
+
     Implicit None
 
     Logical :: Fix_Tvar_Top    = .True.
@@ -42,7 +42,6 @@ Module BoundaryConditions
     Logical :: Fix_poloidalfield_top = .False.
     Logical :: Fix_poloidalfield_bottom = .False.
     Logical :: Impose_Dipole_Field = .False.
-    Logical :: fix_tdt_bottom = .false.
 
     Real*8  :: T_Bottom     = 1.0d0
     Real*8  :: T_Top        = 0.0d0
@@ -75,7 +74,7 @@ Module BoundaryConditions
         fix_dtdr_bottom, fix_dtdr_top, fix_divrt_top, fix_divt_top, fix_divrfc_top, fix_divfc_top, &
         no_slip_boundaries, strict_L_Conservation, fix_poloidalfield_top, fix_poloidalfield_bottom, &
         C10_bottom, C10_top, C11_bottom, C11_top, C1m1_bottom, C1m1_top, Br_bottom, &
-        dipole_tilt_degrees, impose_dipole_field, fix_tdt_bottom, no_slip_top, no_slip_bottom, &
+        dipole_tilt_degrees, impose_dipole_field, no_slip_top, no_slip_bottom, &
         stress_free_top, stress_free_bottom, T_top_file, T_bottom_file, dTdr_top_file, dTdr_bottom_file, &
         C_top_file, C_bottom_file
 
@@ -119,7 +118,9 @@ Contains
 
         Endif
 
-        call generate_boundary_mask()
+        Call Generate_Boundary_Mask()
+
+        Call Transport_Dependencies()
 
     End Subroutine Initialize_Boundary_Conditions
 
@@ -247,6 +248,35 @@ Contains
 
     End Subroutine Set_BC_from_file
 
+    Subroutine Transport_Dependencies()
+        Implicit None
+        Real*8 :: fsun, lum_top, lum_bottom
+
+        ! Odd reference state quantities that somehow depend on 
+        ! boundary conditions can be set here.
+
+        If (adjust_reference_heating ) Then
+            !Renormalize the reference heating based on boundary fluxes
+            lum_top    = 0.0d0
+            lum_bottom = 0.0d0
+
+            If ( fix_dtdr_top ) Then
+                lum_top = -dtdr_top*kappa(1)*four_pi*(rmax**2)
+                lum_top = lum_top*ref%density(1)*ref%temperature(1)
+            Endif
+
+            If ( fix_dtdr_bottom) Then
+                lum_bottom = -dtdr_bottom*kappa(N_R)*four_pi*(rmin**2)
+                lum_bottom = lum_bottom*ref%density(N_R)*ref%temperature(N_R)
+            Endif
+
+            ref%heating = ref%heating*(lum_top-lum_bottom)
+            !If something has been set inconsistenly, this will result
+            ! in zero reference heating
+         Endif
+    End Subroutine Transport_Dependencies
+
+
 
     Subroutine Restore_BoundaryCondition_Defaults()
         Implicit None
@@ -261,7 +291,6 @@ Contains
         Fix_poloidalfield_top    = .False.
         Fix_poloidalfield_bottom = .False.
         Impose_Dipole_Field      = .False.
-        fix_tdt_bottom           = .False.
 
         T_Bottom     = 1.0d0
         T_Top        = 0.0d0

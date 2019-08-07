@@ -32,7 +32,7 @@ Module Sphere_Hybrid_Space
     Use Fields
     Use Timers
     Use ClockInfo
-    Use ReferenceState
+    Use PDE_Coefficients
 
     Implicit None
     Real*8, Allocatable :: over_rhor(:), over_rhorsq(:), drho_term(:)
