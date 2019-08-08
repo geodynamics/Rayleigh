@@ -7,6 +7,7 @@ Rayleigh User Manual
 
    overview
    installation
+   devel_environment
    running
    benchmarking
    physics
