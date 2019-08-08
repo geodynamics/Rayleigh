@@ -74,7 +74,6 @@ class Spherical_3D:
         self.vals = np.reshape(swapread(fd,dtype='float64',count=nphi*ntheta*nr,swap=bs),(nphi,ntheta,nr), order = 'F')
         fd.close()
 
-
 class Spherical_3D_multi:
     """Rayleigh Spherical_3D Structure
     ----------------------------------
@@ -121,11 +120,10 @@ class Spherical_3D_multi:
           self.vals[index] = swapread(fd,dtype='float64',count=nphi*ntheta*nr,swap=bs)
           self.vals[index] = np.reshape(self.vals[index],(nphi,ntheta,nr), order = 'F')
 
-
 class RayleighTiming:
 
     def __init__(self,filename,byteswap=True):
-        """filename  : The reference state file to read.
+        """filename  : The timing file file to read.
         """       
         fd = open(filename,'rb')
         # We read an integer to assess which endian the file was written in...
@@ -154,7 +152,7 @@ class RayleighTiming:
                       'Total Runtime'] 
 
 class RayleighProfile:
-    """Rayleigh Reference State Structure
+    """Rayleigh Profile Structure
     ----------------------------------
     self.nr         : number of radial points
     self.nq         : number of quantities in the 2-D structure file
@@ -238,10 +236,88 @@ class RayleighArray:
         swapwrite(self.vals,fd,swap=byteswap,array=True,verbose=True)
         fd.close()
 
+class PDE_Coefficients:
+    """Rayleigh PDE Coefficients Structure
+    --------------------------------------
+    self.nconst                      : number of functions
+    self.nfunc                       : number of coefficients
+    self.nr                          : number of radial points
+    self.radius                      : radial coordinates
+    self.cset[0:nconst-1]            : determines if the constant is set or not
+    self.fset[0:nfunc-1]             : determines if the function is set or not
+    self.constants[0:nconst-1]       : the constant coefficients
+    self.functions[0:nr-1,0:nfunc-1] : the non-constant coefficients
+    self.version                     : version number of coefficients format
+    self.density, self.rho           : [0:nr-1] alias for func_1
+    self.dlnrho                      : [0:nr-1] alias for func_8
+    self.d2lnrho                     : [0:nr-1] alias for func_9
+    self.temperature, self.T         : [0:nr-1] alias for func_4
+    self.dlnT                        : [0:nr-1] alias for func_10
+    self.dsdr                        : [0:nr-1] alias for func_14
+    self.heating                     : [0:nr-1] alias for func_6 * const_10 / func_1 / func_4
+    self.nu                          : [0:nr-1] alias for func_3
+    self.dlnu                        : [0:nr-1] alias for func_11
+    self.kappa                       : [0:nr-1] alias for func_5
+    self.dlnkappa                    : [0:nr-1] alias for func_12
+    self.eta                         : [0:nr-1] alias for func_7
+    self.dlneta                      : [0:nr-1] alias for func_13
+
+    """
+
+    nconst = 10
+    nfunc  = 14
+
+    def __init__(self, filename='equation_coefficients', path='./'):
+        """filename  : The pde coefficient file to read.
+           path      : The directory where the file is located (if full path not in filename)
+        """
+        the_file = os.path.join(path, filename)
+
+        fd = open(the_file, 'rb')
+
+        bs = check_endian(fd, 314, 'int32')
+        version = swapread(fd, dtype='int32', count=1, swap=bs)
+        cset = swapread(fd, dtype='int32', count=self.nconst, swap=bs)
+        fset = swapread(fd, dtype='int32', count=self.nfunc,  swap=bs)
+        const = swapread(fd, dtype='float64', count=self.nconst, swap=bs)
+        nr = swapread(fd, dtype='int32', count=1, swap=bs)
+        radius = swapread(fd, dtype='float64', count=nr, swap=bs)
+        tmp = swapread(fd, dtype='float64', count=self.nfunc*nr, swap=bs)
+        funcs = np.reshape(tmp, (nr,self.nfunc), order='F')
+
+        fd.close()
+
+        self.version = version
+        self.cset = cset
+        self.fset = fset
+        self.constants = const
+        self.nr = nr
+        self.radius = radius
+        self.functions = funcs
+
+        # aliases
+        self.density = self.rho = self.functions[:,1-1]
+        self.dlnrho  = self.functions[:,8-1]
+        self.d2lnrho = self.functions[:,9-1]
+
+        self.temperature = self.T = self.functions[:,4-1]
+        self.dlnT        = self.functions[:,10-1]
+
+        self.dsdr = self.functions[:,14-1]
+
+        self.heating = self.functions[:,6-1]*self.constants[10-1]/self.rho/self.T
+
+        self.nu   = self.functions[:,3-1]
+        self.dlnu = self.functions[:,11-1]
+        self.kappa    = self.functions[:,5-1]
+        self.dlnkappa = self.functions[:,12-1]
+        self.eta    = self.functions[:,7-1]
+        self.dlneta = self.functions[:,13-1]
+
 class ReferenceState:
     """Rayleigh Reference State Structure
     ----------------------------------
-    self.n_r         : number of radial points
+    self.nr          : number of radial points
     self.radius      : radial coordinates
     self.density     : density
     self.dlnrho      : logarithmic derivative of density
@@ -299,55 +375,6 @@ class ReferenceState:
         else:
             self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure', 'temperature',
         'dlnt', 'dsdr','entropy','gravity']
-        fd.close()
-
-class TransportCoeffs:
-    """Rayleigh Transport Coefficients Structure
-    ----------------------------------
-    self.n_r         : number of radial points
-    self.radius      : radial coordinates
-    self.nu          : momentum diffusivity (kinematic viscosity)
-    self.dlnu        : logarithmic derivative of the viscosity
-    self.kappa       : temperature diffusivity (thermometric conductivity)
-    self.eta :       : magnetic diffusivity 
-    self.dlneta      : logarithmic derivative of magnetic diffusivity
-    """
-
-    def __init__(self,filename='none',path='./'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename)
-        """
-        if (filename == 'none'):
-            the_file = path+'transport'
-        else:
-            the_file = path+filename
-        fd = open(the_file, 'rb')
-        # We read an integer to assess which endian the file was written in...
-        bs = check_endian(fd, 314, 'int32')
-        
-        nr = swapread(fd, dtype='int32', count=1, swap=bs)
-        mag_flag = swapread(fd, dtype='int32', count=1, swap=bs)
-        if (mag_flag == 0):
-            tmp = np.reshape(swapread(fd, dtype='float64', count=5*nr, swap=bs),(nr,5), order = 'F')
-        elif (mag_flag == 1):
-            tmp = np.reshape(swapread(fd, dtype='float64', count=7*nr, swap=bs),(nr,7), order = 'F')
-
-        self.nr = nr
-        self.radius      = tmp[:, 0]
-        self.nu          = tmp[:, 1]
-        self.dlnu        = tmp[:, 2]
-        self.kappa       = tmp[:, 3]
-        self.dlnkappa    = tmp[:, 4]
-        if (mag_flag == 1):
-            self.eta         = tmp[:, 5]
-            self.dlneta      = tmp[:, 6]
-
-        self.transport = tmp
-        if (mag_flag == 1):
-            self.names = ['nr', 'radius', 'nu', 'dlnu', 'kappa', 'dlnkappa', 'eta', 'dlneta']
-        elif (mag_flag == 0):
-            self.names = ['nr', 'radius', 'nu', 'dlnu', 'kappa', 'dlnkappa']
-
         fd.close()
 
 class GridInfo:
@@ -496,7 +523,6 @@ class Shell_Avgs:
             self.vals  = np.zeros((nr,nq,nrec),dtype='float64')
         if (self.version > 1):
             self.vals  = np.zeros((nr,4,nq,nrec),dtype='float64')
-            #print 'version is: ', self.version
         self.iters = np.zeros(nrec,dtype='int32')
         self.time  = np.zeros(nrec,dtype='float64')
 
@@ -546,7 +572,6 @@ class AZ_Avgs:
     self.lut                                      : Lookup table for the different diagnostics output
     """
 
-
     def __init__(self,filename='none',path='AZ_Avgs/'):
         """filename  : The reference state file to read.
            path      : The directory where the file is located (if full path not in filename)
@@ -569,7 +594,6 @@ class AZ_Avgs:
         self.nq = nq
         self.nr = nr
         self.ntheta = ntheta
-
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
@@ -609,7 +633,6 @@ class Point_Probes:
     self.lut                                      : Lookup table for the different diagnostics output
     """
 
-
     def __init__(self,filename='none',path='Point_Probes/'):
         """filename  : The reference state file to read.
            path      : The directory where the file is located (if full path not in filename)
@@ -628,7 +651,6 @@ class Point_Probes:
         nphi = swapread(fd,dtype='int32',count=1,swap=bs)
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
-
         self.version = version
         self.niter = nrec
         self.nq = nq
@@ -636,14 +658,8 @@ class Point_Probes:
         self.ntheta = ntheta
         self.nphi = nphi
 
-        #print nr,ntheta,nphi,nq
-        #print 'nrec is: ', nrec
         hsize = (nr+ntheta+nphi)*12 + nq*4 + 8 + 16+4
-        #print 'hsize is: ', hsize
         recsize = nq*nphi*ntheta*nr*8 + 12
-
-        #print 'expected filesize (bytes): ', recsize*nrec+hsize
-        #print 'single rec size (bytes): ', recsize
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
@@ -656,37 +672,24 @@ class Point_Probes:
         self.phi = np.reshape(swapread(fd,dtype='float64',count=nphi,swap=bs),(nphi), order = 'F')
         self.phi_inds = np.reshape(swapread(fd,dtype='int32',count=nphi,swap=bs),(nphi), order = 'F')
 
-
         # convert from Fortran 1-based to Python 0-based indexing
         self.rad_inds   = self.rad_inds - 1
         self.theta_inds = self.theta_inds - 1
         self.phi_inds   = self.phi_inds - 1
 
-        #print 'rad inds: ', self.rad_inds
-        #print 'theta inds: ', self.theta_inds
-        #print 'phi_inds: ', self.phi_inds
-        #print 'qvals : ', self.qv
-        #print ''
-        #print 'radius: ', self.radius
-        #print 'ctheta: ', self.costheta
         self.sintheta = (1.0-self.costheta**2)**0.5
         self.vals  = np.zeros((nphi,ntheta,nr,nq,nrec),dtype='float64')
         self.iters = np.zeros(nrec,dtype='int32')
         self.time  = np.zeros(nrec,dtype='float64')
 
         for i in range(nrec):
-            #print i
             tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*ntheta*nphi,swap=bs),(nphi,ntheta,nr,nq), order = 'F')
             self.vals[:,:,:,:,i] = tmp
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        #print 'iters: ', self.iters
-        #print 'times: ', self.time
-
         self.lut = get_lut(self.qv)
         fd.close()
-
 
 class Meridional_Slices:
     """Rayleigh Meridional Slice Structure
@@ -708,7 +711,6 @@ class Meridional_Slices:
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
     """
-
 
     def __init__(self,filename='none',path='Meridional_Slices/'):
         """filename  : The reference state file to read.
@@ -734,7 +736,6 @@ class Meridional_Slices:
         self.nr = nr
         self.ntheta = ntheta
         self.nphi = nphi
-
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
@@ -763,8 +764,6 @@ class Meridional_Slices:
         self.lut = get_lut(self.qv)
         fd.close()
 
-
-
 class Equatorial_Slices:
     """Rayleigh Equatorial Slice Structure
     ----------------------------------
@@ -781,7 +780,6 @@ class Equatorial_Slices:
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
     """
-
 
     def __init__(self,filename='none',path='Equatorial_Slices/'):
         """filename  : The reference state file to read.
@@ -806,7 +804,6 @@ class Equatorial_Slices:
         self.nr = nr
         self.nphi= nphi
 
-
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
         self.vals  = np.zeros((nphi,nr,nq,nrec),dtype='float64')
@@ -826,7 +823,6 @@ class Equatorial_Slices:
 
         self.lut = get_lut(self.qv)
         fd.close()
-
 
 class Shell_Slices:
     """Rayleigh Shell Slice Structure
@@ -897,19 +893,14 @@ class Shell_Slices:
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
-
         self.nq = nq
         self.nr = nr
         self.ntheta = ntheta
         self.nphi = nphi
 
-
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
         self.lut = get_lut(qv)
-
-
-
 
         radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
         inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
@@ -933,7 +924,6 @@ class Shell_Slices:
             self.nq = 1
             self.nr = 1
             self.vals  = np.zeros((nphi,ntheta,1,1,1),dtype='float64')
-
 
             error = False
             tspec = slice_spec[0]
@@ -990,7 +980,6 @@ class Shell_Slices:
             seek_bytes  = seek_offset 
             fd.seek(seek_bytes,1)
 
-
             self.radius[0] = radius[rspec]
             self.inds[0]   = inds[rspec]
             self.qv[0] = qspec
@@ -1019,7 +1008,7 @@ class Shell_Slices:
         fd.close()
 
 class SPH_Modes:
-    """Rayleigh Shell Spectrum Structure
+    """Rayleigh SPH Mode Structure
     ----------------------------------
     self.niter                                    : number of time steps
     self.nq                                       : number of diagnostic quantities output
@@ -1037,9 +1026,6 @@ class SPH_Modes:
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
     """
-
-
-
 
     def __init__(self,filename='none',path='SPH_Modes/'):
         """
@@ -1075,9 +1061,6 @@ class SPH_Modes:
         # convert from Fortran 1-based to Python 0-based indexing
         self.inds = self.inds - 1
 
-        #print self.lvals
-        #print lmax, nm
-        #print self.inds
         self.vals  = np.zeros((nm,nell,nr,nq,nrec),dtype='complex128')
         
         self.iters = np.zeros(nrec,dtype='int32')
@@ -1094,12 +1077,8 @@ class SPH_Modes:
 
                             if (p == 0):
                                 self.vals[0:nm,lv,rr,qv,i].real = tmp
-                                #if (lval == 0):
-                                #    print 'real: ', tmp
                             else:
                                 self.vals[0:nm,lv,rr,qv,i].imag = tmp
-                                #if (lval == 0):
-                                #    print 'imag: ', tmp
 
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
@@ -1107,20 +1086,10 @@ class SPH_Modes:
         if (self.version < 4):
             # The m>0 --power-- is too high by a factor of 2
             # We divide the --complex amplitude-- by sqrt(2)
-            sqrttwo = np.sqrt(2)
-            for k in range(nrec):
-                for q in range(nq):
-                    for j in range(nr):
-                        for m in range(1,nm):
-                            self.vals[m,:,j,q,k] = self.vals[m,:,j,q,k]/sqrttwo
-
+            self.vals[1:,:,:,:,:] /= np.sqrt(2.0)
 
         self.lut = get_lut(self.qv)
         fd.close()
-
-
-
-
 
 class Shell_Spectra:
     """Rayleigh Shell Spectrum Structure
@@ -1222,13 +1191,7 @@ class Shell_Spectra:
         if (self.version < 4):
             # The m>0 --power-- is too high by a factor of 2
             # We divide the --complex amplitude-- by sqrt(2)
-            sqrttwo = np.sqrt(2)
-            for k in range(nrec):
-                for q in range(nq):
-                    for j in range(nr):
-                        for m in range(1,nm):
-                            self.vals[:,m,j,q,k] = self.vals[:,m,j,q,k]/sqrttwo
-
+            self.vals[:,1:,:,:,:] /= np.sqrt(2.0)
 
         self.lut = get_lut(self.qv)
         fd.close()
@@ -1248,7 +1211,6 @@ class Shell_Spectra:
 
 
                     self.lpower[:,j,q,k,0] = self.lpower[:,j,q,k,2]+self.lpower[:,j,q,k,1] # total power
-
 
 class Power_Spectrum():
     """Rayleigh Power Spectrum Structure
@@ -1368,16 +1330,6 @@ class Power_Spectrum():
         vrc = np.reshape(a.vals[:,:,:, vr_index, :],dims)
         vtc = np.reshape(a.vals[:,:,:, vt_index, :],dims)
         vpc = np.reshape(a.vals[:,:,:, vp_index, :],dims)
-
-        #print 'first index: '
-        #for i in range(0,lmax+1,10):
-        #    print a.vals[i:i+10,0,0,0,0]   
-
-
-        #print 'second index: '
-        #for i in range(0,lmax+1,10):
-        #    print a.vals[0,i:i+10,0,0,0]   
-
 
         for k in range(nt):
             for j in range(nr):
@@ -1525,7 +1477,6 @@ def TimeAvg_AZAverages(file_list,ofile):
     a = AzAverage(file_list[0], path = '')
     nfiles = len(file_list)
 
-
     nr = a.nr
     ntheta = a.ntheta
     nq = a.nq
@@ -1566,7 +1517,6 @@ def TimeAvg_AZAverages(file_list,ofile):
     a.radius.tofile(fd)
     a.costheta.tofile(fd)
 
-
     test = np.transpose(tmp)
     test.tofile(fd)
     t0.tofile(fd)
@@ -1583,7 +1533,6 @@ def TimeAvg_ShellAverages(file_list,ofile):
     #print file_list
     a = ShellAverage(file_list[0], path = '')
     nfiles = len(file_list)
-
 
     nr = a.nr
     nq = a.nq
@@ -1620,7 +1569,6 @@ def TimeAvg_ShellAverages(file_list,ofile):
     dims.tofile(fd)
     a.qv.tofile(fd)
     a.radius.tofile(fd)
-
 
     test = np.transpose(tmp)
     test.tofile(fd)
@@ -1675,7 +1623,6 @@ def swapwrite(val,fd,swap=False,verbose=False, array = False):
 ###########################################################################
 #  This portion file contains utilities useful for plotting the AZ-Average files
 
-
 def get_lims(arr,boundstype='minmax',boundsfactor=1,themin=True):
     import numpy as np
     if (themin):
@@ -1689,6 +1636,7 @@ def get_lims(arr,boundstype='minmax',boundsfactor=1,themin=True):
         elif (boundstype == 'rms'):
             val = np.std(arr)*boundsfactor
     return val
+
 def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,mycmap='jet',cbar=True, 
     boundsfactor = 1, boundstype = 'minmax', units = '',fontsize = 12, underlay = [0], nlevs = 6):
     import numpy as np
@@ -1713,7 +1661,6 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
     if (len(underlay)!=1):
         umini = get_lims(underlay,boundsfactor=boundsfactor,boundstype=boundstype,themin = True)
         umaxi = get_lims(underlay,boundsfactor=boundsfactor,boundstype=boundstype,themin = False)
-
 
     #plt.hold(True)
     if (len(underlay) == 1):
@@ -1830,3 +1777,4 @@ def streamfunction(vr,vt,r,cost,order=0):
             psi=0.5*(psi+psi2)
             
     return psi
+
