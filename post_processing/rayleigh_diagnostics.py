@@ -236,6 +236,165 @@ class RayleighArray:
         swapwrite(self.vals,fd,swap=byteswap,array=True,verbose=True)
         fd.close()
 
+class ReferenceState:
+    """Rayleigh Reference State Structure
+    ----------------------------------
+    self.nr          : number of radial points
+    self.radius      : radial coordinates
+    self.density     : density
+    self.dlnrho      : logarithmic derivative of density
+    self.d2lnrho     : d_by_dr of dlnrho
+    self.pressure    : pressure
+    self.temperature : temperature
+    self.dlnt        : logarithmic derivative of temperature
+    self.dsdr        : entropy gradient (radial)
+    self.entropy     : entropy
+    self.gravity     : gravity
+    self.heating     : volumetric heating (Q) (only after Jan 2019)
+    """
+
+    def __init__(self,filename='reference',path='./'):
+        """filename  : The reference state file to read.
+           path      : The directory where the file is located (if full path not in filename)
+        """
+        the_file = os.path.join(path, filename)
+        fd = open(the_file, 'rb')
+
+        bs = check_endian(fd, 314, 'int32')
+
+        nr = swapread(fd,dtype='int32',count=1,swap=bs)
+
+        # there are 3 "versions" of the reference file
+        #   1) has heating and entropy and gravity and pressure
+        #   2) has entropy and gravity and pressure, no heating
+        #   3) has heating, no entropy/gravity/pressure
+        # check which version here:
+        try:
+            tmp = np.reshape(swapread(fd, dtype='float64', count=11*nr, swap=bs),
+                             (nr,11), order='F')
+            has_heating = True
+            has_other = True
+        except:
+            try:
+                fd.close()
+                fd = open(the_file, 'rb')
+                dummy = swapread(fd, dtype='int32', count=1, swap=bs)
+                dummy = swapread(fd, dtype='int32', count=1, swap=bs)
+                tmp = np.reshape(swapread(fd, dtype='float64', count=10*nr, swap=bs),
+                                 (nr,10), order='F')
+                has_heating = False
+                has_other = True
+            except:
+                fd.close()
+                fd = open(the_file, 'rb')
+                dummy = swapread(fd, dtype='int32', count=1, swap=bs)
+                dummy = swapread(fd, dtype='int32', count=1, swap=bs)
+                tmp = np.reshape(swapread(fd, dtype='float64', count=8*nr, swap=bs),
+                                 (nr,8), order='F')
+                has_heating = True
+                has_other = False
+        fd.close()
+
+        self.nr = nr
+        if (has_heating and has_other):
+            self.radius      = tmp[:,0]
+            self.density     = tmp[:,1]
+            self.dlnrho      = tmp[:,2]
+            self.d2lnrho     = tmp[:,3]
+            self.pressure    = tmp[:,4]
+            self.temperature = tmp[:,5]
+            self.dlnt        = tmp[:,6]
+            self.dsdr        = tmp[:,7]
+            self.entropy     = tmp[:,8]
+            self.gravity     = tmp[:,9]
+            self.heating     = tmp[:,10]
+            self.ref         = tmp
+            self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure',
+                          'temperature', 'dlnt', 'dsdr', 'entropy', 'gravity', 'heating']
+        elif (has_other):
+            self.radius      = tmp[:,0]
+            self.density     = tmp[:,1]
+            self.dlnrho      = tmp[:,2]
+            self.d2lnrho     = tmp[:,3]
+            self.pressure    = tmp[:,4]
+            self.temperature = tmp[:,5]
+            self.dlnt        = tmp[:,6]
+            self.dsdr        = tmp[:,7]
+            self.entropy     = tmp[:,8]
+            self.gravity     = tmp[:,9]
+            self.ref         = tmp
+            self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure',
+                          'temperature', 'dlnt', 'dsdr', 'entropy', 'gravity']
+        elif (has_heating):
+            self.radius      = tmp[:,0]
+            self.density     = tmp[:,1]
+            self.dlnrho      = tmp[:,2]
+            self.d2lnrho     = tmp[:,3]
+            self.temperature = tmp[:,4]
+            self.dlnt        = tmp[:,5]
+            self.dsdr        = tmp[:,6]
+            self.heating     = tmp[:,7]
+            self.ref         = tmp
+            self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'temperature',
+                          'dlnt', 'dsdr', 'heating']
+        else:
+            print("Should produce an error on reading if you made it here")
+
+class TransportCoeffs:
+    """Rayleigh Transport Coefficients Structure
+    ----------------------------------
+    self.n_r         : number of radial points
+    self.radius      : radial coordinates
+    self.nu          : momentum diffusivity (kinematic viscosity)
+    self.dlnu        : logarithmic derivative of the viscosity
+    self.kappa       : temperature diffusivity (thermometric conductivity)
+    self.eta :       : magnetic diffusivity 
+    self.dlneta      : logarithmic derivative of magnetic diffusivity
+    """
+
+    def __init__(self,filename='transport',path='./'):
+        """filename  : The reference state file to read.
+           path      : The directory where the file is located (if full path not in filename)
+        """
+        the_file = os.path.join(path, filename)
+
+        fd = open(the_file, 'rb')
+
+        bs = check_endian(fd, 314, 'int32')
+
+        nr = swapread(fd, dtype='int32', count=1, swap=bs)
+        mag_flag = swapread(fd, dtype='int32', count=1, swap=bs)
+
+        if (mag_flag == 0):
+            tmp = np.reshape(swapread(fd, dtype='float64', count=5*nr, swap=bs),
+                             (nr,5), order='F')
+        elif (mag_flag == 1):
+            tmp = np.reshape(swapread(fd, dtype='float64', count=7*nr, swap=bs),
+                             (nr,7), order='F')
+        else:
+            print("Should never be here")
+
+        self.nr = nr
+        self.radius      = tmp[:, 0]
+        self.nu          = tmp[:, 1]
+        self.dlnu        = tmp[:, 2]
+        self.kappa       = tmp[:, 3]
+        self.dlnkappa    = tmp[:, 4]
+        if (mag_flag == 1):
+            self.eta         = tmp[:, 5]
+            self.dlneta      = tmp[:, 6]
+
+        self.transport = tmp
+        if (mag_flag == 1):
+            self.names = ['nr', 'radius', 'nu', 'dlnu', 'kappa', 'dlnkappa',
+                          'eta', 'dlneta']
+        elif (mag_flag == 0):
+            self.names = ['nr', 'radius', 'nu', 'dlnu', 'kappa', 'dlnkappa']
+        else:
+            print("Should never be here")
+
+        fd.close()
+
 class PDE_Coefficients:
     """Rayleigh PDE Coefficients Structure
     --------------------------------------
