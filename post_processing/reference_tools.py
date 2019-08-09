@@ -26,7 +26,15 @@ class equation_coefficients:
             self.fset      = numpy.zeros(self.nfunc      , dtype='int32'   )
         elif (file != None):
             self.read(filename=file)
-            
+
+    def __getattr__(self, name):
+        if name in self.f_dict:
+            return self.functions[self.f_dict[name] - 1]
+        elif name in self.c_dict:
+            return self.constants[self.c_dict[name] - 1]
+        else:
+            return AttributeError
+
     def set_function(self,y,f_name):
 
         if (isinstance(f_name,str)):
