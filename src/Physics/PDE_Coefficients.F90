@@ -1148,9 +1148,6 @@ Contains
 		    ra_functions(:,8) = ref%dlnrho(:)
 		    ra_functions(:,9) = ref%d2lnrho(:)
 		    ra_functions(:,10) = ref%dlnT(:)
-		    ra_functions(:,11) = dlnu(:)
-		    ra_functions(:,12) = dlnkappa(:)
-		    ra_functions(:,13) = dlneta(:)
 		    ra_functions(:,14) = ref%dsdr(:)
 		Endif
         filename = Trim(my_path)//"equation_coefficients"
