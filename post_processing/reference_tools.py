@@ -33,7 +33,7 @@ class equation_coefficients:
         elif name in self.c_dict:
             return self.constants[self.c_dict[name] - 1]
         else:
-            return AttributeError
+            raise AttributeError("'{}' has no attribute '{}'".format(self.__class__, name))
 
     def set_function(self,y,f_name):
 
