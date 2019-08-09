@@ -995,9 +995,6 @@ Contains
         Else
             eta(:)    = 0.0d0 ! eta was already allocated, but never initialized since this
             dlneta(:) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
-			! Must also set f_7 and c_7 in this case, since initialize_diffusivity() wasn't called
-			ra_functions(:, 7) = 0.0d0
-			ra_constants(7) = 0.0d0
         Endif
 
         Call Compute_Diffusion_Coefs()
@@ -1039,13 +1036,20 @@ Contains
             Case(1)
                 x(:) = xtop
                 dlnx(:) = 0.0d0
+				ra_constants(ci) = xtop
+				ra_functions(:,fi) = 1.0d0
+				ra_functions(:,dlnfi) = 0.0d0
             Case(2)
                 Call vary_with_density(x,dlnx,xtop, xpower)
+				ra_constants(ci) = xtop
+				ra_functions(:,fi) = x(:)/xtop
+				ra_functions(:,dlnfi) = dlnx
             Case(3)
                 If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
                     x(:) = ra_constants(ci)*ra_functions(:,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
                     xtop = x(1)
+            		! Nothing to be done here for functions and constants -- completely set
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
                     x(:) = xtop*ra_functions(:,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
@@ -1056,19 +1060,6 @@ Contains
                         Call stdout%print('Error: Need to specify f_'//Trim(ind))
                     EndIf
                 EndIf
-
-		! The following ensures that the equation coefficients associated with diffusions are
-		! properly set to be written out to the equation_coefficients file
-		If (reference_type .eq. 2) Then ! the dimensional case
-			ra_functions(:, fi) = x(:)
-			ra_functions(:, dlnfi) = dlnx(:)
-			ra_constants(ci) = 1.0d0
-		ElseIf (reference_type .ne. 4 .and. xtype .ne. 3) Then ! The non-dimensional cases (both of which
-													   ! demand constant diffusions)
-			ra_functions(:, fi) = 1.0d0
-			ra_functions(:, dlnfi) = 0.0d0
-			ra_constants(ci) = xtop
-		Endif
 
         End Select
 
