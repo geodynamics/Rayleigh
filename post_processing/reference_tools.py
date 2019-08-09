@@ -35,6 +35,14 @@ class equation_coefficients:
         else:
             raise AttributeError("'{}' has no attribute '{}'".format(self.__class__, name))
 
+    def __setattr__(self, name, value):
+        if name in self.f_dict:
+            self.set_function(value, name)
+        elif name in self.c_dict:
+            self.set_constant[name]
+        else:
+            super().__setattr__(name, value)
+
     def set_function(self,y,f_name):
 
         if (isinstance(f_name,str)):
