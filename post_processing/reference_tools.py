@@ -6,6 +6,12 @@ class equation_coefficients:
     nconst = 10
     nfunc = 14
     version=1
+    c_dict    = {'two_omega':1, 'buoy_fact':2, 'p_fact':3, 'lorentz_fact':4, 'visc_fact':5,
+                 'diff_fact':6, 'resist_fact':7, 'nu_heat_fact':8, 'ohm_heat_fact':9,
+                 'luminosity':10}
+    f_dict    = {'density':1, 'buoy':2, 'nu':3, 'temperature':4, 'kappa':5, 'heating':6,
+                 'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
+                 'd_ln_eta':13, 'ds_dr':14}
 
     def __init__(self,radius=[], file=None):
         if (len(radius) != 0):
@@ -18,12 +24,6 @@ class equation_coefficients:
             self.constants = numpy.zeros(self.nconst     , dtype='float64' )
             self.cset      = numpy.zeros(self.nconst     , dtype='int32'   )
             self.fset      = numpy.zeros(self.nfunc      , dtype='int32'   )
-            self.c_dict    = {'two_omega':1, 'buoy_fact':2, 'p_fact':3, 'lorentz_fact':4, 'visc_fact':5,
-                 'diff_fact':6, 'resist_fact':7, 'nu_heat_fact':8, 'ohm_heat_fact':9,
-                 'luminosity':10}
-            self.f_dict    = {'density':1, 'buoy':2, 'nu':3, 'temperature':4, 'kappa':5, 'heating':6,
-                 'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
-                 'd_ln_eta':13, 'ds_dr':14}          
         elif (file != None):
             self.read(filename=file)
             
