@@ -1019,11 +1019,11 @@ Contains
     End Subroutine Allocate_Transport_Coefficients
 
     Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
-	    Implicit None
-	    Real*8, Intent(InOut) :: x(:), dlnx(:)
-	    Real*8, Intent(InOut) :: xtop
-	    Integer, Intent(In) :: ci, fi, dlnfi, xtype
-	    Real*8, Intent(In) :: xpower
+        Implicit None
+        Real*8, Intent(InOut) :: x(:), dlnx(:)
+        Real*8, Intent(InOut) :: xtop
+        Integer, Intent(In) :: ci, fi, dlnfi, xtype
+        Real*8, Intent(In) :: xpower
         Character(len=2) :: ind
 
         If (reference_type .eq. 4) Then
@@ -1041,13 +1041,20 @@ Contains
             Case(1)
                 x(:) = xtop
                 dlnx(:) = 0.0d0
+                ra_constants(ci) = xtop
+                ra_functions(:,fi) = 1.0d0
+                ra_functions(:,dlnfi) = 0.0d0
             Case(2)
                 Call vary_with_density(x,dlnx,xtop, xpower)
+                ra_constants(ci) = xtop
+                ra_functions(:,fi) = x(:)/xtop
+                ra_functions(:,dlnfi) = dlnx
             Case(3)
                 If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
                     x(:) = ra_constants(ci)*ra_functions(:,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
                     xtop = x(1)
+                    ! Nothing to be done here for functions and constants -- completely set
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
                     x(:) = xtop*ra_functions(:,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
@@ -1118,32 +1125,27 @@ Contains
         Implicit None
         Character*120 :: filename
 
-        ra_constants(1) = ref%coriolis_coeff
-        ra_constants(2) = 1.0d0 ! buoyancy coefficient
-        ra_constants(3) = 1.0d0 ! dpdr_w
-        ra_constants(4) = ref%lorentz_coeff
-        ra_constants(5) = 1.0d0 ! multiplies nu
-        ra_constants(6) = 1.0d0 ! multiplies kappa
-        ra_constants(7) = 1.0d0 ! multiplies eta
-        ra_constants(8) = 1.0d0 ! multiplies viscous heating
-        ra_constants(9) = 1.0d0 ! multiplies ohmic heating
-        ra_constants(10) = 1.0d0 ! multiplies volumetric heating
+        ! For reference_type = 4, the equation coefficients have already been set in 
+        ! read_custom_reference_file()
+        ! f_3, f_5, f_7, c_5, c_6, c_7 have already been set in initialize_diffusivity()
+        If (reference_type .ne. 4) Then
+            ra_constants(1) = ref%coriolis_coeff
+            ra_constants(2) = 1.0d0 ! buoyancy coefficient
+            ra_constants(3) = 1.0d0 ! dpdr_w
+            ra_constants(4) = ref%lorentz_coeff
+            ra_constants(8) = 1.0d0 ! multiplies viscous heating
+            ra_constants(9) = 1.0d0 ! multiplies ohmic heating
+            ra_constants(10) = 1.0d0 ! multiplies volumetric heating
 
-        ra_functions(:,1) = ref%density(:)
-        ra_functions(:,2) = ref%buoyancy_coeff(:)
-        ra_functions(:,3) = nu(:)
-        ra_functions(:,4) = ref%temperature(:)
-        ra_functions(:,5) = kappa(:)
-        ra_functions(:,6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
-        ra_functions(:,7) = eta(:)
-        ra_functions(:,8) = ref%dlnrho(:)
-        ra_functions(:,9) = ref%d2lnrho(:)
-        ra_functions(:,10) = ref%dlnT(:)
-        ra_functions(:,11) = dlnu(:)
-        ra_functions(:,12) = dlnkappa(:)
-        ra_functions(:,13) = dlneta(:)
-        ra_functions(:,14) = ref%dsdr(:)
-
+            ra_functions(:,1) = ref%density(:)
+            ra_functions(:,2) = ref%buoyancy_coeff(:)
+            ra_functions(:,4) = ref%temperature(:)
+            ra_functions(:,6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
+            ra_functions(:,8) = ref%dlnrho(:)
+            ra_functions(:,9) = ref%d2lnrho(:)
+            ra_functions(:,10) = ref%dlnT(:)
+            ra_functions(:,14) = ref%dsdr(:)
+        Endif
         filename = Trim(my_path)//"equation_coefficients"
 
         Call Write_Equation_Coefficients_File(filename)
