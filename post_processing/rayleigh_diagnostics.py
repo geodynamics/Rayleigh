@@ -244,12 +244,12 @@ class ReferenceState:
     self.density     : density
     self.dlnrho      : logarithmic derivative of density
     self.d2lnrho     : d_by_dr of dlnrho
-    self.pressure    : pressure
+    self.pressure    : pressure (only before Jul 2019)
     self.temperature : temperature
     self.dlnt        : logarithmic derivative of temperature
     self.dsdr        : entropy gradient (radial)
-    self.entropy     : entropy
-    self.gravity     : gravity
+    self.entropy     : entropy (only before Jul 2019)
+    self.gravity     : gravity (only before Jul 2019)
     self.heating     : volumetric heating (Q) (only after Jan 2019)
     """
 
@@ -295,12 +295,14 @@ class ReferenceState:
                 has_other = False
         fd.close()
 
-        self.nr = nr
+        self.ref     = tmp
+        self.nr      = nr
+        self.radius  = tmp[:,0]
+        self.density = tmp[:,1]
+        self.dlnrho  = tmp[:,2]
+        self.d2lnrho = tmp[:,3]
+
         if (has_heating and has_other):
-            self.radius      = tmp[:,0]
-            self.density     = tmp[:,1]
-            self.dlnrho      = tmp[:,2]
-            self.d2lnrho     = tmp[:,3]
             self.pressure    = tmp[:,4]
             self.temperature = tmp[:,5]
             self.dlnt        = tmp[:,6]
@@ -308,33 +310,22 @@ class ReferenceState:
             self.entropy     = tmp[:,8]
             self.gravity     = tmp[:,9]
             self.heating     = tmp[:,10]
-            self.ref         = tmp
             self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure',
                           'temperature', 'dlnt', 'dsdr', 'entropy', 'gravity', 'heating']
         elif (has_other):
-            self.radius      = tmp[:,0]
-            self.density     = tmp[:,1]
-            self.dlnrho      = tmp[:,2]
-            self.d2lnrho     = tmp[:,3]
             self.pressure    = tmp[:,4]
             self.temperature = tmp[:,5]
             self.dlnt        = tmp[:,6]
             self.dsdr        = tmp[:,7]
             self.entropy     = tmp[:,8]
             self.gravity     = tmp[:,9]
-            self.ref         = tmp
             self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'pressure',
                           'temperature', 'dlnt', 'dsdr', 'entropy', 'gravity']
         elif (has_heating):
-            self.radius      = tmp[:,0]
-            self.density     = tmp[:,1]
-            self.dlnrho      = tmp[:,2]
-            self.d2lnrho     = tmp[:,3]
             self.temperature = tmp[:,4]
             self.dlnt        = tmp[:,5]
             self.dsdr        = tmp[:,6]
             self.heating     = tmp[:,7]
-            self.ref         = tmp
             self.names = ['radius', 'density', 'dlnrho', 'd2lnrho', 'temperature',
                           'dlnt', 'dsdr', 'heating']
         else:
