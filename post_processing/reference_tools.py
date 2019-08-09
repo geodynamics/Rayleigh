@@ -50,7 +50,7 @@ class equation_coefficients:
         else:
             fi = f_name
 
-        self.functions[fi-1,:] = y[:]
+        self.functions[fi-1,:] = y
         self.fset[fi-1] = 1
         
     def set_constant(self,c,c_name):
