@@ -386,6 +386,7 @@ Contains
     Subroutine Polytropic_Reference()
         Real*8 :: zeta_0,  c0, c1, d
         Real*8 :: rho_c, P_c, T_c,denom
+	Real*8 :: thermo_gamma, volume_specific_heat
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
         Real*8, Allocatable :: zeta(:), gravity(:)
@@ -453,6 +454,10 @@ Contains
         ! Initialize reference structure
         Gravity = Gravitational_Constant * poly_mass / Radius**2
 
+	! The following is needed to calculate the entropy gradient
+	thermo_gamma = 5.0d0/3.0d0
+	volume_specific_heat = pressure_specific_heat / thermo_gamma
+
         Ref%Density = rho_c * zeta**poly_n
 
         Ref%dlnrho = - poly_n * c1 * d / (zeta * Radius**2)
@@ -461,7 +466,7 @@ Contains
         Ref%Temperature = T_c * zeta
         Ref%dlnT = -(c1*d/Radius**2)/zeta
 
-        Ref%dsdr = 0.d0
+        Ref%dsdr = volume_specific_heat * (Ref%dlnT - (thermo_gamma - 1.0d0) * Ref%dlnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
