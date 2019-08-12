@@ -534,6 +534,7 @@ Contains
 
     Subroutine Augment_Reference()
         Implicit None
+        Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
 
         If (my_rank .eq. 0) Then
             Call stdout%print('Reference state will be augmented.')
@@ -542,6 +543,16 @@ Contains
             Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
             Call stdout%print('Reading from: '//Trim(custom_reference_file))
         Endif
+
+        ! Before reading the custom reference file, guard against
+        ! potential overwrites of all ra_functions and ra_constants which,
+        ! in this case were determined by ref_types 1,2,3.  Only certain
+        ! combinations are allowed to be overwritten.
+
+        Allocate(temp_functions(1:n_r, 1:n_ra_functions))
+        Allocate(temp_constants(1:n_ra_constants))
+        temp_functions(:,:) = ra_functions(:,:)
+        temp_constants(:) = ra_constants(:)
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
@@ -552,6 +563,8 @@ Contains
                 Call stdout%print(' ')
             Endif
             ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
+            temp_functions(:,6) = ra_functions(:,6)
+            temp_constants(10)  = ra_constants(10)
         Endif
 
         If (use_custom_constant(2) .and. use_custom_function(2)) Then
@@ -561,7 +574,13 @@ Contains
                 Call stdout%print(' ')
             Endif
             ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+            temp_functions(:,2) = ra_functions(:,2)
+            temp_constants(2) = ra_constants(2)
         Endif
+
+        ra_constants(:) = temp_constants(:)
+        ra_functions(:,:) = temp_functions(:,:)
+        DeAllocate(temp_functions, temp_constants)
 
     End Subroutine Augment_Reference
 
