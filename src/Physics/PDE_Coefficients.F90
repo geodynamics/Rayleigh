@@ -300,6 +300,25 @@ Contains
             eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
+        
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities)
+        ! for proper output to the equation_coefficients file
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = (radius(i)/radius(1))**gravity_power
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,6) = 0.0d0
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr     
+                        
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(2) = Rayleigh_Number/Prandtl_Number
+        ra_constants(3) = pscaling
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = 0.0d0
+        ra_constants(9) = 0.0d0
+        ra_constants(10) = 0.0d0
 
     End Subroutine Constant_Reference
 
@@ -381,6 +400,27 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
+        ! for proper output to the equation_coefficients file
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = gravity*ref%density
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr     
+                        
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(2) = Modified_Rayleigh_Number
+        ra_constants(3) = 1.0d0
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
+        If (magnetism) Then
+        	ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
+        Else
+        	ra_constants(9) = 0.0d0
+        Endif
+
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
@@ -454,9 +494,9 @@ Contains
         ! Initialize reference structure
         Gravity = Gravitational_Constant * poly_mass / Radius**2
 
-	! The following is needed to calculate the entropy gradient
-	thermo_gamma = 5.0d0/3.0d0
-	volume_specific_heat = pressure_specific_heat / thermo_gamma
+		! The following is needed to calculate the entropy gradient
+		thermo_gamma = 5.0d0/3.0d0
+		volume_specific_heat = pressure_specific_heat / thermo_gamma
 
         Ref%Density = rho_c * zeta**poly_n
 
@@ -485,6 +525,23 @@ Contains
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
+        
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
+        ! for proper output to the equation_coefficients file
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = ref%Buoyancy_Coeff
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr     
+                        
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(2) = 1.0d0
+        ra_constants(3) = 1.0d0
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = 1.0d0
+        ra_constants(9) = ref%Lorentz_Coeff       
 
     End Subroutine Polytropic_Reference
 
