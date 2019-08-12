@@ -400,27 +400,6 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = gravity*ref%density
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Modified_Rayleigh_Number
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
-        If (magnetism) Then
-        	ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
-        Else
-        	ra_constants(9) = 0.0d0
-        Endif
-
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
@@ -524,24 +503,7 @@ Contains
         Else
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif
-        
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = ref%Buoyancy_Coeff
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = 1.0d0
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = 1.0d0
-        ra_constants(9) = ref%Lorentz_Coeff       
+        Endif   
 
     End Subroutine Polytropic_Reference
 
@@ -1203,8 +1165,10 @@ Contains
 
         ! For reference_type = 4, the equation coefficients have already been set in 
         ! read_custom_reference_file()
-        ! f_3, f_5, f_7, c_5, c_6, c_7 have already been set in initialize_diffusivity()
-        If (reference_type .ne. 4) Then
+        ! For reference_type = 1, the coefficients have been set in Constant_Reference()
+        ! In all cases, f_3, f_5, f_7, c_5, c_6, c_7 have already been set in 
+        ! Initialize_Diffusivity()
+        If (reference_type .eq. 2 .or. reference_type .eq. 3) Then
             ra_constants(1) = ref%coriolis_coeff
             ra_constants(2) = 1.0d0 ! buoyancy coefficient
             ra_constants(3) = 1.0d0 ! dpdr_w
