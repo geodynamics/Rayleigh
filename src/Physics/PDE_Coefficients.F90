@@ -503,7 +503,7 @@ Contains
         Else
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif 
+        Endif
 
     End Subroutine Polytropic_Reference
 
