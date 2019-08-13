@@ -405,7 +405,7 @@ Contains
     Subroutine Polytropic_Reference()
         Real*8 :: zeta_0,  c0, c1, d
         Real*8 :: rho_c, P_c, T_c,denom
-    Real*8 :: thermo_gamma, volume_specific_heat
+        Real*8 :: thermo_gamma, volume_specific_heat
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
         Real*8, Allocatable :: zeta(:), gravity(:)
@@ -503,7 +503,7 @@ Contains
         Else
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif   
+        Endif 
 
     End Subroutine Polytropic_Reference
 
