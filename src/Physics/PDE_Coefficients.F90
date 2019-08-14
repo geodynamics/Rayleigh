@@ -530,6 +530,9 @@ Contains
         ! Heating Q_H is normalized so that:
         ! Int_volume rho T Q_H dV = 1 
 
+        ! Here is a good time set f_6
+        ra_functions(:, 6) = ref%heating
+
         !If luminosity or heating_integral has been set,
         !we set the integral of ref%heating using that.
 
@@ -540,11 +543,15 @@ Contains
             If (abs(Luminosity) .gt. heating_eps) Then
                 adjust_reference_heating = .false.
                 ref%heating = ref%heating*Luminosity
+                ! and here is a good time to set c_10
+                ra_constants(10) = Luminosity
             Endif
 
             If (abs(Heating_Integral) .gt. heating_eps) Then
                 adjust_reference_heating = .false.
                 ref%heating = ref%heating*Heating_Integral
+                ! ... or set c_10 here
+                ra_constants(10) = Heating_Integral              
             Endif
         Endif
     End Subroutine Initialize_Reference_Heating
