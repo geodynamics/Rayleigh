@@ -1,0 +1,98 @@
+!This initializes a non-rotating, 1 Msol star from a MESA profile file.
+!Run the notebook "MESA-input-1Msun-ZAMS.ipynb" to the custom reference file.
+&problemsize_namelist
+ n_r = 128
+ n_theta = 192
+ nprow = 2
+ npcol = 2
+ rmin = 5.1d10
+ rmax = 6.8e10
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ rotation  = .false.
+ magnetism = .false.
+ advect_reference_state = .true.
+/
+&temporal_controls_namelist
+ max_time_step = 1000.0d0
+ max_iterations = 2000000
+ checkpoint_interval = 100000
+ quicksave_interval = 25000
+ num_quicksaves = 3
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+meridional_values    = 1,2,3 ! radial and phi components of velocity; temperature
+meridional_frequency = 20000
+meridional_nrec      = 2
+meridional_indices_nrm = 0.7
+
+
+! velocity, temperature, energy fluxes, and Kinetic Energy
+shellavg_values = 1,2,3,501, 1440, 1435, 1455, 1470, 1923, 1938
+shellavg_frequency = 200
+shellavg_nrec = 50
+
+! Kinetic energy, Mean KE, Diff-Rot KE, and Convective KE
+globalavg_values = 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412
+globalavg_frequency = 100
+globalavg_nrec = 100
+
+shellslice_levels_nrm    = 0.3, 0.7,0.9
+shellslice_values    = 1,2,3 ! velocity components
+shellslice_frequency = 1000
+shellslice_nrec      = 2
+
+
+
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .false.
+strict_L_Conservation = .false.
+dtdr_bottom = 0.0d0
+T_Top    = 0.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .false.
+fix_dtdr_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 7
+magnetic_init_type = 7
+mag_amp = 1.0d0
+temp_amp = 1.0d1
+temp_w = 0.01d4
+restart_iter = 1000000
+/
+&Test_Namelist
+/
+&Reference_Namelist
+reference_type = 4
+custom_reference_file='cref_from_MESA.dat'
+heating_type = 1
+pressure_specific_heat = 3.5d8
+angular_velocity = 0.d0
+
+!override_constants=T
+override_constant(5)= T
+ra_constants(5)= 8d12 ! nu_top
+
+override_constant(6)= T
+ra_constants(6)= 8d12 ! kappa_top
+
+override_constant(1)= T
+ra_constants(1) = 0.d0  ! 2 x angular velocity
+
+!override_constant(10)= T
+!ra_constants(10) = 3.846d33 ! luminosity
+
+
+
+/
+&Transport_Namelist
+/
