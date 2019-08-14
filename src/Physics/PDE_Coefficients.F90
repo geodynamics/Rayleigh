@@ -300,6 +300,25 @@ Contains
             eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
+        
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities)
+        ! for proper output to the equation_coefficients file
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,6) = 0.0d0
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr     
+                        
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(2) = Rayleigh_Number/Prandtl_Number
+        ra_constants(3) = pscaling
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = 0.0d0
+        ra_constants(9) = 0.0d0
+        ra_constants(10) = 0.0d0
 
     End Subroutine Constant_Reference
 
@@ -386,7 +405,7 @@ Contains
     Subroutine Polytropic_Reference()
         Real*8 :: zeta_0,  c0, c1, d
         Real*8 :: rho_c, P_c, T_c,denom
-	Real*8 :: thermo_gamma, volume_specific_heat
+        Real*8 :: thermo_gamma, volume_specific_heat
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
         Real*8, Allocatable :: zeta(:), gravity(:)
@@ -454,9 +473,9 @@ Contains
         ! Initialize reference structure
         Gravity = Gravitational_Constant * poly_mass / Radius**2
 
-	! The following is needed to calculate the entropy gradient
-	thermo_gamma = 5.0d0/3.0d0
-	volume_specific_heat = pressure_specific_heat / thermo_gamma
+        ! The following is needed to calculate the entropy gradient
+        thermo_gamma = 5.0d0/3.0d0
+        volume_specific_heat = pressure_specific_heat / thermo_gamma
 
         Ref%Density = rho_c * zeta**poly_n
 
@@ -1146,8 +1165,10 @@ Contains
 
         ! For reference_type = 4, the equation coefficients have already been set in 
         ! read_custom_reference_file()
-        ! f_3, f_5, f_7, c_5, c_6, c_7 have already been set in initialize_diffusivity()
-        If (reference_type .ne. 4) Then
+        ! For reference_type = 1, the coefficients have been set in Constant_Reference()
+        ! In all cases, f_3, f_5, f_7, c_5, c_6, c_7 have already been set in 
+        ! Initialize_Diffusivity()
+        If (reference_type .eq. 2 .or. reference_type .eq. 3) Then
             ra_constants(1) = ref%coriolis_coeff
             ra_constants(2) = 1.0d0 ! buoyancy coefficient
             ra_constants(3) = 1.0d0 ! dpdr_w
