@@ -531,7 +531,7 @@ Contains
         ! Int_volume rho T Q_H dV = 1 
 
         ! Here is a good time set f_6
-        ra_functions(:, 6) = ref%heating
+        ra_functions(:, 6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
 
         !If luminosity or heating_integral has been set,
         !we set the integral of ref%heating using that.
