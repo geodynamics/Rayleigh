@@ -306,7 +306,6 @@ Contains
         ra_functions(:,1) = ref%density
         ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
         ra_functions(:,4) = ref%temperature
-        ra_functions(:,6) = 0.0d0
         ra_functions(:,8) = ref%dlnrho
         ra_functions(:,9) = ref%d2lnrho        
         ra_functions(:,10) = ref%dlnT
@@ -318,7 +317,6 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 0.0d0
         ra_constants(9) = 0.0d0
-        ra_constants(10) = 0.0d0
 
     End Subroutine Constant_Reference
 
