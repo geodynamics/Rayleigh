@@ -1094,6 +1094,7 @@ Contains
                     xtop = x(1)
                     ! Nothing to be done here for functions and constants -- completely set
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
+                    ra_constants(ci) = xtop
                     x(:) = xtop*ra_functions(:,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
                     xtop = x(1)
