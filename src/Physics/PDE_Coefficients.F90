@@ -92,6 +92,7 @@ Module PDE_Coefficients
     Real*8  :: Luminosity = 0.0d0 ! specifies the integral of the heating function
     Real*8  :: Heating_Integral = 0.0d0  !same as luminosity (for non-star watchers)
     Real*8  :: Heating_EPS = 1.0D-12  !Small number to test whether luminosity specified
+    Logical :: adjust_reference_heating = .false.  ! Flag used to decide if luminosity determined via boundary conditions
 
     Type(ReferenceInfo) :: ref
 
@@ -538,13 +539,16 @@ Contains
         !Otherwise, we will use the boundary thermal flux
         !To establish the integral
         If (heating_type .gt. 0)Then
+            adjust_reference_heating = .true.
             If (abs(Luminosity) .gt. heating_eps) Then
+                adjust_reference_heating = .false.
                 ref%heating = ref%heating*Luminosity
                 ! and here is a good time to set c_10
                 ra_constants(10) = Luminosity
             Endif
 
             If (abs(Heating_Integral) .gt. heating_eps) Then
+                adjust_reference_heating = .false.
                 ref%heating = ref%heating*Heating_Integral
                 ! ... or set c_10 here
                 ra_constants(10) = Heating_Integral              
