@@ -1013,10 +1013,21 @@ Contains
     ! IV.  Subroutines used to define the transport coefficients
 
     Subroutine Initialize_Transport_Coefficients()
+        Implicit None
+        Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
+        Logical :: restore
+
+        restore = .false.
+
         Call Allocate_Transport_Coefficients
 
         If ((.not. custom_reference_read) .and. &
             ((nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3))) Then
+            Allocate(temp_functions(1:n_r, 1:n_ra_functions))
+            Allocate(temp_constants(1:n_ra_constants))
+            temp_functions(:,:) = ra_functions(:,:)
+            temp_constants(:) = ra_constants(:)
+            restore = .true.
             Call Read_Custom_Reference_File(custom_reference_file)
         EndIf
 
@@ -1038,6 +1049,33 @@ Contains
         Else
             eta(:)    = 0.0d0 ! eta was already allocated, but never initialized since this
             dlneta(:) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
+        Endif
+
+        If (restore) Then
+
+            If (eta_type .eq. 3) Then
+                temp_functions(:,7)  = ra_functions(:,7)
+                temp_functions(:,13) = ra_functions(:,13)
+                temp_constants(7)    = ra_constants(7)
+            Endif
+
+            If (kappa_type .eq. 3) Then
+                temp_functions(:,5)  = ra_functions(:,5)
+                temp_functions(:,12) = ra_functions(:,12)
+                temp_constants(6)    = ra_constants(6)
+            Endif
+
+            If (nu_type .eq. 3) Then
+                temp_functions(:,3)  = ra_functions(:,3)
+                temp_functions(:,11) = ra_functions(:,11)
+                temp_constants(5)    = ra_constants(5)
+            Endif
+
+            ra_constants(:) = temp_constants(:)
+            ra_functions(:,:) = temp_functions(:,:)
+            DeAllocate(temp_functions, temp_constants)
+
+
         Endif
 
         Call Compute_Diffusion_Coefs()
@@ -1094,6 +1132,7 @@ Contains
                     xtop = x(1)
                     ! Nothing to be done here for functions and constants -- completely set
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
+                    ra_constants(ci) = xtop
                     x(:) = xtop*ra_functions(:,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
                     xtop = x(1)
