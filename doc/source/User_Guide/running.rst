@@ -209,6 +209,17 @@ will run for is determined by the value of the namelist
 *max_time_minutes minutes* or when it has run for *max_iterations time
 steps* – whichever occurs first.
 
+An orderly shutdown of Rayleigh can be manually triggered by creating a file
+with the name set in **terminate_file** (i.e., running the command *touch
+terminate* in the default setting). If the file is found, Rayleigh will stop
+after the next time step and write a checkpoint file. The existence of
+**terminate_file** is checked every **terminate_check_interval** iterations.
+The check can be switched off completely by setting
+**terminate_check_interval** to -1. With the appropriate job script this
+feature can be used to easily restart the code with new settings without losing
+the current allocation in the queuing system. A **terminate_file** left over
+from a previous run is automatically deleted when the code starts.
+
 Time-step size in Rayleigh is controlled by the Courant-Friedrichs-Lewy
 condition (CFL; as determined by the fluid velocity and Alfvén speed). A
 safety factor of **cflmax** is applied to the maximum time step
