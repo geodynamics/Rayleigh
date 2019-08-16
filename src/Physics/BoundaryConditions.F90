@@ -271,6 +271,9 @@ Contains
             Endif
 
             ref%heating = ref%heating*(lum_top-lum_bottom)
+            ! If the code has reached this point, c_10 was not defined in
+            ! initialize_reference_heating and needs to be defined here
+            ra_constants(10) = lum_top - lum_bottom
             !If something has been set inconsistenly, this will result
             ! in zero reference heating
          Endif
