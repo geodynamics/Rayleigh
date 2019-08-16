@@ -196,7 +196,7 @@ Contains
                 last_iteration = iteration !force loop to end
             Endif
 
-            If (global_msgs(5) .ne. 0.0d0) Then
+            If (global_msgs(5) .ge. 0.5d0) Then
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' Termination file was found. Cleaning up.')
                 Endif
