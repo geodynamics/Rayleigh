@@ -75,7 +75,8 @@ Contains
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*8 :: istr, dtfmt ='(ES10.4)'
+        Character*10 :: wtmstr, wtmstr_cpu
+        Character*8 :: istr, dtfmt ='(ES10.4)', wtmfmt='(G8.2E1)'
         Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
         
 
@@ -162,7 +163,15 @@ Contains
             If (my_rank .eq. 0) Then
                 Write(istr,ifmtstr)iteration
                 Write(tmstr,dtfmt)deltat
-                Call stdout%print(' On iteration : '//istr//'    DeltaT :   '//tmstr)
+                If (stopwatch(walltime)%delta .ne. 0.0d0) Then
+                   Write(wtmstr,wtmfmt) 1.0d0 / stopwatch(walltime)%delta
+                   Write(wtmstr_cpu,wtmfmt) 1.0d0 / (stopwatch(walltime)%delta * ncpu)
+                Else
+                   Write(wtmstr,wtmfmt) -1.0d0
+                   Write(wtmstr_cpu,wtmfmt) -1.0d0
+                Endif
+                Call stdout%print(' On iteration : '//istr//'    DeltaT :   '//tmstr//'  '&
+                   //adjustr(wtmstr)//' iter/sec, '//adjustr(wtmstr_cpu)//' iter/(sec*ncpu)')
             Endif
             Call rlm_spacea()
 
