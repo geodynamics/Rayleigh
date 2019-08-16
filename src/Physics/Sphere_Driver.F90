@@ -73,6 +73,7 @@ Contains
         Integer ::  last_iteration, first_iteration,i,iret, sigflag
         Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
+        Logical :: terminate_file_exists
         Character*14 :: tmstr
         Character*8 :: istr, dtfmt ='(ES10.4)'
         Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
@@ -88,6 +89,7 @@ Contains
         iret = SIGNAL(15, handle_sig) 
 #endif        
         killsig = 0.0d0  ! This will become 2.5 is SIGTERM is caught
+        terminate_file_exists = .false.
     
         ! We enter the main loop assuming that the solve has just been performed
         ! and that the equation set structure's RHS contains our primary fields with
@@ -140,12 +142,19 @@ Contains
             !The transpose buffers
             output_iteration = time_to_output(iteration)
 
+            If (my_rank .eq. 0) Then
+               If (terminate_check_interval .ne. -1 .and. mod(iteration,terminate_check_interval) .eq. 0) Then
+                  Inquire(file=Trim(my_path)//Trim(terminate_file), exist=terminate_file_exists)
+               Endif
+            Endif
+
             ! Information relevant to ending the simulation is added here.
             ! All processes contain the same (cpu-pool max) value
             ! for global_msgs following the completion of AdvanceTime
             global_msgs(2) = stopwatch(walltime)%elapsed 
             global_msgs(3) = killsig
             global_msgs(4) = simulation_time
+            If (terminate_file_exists) global_msgs(5) = 1.0d0
 
             Call Post_Solve() ! Linear Solve Configuration
 
@@ -183,6 +192,13 @@ Contains
             If (global_msgs(2) .gt. max_time_seconds) Then
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' User-specified maximum walltime exceeded.  Cleaning up.')
+                Endif
+                last_iteration = iteration !force loop to end
+            Endif
+
+            If (global_msgs(5) .ne. 0.0d0) Then
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(' Termination file was found. Cleaning up.')
                 Endif
                 last_iteration = iteration !force loop to end
             Endif

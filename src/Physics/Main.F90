@@ -108,6 +108,7 @@ Contains
     Subroutine Initialize_Directory_Structure()
         Implicit None
         Integer :: ecode
+        Logical :: file_exists
         If (my_rank .eq. 0) Then
             Call Make_Directory(Trim(my_path)//'G_Avgs',ecode)
             Call Make_Directory(Trim(my_path)//'Shell_Avgs',ecode)
@@ -122,6 +123,13 @@ Contains
             Call Make_Directory(Trim(my_path)//'Meridional_Slices',ecode)
             Call Make_Directory(Trim(my_path)//'SPH_Modes',ecode)
             Call Make_Directory(Trim(my_path)//'Point_Probes',ecode)
+
+            !Delete possibly existing terminate file from last run
+            Inquire(file=Trim(my_path)//Trim(terminate_file),exist=file_exists)
+            If (file_exists) Then
+               Open(unit=25,file=Trim(my_path)//Trim(terminate_file))
+               close(unit=25,status='delete')
+            Endif
         Endif
     End Subroutine Initialize_Directory_Structure
 
