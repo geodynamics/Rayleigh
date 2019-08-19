@@ -398,6 +398,25 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
+        ! for proper output to the equation_coefficients file
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = gravity*ref%density
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr     
+                        
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(2) = Modified_Rayleigh_Number
+        ra_constants(3) = 1.0d0
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
+        If (magnetism) Then
+        	ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
+        Endif ! if not magnetism, ra_constants(9) was initialized to zero
+
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
