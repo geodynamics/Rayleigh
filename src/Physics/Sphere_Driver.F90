@@ -74,10 +74,11 @@ Contains
         Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
-        Character*14 :: tmstr
-        Character*10 :: wtmstr, wtmstr_cpu
-        Character*8 :: istr, dtfmt ='(ES10.4)', wtmfmt='(G8.2E1)'
-        Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
+        Character*11 :: tmstr
+        Character*9 :: wtmstr
+        Character*8 :: istr
+        Character(len=*), parameter :: dtfmt ='(ES11.4)', wtmfmt='(ES9.3E1)', &
+           fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
         
 
         ! Register handle_sig as the signal-handling 
@@ -165,13 +166,11 @@ Contains
                 Write(tmstr,dtfmt)deltat
                 If (stopwatch(walltime)%delta .ne. 0.0d0) Then
                    Write(wtmstr,wtmfmt) 1.0d0 / stopwatch(walltime)%delta
-                   Write(wtmstr_cpu,wtmfmt) 1.0d0 / (stopwatch(walltime)%delta * ncpu)
                 Else
-                   Write(wtmstr,wtmfmt) -1.0d0
-                   Write(wtmstr_cpu,wtmfmt) -1.0d0
+                   Write(wtmstr,wtmfmt) 0.0d0
                 Endif
-                Call stdout%print(' On iteration : '//istr//'    DeltaT :   '//tmstr//'  '&
-                   //adjustr(wtmstr)//' iter/sec, '//adjustr(wtmstr_cpu)//' iter/(sec*ncpu)')
+                Call stdout%print(' On iteration : '//istr//' DeltaT : '//tmstr//' Iter/sec : '&
+                   //adjustr(wtmstr))
             Endif
             Call rlm_spacea()
 
