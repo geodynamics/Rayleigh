@@ -87,7 +87,7 @@ Contains
         Call Initialize_Boundary_Conditions()
         Call Initialize_Transport_Coefficients()
 
-        Call Finalize_Equation_Coefficients()
+        Call Write_Equation_Coefficients_File()
 
         Call Initialize_Diagnostics()
 

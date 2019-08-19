@@ -741,7 +741,7 @@ Contains
         If (present(filename)) Then
             ref_file = Trim(my_path)//filename
         Else
-            ref_file = 'reference'
+            ref_file = 'equation_coefficients'
         Endif
 
         If (my_rank .eq. 0) Then
@@ -1238,17 +1238,6 @@ Contains
         kappa_power = 0
 
     End Subroutine Restore_Transport_Defaults
-
-    Subroutine Finalize_Equation_Coefficients()
-        Implicit None
-        Character*120 :: filename
-
-        ! All equation coefficients should be finalized in the various subroutines by this
-        ! point; here just write the equation coefficients to file
-        filename = Trim(my_path)//"equation_coefficients"
-        Call Write_Equation_Coefficients_File(filename)
-
-    End Subroutine Finalize_Equation_Coefficients
 
     Subroutine Compute_Diffusion_Coefs()
         Implicit None
