@@ -160,7 +160,7 @@ Contains
             Call Post_Solve() ! Linear Solve Configuration
 
 
-            If (my_rank .eq. 0) Then
+            If (my_rank .eq. 0 .and. mod(iteration,statusline_interval) .eq. 0) Then
                 Write(istr,ifmtstr)iteration
                 Write(tmstr,dtfmt)deltat
                 If (stopwatch(walltime)%delta .ne. 0.0d0) Then
