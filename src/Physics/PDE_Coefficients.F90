@@ -1243,31 +1243,9 @@ Contains
         Implicit None
         Character*120 :: filename
 
-        ! For reference_type = 4, the equation coefficients have already been set in 
-        ! read_custom_reference_file()
-        ! For reference_type = 1,2,  the coefficients have been set in Constant_Reference()
-        ! and Polytropic_Reference()
-        ! In all cases, f_3, f_5, f_7, c_5, c_6, c_7 have already been set in 
-        ! Initialize_Diffusivity() and c_10 and f_6 have been set in
-        ! Initialize_Reference_Heating()
-        If (reference_type .eq. 3) Then
-            ra_constants(1) = ref%coriolis_coeff
-            ra_constants(2) = 1.0d0 ! buoyancy coefficient
-            ra_constants(3) = 1.0d0 ! dpdr_w
-            ra_constants(4) = ref%lorentz_coeff
-            ra_constants(8) = 1.0d0 ! multiplies viscous heating
-            ra_constants(9) = 1.0d0 ! multiplies ohmic heating
-
-            ra_functions(:,1) = ref%density(:)
-            ra_functions(:,2) = ref%buoyancy_coeff(:)
-            ra_functions(:,4) = ref%temperature(:)
-            ra_functions(:,8) = ref%dlnrho(:)
-            ra_functions(:,9) = ref%d2lnrho(:)
-            ra_functions(:,10) = ref%dlnT(:)
-            ra_functions(:,14) = ref%dsdr(:)
-        Endif
+        ! All equation coefficients should be finalized in the various subroutines by this
+        ! point; here just write the equation coefficients to file
         filename = Trim(my_path)//"equation_coefficients"
-
         Call Write_Equation_Coefficients_File(filename)
 
     End Subroutine Finalize_Equation_Coefficients
