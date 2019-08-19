@@ -74,7 +74,8 @@ Contains
         Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
-        Character*11 :: tmstr
+        Character*14 :: tmstr
+        Character*11 :: dtstr
         Character*9 :: wtmstr
         Character*8 :: istr
         Character(len=*), parameter :: dtfmt ='(ES11.4)', wtmfmt='(ES9.3E1)', &
@@ -163,13 +164,13 @@ Contains
 
             If (my_rank .eq. 0 .and. mod(iteration,statusline_interval) .eq. 0) Then
                 Write(istr,ifmtstr)iteration
-                Write(tmstr,dtfmt)deltat
+                Write(dtstr,dtfmt)deltat
                 If (stopwatch(walltime)%delta .ne. 0.0d0) Then
                    Write(wtmstr,wtmfmt) 1.0d0 / stopwatch(walltime)%delta
                 Else
                    Write(wtmstr,wtmfmt) 0.0d0
                 Endif
-                Call stdout%print(' On iteration : '//istr//' DeltaT : '//tmstr//' Iter/sec : '&
+                Call stdout%print(' On iteration : '//istr//' DeltaT : '//dtstr//' Iter/sec : '&
                    //adjustr(wtmstr))
             Endif
             Call rlm_spacea()
