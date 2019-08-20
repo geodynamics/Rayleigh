@@ -91,7 +91,7 @@ Contains
             imax = self%current_index
         Endif
         Do i = 1, imax
-            Write(self%file_unit,*)Trim(self%lines(i))
+            Write(self%file_unit,'(A)')Trim(self%lines(i))
         Enddo
 
         If (self%file_unit .ne. 6) Close(self%file_unit)

@@ -43,3 +43,8 @@ force a text-buffer flush. Unexpected crashes and sudden termination by
 the system job scheduler do not force a buffer flush. Note that the
 default value of stdout_file is **‘nofile’**. If this value is
 specified, output will directed to normal stdout.
+
+To save on disk space for logs of very long runs, the number of status outputs
+can be reduced by specifying **statusline_interval** in the
+**io_controls_namelist**. This causes only every n-th status line to be
+written.

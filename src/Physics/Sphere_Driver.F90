@@ -75,8 +75,11 @@ Contains
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*8 :: istr, dtfmt ='(ES10.4)'
-        Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
+        Character*11 :: dtstr
+        Character*9 :: wtmstr
+        Character*8 :: istr
+        Character(len=*), parameter :: dtfmt ='(ES11.4)', wtmfmt='(ES9.3E1)', &
+           fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
         
 
         ! Register handle_sig as the signal-handling 
@@ -159,10 +162,16 @@ Contains
             Call Post_Solve() ! Linear Solve Configuration
 
 
-            If (my_rank .eq. 0) Then
+            If (my_rank .eq. 0 .and. mod(iteration,statusline_interval) .eq. 0) Then
                 Write(istr,ifmtstr)iteration
-                Write(tmstr,dtfmt)deltat
-                Call stdout%print(' On iteration : '//istr//'    DeltaT :   '//tmstr)
+                Write(dtstr,dtfmt)deltat
+                If (stopwatch(walltime)%delta .ne. 0.0d0) Then
+                   Write(wtmstr,wtmfmt) 1.0d0 / stopwatch(walltime)%delta
+                Else
+                   Write(wtmstr,wtmfmt) 0.0d0
+                Endif
+                Call stdout%print(' On iteration : '//istr//' DeltaT : '//dtstr//' Iter/sec : '&
+                   //adjustr(wtmstr))
             Endif
             Call rlm_spacea()
 
