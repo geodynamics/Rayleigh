@@ -668,6 +668,57 @@ then
 
 fi
 
+if [[ $FVERSION == "GNU" ]] &&  [[ $DEVELMODE != "TRUE" ]]
+then
+
+  echo "***********************************************************************"
+  echo " GNU compiler detected.  Please indicate desired SIMD instruction set."
+  echo ""
+  echo " Suggested instruction sets are: "
+  echo " -- auto-detect (make sure compiling CPU is same as compute) : native"
+  echo " -- Westmere cores (SSE4.2)                                  : westmere"
+  echo " -- Sandy Bridge / Ivy Bridge cores (AVX)                    : sandybridge/ivybridge"
+  echo " -- Haswell / Broadwell (AVX2)                               : haswell/broadwell"
+  echo " -- SkyLake (AVX2 only)                                      : skylake"
+  echo " -- SkyLake / Knights Landing (AVX512)                       : skylake-avx512/knl"
+  echo " -- separate executables for each architecture               : ALL"
+  echo " -- no vectorization                                         : NONE"
+  echo ""
+    CPUTYPES="native westmere sandybridge ivybridge haswell broadwell skylake skylake-avx512 knl"
+    OPTIONS="${CPUTYPES} ALL NONE"
+    select opt in $OPTIONS; do
+       if [ -z "$opt" ]; then
+         echo "Invalid option.  Choosing no vectorization"
+         break
+       elif [ "$opt" = "NONE" ]; then
+         FFLAGS[0]=$OPT_FLAGS
+         break
+       elif [ "$opt" = "ALL" ]; then
+         DEFAULT='avx2'
+         nvers=5
+         MULTIVEC=TRUE
+         FFLAGS[0]=$OPT_FLAGS" -march=haswell"
+         FFLAGS[2]=$OPT_FLAGS" -march=sandybridge"
+         FFLAGS[3]=$OPT_FLAGS" -march=westmere"
+         FFLAGS[4]=$OPT_FLAGS" -march=knl"
+         RVALUES[0]=$DEFAULT
+         RVALUES[2]=avx
+         RVALUES[3]=sse
+         RVALUES[4]=avx512
+         RVTAGS[2]="AVX"
+         RVTAGS[3]="SSE"
+         RVTAGS[4]="AVX512"
+         break
+       fi
+       FFLAGS[0]="${OPT_FLAGS} -march=${opt}"
+       if [ "$opt" = "native" ]; then
+               echo "CPU autodetect result: $(gfortran -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
+       fi
+       break
+    done
+  echo "***********************************************************************"
+
+fi
 
 ###############################################################################################
 # Set the include flags
