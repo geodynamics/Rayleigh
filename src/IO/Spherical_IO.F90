@@ -242,7 +242,7 @@ Module Spherical_IO
     Type(SphericalBuffer) :: spectra_buffer, sph_sample_buffer
     Real*8, Private :: da_total, int_vol, int_dphi, int_rsquared_dr, int_sintheta_dtheta
     Real*8, Private, Allocatable :: sintheta_dtheta(:), rsquared_dr(:)
-    Character*8, Public :: i_ofmt = '(i12.12)', i_pfmt = '(i5.5)'
+    Character*8, Public :: i_ofmt = '(i8.8)', i_pfmt = '(i5.5)'
     integer :: output_ireq(1), output_status(1)
 
     !//////////////////////////////////////////////////////////////////////

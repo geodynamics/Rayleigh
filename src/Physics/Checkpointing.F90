@@ -45,6 +45,7 @@ Module Checkpointing
     Integer*8, Private :: my_in_disp, full_in_disp        ! for reading checkpoints
     Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
     Character*120 :: checkpoint_prefix ='nothing'
+    Character*8, Private :: chk_ofmt = '(i8.8)', chk_ifmt='(i8.8)'
 
     Integer :: checkpoint_iter = 0
     Real*8 :: checkpoint_dt, checkpoint_newdt
@@ -73,6 +74,24 @@ Contains
         Implicit None
         Integer :: nfs(6)
         Integer :: p, np, nl, m, mp, rextra
+        Character*2 :: dig_str
+
+        ! Set format code for integer file names
+        If (output_digits .gt. 9) Then
+            Write(dig_str,'(i2)')output_digits
+        Else
+            Write(dig_str,'(i1)')output_digits
+        Endif
+        chk_ofmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
+        If (input_digits .gt. 9) Then
+            Write(dig_str,'(i2)')input_digits
+        Else
+            Write(dig_str,'(i1)')input_digits
+        Endif
+        chk_ifmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
+
         checkpoint_t0 = stopwatch(walltime)%elapsed
         If (check_frequency .gt. 0) Then
             !this is for backwards compatibility
@@ -251,7 +270,7 @@ Contains
                     write(autostring,'(i2.2)') (quicksave_num+1) !quick save number starts at 1
                     checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
                 Else
-                    write(iterstring,'(i8.8)') iteration
+                    write(iterstring,chk_ofmt) iteration
                     checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
                 Endif
 
@@ -370,7 +389,7 @@ Contains
                 Else
                     !Not a quicksave
                     old_pars(4) = last_iter
-                    Write(iterstring,'(i8.8)') last_iter
+                    Write(iterstring,chk_ifmt) last_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
                 Endif
 
@@ -1091,7 +1110,7 @@ Contains
         Integer :: dim2, i, offset_index, r, imi,f,ind
         Real*8, Allocatable :: myarr(:,:)
         Character*2 :: autostring
-        Character*8 :: iterstring
+        Character*120 :: iterstring
         Character*120 :: cfile
         np = pfi%rcomm%np
 
@@ -1126,7 +1145,7 @@ Contains
             write(autostring,'(i2.2)') (quicksave_num+1) !quick save number starts at 1
             checkpoint_prefix = trim(my_path)//'Checkpoints/quicksave_'//trim(autostring)
         Else
-            write(iterstring,'(i8.8)') iteration
+            write(iterstring,chk_ofmt) iteration
             checkpoint_prefix = trim(my_path)//'Checkpoints/'//trim(iterstring)
         Endif
 
@@ -1155,7 +1174,7 @@ Contains
     If (my_row_rank .eq. 0) Then
         ! row/column 0 writes out a file with the grid, etc.
         ! This file should contain everything that needs to be known
-        write(iterstring,'(i8.8)') iteration
+        write(iterstring,chk_ofmt) iteration
         cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
         open(unit=15,file=cfile,form='unformatted', status='replace')
         Write(15)n_r
@@ -1406,7 +1425,7 @@ Contains
                     Write(autostring,'(i2.2)')-checkpoint_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
             Else
-                Write(iterstring,'(i8.8)') iteration
+                Write(iterstring,chk_ifmt) iteration
                 checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
             Endif
 
