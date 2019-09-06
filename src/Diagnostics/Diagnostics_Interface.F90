@@ -322,7 +322,7 @@ Contains
             Close(15)
         Endif
 
-        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path)
+        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path,output_digits)
 
         Call Initialize_Diagnostic_Indices()
         !DeAllocate(tweights)  !<---- Used to deallocate these.  We now use these for the computing the ell0 components

@@ -112,9 +112,11 @@ Module Controls
     Character*120 :: stdout_file = 'nofile'
     Character*120 :: jobinfo_file = 'jobinfo.txt'
     Character*120 :: terminate_file = 'terminate'
+    Integer :: output_digits = 8
+    Integer :: input_digits = 8
 
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
-       stdout_file,jobinfo_file,terminate_file
+       stdout_file,jobinfo_file,terminate_file, output_digits, input_digits
 
     !///////////////////////////////////////////////////////////////////////////
     ! This array may be used for various purposes related to passing messages to the

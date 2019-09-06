@@ -242,7 +242,7 @@ Module Spherical_IO
     Type(SphericalBuffer) :: spectra_buffer, sph_sample_buffer
     Real*8, Private :: da_total, int_vol, int_dphi, int_rsquared_dr, int_sintheta_dtheta
     Real*8, Private, Allocatable :: sintheta_dtheta(:), rsquared_dr(:)
-    Character*6, Public :: i_ofmt = '(i8.8)', i_pfmt = '(i5.5)'
+    Character*8, Public :: i_ofmt = '(i12.12)', i_pfmt = '(i5.5)'
     integer :: output_ireq(1), output_status(1)
 
     !//////////////////////////////////////////////////////////////////////
@@ -306,13 +306,24 @@ Contains
 
 
 
-	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path)
+	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,ndig)
 		Implicit None
 		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
         Integer :: thmax, thmin, nth1, nth2, nn
+        Integer, Intent(In) ::  ndig
 		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
+        Character*2 :: dig_str
+
+        ! Set format code for integer file names
+        If (ndig .gt. 9) Then
+            Write(dig_str,'(i2)')ndig
+        Else
+            Write(dig_str,'(i1)')ndig
+        Endif
+        i_ofmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
         local_file_path = file_path
 		! Handles output bookkeeping
 
@@ -3235,7 +3246,7 @@ Contains
 		Real*8, Allocatable :: my_shells(:,:,:), buff(:,:,:)
 		Integer :: i, j
 		Character*4 :: qstring
-		Character*8 :: iterstring
+		Character*120 :: iterstring
 		Character*120 :: cfile
 
 		Integer :: your_theta_min, your_theta_max, your_ntheta
@@ -3582,7 +3593,7 @@ Contains
         Class(DiagnosticInfo) :: self
         Integer, Intent(In) :: iter
         Integer, Intent(InOut) :: errcheck
-        Character*8 :: iterstring,istr
+        Character*120 :: iterstring,istr
         Character*120 :: filename, omsg
         Integer :: modcheck, imod, file_iter, next_iter, ibelong
         Integer :: fstat
@@ -3671,7 +3682,7 @@ Contains
         Class(DiagnosticInfo) :: self
         Integer, Intent(In) :: iter
         Integer, Intent(InOut) :: ierr
-        Character*8 :: iterstring
+        Character*120 :: iterstring
         Character*120 :: filename
         Integer :: modcheck, imod, file_iter, next_iter, ibelong, icomp
         Integer :: buffsize, funit
