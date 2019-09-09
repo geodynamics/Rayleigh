@@ -1360,7 +1360,7 @@ Contains
                 !User has specified a particular quicksave file
                     last_auto = -checkpoint_iter
                     old_pars(5) = -checkpoint_iter
-                    Write(autostring,int_out_fmt)-checkpoint_iter
+                    Write(autostring,auto_fmt)-checkpoint_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
             Else
                 Write(iterstring,int_in_fmt) iteration
