@@ -45,11 +45,11 @@ Module Checkpointing
     Integer*8, Private :: my_in_disp, full_in_disp        ! for reading checkpoints
     Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
     Character*120 :: checkpoint_prefix ='nothing'
-    Character*8, Private :: chk_ofmt = '(i8.8)', chk_ifmt='(i8.8)'
+    Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
 
     Integer :: checkpoint_iter = 0
-    Real*8 :: checkpoint_dt, checkpoint_newdt
-    Real*8 :: checkpoint_time
+    Real*8  :: checkpoint_dt, checkpoint_newdt
+    Real*8  :: checkpoint_time
     !//////////////////////////
     ! New variables for new checkpointing style
     Integer :: Noutputs_per_row, Nradii_per_output
@@ -75,8 +75,6 @@ Contains
         Integer :: nfs(6)
         Integer :: p, np, nl, m, mp, rextra
 
-
-
         checkpoint_t0 = stopwatch(walltime)%elapsed
         If (check_frequency .gt. 0) Then
             !this is for backwards compatibility
@@ -99,8 +97,6 @@ Contains
         Endif
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a')            ! This structure hangs around through the entire run
-
-        !////////////////////////
 
         !//////////////////////////////////////////////////
         ! Revisions for mem-friendly I/O
@@ -183,8 +179,8 @@ Contains
         Integer :: dim2, lstart, i, offset_index
         Real*8, Allocatable :: myarr(:,:), rowstrip(:,:)
         Real*8, Intent(In) :: elapsed_time
-        Character*2 :: autostring
-        Character*8 :: iterstring
+        Character*120 :: autostring
+        Character*120 :: iterstring
         Character*120 :: cfile
         np = pfi%rcomm%np
 
@@ -252,10 +248,10 @@ Contains
                     DeAllocate(myarr)
             Enddo
                 If (ItIsTimeForAQuickSave) Then
-                    write(autostring,'(i2.2)') (quicksave_num+1) !quick save number starts at 1
+                    write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
                     checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
                 Else
-                    write(iterstring,chk_ofmt) iteration
+                    write(iterstring,int_out_fmt) iteration
                     checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
                 Endif
 
@@ -299,27 +295,21 @@ Contains
 
                 open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
                 If (ItIsTimeForAQuickSave) Then
-                    !Write(iterstring,'(i8.8)')iteration
-                    !Write(autostring,'(i2.2)')quicksave_num+1
-                    !Write(15,*)iterstring, ' ', autostring
-                    Write(15,'(i9.8)')-iteration
+                    Write(15,int_minus_out_fmt)-iteration
                     Write(15,'(i2.2)')(quicksave_num+1)
                 Else
-                    Write(15,'(i8.8)')iteration
+                    Write(15,int_out_fmt)iteration
                 Endif
                 Close(15)
 
                 open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
                     position='Append')
                 If (ItIsTimeForAQuickSave) Then
-                    !Write(15,'(i9.8)')-iteration
-                    !Write(15,'(i2.2)')(quicksave_num+1)
-                    Write(iterstring,'(i8.8)')iteration
-                    Write(autostring,'(i2.2)')quicksave_num+1
+                    Write(iterstring,int_out_fmt)iteration
+                    Write(autostring,auto_fmt)quicksave_num+1
                     Write(15,*)iterstring, ' ', autostring
-
                 Else
-                    Write(15,'(i8.8)')iteration
+                    Write(15,int_out_fmt)iteration
                 Endif
                 Close(15)
 
@@ -342,10 +332,9 @@ Contains
         Real*8, Allocatable :: rowstrip(:,:), myarr(:,:), sendarr(:,:)
         Real*8 :: dt_pars(3),dt,new_dt
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
-        Character*8 :: iterstring
-        Character*2 :: autostring
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
+        Character*120 :: iterstring
+        Character*120 :: autostring
+        Character*120 :: dstring
         Character*120 :: cfile
         Integer :: fcount(3,2)
         Integer :: lb,ub, f, imi, r, ind
@@ -358,23 +347,23 @@ Contains
 
         dim2 = tnr*numfields*2
         checkpoint_iter = iteration
-        !Write(iterstring,'(i8.8)') iteration
+
         If (my_rank .eq. 0) Then
             old_pars(4) = checkpoint_iter
             old_pars(5) = -1
             If (checkpoint_iter .eq. 0) Then
                 open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='old')
-                read(15,'(i9.8)')last_iter
+                read(15,int_minus_in_fmt)last_iter
                 If (last_iter .lt. 0) Then  !Indicates a quicksave
                     Read(15,'(i2.2)')last_auto
                     old_pars(4) = -last_iter
                     old_pars(5) = last_auto
-                    Write(autostring,'(i2.2)')last_auto
+                    Write(autostring,auto_fmt)last_auto
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
                 Else
                     !Not a quicksave
                     old_pars(4) = last_iter
-                    Write(iterstring,chk_ifmt) last_iter
+                    Write(iterstring,int_in_fmt) last_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
                 Endif
 
@@ -382,11 +371,11 @@ Contains
             ElseIf (checkpoint_iter .lt. 0) Then
                 !User has specified a particular quicksave file
                     last_auto = -checkpoint_iter
-                    old_pars(5) = -checkpoint_iter
-                    Write(autostring,'(i2.2)')-checkpoint_iter
+                    old_pars(5) = last_auto
+                    Write(autostring,auto_fmt) last_auto
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
             Else
-                Write(iterstring,'(i8.8)') iteration
+                Write(iterstring,int_in_fmt) iteration
                 checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
             Endif
 
@@ -411,7 +400,7 @@ Contains
             Endif
             Close(15)
 
-            write(dstring,dofmt)checkpoint_time
+            write(dstring,sci_note_fmt)checkpoint_time
             call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
             old_pars(1) = n_r_old
             old_pars(2) = grid_type_old
@@ -461,11 +450,11 @@ Contains
 
         If (last_auto .ne. -1) Then
             !The prefix should be formed using quicksave
-            Write(autostring,'(i2.2)')last_auto
+            Write(autostring,auto_fmt)last_auto
             checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
         Else
             !The prefix should reflect that this is a normal checkpoint file
-            Write(iterstring,'(i8.8)') checkpoint_iter
+            Write(iterstring,int_in_fmt) checkpoint_iter
             checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
         Endif
 
@@ -736,85 +725,70 @@ Contains
     End Subroutine Read_Checkpoint
 
     Subroutine Write_Field(arr,ind,tag,iter)
-                Implicit None
-                Integer, Intent(In) :: ind, iter
-                Real*8, Intent(In) :: arr(1:,1:)
-                Character*2 :: autostring
-                Character*8 :: iterstring
-                Character*3, Intent(In) :: tag
-                Character*120 :: cfile
+        Implicit None
+        Integer, Intent(In) :: ind, iter
+        Real*8, Intent(In) :: arr(1:,1:)
+        Character*3, Intent(In) :: tag
+        Character*120 :: cfile
 
-                integer ierr, funit , v_offset1, v_offset2
-                integer(kind=MPI_OFFSET_KIND) disp1,disp2
-                Integer :: mstatus(MPI_STATUS_SIZE)
+        integer ierr, funit , v_offset1, v_offset2
+        integer(kind=MPI_OFFSET_KIND) disp1,disp2
+        Integer :: mstatus(MPI_STATUS_SIZE)
 
+        cfile = Trim(my_path)//Trim(checkpoint_prefix)//'_'//Trim(tag)
+         ! We have to be careful here.  Each processor does TWO writes.
+        ! The first write places the real part of the field into the file.
+        ! The view then changes and advances to the appropriate location of the
+        ! imaginary part.  This step is crucial for checkpoints to work with
+        ! Different processor configurations.
+        v_offset1 = (ind-1)*tnr+1
+        v_offset2 = v_offset1+my_r%delta
 
+        call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
+               MPI_MODE_WRONLY + MPI_MODE_CREATE, &
+               MPI_INFO_NULL, funit, ierr)
+        if (ierr .ne. 0) Then
+            Write(6,*)'Error Opening File: ', pfi%ccomm%rank
+        Endif
 
-                cfile = Trim(my_path)//Trim(checkpoint_prefix)//'_'//Trim(tag)
-                 ! We have to be careful here.  Each processor does TWO writes.
-                ! The first write places the real part of the field into the file.
-                ! The view then changes and advances to the appropriate location of the
-                ! imaginary part.  This step is crucial for checkpoints to work with
-                ! Different processor configurations.
-                 v_offset1 = (ind-1)*tnr+1
-                v_offset2 = v_offset1+my_r%delta
-
-                call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
-                       MPI_MODE_WRONLY + MPI_MODE_CREATE, &
-                       MPI_INFO_NULL, funit, ierr)
-                if (ierr .ne. 0) Then
-                    Write(6,*)'Error Opening File: ', pfi%ccomm%rank
-                Endif
-
-                disp1 = my_check_disp*8
-                disp2 = (my_check_disp+full_disp)*8
+        disp1 = my_check_disp*8
+        disp2 = (my_check_disp+full_disp)*8
 
 
-                Call MPI_File_Seek(funit,disp1,MPI_SEEK_SET,ierr)
-                If (ierr .ne. 0) Write(6,*)'Error Seeking 1: ', pfi%ccomm%rank
+        Call MPI_File_Seek(funit,disp1,MPI_SEEK_SET,ierr)
+        If (ierr .ne. 0) Write(6,*)'Error Seeking 1: ', pfi%ccomm%rank
 
 
-                Call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, &
-                        mstatus, ierr)
-                If (ierr .ne. 0) Write(6,*)'Error Writing 1: ', pfi%ccomm%rank
+        Call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, &
+                mstatus, ierr)
+        If (ierr .ne. 0) Write(6,*)'Error Writing 1: ', pfi%ccomm%rank
 
 
-                Call MPI_File_Seek(funit,disp2,MPI_SEEK_SET,ierr)
-                If (ierr .ne. 0) Write(6,*)'Error Seeking 2: ', pfi%ccomm%rank
+        Call MPI_File_Seek(funit,disp2,MPI_SEEK_SET,ierr)
+        If (ierr .ne. 0) Write(6,*)'Error Seeking 2: ', pfi%ccomm%rank
 
 
-                Call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, &
-                        mstatus, ierr)
-                If (ierr .ne. 0) Write(6,*)'Error Writing 2: ', pfi%ccomm%rank
+        Call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, &
+                mstatus, ierr)
+        If (ierr .ne. 0) Write(6,*)'Error Writing 2: ', pfi%ccomm%rank
 
 
-                Call MPI_FILE_CLOSE(funit, ierr)
-                if (ierr .ne. 0) Write(6,*)'Error Closing File: ', pfi%ccomm%rank
-
-
-
-
+        Call MPI_FILE_CLOSE(funit, ierr)
+        if (ierr .ne. 0) Write(6,*)'Error Closing File: ', pfi%ccomm%rank
 
     End Subroutine Write_Field
-
-
-
-
 
     Subroutine Read_Field(arr,ind,tag,iter,nread,nlm)
         Implicit None
         Integer, Intent(In) :: ind, iter,nread, nlm
-
         Real*8, Intent(InOut) :: arr(1:,1:)
-        Character*8 :: iterstring
         Character*3, Intent(In) :: tag
         Character*120 :: cfile
         Integer ::bsize_in
         integer ierr, funit , v_offset1, v_offset2
         integer(kind=MPI_OFFSET_KIND) disp1,disp2
         Integer :: mstatus(MPI_STATUS_SIZE)
-        !write(iterstring,'(i8.8)') iter
-        !cfile = Trim(my_path)//'Checkpoints/'//trim(iterstring)//'_'//trim(tag)
+
         cfile = Trim(checkpoint_prefix)//'_'//trim(tag)
 
         v_offset1 = (ind-1)*tnr+1
@@ -828,7 +802,7 @@ Contains
             Endif
         bsize_in = nread*nlm
         If (ierr .eq. 0) Then
-       ! If (nread .gt. 0) Then     !!! SET_VIEW OR _READ ARE BLOCKING APPRENTLY?...
+
             disp1 = my_in_disp*8
             disp2 = (my_in_disp+full_in_disp)*8
             call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &
@@ -857,7 +831,7 @@ Contains
                 Write(6,*)'Error reading2: ', pfi%ccomm%rank
             Endif
             Endif
-       ! Endif
+
         Else
             If (my_rank .eq. 0) Then
                 Write(6,*)'File read error.  Associated array will contain only zeroes: ', cfile
@@ -919,8 +893,6 @@ Contains
         ! ISends and IReceives are used
         Implicit None
         Integer :: var_offset, offset, new_off
-
-
         Integer :: nrirq, nsirq, irq_ind, rtag, stag
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: rone, rtwo, my_nrad, num_el
@@ -928,18 +900,13 @@ Contains
         Integer :: indstart(2)
         Real*8, Intent(In) :: arrin(1:,1:)
         Real*8, Allocatable :: arr(:,:,:), tarr(:)
-
-
-                Integer, Intent(In) :: ind
-                Character*8 :: iterstring
-                Character*3, Intent(In) :: tag
-                Character*120 :: cfile
-
-                integer ierr, funit
-                integer(kind=MPI_OFFSET_KIND) disp1,disp2
-                Integer :: mstatus(MPI_STATUS_SIZE)
-            cfile = Trim(checkpoint_prefix)//'_'//trim(tag)
-
+        Integer, Intent(In) :: ind
+        Character*3, Intent(In) :: tag
+        Character*120 :: cfile
+        integer ierr, funit
+        integer(kind=MPI_OFFSET_KIND) disp1,disp2
+        Integer :: mstatus(MPI_STATUS_SIZE)
+        cfile = Trim(checkpoint_prefix)//'_'//trim(tag)
 
         var_offset = (ind-1)*tnr
         If (I_Will_Output) Then
@@ -1021,9 +988,6 @@ Contains
             !//////////////////////////////
             !  MPI Write
 
-
-
-
              ! We have to be careful here.  Each processor does TWO writes.
             ! The first write places the real part of the field into the file.
             ! The view then changes and advances to the appropriate location of the
@@ -1094,7 +1058,7 @@ Contains
         Integer :: mp, m, offset,nl,np
         Integer :: dim2, i, offset_index, r, imi,f,ind
         Real*8, Allocatable :: myarr(:,:)
-        Character*2 :: autostring
+        Character*120 :: autostring
         Character*120 :: iterstring
         Character*120 :: cfile
         np = pfi%rcomm%np
@@ -1127,10 +1091,10 @@ Contains
         Enddo
         Call chktmp%deconstruct('s2a')
         If (ItIsTimeForAQuickSave) Then
-            write(autostring,'(i2.2)') (quicksave_num+1) !quick save number starts at 1
+            write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
             checkpoint_prefix = trim(my_path)//'Checkpoints/quicksave_'//trim(autostring)
         Else
-            write(iterstring,chk_ofmt) iteration
+            write(iterstring,int_out_fmt) iteration
             checkpoint_prefix = trim(my_path)//'Checkpoints/'//trim(iterstring)
         Endif
 
@@ -1159,7 +1123,7 @@ Contains
     If (my_row_rank .eq. 0) Then
         ! row/column 0 writes out a file with the grid, etc.
         ! This file should contain everything that needs to be known
-        write(iterstring,chk_ofmt) iteration
+        write(iterstring,int_out_fmt) iteration
         cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
         open(unit=15,file=cfile,form='unformatted', status='replace')
         Write(15)n_r
@@ -1174,33 +1138,29 @@ Contains
         Close(15)
 
 
-
         open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
         If (ItIsTimeForAQuickSave) Then
-            Write(15,'(i9.8)')-iteration
-            Write(15,'(i2.2)')(quicksave_num+1)
+            Write(15,int_minus_out_fmt)-iteration
+            Write(15,auto_fmt)(quicksave_num+1)
         Else
-            Write(15,'(i8.8)')iteration
+            Write(15,int_out_fmt)iteration
         Endif
         Close(15)
 
         open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
             position='Append')
         If (ItIsTimeForAQuickSave) Then
-            Write(iterstring,'(i8.8)')iteration
-            Write(autostring,'(i2.2)')quicksave_num+1
+            Write(iterstring,int_out_fmt)iteration
+            Write(autostring,auto_fmt)quicksave_num+1
             Write(15,*)iterstring, ' ', autostring
 
         Else
-            Write(15,'(i8.8)')iteration
+            Write(15,int_out_fmt)iteration
         Endif
         Close(15)
 
-
         Endif
         Endif
-
-
 
     End Subroutine Write_Checkpoint_Alt
 
@@ -1215,8 +1175,6 @@ Contains
 
         Implicit None
         Integer :: var_offset, offset, new_off
-
-
         Integer :: nrirq, nsirq, irq_ind, rtag, stag
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: rone, rtwo, my_nrad, num_el
@@ -1224,17 +1182,13 @@ Contains
         Integer :: indstart(2)
         Real*8, Intent(InOut) :: arrin(1:,1:)
         Real*8, Allocatable :: arr(:,:,:), tarr(:)
-
-
         Integer, Intent(In) :: ind
-        Character*8 :: iterstring
         Character*3, Intent(In) :: tag
         Character*120 :: cfile
-
         integer ierr, funit
         integer(kind=MPI_OFFSET_KIND) disp1,disp2
         Integer :: mstatus(MPI_STATUS_SIZE)
-        !write(iterstring,'(i8.8)') iter
+
         cfile = trim(checkpoint_prefix)//'_'//trim(tag)
 
 
@@ -1281,7 +1235,6 @@ Contains
                         m = m_values(mp)
                         nl = l_max-m+1
                         lstart = lmstart(m)
-                        !arr(lstart:lstart+nl-1,r,i) = tarr(offset:offset+nl-1)
                         tarr(offset:offset+nl-1) = arr(lstart:lstart+nl-1,r,i)
                         offset = offset+nl
                     Enddo
@@ -1371,8 +1324,8 @@ Contains
         Real*8, Allocatable :: old_radius(:)
         Real*8, Allocatable ::  myarr(:,:)
         Real*8 :: dt_pars(3),dt,new_dt
-        Character*8 :: iterstring
-        Character*2 :: autostring
+        Character*120 :: iterstring
+        Character*120 :: autostring
         Character*120 :: cfile
         Integer :: read_hydro = 0, read_magnetism = 0
         Integer :: last_iter, last_auto
@@ -1382,23 +1335,23 @@ Contains
 
         dim2 = tnr*numfields*2
         checkpoint_iter = iteration
-        Write(iterstring,'(i8.8)') iteration
+        Write(iterstring,int_in_fmt) iteration
         If (my_rank .eq. 0) Then
             old_pars(4) = checkpoint_iter
             old_pars(5) = -1
             If (checkpoint_iter .eq. 0) Then
                 open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='old')
-                read(15,'(i9.8)')last_iter
+                read(15,int_minus_in_fmt)last_iter
                 If (last_iter .lt. 0) Then  !Indicates a quicksave
-                    Read(15,'(i2.2)')last_auto
+                    Read(15,auto_fmt)last_auto
                     old_pars(4) = -last_iter
                     old_pars(5) = last_auto
-                    Write(autostring,'(i2.2)')last_auto
+                    Write(autostring,auto_fmt)last_auto
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
                 Else
                     !Not a quicksave
                     old_pars(4) = last_iter
-                    Write(iterstring,'(i8.8)') last_iter
+                    Write(iterstring,int_in_fmt) last_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
                 Endif
 
@@ -1407,10 +1360,10 @@ Contains
                 !User has specified a particular quicksave file
                     last_auto = -checkpoint_iter
                     old_pars(5) = -checkpoint_iter
-                    Write(autostring,'(i2.2)')-checkpoint_iter
+                    Write(autostring,int_out_fmt)-checkpoint_iter
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
             Else
-                Write(iterstring,chk_ifmt) iteration
+                Write(iterstring,int_in_fmt) iteration
                 checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
             Endif
 
@@ -1478,11 +1431,11 @@ Contains
         last_auto = old_pars(5)
         If (last_auto .ne. -1) Then
             !The prefix should be formed using quicksave
-            Write(autostring,'(i2.2)')last_auto
+            Write(autostring,auto_fmt)last_auto
             checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
         Else
             !The prefix should reflect that this is a normal checkpoint file
-            Write(iterstring,'(i8.8)') checkpoint_iter
+            Write(iterstring,int_in_fmt) checkpoint_iter
             checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
         Endif
 

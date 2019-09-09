@@ -112,22 +112,27 @@ Module Controls
     Character*120 :: stdout_file = 'nofile'
     Character*120 :: jobinfo_file = 'jobinfo.txt'
     Character*120 :: terminate_file = 'terminate'
-    Integer :: output_digits = 8
-    Integer :: input_digits = 8
-    Character*8 :: int_in_fmt = '(i8.8)', int_out_fmt='(i8.8)'
+    Integer :: integer_output_digits = 8  ! Number of digits for integer-filename output (default 8; e.g., 00010000)
+    Integer :: integer_input_digits  = 8  ! Number of digits for integer-filename input
+    Integer :: decimal_places = 3         ! Number of digits after decimal for scientific notation output
 
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
-       stdout_file,jobinfo_file,terminate_file, output_digits, input_digits
+       stdout_file,jobinfo_file,terminate_file, integer_output_digits, integer_input_digits, decimal_places
 
-    !///////////////////////////////////////////////////////////////////////////
+    !//////////////////////////////////////////////////////////////////////////////////
+    !Variables that are controlled by those which appear in a namelist
+
+    !~~These format codes controlled by n_[input/output]_digits
+    Character*8 :: int_in_fmt = '(i8.8)', int_out_fmt='(i8.8)'  
+    Character*8 :: int_minus_in_fmt = '(i9.8)', int_minus_out_fmt='(i9.8)'
+    Character*9 :: sci_note_fmt ='(ES10.3)'
+
+    !///////////////////////////////////////////////////////////////////////////////////
     ! This array may be used for various purposes related to passing messages to the
     ! full pool of processes
     Real*8, Allocatable :: global_msgs(:)
     Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
     Integer :: nglobal_msgs = 5  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found
-
-
-    Integer :: nicknum = 5   ! DO NOT LEAVE THIS HERE -- TEMPORARY LOCATION (AND NAME)
 
 Contains
     Subroutine Initialize_Controls()
@@ -158,30 +163,40 @@ Contains
             momentum_advection = .false.
         Endif
 
-        Call Initialize_IO_Format()
+        Call Initialize_IO_Format_Codes()
 
     End Subroutine Initialize_Controls
 
-    Subroutine Initialize_IO_Format
+    Subroutine Initialize_IO_Format_Codes
         Implicit None
-        Character*2 :: dig_str
+        Character*2 :: dig_str, dig_str2
 
-        ! Set format code for integer file names
-        If (output_digits .gt. 9) Then
-            Write(dig_str,'(i2)')output_digits
-        Else
-            Write(dig_str,'(i1)')output_digits
-        Endif
+        !//////////////////////////////////////////////////////
+        ! Set format code for integer output file names
+        Write(dig_str,'(i2)')integer_output_digits
         int_out_fmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
 
-        If (input_digits .gt. 9) Then
-            Write(dig_str,'(i2)')input_digits
-        Else
-            Write(dig_str,'(i1)')input_digits
-        Endif
+        ! (Same, but for negative numbers)
+        Write(dig_str2,'(i2)')integer_output_digits+1
+        int_minus_out_fmt = '(i'//trim(dig_str2)//'.'//trim(dig_str)//')'
+
+        !///////////////////////////////////////////////
+        ! Next, set the input file format codes
+        Write(dig_str,'(i2)')integer_input_digits
         int_in_fmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
 
-    End Initialize_IO_Format
+        Write(dig_str2,'(i2)')integer_input_digits+1
+        int_minus_in_fmt = '(i'//trim(dig_str2)//'.'//trim(dig_str)//')'
+
+        !///////////////////////////////////////////////
+        ! Set the format code for scientific notation
+        Write(dig_str ,'(i2)')decimal_places+7 
+        Write(dig_str2,'(i2)')decimal_places
+        sci_note_fmt = '(ES'//trim(dig_str)//'.'//trim(dig_str2)//')'
+
+
+
+    End Subroutine Initialize_IO_Format_Codes
 
     Subroutine Restore_Physics_Defaults()
         Implicit None

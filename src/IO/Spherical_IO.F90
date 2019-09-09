@@ -242,7 +242,7 @@ Module Spherical_IO
     Type(SphericalBuffer) :: spectra_buffer, sph_sample_buffer
     Real*8, Private :: da_total, int_vol, int_dphi, int_rsquared_dr, int_sintheta_dtheta
     Real*8, Private, Allocatable :: sintheta_dtheta(:), rsquared_dr(:)
-    Character*8, Public :: i_ofmt = '(i8.8)', i_pfmt = '(i5.5)'
+    Character*8, Public :: i_ofmt = '(i8.8)'
     integer :: output_ireq(1), output_status(1)
 
     !//////////////////////////////////////////////////////////////////////
@@ -306,23 +306,17 @@ Contains
 
 
 
-	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,ndig)
+	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
 		Implicit None
 		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
         Integer :: thmax, thmin, nth1, nth2, nn
-        Integer, Intent(In) ::  ndig
 		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
-        Character*2 :: dig_str
+        Character*8, Intent(In) :: digfmt
 
         ! Set format code for integer file names
-        If (ndig .gt. 9) Then
-            Write(dig_str,'(i2)')ndig
-        Else
-            Write(dig_str,'(i1)')ndig
-        Endif
-        i_ofmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+        i_ofmt=digfmt
 
         local_file_path = file_path
 		! Handles output bookkeeping
@@ -4136,7 +4130,7 @@ Contains
         If (Allocated(sintheta_dtheta)) DeAllocate(sintheta_dtheta)
         If (Allocated(rsquared_dr)) DeAllocate(rsquared_dr)
         i_ofmt = '(i8.8)'  ! These should never change during a run, but just in case...
-        i_pfmt = '(i5.5)'
+
         io_node = 0
         If (Allocated(theta_integration_weights)) DeAllocate(theta_integration_weights)
         If (Allocated(r_integration_weights))   DeAllocate(r_integration_weights)
