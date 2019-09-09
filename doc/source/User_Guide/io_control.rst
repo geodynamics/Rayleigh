@@ -4,7 +4,7 @@
 
 .. _io:
 
-I/O Redirection
+I/O Control
 ===============
 
 Rayleigh writes all text output (e.g., error messages, iteration
