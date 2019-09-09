@@ -7,6 +7,42 @@
 I/O Control
 ===============
 
+I/O Format Controls
+*********************
+
+As an example, the following combination of inputs
+::
+   &temporal_controls_namelist
+   checkpoint_interval=10
+   /
+   &io_controls_namelist
+   integer_output_digits=5
+   integer_input_digits=3
+   decimal_places=5
+   /
+   &initial_conditions_namelist
+   init_type=-1
+   restart_iter=10
+   /
+
+would restart from checkpoint files with the prefix formatted as:
+
+::
+
+   Checkpoints/010_grid_etc.
+
+It would generate status line, shell_slice output, and checkpoints formatted as:
+
+::
+
+   Iteration:  00033   DeltaT:  1.00000E-04   Iter/sec:  2.68500E+00
+   Shell_Slices/00020
+   Checkpoints/00020_grid_etc.
+
+
+I/O Redirection
+*********************
+
 Rayleigh writes all text output (e.g., error messages, iteration
 counter, etc.) to stdout by default. Different computing centers handle
 stdout in different ways, but typically one of two path is taken. On
