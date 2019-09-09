@@ -74,22 +74,7 @@ Contains
         Implicit None
         Integer :: nfs(6)
         Integer :: p, np, nl, m, mp, rextra
-        Character*2 :: dig_str
 
-        ! Set format code for integer file names
-        If (output_digits .gt. 9) Then
-            Write(dig_str,'(i2)')output_digits
-        Else
-            Write(dig_str,'(i1)')output_digits
-        Endif
-        chk_ofmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
-
-        If (input_digits .gt. 9) Then
-            Write(dig_str,'(i2)')input_digits
-        Else
-            Write(dig_str,'(i1)')input_digits
-        Endif
-        chk_ifmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
 
 
         checkpoint_t0 = stopwatch(walltime)%elapsed

@@ -114,6 +114,7 @@ Module Controls
     Character*120 :: terminate_file = 'terminate'
     Integer :: output_digits = 8
     Integer :: input_digits = 8
+    Character*8 :: int_in_fmt = '(i8.8)', int_out_fmt='(i8.8)'
 
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
        stdout_file,jobinfo_file,terminate_file, output_digits, input_digits
@@ -156,8 +157,31 @@ Contains
             Write(6,*)"Setting momentum_advection to False"
             momentum_advection = .false.
         Endif
+
+        Call Initialize_IO_Format()
+
     End Subroutine Initialize_Controls
 
+    Subroutine Initialize_IO_Format
+        Implicit None
+        Character*2 :: dig_str
+
+        ! Set format code for integer file names
+        If (output_digits .gt. 9) Then
+            Write(dig_str,'(i2)')output_digits
+        Else
+            Write(dig_str,'(i1)')output_digits
+        Endif
+        int_out_fmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
+        If (input_digits .gt. 9) Then
+            Write(dig_str,'(i2)')input_digits
+        Else
+            Write(dig_str,'(i1)')input_digits
+        Endif
+        int_in_fmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
+    End Initialize_IO_Format
 
     Subroutine Restore_Physics_Defaults()
         Implicit None
