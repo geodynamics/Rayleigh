@@ -56,8 +56,8 @@ It would generate status line, shell_slice output, and checkpoints formatted as:
    Shell_Slices/00020
    Checkpoints/00020_grid_etc.
 
-**Developer's Note:**  The format codes generated through the values of these three variables are defined in
-Controls.F90.   For integer variables that may take on a negative value, additional format codes with one extra
+**Developer's Note:**  The format codes generated through the values of these three variables are declared (with
+descriptive comments) in Controls.F90.   For integer variables that may take on a negative value, additional format codes with one extra
 digit (for the negative sign) are also provided.
 
 
