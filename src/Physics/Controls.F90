@@ -123,9 +123,11 @@ Module Controls
     !Variables that are controlled by those which appear in a namelist
 
     !~~These format codes controlled by n_[input/output]_digits
-    Character*8 :: int_in_fmt = '(i8.8)', int_out_fmt='(i8.8)'  
-    Character*8 :: int_minus_in_fmt = '(i9.8)', int_minus_out_fmt='(i9.8)'
-    Character*9 :: sci_note_fmt ='(ES10.3)'
+    Character*8 :: int_in_fmt = '(i8.8)'        ! Format code for positive integer input
+    Character*8 :: int_out_fmt='(i8.8)'         ! Format code for positive integer output
+    Character*8 :: int_minus_in_fmt = '(i9.8)'  ! Format code for negative integer input
+    Character*8 :: int_minus_out_fmt='(i9.8)'   ! Format code for negative integer output
+    Character*9 :: sci_note_fmt ='(ES10.3)'     ! Format code for scientific-notation output
 
     !///////////////////////////////////////////////////////////////////////////////////
     ! This array may be used for various purposes related to passing messages to the
