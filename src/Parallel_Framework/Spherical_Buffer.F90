@@ -103,6 +103,9 @@ Module Spherical_Buffer
         Procedure :: write_space
         Procedure :: load_cargo
         Procedure :: unload_cargo
+        Procedure :: write_field 
+        Procedure :: write_physical
+        Procedure :: Initialize_PIO
     End Type SphericalBuffer
 
 Contains
@@ -1136,7 +1139,7 @@ Contains
             Case('p3a')
                 If (.not. Allocated(self%p3a)) Then
                     mn1 = 1
-                    mx1 = pfi%n3p+2
+                    mx1 = pfi%n3p+2         ! Note that the +2 implicitly assumes and in-place transform with FFTW
                     mn2 = pfi%my_1p%min
                     mx2 = pfi%my_1p%max
                     mn3 = pfi%my_2p%min
@@ -1252,4 +1255,39 @@ Contains
                 Endif
         End Select
     End Subroutine Advance_Configuration
+
+
+    !////////////////////////////////////////////////////////////////
+    ! Parallel writing routines
+
+    Subroutine Initialize_PIO(self)
+        Implicit None
+        Class(SphericalBuffer) :: self
+        ! Get nprow from parallel framework
+        ! Stub
+    End Subroutine Initialize_PIO
+
+    Subroutine Write_Field(self,field_ind)
+        Implicit None
+        Integer, Intent(In) :: field_ind
+        Class(SphericalBuffer) :: self
+        Select Case(self%config)
+            Case ('p3a')
+                Call self%write_physical(field_ind)
+            Case ('p3b')
+                Call self%write_physical(field_ind)
+        End Select
+        !stub
+    End Subroutine Write_Field
+
+    Subroutine Write_Physical(self,field_ind)
+        Implicit None
+        Integer, Intent(In) :: field_ind
+        Class(SphericalBuffer) :: self
+        ! This should be pretty straightforward.
+        ! Just mimic the logic in Spherical_IO.F90
+        ! Use multi-column writes, though
+
+    End Subroutine Write_Physical
+
 End Module Spherical_Buffer

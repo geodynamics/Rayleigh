@@ -109,12 +109,13 @@ Module Controls
     Integer :: stdout_flush_interval = 50  ! Lines stored before stdout buffer is flushed to stdout_unit
     Integer :: terminate_check_interval = 50  ! check for presence of terminate_file every n-th time step
     Integer :: statusline_interval = 1  ! output status information only every n-th time step
+    Integer :: outputs_per_row = 1    ! Number of MPI ranks, per process row, that participate in parallel writes.
     Character*120 :: stdout_file = 'nofile'
     Character*120 :: jobinfo_file = 'jobinfo.txt'
     Character*120 :: terminate_file = 'terminate'
 
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
-       stdout_file,jobinfo_file,terminate_file
+       stdout_file,jobinfo_file,terminate_file, outputs_per_row
 
     !///////////////////////////////////////////////////////////////////////////
     ! This array may be used for various purposes related to passing messages to the
