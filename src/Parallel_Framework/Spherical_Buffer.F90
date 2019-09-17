@@ -24,6 +24,7 @@ Module Spherical_Buffer
     Use Structures
     Use Load_Balance
     Use General_MPI
+    Use ISendReceive
     Implicit None
     Private
 
@@ -85,6 +86,18 @@ Module Spherical_Buffer
         Integer :: ncargo
 
 
+        !////////////////////////////////////////////////
+        ! Routines for Parallel I/O
+        ! I/O for configuration p3a (physical space)
+        Integer :: output_cols_p3a         ! Number of outputs columns 
+        Integer :: my_nradii               ! Number of radii this rank outputs
+        Integer, Allocatable :: nradii_at_rank(:)  ! Number of radii output by each rank
+        Integer, Allocatable :: rstart_at_rank(:)  ! First radial index (local) this rank receives
+        Logical :: p3a_output = .false.   ! True if this rank outputs in p3a configuration
+        Integer :: p3a_io_tag = 80
+        Type(rmcontainer3d), Allocatable :: p3a_chain(:) ! buffers for p3a outputs
+        Real*8, Allocatable :: cascade_data(:,:,:)
+
         !scount12(0) => number I send to rank 0 when going FROM 1 TO 2
         !scount21(0) => number I send to rank 0 when going FROM 2 TO 1
         Contains
@@ -103,9 +116,11 @@ Module Spherical_Buffer
         Procedure :: write_space
         Procedure :: load_cargo
         Procedure :: unload_cargo
+
         Procedure :: write_field 
         Procedure :: write_physical
         Procedure :: Initialize_PIO
+        Procedure :: p3a_cascade
     End Type SphericalBuffer
 
 Contains
@@ -972,6 +987,9 @@ Contains
             Call self%set_buffer_sizes()
         Endif
 
+
+        Call self%Initialize_PIO()
+
     End Subroutine Initialize_Spherical_Buffer
 
     Subroutine DeAllocate_Spherical_Buffer(self,config,override)
@@ -1260,11 +1278,107 @@ Contains
     !////////////////////////////////////////////////////////////////
     ! Parallel writing routines
 
-    Subroutine Initialize_PIO(self)
+    Subroutine Initialize_PIO(self, r_indices, t_indices, p_indices)
         Implicit None
         Class(SphericalBuffer) :: self
-        ! Get nprow from parallel framework
-        ! Stub
+        Integer, Intent(In), Optional :: r_indices(:)
+        Integer, Allocatable :: tmp_index(:)
+        Integer :: nout_cols, p
+        Integer :: Nradii_per_output, rextra
+        Integer :: r_size, t_size, p_size
+        Integer :: tmp_count, tmp_ind
+
+
+        !////////////////////////////////
+        ! Identify
+        Allocate(self%nr_at_row(0:pfi%ncol))  ! nr output from a particular process row
+        Allocate(self%nt_at_col(0:pfi%nprow)) ! ntheta from a particular process columns
+        Allocate(self%npts_from_col(0:pfi%nprow)) ! Number of points I receive from column p (if any)
+        my_col_rank = pfi%ccomm%rank
+        my_row_rank = pfi%rcomm%rank
+
+        ! self%n{r,t,p}_local
+        ! self%{r,t_p}_local(:)
+
+        self%nr_at_row(:) = 0
+        self%nt_at_col(:) = 0
+        self%npts_from_col(:) = 0
+
+        ! Radial balancing
+        If (present(r_indices)) Then
+            self%nr_write_g = size(r_indices)
+            Allocate(tmp_indices(1:self%nr_write_g))
+            tmp_indices(:) = r_indices(:)
+        Else
+            self%nr_write_g = pfi%n1p
+            Allocate(tmp_indices(1:self%nr_write_g))
+            Do i = 1, pfi%n1p
+                tmp_indices(i) = i
+            Enddo
+        Endif
+
+        Do p = 0, pfi%npcol
+            vmin = pfi%all_1p(p)%min
+            vmax = pfi%all_1p(p)%max
+            Do r = 1, self%nr_write_g
+                If  (r_indices(r) .ge. vmin) (r_indices(r) .le. vmax)
+                    self%nr_at_row(p) = self%nr_at_row(p) + 1
+                    !If (p .eq. pfi%ccomm%rank) Then
+                    !    tmp_index(tmp_ind) = r_indices(r)
+                    !    tmp_ind = tmp_ind+1
+                    !Endif
+                Endif
+            Enddo
+        Enddo
+  
+        
+        nout_cols = pfi%output_columns
+
+        ! Initialize output parameters for the 3 configuration (physical or spectral)
+        If (nout_cols .gt. pfi%my_1p%delta) Then
+            nout_cols = pfi%my_1p%delta
+        Endif
+        self%output_cols_p3a = nout_cols
+
+        Nradii_per_output = pfi%my_1p%delta/nout_cols    ! Number of radii each processor outputs
+        rextra = Mod(pfi%my_1p%delta, nout_cols)
+        Allocate(self%nradii_at_rank(0:nout_cols-1))  
+        Allocate(self%rstart_at_rank(0:nout_cols-1))         
+
+        Do p = 0, nout_cols -1
+            self%Nradii_at_rank(p) = Nradii_per_output
+            If (rextra .gt. 0) Then
+                If (p .lt. rextra) Then
+                    self%Nradii_at_rank(p) = self%Nradii_at_rank(p)+1
+                Endif
+            Endif
+        Enddo        
+        Write(6,*)'Check 2: ', self%nradii_at_rank(:)
+
+        self%rstart_at_rank(0) = pfi%my_1p%min
+        Do p = 1, nout_cols-1
+            self%rstart_at_rank(p) = self%rstart_at_rank(p-1)+self%Nradii_at_rank(p-1)
+        Enddo        
+
+        ! Determine if each rank will output
+        self%my_nradii = self%nradii_at_rank(pfi%rcomm%rank)
+        If (pfi%rcomm%rank .lt. nout_cols) Then
+            self%p3a_output = .true.
+        Endif
+
+        ! Determine displacements for writing
+
+        self%rdisp = 0
+        Do p = 0, column_rank-1
+            self%rdisp = self%rdisp+self%nradii_in_row(p)
+        Enddo
+
+        Do p = 0, row_rank-1
+            self%rdisp = self%rdisp + nradii_at_rank(p)
+        Enddo
+        self%rdisp = self%rdisp*nt_write*np_write*8
+        self%qdisp = nr_write*nt_write*np_write*8
+        
     End Subroutine Initialize_PIO
 
     Subroutine Write_Field(self,field_ind)
@@ -1283,11 +1397,192 @@ Contains
     Subroutine Write_Physical(self,field_ind)
         Implicit None
         Integer, Intent(In) :: field_ind
+        
+        Character*120 :: filename
         Class(SphericalBuffer) :: self
-        ! This should be pretty straightforward.
-        ! Just mimic the logic in Spherical_IO.F90
-        ! Use multi-column writes, though
+
+        Call self%p3a_cascade(field_ind)
+
+
+        filename = 'test.dat'
+        !MPI Layers
+        
+        indisp = 0
+        my_disp = indisp+self%p3a_rdisp  
+
+        ! File Open
+        if (pfi%my_row_rank
+        !~~~~~~~~~~~~~~~~
+
+        Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)
+        
+        Call MPI_FILE_WRITE(funit, self%cascade_data(1,1,1), &
+               self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+
+        ! File Close
+
+        !~~~~~~~~~~~~~~~~~~~~~`
+        DeAllocate(self%cascade_data)
 
     End Subroutine Write_Physical
+
+    Subroutine p3a_cascade(self,field_ind)
+        Implicit None
+        Integer, Intent(In) :: field_ind
+        Integer :: nr_delta, nt_delta   ! n_r_local, n_theta_local
+        Integer :: np_global, nt_global ! n_phi, n_theta
+        Integer :: t_min, t_max         !
+        Integer :: r_min, r_max
+        Integer :: r, t, p
+        Integer :: row_rank, rstart, rend
+        Integer :: nout_cols, mint, maxt
+
+        ! For MPI ISend/Ireceive
+        Integer :: inds(3)
+        Integer, Allocatable :: rirqs(:), sirqs(:)
+        Integer :: nrirqs, nsirqs, nn,  nelem
+
+
+        Class(SphericalBuffer) :: self
+        Real*8, Allocatable :: restripe_delta(:,:,:)
+
+        ! Allocatable buffers that should probably be allocated once and saved
+        Type(rmcontainer3d), Allocatable :: p3a_chain(:)
+        
+        nout_cols = self%output_cols_p3a
+
+        ! Create sensibly-named aliases
+        nr_delta = pfi%my_1p%delta
+        r_min    = pfi%my_1p%min
+        r_max    = pfi%my_1p%max
+
+        nt_delta = pfi%my_2p%delta
+        t_min    = pfi%my_2p%min
+        t_max    = pfi%my_2p%max
+
+        nt_global = pfi%n2p
+        np_global = pfi%n3p        
+
+        row_rank = pfi%rcomm%rank
+
+        ! All ranks restripe to (phi,delta_t, delta_r)
+        ! In preparation for the send
+        Allocate(restripe_delta(1:np_global,t_min:t_max,r_min:r_max))
+        Do r = r_min, r_max
+        Do t = t_min, t_max
+        Do p = 1, np_global
+            restripe_delta(p,t,r) = self%p3a(p,r,t,field_ind)
+            !restripe_delta(p,t,r) = self%p3a(p,rinds(r),t,field_ind)
+        Enddo
+        Enddo
+        Enddo
+
+        ! Allocate receive buffers and stripe owned data into buffers
+        If (self%p3a_output) Then
+
+            rstart = self%rstart_at_rank(row_rank)
+            rend   = rstart+self%nradii_at_rank(row_rank)-1
+            Write(6,*)"RSTART/END: ",nout_cols
+            !~~~~~~~~~~~~~~~~~~~~~ ALLOCATION            
+            Allocate(self%p3a_chain(0:pfi%nprow))
+            Do p = 0, pfi%nprow-1
+                Allocate(self%p3a_chain(p)%data(1:np_global,1:pfi%all_2p(p)%delta, rstart:rend))
+            Enddo
+            !~~~~~~~~~~~~~~~~~~~~~ ALLOCATION
+        Endif
+
+        If (self%p3a_output) Then
+            nrirqs = pfi%nprow-1
+            nsirqs = nout_cols-1
+            Allocate(rirqs(1:nrirqs))
+        Else
+            nsirqs = nout_cols
+        Endif
+        Allocate(sirqs(1:nsirqs))
+
+
+        If (self%p3a_output) Then
+
+            ! Stripe my data
+            self%p3a_chain(row_rank)%data(:,:,rstart:rend) = &
+                restripe_delta(:,:,rstart:rend)
+
+
+            ! Receive each processes's data
+            inds(1) = 1
+            inds(2) = 1
+            inds(3) = 1
+
+            nn = 1
+            Do p = 0, pfi%nprow -1
+
+                If (p .eq. row_rank) Then
+
+                    ! Stripe data    
+                    self%p3a_chain(p)%data(:,:,rstart:rend) = &
+                        restripe_delta(:,:,rstart:rend)
+
+                Else
+                    Call IReceive(self%p3a_chain(p)%data, rirqs(nn), source= p, &
+                        & tag=self%p3a_io_tag,grp = pfi%rcomm, indstart = inds)
+
+                    nn = nn+1
+                Endif
+
+            Enddo
+
+
+        Endif
+
+        ! Everyone potentially does a send
+        nn=1
+        Do p = 0, nout_cols-1
+            If (p .ne. row_rank) Then
+
+                inds(1) = 1
+                inds(2) = 1
+                inds(3) = self%rstart_at_rank(p)-r_min+1
+                nelem = self%nradii_at_rank(p)*np_global*nt_delta
+
+	            Call Isend(restripe_delta,sirqs(nn),n_elements = nelem,dest = p, &
+                    tag=self%p3a_io_tag, grp = pfi%rcomm, indstart = inds)
+
+                nn = nn+1
+
+            Endif
+        Enddo
+
+        If (self%p3a_output) Then
+
+            Call IWaitAll(nrirqs,rirqs)
+            DeAllocate(rirqs)
+
+        Endif
+
+        Call IWaitAll(nsirqs,sirqs)
+        DeAllocate(sirqs)
+    
+        ! Receive into chain buffers       
+
+
+        If (self%p3a_output) Then        
+
+            Allocate(self%cascade_data(1:np_global,1:nt_global,1:self%my_nradii))
+            Do p = 0, pfi%nprow-1
+                mint = pfi%all_2p(p)%min
+                maxt = pfi%all_2p(p)%max
+                self%cascade_data(:,mint:maxt,:) = &
+                    self%p3a_chain(p)%data(:,:,:)
+            Enddo
+        Endif
+        ! Cleanup
+        DeAllocate(restripe_delta)
+        Do p = 0, pfi%nprow-1
+            DeAllocate(self%p3a_chain(p)%data)
+        Enddo
+        DeAllocate(self%p3a_chain)
+
+        Write(6,*)'Write Physical Complete'
+    End Subroutine p3a_cascade
 
 End Module Spherical_Buffer

@@ -326,49 +326,7 @@ Contains
     End Subroutine Finalize_Framework
 
 
-    !///////////////////////////////////////////////////////////////
-    ! The parallel interface provides some functionality for parallel
-    ! I/O as well.
 
-    Subroutine Initialize_PFI_IO(self)
-        Implicit None
-        Class(Parallel_Interface) :: self
-        Call self%Initialize_config3_IO
-    End Subroutine Initialize_PFI_IO
-
-    Subroutine Initialize_config3_IO(self)
-        Implicit None
-        Class(Parallel_Interface) :: self
-        Integer :: nout_cols
-        nout_cols = self%output_columns
-        ! Initialize output parameters for the 3 configuration (physical or spectral)
-        If (nout_cols .gt. self%my_1p%delta) Then
-            nout_cols = self%my_1p%delta
-        Endif
-        self%output_columns3 = nout_cols
-
-        Nradii_per_output = my_r%delta/Noutputs_per_row    ! Number of radii each processor outputs
-        rextra = Mod(my_r%delta,Noutputs_per_row)           ! Remainder
-        Allocate(nradii_at_rank(0:Noutputs_per_row-1))    ! Number of radii output by each rank
-        Allocate(rstart_at_rank(0:Noutputs_per_row-1))    ! First radial index (local) this rank receives
-        Do p = 0, Noutputs_per_row -1
-            Nradii_at_rank(p) = Nradii_per_output
-            If (rextra .gt. 0) Then
-                If (p .lt. rextra) Then
-                    Nradii_at_rank(p) = Nradii_at_rank(p)+1
-                Endif
-            Endif
-        Enddo
-        rstart_at_rank(0) = 1
-        Do p = 1, Noutputs_per_row-1
-            rstart_at_rank(p) = rstart_at_rank(p-1)+nradii_at_rank(p-1)
-        Enddo
-        ! Determine if each rank will output
-        If (my_row_rank .lt. Noutputs_per_row) Then
-            I_Will_Output = .true.
-        Endif
-        
-    End Subroutine Initialize_Config3_IO
 
 
 

@@ -118,8 +118,8 @@ Module Controls
     Integer :: decimal_places = 3         ! Number of digits after decimal for scientific notation output
 
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
-       stdout_file,jobinfo_file,terminate_file, integer_output_digits, integer_input_digits, decimal_places &
-       outputs_per_row
+       stdout_file,jobinfo_file,terminate_file, integer_output_digits, integer_input_digits, &
+       decimal_places, outputs_per_row
 
 
     !//////////////////////////////////////////////////////////////////////////////////
