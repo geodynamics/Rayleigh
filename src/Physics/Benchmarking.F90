@@ -773,7 +773,7 @@ Contains
                     iter_end   = MAXVAL(iter_saves(1:global_count))
 
 
-                    Write(iter_string,'(i8.8)')iteration
+                    Write(iter_string,int_out_fmt)iteration
                     funit = 88
                     report_file = Trim(my_path)//'Benchmark_Reports/'//TRIM(iter_string)
                     Open(unit = funit, file = report_file,action="write", status="REPLACE", FORM = 'FORMATTED')

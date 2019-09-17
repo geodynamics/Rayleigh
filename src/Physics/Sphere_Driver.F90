@@ -75,11 +75,11 @@ Contains
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*11 :: dtstr
-        Character*9 :: wtmstr
-        Character*8 :: istr
-        Character(len=*), parameter :: dtfmt ='(ES11.4)', wtmfmt='(ES9.3E1)', &
-           fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
+        Character*120 :: dtstr
+        Character*120 :: wtmstr
+        Character*120 :: istr
+        !Character(len=*), parameter :: dtfmt ='(ES11.4)', wtmfmt='(ES9.3E1)', &
+        Character(len=*), parameter ::   fmtstr = '(F14.4)'
         
 
         ! Register handle_sig as the signal-handling 
@@ -114,10 +114,10 @@ Contains
                 Call stdout%print(' ')
                 Call stdout%print('///////////////////////////////////////////////////////////////')
                 Call stdout%print(' WARNING:  Time-step counter has been manually reset.')
-                Write(istr,ifmtstr)checkpoint_iter
-                Call stdout%print('           Checkpoint time-step ID: '//istr//'.')
-                Write(istr,ifmtstr)first_iteration
-                Call stdout%print('                  New time-step ID: '//istr//'.')
+                Write(istr,int_out_fmt)checkpoint_iter
+                Call stdout%print('           Checkpoint time-step ID: '//Trim(istr)//'.')
+                Write(istr,int_out_fmt)first_iteration
+                Call stdout%print('                  New time-step ID: '//Trim(istr)//'.')
                 Call stdout%print('           Revise main_input before the next restart!')
                 Call stdout%print('///////////////////////////////////////////////////////////////')
                 Call stdout%print(' ')
@@ -163,15 +163,15 @@ Contains
 
 
             If (my_rank .eq. 0 .and. mod(iteration,statusline_interval) .eq. 0) Then
-                Write(istr,ifmtstr)iteration
-                Write(dtstr,dtfmt)deltat
+                Write(istr,int_out_fmt)iteration
+                Write(dtstr,sci_note_fmt)deltat
                 If (stopwatch(walltime)%delta .ne. 0.0d0) Then
-                   Write(wtmstr,wtmfmt) 1.0d0 / stopwatch(walltime)%delta
+                   Write(wtmstr,sci_note_fmt) 1.0d0 / stopwatch(walltime)%delta
                 Else
-                   Write(wtmstr,wtmfmt) 0.0d0
+                   Write(wtmstr,sci_note_fmt) 0.0d0
                 Endif
-                Call stdout%print(' On iteration : '//istr//' DeltaT : '//dtstr//' Iter/sec : '&
-                   //adjustr(wtmstr))
+                Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
+                   //Trim(wtmstr))
             Endif
             Call rlm_spacea()
 

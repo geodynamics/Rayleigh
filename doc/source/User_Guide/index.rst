@@ -15,7 +15,7 @@ Rayleigh User Manual
    cookbooks
    custom_reference_states
    diagnostics
-   io_redirection
+   io_control
    ensemble_mode
    references
    examples
