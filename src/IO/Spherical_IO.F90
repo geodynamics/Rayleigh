@@ -242,7 +242,7 @@ Module Spherical_IO
     Type(SphericalBuffer) :: spectra_buffer, sph_sample_buffer
     Real*8, Private :: da_total, int_vol, int_dphi, int_rsquared_dr, int_sintheta_dtheta
     Real*8, Private, Allocatable :: sintheta_dtheta(:), rsquared_dr(:)
-    Character*6, Public :: i_ofmt = '(i8.8)', i_pfmt = '(i5.5)'
+    Character*8, Public :: i_ofmt = '(i8.8)'
     integer :: output_ireq(1), output_status(1)
 
     !//////////////////////////////////////////////////////////////////////
@@ -306,13 +306,18 @@ Contains
 
 
 
-	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path)
+	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
 		Implicit None
 		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
         Integer :: thmax, thmin, nth1, nth2, nn
 		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
+        Character*8, Intent(In) :: digfmt
+
+        ! Set format code for integer file names
+        i_ofmt=digfmt
+
         local_file_path = file_path
 		! Handles output bookkeeping
 
@@ -3235,7 +3240,7 @@ Contains
 		Real*8, Allocatable :: my_shells(:,:,:), buff(:,:,:)
 		Integer :: i, j
 		Character*4 :: qstring
-		Character*8 :: iterstring
+		Character*120 :: iterstring
 		Character*120 :: cfile
 
 		Integer :: your_theta_min, your_theta_max, your_ntheta
@@ -3582,7 +3587,7 @@ Contains
         Class(DiagnosticInfo) :: self
         Integer, Intent(In) :: iter
         Integer, Intent(InOut) :: errcheck
-        Character*8 :: iterstring,istr
+        Character*120 :: iterstring,istr
         Character*120 :: filename, omsg
         Integer :: modcheck, imod, file_iter, next_iter, ibelong
         Integer :: fstat
@@ -3671,7 +3676,7 @@ Contains
         Class(DiagnosticInfo) :: self
         Integer, Intent(In) :: iter
         Integer, Intent(InOut) :: ierr
-        Character*8 :: iterstring
+        Character*120 :: iterstring
         Character*120 :: filename
         Integer :: modcheck, imod, file_iter, next_iter, ibelong, icomp
         Integer :: buffsize, funit
@@ -4125,7 +4130,7 @@ Contains
         If (Allocated(sintheta_dtheta)) DeAllocate(sintheta_dtheta)
         If (Allocated(rsquared_dr)) DeAllocate(rsquared_dr)
         i_ofmt = '(i8.8)'  ! These should never change during a run, but just in case...
-        i_pfmt = '(i5.5)'
+
         io_node = 0
         If (Allocated(theta_integration_weights)) DeAllocate(theta_integration_weights)
         If (Allocated(r_integration_weights))   DeAllocate(r_integration_weights)
