@@ -55,10 +55,10 @@ Math_Constants.o : Math_Constants.F90
 Math_Utility.o : Math_Utility.F90 
 PDE_Coefficients.o : PDE_Coefficients.F90 General_MPI.o Math_Utility.o Math_Constants.o Controls.o ProblemSize.o 
 Parallel_Framework.o : Parallel_Framework.F90 BufferedOutput.o Structures.o Load_Balance.o General_MPI.o MPI_LAYER.o 
+Physical_IO_Buffer.o : Physical_IO_Buffer.F90 Ra_MPI_Base.o 
 ProblemSize.o : ProblemSize.F90 Timers.o BufferedOutput.o Math_Constants.o Chebyshev_Polynomials.o Controls.o Spectral_Derivatives.o Legendre_Polynomials.o Parallel_Framework.o 
 Ra_MPI_Base.o : Ra_MPI_Base.F90 
 Run_Param_Header.dbg.o : Run_Param_Header.dbg.F 
-Run_Param_Header.opt.o : Run_Param_Header.opt.F 
 Run_Parameters.o : Run_Parameters.F90 PDE_Coefficients.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o ProblemSize.o Parallel_Framework.o Controls.o 
 SendReceive.o : SendReceive.F90 Ra_MPI_Base.o 
 Spectral_Derivatives.o : Spectral_Derivatives.F90 Structures.o 
@@ -67,7 +67,7 @@ Sphere_Hybrid_Space.o : Sphere_Hybrid_Space.F90 indices.F PDE_Coefficients.o Clo
 Sphere_Linear_Terms.o : Sphere_Linear_Terms.F90 Math_Constants.o PDE_Coefficients.o ClockInfo.o Timers.o BoundaryConditions.o Fields.o Linear_Solve.o ProblemSize.o Controls.o Load_Balance.o 
 Sphere_Physical_Space.o : Sphere_Physical_Space.F90 indices.F Benchmarking.o Math_Constants.o PDE_Coefficients.o ClockInfo.o Timers.o General_MPI.o Diagnostics_Interface.o Fields.o Spectral_Derivatives.o Fourier_Transform.o ProblemSize.o Controls.o Parallel_Framework.o 
 Sphere_Spectral_Space.o : Sphere_Spectral_Space.F90 Sphere_Linear_Terms.o Timers.o ClockInfo.o BoundaryConditions.o Fields.o Linear_Solve.o Finite_Difference.o ProblemSize.o Controls.o Parallel_Framework.o Load_Balance.o 
-Spherical_Buffer.o : Spherical_Buffer.F90 General_MPI.o Load_Balance.o Structures.o Parallel_Framework.o MPI_LAYER.o 
+Spherical_Buffer.o : Spherical_Buffer.F90 ISendReceive.o General_MPI.o Load_Balance.o Structures.o Parallel_Framework.o MPI_LAYER.o 
 Spherical_IO.o : Spherical_IO.F90 Ra_MPI_Base.o Math_Constants.o BufferedOutput.o Legendre_Transforms.o Fourier_Transform.o General_MPI.o ISendReceive.o SendReceive.o Parallel_Framework.o Spherical_Buffer.o 
 Structures.o : Structures.F90 
 TestSuite.o : TestSuite.F90 ProblemSize.o Test_Cheby.o Test_SHT.o 
