@@ -58,7 +58,7 @@ If you stop here, you will have to do this every time you activate your developm
 you only need to add two small scripts to radev/etc/conda/activate.d and radev/etc/conda/deactivate.d directories.   Scripts in these
 directories are automatically executed when your conda environment is activated and deactivated, respectively.  
 
-Change to your activate.d directory (for me, this was /custom/software/miniconda3/envs/radev/etc/activate.d) and create a file named
+Change to your activate.d directory (for me, this was /custom/software/miniconda3/envs/radev/etc/conda/activate.d) and create a file named
 activate_mkl.sh with the following three lines:
 
 .. code-block:: bash
