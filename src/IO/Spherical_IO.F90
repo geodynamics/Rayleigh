@@ -31,6 +31,7 @@ Module Spherical_IO
 #ifdef INTEL_COMPILER 
     USE IFPORT
 #endif
+    Use Physical_IO_Buffer
 	Implicit None
 	! This module contains routines for outputing spherical data as:
 	! 1. Slices of sphere
@@ -171,7 +172,7 @@ Module Spherical_IO
     Type(DiagnosticInfo) :: Shell_Averages, Shell_Slices, Global_Averages, AZ_Averages, Full_3D, Shell_Spectra
     Type(DiagnosticInfo) :: Equatorial_Slices, Meridional_Slices, SPH_Mode_Samples, Point_Probes
 
-
+    Type(IO_Buffer_Physical) :: shell_slices_buffer, full_3d_buffer
     Integer :: current_averaging_level = 0
     Integer :: current_qval = 0
 
@@ -534,6 +535,10 @@ Contains
         fdir = 'Spherical_3D/'
         Call Full_3D%set_file_info(full3d_version,shellslice_nrec,full3d_frequency,fdir)    
 
+
+        !IO Buffers
+        Call Shell_Slices_Buffer%init()
+        Call Full_3D_Buffer%init()
    End Subroutine Initialize_Spherical_IO
 
     Subroutine Get_Meridional_Slice(qty)
@@ -3250,6 +3255,9 @@ Contains
 		Integer :: funit, ierr, full_3d_tag
 
 		! qty is dimensioned 1:n_phi, my_rmin:my_rmax, my_theta_min:my_theta_max
+
+        Call full_3d_buffer%cache_data(qty)
+        Call full_3d_buffer%cascade()
 
         full_3d_tag = Full_3D%mpi_tag
 		If (my_row_rank .eq. 0) Then

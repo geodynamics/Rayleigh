@@ -57,11 +57,6 @@ Contains
         Call fft_to_physical(wsp%p3a,rsc = .true.)
         Call StopWatch(fft_time)%increment()
 
-        !TEST!
-        If (iteration .eq. 1) Then
-            Call wsp%write_field(1)
-        Endif
-
 
         Call StopWatch(pspace_time)%startclock()
         ! Convert all our terms of the form "sintheta var" to "var"
