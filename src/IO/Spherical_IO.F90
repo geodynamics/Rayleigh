@@ -3253,11 +3253,13 @@ Contains
 		Integer(kind=MPI_OFFSET_KIND) :: my_disp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 		Integer :: funit, ierr, full_3d_tag
+        Character*120 :: tfile
 
 		! qty is dimensioned 1:n_phi, my_rmin:my_rmax, my_theta_min:my_theta_max
 
+        tfile = 'temp.dat'
         Call full_3d_buffer%cache_data(qty)
-        Call full_3d_buffer%cascade()
+        Call full_3d_buffer%write_data(filename=tfile)
 
         full_3d_tag = Full_3D%mpi_tag
 		If (my_row_rank .eq. 0) Then
