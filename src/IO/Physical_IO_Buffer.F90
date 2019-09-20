@@ -129,6 +129,7 @@ Contains
 
         Allocate(self%ntheta_at_column(0:pfi%nprow-1))
         Allocate(self%npts_at_column(0:pfi%nprow-1))
+        !Allocate(self%nr_out_at_column(0:pfi%nprow-1))
 
         Allocate(self%nr_out_at_row(0:pfi%npcol-1))
 
@@ -163,10 +164,7 @@ Contains
             Enddo
 
 
-            Do p = 0, self%row_rank-1
-                n = self%nr_out_at_column(p)*self%ntheta*self%nphi*self%nbytes
-                self%base_disp = self%base_disp+n
-            Enddo
+
 
             self%buffsize = self%nr_local*self%nphi*self%ntheta
         Endif
@@ -189,6 +187,13 @@ Contains
                 self%nrecv_from_column(p) = self%nr_out_at_column(self%row_rank)* &
                                             self%nphi*self%ntheta_at_column(p) 
             Enddo
+
+            Do p = 0, self%row_rank-1
+                n = self%nr_out_at_column(p)*self%ntheta*self%nphi*self%nbytes
+                self%base_disp = self%base_disp+n
+            Enddo
+
+
         Endif
 
 

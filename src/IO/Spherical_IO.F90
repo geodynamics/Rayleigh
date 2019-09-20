@@ -538,7 +538,8 @@ Contains
 
         !IO Buffers
         Call Shell_Slices_Buffer%init()
-        Call Full_3D_Buffer%init()
+        Call Full_3D_Buffer%init(mpi_tag=54)
+        
    End Subroutine Initialize_Spherical_IO
 
     Subroutine Get_Meridional_Slice(qty)
