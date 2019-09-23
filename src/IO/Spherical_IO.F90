@@ -537,7 +537,7 @@ Contains
 
 
         !IO Buffers
-        Call Shell_Slices_Buffer%init()
+        !Call Shell_Slices_Buffer%init()
         Call Full_3D_Buffer%init(mpi_tag=54)
         
    End Subroutine Initialize_Spherical_IO
@@ -3258,7 +3258,7 @@ Contains
 
 		! qty is dimensioned 1:n_phi, my_rmin:my_rmax, my_theta_min:my_theta_max
 
-        tfile = 'temp.dat'
+        tfile = 'Spherical_3D_2/00000001_0501'
         Call full_3d_buffer%cache_data(qty)
         Call full_3d_buffer%write_data(filename=tfile)
 

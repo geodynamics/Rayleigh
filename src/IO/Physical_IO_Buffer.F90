@@ -34,6 +34,8 @@ Module Physical_IO_Buffer
         Integer, Allocatable :: nr_out_at_column(:) ! number of radii output by row rank X in this row
         Integer, Allocatable :: nr_out_at_row(:)    ! number of radii output by column rank Y's row
         Integer, Allocatable :: nrecv_from_column(:)  ! number of points, per field, received from column X
+        Integer :: nr_out = 0   ! Number of radii this process outputs
+
 
         Type(rmcontainer4d), Allocatable :: recv_buffers(:)
 
@@ -125,13 +127,19 @@ Contains
     Subroutine Load_Balance_IO(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer :: p, n, nextra
+        Integer :: p, n, nextra, shsize
 
         Allocate(self%ntheta_at_column(0:pfi%nprow-1))
         Allocate(self%npts_at_column(0:pfi%nprow-1))
-        !Allocate(self%nr_out_at_column(0:pfi%nprow-1))
-
+        Allocate(self%nr_out_at_column(0:pfi%nprow-1))
         Allocate(self%nr_out_at_row(0:pfi%npcol-1))
+        Allocate(self%nrecv_from_column(0:pfi%nprow-1))
+
+        self%nr_out_at_column(:)  = 0
+        self%nr_out_at_row(:)     = 0
+        self%npts_at_column(:)    = 0
+        self%ntheta_at_column(:)  = 0
+        self%nrecv_from_column(:) = 0
 
         If (self%simple) Then
             self%nr     = pfi%n1p
@@ -154,46 +162,49 @@ Contains
             Enddo
 
         Endif
-        If (self%output_rank) Then
-            self%qdisp = self%nr*self%ntheta*self%nphi*self%nbytes
 
-            self%base_disp = 0
-            Do p = 0, self%col_rank-1
-                n = self%nr_out_at_row(p)*self%ntheta*self%nphi*self%nbytes
-                self%base_disp = self%base_disp+n
-            Enddo
-
-
-
-
-            self%buffsize = self%nr_local*self%nphi*self%ntheta
-        Endif
         self%npts = self%npts_at_column(self%row_rank)
 
-        !outputs
+        !Determine how many radii each rank outputs
         n = self%nr_local / self%nout_cols
         nextra = Mod(self%nr_local,self%nout_cols)
-        Allocate(self%nr_out_at_column(0:self%nout_cols-1))
+
         Do p = 0, self%nout_cols-1
             self%nr_out_at_column(p) = n
             If (p .lt. nextra) Then
                 self%nr_out_at_column(p) = n+1
             Endif
         Enddo
-        
+        self%nr_out = self%nr_out_at_column(self%row_rank)
+
+
         If (self%output_rank) Then
-            Allocate(self%nrecv_from_column(0:pfi%nprow-1))
+
+
+
             Do p = 0, pfi%nprow-1
-                self%nrecv_from_column(p) = self%nr_out_at_column(self%row_rank)* &
+                self%nrecv_from_column(p) = self%nr_out* &
                                             self%nphi*self%ntheta_at_column(p) 
             Enddo
 
+
+            ! Determine offsets (in bytes) for MPI-IO
+            shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
+            self%qdisp = self%nr*shsize
+
+            self%base_disp = 0
+            Do p = 0, self%col_rank-1
+                n = self%nr_out_at_row(p)*shsize
+                self%base_disp = self%base_disp+n
+            Enddo
+
             Do p = 0, self%row_rank-1
-                n = self%nr_out_at_column(p)*self%ntheta*self%nphi*self%nbytes
+                n = self%nr_out_at_column(p)*shsize
                 self%base_disp = self%base_disp+n
             Enddo
 
 
+            self%buffsize = self%nr_out*self%nphi*self%ntheta 
         Endif
 
 
@@ -205,9 +216,10 @@ Contains
         Integer :: p, np,nr,nt
         If (self%output_rank) Then
             np = self%nphi
-            nr = self%nr_out_at_column(self%row_rank)
+            nr = self%nr_out
             Do p = 0, pfi%nprow-1
                 nt = self%ntheta_at_column(p)
+                if (self%rank .eq. 0) write(6,*)'p,nt: ', p, nt
                 If (self%cascade_type .eq. 1) Then
                     Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:self%ncache,1:nr))
                 Else
@@ -329,9 +341,8 @@ Contains
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4) = (/1,1,1,1/)
-        Integer :: cache_ind, i, tstart,tend, r
-        Write(6,*)'Simple Cascade!'
-
+        Integer :: cache_ind, i, tstart,tend, r, t
+        
         Call self%Allocate_Receive_Buffers()
 
         If (self%output_rank) Then
@@ -341,43 +352,63 @@ Contains
             Do p = 0, pfi%nprow-1
                 If (p .ne. self%row_rank) Then
                     n = self%nrecv_from_column(p)*self%ncache
-                    Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq+1),n_elements = n, &
-                            &  source= p,tag = self%tag, grp = pfi%rcomm)	            
+
+                        !Write(6,*)'p, n: ', p,n, self%col_rank, self%row_rank
                     nrirq =nrirq+1
+                    Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
+                            &  source= p,tag = self%tag, grp = pfi%rcomm)	            
+                    
                 Endif
             Enddo
         Endif
-
-
 
         nsirq = self%nout_cols
         If (self%output_rank) nsirq = nsirq-1
         Allocate(sirqs(1:nsirq))
         nn = 1
         rstart = 1
+        inds(1) = 1
+        inds(2) = 1
+        inds(3) = 1
         Do p = 0, self%nout_cols-1
             inds(4) = rstart
             If (p .ne. self%row_rank) Then
                 n = self%nr_out_at_column(p)*self%ncache*self%nphi*self%ntheta_local
+                If ((self%row_rank .eq. self%nout_cols) ) Then
+                    Write(6,*)'sending to ',p, rstart, self%cache(1,1,1,rstart), self%nr_out_at_column(p)
+                Endif
+
                 Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
                     grp = pfi%rcomm, indstart = inds)
                 nn = nn+1
+
             Else
-                rend = rstart+self%nr_out_at_column(p)-1
+                rend = rstart+self%nr_out-1
                 self%recv_buffers(p)%data(:,:,:,:) = self%cache(:,:,:,rstart:rend)
             Endif
             rstart = rstart+self%nr_out_at_column(p)
+            !If(self%row_rank .ge. self%nout_cols) Then
+            !    Write(6,*)'non I/O: ', maxval(self%cache)
+            !Endif
         Enddo
 
-        Call IWaitAll(nsirq,sirqs)
+
         If (self%output_rank) Then
             Call IWaitAll(nrirq, rirqs)
             DeAllocate(rirqs)
         Endif
+        Call IWaitAll(nsirq,sirqs)
         DeAllocate(sirqs)
 
 
         If (self%output_rank) Then
+
+            If (self%row_rank .eq. 0) Then
+                Do p = 0, pfi%nprow-1
+                    Write(6,*)'I/O recv from: ',p, self%recv_buffers(p)%data(1,1,1,1)
+                Enddo
+            Endif
+
 
             Allocate(self%collated_data(self%nphi,self%ntheta,self%nr_local,self%ncache))
             tstart = 1
@@ -385,9 +416,11 @@ Contains
                 If (self%nrecv_from_column(p) .gt. 0) Then
                     tend = tstart+self%ntheta_at_column(p)-1
                     Do i = 1, self%ncache
-                        Do r =1, self%nr_out_at_column(self%row_rank)
+                        Do r =1, self%nr_out
                             self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
-                            !self%collated_data(1,1,1,1) = 1 !self%recv_buffers(p)%data(1,1,1,1)
+                            !Do t = tstart, tend
+                            !    self%collated_data(:,t,r,i) = t
+                            !Enddo
                         Enddo
                     Enddo
                     tstart = tend+1
@@ -412,7 +445,6 @@ Contains
         Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 
-        Write(6,*)'filename: ', filename
 
         hdisp = 0
         If (present(disp)) hdisp = disp
