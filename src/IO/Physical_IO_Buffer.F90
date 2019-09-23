@@ -23,6 +23,7 @@ Module Physical_IO_Buffer
         Integer :: npts         ! number of points I output
         
         Integer, Allocatable :: phi_ind(:)  ! phi indices in (potentially subsampled) array 
+        Integer, Allocatable :: r_local_ind(:) ! r indices in subsampled array (r-my_r%min+1)
 
         !**Row-specific** variables related to the cascade operation
         !Everything here is true within a given row, but may different between
@@ -77,8 +78,10 @@ Contains
                                              phi_indices,ncache, mpi_tag)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer, Intent(In), Optional :: r_indices, theta_indices, phi_indices
+        Integer, Intent(In), Optional :: r_indices(:), theta_indices, phi_indices
         Integer, Intent(In), Optional :: ncache, mpi_tag
+
+        Integer :: r, ii, ind, my_min, my_max
 
         self%cascade_type = 1
 
@@ -100,6 +103,30 @@ Contains
 
         !///////////////////////////////////////////////////////////
         ! Establish how this buffer will be subsampled, if at all
+
+
+
+        If (present(r_indices)) Then
+            self%nr = size(r_indices)
+            self%nr_local = 0
+            my_min = pfi%all_1p(self%col_rank)%min
+            my_max = pfi%all_1p(self%col_rank)%max
+            Allocate(self%r_local_ind(1:(my_max-my_min)))
+            self%r_local_ind = -1
+            ii = 1
+            Do r = 1, self%nr
+                ind = r_indices(r)
+                If ((ind .ge. my_min ) .and. (ind .le. my_max)) Then
+                    self%r_local_ind(ii) = r_indices(r)-my_min+1
+                    self%nr_local = self%nr_local+1   
+                Endif
+            Enddo
+            write(6,*)'r_local_ind: ', self%r_local_ind
+        Else
+            self%nr       = pfi%n1p
+            self%nr_local = pfi%all_1p(self%col_rank)%delta
+        Endif
+
         If (.not. present(r_indices)) Then
             If (.not. present(theta_indices)) Then
                 If (.not. present(phi_indices)) Then
@@ -124,6 +151,7 @@ Contains
 
     End Subroutine Initialize_Physical_IO_Buffer
 
+
     Subroutine Load_Balance_IO(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
@@ -142,12 +170,12 @@ Contains
         self%nrecv_from_column(:) = 0
 
         If (self%simple) Then
-            self%nr     = pfi%n1p
+
             self%ntheta = pfi%n2p
             self%nphi   = pfi%n3p
 
             self%ntheta_local = pfi%all_2p(self%row_rank)%delta
-            self%nr_local     = pfi%all_1p(self%col_rank)%delta
+
 
 
             Do p = 0, pfi%nprow-1
@@ -219,7 +247,7 @@ Contains
             nr = self%nr_out
             Do p = 0, pfi%nprow-1
                 nt = self%ntheta_at_column(p)
-                if (self%rank .eq. 0) write(6,*)'p,nt: ', p, nt
+                
                 If (self%cascade_type .eq. 1) Then
                     Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:self%ncache,1:nr))
                 Else
@@ -274,7 +302,7 @@ Contains
 
         self%orank = self%ocomm%rank
         If (self%output_rank) Then
-            Write(6,*)'my_rank: ', pfi%gcomm%rank, ' output_rank: ', self%ocomm%rank
+            !Write(6,*)'my_rank: ', pfi%gcomm%rank, ' output_rank: ', self%ocomm%rank
             Allocate(self%recv_buffers(0:pfi%nprow-1))
         Endif
 
@@ -352,8 +380,6 @@ Contains
             Do p = 0, pfi%nprow-1
                 If (p .ne. self%row_rank) Then
                     n = self%nrecv_from_column(p)*self%ncache
-
-                        !Write(6,*)'p, n: ', p,n, self%col_rank, self%row_rank
                     nrirq =nrirq+1
                     Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
                             &  source= p,tag = self%tag, grp = pfi%rcomm)	            
@@ -374,9 +400,9 @@ Contains
             inds(4) = rstart
             If (p .ne. self%row_rank) Then
                 n = self%nr_out_at_column(p)*self%ncache*self%nphi*self%ntheta_local
-                If ((self%row_rank .eq. self%nout_cols) ) Then
-                    Write(6,*)'sending to ',p, rstart, self%cache(1,1,1,rstart), self%nr_out_at_column(p)
-                Endif
+                !If ((self%row_rank .eq. self%nout_cols) ) Then
+                !    Write(6,*)'sending to ',p, rstart, self%cache(1,1,1,rstart), self%nr_out_at_column(p)
+                !Endif
 
                 Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
                     grp = pfi%rcomm, indstart = inds)
@@ -403,11 +429,11 @@ Contains
 
         If (self%output_rank) Then
 
-            If (self%row_rank .eq. 0) Then
-                Do p = 0, pfi%nprow-1
-                    Write(6,*)'I/O recv from: ',p, self%recv_buffers(p)%data(1,1,1,1)
-                Enddo
-            Endif
+            !If (self%row_rank .eq. 0) Then
+            !    Do p = 0, pfi%nprow-1
+            !        Write(6,*)'I/O recv from: ',p, self%recv_buffers(p)%data(1,1,1,1)
+            !    Enddo
+            !Endif
 
 
             Allocate(self%collated_data(self%nphi,self%ntheta,self%nr_local,self%ncache))

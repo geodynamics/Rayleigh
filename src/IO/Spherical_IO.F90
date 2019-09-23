@@ -537,7 +537,7 @@ Contains
 
 
         !IO Buffers
-        !Call Shell_Slices_Buffer%init()
+        Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels)
         Call Full_3D_Buffer%init(mpi_tag=54)
         
    End Subroutine Initialize_Spherical_IO
@@ -3240,111 +3240,34 @@ Contains
 	End Subroutine Write_Shell_Average
 
 	Subroutine Write_Full_3D(qty)
-		Use RA_MPI_BASE ! Doing this here for now.  No other routine above sees MPI_Base, and I may want to keep it that way.
 		Implicit None		
 		Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
-		Real*8, Allocatable :: my_shells(:,:,:), buff(:,:,:)
-		Integer :: i, j
+		Integer :: i, funit
 		Character*4 :: qstring
-		Character*120 :: iterstring
-		Character*120 :: cfile
+		Character*120 :: iterstring, data_file, grid_file
 
-		Integer :: your_theta_min, your_theta_max, your_ntheta
-		Integer :: np, buffsize, p
-		Integer(kind=MPI_OFFSET_KIND) :: my_disp
-		Integer :: mstatus(MPI_STATUS_SIZE)
-		Integer :: funit, ierr, full_3d_tag
-        Character*120 :: tfile
 
-		! qty is dimensioned 1:n_phi, my_rmin:my_rmax, my_theta_min:my_theta_max
-
-        tfile = 'Spherical_3D_2/00000001_0501'
+        ! Write the data file (Parallel I/O)
+        Write(iterstring,i_ofmt) current_iteration
+        Write(qstring,'(i4.4)') current_qval
+        data_file = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//qstring
         Call full_3d_buffer%cache_data(qty)
-        Call full_3d_buffer%write_data(filename=tfile)
-
-        full_3d_tag = Full_3D%mpi_tag
-		If (my_row_rank .eq. 0) Then
-			! Everyone in the row communicates to row-rank zero.
-			! Each row owns a specific rank of radii
-			Allocate(my_shells(1:nphi, 1:ntheta, my_rmin:my_rmax))
-			my_shells(:,:,:) = 0.0d0					
-
-			! First each rank stripes its own data into the new array
-			! Not that striping is not in the "native" order
-			Do j = my_theta_min, my_theta_max
-				Do i = my_rmin, my_rmax
-					my_shells(:,j,i) = qty(:,i,j)
-				Enddo
-			Enddo
-			np = pfi%rcomm%np
-			Do p = 1, np-1	
-				your_theta_min = pfi%all_2p(p)%min
-				your_theta_max = pfi%all_2p(p)%max
-				your_ntheta    = pfi%all_2p(p)%delta
-				Allocate(buff(1:nphi,my_rmin:my_rmax, your_theta_min:your_theta_max))
-				Call receive(buff, source= p,tag=full_3d_tag,grp = pfi%rcomm)
-				Do j = your_theta_min, your_theta_max
-					Do i = my_rmin, my_rmax
-						my_shells(:,j,i) = buff(:,i,j)
-					Enddo
-				Enddo
-				DeAllocate(buff)
-			Enddo
-			! Now do the MPI write
-			np = pfi%ccomm%np
-			my_disp = 0
-			Do p = 1, my_column_rank
-				my_disp = my_disp+pfi%all_1p(p-1)%delta
-			Enddo
-			my_disp = my_disp*ntheta*nphi*8	! Displacment of this rank in the MPI File
-			buffsize = my_nr*nphi*ntheta		! Number of elements to write
+        Call full_3d_buffer%write_data(filename=data_file)
 
 
-			write(iterstring,i_ofmt) current_iteration
-			write(qstring,'(i4.4)') current_qval
-         cfile = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//qstring
-			!Write(6,*)cfile
-			call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
-                   MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-                   MPI_INFO_NULL, funit, ierr) 
-
-			call MPI_FILE_SET_VIEW(funit, my_disp, MPI_DOUBLE_PRECISION, & 
-                   MPI_DOUBLE_PRECISION, 'native', & 
-                   MPI_INFO_NULL, ierr) 
-			call MPI_FILE_WRITE(funit, my_shells, buffsize, MPI_DOUBLE_PRECISION, & 
-                   mstatus, ierr) 
-
-			call MPI_FILE_CLOSE(funit, ierr) 
-			If (my_column_rank .eq. 0) Then
-				! row/column 0 writes out a file with the grid, etc.
-				! This file should contain everything that needs to be known for processing later
-	         write(iterstring,'(i8.8)') current_iteration
-            cfile = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//'grid'
-	         open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
-           Write(15)endian_tag
-	         Write(15)nr
-				Write(15)ntheta
-				Write(15)nphi
-	         Write(15)(radius(i),i=1,nr)
-				Write(15)(acos(costheta(i)),i = 1, ntheta)
-	         Close(15)
-			Endif
-
-
-		Else
-			! Send an array that's indexed starting at 1.  Shouldn't be necessary, but just in case.
-			!Allocate(buff(1:nphi,1:my_ntheta,1:my_nr))
-			
-			!Do j = my_theta_min, my_theta_max
-			!	jind = j-my_theta_min+1
-			!	Do i = my_rmin, my_rmax
-			!		buff(:,jind,i) = qty(:,i,j)
-			!	Enddo
-			!Enddo
-			Call send(qty, dest= 0,tag=full_3d_tag,grp = pfi%rcomm)
-			!DeAllocate(buff)
-
-		Endif	
+        ! Rank 0 writes the grid file.
+        If (myid .eq. 0) Then
+            Write(iterstring,'(i8.8)') current_iteration
+            grid_file = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//'grid'
+            Open(newunit=funit,file=grid_file,form='unformatted', status='replace', access='stream')
+            Write(funit)endian_tag
+            Write(funit)nr
+            Write(funit)ntheta
+            Write(funit)nphi
+            Write(funit)(radius(i),i=1,nr)
+            Write(funit)(acos(costheta(i)),i = 1, ntheta)
+            Close(funit)
+        Endif
 
 
 	End Subroutine Write_Full_3D
@@ -4506,7 +4429,117 @@ Contains
     END SUBROUTINE Interpret_Indices
 
 
+    !///////////////////////////////////////////////////////////////////////////
+    ! These routines are staged for deletion
+
+	Subroutine Write_Full_3D_Old(qty)
+		Use RA_MPI_BASE ! Doing this here for now.  No other routine above sees MPI_Base, and I may want to keep it that way.
+		Implicit None		
+		Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
+		Real*8, Allocatable :: my_shells(:,:,:), buff(:,:,:)
+		Integer :: i, j
+		Character*4 :: qstring
+		Character*120 :: iterstring
+		Character*120 :: cfile
+
+		Integer :: your_theta_min, your_theta_max, your_ntheta
+		Integer :: np, buffsize, p
+		Integer(kind=MPI_OFFSET_KIND) :: my_disp
+		Integer :: mstatus(MPI_STATUS_SIZE)
+		Integer :: funit, ierr, full_3d_tag
+        Character*120 :: tfile
+
+		! qty is dimensioned 1:n_phi, my_rmin:my_rmax, my_theta_min:my_theta_max
+
+        tfile = 'Spherical_3D_2/00000001_0501'
+        Call full_3d_buffer%cache_data(qty)
+        Call full_3d_buffer%write_data(filename=tfile)
+
+        full_3d_tag = Full_3D%mpi_tag
+		If (my_row_rank .eq. 0) Then
+			! Everyone in the row communicates to row-rank zero.
+			! Each row owns a specific rank of radii
+			Allocate(my_shells(1:nphi, 1:ntheta, my_rmin:my_rmax))
+			my_shells(:,:,:) = 0.0d0					
+
+			! First each rank stripes its own data into the new array
+			! Not that striping is not in the "native" order
+			Do j = my_theta_min, my_theta_max
+				Do i = my_rmin, my_rmax
+					my_shells(:,j,i) = qty(:,i,j)
+				Enddo
+			Enddo
+			np = pfi%rcomm%np
+			Do p = 1, np-1	
+				your_theta_min = pfi%all_2p(p)%min
+				your_theta_max = pfi%all_2p(p)%max
+				your_ntheta    = pfi%all_2p(p)%delta
+				Allocate(buff(1:nphi,my_rmin:my_rmax, your_theta_min:your_theta_max))
+				Call receive(buff, source= p,tag=full_3d_tag,grp = pfi%rcomm)
+				Do j = your_theta_min, your_theta_max
+					Do i = my_rmin, my_rmax
+						my_shells(:,j,i) = buff(:,i,j)
+					Enddo
+				Enddo
+				DeAllocate(buff)
+			Enddo
+			! Now do the MPI write
+			np = pfi%ccomm%np
+			my_disp = 0
+			Do p = 1, my_column_rank
+				my_disp = my_disp+pfi%all_1p(p-1)%delta
+			Enddo
+			my_disp = my_disp*ntheta*nphi*8	! Displacment of this rank in the MPI File
+			buffsize = my_nr*nphi*ntheta		! Number of elements to write
 
 
+			write(iterstring,i_ofmt) current_iteration
+			write(qstring,'(i4.4)') current_qval
+         cfile = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//qstring
+			!Write(6,*)cfile
+			call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, & 
+                   MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
+                   MPI_INFO_NULL, funit, ierr) 
+
+			call MPI_FILE_SET_VIEW(funit, my_disp, MPI_DOUBLE_PRECISION, & 
+                   MPI_DOUBLE_PRECISION, 'native', & 
+                   MPI_INFO_NULL, ierr) 
+			call MPI_FILE_WRITE(funit, my_shells, buffsize, MPI_DOUBLE_PRECISION, & 
+                   mstatus, ierr) 
+
+			call MPI_FILE_CLOSE(funit, ierr) 
+			If (my_column_rank .eq. 0) Then
+				! row/column 0 writes out a file with the grid, etc.
+				! This file should contain everything that needs to be known for processing later
+	         write(iterstring,'(i8.8)') current_iteration
+            cfile = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//'grid'
+	         open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
+           Write(15)endian_tag
+	         Write(15)nr
+				Write(15)ntheta
+				Write(15)nphi
+	         Write(15)(radius(i),i=1,nr)
+				Write(15)(acos(costheta(i)),i = 1, ntheta)
+	         Close(15)
+			Endif
+
+
+		Else
+			! Send an array that's indexed starting at 1.  Shouldn't be necessary, but just in case.
+			!Allocate(buff(1:nphi,1:my_ntheta,1:my_nr))
+			
+			!Do j = my_theta_min, my_theta_max
+			!	jind = j-my_theta_min+1
+			!	Do i = my_rmin, my_rmax
+			!		buff(:,jind,i) = qty(:,i,j)
+			!	Enddo
+			!Enddo
+			Call send(qty, dest= 0,tag=full_3d_tag,grp = pfi%rcomm)
+			!DeAllocate(buff)
+
+		Endif	
+
+
+	End Subroutine Write_Full_3D_old
 
 End Module Spherical_IO
