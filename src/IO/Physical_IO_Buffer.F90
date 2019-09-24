@@ -21,6 +21,9 @@ Module Physical_IO_Buffer
         Integer :: nr_local     ! number of r-values subsampled locally (possibly 0)
         Integer :: ntheta_local     ! number of theta-values subsampled locally (possibly 0)
         Integer :: npts         ! number of points I output
+
+        Integer, Allocatable :: r_global(:), theta_global(:)
+        Integer, Allocatable :: r_local(:), theta_local(:), phi_local(:)
         
         Integer, Allocatable :: phi_ind(:)  ! phi indices in (potentially subsampled) array 
         Integer, Allocatable :: r_local_ind(:) ! r indices in subsampled array (r-my_r%min+1)
@@ -44,6 +47,7 @@ Module Physical_IO_Buffer
         Logical :: simple   = .false.   ! no subsampling (3-D output)
         Logical :: general  = .false.   ! subsampling in all 3 dimensions (point-probe output)
         Logical :: r_general = .false.   ! subsampling in radius only (Shell Slices)
+        Logical :: rp_general = .false. 
 
         Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
 
@@ -78,10 +82,18 @@ Contains
                                              phi_indices,ncache, mpi_tag)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer, Intent(In), Optional :: r_indices(:), theta_indices, phi_indices
+        Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag
-
+        Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
+
+        !//////////////////////////////////////////////
+        ! Establish my identity
+        self%col_rank = pfi%ccomm%rank
+        self%row_rank = pfi%rcomm%rank
+        self%rank     = pfi%gcomm%rank
+
+
 
         self%cascade_type = 1
 
@@ -91,6 +103,7 @@ Contains
             self%ncache = 1
         Else
             self%ncache = ncache
+            Write(6,*)'ncahce is: ', self%ncache
         Endif
 
         !/////////////////////////////////////////////////
@@ -104,28 +117,23 @@ Contains
         !///////////////////////////////////////////////////////////
         ! Establish how this buffer will be subsampled, if at all
 
-
-
         If (present(r_indices)) Then
             self%nr = size(r_indices)
-            self%nr_local = 0
-            my_min = pfi%all_1p(self%col_rank)%min
-            my_max = pfi%all_1p(self%col_rank)%max
-            Allocate(self%r_local_ind(1:(my_max-my_min)))
-            self%r_local_ind = -1
-            ii = 1
-            Do r = 1, self%nr
-                ind = r_indices(r)
-                If ((ind .ge. my_min ) .and. (ind .le. my_max)) Then
-                    self%r_local_ind(ii) = r_indices(r)-my_min+1
-                    self%nr_local = self%nr_local+1   
-                Endif
-            Enddo
-            write(6,*)'r_local_ind: ', self%r_local_ind
-        Else
-            self%nr       = pfi%n1p
-            self%nr_local = pfi%all_1p(self%col_rank)%delta
+            Allocate(self%r_global(1:self%nr))
+            self%r_global(:) =r_indices(:)
         Endif
+
+        If (present(theta_indices)) Then
+            self%ntheta = size(theta_indices)
+            Allocate(self%theta_global(1:self%ntheta))
+        Endif
+
+        If (present(phi_indices)) Then
+            self%nphi = size(phi_indices)
+            Allocate(self%phi_local(1:self%nphi))
+            self%phi_local(:) = phi_indices(:)
+        Endif
+
 
         If (.not. present(r_indices)) Then
             If (.not. present(theta_indices)) Then
@@ -133,11 +141,12 @@ Contains
                     self%simple = .true.
                 Endif
             Endif
-
         Else
             If (.not. present(theta_indices)) Then
                 If (.not. present(phi_indices)) Then
                     self%r_general=.true.
+                Else
+                    self%rp_general = .true.
                 Endif
             Else
                 self%general = .true.
@@ -145,8 +154,9 @@ Contains
         Endif
 
 
-        Call self%Initialize_IO_MPI()
+
         Call self%Load_Balance_IO()
+        Call self%Initialize_IO_MPI()
         Call self%Allocate_Cache()
 
     End Subroutine Initialize_Physical_IO_Buffer
@@ -155,7 +165,11 @@ Contains
     Subroutine Load_Balance_IO(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer :: p, n, nextra, shsize
+        Integer :: m, n, p,  nextra, shsize, nout_cols
+        Integer :: my_min, my_max
+        Integer :: r, rmin, rmax
+        Integer :: t, tmax, tmin
+        Integer, Allocatable :: tmp(:)
 
         Allocate(self%ntheta_at_column(0:pfi%nprow-1))
         Allocate(self%npts_at_column(0:pfi%nprow-1))
@@ -169,14 +183,13 @@ Contains
         self%ntheta_at_column(:)  = 0
         self%nrecv_from_column(:) = 0
 
-        If (self%simple) Then
 
+        If (self%simple) Then
             self%ntheta = pfi%n2p
             self%nphi   = pfi%n3p
-
+            self%nr       = pfi%n1p
+            self%nr_local = pfi%all_1p(self%col_rank)%delta
             self%ntheta_local = pfi%all_2p(self%row_rank)%delta
-
-
 
             Do p = 0, pfi%nprow-1
                 n = pfi%all_2p(p)%delta
@@ -191,20 +204,111 @@ Contains
 
         Endif
 
+        If (.not. self%simple) Then
+            ! In this case, at minimum, a subset of radial indices
+            ! have been specified
+            self%nr_local = 0
+            my_min = pfi%all_1p(self%col_rank)%min
+            my_max = pfi%all_1p(self%col_rank)%max
+
+            Allocate(tmp(1:(my_max-my_min)))
+
+            Do p = 0, pfi%npcol-1
+                rmin = pfi%all_1p(p)%min
+                rmax = pfi%all_1p(p)%max
+                n = 1
+                Do r = 1, self%nr
+                    m = self%r_global(r)
+                    If ((m .ge. rmin ) .and. (m .le. rmax)) Then
+                        self%nr_out_at_row(p) = n
+                        If (p .eq. self%col_rank) tmp(n) = m-my_min+1
+                        n = n+1
+                    Endif
+                Enddo
+            Enddo
+            self%nr_local = self%nr_out_at_row(self%col_rank)
+            Allocate(self%r_local(1:self%nr_local))
+            self%r_local(1:self%nr_local) = tmp(1:self%nr_local)
+            DeAllocate(tmp)
+            !write(6,*)'r_local_ind: ', self%r_local(1:self%nr_local), my_min, my_max
+
+
+            ! Phi
+            If ((.not. self%rp_general) .and. (.not. self%general) ) Then
+                self%nphi   = pfi%n3p
+            Endif
+
+            ! Theta
+            If (self%general) Then
+
+                self%ntheta_local = 0
+                my_min = pfi%all_2p(self%row_rank)%min
+                my_max = pfi%all_2p(self%row_rank)%max
+
+                Allocate(tmp(1:(my_max-my_min)))
+
+                Do p = 0, pfi%nprow-1
+                    tmin = pfi%all_2p(p)%min
+                    tmax = pfi%all_2p(p)%max
+                    n = 1
+                    Do t = 1, self%ntheta
+                        m = self%theta_global(t)
+                        If ((m .ge. tmin ) .and. (m .le. tmax)) Then
+                            self%ntheta_at_column(p) = n
+                            If (p .eq. self%row_rank) tmp(n) = m-my_min+1
+                            n = n+1
+                        Endif
+                    Enddo
+                Enddo
+                self%ntheta_local = self%ntheta_at_column(self%row_rank)
+                Allocate(self%theta_local(1:self%ntheta_local))
+                self%theta_local(1:self%ntheta_local) = tmp(1:self%ntheta_local)
+                DeAllocate(tmp)
+
+            Else
+
+                self%ntheta_local = pfi%all_2p(self%row_rank)%delta
+                Do p = 0, pfi%nprow-1
+                    self%ntheta_at_column(p) = pfi%all_2p(p)%delta
+                Enddo
+
+            Endif
+
+            Do p = 0, pfi%nprow-1
+                n = self%ntheta_at_column(p)
+                self%npts_at_column(p) = self%nphi*self%nr_local*n
+            Enddo
+
+
+        Endif
+
+
+
+        nout_cols = pfi%output_columns
+        If (nout_cols .gt. self%nr_local) Then
+            nout_cols = self%nr_local
+        Endif
+        self%nout_cols = nout_cols
+        If (self%row_rank .lt. nout_cols) self%output_rank = .true.
+
+
         self%npts = self%npts_at_column(self%row_rank)
 
-        !Determine how many radii each rank outputs
-        n = self%nr_local / self%nout_cols
-        nextra = Mod(self%nr_local,self%nout_cols)
+        !Determine how many radii each rank in this row outputs
 
-        Do p = 0, self%nout_cols-1
-            self%nr_out_at_column(p) = n
-            If (p .lt. nextra) Then
-                self%nr_out_at_column(p) = n+1
-            Endif
-        Enddo
+        If (self%nout_cols .gt. 0) Then
+            n = self%nr_local / self%nout_cols
+            nextra = Mod(self%nr_local,self%nout_cols)
+
+            Do p = 0, self%nout_cols-1
+                self%nr_out_at_column(p) = n
+                If (p .lt. nextra) Then
+                    self%nr_out_at_column(p) = n+1
+                Endif
+            Enddo
+        Endif
         self%nr_out = self%nr_out_at_column(self%row_rank)
-
+        
 
         If (self%output_rank) Then
 
@@ -275,23 +379,19 @@ Contains
         Integer :: nout_cols
         Integer :: color, ierr
 
-        !//////////////////////////////////////////////
-        ! Establish my identity
-        self%col_rank = pfi%ccomm%rank
-        self%row_rank = pfi%rcomm%rank
-        self%rank     = pfi%gcomm%rank
+
 
         !Initialize Multi-column I/O
-        If (self%simple) Then
-
-            nout_cols = pfi%output_columns
-            If (nout_cols .gt. pfi%my_1p%delta) Then
-                nout_cols = pfi%my_1p%delta
-            Endif
-            self%nout_cols = nout_cols
-            If (self%row_rank .lt. nout_cols) self%output_rank = .true.
-
-        Endif
+        !If (self%simple) Then
+        !
+        !    nout_cols = pfi%output_columns
+        !    If (nout_cols .gt. pfi%my_1p%delta) Then
+        !        nout_cols = pfi%my_1p%delta
+        !    Endif
+        !    self%nout_cols = nout_cols
+        !    If (self%row_rank .lt. nout_cols) self%output_rank = .true.
+        !
+        !Endif
 
         color = 0
         If (self%output_rank) color = 1
@@ -330,13 +430,27 @@ Contains
         
         If (self%cascade_type .eq. 1) Then
             ! Need r_simple etc. logic here.  OK for now
-            Do t = 1, self%ntheta_local
-                Do r = 1, self%nr_local
-                    Do p = 1, self%nphi
-                        self%cache(p,t,self%cache_index,r) = vals(p,r,t)
+            If (self%simple) Then
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,self%cache_index,r) = vals(p,r,t)
+                        Enddo
                     Enddo
                 Enddo
-            Enddo
+            Endif
+
+            If (self%r_general) Then
+                If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
+                        MOD(self%ncache,self%cache_index+1), self%ncache
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,self%cache_index,r) = vals(p,self%r_local(r),t)
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
         Else
             Do t = 1, self%ntheta_local
                 Do r = 1, self%nr_local
@@ -347,8 +461,7 @@ Contains
             Enddo
 
         Endif
-
-        self%cache_index = MOD(self%ncache,self%cache_index+1)
+        self%cache_index = MOD(self%cache_index, self%ncache)+1
     End Subroutine Cache_Data
 
     Subroutine Collate(self,ind)
