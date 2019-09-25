@@ -68,7 +68,6 @@ Module Physical_IO_Buffer
         Procedure :: cache_data
         Procedure :: allocate_cache
         Procedure :: collate
-        Procedure :: simple_cascade
         Procedure :: Initialize_IO_MPI
         Procedure :: Load_Balance_IO
         Procedure :: Allocate_Receive_Buffers
@@ -79,11 +78,12 @@ Module Physical_IO_Buffer
 Contains
 
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
-                                             phi_indices,ncache, mpi_tag)
+                                             phi_indices,ncache, mpi_tag, &
+                                             cascade)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
-        Integer, Intent(In), Optional :: ncache, mpi_tag
+        Integer, Intent(In), Optional :: ncache, mpi_tag, cascade
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
 
@@ -96,6 +96,7 @@ Contains
 
 
         self%cascade_type = 1
+        if (present(cascade)) self%cascade_type = cascade
 
         !///////////////////////////////////////////////////////////
         ! Note how many fields/time-steps will be stored and output
@@ -357,7 +358,7 @@ Contains
                 If (self%cascade_type .eq. 1) Then
                     Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:self%ncache,1:nr))
                 Else
-                    Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:nr,self%ncache))
+                    Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:nr,1))
                 Endif
             Enddo
         Endif
@@ -419,7 +420,7 @@ Contains
                             1:self%ncache, 1:self%nr_local))
         Else
             Allocate(self%cache(1:self%nphi, 1:self%ntheta_local, &
-                            1:self%nr_local,1))
+                            1:self%nr_local,self%ncache))
         Endif
         self%cache(:,:,:,:) = 0.0d0
     End Subroutine Allocate_Cache
@@ -454,39 +455,46 @@ Contains
                 Enddo
             Endif
         Else
-            Do t = 1, self%ntheta_local
-                Do r = 1, self%nr_local
-                    Do p = 1, self%nphi
-                        self%cache(p,t,r,self%cache_index) = vals(p,r,t)
+            If (self%simple) then
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,r,self%cache_index) = vals(p,r,t)
+                        Enddo
                     Enddo
                 Enddo
-            Enddo
+            Endif
+
+            If (self%r_general) Then
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,r,self%cache_index) = vals(p,self%r_local(r),t)
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
 
         Endif
         self%cache_index = MOD(self%cache_index, self%ncache)+1
     End Subroutine Cache_Data
 
-    Subroutine Collate(self,ind)
+
+
+    Subroutine Collate(self,cache_ind)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer, Intent(In), Optional :: ind
-
-        !If (self%simple) call self%simple_cascade()
-        Call self%simple_cascade()
-        
-
-
-    End Subroutine Collate
-
-    Subroutine Simple_Cascade(self)
-        Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Integer, Intent(In), Optional :: cache_ind
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
-        Integer :: inds(4) = (/1,1,1,1/)
-        Integer :: cache_ind, i, tstart,tend, r, t
+        Integer :: inds(4)
+        Integer :: i, tstart,tend, r, t, ncache
         
         Call self%Allocate_Receive_Buffers()
+
+        ncache =1
+        If (self%cascade_type .eq.1) ncache = self%ncache
+
 
         If (self%output_rank) Then
             !Post receives
@@ -494,7 +502,7 @@ Contains
             nrirq = 0
             Do p = 0, pfi%nprow-1
                 If (p .ne. self%row_rank) Then
-                    n = self%nrecv_from_column(p)*self%ncache
+                    n = self%nrecv_from_column(p)*ncache
                     If (n .gt. 0) Then
                         nrirq =nrirq+1
                         Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
@@ -511,11 +519,16 @@ Contains
         rstart = 1
         inds(1) = 1
         inds(2) = 1
-        inds(3) = 1
         Do p = 0, self%nout_cols-1
-            inds(4) = rstart
+            if (self%cascade_type .eq. 1) Then
+                inds(3) = 1
+                inds(4) = rstart
+            Else
+                inds(3) = rstart
+                inds(4) = cache_ind
+            Endif
             If (p .ne. self%row_rank) Then
-                n = self%nr_out_at_column(p)*self%ncache*self%nphi*self%ntheta_local
+                n = self%nr_out_at_column(p)*ncache*self%nphi*self%ntheta_local
                 !If ((self%row_rank .eq. self%nout_cols) ) Then
                 !    Write(6,*)'sending to ',p, rstart, self%cache(1,1,1,rstart), self%nr_out_at_column(p)
                 !Endif
@@ -527,7 +540,11 @@ Contains
 
             Else
                 rend = rstart+self%nr_out-1
-                self%recv_buffers(p)%data(:,:,:,:) = self%cache(:,:,:,rstart:rend)
+                If (self%cascade_type .eq. 1) Then
+                    self%recv_buffers(p)%data(:,:,:,:) = self%cache(:,:,:,rstart:rend)
+                Else
+                    self%recv_buffers(p)%data(:,:,rstart:rend,1) = self%cache(:,:,rstart:rend,cache_ind)
+                Endif
             Endif
             rstart = rstart+self%nr_out_at_column(p)
             !If(self%row_rank .ge. self%nout_cols) Then
@@ -545,16 +562,22 @@ Contains
 
 
         If (self%output_rank) Then
-            Allocate(self%collated_data(self%nphi,self%ntheta,self%nr_local,self%ncache))
             tstart = 1
+            write(6,*)(shape(self%collated_data))
             Do p = 0, pfi%nprow-1
                 If (self%nrecv_from_column(p) .gt. 0) Then
                     tend = tstart+self%ntheta_at_column(p)-1
-                    Do i = 1, self%ncache
-                        Do r =1, self%nr_out
-                            self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
+                    If (self%cascade_type .eq. 1) Then
+                        Do i = 1, self%ncache
+                            Do r =1, self%nr_out
+                                self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
+                            Enddo
                         Enddo
-                    Enddo
+                    Else
+                        Do r =1, self%nr_out
+                            self%collated_data(:,tstart:tend,r,1) = self%recv_buffers(p)%data(:,:,r,1)
+                        Enddo                        
+                    Endif
                     tstart = tend+1
                 Endif
             Enddo            
@@ -562,12 +585,12 @@ Contains
 
         Call self%deallocate_receive_buffers()
 
-    End Subroutine Simple_Cascade
+    End Subroutine Collate
 
-    Subroutine Write_Data(self,disp,file_unit,filename)
+    Subroutine Write_Data(self,disp,file_unit,filename, mode)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer, Intent(In), Optional :: file_unit
+        Integer, Intent(In), Optional :: file_unit, mode
         Character*120, Intent(In), Optional :: filename
         Integer :: funit
         Integer :: write_mode
@@ -588,7 +611,12 @@ Contains
         !   2.)  Single cache item write -- specified index is cascaded and written
         !   3.)  Iterative cache write -- All cache items written, but communicated one-at-a-time
 
-        write_mode = 1
+        If (present(mode)) Then
+            If ((mode .gt. 0) .and. (mode .le. 3)) write_mode = mode
+        Else
+            write_mode = 1
+        Endif
+        Write(6,*)'write_mode is: ', write_mode
 
         error = .false.
         ! The full write
@@ -607,6 +635,15 @@ Contains
         Endif 
 
         If (.not. error) Then
+
+            If (self%output_rank) Then
+                If (write_mode .eq. 1) Then
+                    Allocate(self%collated_data(self%nphi,self%ntheta,self%nr_local,self%ncache))
+                Else
+                    Allocate(self%collated_data(self%nphi,self%ntheta,self%nr_local,1))
+                Endif
+            Endif
+
             If (write_mode .eq. 1) Then
                 Call self%collate()
                 cache_start = 1
@@ -615,6 +652,10 @@ Contains
             If (write_mode .eq. 2) Then
                 cache_start = cache_ind
                 cache_end = cache_ind
+            Endif
+            If (write_mode .eq. 3) Then
+                cache_start = 1
+                cache_end = self%ncache
             Endif
 
             my_disp = hdisp + self%base_disp

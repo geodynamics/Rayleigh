@@ -311,7 +311,7 @@ Contains
 	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
 		Implicit None
 		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
-        Integer :: thmax, thmin, nth1, nth2, nn
+        Integer :: thmax, thmin, nth1, nth2, nn, cascade_type
 		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
@@ -538,8 +538,10 @@ Contains
 
 
         !IO Buffers
+        cascade_type = 1
+        if (mem_friendly) cascade_type = 2
         Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
-                                      ncache  = Shell_Slices%nq)
+                                      ncache  = Shell_Slices%nq, cascade = cascade_type)
         Call Full_3D_Buffer%init(mpi_tag=54)
         
         ! temporary IO for testing
@@ -2283,7 +2285,11 @@ Contains
 
         !If (resposible) Write(6,*)'Writing: ', 
         !Write the data
-        Call Shell_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
+        If (mem_friendly) Then
+            Call Shell_Slices_Buffer%write_data( disp=new_disp, file_unit = funit, mode=3)
+        Else
+            Call Shell_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
+        Endif
 
         If (output_rank) Then
             ! Write the iteration and simulation time
@@ -2871,6 +2877,7 @@ Contains
 
 	    If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%frequency) .eq. 0 )) Then
             If (mem_friendly) Then
+                Call Write_Shell_Slices_CACHE(iter,sim_time)
                 Call Write_Shell_Slices_MEM(iter,sim_time)
             Else
                 Call Write_Shell_Slices_CACHE(iter,sim_time)
