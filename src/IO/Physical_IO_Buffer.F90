@@ -103,7 +103,7 @@ Contains
             self%ncache = 1
         Else
             self%ncache = ncache
-            Write(6,*)'ncahce is: ', self%ncache
+            !Write(6,*)'ncahce is: ', self%ncache
         Endif
 
         !/////////////////////////////////////////////////
@@ -126,6 +126,8 @@ Contains
         If (present(theta_indices)) Then
             self%ntheta = size(theta_indices)
             Allocate(self%theta_global(1:self%ntheta))
+        Else
+            self%ntheta = pfi%n2p
         Endif
 
         If (present(phi_indices)) Then
@@ -441,8 +443,8 @@ Contains
             Endif
 
             If (self%r_general) Then
-                If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
-                        MOD(self%ncache,self%cache_index+1), self%ncache
+                !If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
+                !        MOD(self%ncache,self%cache_index+1), self%ncache
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
                         Do p = 1, self%nphi
@@ -469,8 +471,8 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: ind
 
-        If (self%simple) call self%simple_cascade()
-
+        !If (self%simple) call self%simple_cascade()
+        Call self%simple_cascade()
         
 
 
@@ -493,10 +495,11 @@ Contains
             Do p = 0, pfi%nprow-1
                 If (p .ne. self%row_rank) Then
                     n = self%nrecv_from_column(p)*self%ncache
-                    nrirq =nrirq+1
-                    Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
-                            &  source= p,tag = self%tag, grp = pfi%rcomm)	            
-                    
+                    If (n .gt. 0) Then
+                        nrirq =nrirq+1
+                        Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
+                                &  source= p,tag = self%tag, grp = pfi%rcomm)	            
+                    Endif
                 Endif
             Enddo
         Endif
@@ -516,10 +519,11 @@ Contains
                 !If ((self%row_rank .eq. self%nout_cols) ) Then
                 !    Write(6,*)'sending to ',p, rstart, self%cache(1,1,1,rstart), self%nr_out_at_column(p)
                 !Endif
-
-                Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
-                    grp = pfi%rcomm, indstart = inds)
-                nn = nn+1
+                If (n .gt. 0) Then
+                    Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
+                        grp = pfi%rcomm, indstart = inds)
+                    nn = nn+1
+                Endif
 
             Else
                 rend = rstart+self%nr_out-1
@@ -541,14 +545,6 @@ Contains
 
 
         If (self%output_rank) Then
-
-            !If (self%row_rank .eq. 0) Then
-            !    Do p = 0, pfi%nprow-1
-            !        Write(6,*)'I/O recv from: ',p, self%recv_buffers(p)%data(1,1,1,1)
-            !    Enddo
-            !Endif
-
-
             Allocate(self%collated_data(self%nphi,self%ntheta,self%nr_local,self%ncache))
             tstart = 1
             Do p = 0, pfi%nprow-1
@@ -557,9 +553,6 @@ Contains
                     Do i = 1, self%ncache
                         Do r =1, self%nr_out
                             self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
-                            !Do t = tstart, tend
-                            !    self%collated_data(:,t,r,i) = t
-                            !Enddo
                         Enddo
                     Enddo
                     tstart = tend+1
@@ -628,9 +621,10 @@ Contains
             Do i = cache_start, cache_end
                 cache_ind = i
                 If (write_mode .eq. 3 ) Call self%collate(i)
-                If ((write_mode .gt. 1)) cache_ind = 1
+                If (write_mode .gt. 1 ) cache_ind = 1
                 If (self%output_rank) Then
 
+                    !Write(6,*)'info: ', my_disp, self%buffsize
         
                     Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)                    
                     Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
@@ -640,8 +634,9 @@ Contains
                 Endif
             Enddo
 
-            If (present(filename)) Then
-                If (self%output_rank) Then
+            If (self%output_rank) Then
+                DeAllocate(self%collated_data)
+                If (present(filename)) Then
 			        Call MPI_FILE_CLOSE(funit, ierr) 
                 Endif
             Endif
