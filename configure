@@ -801,7 +801,7 @@ else
 
     fi
     
-    #LAPACK
+    #FFTW
     if [[ $STATICFFTW == "TRUE" ]]
     then
         FFTWLINK="-L$FFTWROOT/lib/libfftw3.a"
