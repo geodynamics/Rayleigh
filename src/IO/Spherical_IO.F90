@@ -541,7 +541,7 @@ Contains
         cascade_type = 1
         if (mem_friendly) cascade_type = 2
         Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
-                                      ncache  = Shell_Slices%nq, cascade = cascade_type)
+                                      ncache  = Shell_Slices%nq, cascade = cascade_type, mpi_tag=53)
         Call Full_3D_Buffer%init(mpi_tag=54)
         
         ! temporary IO for testing
@@ -2283,6 +2283,8 @@ Contains
         full_disp = qdisp*nq_shell+12  ! 12 is for the simtime+iteration at the end
         new_disp = hdisp+full_disp*(Temp_IO%current_rec-1)
 
+        if (output_rank) write(6,*)'rec: ', orank, Temp_IO%current_rec-1
+
         !If (resposible) Write(6,*)'Writing: ', 
         !Write the data
         If (mem_friendly) Then
@@ -2876,11 +2878,11 @@ Contains
 		Real*8, Intent(In) :: sim_time
 
 	    If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%frequency) .eq. 0 )) Then
+            Call Write_Shell_Slices_CACHE(iter,sim_time)
             If (mem_friendly) Then
-                Call Write_Shell_Slices_CACHE(iter,sim_time)
-                Call Write_Shell_Slices_MEM(iter,sim_time)
+                !Call Write_Shell_Slices_MEM(iter,sim_time)
+                if (allocated(shell_slice_outputs)) deallocate(shell_slice_outputs)
             Else
-                Call Write_Shell_Slices_CACHE(iter,sim_time)
                 Call Write_Shell_Slices(iter,sim_time)
             Endif
         Endif
@@ -3785,6 +3787,7 @@ Contains
                  MPI_MODE_RDWR, & 
                  MPI_INFO_NULL, funit, ierr) 
 
+
             self%file_unit = funit
             self%write_header = .false.
 
@@ -3827,9 +3830,11 @@ Contains
                 !Read the previous record number / advance record
                 disp = 8
                 Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
+                If (ierr .ne. 0) Write(6,*)'ierr!'
                 Call MPI_FILE_READ(self%file_unit, self%current_rec, 1, &
                     & MPI_INTEGER, mstatus, ierr)
-
+                If (ierr .ne. 0) Write(6,*)'ierr2!'
+                Write(6,*)'test: ', self%current_rec
                 self%current_rec = self%current_rec+1+self%cc
 
 

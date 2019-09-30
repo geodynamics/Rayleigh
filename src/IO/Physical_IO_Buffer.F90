@@ -3,6 +3,7 @@ Module Physical_IO_Buffer
     Use Parallel_Framework
     Use Structures
     Use ISendReceive
+    Use MPI_Layer
     Type, Public :: IO_Buffer_Physical
 
 
@@ -342,6 +343,7 @@ Contains
             self%buffsize = self%nr_out*self%nphi*self%ntheta 
         Endif
 
+        If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
 
     End Subroutine Load_Balance_IO
 
@@ -358,6 +360,9 @@ Contains
                 If (self%cascade_type .eq. 1) Then
                     Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:self%ncache,1:nr))
                 Else
+                    !If (p .eq. 0) Then
+                    !    Write(6,*)'allocating: ', np, nt, nr
+                    !Endif
                     Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:nr,1))
                 Endif
             Enddo
@@ -405,7 +410,6 @@ Contains
 
         self%orank = self%ocomm%rank
         If (self%output_rank) Then
-            !Write(6,*)'my_rank: ', pfi%gcomm%rank, ' output_rank: ', self%ocomm%rank
             Allocate(self%recv_buffers(0:pfi%nprow-1))
         Endif
 
@@ -543,7 +547,8 @@ Contains
                 If (self%cascade_type .eq. 1) Then
                     self%recv_buffers(p)%data(:,:,:,:) = self%cache(:,:,:,rstart:rend)
                 Else
-                    self%recv_buffers(p)%data(:,:,rstart:rend,1) = self%cache(:,:,rstart:rend,cache_ind)
+                    !Write(6,*)'rstart/rend', self%row_rank, rstart,rend
+                    self%recv_buffers(p)%data(:,:,:,1) =  self%cache(:,:,rstart:rend,cache_ind)
                 Endif
             Endif
             rstart = rstart+self%nr_out_at_column(p)
@@ -563,7 +568,7 @@ Contains
 
         If (self%output_rank) Then
             tstart = 1
-            write(6,*)(shape(self%collated_data))
+            !write(6,*)(shape(self%collated_data))
             Do p = 0, pfi%nprow-1
                 If (self%nrecv_from_column(p) .gt. 0) Then
                     tend = tstart+self%ntheta_at_column(p)-1
@@ -616,7 +621,7 @@ Contains
         Else
             write_mode = 1
         Endif
-        Write(6,*)'write_mode is: ', write_mode
+        !Write(6,*)'write_mode is: ', write_mode
 
         error = .false.
         ! The full write
@@ -671,13 +676,16 @@ Contains
                     Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                     my_disp = my_disp+self%qdisp
-
+                    if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
                 Endif
             Enddo
-
+    
             If (self%output_rank) Then
+                Write(6,*)'buff: ', self%orank, self%qdisp, hdisp, self%base_disp, my_disp
                 DeAllocate(self%collated_data)
+                Call Barrier(self%ocomm)
                 If (present(filename)) Then
+                    Write(6,*)'closing...'
 			        Call MPI_FILE_CLOSE(funit, ierr) 
                 Endif
             Endif
