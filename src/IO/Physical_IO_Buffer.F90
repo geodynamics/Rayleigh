@@ -343,7 +343,7 @@ Contains
             self%buffsize = self%nr_out*self%nphi*self%ntheta 
         Endif
 
-        If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
+        !If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
 
     End Subroutine Load_Balance_IO
 
@@ -676,14 +676,14 @@ Contains
                     Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                     my_disp = my_disp+self%qdisp
-                    if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
+                    !if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
                 Endif
             Enddo
     
             If (self%output_rank) Then
-                Write(6,*)'buff: ', self%orank, self%qdisp, hdisp, self%base_disp, my_disp
+                !Write(6,*)'buff: ', self%orank, self%qdisp, hdisp, self%base_disp, my_disp
                 DeAllocate(self%collated_data)
-                Call Barrier(self%ocomm)
+
                 If (present(filename)) Then
                     Write(6,*)'closing...'
 			        Call MPI_FILE_CLOSE(funit, ierr) 
