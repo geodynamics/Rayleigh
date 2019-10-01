@@ -434,7 +434,7 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
         Integer :: r, t, p
-        
+        write(6,*)'caching'
         If (self%cascade_type .eq. 1) Then
             ! Need r_simple etc. logic here.  OK for now
             If (self%simple) Then
@@ -458,6 +458,20 @@ Contains
                     Enddo
                 Enddo
             Endif
+
+            If (self%rp_general) Then
+                !If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
+                !        MOD(self%ncache,self%cache_index+1), self%ncache
+                Write(6,*)'rp general!'
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,self%cache_index,r) = vals(self%phi_local(p),self%r_local(r),t)
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+
         Else
             If (self%simple) then
                 Do t = 1, self%ntheta_local

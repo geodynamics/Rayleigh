@@ -173,7 +173,7 @@ Module Spherical_IO
     Type(DiagnosticInfo) :: Equatorial_Slices, Meridional_Slices, SPH_Mode_Samples, Point_Probes
     Type(DiagnosticInfo) :: temp_io
 
-    Type(IO_Buffer_Physical) :: shell_slices_buffer, full_3d_buffer
+    Type(IO_Buffer_Physical) :: shell_slices_buffer, full_3d_buffer, meridional_slices_buffer, az_avgs_buffer
     Integer :: current_averaging_level = 0
     Integer :: current_qval = 0
 
@@ -538,20 +538,26 @@ Contains
 
 
         !IO Buffers
+
+        !NOTE:  need to decide on cascade_type and whether it applies globally or only to shell_slice/spectra
         cascade_type = 1
         if (mem_friendly) cascade_type = 2
         Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
                                       ncache  = Shell_Slices%nq, cascade = cascade_type, mpi_tag=53)
+
+        Call Meridional_Slices_Buffer%init(phi_indices=meridional_slices%phi_indices, &
+                                      ncache  = Meridional_Slices%nq, cascade = cascade_type, mpi_tag=553)
 
         Call Shell_Slices%init_ocomm(shell_slices_buffer%ocomm%comm,shell_slices_buffer%ocomm%np,shell_slices_buffer%ocomm%rank ,0)
         Call Full_3D_Buffer%init(mpi_tag=54)
         
         ! temporary IO for testing
         Call Temp_IO%Init(averaging_level,compute_q,myid, &
-            & 4242,values = shellslice_values, levels = shellslice_levels)
-        Call Temp_IO%init_ocomm(shell_slices_buffer%ocomm%comm,shell_slices_buffer%ocomm%np,shell_slices_buffer%ocomm%rank ,0) 
+            & 4242,values = meridional_values, phi_inds = meridional_indices)
+        Call Temp_IO%init_ocomm(meridional_slices_buffer%ocomm%comm, &
+                                meridional_slices_buffer%ocomm%np,meridional_slices_buffer%ocomm%rank ,0) 
         fdir = 'Temp_IO/'
-        Call Temp_IO%set_file_info(shellslice_version,shellslice_nrec,shellslice_frequency,fdir)   
+        Call Temp_IO%set_file_info(meridslice_version,meridional_nrec,meridional_frequency,fdir)   
    End Subroutine Initialize_Spherical_IO
 
     Subroutine Get_Meridional_Slice(qty)
@@ -559,6 +565,9 @@ Contains
         REAL*8, INTENT(IN) :: qty(:,my_rmin:,my_theta_min:)
         INTEGER :: nphi_grab, mer_ind
         INTEGER :: tind, pind, rind
+
+        Call Meridional_Slices_Buffer%cache_data(qty)
+
         nphi_grab = Meridional_Slices%nphi_indices
         IF (Meridional_Slices%begin_output) THEN
             ! Stripe with theta-index slowest, so data is ordered for row-communication
@@ -580,6 +589,121 @@ Contains
         Call Meridional_Slices%AdvanceInd()
 
     End Subroutine Get_Meridional_Slice
+
+	Subroutine Write_Meridional_Slices_Cache(this_iter,simtime)
+        USE RA_MPI_BASE
+		Implicit None
+		Real*8, Intent(in) :: simtime
+		Integer, Intent(in) :: this_iter
+		Integer :: current_rec, s_start, s_end, this_rid
+		Integer :: i, j, k,qq, p, sizecheck, ii
+		Integer :: n, nn, this_nshell, nq_merid, merid_tag,nphi_grab
+		Integer :: your_theta_min, your_theta_max, your_ntheta
+		Integer :: nelem, buffsize
+        Integer :: file_pos, funit, error, dims(1:4)
+        Integer :: inds(4), nirq,sirq
+        Integer, Allocatable :: rirqs(:)
+        
+        integer :: ierr, rcount
+		integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_rdisp, new_disp, qdisp, full_disp
+		Integer :: mstatus(MPI_STATUS_SIZE)
+
+        Logical :: responsible, output_rank
+        Integer :: orank
+
+        nq_merid     = Meridional_Slices%nq
+        merid_tag    = Meridional_Slices%mpi_tag
+        nphi_grab    = Meridional_Slices%nphi_indices
+        funit        = Meridional_Slices%file_unit
+        
+
+
+        orank = Meridional_Slices_Buffer%ocomm%rank
+        output_rank = Meridional_Slices_Buffer%output_rank
+        responsible = .false.
+        If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
+
+              
+
+        If (responsible ) Then   
+            Call Temp_IO%OpenFile_Par(this_iter, error)
+            current_rec = Temp_IO%current_rec
+            funit = Temp_IO%file_unit
+
+            If ( (orank .eq. 0) .and. (Temp_IO%write_header) ) Then
+                If (Temp_IO%file_open) Then
+                    ! Rank 0 writes the header
+                    dims(1) =  nr
+                    dims(2) =  ntheta
+                    dims(3) =  nphi_grab
+                    dims(4) =  nq_merid
+                    buffsize = 4
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
+
+                    buffsize = nq_merid
+                    Call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
+
+                    buffsize = nr
+                    Call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+
+                    buffsize = ntheta
+                    Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+
+                    buffsize = nphi_grab
+                    Call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
+                        MPI_INTEGER, mstatus, ierr) 
+                Endif
+
+            Endif
+
+            hdisp = 28 ! dimensions+endian+version+record count
+            hdisp = hdisp+nq_merid*4 ! nq
+            hdisp = hdisp+nr*8  ! The radius array
+            hdisp = hdisp+ ntheta*8  ! costheta
+            hdisp = hdisp+ nphi_grab*4  ! phi indices
+
+
+            qdisp = Meridional_Slices_Buffer%qdisp
+            full_disp = qdisp*nq_merid+12  ! 12 is for the simtime+iteration at the end
+            new_disp = hdisp+full_disp*(current_rec-1)
+
+
+
+            Call Meridional_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
+            
+            buffsize = my_nr*ntheta*nphi_grab
+            ! The file is striped with time step slowest, followed by q
+
+            my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
+
+            If (Temp_IO%file_open) Then
+
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (responsible) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
+            Endif
+
+
+            Call Temp_IO%Closefile_Par()
+
+        Endif  ! Responsible
+
+	End Subroutine Write_Meridional_slices_cache
+
+
 
 	Subroutine Write_Meridional_Slices(this_iter,simtime)
         USE RA_MPI_BASE
@@ -2417,6 +2541,7 @@ Contains
         Endif
 	    If ((Meridional_Slices%nq > 0) .and. (Mod(iter,Meridional_Slices%frequency) .eq. 0 )) Then
             Call Write_Meridional_Slices(iter,sim_time)
+            Call Write_Meridional_Slices_Cache(iter,sim_time)
         Endif
 	    If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%frequency) .eq. 0 )) Then
             Call Write_SPH_Modes(iter,sim_time)
