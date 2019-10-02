@@ -49,6 +49,11 @@ Module Physical_IO_Buffer
         Logical :: general  = .false.   ! subsampling in all 3 dimensions (point-probe output)
         Logical :: r_general = .false.   ! subsampling in radius only (Shell Slices)
         Logical :: rp_general = .false. 
+        Logical :: phi_general = .false.
+
+        Logical :: r_spec = .false.
+        Logical :: t_spec = .false.
+        Logical :: p_spec = .false.
 
         Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
 
@@ -123,42 +128,40 @@ Contains
             self%nr = size(r_indices)
             Allocate(self%r_global(1:self%nr))
             self%r_global(:) =r_indices(:)
+            self%r_spec = .true.
+        Else
+            self%nr = pfi%n1p
         Endif
 
         If (present(theta_indices)) Then
             self%ntheta = size(theta_indices)
             Allocate(self%theta_global(1:self%ntheta))
+            self%theta_global(:) = theta_indices(:)
+            self%t_spec = .true.
         Else
             self%ntheta = pfi%n2p
         Endif
 
         If (present(phi_indices)) Then
+            !Write(6,*)'here...phi', present(phi_indices), phi_indices
             self%nphi = size(phi_indices)
             Allocate(self%phi_local(1:self%nphi))
             self%phi_local(:) = phi_indices(:)
-        Endif
-
-
-        If (.not. present(r_indices)) Then
-            If (.not. present(theta_indices)) Then
-                If (.not. present(phi_indices)) Then
-                    Write(6,*)'I am here...'
-                    self%simple = .true.
-                Endif
-            Endif
+            self%p_spec = .true.
         Else
-            If (.not. present(theta_indices)) Then
-                If (.not. present(phi_indices)) Then
-                    self%r_general=.true.
-                Else
-                    self%rp_general = .true.
-                Endif
-            Else
-                self%general = .true.
-            Endif
+            self%nphi = pfi%n3p
         Endif
-        Write(6,*)self%general, self%rp_general, self%r_general, self%simple
 
+        If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
+             .and. (.not. self%p_spec) ) self%simple = .true.
+
+        If ( (self%r_spec ) .and. (.not. self%t_spec) &
+             .and. (.not. self%p_spec) ) self%r_general = .true.
+
+        If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
+             .and. (self%p_spec) ) self%phi_general = .true.
+
+        Write(6,*)self%simple, self%r_general, self%phi_general, self%general
 
         Call self%Load_Balance_IO()
         Call self%Initialize_IO_MPI()
@@ -190,9 +193,9 @@ Contains
 
 
         If (self%simple) Then
-            self%ntheta = pfi%n2p
-            self%nphi   = pfi%n3p
-            self%nr       = pfi%n1p
+            !self%ntheta = pfi%n2p
+            !self%nphi   = pfi%n3p
+            !self%nr       = pfi%n1p
             self%nr_local = pfi%all_1p(self%col_rank)%delta
             self%ntheta_local = pfi%all_2p(self%row_rank)%delta
 
@@ -390,20 +393,6 @@ Contains
         Integer :: nout_cols
         Integer :: color, ierr
 
-
-
-        !Initialize Multi-column I/O
-        !If (self%simple) Then
-        !
-        !    nout_cols = pfi%output_columns
-        !    If (nout_cols .gt. pfi%my_1p%delta) Then
-        !        nout_cols = pfi%my_1p%delta
-        !    Endif
-        !    self%nout_cols = nout_cols
-        !    If (self%row_rank .lt. nout_cols) self%output_rank = .true.
-        !
-        !Endif
-
         color = 0
         If (self%output_rank) color = 1
 
@@ -437,7 +426,7 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
         Integer :: r, t, p
-        write(6,*)'caching'
+        !write(6,*)'caching'
         If (self%cascade_type .eq. 1) Then
             ! Need r_simple etc. logic here.  OK for now
             If (self%simple) Then
@@ -462,14 +451,14 @@ Contains
                 Enddo
             Endif
 
-            If (self%rp_general) Then
+            If (self%phi_general) Then
                 !If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
                 !        MOD(self%ncache,self%cache_index+1), self%ncache
-                Write(6,*)'rp general!'
+                !Write(6,*)'phi general!'
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
                         Do p = 1, self%nphi
-                            self%cache(p,t,self%cache_index,r) = vals(self%phi_local(p),self%r_local(r),t)
+                            self%cache(p,t,self%cache_index,r) = vals(self%phi_local(p),r,t)
                         Enddo
                     Enddo
                 Enddo
@@ -496,7 +485,19 @@ Contains
                 Enddo
             Endif
 
+            If (self%phi_general) Then
+                !Write(6,*)'cascade type 2'
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,r,self%cache_index) = vals(self%phi_local(p),r,t)
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+
         Endif
+
         self%cache_index = MOD(self%cache_index, self%ncache)+1
     End Subroutine Cache_Data
 

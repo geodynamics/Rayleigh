@@ -545,7 +545,8 @@ Contains
         !Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
         !                              ncache  = Shell_Slices%nq, cascade = cascade_type, mpi_tag=53)
 
-        Write(6,*)'m: ', meridional_slices%phi_indices
+        Write(6,*)'m: ', meridional_slices%phi_indices, Meridional_Slices%nq
+        cascade_type = 1
         Call Meridional_Slices_Buffer%init(phi_indices=meridional_slices%phi_indices, &
                                       ncache  = Meridional_Slices%nq, cascade = cascade_type, mpi_tag=553)
 
@@ -621,6 +622,7 @@ Contains
 
         orank = Meridional_Slices_Buffer%ocomm%rank
         output_rank = Meridional_Slices_Buffer%output_rank
+        Write(6,*)'output rank: ', output_rank
         responsible = .false.
         If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
 
