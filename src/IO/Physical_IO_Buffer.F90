@@ -142,6 +142,7 @@ Contains
         If (.not. present(r_indices)) Then
             If (.not. present(theta_indices)) Then
                 If (.not. present(phi_indices)) Then
+                    Write(6,*)'I am here...'
                     self%simple = .true.
                 Endif
             Endif
@@ -156,7 +157,7 @@ Contains
                 self%general = .true.
             Endif
         Endif
-
+        Write(6,*)self%general, self%rp_general, self%r_general, self%simple
 
 
         Call self%Load_Balance_IO()
@@ -205,10 +206,12 @@ Contains
             Do p = 0, pfi%npcol-1
                 self%nr_out_at_row(p) = pfi%all_1p(p)%delta
             Enddo
+            Write(6,*)"here bro"
 
         Endif
 
         If (.not. self%simple) Then
+            Write(6,*)'simple branch'
             ! In this case, at minimum, a subset of radial indices
             ! have been specified
             self%nr_local = 0

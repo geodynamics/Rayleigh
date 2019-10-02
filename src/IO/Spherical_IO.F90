@@ -542,18 +542,19 @@ Contains
         !NOTE:  need to decide on cascade_type and whether it applies globally or only to shell_slice/spectra
         cascade_type = 1
         if (mem_friendly) cascade_type = 2
-        Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
-                                      ncache  = Shell_Slices%nq, cascade = cascade_type, mpi_tag=53)
+        !Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
+        !                              ncache  = Shell_Slices%nq, cascade = cascade_type, mpi_tag=53)
 
+        Write(6,*)'m: ', meridional_slices%phi_indices
         Call Meridional_Slices_Buffer%init(phi_indices=meridional_slices%phi_indices, &
                                       ncache  = Meridional_Slices%nq, cascade = cascade_type, mpi_tag=553)
 
         Call Shell_Slices%init_ocomm(shell_slices_buffer%ocomm%comm,shell_slices_buffer%ocomm%np,shell_slices_buffer%ocomm%rank ,0)
-        Call Full_3D_Buffer%init(mpi_tag=54)
+        !Call Full_3D_Buffer%init(mpi_tag=54)
         
         ! temporary IO for testing
-        Call Temp_IO%Init(averaging_level,compute_q,myid, &
-            & 4242,values = meridional_values, phi_inds = meridional_indices)
+        Call Temp_IO%Init(averaging_level,compute_q,myid, 4242, &
+                          values = meridional_values, phi_inds = meridional_indices)
         Call Temp_IO%init_ocomm(meridional_slices_buffer%ocomm%comm, &
                                 meridional_slices_buffer%ocomm%np,meridional_slices_buffer%ocomm%rank ,0) 
         fdir = 'Temp_IO/'
@@ -598,7 +599,6 @@ Contains
 		Integer :: current_rec, s_start, s_end, this_rid
 		Integer :: i, j, k,qq, p, sizecheck, ii
 		Integer :: n, nn, this_nshell, nq_merid, merid_tag,nphi_grab
-		Integer :: your_theta_min, your_theta_max, your_ntheta
 		Integer :: nelem, buffsize
         Integer :: file_pos, funit, error, dims(1:4)
         Integer :: inds(4), nirq,sirq
@@ -611,10 +611,11 @@ Contains
         Logical :: responsible, output_rank
         Integer :: orank
 
+        Write(6,*)'in here'
         nq_merid     = Meridional_Slices%nq
-        merid_tag    = Meridional_Slices%mpi_tag
+        merid_tag    = Temp_IO%mpi_tag
         nphi_grab    = Meridional_Slices%nphi_indices
-        funit        = Meridional_Slices%file_unit
+        funit        = Temp_IO%file_unit
         
 
 
@@ -624,12 +625,13 @@ Contains
         If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
 
               
+        If (output_rank) Write(6,*)'OUTPUTING'
 
-        If (responsible ) Then   
+        If (output_rank ) Then   
             Call Temp_IO%OpenFile_Par(this_iter, error)
             current_rec = Temp_IO%current_rec
             funit = Temp_IO%file_unit
-
+            Write(6,*)"Here yo"
             If ( (orank .eq. 0) .and. (Temp_IO%write_header) ) Then
                 If (Temp_IO%file_open) Then
                     ! Rank 0 writes the header
