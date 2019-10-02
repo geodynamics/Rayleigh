@@ -612,28 +612,21 @@ Contains
         Logical :: responsible, output_rank
         Integer :: orank
 
-        Write(6,*)'in here'
         nq_merid     = Meridional_Slices%nq
         merid_tag    = Temp_IO%mpi_tag
         nphi_grab    = Meridional_Slices%nphi_indices
         funit        = Temp_IO%file_unit
         
-
-
         orank = Meridional_Slices_Buffer%ocomm%rank
         output_rank = Meridional_Slices_Buffer%output_rank
-        Write(6,*)'output rank: ', output_rank
+
         responsible = .false.
         If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
-
-              
-        If (output_rank) Write(6,*)'OUTPUTING'
 
         If (output_rank ) Then   
             Call Temp_IO%OpenFile_Par(this_iter, error)
             current_rec = Temp_IO%current_rec
             funit = Temp_IO%file_unit
-            Write(6,*)"Here yo"
             If ( (orank .eq. 0) .and. (Temp_IO%write_header) ) Then
                 If (Temp_IO%file_open) Then
                     ! Rank 0 writes the header
@@ -676,7 +669,7 @@ Contains
             new_disp = hdisp+full_disp*(current_rec-1)
 
 
-
+        Endif
             Call Meridional_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
             
             buffsize = my_nr*ntheta*nphi_grab
@@ -684,6 +677,7 @@ Contains
 
             my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
 
+        If (output_rank) Then
             If (Temp_IO%file_open) Then
 
                 disp = hdisp+full_disp*current_rec
@@ -706,192 +700,6 @@ Contains
         Endif  ! Responsible
 
 	End Subroutine Write_Meridional_slices_cache
-
-
-
-	Subroutine Write_Meridional_Slices(this_iter,simtime)
-        USE RA_MPI_BASE
-		Implicit None
-		Real*8, Intent(in) :: simtime
-		Integer, Intent(in) :: this_iter
-		Real*8, Allocatable :: buff(:,:,:,:), all_slices(:,:,:,:)
-		Integer :: responsible, current_rec, s_start, s_end, this_rid
-		Integer :: i, j, k,qq, p, sizecheck, ii
-		Integer :: n, nn, this_nshell, nq_merid, merid_tag,nphi_grab
-		Integer :: your_theta_min, your_theta_max, your_ntheta
-		Integer :: nelem, buffsize
-        Integer :: file_pos, funit, error, dims(1:4)
-        Integer :: inds(4), nirq,sirq
-        Integer, Allocatable :: rirqs(:)
-        
-        integer :: ierr, rcount
-		integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_rdisp, new_disp, qdisp, full_disp
-		Integer :: mstatus(MPI_STATUS_SIZE)
-        sizecheck = sizeof(disp)
-        if (sizecheck .lt. 8) Then
-            if (myid .eq. 0) Then
-            Write(6,*)"Warning, MPI_OFFSET_KIND is less than 8 bytes on your system."
-            Write(6,*)"Your size (in bytes) is: ", sizecheck
-            Write(6,*)"A size of 4 bytes means that shell slices files are effectively limited to 2 GB in size."
-            Endif
-        endif 
-
-
-		responsible = 0
-        nq_merid     = Meridional_Slices%nq
-        merid_tag    = Meridional_Slices%mpi_tag
-        nphi_grab    = Meridional_Slices%nphi_indices
-        funit        = Meridional_Slices%file_unit
-        
-
-		If (my_row_rank .eq. 0) Then
-                responsible = 1
-        Endif
-
-        
-		If (responsible .eq. 1) Then
-			! Rank 0 in reach row receives from all other row members
-		
-			Allocate(all_slices(my_rmin:my_rmax,1:nphi_grab,1:nq_merid, 1:ntheta))
-			all_slices(:,:,:,:) = 0.0d0
-
-            nirq = nproc2-1
-            Allocate(rirqs(1:nirq))
-
-            Do nn = 1, nproc2-1
-
-				your_ntheta    = pfi%all_2p(nn)%delta
-				your_theta_min = pfi%all_2p(nn)%min
-				your_theta_max = pfi%all_2p(nn)%max
-                inds(1) = 1
-                inds(2) = 1
-                inds(3) = 1
-                inds(4) = your_theta_min
-                nelem = your_ntheta*my_nr*nq_merid*nphi_grab
-
-                Call IReceive(all_slices, rirqs(nn),n_elements = nelem, &
-                            &  source= nn,tag = merid_tag, grp = pfi%rcomm,indstart = inds)				
-			Enddo
-
-            all_slices(my_rmin:my_rmax, 1:nphi_grab, 1:nq_merid,my_theta_min:my_theta_max) = &
-               meridional_outputs(my_rmin:my_rmax, 1:nphi_grab, 1:nq_merid,my_theta_min:my_theta_max)
-
-            Call IWaitAll(nirq, rirqs)
-            DeAllocate(rirqs)
-		Else
-			!  Rest of the row sends to process 0 within the row
-            inds(1) = 1 !my_rmin
-            inds(2) = 1
-            inds(3) = 1
-            inds(4) = 1 
-            nelem = my_nr*my_ntheta*nq_merid*nphi_grab
-            Call ISend(meridional_outputs, sirq,n_elements = nelem, dest = 0, tag = merid_tag, & 
-                grp = pfi%rcomm, indstart = inds)
-            Call IWait(sirq)
-		Endif
-        If (allocated(meridional_outputs)) DeAllocate(meridional_outputs)
-
-        ! Communication is complete.  Now we open the file using MPI-IO
-        
-
-      
-
-        If (responsible .eq. 1) Then   
-            Call Meridional_Slices%OpenFile_Par(this_iter, error)
-            current_rec = Meridional_Slices%current_rec
-            funit = Meridional_Slices%file_unit
-            ! before we do anything else, we need to restripe the data so
-            ! that q-index is the slowest
-
-            Allocate(buff(1:nphi_grab, 1:ntheta,my_rmin:my_rmax, 1:nq_merid))
-            Do k = 1, ntheta
-                Do j = 1, nq_merid
-                    Do ii = 1, nphi_grab
-                    Do i = my_rmin, my_rmax    
-                        buff(ii,k,i,j) = all_slices(i,ii,j,k)
-                    Enddo
-                    Enddo
-                Enddo
-            Enddo        
-            DeAllocate(all_slices)
-            
-
-            If ( (my_column_rank .eq. 0) .and. (Meridional_Slices%write_header) ) Then
-                If (Meridional_Slices%file_open) Then
-                    ! Rank 0 in column and row writes the header
-                    dims(1) =  nr
-                    dims(2) =  ntheta
-                    dims(3) =  nphi_grab
-                    dims(4) =  nq_merid
-                    buffsize = 4
-                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                        mstatus, ierr) 
-
-                    buffsize = nq_merid
-                    Call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
-                        mstatus, ierr) 
-
-                    buffsize = nr
-                    Call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
-
-                    buffsize = ntheta
-                    Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
-
-                    buffsize = nphi_grab
-                    Call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
-                        MPI_INTEGER, mstatus, ierr) 
-                Endif
-
-            Endif
-
-            hdisp = 28 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_merid*4 ! nq
-            hdisp = hdisp+nr*8  ! The radius array
-            hdisp = hdisp+ ntheta*8  ! costheta
-            hdisp = hdisp+ nphi_grab*4  ! phi indices
-
-            qdisp = ntheta*nr*nphi_grab*8
-            full_disp = qdisp*nq_merid+12  ! 12 is for the simtime+iteration at the end
-            disp = hdisp+full_disp*(current_rec-1)
-            
-            buffsize = my_nr*ntheta*nphi_grab
-            ! The file is striped with time step slowest, followed by q
-
-            my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
-
-            If (Meridional_Slices%file_open) Then
-
-                Do i = 1, nq_merid
-                    new_disp = disp+qdisp*(i-1)+my_rdisp                
-                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                    
-                    Call MPI_FILE_WRITE(funit, buff(1,1,my_rmin,i), buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Enddo
-
-                disp = hdisp+full_disp*current_rec
-                disp = disp-12
-                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
-
-                If (my_column_rank .eq. 0) Then
-                    buffsize = 1
-                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                           MPI_INTEGER, mstatus, ierr)
-                Endif
-
-            Endif
-
-			DeAllocate(buff)
-
-            Call Meridional_Slices%Closefile_Par()
-
-        Endif  ! Responsible
-
-	End Subroutine Write_Meridional_slices
 
 
     Subroutine Get_Point_Probes(qty)
@@ -4806,4 +4614,189 @@ Contains
             Call Shell_Slices%AdvanceInd()
         Endif
 	End Subroutine Get_Shell_Slice_Old
+
+	Subroutine Write_Meridional_Slices(this_iter,simtime)
+        USE RA_MPI_BASE
+		Implicit None
+		Real*8, Intent(in) :: simtime
+		Integer, Intent(in) :: this_iter
+		Real*8, Allocatable :: buff(:,:,:,:), all_slices(:,:,:,:)
+		Integer :: responsible, current_rec, s_start, s_end, this_rid
+		Integer :: i, j, k,qq, p, sizecheck, ii
+		Integer :: n, nn, this_nshell, nq_merid, merid_tag,nphi_grab
+		Integer :: your_theta_min, your_theta_max, your_ntheta
+		Integer :: nelem, buffsize
+        Integer :: file_pos, funit, error, dims(1:4)
+        Integer :: inds(4), nirq,sirq
+        Integer, Allocatable :: rirqs(:)
+        
+        integer :: ierr, rcount
+		integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_rdisp, new_disp, qdisp, full_disp
+		Integer :: mstatus(MPI_STATUS_SIZE)
+        sizecheck = sizeof(disp)
+        if (sizecheck .lt. 8) Then
+            if (myid .eq. 0) Then
+            Write(6,*)"Warning, MPI_OFFSET_KIND is less than 8 bytes on your system."
+            Write(6,*)"Your size (in bytes) is: ", sizecheck
+            Write(6,*)"A size of 4 bytes means that shell slices files are effectively limited to 2 GB in size."
+            Endif
+        endif 
+
+
+		responsible = 0
+        nq_merid     = Meridional_Slices%nq
+        merid_tag    = Meridional_Slices%mpi_tag
+        nphi_grab    = Meridional_Slices%nphi_indices
+        funit        = Meridional_Slices%file_unit
+        
+
+		If (my_row_rank .eq. 0) Then
+                responsible = 1
+        Endif
+
+        
+		If (responsible .eq. 1) Then
+			! Rank 0 in reach row receives from all other row members
+		
+			Allocate(all_slices(my_rmin:my_rmax,1:nphi_grab,1:nq_merid, 1:ntheta))
+			all_slices(:,:,:,:) = 0.0d0
+
+            nirq = nproc2-1
+            Allocate(rirqs(1:nirq))
+
+            Do nn = 1, nproc2-1
+
+				your_ntheta    = pfi%all_2p(nn)%delta
+				your_theta_min = pfi%all_2p(nn)%min
+				your_theta_max = pfi%all_2p(nn)%max
+                inds(1) = 1
+                inds(2) = 1
+                inds(3) = 1
+                inds(4) = your_theta_min
+                nelem = your_ntheta*my_nr*nq_merid*nphi_grab
+
+                Call IReceive(all_slices, rirqs(nn),n_elements = nelem, &
+                            &  source= nn,tag = merid_tag, grp = pfi%rcomm,indstart = inds)				
+			Enddo
+
+            all_slices(my_rmin:my_rmax, 1:nphi_grab, 1:nq_merid,my_theta_min:my_theta_max) = &
+               meridional_outputs(my_rmin:my_rmax, 1:nphi_grab, 1:nq_merid,my_theta_min:my_theta_max)
+
+            Call IWaitAll(nirq, rirqs)
+            DeAllocate(rirqs)
+		Else
+			!  Rest of the row sends to process 0 within the row
+            inds(1) = 1 !my_rmin
+            inds(2) = 1
+            inds(3) = 1
+            inds(4) = 1 
+            nelem = my_nr*my_ntheta*nq_merid*nphi_grab
+            Call ISend(meridional_outputs, sirq,n_elements = nelem, dest = 0, tag = merid_tag, & 
+                grp = pfi%rcomm, indstart = inds)
+            Call IWait(sirq)
+		Endif
+        If (allocated(meridional_outputs)) DeAllocate(meridional_outputs)
+
+        ! Communication is complete.  Now we open the file using MPI-IO
+        
+
+      
+
+        If (responsible .eq. 1) Then   
+            Call Meridional_Slices%OpenFile_Par(this_iter, error)
+            current_rec = Meridional_Slices%current_rec
+            funit = Meridional_Slices%file_unit
+            ! before we do anything else, we need to restripe the data so
+            ! that q-index is the slowest
+
+            Allocate(buff(1:nphi_grab, 1:ntheta,my_rmin:my_rmax, 1:nq_merid))
+            Do k = 1, ntheta
+                Do j = 1, nq_merid
+                    Do ii = 1, nphi_grab
+                    Do i = my_rmin, my_rmax    
+                        buff(ii,k,i,j) = all_slices(i,ii,j,k)
+                    Enddo
+                    Enddo
+                Enddo
+            Enddo        
+            DeAllocate(all_slices)
+            
+
+            If ( (my_column_rank .eq. 0) .and. (Meridional_Slices%write_header) ) Then
+                If (Meridional_Slices%file_open) Then
+                    ! Rank 0 in column and row writes the header
+                    dims(1) =  nr
+                    dims(2) =  ntheta
+                    dims(3) =  nphi_grab
+                    dims(4) =  nq_merid
+                    buffsize = 4
+                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
+
+                    buffsize = nq_merid
+                    Call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
+                        mstatus, ierr) 
+
+                    buffsize = nr
+                    Call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+
+                    buffsize = ntheta
+                    Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
+                        mstatus, ierr) 
+
+                    buffsize = nphi_grab
+                    Call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
+                        MPI_INTEGER, mstatus, ierr) 
+                Endif
+
+            Endif
+
+            hdisp = 28 ! dimensions+endian+version+record count
+            hdisp = hdisp+nq_merid*4 ! nq
+            hdisp = hdisp+nr*8  ! The radius array
+            hdisp = hdisp+ ntheta*8  ! costheta
+            hdisp = hdisp+ nphi_grab*4  ! phi indices
+
+            qdisp = ntheta*nr*nphi_grab*8
+            full_disp = qdisp*nq_merid+12  ! 12 is for the simtime+iteration at the end
+            disp = hdisp+full_disp*(current_rec-1)
+            
+            buffsize = my_nr*ntheta*nphi_grab
+            ! The file is striped with time step slowest, followed by q
+
+            my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
+
+            If (Meridional_Slices%file_open) Then
+
+                Do i = 1, nq_merid
+                    new_disp = disp+qdisp*(i-1)+my_rdisp                
+                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
+                    
+                    Call MPI_FILE_WRITE(funit, buff(1,1,my_rmin,i), buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Enddo
+
+                disp = hdisp+full_disp*current_rec
+                disp = disp-12
+                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
+
+                If (my_column_rank .eq. 0) Then
+                    buffsize = 1
+                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
+                           MPI_INTEGER, mstatus, ierr)
+                Endif
+
+            Endif
+
+			DeAllocate(buff)
+
+            Call Meridional_Slices%Closefile_Par()
+
+        Endif  ! Responsible
+
+	End Subroutine Write_Meridional_slices
+
 End Module Spherical_IO
