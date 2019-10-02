@@ -193,15 +193,15 @@ Contains
 
         If (self%t_spec) Then
 
-            self%nr_local = 0
-            my_min = pfi%all_2p(self%col_rank)%min
-            my_max = pfi%all_2p(self%col_rank)%max
+            self%ntheta_local = 0
+            my_min = pfi%all_2p(self%row_rank)%min
+            my_max = pfi%all_2p(self%row_rank)%max
 
             Allocate(tmp(1:(my_max-my_min)))
 
-            Do p = 0, pfi%npcol-1
-                tmin = pfi%all_1p(p)%min
-                tmax = pfi%all_1p(p)%max
+            Do p = 0, pfi%nprow-1
+                tmin = pfi%all_2p(p)%min
+                tmax = pfi%all_2p(p)%max
                 n = 1
                 Do t = 1, self%ntheta
                     m = self%theta_global(t)
@@ -216,6 +216,8 @@ Contains
             Allocate(self%theta_local(1:self%ntheta_local))
             self%theta_local(1:self%ntheta_local) = tmp(1:self%ntheta_local)
             DeAllocate(tmp)
+
+
         Else
             self%ntheta_local = pfi%all_2p(self%row_rank)%delta
             Do p = 0, pfi%nprow-1
@@ -262,7 +264,7 @@ Contains
             n = self%ntheta_at_column(p)
             self%npts_at_column(p) = self%nphi*self%nr_local*n
         Enddo
-
+        self%npts = self%npts_at_column(self%row_rank)
 
         !If (self%simple .or. self%phi_general) Then
         !    !self%ntheta = pfi%n2p
@@ -283,86 +285,82 @@ Contains
         !
         !Endif
 
-        If ( (.not. self%simple) .and. (.not. self%phi_general) ) Then
-            Write(6,*)'simple branch', self%phi_general
-            ! In this case, at minimum, a subset of radial indices
-            ! have been specified
-            self%nr_local = 0
-            my_min = pfi%all_1p(self%col_rank)%min
-            my_max = pfi%all_1p(self%col_rank)%max
-
-            Allocate(tmp(1:(my_max-my_min)))
-
-            Do p = 0, pfi%npcol-1
-                rmin = pfi%all_1p(p)%min
-                rmax = pfi%all_1p(p)%max
-                n = 1
-                Do r = 1, self%nr
-                    m = self%r_global(r)
-                    If ((m .ge. rmin ) .and. (m .le. rmax)) Then
-                        self%nr_out_at_row(p) = n
-                        If (p .eq. self%col_rank) tmp(n) = m-my_min+1
-                        n = n+1
-                    Endif
-                Enddo
-            Enddo
-            self%nr_local = self%nr_out_at_row(self%col_rank)
-            Allocate(self%r_local(1:self%nr_local))
-            self%r_local(1:self%nr_local) = tmp(1:self%nr_local)
-            DeAllocate(tmp)
+        !If ( (.not. self%simple) .and. (.not. self%phi_general) ) Then
+        !    Write(6,*)'simple branch', self%phi_general
+        !    ! In this case, at minimum, a subset of radial indices
+        !    ! have been specified
+        !    self%nr_local = 0
+        !    my_min = pfi%all_1p(self%col_rank)%min
+        !    my_max = pfi%all_1p(self%col_rank)%max
+        !
+        !    Allocate(tmp(1:(my_max-my_min)))
+        !
+        !    Do p = 0, pfi%npcol-1
+         !       rmin = pfi%all_1p(p)%min
+          !      rmax = pfi%all_1p(p)%max
+           !     n = 1
+            !    Do r = 1, self%nr
+             !       m = self%r_global(r)
+              !      If ((m .ge. rmin ) .and. (m .le. rmax)) Then
+               !         self%nr_out_at_row(p) = n
+                !        If (p .eq. self%col_rank) tmp(n) = m-my_min+1
+                 !       n = n+1
+                  !  Endif
+                 ! Enddo
+            ! Enddo
+            !self%nr_local = self%nr_out_at_row(self%col_rank)
+            !Allocate(self%r_local(1:self%nr_local))
+            !self%r_local(1:self%nr_local) = tmp(1:self%nr_local)
+            !DeAllocate(tmp)
             !write(6,*)'r_local_ind: ', self%r_local(1:self%nr_local), my_min, my_max
 
 
             ! Phi
-            If ((.not. self%rp_general) .and. (.not. self%general) ) Then
-                self%nphi   = pfi%n3p
-            Endif
+            !If ((.not. self%rp_general) .and. (.not. self%general) ) Then
+            !    self%nphi   = pfi%n3p
+            !Endif
 
             ! Theta
-            If (self%general) Then
-
-                self%ntheta_local = 0
-                my_min = pfi%all_2p(self%row_rank)%min
-                my_max = pfi%all_2p(self%row_rank)%max
-
-                Allocate(tmp(1:(my_max-my_min)))
-
-                Do p = 0, pfi%nprow-1
-                    tmin = pfi%all_2p(p)%min
-                    tmax = pfi%all_2p(p)%max
-                    n = 1
-                    Do t = 1, self%ntheta
-                        m = self%theta_global(t)
-                        If ((m .ge. tmin ) .and. (m .le. tmax)) Then
-                            self%ntheta_at_column(p) = n
-                            If (p .eq. self%row_rank) tmp(n) = m-my_min+1
-                            n = n+1
-                        Endif
-                    Enddo
-                Enddo
-                self%ntheta_local = self%ntheta_at_column(self%row_rank)
-                Allocate(self%theta_local(1:self%ntheta_local))
-                self%theta_local(1:self%ntheta_local) = tmp(1:self%ntheta_local)
-                DeAllocate(tmp)
-
-            Else
-
-                self%ntheta_local = pfi%all_2p(self%row_rank)%delta
-                Do p = 0, pfi%nprow-1
-                    self%ntheta_at_column(p) = pfi%all_2p(p)%delta
-                Enddo
-
-            Endif
-
-            Do p = 0, pfi%nprow-1
-                n = self%ntheta_at_column(p)
-                self%npts_at_column(p) = self%nphi*self%nr_local*n
-            Enddo
-
-
-        Endif
-
-
+            !If (self%general) Then
+            !
+            !    self%ntheta_local = 0
+            !    my_min = pfi%all_2p(self%row_rank)%min
+            !    my_max = pfi%all_2p(self%row_rank)%max
+            !
+            !    Allocate(tmp(1:(my_max-my_min)))
+            !
+            !    Do p = 0, pfi%nprow-1
+            !        tmin = pfi%all_2p(p)%min
+            !        tmax = pfi%all_2p(p)%max
+            !        n = 1
+            !        Do t = 1, self%ntheta
+            !            m = self%theta_global(t)
+            !            If ((m .ge. tmin ) .and. (m .le. tmax)) Then
+            !                self%ntheta_at_column(p) = n
+            !                If (p .eq. self%row_rank) tmp(n) = m-my_min+1
+            !                n = n+1
+            !            Endif
+            !        Enddo
+            !    Enddo
+            !    self%ntheta_local = self%ntheta_at_column(self%row_rank)
+            !    Allocate(self%theta_local(1:self%ntheta_local))
+            !    self%theta_local(1:self%ntheta_local) = tmp(1:self%ntheta_local)
+            !    DeAllocate(tmp)
+            !
+            !Else
+            !
+            !    self%ntheta_local = pfi%all_2p(self%row_rank)%delta
+            !    Do p = 0, pfi%nprow-1
+            !        self%ntheta_at_column(p) = pfi%all_2p(p)%delta
+            !    Enddo
+            !
+            !Endif
+    
+            !Do p = 0, pfi%nprow-1
+            !    n = self%ntheta_at_column(p)
+            !    self%npts_at_column(p) = self%nphi*self%nr_local*n
+            !Enddo
+        !Endif
 
         nout_cols = pfi%output_columns
         If (nout_cols .gt. self%nr_local) Then
@@ -371,8 +369,6 @@ Contains
         self%nout_cols = nout_cols
         If (self%row_rank .lt. nout_cols) self%output_rank = .true.
 
-
-        self%npts = self%npts_at_column(self%row_rank)
 
         !Determine how many radii each rank in this row outputs
 
@@ -392,13 +388,10 @@ Contains
 
         If (self%output_rank) Then
 
-
-
             Do p = 0, pfi%nprow-1
                 self%nrecv_from_column(p) = self%nr_out* &
                                             self%nphi*self%ntheta_at_column(p) 
             Enddo
-
 
             ! Determine offsets (in bytes) for MPI-IO
             shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
