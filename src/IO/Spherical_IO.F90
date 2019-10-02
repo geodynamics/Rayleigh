@@ -597,23 +597,14 @@ Contains
 		Implicit None
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
-		Integer :: current_rec, s_start, s_end, this_rid
-		Integer :: i, j, k,qq, p, sizecheck, ii
-		Integer :: n, nn, this_nshell, nq_merid, merid_tag,nphi_grab
-		Integer :: nelem, buffsize
-        Integer :: file_pos, funit, error, dims(1:4)
-        Integer :: inds(4), nirq,sirq
-        Integer, Allocatable :: rirqs(:)
-        
-        integer :: ierr, rcount
-		integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_rdisp, new_disp, qdisp, full_disp
+		Integer :: buffsize, current_rec, dims(1:4), file_pos, funit, ierr
+		Integer :: nq_merid, nphi_grab, orank
+		Integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, new_disp, qdisp, full_disp
 		Integer :: mstatus(MPI_STATUS_SIZE)
-
         Logical :: responsible, output_rank
-        Integer :: orank
+
 
         nq_merid     = Meridional_Slices%nq
-        merid_tag    = Temp_IO%mpi_tag
         nphi_grab    = Meridional_Slices%nphi_indices
         funit        = Temp_IO%file_unit
         
@@ -624,7 +615,7 @@ Contains
         If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
 
         If (output_rank ) Then   
-            Call Temp_IO%OpenFile_Par(this_iter, error)
+            Call Temp_IO%OpenFile_Par(this_iter, ierr)
             current_rec = Temp_IO%current_rec
             funit = Temp_IO%file_unit
             If ( (orank .eq. 0) .and. (Temp_IO%write_header) ) Then
@@ -663,20 +654,14 @@ Contains
             hdisp = hdisp+ ntheta*8  ! costheta
             hdisp = hdisp+ nphi_grab*4  ! phi indices
 
-
             qdisp = Meridional_Slices_Buffer%qdisp
             full_disp = qdisp*nq_merid+12  ! 12 is for the simtime+iteration at the end
             new_disp = hdisp+full_disp*(current_rec-1)
 
-
         Endif
-            Call Meridional_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
+
+        Call Meridional_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
             
-            buffsize = my_nr*ntheta*nphi_grab
-            ! The file is striped with time step slowest, followed by q
-
-            my_rdisp = (my_rmin-1)*ntheta*nphi_grab*8
-
         If (output_rank) Then
             If (Temp_IO%file_open) Then
 
@@ -694,10 +679,9 @@ Contains
 
             Endif
 
-
             Call Temp_IO%Closefile_Par()
 
-        Endif  ! Responsible
+        Endif
 
 	End Subroutine Write_Meridional_slices_cache
 
