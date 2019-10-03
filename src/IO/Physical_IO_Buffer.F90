@@ -55,6 +55,12 @@ Module Physical_IO_Buffer
         Logical :: t_spec = .false.
         Logical :: p_spec = .false.
 
+        ! Averaging variables
+        Logical :: sum_r =.false.        ! Perform a weighted sum in r
+        Logical :: sum_theta = .false.   ! Perform a weighted sum in theta
+        Real*8, Allocatable :: theta_weights(:)  ! For summing over theta points
+        Real*8, Allocatable :: radial_weights(:)
+
         Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
 
         ! Buffer-specific variables
@@ -85,11 +91,12 @@ Contains
 
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
                                              phi_indices,ncache, mpi_tag, &
-                                             cascade)
+                                             cascade, sum_weights_theta)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade
+        Real*8, Intent(In), Optional :: sum_weights_theta(:)
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
 
@@ -138,6 +145,11 @@ Contains
             Allocate(self%theta_global(1:self%ntheta))
             self%theta_global(:) = theta_indices(:)
             self%t_spec = .true.
+            If (present(sum_weights_theta)) Then
+                Allocate(self%theta_weights(1:self%ntheta))
+                self%theta_weights(:) = sum_weights_theta(:)
+                self%sum_theta = .true.
+            Endif
         Else
             self%ntheta = pfi%n2p
         Endif
@@ -162,11 +174,16 @@ Contains
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
              .and. (self%p_spec) ) self%phi_general = .true.
 
+        If (self%r_spec .and. self%t_spec &
+             .and. self%p_spec ) self%general = .true.
+
        ! Write(6,*)self%simple, self%r_general, self%phi_general, self%general
 
         Call self%Load_Balance_IO()
         Call self%Initialize_IO_MPI()
         Call self%Allocate_Cache()
+
+        If (self%general) Write(6,*)'check: ', self%nr_local, self%ntheta_local, self%nphi, self%buffsize
 
     End Subroutine Initialize_Physical_IO_Buffer
 
@@ -392,9 +409,8 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
         Integer :: r, t, p
-        !write(6,*)'caching'
+        
         If (self%cascade_type .eq. 1) Then
-            ! Need r_simple etc. logic here.  OK for now
             If (self%simple) Then
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
@@ -406,8 +422,6 @@ Contains
             Endif
 
             If (self%r_general) Then
-                !If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
-                !        MOD(self%ncache,self%cache_index+1), self%ncache
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
                         Do p = 1, self%nphi
@@ -418,13 +432,21 @@ Contains
             Endif
 
             If (self%phi_general) Then
-                !If (pfi%gcomm%rank .eq. 0) Write(6,*)'caching index: ', self%cache_index, &
-                !        MOD(self%ncache,self%cache_index+1), self%ncache
-                !Write(6,*)'phi general!'
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
                         Do p = 1, self%nphi
                             self%cache(p,t,self%cache_index,r) = vals(self%phi_local(p),r,t)
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+
+            If (self%general) Then
+                Do t = 1, self%ntheta_local
+                    Do r = 1, self%nr_local
+                        Do p = 1, self%nphi
+                            self%cache(p,t,self%cache_index,r) = &
+                                & vals(self%phi_local(p),self%r_local(r),self%theta_local(t))
                         Enddo
                     Enddo
                 Enddo
@@ -549,7 +571,7 @@ Contains
         Call IWaitAll(nsirq,sirqs)
         DeAllocate(sirqs)
 
-
+        
         If (self%output_rank) Then
             tstart = 1
             !write(6,*)(shape(self%collated_data))
@@ -573,6 +595,11 @@ Contains
         Endif
 
         Call self%deallocate_receive_buffers()
+
+        ! If (self%sum_theta) Then
+        !       Allocate(reducted_data)
+        !       Sum with weights over collated data
+        ! Endif
 
     End Subroutine Collate
 
@@ -655,8 +682,12 @@ Contains
                 If (self%output_rank) Then
 
                     !Write(6,*)'info: ', my_disp, self%buffsize
-        
-                    Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)                    
+                    If (self%general) Write(6,*)my_disp        
+                    !Write(6,*)my_disp
+                    Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)    
+                    !IF (self%reduced) Then
+                    ! Write the reduced buffer
+                    ! ELSE                
                     Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                     my_disp = my_disp+self%qdisp
