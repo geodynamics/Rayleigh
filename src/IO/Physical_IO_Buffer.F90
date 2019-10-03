@@ -148,6 +148,7 @@ Contains
             Allocate(self%phi_local(1:self%nphi))
             self%phi_local(:) = phi_indices(:)
             self%p_spec = .true.
+            !Write(6,*)'phi: ', phi_indices
         Else
             self%nphi = pfi%n3p
         Endif
