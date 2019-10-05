@@ -61,6 +61,10 @@ Module Physical_IO_Buffer
         Real*8, Allocatable :: theta_weights(:)  ! For summing over theta points
         Real*8, Allocatable :: radial_weights(:)
 
+        ! Caching variables
+        Integer :: ncache_per_rec = 1
+        Integer :: nrec = 1
+
         Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
 
         ! Buffer-specific variables
@@ -91,11 +95,11 @@ Contains
 
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
                                              phi_indices,ncache, mpi_tag, &
-                                             cascade, sum_weights_theta)
+                                             cascade, sum_weights_theta, nrec)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
-        Integer, Intent(In), Optional :: ncache, mpi_tag, cascade
+        Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
@@ -119,6 +123,13 @@ Contains
             self%ncache = ncache
             !Write(6,*)'ncahce is: ', self%ncache
         Endif
+
+        If (.not. present(nrec)) Then
+            self%nrec = 1
+        Else
+            self%nrec = nrec
+        Endif
+        self%ncache_per_rec = self%ncache/self%nrec
 
         !/////////////////////////////////////////////////
         ! Set a unique tag for message exchange
@@ -565,6 +576,7 @@ Contains
 
 
         If (self%output_rank) Then
+            !WRite(6,*)'outputting', self%rank
             Call IWaitAll(nrirq, rirqs)
             DeAllocate(rirqs)
         Endif
@@ -619,7 +631,7 @@ Contains
 
         hdisp = 0
         If (present(disp)) hdisp = disp
-
+      
         ! The file can be opened previously or opened by this routine
 
         ! The write can be conducted in various ways:
@@ -682,12 +694,14 @@ Contains
                 If (self%output_rank) Then
 
                     !Write(6,*)'info: ', my_disp, self%buffsize
-                    If (self%general) Write(6,*)my_disp        
+                    !If (self%general) Write(6,*)my_disp        
                     !Write(6,*)my_disp
                     Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)    
                     !IF (self%reduced) Then
                     ! Write the reduced buffer
-                    ! ELSE                
+                    ! ELSE     
+                    Write(6,*)my_disp, hdisp, funit, &
+                             self%collated_data(:,:,:,cache_ind)           
                     Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                     my_disp = my_disp+self%qdisp

@@ -749,7 +749,7 @@ Contains
         nq      = Point_Probes%nq
         ncache  = Temp_IO%cache_size
         probe_tag = Temp_IO%mpi_tag
-        funit   = Temp_IO%file_unit
+
 
         orank       = Point_Probes_Buffer%ocomm%rank
         output_rank = Point_Probes_Buffer%output_rank
@@ -768,7 +768,7 @@ Contains
         ! For the moment, every process in column 0 participates in the mpi file-open operation
  
         If (output_rank) Call Temp_IO%OpenFile_Par(this_iter, error)
-
+        funit   = Temp_IO%file_unit
         If ( responsible .and. Temp_IO%file_open ) Then   
             funit = Temp_IO%file_unit
             If (Temp_IO%current_rec .eq. ncache) Then                
