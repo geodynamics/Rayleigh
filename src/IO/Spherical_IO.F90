@@ -858,8 +858,26 @@ Contains
                    MPI_INTEGER, mstatus, ierr)
         Endif
 
+        IF (responsible)
+            !tdisp= ?  What...
+            Do j = 1, ncache
 
-             !disp = disp+full_disp 
+                tdisp = disp+full_disp-12
+
+                Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
+
+                buffsize2 = 1
+
+                Call MPI_FILE_WRITE(funit, Point_Probes%time_save(j), buffsize2, & 
+                       MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Call MPI_FILE_WRITE(funit, Point_Probes%iter_save(j), buffsize2, & 
+                       MPI_INTEGER, mstatus, ierr)
+
+                disp = disp+full_disp 
+            Enddo
+        Endif
+
+
 
 
         If (output_rank) Call Temp_IO%closefile_par()

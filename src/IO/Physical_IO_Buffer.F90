@@ -64,6 +64,7 @@ Module Physical_IO_Buffer
         ! Caching variables
         Integer :: ncache_per_rec = 1
         Integer :: nrec = 1
+        Integer :: rec_skip = 0 ! number of bytes to skip between cached records
 
         Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
 
@@ -95,11 +96,12 @@ Contains
 
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
                                              phi_indices,ncache, mpi_tag, &
-                                             cascade, sum_weights_theta, nrec)
+                                             cascade, sum_weights_theta, nrec, &
+                                             skip)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
-        Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec
+        Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
@@ -130,6 +132,8 @@ Contains
             self%nrec = nrec
         Endif
         self%ncache_per_rec = self%ncache/self%nrec
+
+        If (present(skip)) self%rec_skip = skip
 
         !/////////////////////////////////////////////////
         ! Set a unique tag for message exchange
@@ -687,10 +691,13 @@ Contains
             Endif
 
             my_disp = hdisp + self%base_disp
+            Do j = 1, self%nrec
+            cache_start = (j-1)*self%ncache_per_rec
+            cache_end   = j*self%ncache_per_rec
             Do i = cache_start, cache_end
                 cache_ind = i
                 If (write_mode .eq. 3 ) Call self%collate(i)
-                If (write_mode .gt. 1 ) cache_ind = 1
+                If (write_mode .gt. 1 ) cache_ind = 1  ! mode 2 not used, but I think this is incorrect
                 If (self%output_rank) Then
 
                     !Write(6,*)'info: ', my_disp, self%buffsize
@@ -708,7 +715,8 @@ Contains
                     !if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
                 Endif
             Enddo
-    
+                my_disp = my_dip+self%rec_skip
+            Enddo
             If (self%output_rank) Then
                 !Write(6,*)'buff: ', self%orank, self%qdisp, hdisp, self%base_disp, my_disp
                 DeAllocate(self%collated_data)
