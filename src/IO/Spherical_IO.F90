@@ -559,8 +559,10 @@ Contains
         Call Full_3D_Buffer%init(mpi_tag=54)
  
         Call Point_Probes_Buffer%init(phi_indices=Point_Probes%probe_p_global, & 
-                                      r_indices=Point_Probes%probe_r_global, theta_indices = Point_Probes%probe_t_global, &
-                                      ncache  = Point_Probes%nq, cascade = cascade_type, mpi_tag=611)
+                                      r_indices=Point_Probes%probe_r_global, &
+                                      theta_indices = Point_Probes%probe_t_global, &
+                                      ncache  = Point_Probes%nq, cascade = cascade_type, mpi_tag=611, &
+                                      nrec = Point_Probe_Cache_size, skip = 12)
        
         ! temporary IO for testing
         Call Temp_IO%Init(averaging_level,compute_q,myid, 611, &
@@ -848,21 +850,20 @@ Contains
 
         Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
-        j = 1
+        !j = 1
+        !If (responsible) Then
+        !    buffsize2 = 1
+        !
+        !    Call MPI_FILE_WRITE(funit, Point_Probes%time_save(j), buffsize2, & 
+        !           MPI_DOUBLE_PRECISION, mstatus, ierr)
+        !    Call MPI_FILE_WRITE(funit, Point_Probes%iter_save(j), buffsize2, & 
+        !           MPI_INTEGER, mstatus, ierr)
+        !Endif
+
+
         If (responsible) Then
-            buffsize2 = 1
-
-            Call MPI_FILE_WRITE(funit, Point_Probes%time_save(j), buffsize2, & 
-                   MPI_DOUBLE_PRECISION, mstatus, ierr)
-            Call MPI_FILE_WRITE(funit, Point_Probes%iter_save(j), buffsize2, & 
-                   MPI_INTEGER, mstatus, ierr)
-        Endif
-
-        IF (responsible)
-            !tdisp= ?  What...
+            tdisp = new_disp+full_disp-12
             Do j = 1, ncache
-
-                tdisp = disp+full_disp-12
 
                 Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
@@ -873,7 +874,7 @@ Contains
                 Call MPI_FILE_WRITE(funit, Point_Probes%iter_save(j), buffsize2, & 
                        MPI_INTEGER, mstatus, ierr)
 
-                disp = disp+full_disp 
+                tdisp = tdisp+full_disp 
             Enddo
         Endif
 

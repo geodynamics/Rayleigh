@@ -627,7 +627,7 @@ Contains
         Integer :: funit
         Integer :: write_mode
         Logical :: error
-        Integer :: i, ierr, cache_start, cache_end, cache_ind
+        Integer :: i, ierr, j, cache_start, cache_end, cache_ind
 		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
@@ -692,7 +692,7 @@ Contains
 
             my_disp = hdisp + self%base_disp
             Do j = 1, self%nrec
-            cache_start = (j-1)*self%ncache_per_rec
+            cache_start = (j-1)*self%ncache_per_rec+1
             cache_end   = j*self%ncache_per_rec
             Do i = cache_start, cache_end
                 cache_ind = i
@@ -715,7 +715,7 @@ Contains
                     !if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
                 Endif
             Enddo
-                my_disp = my_dip+self%rec_skip
+                my_disp = my_disp+self%rec_skip
             Enddo
             If (self%output_rank) Then
                 !Write(6,*)'buff: ', self%orank, self%qdisp, hdisp, self%base_disp, my_disp
