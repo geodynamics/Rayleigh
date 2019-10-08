@@ -65,8 +65,14 @@ Module Physical_IO_Buffer
         Integer :: ncache_per_rec = 1
         Integer :: nrec = 1
         Integer :: rec_skip = 0 ! number of bytes to skip between cached records
+        Integer :: time_index = 1
 
         Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
+
+        ! Time stamps:
+        Integer, Allocatable :: iter(:)
+        Real*8, Allocatable :: time(:)
+        Logical :: write_timestamp = .false.
 
         ! Buffer-specific variables
         Real*8, Allocatable :: cache(:,:,:,:)   ! storage space
@@ -84,6 +90,7 @@ Module Physical_IO_Buffer
         Procedure :: init => Initialize_Physical_IO_Buffer
         Procedure :: cache_data
         Procedure :: allocate_cache
+        Procedure :: timestamp
         Procedure :: collate
         Procedure :: Initialize_IO_MPI
         Procedure :: Load_Balance_IO
@@ -94,15 +101,17 @@ Module Physical_IO_Buffer
 
 Contains
 
+
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
                                              phi_indices,ncache, mpi_tag, &
                                              cascade, sum_weights_theta, nrec, &
-                                             skip)
+                                             skip, write_timestamp)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
+        Logical, Intent(In), Optional :: write_timestamp
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
 
@@ -194,12 +203,22 @@ Contains
 
        ! Write(6,*)self%simple, self%r_general, self%phi_general, self%general
 
+
+
+        
         Call self%Load_Balance_IO()
         Call self%Initialize_IO_MPI()
-        Call self%Allocate_Cache()
+
 
         If (self%general) Write(6,*)'check: ', self%nr_local, self%ntheta_local, self%nphi, self%buffsize
 
+        If (present(write_timestamp)) Then
+            If ((self%output_rank) .and. (self%ocomm%rank .eq. 0) ) Then
+                self%write_timestamp = write_timestamp
+            Endif
+            If (write_timestamp) self%rec_skip = 12
+        Endif
+        Call self%Allocate_Cache()
     End Subroutine Initialize_Physical_IO_Buffer
 
 
@@ -417,7 +436,24 @@ Contains
                             1:self%nr_local,self%ncache))
         Endif
         self%cache(:,:,:,:) = 0.0d0
+        If (self%write_timestamp) Then
+            Allocate(self%iter(1:self%nrec))
+            Allocate(self%time(1:self%nrec))
+        Endif
     End Subroutine Allocate_Cache
+
+    Subroutine Timestamp(self,ival,tval)
+        Implicit None
+        Class(IO_Buffer_Physical) :: self
+        Integer, Intent(In) :: ival
+        Real*8, Intent(In) :: tval
+        If (self%write_timestamp) Then
+            !Write(6,*)'True!', self%output_rank, self%ocomm%rank,self%nrec
+            self%iter(self%time_index) = ival
+            self%time(self%time_index) = tval
+            self%time_index = MOD(self%time_index, self%nrec)+1
+        Endif
+    End Subroutine Timestamp
 
     Subroutine Cache_Data(self,vals)
         Implicit None
@@ -581,7 +617,7 @@ Contains
 
         If (self%output_rank) Then
             !WRite(6,*)'outputting', self%rank
-            WRite(6,*)'shapes: ', nrirq, shape(rirqs)
+            !WRite(6,*)'shapes: ', nrirq, shape(rirqs)
             if (nrirq .gt. 0) Call IWaitAll(nrirq, rirqs)
             DeAllocate(rirqs)
         Endif
@@ -630,7 +666,7 @@ Contains
         Logical :: error
         Integer :: i, ierr, j, cache_start, cache_end, cache_ind
 		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
-        Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp
+        Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 
 
@@ -693,31 +729,43 @@ Contains
 
             my_disp = hdisp + self%base_disp
             Do j = 1, self%nrec
-            cache_start = (j-1)*self%ncache_per_rec+1
-            cache_end   = j*self%ncache_per_rec
-            !Write(6,*)'cache: ', cache_start, cache_end
-            Do i = cache_start, cache_end
-                cache_ind = i
-                
-                If (write_mode .eq. 3 ) Call self%collate(i)
-                If (write_mode .gt. 1 ) cache_ind = 1  ! mode 2 not used, but I think this is incorrect
-                If (self%output_rank) Then
+                cache_start = (j-1)*self%ncache_per_rec+1
+                cache_end   = j*self%ncache_per_rec
+                !Write(6,*)'cache: ', cache_start, cache_end
+                Do i = cache_start, cache_end
+                    cache_ind = i
+                    
+                    If (write_mode .eq. 3 ) Call self%collate(i)
+                    If (write_mode .gt. 1 ) cache_ind = 1  ! mode 2 not used, but I think this is incorrect
+                    If (self%output_rank) Then
 
-                    !Write(6,*)'info: ', my_disp, self%buffsize
-                    !If (self%general) Write(6,*)my_disp        
-                    !Write(6,*)my_disp
-                    Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)    
-                    !IF (self%reduced) Then
-                    ! Write the reduced buffer
-                    ! ELSE     
-                    !Write(6,*)my_disp, hdisp, funit, shape(self%collated_data)
-                    !         self%collated_data(:,:,:,cache_ind)           
-                    Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
-                           self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    my_disp = my_disp+self%qdisp
-                    !if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
+                        !Write(6,*)'info: ', my_disp, self%buffsize
+                        !If (self%general) Write(6,*)my_disp        
+                        !Write(6,*)my_disp
+                        Call MPI_File_Seek(funit,my_disp,MPI_SEEK_SET,ierr)    
+                        !IF (self%reduced) Then
+                        ! Write the reduced buffer
+                        ! ELSE     
+                        !Write(6,*)my_disp, hdisp, funit, shape(self%collated_data)
+                        !         self%collated_data(:,:,:,cache_ind)           
+                        Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
+                               self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                        my_disp = my_disp+self%qdisp
+                        !if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
+                    Endif
+                Enddo
+
+                If (self%write_timestamp) Then  ! output_rank 0 will be the timestamp writer
+                    tdisp = my_disp !  This works because output rank 0 always has my_disp 0 !-12
+                    Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
+                    Write(6,*)'time stammping'
+                    Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
+                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Call MPI_FILE_WRITE(funit, self%iter(j), 1, & 
+                           MPI_INTEGER, mstatus, ierr)
                 Endif
-            Enddo
+
+
                 my_disp = my_disp+self%rec_skip
             Enddo
             If (self%output_rank) Then

@@ -563,7 +563,8 @@ Contains
                                       theta_indices = Point_Probes%probe_t_global, &
                                       ncache  = Point_Probes%nq*Point_Probe_Cache_Size, &
                                       cascade = cascade_type, mpi_tag=611, &
-                                      nrec = Point_Probe_Cache_size, skip = 12)
+                                      nrec = Point_Probe_Cache_size, skip = 12, &
+                                      write_timestamp = .true.)
        
         ! temporary IO for testing
         Call Temp_IO%Init(averaging_level,compute_q,myid, 611, &
@@ -847,41 +848,6 @@ Contains
 
         Call Point_Probes_Buffer%write_data(disp=new_disp,file_unit=funit)
     
-        tdisp = new_disp+full_disp-12
-
-        Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
-
-        !j = 1
-        !If (responsible) Then
-        !    buffsize2 = 1
-        !
-        !    Call MPI_FILE_WRITE(funit, Point_Probes%time_save(j), buffsize2, & 
-        !           MPI_DOUBLE_PRECISION, mstatus, ierr)
-        !    Call MPI_FILE_WRITE(funit, Point_Probes%iter_save(j), buffsize2, & 
-        !           MPI_INTEGER, mstatus, ierr)
-        !Endif
-
-
-        If (responsible) Then
-            tdisp = new_disp+full_disp-12
-            Do j = 1, ncache
-
-                Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
-
-                buffsize2 = 1
-
-                Call MPI_FILE_WRITE(funit, Point_Probes%time_save(j), buffsize2, & 
-                       MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Call MPI_FILE_WRITE(funit, Point_Probes%iter_save(j), buffsize2, & 
-                       MPI_INTEGER, mstatus, ierr)
-
-                tdisp = tdisp+full_disp 
-            Enddo
-        Endif
-
-
-
-
         If (output_rank) Call Temp_IO%closefile_par()
 
 	End Subroutine Write_Point_Probes_Cache
@@ -2502,8 +2468,8 @@ Contains
 	    If ((Point_Probes%nq > 0) .and. (Mod(iter,Point_Probes%frequency) .eq. 0 )) Then
             Point_Probes%time_save(Point_Probes%cc+1) = sim_time
             Point_Probes%iter_save(Point_Probes%cc+1) = iter
+            Call Point_Probes_Buffer%timestamp(iter, sim_time)
             If ((Point_Probes%cache_size-1) .eq. Point_Probes%cc) Then
-                Write(6,*)'check: ', Point_Probes%cache_size, Point_Probes%cc, Temp_IO%cache_size, Temp_IO%cc
                 Call Write_Point_Probes(iter,sim_time)
                 Call Write_Point_Probes_Cache(iter,sim_time)
             Endif            
