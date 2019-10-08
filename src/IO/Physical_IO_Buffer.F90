@@ -758,7 +758,7 @@ Contains
                 If (self%write_timestamp) Then  ! output_rank 0 will be the timestamp writer
                     tdisp = my_disp !  This works because output rank 0 always has my_disp 0 !-12
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
-                    Write(6,*)'time stammping'
+                    !Write(6,*)'time stammping'
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
                            MPI_DOUBLE_PRECISION, mstatus, ierr)
                     Call MPI_FILE_WRITE(funit, self%iter(j), 1, & 
