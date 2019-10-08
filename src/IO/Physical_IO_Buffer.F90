@@ -538,7 +538,7 @@ Contains
             Enddo
         Endif
 
-        nsirq = self%nout_cols
+        nsirq = self%nout_cols      ! maximum possible sends (point probes can alter this)
         If (self%output_rank) nsirq = nsirq-1
         Allocate(sirqs(1:nsirq))
         nn = 1
@@ -577,14 +577,15 @@ Contains
             !    Write(6,*)'non I/O: ', maxval(self%cache)
             !Endif
         Enddo
-
+        nsirq = nn-1  ! actual number of sends undertaken
 
         If (self%output_rank) Then
             !WRite(6,*)'outputting', self%rank
-            Call IWaitAll(nrirq, rirqs)
+            WRite(6,*)'shapes: ', nrirq, shape(rirqs)
+            if (nrirq .gt. 0) Call IWaitAll(nrirq, rirqs)
             DeAllocate(rirqs)
         Endif
-        Call IWaitAll(nsirq,sirqs)
+        If (nsirq .gt. 0) Call IWaitAll(nsirq,sirqs)
         DeAllocate(sirqs)
 
         
@@ -694,8 +695,10 @@ Contains
             Do j = 1, self%nrec
             cache_start = (j-1)*self%ncache_per_rec+1
             cache_end   = j*self%ncache_per_rec
+            !Write(6,*)'cache: ', cache_start, cache_end
             Do i = cache_start, cache_end
                 cache_ind = i
+                
                 If (write_mode .eq. 3 ) Call self%collate(i)
                 If (write_mode .gt. 1 ) cache_ind = 1  ! mode 2 not used, but I think this is incorrect
                 If (self%output_rank) Then
@@ -707,8 +710,8 @@ Contains
                     !IF (self%reduced) Then
                     ! Write the reduced buffer
                     ! ELSE     
-                    Write(6,*)my_disp, hdisp, funit, &
-                             self%collated_data(:,:,:,cache_ind)           
+                    !Write(6,*)my_disp, hdisp, funit, shape(self%collated_data)
+                    !         self%collated_data(:,:,:,cache_ind)           
                     Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                     my_disp = my_disp+self%qdisp

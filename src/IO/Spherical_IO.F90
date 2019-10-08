@@ -397,10 +397,10 @@ Contains
         Call       SPH_Mode_Samples%Init(averaging_level,compute_q,myid, &
             & 62,values = sph_mode_values, levels = sph_mode_levels)
 
-
+        Write(6,*)'cache size is...', point_probe_cache_size
         Call       Point_Probes%Init(averaging_level,compute_q,myid, &
             & 63,values = point_probe_values, cache_size = point_probe_cache_size)
-
+        Write(6,*)'cache size 2 is...', Point_Probes%cache_size
 
         !Outputs involve saving and communicating partial shell slices (e.g. Shell_Slices or spectra)
         !require an additional initialization step to load-balance the shells
@@ -561,12 +561,13 @@ Contains
         Call Point_Probes_Buffer%init(phi_indices=Point_Probes%probe_p_global, & 
                                       r_indices=Point_Probes%probe_r_global, &
                                       theta_indices = Point_Probes%probe_t_global, &
-                                      ncache  = Point_Probes%nq, cascade = cascade_type, mpi_tag=611, &
+                                      ncache  = Point_Probes%nq*Point_Probe_Cache_Size, &
+                                      cascade = cascade_type, mpi_tag=611, &
                                       nrec = Point_Probe_Cache_size, skip = 12)
        
         ! temporary IO for testing
         Call Temp_IO%Init(averaging_level,compute_q,myid, 611, &
-                          values = point_probe_values)
+                          values = point_probe_values, cache_size = point_probe_cache_size)
         Call Temp_IO%init_ocomm(point_probes_buffer%ocomm%comm, &
                                 point_probes_buffer%ocomm%np,point_probes_buffer%ocomm%rank ,0) 
         fdir = 'Temp_IO/'
@@ -2502,10 +2503,12 @@ Contains
             Point_Probes%time_save(Point_Probes%cc+1) = sim_time
             Point_Probes%iter_save(Point_Probes%cc+1) = iter
             If ((Point_Probes%cache_size-1) .eq. Point_Probes%cc) Then
+                Write(6,*)'check: ', Point_Probes%cache_size, Point_Probes%cc, Temp_IO%cache_size, Temp_IO%cc
                 Call Write_Point_Probes(iter,sim_time)
                 Call Write_Point_Probes_Cache(iter,sim_time)
             Endif            
             Call Point_Probes%AdvanceCC() 
+            Call Temp_IO%AdvanceCC()
         Endif
 	    If ((AZ_Averages%nq > 0) .and. (Mod(iter,AZ_Averages%frequency) .eq. 0 )) Then
             Call Write_Azimuthal_Average(iter,sim_time)
