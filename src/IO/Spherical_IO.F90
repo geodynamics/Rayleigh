@@ -319,7 +319,7 @@ Contains
         Call  SPH_Mode_Samples%reset()
         Call      Point_Probes%reset()
 
-        Call Temp_IO%reset
+        Call Temp_IO%reset()
 
         Allocate(f_of_r_theta(1,my_rmin:my_rmax,my_theta_min:my_theta_max))
         Allocate(f_of_r(my_rmin:my_rmax))
@@ -779,7 +779,7 @@ Contains
         INTEGER :: i,j,k
         INTEGER :: rind, tind
  
-        Call Temp_IO%buffer%cache_data(qty)
+        !Call Temp_IO%buffer%cache_data(qty)
 
         q_ind = Point_Probes%ind
         npts = Point_Probes%npts_at_rowrank(my_row_rank)
@@ -933,9 +933,6 @@ Contains
                     Endif
                 Endif
 
-                !hdisp = self%hdisp ! 28 ! dimensions+endian+version+record count
-
-                !qdisp = self%Buffer%qdisp 
                 full_disp = self%buffer%qdisp*self%nq+12  ! 12 is for the simtime+iteration at the end
                 new_disp = self%hdisp+full_disp*(Temp_IO%current_rec-ncache)
 
@@ -951,10 +948,6 @@ Contains
 
 	End Subroutine Write_IO
 
-
-
-
-
 	Subroutine Get_SPH_Modes(qty)
 		Implicit None
 		Integer :: j, ilocal, shell_ind, field_ind, rind, counter
@@ -966,8 +959,6 @@ Contains
 
             SPH_Mode_Samples%oqvals(shell_ind) = current_qval
 
-        
-
 		    If (SPH_Mode_Samples%my_nlevels .gt. 0) Then
 
 		        If (SPH_Mode_Samples%begin_output) Then
@@ -975,11 +966,7 @@ Contains
                     sph_sample_buffer%p3b(:,:,:,:) = 0.0d0
 		        Endif
 
-                            
-
 		        Do j = 1, SPH_Mode_Samples%my_nlevels
-
-
 
 		            ilocal = SPH_Mode_Samples%my_shell_levs(j)-my_rmin+1
 
@@ -989,10 +976,10 @@ Contains
                     rind = MOD(counter,my_nr)+my_rmin
 
                     Do k = 1, nphi
-                    Do jj = my_theta_min, my_theta_max
-				        sph_sample_buffer%p3b(k,rind,jj,field_ind) = &
-                        & qty(k, ilocal, jj)
-                    Enddo
+                        Do jj = my_theta_min, my_theta_max
+				            sph_sample_buffer%p3b(k,rind,jj,field_ind) = &
+                                & qty(k, ilocal, jj)
+                        Enddo
                     Enddo
 
 		        Enddo
@@ -2234,10 +2221,14 @@ Contains
 
          If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%Frequency) .eq. 0)) yesno = .true. 
          If ((Point_Probes%nq > 0) .and. (Mod(iter,Point_Probes%Frequency) .eq. 0)) yesno = .true. 
+     
 
          If ((AZ_Averages%nq > 0) .and. (Mod(iter,AZ_Averages%Frequency) .eq. 0)) yesno = .true.
          If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%Frequency) .eq. 0)) yesno = .true. 
          If ((Full_3D%nq > 0) .and. (Mod(iter,Full_3D%Frequency) .eq. 0)) yesno = .true.
+
+         If ((Temp_IO%nq > 0) .and. (Mod(iter,Temp_IO%Frequency) .eq. 0)) yesno = .true. 
+        
 
     End function Time_To_Output
 
