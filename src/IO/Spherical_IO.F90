@@ -2768,41 +2768,13 @@ Contains
                 endif 
             Enddo
         Endif
-        self%my_nlevels = 0
-        If (present(levels)) Then
-            self%levels(:) = levels(:)
-            Do i = 1, nshellmax
-                if( (self%levels(i) .gt. 0) .and. (self%levels(i) .le. nr) ) Then
-                    self%nlevels = self%nlevels+1
-                Endif
-            Enddo
-        Endif
 
-        If (present(phi_inds)) Then
-            self%nphi_indices = 0
-            Do i=1,nmeridmax
-                IF (meridional_indices(i) .gt. 0) THEN
-                    IF (meridional_indices(i) .le. nphi) THEN
-                        self%nphi_indices = self%nphi_indices+1
-                    ENDIf
-                ENDIF
-            Enddo
-            IF (self%nphi_indices .gt. 0) THEN
-                ALLOCATE(self%phi_indices(1:self%nphi_indices))
-                DO i = 1, self%nphi_indices
-                    IF (meridional_indices(i) .le. nphi) THEN
-                        self%phi_indices(i) = meridional_indices(i)
-                    ENDIf
-                ENDDO
 
-            ENDIF
-        Endif
 
-        !if (pid .eq. 0) Then
-            !NOTE:  Later, we may want to do this only on the master node later, but this isn't a huge memory issue
-            Allocate(self%oqvals(1:self%nq))
-            self%oqvals(:) = nqmax+100
-        !Endif
+
+        Allocate(self%oqvals(1:self%nq))
+        self%oqvals(:) = nqmax+100
+
 
 
         ! Buffer init
