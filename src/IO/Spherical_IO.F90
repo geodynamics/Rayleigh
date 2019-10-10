@@ -131,6 +131,11 @@ Module Spherical_IO
         INTEGER, ALLOCATABLE :: iter_save(:)
         REAL*8 , ALLOCATABLE :: time_save(:)
 
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ! Variables for subsampling the IO buffer
+        Integer, Allocatable :: r_global (:), theta_global(:), phi_global(:)
+        Integer :: nr_global, ntheta_global, nphi_global
+
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Point-probe Variables
         INTEGER, ALLOCATABLE :: probe_p_global(:)  !phi-indces (phi is in-process at I/O time) 
@@ -161,11 +166,12 @@ Module Spherical_IO
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         !I/O Buffer
         Type(IO_Buffer_Physical) :: buffer
-
+        Integer :: cascade_type =1
 
         ! Methods
         Contains
         Procedure :: Init => Initialize_Diagnostic_Info
+        Procedure :: Init2 => Initialize_Diagnostic_Info2
         Procedure :: AdvanceInd
         Procedure :: AdvanceCC
         Procedure :: reset => diagnostic_output_reset
@@ -586,21 +592,24 @@ Contains
 
        
         ! temporary IO for testing
-        Call Temp_IO%Init(averaging_level,compute_q,myid, 611, &
-                          values = point_probe_values, cache_size = point_probe_cache_size)
+        fdir = 'Temp_IO'
+        Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
+                          probe_version, point_probe_nrec, point_probe_frequency, &
+                          values = point_probe_values, cache_size = point_probe_cache_size, &
+                          rinds = point_probe_r, tinds = point_probe_theta, & 
+                          pinds = point_probe_phi)
 
-        Call Temp_IO%buffer%init(phi_indices=Point_Probes%probe_p_global, & 
-                                      r_indices=Point_Probes%probe_r_global, &
-                                      theta_indices = Point_Probes%probe_t_global, &
-                                      ncache  = Point_Probes%nq*Point_Probe_Cache_Size, &
-                                      cascade = cascade_type, mpi_tag=611, &
-                                      nrec = Point_Probe_Cache_size, skip = 12, &
-                                      write_timestamp = .true.)
+        !Call Temp_IO%buffer%init(phi_indices=Point_Probes%probe_p_global, & 
+        !                              rinds=Point_Probes%probe_r_global, &
+        !                              tinds= Point_Probes%probe_t_global, &
+        !                              ncache  = Point_Probe_Cache_Size, &
+        !                              cascade = cascade_type, mpi_tag=611, &
+        !                              nrec = Point_Probe_Cache_size)
 
 
 
-        Call Temp_IO%init_ocomm(temp_IO%buffer%ocomm%comm, &
-                                temp_IO%buffer%ocomm%np,temp_IO%buffer%ocomm%rank ,0) 
+        !Call Temp_IO%init_ocomm(temp_IO%buffer%ocomm%comm, &
+        !                        temp_IO%buffer%ocomm%np,temp_IO%buffer%ocomm%rank ,0) 
         fdir = 'Temp_IO/'
         Call Temp_IO%set_file_info(probe_version,point_probe_nrec,point_probe_frequency,fdir)   
 
@@ -2659,19 +2668,268 @@ Contains
         !Integer :: nrbuffer = 0                     ! number of real and integer buffers
         !Integer :: nibuffer = 0 
 
-
-    Subroutine Initialize_Diagnostic_Info(self,avg_levels,computes,pid,mpi_tag,avg_level,values, &
-            levels, phi_inds, cache_size)
+    Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
+                 dir, version, nrec, frequency, avg_level,values, &
+                 levels, phi_inds, cache_size, rinds, tinds, pinds, ctype)
         Implicit None
         Integer :: i,ind
-        Integer, Intent(In) :: pid, mpi_tag
-        Integer, Intent(In), Optional :: cache_size
+        Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
+        Integer, Intent(In), Optional :: cache_size, ctype
+        Character*120, Intent(In) :: dir
         Integer, Optional, Intent(In) :: avg_level
         Integer, Optional, Intent(In) :: values(1:)
         Integer, Optional, Intent(In) :: levels(1:)
         Integer, Optional, Intent(In) :: phi_inds(1:)
         Integer, Intent(InOut) :: computes(1:), avg_levels(1:)
+        Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:)
+        Integer :: rcount, tcount, pcount, modcheck
+        Logical :: rspec, pspec, tspec, rtp_spec
         Class(DiagnosticInfo) :: self 
+
+        ! File info
+        self%file_prefix = dir
+        self%output_version = version
+        self%rec_per_file = nrec
+        self%frequency = frequency
+
+        !Check that the cache size is appropriate
+        IF (present(cache_size)) THEN
+            IF (cache_size .ge. 1) THEN
+                self%cache_size = cache_size
+            ENDIF
+        ENDIF
+        If (self%cache_size .lt. 1) Then
+            If (myid .eq. 0) Then
+                    Write(6,*)'////////////////////////////////////////////////////////////////////'
+                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
+                    Write(6,*)'   Cache_size must be at least 1.'
+                    Write(6,*)'   Specified cache_size: ', self%cache_size
+                    Write(6,*)'   Caching has been deactivated for ', self%file_prefix
+                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
+            Endif
+            self%cache_size = 1
+        Endif
+        If (self%cache_size .gt. self%rec_per_file) Then
+            modcheck = MOD(self%rec_per_file,self%cache_size)
+            IF (modcheck .ne. 0) THEN
+
+                If (myid .eq. 0) THEN
+                    Write(6,*)'////////////////////////////////////////////////////////////////////'
+                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
+                    Write(6,*)'   Cache_size cannot be larger than nrec.'
+                    Write(6,*)'   Cache_size: ', self%cache_size
+                    Write(6,*)'   nrec      : ', self%rec_per_file
+                    Write(6,*)'   Cache_size has been set to nrec.'
+                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
+                ENDIF
+                self%cache_size = self%rec_per_file
+            ENDIF
+        Endif
+        
+        If (self%cache_size .gt. 1) Then
+            modcheck = MOD(self%rec_per_file,self%cache_size)
+            IF (modcheck .ne. 0) THEN
+
+                If (myid .eq. 0) THEN
+                    Write(6,*)'////////////////////////////////////////////////////////////////////'
+                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
+                    Write(6,*)'   Cache_size must divide evenly into nrec.'
+                    Write(6,*)'   Cache_size: ', self%cache_size
+                    Write(6,*)'   nrec      : ', self%rec_per_file
+                    Write(6,*)'   Caching has been deactivated for ', self%file_prefix
+                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
+                ENDIF
+                self%cache_size = 1
+            ENDIF
+        Endif
+
+
+        !~~~~~~~~~~~~~~~~~~~~
+
+
+        rspec = .false.
+        tspec = .false.
+        pspec = .false.
+        rtp_spec = .false.
+
+        If (present(ctype)) Then
+            self%cascade_type = ctype
+        Else
+            self%cascade_type = 1
+        Endif
+
+        If (present(avg_level)) Then
+            if (avg_level .gt. 0) self%avg_level = avg_level
+        Endif
+        self%mpi_tag = mpi_tag
+        self%nq = 0
+
+        Allocate(self%iter_save(1:self%cache_size))
+        Allocate(self%time_save(1:self%cache_size))
+
+
+        If (present(values)) Then
+            self%values(:) = values(:)  ! This is clunky - will look into getting the object attributes directly into a namelist later
+            
+            Do i = 1, nqmax
+                if(self%values(i) .gt. 0) Then 
+                    self%nq = self%nq+1
+                    ind = self%values(i)
+                    self%compute(ind) = 1
+                    computes(ind) = 1
+                    If (avg_levels(ind) .lt. self%avg_level) Then
+                        avg_levels(ind) = self%avg_level
+                    Endif
+                endif 
+            Enddo
+        Endif
+        self%my_nlevels = 0
+        If (present(levels)) Then
+            self%levels(:) = levels(:)
+            Do i = 1, nshellmax
+                if( (self%levels(i) .gt. 0) .and. (self%levels(i) .le. nr) ) Then
+                    self%nlevels = self%nlevels+1
+                Endif
+            Enddo
+        Endif
+
+        If (present(phi_inds)) Then
+            self%nphi_indices = 0
+            Do i=1,nmeridmax
+                IF (meridional_indices(i) .gt. 0) THEN
+                    IF (meridional_indices(i) .le. nphi) THEN
+                        self%nphi_indices = self%nphi_indices+1
+                    ENDIf
+                ENDIF
+            Enddo
+            IF (self%nphi_indices .gt. 0) THEN
+                ALLOCATE(self%phi_indices(1:self%nphi_indices))
+                DO i = 1, self%nphi_indices
+                    IF (meridional_indices(i) .le. nphi) THEN
+                        self%phi_indices(i) = meridional_indices(i)
+                    ENDIf
+                ENDDO
+
+            ENDIF
+        Endif
+
+        !if (pid .eq. 0) Then
+            !NOTE:  Later, we may want to do this only on the master node later, but this isn't a huge memory issue
+            Allocate(self%oqvals(1:self%nq))
+            self%oqvals(:) = nqmax+100
+        !Endif
+
+
+        ! Buffer init
+        If (present(rinds)) Then
+            rspec = .true.
+            rcount = size(rinds)
+            i = 1
+            DO WHILE ( i .le. rcount )
+                IF (rinds(i) .lt. 0) THEN
+                    rcount = i-1
+                ENDIF
+                i = i+1
+            ENDDO
+
+            If (rcount .gt. 0) Then
+                Allocate(self%r_global(1:rcount))
+                self%r_global(1:rcount) = rinds(1:rcount)
+            Endif
+
+
+        Endif
+
+        If (present(tinds)) Then
+            tspec = .true.
+            tcount = size(tinds)
+            i = 1
+            DO WHILE ( i .le. tcount )
+                IF (tinds(i) .lt. 0) THEN
+                    tcount = i-1
+                ENDIF
+                i = i+1
+            ENDDO
+
+            IF (tcount .gt. 0) THEN
+                Allocate(self%theta_global(1:tcount))
+                self%theta_global(1:tcount) = tinds(1:tcount)
+            ENDIF
+
+        Endif
+
+        If(present(pinds)) Then
+
+            pcount = size(pinds)
+            i = 1
+            Do While ( i .le. pcount )
+                If (pinds(i) .lt. 0) Then
+                    pcount = i-1
+                Endif
+                i = i+1
+            Enddo
+            If (pcount .gt. 0) Then
+                Allocate(self%phi_global(1:pcount))
+                self%phi_global(1:pcount) = pinds(1:pcount)
+            Endif
+        Endif
+
+        self%nr_global     = rcount
+        self%ntheta_global = tcount
+        self%nphi_global   = pcount
+
+
+        ! Initialize the buffer (and then ocomm)
+        rtp_spec = (rspec .and. tspec .and. pspec)
+
+        If (rtp_spec) Then
+            Call self%buffer%init(phi_indices=self%phi_global, r_indices=self%r_global, &
+                                      theta_indices = self%theta_global, &
+                                      ncache  = self%nq*self%cache_Size, &
+                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      nrec = self%cache_size, skip = 12, &
+                                      write_timestamp = .true.)
+        Endif
+
+        ! Once the buffer is initialized, set the ocomm info
+        self%ocomm = self%buffer%ocomm%comm
+        self%orank = self%buffer%ocomm%rank
+        self%onp = self%buffer%ocomm%np
+        If (self%orank .eq. 0) then
+            self%master = .true.    ! This process handles file headers in parallel IO
+        Endif
+
+    End Subroutine Initialize_Diagnostic_Info2
+
+
+
+    Subroutine Initialize_Diagnostic_Info(self,avg_levels,computes,pid,mpi_tag,avg_level,values, &
+            levels, phi_inds, cache_size, rinds, tinds, pinds, ctype)
+        Implicit None
+        Integer :: i,ind
+        Integer, Intent(In) :: pid, mpi_tag
+        Integer, Intent(In), Optional :: cache_size, ctype
+        Integer, Optional, Intent(In) :: avg_level
+        Integer, Optional, Intent(In) :: values(1:)
+        Integer, Optional, Intent(In) :: levels(1:)
+        Integer, Optional, Intent(In) :: phi_inds(1:)
+        Integer, Intent(InOut) :: computes(1:), avg_levels(1:)
+        Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:)
+        Integer :: rcount, tcount, pcount
+        Logical :: rspec, pspec, tspec, rtp_spec
+        Class(DiagnosticInfo) :: self 
+
+        rspec = .false.
+        tspec = .false.
+        pspec = .false.
+        rtp_spec = .false.
+
+        If (present(ctype)) Then
+            self%cascade_type = ctype
+        Else
+            self%cascade_type = 1
+        Endif
+
         If (present(avg_level)) Then
             if (avg_level .gt. 0) self%avg_level = avg_level
         Endif
@@ -2736,6 +2994,87 @@ Contains
             Allocate(self%oqvals(1:self%nq))
             self%oqvals(:) = nqmax+100
         !Endif
+
+
+        ! Buffer init
+        If (present(rinds)) Then
+            rspec = .true.
+            rcount = size(rinds)
+            i = 1
+            DO WHILE ( i .le. rcount )
+                IF (rinds(i) .lt. 0) THEN
+                    rcount = i-1
+                ENDIF
+                i = i+1
+            ENDDO
+
+            If (rcount .gt. 0) Then
+                Allocate(self%r_global(1:rcount))
+                self%r_global(1:rcount) = rinds(1:rcount)
+            Endif
+
+
+        Endif
+
+        If (present(tinds)) Then
+            tspec = .true.
+            tcount = size(tinds)
+            i = 1
+            DO WHILE ( i .le. tcount )
+                IF (tinds(i) .lt. 0) THEN
+                    tcount = i-1
+                ENDIF
+                i = i+1
+            ENDDO
+
+            IF (tcount .gt. 0) THEN
+                Allocate(self%theta_global(1:tcount))
+                self%theta_global(1:tcount) = tinds(1:tcount)
+            ENDIF
+
+        Endif
+
+        If(present(pinds)) Then
+
+            pcount = size(pinds)
+            i = 1
+            Do While ( i .le. pcount )
+                If (pinds(i) .lt. 0) Then
+                    pcount = i-1
+                Endif
+                i = i+1
+            Enddo
+            If (pcount .gt. 0) Then
+                Allocate(self%phi_global(1:pcount))
+                self%phi_global(1:pcount) = pinds(1:pcount)
+            Endif
+        Endif
+
+        self%nr_global     = rcount
+        self%ntheta_global = tcount
+        self%nphi_global   = pcount
+
+
+        ! Initialize the buffer (and then ocomm)
+        rtp_spec = (rspec .and. tspec .and. pspec)
+
+        If (rtp_spec) Then
+            Call self%buffer%init(phi_indices=self%phi_global, r_indices=self%r_global, &
+                                      theta_indices = self%theta_global, &
+                                      ncache  = self%nq*self%cache_Size, &
+                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      nrec = self%cache_size, skip = 12, &
+                                      write_timestamp = .true.)
+        Endif
+
+        ! Once the buffer is initialized, set the ocomm info
+        self%ocomm = self%buffer%ocomm%comm
+        self%orank = self%buffer%ocomm%rank
+        self%onp = self%buffer%ocomm%np
+        If (self%orank .eq. 0) then
+            self%master = .true.    ! This process handles file headers in parallel IO
+        Endif
+
     End Subroutine Initialize_Diagnostic_Info
 
     Subroutine AdvanceInd(self)
