@@ -131,10 +131,16 @@ Module Spherical_IO
         INTEGER, ALLOCATABLE :: iter_save(:)
         REAL*8 , ALLOCATABLE :: time_save(:)
 
+        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ! Legacy variables
+        Integer :: nphi_global, nr_global, ntheta_global
+        Integer, Allocatable :: phi_global(:), theta_global(:), r_global(:)
+        Real*8, Allocatable :: r_values(:), theta_values(:), phi_values(:)
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Variables for subsampling the IO buffer
-        Integer, Allocatable :: r_global (:), theta_global(:), phi_global(:)
-        Integer :: nr_global, ntheta_global, nphi_global
+        Integer, Allocatable :: r_inds(:), theta_inds(:), phi_inds(:)
+        Integer :: nr, ntheta, nphi
+        Real*8, Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
 
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Point-probe Variables
@@ -592,7 +598,7 @@ Contains
 
        
         ! temporary IO for testing
-        fdir = 'Temp_IO'
+        fdir = 'Temp_IO/'
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
                           probe_version, point_probe_nrec, point_probe_frequency, &
                           values = point_probe_values, cache_size = point_probe_cache_size, &
@@ -611,7 +617,7 @@ Contains
         !Call Temp_IO%init_ocomm(temp_IO%buffer%ocomm%comm, &
         !                        temp_IO%buffer%ocomm%np,temp_IO%buffer%ocomm%rank ,0) 
         fdir = 'Temp_IO/'
-        Call Temp_IO%set_file_info(probe_version,point_probe_nrec,point_probe_frequency,fdir)   
+        !Call Temp_IO%set_file_info(probe_version,point_probe_nrec,point_probe_frequency,fdir)   
 
         Call Initialize_Headers()
 
@@ -619,49 +625,28 @@ Contains
 
     Subroutine Initialize_Headers
         Implicit None
-        Integer :: dims(1:4), i, nvals
-        Real*8, Allocatable :: probe_vals(:)
-        Integer :: nq, probe_nr, probe_nt, probe_np
-        !Point Probes
+        Integer :: dims(1:4)
 
-        probe_nr = Point_Probes%probe_nr_global
-        probe_nt = Point_Probes%probe_nt_global
-        probe_np = Point_Probes%probe_np_global
-        nq       = Point_Probes%nq
-
-        dims(1:4) = (/ probe_nr, probe_nt, probe_np, nq /)
+        !///////////////////////////////////////////////////
+        ! Point Probes Header
+        ! Dimensions ------------------
+        dims(1:4) = (/ Temp_IO%nr, Temp_IO%ntheta, &
+                       Temp_IO%nphi, Temp_IO%nq /)
         Call Temp_IO%Add_IHeader(dims,4)
-        Call Temp_IO%Add_IHeader(Point_Probes%oqvals*0,nq)
-
-
-        nvals = max(probe_nr,probe_nt)
-        nvals = max(nvals,probe_np)
-        Allocate(probe_vals(1:nvals))
-        probe_vals(:) = 0
+        Call Temp_IO%Add_IHeader(Temp_IO%oqvals*0,Temp_IO%nq)
 
         ! Radial grid -----------------------------------
-        Do i = 1, probe_nr
-            probe_vals(i) = radius(Point_Probes%probe_r_global(i))                       
-        Enddo
-        Call Temp_IO%Add_DHeader(probe_vals,probe_nr)
-        Call Temp_IO%Add_IHeader(Point_Probes%probe_r_global, probe_nr)
-
+        Call Temp_IO%Add_DHeader(Temp_IO%r_vals,Temp_IO%nr)
+        Call Temp_IO%Add_IHeader(Temp_IO%r_inds, Temp_IO%nr)
         !Theta grid-----------------------------------------
-        DO i = 1, probe_nt
-            probe_vals(i) = costheta(Point_Probes%probe_t_global(i))                       
-        ENDDO
-        Call Temp_IO%Add_DHeader(probe_vals,probe_nt)
-        Call Temp_IO%Add_IHeader(Point_Probes%probe_t_global, probe_nt)
+        Call Temp_IO%Add_DHeader(Temp_IO%theta_vals,Temp_IO%ntheta)
+        Call Temp_IO%Add_IHeader(Temp_IO%theta_inds, Temp_IO%ntheta)
+        !Phi grid-----------------------------------------
+        Call Temp_IO%Add_DHeader(Temp_IO%phi_vals,Temp_IO%nphi)
+        Call Temp_IO%Add_IHeader(Temp_IO%phi_inds, Temp_IO%nphi)
 
-        !Phi grid----------------------------------
-        DO i = 1, probe_np
-            probe_vals(i) = (Point_Probes%probe_p_global(i)-1)*(two_pi/nphi)                        
-        ENDDO
-        Call Temp_IO%Add_DHeader(probe_vals,probe_np)
-        Call Temp_IO%Add_IHeader(Point_Probes%probe_p_global, probe_np)
+        WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
 
-
-        DeAllocate(probe_vals)
     End Subroutine Initialize_Headers
 
     Subroutine Get_Meridional_Slice(qty)
@@ -856,7 +841,7 @@ Contains
                     funit = self%file_unit
                     If (self%current_rec .eq. ncache) Then                                        
                         If ( responsible .and. (self%write_header) ) Then    !           
-                            Call self%Set_IHeader_Line(2,self%oqvals)  ! HARD_CODED!
+                            Call self%Set_IHeader_Line(2,self%oqvals) 
                             Call self%Write_Header_Data()
                         Endif
                     Endif
@@ -2833,8 +2818,12 @@ Contains
             ENDDO
 
             If (rcount .gt. 0) Then
-                Allocate(self%r_global(1:rcount))
-                self%r_global(1:rcount) = rinds(1:rcount)
+                Allocate(self%r_inds(1:rcount))
+                Allocate(self%r_vals(1:rcount))
+                self%r_inds(1:rcount) = rinds(1:rcount)
+                Do i = 1, rcount
+                    self%r_vals(i) = radius(rinds(i))
+                Enddo
             Endif
 
 
@@ -2852,14 +2841,18 @@ Contains
             ENDDO
 
             IF (tcount .gt. 0) THEN
-                Allocate(self%theta_global(1:tcount))
-                self%theta_global(1:tcount) = tinds(1:tcount)
+                Allocate(self%theta_inds(1:tcount))
+                Allocate(self%theta_vals(1:tcount))
+                self%theta_inds(1:tcount) = tinds(1:tcount)
+                Do i = 1, tcount
+                    self%theta_vals(i) = costheta(tinds(i))
+                Enddo
             ENDIF
 
         Endif
 
         If(present(pinds)) Then
-
+            pspec = .true.
             pcount = size(pinds)
             i = 1
             Do While ( i .le. pcount )
@@ -2869,22 +2862,27 @@ Contains
                 i = i+1
             Enddo
             If (pcount .gt. 0) Then
-                Allocate(self%phi_global(1:pcount))
-                self%phi_global(1:pcount) = pinds(1:pcount)
+                Allocate(self%phi_inds(1:pcount))
+                Allocate(self%phi_vals(1:pcount))
+                self%phi_inds(1:pcount) = pinds(1:pcount)
+                Do i = 1, pcount
+                    self%phi_vals(i) = (pinds(i)-1)*(two_pi/nphi)   
+                Enddo
             Endif
         Endif
 
-        self%nr_global     = rcount
-        self%ntheta_global = tcount
-        self%nphi_global   = pcount
+        self%nr     = rcount
+        self%ntheta = tcount
+        self%nphi   = pcount
 
 
         ! Initialize the buffer (and then ocomm)
         rtp_spec = (rspec .and. tspec .and. pspec)
 
         If (rtp_spec) Then
-            Call self%buffer%init(phi_indices=self%phi_global, r_indices=self%r_global, &
-                                      theta_indices = self%theta_global, &
+            Write(6,*)'PP INIT!'
+            Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
+                                      theta_indices = self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
                                       cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
                                       nrec = self%cache_size, skip = 12, &
