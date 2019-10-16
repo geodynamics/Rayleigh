@@ -54,13 +54,13 @@ Program Main!
 
     Call Main_Input()
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
-    Call Write_Run_Parameters()  ! write input parameters and other build information
 
     If (test_mode) Then
         Call Init_ProblemSize()
         Call Test_Lib()
     Else
         Call Main_Initialization()
+        Call Write_Run_Parameters()  ! write input parameters and other build information
         Call Main_Loop_Sphere()
     Endif
     Call Finalization()
