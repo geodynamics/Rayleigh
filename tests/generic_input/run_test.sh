@@ -31,8 +31,8 @@ cd ..
 # then again onto the same thing but using generic input files to set the boundary conditions
 cd bcs_script
 ../../../pre_processing/rayleigh_spectral_input.py -m 0 0 0 0.0+0.j -o zero_init_vol
-../../../pre_processing/rayleigh_spectral_input.py -m 1 0 2.973662220170157 -m 1 1 0.5243368809294343+0.j -o ctop_init_bc
-../../../pre_processing/rayleigh_spectral_input.py -m 1 0 8.496177771914736 -m 1 1 1.4981053740840984+0.j -o cbottom_init_bc
+../../../pre_processing/rayleigh_spectral_input.py -m 1 0 2.973662220170157 -m 1 1 0.7415243282628127+0.j -o ctop_init_bc
+../../../pre_processing/rayleigh_spectral_input.py -m 1 0 8.496177771914736 -m 1 1 2.1186409378937510+0.j -o cbottom_init_bc
 ../../../pre_processing/rayleigh_spectral_input.py -e '5.0' -o five_init_bc
 ../../../pre_processing/rayleigh_spectral_input.py -e '-5.0' -o mfive_init_bc
 mpirun -np 4 ../../../bin/rayleigh.dbg
