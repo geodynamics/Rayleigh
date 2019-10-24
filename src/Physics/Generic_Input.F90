@@ -46,7 +46,8 @@ contains
     integer :: l_endian_tag, version, fmode, n_lmn, l_l_max, l_n_max, k_lm_owner, l_max_n
     integer :: i, j, k, l, m, n, lm, mp, j1, jc, jf, jn, jo, ji, p, col_np, col_mp_min
     integer :: start_count, end_count, my_lmn_count, total_lmn_count, col_lmn_n, col_lmn_i, l_lm_count
-    integer :: int_size, real_size, offset, ierr, funit
+    integer :: offset, ierr, funit
+    integer(kind=MPI_ADDRESS_KIND) :: lb, int_size, real_size
     integer(kind=MPI_OFFSET_KIND) :: disp1, disp2
     integer, dimension(3) :: pars
     integer, dimension(MPI_STATUS_SIZE) :: mstatus
@@ -56,8 +57,8 @@ contains
     real*8, allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
 
     ! set up some sizes of mpi types
-    call MPI_TYPE_EXTENT(MPI_DOUBLE_PRECISION, real_size, ierr)
-    call MPI_TYPE_EXTENT(MPI_INTEGER, int_size, ierr)
+    call MPI_TYPE_GET_EXTENT(MPI_DOUBLE_PRECISION, lb, real_size, ierr)
+    call MPI_TYPE_GET_EXTENT(MPI_INTEGER, lb, int_size, ierr)
 
     ! process 0 reads the first few parameters describing the file
     pars(:) = 0
