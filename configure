@@ -776,7 +776,7 @@ else
     #BLAS
     if [[ $USEOPENBLAS == "TRUE" ]]
     then
-	# OPENBLAS already comes with LAPACK
+    # OPENBLAS already comes with LAPACK
         if [[ $STATICBLAS == "TRUE" ]]
         then
           BLASLINK="-L$BLASROOT/lib/libopenblas.a"
@@ -790,15 +790,13 @@ else
         else
           BLASLINK="-L$BLASROOT/lib -lblas"
         fi
-
-	#LAPACK
-	if [[ $STATICLAPACK == "TRUE" ]]
-	then
-	LAPACKLINK="-L$LPROOT/lib/liblapack.a"
-	else
-	LAPACKLINK="-L$LPROOT/lib -llapack"
-	fi
-
+        #LAPACK
+        if [[ $STATICLAPACK == "TRUE" ]]
+        then
+            LAPACKLINK="-L$LPROOT/lib/liblapack.a"
+        else
+            LAPACKLINK="-L$LPROOT/lib -llapack"
+        fi
     fi
     
     #FFTW
