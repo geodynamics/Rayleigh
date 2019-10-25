@@ -142,18 +142,6 @@ Module Spherical_IO
         Integer :: nr, ntheta, nphi
         Real*8, Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
 
-        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        ! Point-probe Variables
-        INTEGER, ALLOCATABLE :: probe_p_global(:)  !phi-indces (phi is in-process at I/O time) 
-        INTEGER, ALLOCATABLE :: probe_r_global(:), probe_r_local(:) ! global/local r-indices
-        INTEGER, ALLOCATABLE :: probe_t_global(:), probe_t_local(:) ! " " theta-indices
-        INTEGER :: probe_nr_local, probe_nr_global  !number of local/global r-indices
-        INTEGER :: probe_nt_local, probe_nt_global, probe_np_global !" " theta-indices & phi-indices
-        INTEGER, ALLOCATABLE :: probe_nr_atrank(:)  ! Number of radial indices held by each column rank
-        INTEGER, ALLOCATABLE :: probe_nt_atrank(:)  ! Number of theta indices held by each theta rank
-        INTEGER, ALLOCATABLE :: npts_at_colrank(:)  ! Number of points contained on a given row
-        INTEGER, ALLOCATABLE :: npts_at_rowrank(:)  ! Number of points contained at a given rank within a row
-        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         !Communicatory Info for parallel writing (if used)
         Integer :: ocomm, orank, onp
         Logical :: master = .false.
@@ -269,22 +257,15 @@ Module Spherical_IO
 
 
     Integer :: integer_zero = 0
-    Real*8, Private, Allocatable :: circumference(:,:), qty(:,:,:), f_of_r_theta(:,:,:)
-    Real*8, Private, Allocatable :: azav_outputs(:,:,:), f_of_r(:), rdtheta_total(:)
-    Real*8, Private, Allocatable :: shellav_outputs(:,:,:), globav_outputs(:), shell_slice_outputs(:,:,:,:)
-    Real*8, Private, Allocatable :: meridional_outputs(:,:,:,:), probe_outputs(:,:,:)
+    Real*8, Private, Allocatable :: qty(:,:,:), f_of_r_theta(:,:,:), f_of_r(:)
+    Real*8, Private, Allocatable :: shellav_outputs(:,:,:), globav_outputs(:)
+
 
     Type(SphericalBuffer) :: spectra_buffer, sph_sample_buffer
     Real*8, Private :: da_total, int_vol, int_dphi, int_rsquared_dr, int_sintheta_dtheta
     Real*8, Private, Allocatable :: sintheta_dtheta(:), rsquared_dr(:)
     Character*8, Public :: i_ofmt = '(i8.8)'
     integer :: output_ireq(1), output_status(1)
-
-    !//////////////////////////////////////////////////////////////////////
-    ! *****           Equatorial Slice Output Variables
-    REAL*8, ALLOCATABLE :: equslice_outputs(:,:,:)
-    INTEGER :: th1_owner = -1, th2_owner = -1 ! Angular ranks of the owners of ntheta/2 and ntheta/2+1 
-    INTEGER :: my_nth_owned = -1
 
     !////////////////////////////////////////////////////////////////////
     Logical :: start_az_average, start_shell_average  !, start_shell_slice
@@ -343,7 +324,7 @@ Contains
 	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
 		Implicit None
 		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
-        Integer :: thmax, thmin, nth1, nth2, nn, cascade_type
+        Integer :: nn, cascade_type
 		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
@@ -396,9 +377,7 @@ Contains
         ! the user has specified shell-slice levels etc. using normalized
         ! physical coordinates or negative-index shorthand
 
-
         Call Process_Coordinates()
-
 
         ! Map the various quantity lists etc. into their associated diagnostic structures
 
@@ -410,17 +389,11 @@ Contains
         Call    Global_Averages%Init(averaging_level,compute_q,myid, &
             & 55,avg_level = 3,values = globalavg_values)
 
-
         Call     Shell_Averages%Init(averaging_level,compute_q,myid, &
             & 57,avg_level = 2,values = shellavg_values)
 
-
-
         Call       Shell_Spectra%Init(averaging_level,compute_q,myid, &
             & 59,values = shellspectra_values, levels = shellspectra_levels)
-
-        Call       Equatorial_Slices%Init(averaging_level,compute_q,myid, &
-            & 60,values = equatorial_values)
 
         Call       SPH_Mode_Samples%Init(averaging_level,compute_q,myid, &
             & 62,values = sph_mode_values, levels = sph_mode_levels)
@@ -432,9 +405,6 @@ Contains
         Call SPH_Mode_Samples%Shell_Balance()
 
         if (my_row_rank .eq. 0) Then
-
-            Call Equatorial_Slices%init_ocomm(pfi%ccomm%comm,nproc1,my_column_rank,0)
-
 
             If (Shell_Spectra%nshell_r_ids .gt. 0) Then
                 master_rank = shell_spectra%shell_r_ids(1)
@@ -474,27 +444,6 @@ Contains
             Endif	
         Endif 
 
-        !/////////////////////////////////////////////////
-        !Some BookKeeping for Equatorial Slices
-        nth1 = ntheta/2   ! These two points bracket the equator
-        nth2 = ntheta/2+1
-        Do nn = 0, nproc2-1
-
-			thmax = pfi%all_2p(nn)%max
-			thmin = pfi%all_2p(nn)%min
-
-            If ( (nth1 .ge. thmin) .and. (nth1 .le. thmax) ) Then
-                th1_owner = nn
-            Endif
-            If ( (nth2 .ge. thmin) .and. (nth2 .le. thmax) ) Then
-                th2_owner = nn
-            Endif
-
-        Enddo
-        my_nth_owned = 0
-        If (my_row_rank .eq. th1_owner) my_nth_owned = 1
-        If (my_row_rank .eq. th2_owner) my_nth_owned = my_nth_owned+1
-
         !//////////////////////////////////////////////////
         !Next, provide the file directory, frequency info, output versions etc.
 
@@ -510,10 +459,6 @@ Contains
         fdir = 'Shell_Spectra/'
         Call Shell_Spectra%set_file_info(shellspectra_version,shellspectra_nrec,shellspectra_frequency,fdir) 
 
-        ! Equatorial Slices
-        fdir = 'Equatorial_Slices/'
-        Call Equatorial_Slices%set_file_info(equslice_version,equatorial_nrec,equatorial_frequency,fdir) 
-
         fdir = 'SPH_Modes/'
         Call SPH_Mode_Samples%set_file_info(sphmode_version,sph_mode_nrec,sph_mode_frequency,fdir) 
 
@@ -528,7 +473,7 @@ Contains
         Call Full_3D_Buffer%init(mpi_tag=54)
        
         ! temporary IO for testing
-        fdir = 'Temp_IO/'
+        fdir = 'Temp_2/'
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
                           equslice_version, equatorial_nrec, equatorial_frequency, &
                           values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
@@ -563,7 +508,11 @@ Contains
                           azavg_version, azavg_nrec, azavg_frequency, &
                           values = azavg_values, avg_axes = (/ 1, 0, 0 /) ) !phi,r,t
 
-
+        fdir = 'Equatorial_Slices/'
+        Call Equatorial_Slices%Init2(averaging_level,compute_q,myid, 60, fdir, &
+                          equslice_version, equatorial_nrec, equatorial_frequency, &
+                          values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
+                          tweights = (/ 0.5d0, 0.5d0 /) ) 
 
 
         Call Initialize_Headers()
@@ -620,10 +569,10 @@ Contains
 
         !//////////////////////////////////////////////////////
         ! Equatorial Slices
-        dims(1:3) = (/ nphi, nr,  Temp_IO%nq /)       
-        Call Temp_IO%Add_IHeader(dims,3)
-        Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
-        Call Temp_IO%Add_DHeader(radius,nr)
+        dims(1:3) = (/ nphi, nr,  Equatorial_Slices%nq /)       
+        Call Equatorial_Slices%Add_IHeader(dims,3)
+        Call Equatorial_Slices%Add_IHeader(Equatorial_Slices%oqvals, Equatorial_Slices%nq)
+        Call Equatorial_Slices%Add_DHeader(radius,nr)
 
         !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
 
@@ -1016,194 +965,6 @@ Contains
 
 
 	End Subroutine Write_SPH_Modes
-
-
-    Subroutine Get_Equatorial_Slice(qty)
-        Implicit None
-        REAL*8, INTENT(IN) :: qty(:,:,my_theta_min:)
-        INTEGER :: eq_ind 
-        eq_ind = Equatorial_Slices%ind
-        IF (my_nth_owned .gt. 0) THEN
-            IF (Equatorial_Slices%begin_output) THEN
-                ALLOCATE( equslice_outputs(1:nphi, my_rmin:my_rmax, 1:Equatorial_Slices%nq) )
-                equslice_outputs(:,:,:) = 0.0d0
-            ENDIF
-            IF (th1_owner .eq. my_row_rank) THEN
-                equslice_outputs(:,:,eq_ind) = 0.5d0*qty(:,:,ntheta/2)
-            ENDIF
-            IF (th2_owner .eq. my_row_rank) THEN
-                equslice_outputs(:,:,eq_ind) = equslice_outputs(:,:,eq_ind)+0.5d0*qty(:,:,ntheta/2+1)
-            ENDIF
-
-            Equatorial_Slices%oqvals(eq_ind) = current_qval
-        ENDIF
-        Equatorial_Slices%oqvals(eq_ind) = current_qval
-        Call Equatorial_Slices%AdvanceInd()
-    End Subroutine Get_Equatorial_Slice
-
-    Subroutine Write_Equatorial_Slices(this_iter, simtime)
-		Real*8, Intent(in) :: simtime
-		Integer, Intent(in) :: this_iter
-
-        integer :: sizecheck, responsible, current_rec, buffsize
-        INTEGER :: nq_eqs, eqs_tag, funit, error, dims(3), i, ierr
-		integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, qdisp, new_disp, my_rdisp, full_disp
-		Integer :: mstatus(MPI_STATUS_SIZE)
-        Real*8, Allocatable :: buff(:,:,:), tbuff(:,:,:)
-        INTEGER :: rirq1, rirq2, sirq, nelem
-
-        sizecheck = sizeof(disp)
-        IF (sizecheck .lt. 8) Then
-            if (myid .eq. 0) Then
-            Write(6,*)"Warning, MPI_OFFSET_KIND is less than 8 bytes on your system."
-            Write(6,*)"Your size (in bytes) is: ", sizecheck
-            Write(6,*)"A size of 4 bytes means that files are effectively limited to 2 GB in size."
-            Endif
-        ENDIF 
-		responsible = 0
-        nq_eqs   = Equatorial_Slices%nq
-        eqs_tag  = Equatorial_Slices%mpi_tag
-        funit    = Equatorial_Slices%file_unit
-
-        If (my_row_rank .eq. 0) Then
-            responsible = 1
-        Endif
-
-        !////////////////////////////////////////
-        ! Communication down-row
-        nelem = my_nr*nphi*nq_eqs
-        If (responsible .eq. 1) Then
-            ! We average over latitudes that bracket the equator.
-            ! The 0.5 factor was already taken into account when
-            ! the equatorial slices were sampled.
-            ALLOCATE(buff(1:nphi,my_rmin:my_rmax,1:nq_eqs))
-            
-            IF (th1_owner .eq. th2_owner) THEN
-                IF (th1_owner .eq. my_row_rank) THEN
-                    buff(:,:,:) = equslice_outputs(:,:,:)
-                ELSE
-                    Call IReceive(buff, rirq1,n_elements = nelem, &
-                        &  source= th1_owner,tag = eqs_tag, grp = pfi%rcomm)	
-                    Call IWait(rirq1) 
-                ENDIF
-
-            ELSE
-                Allocate(tbuff(1:nphi,my_rmin:my_rmax,1:nq_eqs))
-                IF (th1_owner .eq. my_row_rank) THEN
-                    buff(:,:,:) = equslice_outputs(:,:,:)
-                ELSE
-                    Call IReceive(buff, rirq1,n_elements = nelem, &
-                        &  source= th1_owner,tag = eqs_tag, grp = pfi%rcomm)	
-                    Call IWait(rirq1) 
-                ENDIF
-                IF (th2_owner .eq. my_row_rank) THEN
-                    tbuff(:,:,:) = equslice_outputs(:,:,:)
-                ELSE
-                    Call IReceive(tbuff, rirq2,n_elements = nelem, &
-                        &  source= th2_owner,tag = eqs_tag, grp = pfi%rcomm)	
-                    Call IWait(rirq2) 
-                ENDIF
-                buff(:,:,:) = buff(:,:,:)+tbuff(:,:,:)
-                DEALLOCATE(tbuff)
-            ENDIF
-            
-            
-            
-            !This is where we would receive
-        Else    
-            IF ((th1_owner .eq. my_row_rank) .or. &
-                & (th2_owner .eq. my_row_rank)) THEN
-			    !  Rest of the row sends to process 0 within the row
-
-                Call ISend(equslice_outputs, sirq,n_elements = nelem, dest = 0, tag = eqs_tag, & 
-                    grp = pfi%rcomm)
-                Call IWait(sirq)                
-            
-            ENDIF
-        Endif
-
-
-
-        !/////////////////////////////////////////
-        ! Parallel Write amongst all processes in column 0
-        If (responsible .eq. 1) Then
-
-            Call Equatorial_Slices%OpenFile_Par(this_iter, error)
-
-            current_rec = Equatorial_Slices%current_rec
-            funit = Equatorial_Slices%file_unit
-
-            If (Equatorial_Slices%file_open) Then
-
-                If ( (my_column_rank .eq. 0) .and. (Equatorial_Slices%write_header) ) Then
-                    dims(1) =  nphi
-                    dims(2) =  nr
-                    dims(3) =  nq_eqs
-                    buffsize = 3
-                    CALL MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                        mstatus, ierr) 
-
-                    buffsize = nq_eqs
-                    CALL MPI_FILE_WRITE(funit,Equatorial_Slices%oqvals, buffsize, &
-                        & MPI_INTEGER, mstatus, ierr) 
-
-                    buffsize = nr
-                    CALL MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
-
-                Endif
-
-                hdisp = 24 ! dimensions+endian+version+record count
-                hdisp = hdisp+nq_eqs*4 ! nq
-                hdisp = hdisp+nr*8  ! The radius array
-
-                qdisp = nphi*nr*8
-                full_disp = qdisp*nq_eqs+12  ! 12 is for the simtime+iteration at the end
-                disp = hdisp+full_disp*(current_rec-1)
-                
-                buffsize = my_nr*nphi
-                ! The file is striped with time step slowest, followed by q
-
-                my_rdisp = (my_rmin-1)*nphi*8
-                Do i = 1, nq_eqs
-                    new_disp = disp+qdisp*(i-1)+my_rdisp                
-                    Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                    
-                    Call MPI_FILE_WRITE(funit, buff(1,my_rmin,i), buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                Enddo
-
-                disp = hdisp+full_disp*current_rec
-                disp = disp-12
-                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
-
-                If (my_column_rank .eq. 0) Then
-                    buffsize = 1
-                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                           MPI_INTEGER, mstatus, ierr)
-                Endif
-
-            Endif
-
-            Call Equatorial_Slices%closefile_par()
-            Deallocate(buff)
-
-        Endif
-        
-
-        !//////////////////////////////////////////////
-        ! DeAllocation
-        If (my_nth_owned .gt. 0) Then
-            If (allocated(equslice_outputs)) DEALLOCATE( equslice_outputs)
-        Endif
-
-
-    End Subroutine Write_Equatorial_Slices
-
-
-
 
 	Subroutine Get_Shell_Spectra(qty)
 		Implicit None
@@ -1884,7 +1645,7 @@ Contains
             If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
             If (AZ_Averages%grab_this_q)       Call AZ_Averages%Store_Values(qty)  
 
-            If (Equatorial_Slices%grab_this_q) Call Get_Equatorial_Slice(qty)
+            If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
             If (Meridional_Slices%grab_this_q) Call Meridional_Slices%Store_Values(qty)
             If (SPH_Mode_Samples%grab_this_q)  Call Get_SPH_Modes(qty)
             If (Point_Probes%grab_this_q)      Call Point_Probes%Store_Values(qty)
@@ -1904,7 +1665,12 @@ Contains
 		Integer, Intent(In) :: iter
 		Real*8, Intent(In) :: sim_time
 
-        Call Shell_Slices%write_io(iter,sim_time)
+        Call Shell_Slices%write_io(iter,sim_time)    
+        Call Equatorial_Slices%Write_IO(iter,sim_time)
+        Call Meridional_Slices%write_io(iter,sim_time)
+        Call Point_Probes%write_io(iter,sim_time)
+        Call AZ_Averages%write_io(iter,sim_time)
+        !Call Temp_IO%write_io(iter,sim_time)
 
 	    If ((Shell_Spectra%nq > 0) .and. (Mod(iter,Shell_Spectra%frequency) .eq. 0 )) Then
             If (mem_friendly) Then
@@ -1913,24 +1679,10 @@ Contains
                 Call Write_Shell_Spectra(iter,sim_time)
             Endif
         Endif
-	    If ((Equatorial_Slices%nq > 0) .and. (Mod(iter,Equatorial_Slices%frequency) .eq. 0 )) Then
-
-            Call Write_Equatorial_Slices(iter,sim_time)
-
-        Endif
-
-        Call Meridional_Slices%write_io(iter,sim_time)
 
 	    If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%frequency) .eq. 0 )) Then
             Call Write_SPH_Modes(iter,sim_time)
         Endif
-
-
-        Call Point_Probes%write_io(iter,sim_time)
-
-        Call Temp_IO%write_io(iter,sim_time)
-
-        Call AZ_Averages%write_io(iter,sim_time)
 
 	    If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
 	    If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%frequency) .eq. 0 )) Call Write_Global_Average(iter,sim_time)
@@ -3431,17 +3183,12 @@ Contains
         local_file_path=''
 
         integer_zero = 0
-        If (Allocated(circumference)) DeAllocate(circumference)
         If (Allocated(qty)) DeAllocate(qty)
         If (Allocated(f_of_r_theta)) DeAllocate(f_of_r_theta)
-        If (Allocated(azav_outputs)) DeAllocate(azav_outputs)
         If (Allocated(f_of_r)) DeAllocate(f_of_r)
-        If (Allocated(rdtheta_total)) DeAllocate(rdtheta_total)
         If (Allocated(shellav_outputs)) DeAllocate(shellav_outputs)
         If (Allocated(globav_outputs)) DeAllocate(globav_outputs)
-        If (Allocated(shell_slice_outputs)) DeAllocate(shell_slice_outputs)
     
-        
         If (Allocated(sintheta_dtheta)) DeAllocate(sintheta_dtheta)
         If (Allocated(rsquared_dr)) DeAllocate(rsquared_dr)
         i_ofmt = '(i8.8)'  ! These should never change during a run, but just in case...
