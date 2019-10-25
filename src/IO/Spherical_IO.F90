@@ -198,8 +198,6 @@ Module Spherical_IO
         Procedure :: init_ocomm
         Procedure :: CleanUp
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        ! 
-
 
     End Type DiagnosticInfo
 
@@ -207,7 +205,7 @@ Module Spherical_IO
     Type(DiagnosticInfo) :: Equatorial_Slices, Meridional_Slices, SPH_Mode_Samples, Point_Probes
     Type(DiagnosticInfo) :: temp_io
 
-    Type(IO_Buffer_Physical) :: full_3d_buffer, meridional_slices_buffer, az_avgs_buffer
+    Type(IO_Buffer_Physical) :: full_3d_buffer, az_avgs_buffer, meridional_slices_buffer
     
     Integer :: current_averaging_level = 0
     Integer :: current_qval = 0
@@ -426,9 +424,6 @@ Contains
         Call       Equatorial_Slices%Init(averaging_level,compute_q,myid, &
             & 60,values = equatorial_values)
 
-        Call       Meridional_Slices%Init(averaging_level,compute_q,myid, &
-            & 61,values = meridional_values, phi_inds = meridional_indices)
-
         Call       SPH_Mode_Samples%Init(averaging_level,compute_q,myid, &
             & 62,values = sph_mode_values, levels = sph_mode_levels)
 
@@ -481,8 +476,6 @@ Contains
             Endif	
         Endif 
 
-
-
         !/////////////////////////////////////////////////
         !Some BookKeeping for Equatorial Slices
         nth1 = ntheta/2   ! These two points bracket the equator
@@ -503,8 +496,8 @@ Contains
         my_nth_owned = 0
         If (my_row_rank .eq. th1_owner) my_nth_owned = 1
         If (my_row_rank .eq. th2_owner) my_nth_owned = my_nth_owned+1
-        !//////////////////////////////////////////////////
 
+        !//////////////////////////////////////////////////
         !Next, provide the file directory, frequency info, output versions etc.
 
         ! Global Averages
@@ -527,30 +520,17 @@ Contains
         fdir = 'Equatorial_Slices/'
         Call Equatorial_Slices%set_file_info(equslice_version,equatorial_nrec,equatorial_frequency,fdir) 
 
-        ! Meridional Slices
-        fdir = 'Meridional_Slices/'
-        Call Meridional_Slices%set_file_info(meridslice_version,meridional_nrec,meridional_frequency,fdir) 
-
         fdir = 'SPH_Modes/'
         Call SPH_Mode_Samples%set_file_info(sphmode_version,sph_mode_nrec,sph_mode_frequency,fdir) 
-
-
 
         ! Full 3D (special because it only cares about the frequency, not nrec)
         fdir = 'Spherical_3D/'
         Call Full_3D%set_file_info(full3d_version,shellslice_nrec,full3d_frequency,fdir)    
 
 
-        !IO Buffers
-
-
-
-        !Write(6,*)'m: ', meridional_slices%phi_indices, Meridional_Slices%nq
+        !Revised IO
         cascade_type = 1
-        Call Meridional_Slices_Buffer%init(phi_indices=meridional_slices%phi_indices, &
-                                      ncache  = Meridional_Slices%nq, cascade = cascade_type, mpi_tag=61)
-        Call Meridional_Slices%init_ocomm(meridional_slices_buffer%ocomm%comm, &
-                                          meridional_slices_buffer%ocomm%np,meridional_slices_buffer%ocomm%rank ,0)
+
 
         Call AZ_Avgs_Buffer%init(phi_indices=(/1/), &
                                       ncache  = AZ_Averages%nq, cascade = cascade_type, mpi_tag=611)
@@ -561,16 +541,14 @@ Contains
        
         Call Full_3D_Buffer%init(mpi_tag=54)
  
-
-       
+      
         ! temporary IO for testing
-        fdir = 'Temp_IO/'
-        Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
-                          meridional_version, meridional_nrec, meridional_frequency, &
+        fdir = 'T2/'
+        Call Temp_IO%Init2(averaging_level,compute_q,myid, 61, fdir, &
+                          meridslice_version, meridional_nrec, meridional_frequency, &
                           values = meridional_values, pinds = meridional_indices)
 
         ! Converted outputs
-
 
         cascade_type = 1
         if (mem_friendly) cascade_type = 2
@@ -589,6 +567,13 @@ Contains
                           values = point_probe_values, cache_size = point_probe_cache_size, &
                           rinds = point_probe_r, tinds = point_probe_theta, & 
                           pinds = point_probe_phi)
+
+
+        fdir = 'Meridional_Slices/'
+        Call Meridional_Slices%Init2(averaging_level,compute_q,myid, 61, fdir, &
+                          meridslice_version, meridional_nrec, meridional_frequency, &
+                          values = meridional_values, pinds = meridional_indices)
+
 
         Call Initialize_Headers()
 
@@ -627,121 +612,16 @@ Contains
 
         !//////////////////////////////////////////////////////
         ! Meridional Slices
-        dims(1:4) = (/ nr, ntheta, Temp_IO%nphi, Temp_IO%nq /)       
-        Call Temp_IO%Add_IHeader(dims,4)
-        Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
-        Call Temp_IO%Add_DHeader(radius,nr)
-        Call Temp_IO%Add_DHeader(costheta,ntheta)
-        Call Temp_IO%Add_IHeader(Temp_IO%phi_inds, Temp_IO%nphi)
+        dims(1:4) = (/ nr, ntheta, Meridional_Slices%nphi, Meridional_Slices%nq /)       
+        Call Meridional_Slices%Add_IHeader(dims,4)
+        Call Meridional_Slices%Add_IHeader(Meridional_Slices%oqvals, Meridional_Slices%nq)
+        Call Meridional_Slices%Add_DHeader(radius,nr)
+        Call Meridional_Slices%Add_DHeader(costheta,ntheta)
+        Call Meridional_Slices%Add_IHeader(Meridional_Slices%phi_inds, Meridional_Slices%nphi)
 
         !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
 
     End Subroutine Initialize_Headers
-
-    Subroutine Get_Meridional_Slice(qty)
-        Implicit None
-        REAL*8, INTENT(IN) :: qty(:,my_rmin:,my_theta_min:)
-        INTEGER :: nphi_grab, mer_ind
-        INTEGER :: tind, pind, rind
-
-        Call Meridional_Slices_Buffer%cache_data(qty)
-        mer_ind = Meridional_Slices%ind 
-        Meridional_Slices%oqvals(mer_ind) = current_qval
-        Call Meridional_Slices%AdvanceInd()
-
-    End Subroutine Get_Meridional_Slice
-
-	Subroutine Write_Meridional_Slices(this_iter,simtime)
-        USE RA_MPI_BASE
-		Implicit None
-		Real*8, Intent(in) :: simtime
-		Integer, Intent(in) :: this_iter
-		Integer :: buffsize, current_rec, dims(1:4), file_pos, funit, ierr
-		Integer :: nq_merid, nphi_grab, orank
-		Integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, new_disp, qdisp, full_disp
-		Integer :: mstatus(MPI_STATUS_SIZE)
-        Logical :: responsible, output_rank
-
-        nq_merid     = Meridional_Slices%nq
-        nphi_grab    = Meridional_Slices%nphi_indices
-        funit        = Meridional_Slices%file_unit
-        
-        orank = Meridional_Slices_Buffer%ocomm%rank
-        output_rank = Meridional_Slices_Buffer%output_rank
-
-        responsible = .false.
-        If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
-
-        If (output_rank ) Then   
-            Call Meridional_Slices%OpenFile_Par(this_iter, ierr)
-            current_rec = Meridional_Slices%current_rec
-            funit = Meridional_Slices%file_unit
-            If ( (orank .eq. 0) .and. (Meridional_Slices%write_header) ) Then
-                If (Meridional_Slices%file_open) Then
-                    ! Rank 0 writes the header
-                    dims(1) =  nr
-                    dims(2) =  ntheta
-                    dims(3) =  nphi_grab
-                    dims(4) =  nq_merid
-                    buffsize = 4
-                    Call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                        mstatus, ierr) 
-
-                    buffsize = nq_merid
-                    Call MPI_FILE_WRITE(funit,Meridional_Slices%oqvals, buffsize, MPI_INTEGER, & 
-                        mstatus, ierr) 
-
-                    buffsize = nr
-                    Call MPI_FILE_WRITE(funit, radius, buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
-
-                    buffsize = ntheta
-                    Call MPI_FILE_WRITE(funit, costheta, buffsize, MPI_DOUBLE_PRECISION, & 
-                        mstatus, ierr) 
-
-                    buffsize = nphi_grab
-                    Call MPI_FILE_WRITE(funit, Meridional_Slices%phi_indices, buffsize, &
-                        MPI_INTEGER, mstatus, ierr) 
-                Endif
-
-            Endif
-
-            hdisp = 28 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_merid*4 ! nq
-            hdisp = hdisp+nr*8  ! The radius array
-            hdisp = hdisp+ ntheta*8  ! costheta
-            hdisp = hdisp+ nphi_grab*4  ! phi indices
-
-            qdisp = Meridional_Slices_Buffer%qdisp
-            full_disp = qdisp*nq_merid+12  ! 12 is for the simtime+iteration at the end
-            new_disp = hdisp+full_disp*(current_rec-1)
-
-        Endif
-
-        Call Meridional_Slices_Buffer%write_data( disp=new_disp, file_unit = funit)
-            
-        If (output_rank) Then
-            If (Meridional_Slices%file_open) Then
-
-                disp = hdisp+full_disp*current_rec
-                disp = disp-12
-                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
-
-                If (responsible) Then
-                    buffsize = 1
-                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                           MPI_INTEGER, mstatus, ierr)
-                Endif
-
-            Endif
-
-            Call Meridional_Slices%Closefile_Par()
-
-        Endif
-
-	End Subroutine Write_Meridional_slices
 
     Subroutine Store_Values(self,qty)
         Implicit None
@@ -753,8 +633,6 @@ Contains
         Call self%AdvanceInd()
 
     End Subroutine Store_Values
-
-
 
 	Subroutine Write_IO(self,this_iter,simtime)
         USE RA_MPI_BASE
@@ -2000,7 +1878,7 @@ Contains
             If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
 
             If (Equatorial_Slices%grab_this_q) Call Get_Equatorial_Slice(qty)
-            If (Meridional_Slices%grab_this_q) Call Get_Meridional_Slice(qty)
+            If (Meridional_Slices%grab_this_q) Call Meridional_Slices%Store_Values(qty)
             If (SPH_Mode_Samples%grab_this_q)  Call Get_SPH_Modes(qty)
             If (Point_Probes%grab_this_q)      Call Point_Probes%Store_Values(qty)
 
@@ -2033,9 +1911,11 @@ Contains
             Call Write_Equatorial_Slices(iter,sim_time)
 
         Endif
-	    If ((Meridional_Slices%nq > 0) .and. (Mod(iter,Meridional_Slices%frequency) .eq. 0 )) Then
-            Call Write_Meridional_Slices(iter,sim_time)
-        Endif
+
+        !Call Temp_IO%write_io(iter,sim_time)
+
+        Call Meridional_Slices%write_io(iter,sim_time)
+
 	    If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%frequency) .eq. 0 )) Then
             Call Write_SPH_Modes(iter,sim_time)
         Endif
@@ -2493,7 +2373,7 @@ Contains
         Integer, Intent(InOut) :: computes(1:), avg_levels(1:)
         Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:)
         Integer :: rcount, tcount, pcount, modcheck
-        Logical :: rspec, pspec, tspec, rtp_spec, rad_only
+        Logical :: rspec, pspec, tspec, rtp_spec, rad_only, phi_only
         Class(DiagnosticInfo) :: self 
 
         ! File info
@@ -2681,6 +2561,7 @@ Contains
         rtp_spec = (rspec .and. tspec .and. pspec)
 
         rad_only = (rspec .and. (.not. tspec) .and. (.not. pspec) )
+        phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
 
         !Write(6,*)'rad only: ', rad_only, rspec, tspec, pspec
 
@@ -2697,6 +2578,15 @@ Contains
         If (rad_only) Then
             Write(6,*)'RAD INIT!'
             Call self%buffer%init(r_indices=self%r_inds, &
+                                      ncache  = self%nq*self%cache_Size, &
+                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      nrec = self%cache_size, skip = 12, &
+                                      write_timestamp = .true.)
+        Endif
+
+        If (phi_only) Then
+            Write(6,*)'PHI INIT!'
+            Call self%buffer%init(phi_indices=self%phi_inds, &
                                       ncache  = self%nq*self%cache_Size, &
                                       cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
                                       nrec = self%cache_size, skip = 12, &
