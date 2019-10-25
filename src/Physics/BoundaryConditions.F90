@@ -125,6 +125,11 @@ Contains
             C1m1_bottom = 0.0d0 ! For the time being, we don't
             C1m1_top =  0.0d0   ! worry about phasing in longitude.
 
+            If (my_rank .eq. 0) Then
+                Write(6,*)'c10_bottom, c10_top : ', c10_bottom, c10_top
+                Write(6,*)'c11_bottom, c11_top : ', c11_bottom, c11_top
+            Endif
+
         Endif
 
         Call Generate_Boundary_Mask()
