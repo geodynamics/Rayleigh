@@ -704,25 +704,20 @@ Contains
         Call self%deallocate_receive_buffers()
 
         If (self%output_rank .and. self%sum_theta) Then
+
             Allocate(data_copy(self%nphi,self%ntheta,self%nr_local,self%ncache))
             data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
             DeAllocate(self%collated_data)
             Allocate(self%collated_data(self%nphi,1,self%nr_local,self%ncache))
             self%collated_data = 0.0d0
-            Do i = 1, self%ncache
-                Do t = 1, self%ntheta
-                    self%collated_data(:,1,:,:) = self%collated_data(:,1,:,:) + &
-                            data_copy(:,t,:,:)*self%theta_weights(t)
-                    !Write(6,*)'weights: ', t, self%theta_weights(t), data_copy(
-                Enddo   
-                 !Do r =1, self%nr_out
-                 !   Do t = 1, self%nphi
-                 !       self%collated_data(t,1,r,i) = self%collated_data(t,1,r,i) + &
-                 !           SUM(data_copy(t,1:self%ntheta,r,i)*self%theta_weights(1:self%ntheta))
-                 !   Enddo
-                 !Enddo
-            Enddo
+
+            Do t = 1, self%ntheta
+                self%collated_data(:,1,:,:) = self%collated_data(:,1,:,:) + &
+                        data_copy(:,t,:,:)*self%theta_weights(t)
+            Enddo   
+
             DeAllocate(data_copy)
+
         Endif
 
     End Subroutine Collate
