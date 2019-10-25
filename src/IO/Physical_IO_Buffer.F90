@@ -58,8 +58,11 @@ Module Physical_IO_Buffer
         ! Averaging variables
         Logical :: sum_r =.false.        ! Perform a weighted sum in r
         Logical :: sum_theta = .false.   ! Perform a weighted sum in theta
+        Logical :: sum_phi = .false.     ! Straight average in phi (weighted sum not supported)
+        Logical :: weighted_sum = .false. 
         Real*8, Allocatable :: theta_weights(:)  ! For summing over theta points
         Real*8, Allocatable :: radial_weights(:)
+        Real*8 :: phi_weight = 0.0d0
 
         ! Caching variables
         Integer :: ncache_per_rec = 1
@@ -105,13 +108,15 @@ Contains
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
                                              phi_indices,ncache, mpi_tag, &
                                              cascade, sum_weights_theta, nrec, &
-                                             skip, write_timestamp)
+                                             skip, write_timestamp, &
+                                             averaging_axes)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
         Logical, Intent(In), Optional :: write_timestamp
+        Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
 
@@ -121,7 +126,13 @@ Contains
         self%row_rank = pfi%rcomm%rank
         self%rank     = pfi%gcomm%rank
 
+        If (present(averaging_axes)) Then
+            If (averaging_axes(2) .eq. 1) self%sum_r = .true.
+            If (averaging_axes(3) .eq. 1) self%sum_theta = .true.
+            If (averaging_axes(1) .eq. 1) self%sum_phi = .true.
+        Endif
 
+        self%weighted_sum = (self%sum_r .or. self%sum_theta .or. self%sum_phi)
 
         self%cascade_type = 1
         if (present(cascade)) self%cascade_type = cascade
@@ -187,6 +198,10 @@ Contains
             !Write(6,*)'phi: ', phi_indices
         Else
             self%nphi = pfi%n3p
+            If (self%sum_phi) Then
+                self%nphi=1
+                self%phi_weight = 1.0d0/pfi%n3p
+            Endif
         Endif
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
@@ -462,45 +477,65 @@ Contains
         Integer :: r, t, p
         
         If (self%cascade_type .eq. 1) Then
-            If (self%simple) Then
-                Do t = 1, self%ntheta_local
-                    Do r = 1, self%nr_local
-                        Do p = 1, self%nphi
-                            self%cache(p,t,self%cache_index,r) = vals(p,r,t)
-                        Enddo
-                    Enddo
-                Enddo
-            Endif
+            ! If cascade_type is 1, we may be performing a weighted sum
+            If (self%weighted_sum) Then
 
-            If (self%r_general) Then
-                Do t = 1, self%ntheta_local
-                    Do r = 1, self%nr_local
-                        Do p = 1, self%nphi
-                            self%cache(p,t,self%cache_index,r) = vals(p,self%r_local(r),t)
-                        Enddo
-                    Enddo
-                Enddo
-            Endif
+                ! sum_phi sum_theta sum_r
 
-            If (self%phi_general) Then
-                Do t = 1, self%ntheta_local
-                    Do r = 1, self%nr_local
-                        Do p = 1, self%nphi
-                            self%cache(p,t,self%cache_index,r) = vals(self%phi_local(p),r,t)
+                ! sum_phi and sum_theta
+                
+                If (self%sum_phi) Then  ! Put this one last (logical ordering)
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            self%cache(1,t,self%cache_index,r) = SUM(vals(:,r,t))*self%phi_weight
                         Enddo
-                    Enddo
-                Enddo
-            Endif
+                    Enddo          
+                Endif
 
-            If (self%general) Then
-                Do t = 1, self%ntheta_local
-                    Do r = 1, self%nr_local
-                        Do p = 1, self%nphi
-                            self%cache(p,t,self%cache_index,r) = &
-                                & vals(self%phi_local(p),self%r_local(r),self%theta_local(t))
+            Else
+
+
+                If (self%simple) Then
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            Do p = 1, self%nphi
+                                self%cache(p,t,self%cache_index,r) = vals(p,r,t)
+                            Enddo
                         Enddo
                     Enddo
-                Enddo
+                Endif
+
+                If (self%r_general) Then
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            Do p = 1, self%nphi
+                                self%cache(p,t,self%cache_index,r) = vals(p,self%r_local(r),t)
+                            Enddo
+                        Enddo
+                    Enddo
+                Endif
+
+                If (self%phi_general) Then
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            Do p = 1, self%nphi
+                                self%cache(p,t,self%cache_index,r) = vals(self%phi_local(p),r,t)
+                            Enddo
+                        Enddo
+                    Enddo
+                Endif
+
+                If (self%general) Then
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            Do p = 1, self%nphi
+                                self%cache(p,t,self%cache_index,r) = &
+                                    & vals(self%phi_local(p),self%r_local(r),self%theta_local(t))
+                            Enddo
+                        Enddo
+                    Enddo
+                Endif
+
             Endif
 
         Else
