@@ -50,6 +50,7 @@ Module Physical_IO_Buffer
         Logical :: r_general = .false.   ! subsampling in radius only (Shell Slices)
         Logical :: rp_general = .false. 
         Logical :: phi_general = .false.
+        Logical :: theta_general = .false. ! equatorial slices
 
         Logical :: r_spec = .false.
         Logical :: t_spec = .false.
@@ -210,6 +211,10 @@ Contains
         If ( (self%r_spec ) .and. (.not. self%t_spec) &
              .and. (.not. self%p_spec) ) self%r_general = .true.
 
+        If ( (self%t_spec ) .and. (.not. self%r_spec) &
+             .and. (.not. self%p_spec) ) self%theta_general = .true.
+
+
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
              .and. (self%p_spec) ) self%phi_general = .true.
 
@@ -365,6 +370,7 @@ Contains
 
             ! Determine offsets (in bytes) for MPI-IO
             shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
+            If (self%sum_theta) shsize = shsize/self%ntheta
             self%qdisp = self%nr*shsize
 
             self%base_disp = 0
@@ -379,6 +385,8 @@ Contains
             Enddo
 
             self%buffsize = self%nr_out*self%nphi*self%ntheta 
+            if (self%sum_theta) self%buffsize = self%buffsize/self%ntheta
+
         Endif
 
         !If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
@@ -525,6 +533,16 @@ Contains
                     Enddo
                 Endif
 
+                If (self%theta_general) Then        ! We need to get these together...
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            Do p = 1, self%nphi
+                                self%cache(p,t,self%cache_index,r) = vals(p,r,self%theta_local(t))
+                            Enddo
+                        Enddo
+                    Enddo
+                Endif
+
                 If (self%general) Then
                     Do t = 1, self%ntheta_local
                         Do r = 1, self%nr_local
@@ -585,6 +603,7 @@ Contains
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
         Integer :: i, tstart,tend, r, t, ncache
+        Real*8, Allocatable :: data_copy(:,:,:,:)
         
         Call self%Allocate_Receive_Buffers()
 
@@ -684,10 +703,27 @@ Contains
 
         Call self%deallocate_receive_buffers()
 
-        ! If (self%sum_theta) Then
-        !       Allocate(reducted_data)
-        !       Sum with weights over collated data
-        ! Endif
+        If (self%output_rank .and. self%sum_theta) Then
+            Allocate(data_copy(self%nphi,self%ntheta,self%nr_local,self%ncache))
+            data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
+            DeAllocate(self%collated_data)
+            Allocate(self%collated_data(self%nphi,1,self%nr_local,self%ncache))
+            self%collated_data = 0.0d0
+            Do i = 1, self%ncache
+                Do t = 1, self%ntheta
+                    self%collated_data(:,1,:,:) = self%collated_data(:,1,:,:) + &
+                            data_copy(:,t,:,:)*self%theta_weights(t)
+                    !Write(6,*)'weights: ', t, self%theta_weights(t), data_copy(
+                Enddo   
+                 !Do r =1, self%nr_out
+                 !   Do t = 1, self%nphi
+                 !       self%collated_data(t,1,r,i) = self%collated_data(t,1,r,i) + &
+                 !           SUM(data_copy(t,1:self%ntheta,r,i)*self%theta_weights(1:self%ntheta))
+                 !   Enddo
+                 !Enddo
+            Enddo
+            DeAllocate(data_copy)
+        Endif
 
     End Subroutine Collate
 

@@ -528,10 +528,11 @@ Contains
         Call Full_3D_Buffer%init(mpi_tag=54)
        
         ! temporary IO for testing
-        fdir = 'T2/'
+        fdir = 'Temp_IO/'
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
-                          azavg_version, azavg_nrec, azavg_frequency, &
-                          values = azavg_values, avg_axes = (/ 1, 0, 0 /) ) !phi,r,t
+                          equslice_version, equatorial_nrec, equatorial_frequency, &
+                          values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
+                          tweights = (/ 0.5d0, 0.5d0 /) ) 
 
         ! Converted outputs
 
@@ -543,8 +544,6 @@ Contains
                           shellslice_version, shellslice_nrec, shellslice_frequency, &
                           values = shellslice_values, rinds = shellslice_levels, &
                           ctype = cascade_type)
-
-
 
         fdir = 'Point_Probes/'
         Call Point_Probes%Init2(averaging_level,compute_q,myid, 63, fdir, &
@@ -620,14 +619,11 @@ Contains
         Call AZ_Averages%Add_DHeader(costheta,ntheta)
 
         !//////////////////////////////////////////////////////
-        ! Temp_IO
-        dims(1:3) = (/ nr, ntheta,  Temp_IO%nq /)       
+        ! Equatorial Slices
+        dims(1:3) = (/ nphi, nr,  Temp_IO%nq /)       
         Call Temp_IO%Add_IHeader(dims,3)
         Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
         Call Temp_IO%Add_DHeader(radius,nr)
-        Call Temp_IO%Add_DHeader(costheta,ntheta)
-
-
 
         !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
 
@@ -1932,7 +1928,7 @@ Contains
 
         Call Point_Probes%write_io(iter,sim_time)
 
-        !Call Temp_IO%write_io(iter,sim_time)
+        Call Temp_IO%write_io(iter,sim_time)
 
         Call AZ_Averages%write_io(iter,sim_time)
 
@@ -2286,7 +2282,7 @@ Contains
     Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, ctype, &
-                 avg_axes)
+                 avg_axes, tweights)
         Implicit None
         Integer :: i,ind
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
@@ -2301,9 +2297,11 @@ Contains
 
         !Averaging variables
         Integer, Intent(In), Optional :: avg_axes(1:)
+        Real*8, Intent(In), Optional :: tweights(1:)
 
+        !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, modcheck
-        Logical :: rspec, pspec, tspec, rtp_spec, rad_only, phi_only
+        Logical :: rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only
         Class(DiagnosticInfo) :: self 
 
         ! File info
@@ -2375,6 +2373,7 @@ Contains
         ! These variables describe which COMBINATION of indices have been specified
         rtp_spec = .false.
         rad_only = .false.
+        theta_only = .false.
 
         If (present(ctype)) Then
             self%cascade_type = ctype
@@ -2487,6 +2486,7 @@ Contains
 
         rad_only = (rspec .and. (.not. tspec) .and. (.not. pspec) )
         phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
+        theta_only = (tspec .and. (.not. pspec) .and. (.not. rspec) )
 
         !Write(6,*)'rad only: ', rad_only, rspec, tspec, pspec
 
@@ -2509,6 +2509,16 @@ Contains
                                       write_timestamp = .true.)
         Endif
 
+        If (theta_only) Then
+            Write(6,*)'THETA INIT!'
+            If (.not. present(tweights)) Write(6,*)'Warning! tweights must be specified in this mode!'
+            Call self%buffer%init(theta_indices=self%theta_inds, &
+                                      ncache  = self%nq*self%cache_Size, &
+                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      nrec = self%cache_size, skip = 12, &
+                                      write_timestamp = .true., sum_weights_theta=tweights)
+        Endif
+
         If (phi_only) Then
             Write(6,*)'PHI INIT!'
             Call self%buffer%init(phi_indices=self%phi_inds, &
@@ -2527,8 +2537,6 @@ Contains
                                   write_timestamp = .true., averaging_axes = avg_axes)
         Endif
 
-        !Call Shell_Slices_Buffer%init(r_indices=Shell_Slices%levels(1:Shell_Slices%nlevels), &
-        !                              ncache  = Shell_Slices%nq, cascade = cascade_type, mpi_tag=53)
 
 
         ! Once the buffer is initialized, set the ocomm info
