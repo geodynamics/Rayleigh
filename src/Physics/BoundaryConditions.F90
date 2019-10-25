@@ -126,8 +126,8 @@ Contains
             C1m1_top =  0.0d0   ! worry about phasing in longitude.
 
             If (my_rank .eq. 0) Then
-                Write(6,*)'c10_bottom, c10_top : ', c10_bottom, c10_top
-                Write(6,*)'c11_bottom, c11_top : ', c11_bottom, c11_top
+                Write(6,*)'c10_bottom, c10_top : ', 2*c10_bottom, 2*c10_top
+                Write(6,*)'c11_bottom, c11_top : ', 2*c11_bottom, 2*c11_top
             Endif
 
         Endif
