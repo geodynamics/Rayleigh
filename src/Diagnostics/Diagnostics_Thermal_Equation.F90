@@ -905,39 +905,31 @@ Contains
         Integer :: r,k, t
         ! Volume Heating
         If (compute_quantity(vol_heating)) Then
-            If (allocated(ref%heating)) Then
-                DO_PSI
-                    qty(PSI) = ref%heating(r)* &
-                        & ref%density(r)*ref%temperature(r)
-                END_DO
-            Else
-                qty(:,:,:) = 0.0d0
-            Endif
+            DO_PSI
+                qty(PSI) = ref%heating(r)* &
+                    & ref%density(r)*ref%temperature(r)
+            END_DO
             Call Add_Quantity(qty)
         Endif
 
         !The "Flux" associated with the volume heating
         If (compute_quantity(vol_heat_flux)) Then
-            tmp1d(:) = 0.0d0
-            If (heating_type .gt. 0) Then
+            ! Note that radial_integral_weights give int{f r^2}/int(r^2}
+            Do r = N_R-1, 1,-1
+                mean_rho = half*(ref%density(r)     +  ref%density(r+1)    )
+                mean_t   = half*(ref%temperature(r) +  ref%temperature(r+1))
+                mean_r2  = half*(r_squared(r)       +  r_squared(r+1)      )
+                mean_q   = half*(ref%heating(r)     +  ref%heating(r+1)    )
+                mean_dr  = radius(r)-radius(r+1)
 
-                ! Note that radial_integral_weights give int{f r^2}/int(r^2}
-                Do r = N_R-1, 1,-1
-                    mean_rho = half*(ref%density(r)     +  ref%density(r+1)    )
-                    mean_t   = half*(ref%temperature(r) +  ref%temperature(r+1))
-                    mean_r2  = half*(r_squared(r)       +  r_squared(r+1)      )
-                    mean_q   = half*(ref%heating(r)     +  ref%heating(r+1)    )
-                    mean_dr  = radius(r)-radius(r+1)
+                qadd = mean_q*mean_rho*mean_t
+                fpr2dr = mean_r2*four_pi*mean_dr
 
-                    qadd = mean_q*mean_rho*mean_t
-                    fpr2dr = mean_r2*four_pi*mean_dr
-
-                    tmp1d(r) = tmp1d(r+1)+qadd*fpr2dr
+                tmp1d(r) = tmp1d(r+1)+qadd*fpr2dr
 
                 Enddo
                 tmp1d = tmp1d(1)-tmp1d
                 tmp1d = tmp1d/four_pi/r_squared
-            Endif
             DO_PSI
                 qty(PSI) = tmp1d(r)
             END_DO
