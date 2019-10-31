@@ -4,6 +4,8 @@ Module Physical_IO_Buffer
     Use Structures
     Use ISendReceive
     Use MPI_Layer
+    Use Fourier_Transform
+    Use Legendre_Transforms, Only : Legendre_Transform
     Use Spherical_Buffer
     Type, Public :: IO_Buffer_Physical
 
@@ -23,6 +25,8 @@ Module Physical_IO_Buffer
         Integer :: nr_local     ! number of r-values subsampled locally (possibly 0)
         Integer :: ntheta_local     ! number of theta-values subsampled locally (possibly 0)
         Integer :: npts         ! number of points I output
+
+        Integer :: nlm_local, nlm_global
 
         Integer, Allocatable :: r_global(:), theta_global(:)
         Integer, Allocatable :: r_local(:), theta_local(:), phi_local(:)
@@ -106,6 +110,7 @@ Module Physical_IO_Buffer
         Procedure :: Allocate_Receive_Buffers
         Procedure :: DeAllocate_Receive_Buffers
         Procedure :: write_data
+        Procedure :: Spectral_Prep
     End Type IO_Buffer_Physical
 
 Contains
@@ -534,8 +539,6 @@ Contains
             Enddo
 
         Endif
-
-
         
         If (self%cascade_type .eq. 1) Then
             ! If cascade_type is 1, we may be performing a weighted sum
@@ -630,8 +633,6 @@ Contains
                 Enddo
             Endif
 
-
-
             If (self%phi_general) Then
                 !Write(6,*)'cascade type 2'
                 Do t = 1, self%ntheta_local
@@ -648,7 +649,36 @@ Contains
         self%cache_index = MOD(self%cache_index, self%ncache)+1
     End Subroutine Cache_Data
 
+    Subroutine Spectral_Prep(self)
+        Implicit None
+        Class(IO_Buffer_Physical) :: self
 
+        ! This routine ensures transforms phi-theta to ell-m space.
+        ! It then puts the spectral data into the cache buffer
+        ! in a format that is compatible with the collate and write routines.
+
+        If (self%nr_local .gt. 0) Then
+            !(1) Transform/transpose the phi-theta buffer to Ylm space
+            Call FFT_To_Spectral(self%spectral_buffer%p3b, rsc = .true.)
+            self%spectral_buffer%config ='p3b'
+            Call self%spectral_buffer%reform()
+            Call self%spectral_buffer%construct('s2b')
+            Call Legendre_Transform(self%spectral_buffer%p2b,self%spectral_buffer%s2b)
+            Call self%spectral_buffer%deconstruct('p2b')
+
+            !(2) Stripe the spectral data into the self%cache buffer
+            !    While that buffer has nphi and ntheta dimensions, we 
+            !    alias those to n_lm and nr
+            If (self%cascade_type .eq. 1) Then
+                Allocate(self%cache(1:self%nlm_local, 2, &
+                    self%ncache, 1:self%nr_local))     
+            Else
+                Allocate(self%cache(1:self%nlm_local, 2, &
+                    1:self%nr_local, self%ncache))  
+            Endif
+
+        Endif
+    End Subroutine Spectral_Prep
 
     Subroutine Collate(self,cache_ind)
         Implicit None
@@ -662,9 +692,10 @@ Contains
         
         Call self%Allocate_Receive_Buffers()
 
+        If (self%spectral) Call self%Spectral_Prep()
+
         ncache =1
         If (self%cascade_type .eq.1) ncache = self%ncache
-
 
         If (self%output_rank) Then
             !Post receives
@@ -790,7 +821,6 @@ Contains
         Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 
-
         hdisp = 0
         If (present(disp)) hdisp = disp
       
@@ -879,7 +909,6 @@ Contains
                 If (self%write_timestamp) Then  ! output_rank 0 will be the timestamp writer
                     tdisp = my_disp !  This works because output rank 0 always has my_disp 0 !-12
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
-                    !Write(6,*)'time stammping'
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
                            MPI_DOUBLE_PRECISION, mstatus, ierr)
                     Call MPI_FILE_WRITE(funit, self%iter(j), 1, & 

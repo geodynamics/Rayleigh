@@ -55,7 +55,7 @@ Math_Constants.o : Math_Constants.F90
 Math_Utility.o : Math_Utility.F90 
 PDE_Coefficients.o : PDE_Coefficients.F90 General_MPI.o Math_Utility.o Math_Constants.o Controls.o ProblemSize.o 
 Parallel_Framework.o : Parallel_Framework.F90 BufferedOutput.o Structures.o Load_Balance.o General_MPI.o MPI_LAYER.o 
-Physical_IO_Buffer.o : Physical_IO_Buffer.F90 Spherical_Buffer.o MPI_LAYER.o ISendReceive.o Structures.o Parallel_Framework.o Ra_MPI_Base.o 
+Physical_IO_Buffer.o : Physical_IO_Buffer.F90 Spherical_Buffer.o Legendre_Transforms.o Fourier_Transform.o MPI_LAYER.o ISendReceive.o Structures.o Parallel_Framework.o Ra_MPI_Base.o 
 ProblemSize.o : ProblemSize.F90 Timers.o BufferedOutput.o Math_Constants.o Chebyshev_Polynomials.o Controls.o Spectral_Derivatives.o Legendre_Polynomials.o Parallel_Framework.o 
 Ra_MPI_Base.o : Ra_MPI_Base.F90 
 Run_Param_Header.dbg.o : Run_Param_Header.dbg.F 
