@@ -4,6 +4,7 @@ Module Physical_IO_Buffer
     Use Structures
     Use ISendReceive
     Use MPI_Layer
+    Use Spherical_Buffer
     Type, Public :: IO_Buffer_Physical
 
 
@@ -43,6 +44,7 @@ Module Physical_IO_Buffer
 
 
         Type(rmcontainer4d), Allocatable :: recv_buffers(:)
+        Type(SphericalBuffer) :: spectral_buffer
 
         ! Variables that (may) help efficiency of subsampling
         Logical :: simple   = .false.   ! no subsampling (3-D output)
@@ -51,6 +53,9 @@ Module Physical_IO_Buffer
         Logical :: rp_general = .false. 
         Logical :: phi_general = .false.
         Logical :: theta_general = .false. ! equatorial slices
+
+        Logical :: spectral = .false.
+        Logical :: r_general_spectral = .false.
 
         Logical :: r_spec = .false.
         Logical :: t_spec = .false.
@@ -110,16 +115,19 @@ Contains
                                              phi_indices,ncache, mpi_tag, &
                                              cascade, sum_weights_theta, nrec, &
                                              skip, write_timestamp, &
-                                             averaging_axes)
+                                             averaging_axes, spectral)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
-        Logical, Intent(In), Optional :: write_timestamp
+        Logical, Intent(In), Optional :: write_timestamp, spectral
         Integer, Intent(In), Optional :: averaging_axes(3)
+
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
+
+        Integer :: k, ntot, fcount(3,2), fcnt
 
         !//////////////////////////////////////////////
         ! Establish my identity
@@ -221,12 +229,30 @@ Contains
         If (self%r_spec .and. self%t_spec &
              .and. self%p_spec ) self%general = .true.
 
+
+        If (present(spectral)) Then
+            self%spectral = spectral
+            If (self%r_general .and. self%spectral ) Then
+                self%r_general_spectral = .true.
+            Endif
+        Endif
        ! Write(6,*)self%simple, self%r_general, self%phi_general, self%general
 
 
-
+        
         
         Call self%Load_Balance_IO()
+        
+        !///////////////////// TODO:  Does this need a separate routine?
+        ! Some extra work for caching data to be transformed needs to be done
+        ntot = self%ncache*self%nr_local
+        fcnt = ntot/pfi%my_1p%delta
+        k = Mod(ntot,pfi%my_1p%delta)
+        If (k .gt. 0) fcnt = fcnt+1
+        fcount(:,:) = fcnt
+        Call self%spectral_buffer%init(field_count=fcount,config='p3b')  
+        !/////////////////////
+
         Call self%Initialize_IO_MPI()
 
 
@@ -451,14 +477,21 @@ Contains
     Subroutine Allocate_Cache(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        If (self%cascade_type .eq. 1) Then
-            Allocate(self%cache(1:self%nphi, 1:self%ntheta_local, &
-                            1:self%ncache, 1:self%nr_local))
+
+        If (.not. self%spectral) Then
+            If (self%cascade_type .eq. 1) Then
+                Allocate(self%cache(1:self%nphi, 1:self%ntheta_local, &
+                                1:self%ncache, 1:self%nr_local))
+            Else
+                Allocate(self%cache(1:self%nphi, 1:self%ntheta_local, &
+                                1:self%nr_local,self%ncache))
+            Endif
+            self%cache(:,:,:,:) = 0.0d0
+
         Else
-            Allocate(self%cache(1:self%nphi, 1:self%ntheta_local, &
-                            1:self%nr_local,self%ncache))
+
+            Call self%spectral_buffer%construct('p3b')
         Endif
-        self%cache(:,:,:,:) = 0.0d0
         If (self%write_timestamp) Then
             Allocate(self%iter(1:self%nrec))
             Allocate(self%time(1:self%nrec))
@@ -483,6 +516,26 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
         Integer :: r, t, p
+        Integer :: counter, field_ind, rind
+
+        If (self%r_general_spectral) Then
+
+            Do r = 1, self%nr_local
+                counter = (self%cache_index-1)*self%nr_local
+                field_ind = counter/pfi%my_1p%delta
+                rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
+
+                Do t = 1, self%ntheta_local
+                    Do p =1, self%nphi
+                        self%spectral_buffer%p3b(p,rind,t,field_ind) = vals(p,self%r_local(r),t)
+                    Enddo
+                Enddo
+    
+            Enddo
+
+        Endif
+
+
         
         If (self%cascade_type .eq. 1) Then
             ! If cascade_type is 1, we may be performing a weighted sum
@@ -576,6 +629,8 @@ Contains
                     Enddo
                 Enddo
             Endif
+
+
 
             If (self%phi_general) Then
                 !Write(6,*)'cascade type 2'
@@ -814,7 +869,7 @@ Contains
                         ! ELSE     
                         !Write(6,*)my_disp, hdisp, funit, shape(self%collated_data)
                         !         self%collated_data(:,:,:,cache_ind)           
-                        Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &
+                        Call MPI_FILE_WRITE(funit, self%collated_data(1,1,1,cache_ind), &  ! NOTE: change index here to imi (1/2)
                                self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                         my_disp = my_disp+self%qdisp
                         !if (ierr .ne. 0) Write(6,*)'error!: ', self%rank, self%col_rank, self%row_rank
