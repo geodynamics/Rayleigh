@@ -845,7 +845,7 @@ Contains
 
     Subroutine Collate_Physical(self,cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(IO_Buffer_Physical), Target :: self
         Integer, Intent(In), Optional :: cache_ind
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
@@ -859,8 +859,8 @@ Contains
         If (self%output_rank) Then
             cend = 1
             If (self%write_mode .eq. 1) cend = self%ncache
-            !self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_local,1:cend) => &
-            !    self%buffer(1:self%io_buffer_size)
+            self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_local,1:cend) => &
+                self%buffer(1:self%io_buffer_size)
 
             tstart = 1
             !write(6,*)(shape(self%collated_data))
@@ -891,8 +891,8 @@ Contains
             data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
             !DeAllocate(self%collated_data)
  
-            !self%collated_data(1:self%nphi,1:1,1:self%nr_local,1:self%ncache) =>
-            !    self%buffer(1:self%io_buffer_size/self%ntheta)
+            self%collated_data(1:self%nphi,1:1,1:self%nr_local,1:self%ncache) => &
+                self%buffer(1:self%io_buffer_size/self%ntheta)
             
             self%collated_data = 0.0d0
 
