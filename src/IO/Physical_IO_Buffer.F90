@@ -81,7 +81,7 @@ Module Physical_IO_Buffer
         Integer :: rec_skip = 0 ! number of bytes to skip between cached records
         Integer :: time_index = 1
 
-        Integer :: cascade_type  ! 1 for full cache, 2 for single cache index
+        Integer :: write_mode = 1  ! 1 for full cache, single cache index otherwise
 
         ! Time stamps:
         Integer, Allocatable :: iter(:)
@@ -99,7 +99,12 @@ Module Physical_IO_Buffer
         Integer(kind=MPI_OFFSET_KIND), Allocatable :: disp(:)
         Integer :: buffsize
         Integer :: nbytes = 8
-        Real*8, Allocatable :: collated_data(:,:,:,:)
+        Real*8, Pointer :: collated_data(:,:,:,:)
+        Real*8, Allocatable :: buffer(:)
+        Integer, Allocatable :: io_offset(:)
+        Integer :: io_buffer_size
+        Logical, Allocatable :: communicate(:)
+        Integer, Allocatable :: ind(:)
 
     Contains
         Procedure :: init => Initialize_Physical_IO_Buffer
@@ -115,8 +120,9 @@ Module Physical_IO_Buffer
         Procedure :: Spectral_Prep
 
         Procedure :: gather_data
+        Procedure :: cascade
         Procedure :: collate_physical
-        Procedure :: collat_spectral
+        Procedure :: collate_spectral
 
     End Type IO_Buffer_Physical
 
@@ -127,7 +133,7 @@ Contains
                                              phi_indices,ncache, mpi_tag, &
                                              cascade, sum_weights_theta, nrec, &
                                              skip, write_timestamp, &
-                                             averaging_axes, spectral,mode)
+                                             averaging_axes, spectral, mode)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
@@ -135,6 +141,7 @@ Contains
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
         Logical, Intent(In), Optional :: write_timestamp, spectral
         Integer, Intent(In), Optional :: averaging_axes(3)
+        Integer, Intent(In), Optional :: mode
 
         Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
@@ -668,7 +675,8 @@ Contains
     Subroutine Spectral_Prep(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-
+        Integer :: p, mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
+        Integer :: nq_shell, r, rind
         ! This routine ensures transforms phi-theta to ell-m space.
         ! It then puts the spectral data into the cache buffer
         ! in a format that is compatible with the collate and write routines.
@@ -695,10 +703,12 @@ Contains
 
             !~~~~
 
-            field_ind = counter/pfi%my_1p%delta
-            rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
+            !field_ind = counter/pfi%my_1p%delta
+            !rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
 
-            nf = spectra_buffer%nf2b
+            nf = self%spectral_buffer%nf2b
+            my_mp_min = 0
+            my_mp_max = 0
             Do p = 1, 2  ! Real and imaginary parts
             Do mp = my_mp_min,my_mp_max
                 m = pfi%inds_3s(mp)
@@ -712,10 +722,10 @@ Contains
                             !rind = MOD(counter,my_nr)+my_rmin
                             rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
 
-                            sendbuffer(m:lmax,r,f,p,mp) = &
-                                & spectra_buffer%s2b(mp)%data(m:lmax,rind,p,field_ind)
+                            !sendbuffer(m:lmax,r,f,p,mp) = &
+                            !    & self%spectral_buffer%s2b(mp)%data(m:lmax,rind,p,field_ind)
 
-                            self%cache(
+                            !self%cache(
 
                             counter = counter+1
                         Enddo
@@ -740,18 +750,19 @@ Contains
         Call self%cascade(cache_ind)
         
         If (self%spectral) Then
-            Call self%spectral_collate(cache_ind)
+            Call self%collate_spectral(cache_ind)
         Else
             Call self%collate_physical(cache_ind)
         Endif
         
     End Subroutine Gather_Data
 
-    Subroutine Spectral_Collate(self)
+    Subroutine Collate_Spectral(self,cache_ind)
         Implicit None
         Class(IO_Buffer_Physical) :: self
+        Integer :: cache_ind
 
-    End Subroutine Spectral_Collate
+    End Subroutine Collate_Spectral
 
     Subroutine Cascade(self,cache_ind)
         Implicit None
@@ -760,7 +771,7 @@ Contains
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
-        Integer :: i, r, t, nca
+        Integer :: i, r, t, ncache
         Call self%Allocate_Receive_Buffers()
 
         ncache =1
@@ -841,15 +852,15 @@ Contains
         Integer :: inds(4)
         Integer :: i, tstart,tend, r, t, ncache
         Real*8, Allocatable :: data_copy(:,:,:,:)
-        
+        Integer :: cend
         ncache =1
         If (self%write_mode .eq.1) ncache = self%ncache
         
         If (self%output_rank) Then
             cend = 1
             If (self%write_mode .eq. 1) cend = self%ncache
-            self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_local,1:cend) => &
-                self%buffer(1:self%io_buffer_size)
+            !self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_local,1:cend) => &
+            !    self%buffer(1:self%io_buffer_size)
 
             tstart = 1
             !write(6,*)(shape(self%collated_data))
@@ -879,8 +890,9 @@ Contains
             Allocate(data_copy(self%nphi,self%ntheta,self%nr_local,self%ncache))
             data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
             !DeAllocate(self%collated_data)
-            self%collated_data(1:self%nphi,1:1,1:self%nr_local,1:self%ncache) =>
-                self%buffer(1:self%io_buffer_size/self%ntheta)
+ 
+            !self%collated_data(1:self%nphi,1:1,1:self%nr_local,1:self%ncache) =>
+            !    self%buffer(1:self%io_buffer_size/self%ntheta)
             
             self%collated_data = 0.0d0
 
@@ -895,143 +907,10 @@ Contains
 
     End Subroutine Collate_Physical
 
-    Subroutine Collate_Old(self,cache_ind)
-        Implicit None
-        Class(IO_Buffer_Physical) :: self
-        Integer, Intent(In), Optional :: cache_ind
-        Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
-        Integer, Allocatable :: rirqs(:), sirqs(:)
-        Integer :: inds(4)
-        Integer :: i, tstart,tend, r, t, ncache
-        Real*8, Allocatable :: data_copy(:,:,:,:)
-        
-        Call self%Allocate_Receive_Buffers()
-
-        ncache =1
-        If (self%write_mode .eq.1) ncache = self%ncache
-
-        If (self%output_rank) Then
-            !Post receives
-            Allocate(rirqs(1:pfi%nprow-1))
-            nrirq = 0
-            Do p = 0, pfi%nprow-1
-                If (p .ne. self%row_rank) Then
-                    n = self%nrecv_from_column(p)*ncache
-                    If (n .gt. 0) Then
-                        !Write(6,*)self%rank, ' receiving ', n, ' from rank ', p
-                        nrirq =nrirq+1
-                        Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
-                                &  source= p,tag = self%tag, grp = pfi%rcomm)	            
-                    Endif
-                Endif
-            Enddo
-        Endif
-
-        nsirq = self%nout_cols      ! maximum possible sends (point probes can alter this)
-        If (self%output_rank) nsirq = nsirq-1
-        Allocate(sirqs(1:nsirq))
-        nn = 1
-        rstart = 1
-        inds(1) = 1
-        inds(2) = 1
-        Do p = 0, self%nout_cols-1
-            if (self%write_mode .eq. 1) Then
-                inds(3) = 1
-                inds(4) = rstart
-            Else
-                inds(3) = rstart
-                inds(4) = cache_ind
-            Endif
-            If (p .ne. self%row_rank) Then
-                n = self%nr_out_at_column(p)*ncache*self%nphi*self%ntheta_local
-                !Write(6,*)self%rank, n
-                If (n .gt. 0) Then
-                    !Write(6,*)self%rank, ' sending ', n, ' to rank ', p
-                    Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
-                        grp = pfi%rcomm, indstart = inds)
-                    nn = nn+1
-                Endif
-
-            Else
-                rend = rstart+self%nr_out-1
-                If (self%write_mode .eq. 1) Then
-                    self%recv_buffers(p)%data(:,:,:,:) = self%cache(:,:,:,rstart:rend)
-                Else
-                    !Write(6,*)'rstart/rend', self%row_rank, rstart,rend
-                    self%recv_buffers(p)%data(:,:,:,1) =  self%cache(:,:,rstart:rend,cache_ind)
-                Endif
-            Endif
-            rstart = rstart+self%nr_out_at_column(p)
-            !If(self%row_rank .ge. self%nout_cols) Then
-            !    Write(6,*)'non I/O: ', maxval(self%cache)
-            !Endif
-        Enddo
-        nsirq = nn-1  ! actual number of sends undertaken
-
-        If (self%output_rank) Then
-            !WRite(6,*)'outputting', self%rank
-            !WRite(6,*)'shapes: ', nrirq, shape(rirqs)
-            if (nrirq .gt. 0) Call IWaitAll(nrirq, rirqs)
-            DeAllocate(rirqs)
-        Endif
-        If (nsirq .gt. 0) Call IWaitAll(nsirq,sirqs)
-        DeAllocate(sirqs)
-
-        
-        If (self%output_rank) Then
-            cend = 1
-            If (self%write_mode .eq. 1) cend = self%ncache
-            self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_local,1:cend) => &
-                self%buffer(1:self%io_buffer_size)
-
-            tstart = 1
-            !write(6,*)(shape(self%collated_data))
-            Do p = 0, pfi%nprow-1
-                If (self%nrecv_from_column(p) .gt. 0) Then
-                    tend = tstart+self%ntheta_at_column(p)-1
-                    If (self%write_mode .eq. 1) Then
-                        Do i = 1, self%ncache
-                            Do r =1, self%nr_out
-                                self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
-                            Enddo
-                        Enddo
-                    Else
-                        Do r =1, self%nr_out
-                            self%collated_data(:,tstart:tend,r,1) = self%recv_buffers(p)%data(:,:,r,1)
-                        Enddo                        
-                    Endif
-                    tstart = tend+1
-                Endif
-            Enddo            
-        Endif
-
-        Call self%deallocate_receive_buffers()
-
-        If (self%output_rank .and. self%sum_theta) Then
-
-            Allocate(data_copy(self%nphi,self%ntheta,self%nr_local,self%ncache))
-            data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
-            !DeAllocate(self%collated_data)
-            self%collated_data(1:self%nphi,1:1,1:self%nr_local,1:self%ncache) =>
-                self%buffer(1:self%io_buffer_size/self%ntheta)
-            
-            self%collated_data = 0.0d0
-
-            Do t = 1, self%ntheta
-                self%collated_data(:,1,:,:) = self%collated_data(:,1,:,:) + &
-                        data_copy(:,t,:,:)*self%theta_weights(t)
-            Enddo   
-
-            DeAllocate(data_copy)
-
-        Endif
-
-    End Subroutine Collate_Old
-
     Subroutine Write_Data(self,disp,file_unit,filename)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer, Intent(In), Optional :: file_unit, mode
+        Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
         Integer :: funit, ierr, j, write_mode
         Logical :: error
@@ -1070,11 +949,11 @@ Contains
             ! First Write the Data
             Do j = 1, self%nwrites
 
-                If (self%communicate(j)) Call self%gather_data(ind(j))
+                If (self%communicate(j)) Call self%gather_data(self%ind(j))
 
                 my_disp = self%disp(j)+hdisp
                 Call MPI_File_Seek( funit, my_disp, MPI_SEEK_SET, ierr) 
-                Call MPI_FILE_WRITE(funit, self%buffer(io_offset(j) ), & 
+                Call MPI_FILE_WRITE(funit, self%buffer(self%io_offset(j) ), & 
                                self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
     
             Enddo
@@ -1107,6 +986,7 @@ Contains
     Subroutine Set_Displacements(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
+        Integer :: j
         ! calculate self%disp(j)
         ! calculate self%tdisp(j)
         If (self%write_mode .eq. 1) Then
@@ -1116,7 +996,7 @@ Contains
         Endif
         If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
-        fulldisp = self%qdisp*self%ncache + 12
+        !fulldisp = self%qdisp*self%ncache + 12
         self%nwrites = self%nrec*self%ncache
         Allocate(self%disp(1:self%nwrites))
         If (self%spectral) Then

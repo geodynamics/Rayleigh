@@ -633,7 +633,7 @@ Contains
 
                 omode = 1
                 If (mem_friendly .and. (self%cascade_type .ne. 1)) omode = 3
-                Call self%buffer%write_data(disp=new_disp,file_unit=funit, mode = omode)
+                Call self%buffer%write_data(disp=new_disp,file_unit=funit) ! , mode = omode)
             
                 If (output_rank) Call self%closefile_par()
 
