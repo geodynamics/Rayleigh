@@ -962,7 +962,7 @@ Contains
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
                 Do j = 1, self%nrec
-                    tdisp = j*self%qdisp*self%ncache+hdisp
+                    tdisp = j*self%qdisp*self%ncache+hdisp  ! May need to account for real/imaginary here.
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
