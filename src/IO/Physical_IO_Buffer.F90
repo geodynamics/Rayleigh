@@ -123,6 +123,7 @@ Module Physical_IO_Buffer
         Procedure :: cascade
         Procedure :: collate_physical
         Procedure :: collate_spectral
+        Procedure :: set_displacements
 
     End Type IO_Buffer_Physical
 
@@ -273,6 +274,8 @@ Contains
         
         
         Call self%Load_Balance_IO()
+
+        If (self%output_rank) Call self%set_displacements()
         
         !///////////////////// TODO:  Does this need a separate routine?
         ! Some extra work for caching data to be transformed needs to be done
@@ -418,37 +421,74 @@ Contains
         self%nr_out = self%nr_out_at_column(self%row_rank)
         
 
-        If (self%output_rank) Then
 
-            Do p = 0, pfi%nprow-1
-                self%nrecv_from_column(p) = self%nr_out* &
-                                            self%nphi*self%ntheta_at_column(p) 
-            Enddo
-
-            ! Determine offsets (in bytes) for MPI-IO
-            shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
-            If (self%sum_theta) shsize = shsize/self%ntheta
-            self%qdisp = self%nr*shsize
-
-            self%base_disp = 0
-            Do p = 0, self%col_rank-1
-                n = self%nr_out_at_row(p)*shsize
-                self%base_disp = self%base_disp+n
-            Enddo
-
-            Do p = 0, self%row_rank-1
-                n = self%nr_out_at_column(p)*shsize
-                self%base_disp = self%base_disp+n
-            Enddo
-
-            self%buffsize = self%nr_out*self%nphi*self%ntheta 
-            if (self%sum_theta) self%buffsize = self%buffsize/self%ntheta
-
-        Endif
 
         !If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
 
     End Subroutine Load_Balance_IO
+
+    Subroutine Set_Displacements(self)
+        Implicit None
+        Class(IO_Buffer_Physical) :: self
+        Integer :: j,n, p
+        Integer(kind=MPI_OFFSET_KIND) :: shsize
+        ! Only called by output ranks
+
+        Do p = 0, pfi%nprow-1
+            self%nrecv_from_column(p) = self%nr_out* &
+                                        self%nphi*self%ntheta_at_column(p) 
+        Enddo
+
+        ! Determine offsets (in bytes) for MPI-IO
+        shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
+        ! TODO IF spectral, do something here for shsize
+
+        If (self%sum_theta) shsize = shsize/self%ntheta
+        self%qdisp = self%nr*shsize
+
+        self%base_disp = 0
+        Do p = 0, self%col_rank-1
+            n = self%nr_out_at_row(p)*shsize
+            self%base_disp = self%base_disp+n
+        Enddo
+
+        Do p = 0, self%row_rank-1
+            n = self%nr_out_at_column(p)*shsize
+            self%base_disp = self%base_disp+n
+        Enddo
+
+        self%buffsize = self%nr_out*self%nphi*self%ntheta 
+        if (self%sum_theta) self%buffsize = self%buffsize/self%ntheta
+
+
+        self%nwrites = self%nrec*self%ncache
+
+        If (self%write_mode .eq. 1) Then
+            self%io_buffer_size = self%buffsize*self%nwrites
+        Else
+            self%io_buffer_size = self%buffsize
+        Endif
+        If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
+
+
+        Allocate(self%file_disp(1:self%nwrites))
+        Allocate(self%ind(1:self%nwrites))
+        Allocate(self%buffer_disp(1:self%nwrites))
+        If (self%spectral) Then
+            ! Take into account real, imaginary striping here (in-progress)
+            Do j = 1, self%nwrites
+                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+            Enddo
+        Else
+            Do j = 1, self%nwrites
+                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+                self%ind(j) = j
+                self%buffer_disp(j) = 1+(j-1)*self%buffsize
+            Enddo
+        Endif
+
+    End Subroutine Set_Displacements
+
 
     Subroutine Allocate_Receive_Buffers(self)
         Implicit None
@@ -984,41 +1024,6 @@ Contains
         Endif
     End Subroutine Write_Data
 
-    Subroutine Set_Displacements(self)
-        Implicit None
-        Class(IO_Buffer_Physical) :: self
-        Integer :: j
-        ! calculate self%disp(j)
-        ! calculate self%tdisp(j)
 
-
-        !fulldisp = self%qdisp*self%ncache + 12
-        self%nwrites = self%nrec*self%ncache
-
-        If (self%write_mode .eq. 1) Then
-            self%io_buffer_size = self%buffsize*self%nwrites
-        Else
-            self%io_buffer_size = self%buffsize
-        Endif
-        If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
-
-
-        Allocate(self%file_disp(1:self%nwrites))
-        Allocate(self%ind(1:self%nwrites))
-        Allocate(self%buffer_disp(1:self%nwrites))
-        If (self%spectral) Then
-            ! Take into account real, imaginary striping here (in-progress)
-            Do j = 1, self%nwrites
-                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
-            Enddo
-        Else
-            Do j = 1, self%nwrites
-                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
-                self%ind(j) = j
-                self%buffer_disp(j) = 1+(j-1)*self%buffsize
-            Enddo
-        Endif
-
-    End Subroutine Set_Displacements
 
 End Module Physical_IO_Buffer
