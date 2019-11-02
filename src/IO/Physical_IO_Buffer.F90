@@ -989,6 +989,11 @@ Contains
         Integer :: j
         ! calculate self%disp(j)
         ! calculate self%tdisp(j)
+
+
+        !fulldisp = self%qdisp*self%ncache + 12
+        self%nwrites = self%nrec*self%ncache
+
         If (self%write_mode .eq. 1) Then
             self%io_buffer_size = self%buffsize*self%nwrites
         Else
@@ -996,9 +1001,10 @@ Contains
         Endif
         If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
-        !fulldisp = self%qdisp*self%ncache + 12
-        self%nwrites = self%nrec*self%ncache
+
         Allocate(self%disp(1:self%nwrites))
+        Allocate(self%ind(1:self%nwrites))
+        Allocate(self%io_offset(1:self%nwrites))
         If (self%spectral) Then
             ! Take into account real, imaginary striping here (in-progress)
             Do j = 1, self%nwrites
@@ -1007,6 +1013,8 @@ Contains
         Else
             Do j = 1, self%nwrites
                 self%disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+                self%ind(j) = j
+                self%io_offset = 1+(j-1)*self%buffsize
             Enddo
         Endif
 
