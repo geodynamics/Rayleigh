@@ -96,12 +96,12 @@ Module Physical_IO_Buffer
 
         Integer(kind=MPI_OFFSET_KIND) :: base_disp
         Integer(kind=MPI_OFFSET_KIND) :: qdisp
-        Integer(kind=MPI_OFFSET_KIND), Allocatable :: disp(:)
+        Integer(kind=MPI_OFFSET_KIND), Allocatable :: file_disp(:)
         Integer :: buffsize
         Integer :: nbytes = 8
         Real*8, Pointer :: collated_data(:,:,:,:)
         Real*8, Allocatable :: buffer(:)
-        Integer, Allocatable :: io_offset(:)
+        Integer, Allocatable :: buffer_disp(:)
         Integer :: io_buffer_size
         Logical, Allocatable :: communicate(:)
         Integer, Allocatable :: ind(:)
@@ -915,7 +915,7 @@ Contains
         Integer :: funit, ierr, j, write_mode
         Logical :: error
 		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
-        Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp
+        Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp, fdisp, bdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 
         hdisp = 0
@@ -949,12 +949,13 @@ Contains
             ! First Write the Data
             Do j = 1, self%nwrites
 
-                If (self%communicate(j)) Call self%gather_data(self%ind(j))
+                If (self%write_mode .gt. 1) Call self%gather_data(self%ind(j))
 
-                my_disp = self%disp(j)+hdisp
-                Call MPI_File_Seek( funit, my_disp, MPI_SEEK_SET, ierr) 
-                Call MPI_FILE_WRITE(funit, self%buffer(self%io_offset(j) ), & 
-                               self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                fdisp = self%file_disp(j)+hdisp
+                bdisp = self%buffer_disp(j)
+                Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
+                Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
+                    self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
     
             Enddo
 
@@ -1002,19 +1003,19 @@ Contains
         If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
 
-        Allocate(self%disp(1:self%nwrites))
+        Allocate(self%file_disp(1:self%nwrites))
         Allocate(self%ind(1:self%nwrites))
-        Allocate(self%io_offset(1:self%nwrites))
+        Allocate(self%buffer_disp(1:self%nwrites))
         If (self%spectral) Then
             ! Take into account real, imaginary striping here (in-progress)
             Do j = 1, self%nwrites
-                self%disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
             Enddo
         Else
             Do j = 1, self%nwrites
-                self%disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
                 self%ind(j) = j
-                self%io_offset = 1+(j-1)*self%buffsize
+                self%buffer_disp(j) = 1+(j-1)*self%buffsize
             Enddo
         Endif
 
