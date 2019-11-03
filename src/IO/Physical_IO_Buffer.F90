@@ -45,6 +45,7 @@ Module Physical_IO_Buffer
         Integer, Allocatable :: nr_out_at_column(:) ! number of radii output by row rank X in this row
         Integer, Allocatable :: nr_out_at_row(:)    ! number of radii output by column rank Y's row
         Integer, Allocatable :: nrecv_from_column(:)  ! number of points, per field, received from column X
+        Integer, Allocatable :: nsend_to_column(:)    ! number of points, per field, send to column X
         Integer :: nr_out = 0   ! Number of radii this process outputs
 
         Integer, Allocatable :: nlm_at_column(:)  ! Number of spherical harmonic modes in each column
@@ -319,12 +320,14 @@ Contains
         Allocate(self%nr_out_at_column(0:pfi%nprow-1))
         Allocate(self%nr_out_at_row(0:pfi%npcol-1))
         Allocate(self%nrecv_from_column(0:pfi%nprow-1))
+        Allocate(self%nsend_to_column(0:pfi%nprow-1))
 
         self%nr_out_at_column(:)  = 0
         self%nr_out_at_row(:)     = 0
         self%npts_at_column(:)    = 0
         self%ntheta_at_column(:)  = 0
         self%nrecv_from_column(:) = 0
+        self%nsend_to_column(:) = 0
 
         If (self%t_spec) Then
 
@@ -439,14 +442,15 @@ Contains
             Enddo
             self%nlm_local = self%nlm_at_column(self%row_rank)
             Do p = 0, pfi%nprow-1
-                self%nrecv_from_column(p) = self%nr_out*2 &
-                                            *self%nlm_at_column(p) 
+                self%nrecv_from_column(p) = self%nr_out*self%nlm_at_column(p) 
+                self%nsend_to_column(p) = self%nr_out_at_column(p)*self%nlm_local
             Enddo
         Else
 
             Do p = 0, pfi%nprow-1
                 self%nrecv_from_column(p) = self%nr_out* &
                                             self%nphi*self%ntheta_at_column(p) 
+                self%nsend_to_column(p) = self%nr_out_at_column(p)*self%ntheta_local*self%nphi
             Enddo
         Endif
 
@@ -879,7 +883,8 @@ Contains
             Endif
             If (p .ne. self%row_rank) Then
 
-                n = self%nr_out_at_column(p)*ncache*self%nphi*self%ntheta_local
+                !n = self%nr_out_at_column(p)*ncache*self%nphi*self%ntheta_local
+                n = self%nsend_to_column(p)*ncache
                 If (n .gt. 0) Then
                     Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
                         grp = pfi%rcomm, indstart = inds)
