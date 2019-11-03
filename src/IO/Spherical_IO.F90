@@ -323,7 +323,7 @@ Contains
 	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
 		Implicit None
 		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
-        Integer :: nn, cascade_type
+        Integer :: nn, cascade_type, wmode
 		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
@@ -473,10 +473,13 @@ Contains
        
         ! temporary IO for testing
         fdir = 'Temp_2/'
+        wmode =1
+        If (mem_friendly) wmode =2
+        Write(6,*)'WMODE IS: ', wmode
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
                           shellspectra_version, shellspectra_nrec, shellspectra_frequency, &
                           values = shellspectra_values, rinds=shellspectra_levels, &
-                          is_spectral = .true. ) 
+                          is_spectral = .true. , write_mode = wmode) 
 
         ! Converted outputs
 

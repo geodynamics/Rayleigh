@@ -521,7 +521,7 @@ Contains
             self%ind(j) = j
             self%buffer_disp(j) = 1+(j-1)*self%buffsize
         Enddo
-
+        If (self%write_mode .ne. 1) self%buffer_disp(:) = 1  
 
     End Subroutine Set_Displacements
 
@@ -811,6 +811,15 @@ Contains
             nf = self%spectral_buffer%nf2b
             nq = self%ncache/2
             i2 = lmax+1
+
+            !fstart = 1
+            !fend = nq
+            !If (self%write_mode .gt. 1) Then
+            !    fstart = cache_ine
+            !    fend = cache_ind
+            !Endif
+
+
             Do p = 1, 2  ! Real and imaginary parts
                 Do mp = my_mp_min,my_mp_max
                     m = pfi%inds_3s(mp)
@@ -858,8 +867,12 @@ Contains
         Integer, Intent(In) :: cache_ind
         Write(6,*)'Gathering data'
     
-        If (self%spectral) Call self%Spectral_Prep()
-
+        If (self%write_mode .eq. 1) Then
+            If (self%spectral) Call self%Spectral_Prep()
+        Else
+            If ( (cache_ind .eq. 1) .and. (self%spectral) ) Call self%spectral_prep()
+        Endif
+    
         Call self%cascade(cache_ind)
         
         If (self%spectral) Then
