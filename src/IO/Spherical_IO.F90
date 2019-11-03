@@ -160,7 +160,7 @@ Module Spherical_IO
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         !I/O Buffer
         Type(IO_Buffer_Physical) :: buffer
-        Integer :: cascade_type =1
+        Integer :: write_mode =1
 
         ! Methods
         Contains
@@ -487,7 +487,7 @@ Contains
         Call Shell_Slices%Init2(averaging_level,compute_q,myid, 58, fdir, &
                           shellslice_version, shellslice_nrec, shellslice_frequency, &
                           values = shellslice_values, rinds = shellslice_levels, &
-                          ctype = cascade_type)
+                          write_mode = cascade_type)
 
         fdir = 'Point_Probes/'
         Call Point_Probes%Init2(averaging_level,compute_q,myid, 63, fdir, &
@@ -638,8 +638,8 @@ Contains
                 full_disp = self%buffer%qdisp*self%buffer%ncache+12  ! 12 is for the simtime+iteration at the end; use ncache instead of nq to account for real/imaginary in spectral i/o
                 new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
 
-                omode = 1
-                If (mem_friendly .and. (self%cascade_type .ne. 1)) omode = 3
+                !omode = 1
+                !If (mem_friendly .and. (self%cascade_type .ne. 1)) omode = 3
                 Call self%buffer%write_data(disp=new_disp,file_unit=funit) ! , mode = omode)
             
                 If (output_rank) Call self%closefile_par()
@@ -2040,12 +2040,12 @@ Contains
 
     Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
-                 levels, phi_inds, cache_size, rinds, tinds, pinds, ctype, &
+                 levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
                  avg_axes, tweights, is_spectral)
         Implicit None
         Integer :: i,ind
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
-        Integer, Intent(In), Optional :: cache_size, ctype
+        Integer, Intent(In), Optional :: cache_size, write_mode
         Character*120, Intent(In) :: dir
         Integer, Optional, Intent(In) :: avg_level
         Integer, Optional, Intent(In) :: values(1:)
@@ -2136,10 +2136,10 @@ Contains
         rad_only = .false.
         theta_only = .false.
 
-        If (present(ctype)) Then
-            self%cascade_type = ctype
+        If (present(write_mode)) Then
+            self%write_mode = write_mode
         Else
-            self%cascade_type = 1
+            self%write_mode = 1
         Endif
 
         If (present(avg_level)) Then
@@ -2256,7 +2256,7 @@ Contains
             Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
                                       theta_indices = self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
-                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                       nrec = self%cache_size, skip = 12, &
                                       write_timestamp = .true.)
         Endif
@@ -2267,14 +2267,14 @@ Contains
             If (present(is_spectral)) Then
                 Call self%buffer%init(r_indices=self%r_inds, &
                                           ncache  = self%nq*self%cache_Size, &
-                                          cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                           nrec = self%cache_size, skip = 12, &
                                           write_timestamp = .true., spectral = is_spectral)
 
             Else
                 Call self%buffer%init(r_indices=self%r_inds, &
                                           ncache  = self%nq*self%cache_Size, &
-                                          cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                           nrec = self%cache_size, skip = 12, &
                                           write_timestamp = .true.)
 
@@ -2287,7 +2287,7 @@ Contains
             If (.not. present(tweights)) Write(6,*)'Warning! tweights must be specified in this mode!'
             Call self%buffer%init(theta_indices=self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
-                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                       nrec = self%cache_size, skip = 12, &
                                       write_timestamp = .true., sum_weights_theta=tweights)
         Endif
@@ -2296,7 +2296,7 @@ Contains
             Write(6,*)'PHI INIT!'
             Call self%buffer%init(phi_indices=self%phi_inds, &
                                       ncache  = self%nq*self%cache_Size, &
-                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                      mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                       nrec = self%cache_size, skip = 12, &
                                       write_timestamp = .true.)
         Endif
@@ -2305,7 +2305,7 @@ Contains
 
             Write(6,*)'AVG_INIT!', avg_axes
             Call self%buffer%init(ncache  = self%nq*self%cache_Size, &
-                                  cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                  mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                   nrec = self%cache_size, skip = 12, &
                                   write_timestamp = .true., averaging_axes = avg_axes)
         Endif
@@ -2345,11 +2345,11 @@ Contains
         pspec = .false.
         rtp_spec = .false.
 
-        If (present(ctype)) Then
-            self%cascade_type = ctype
-        Else
-            self%cascade_type = 1
-        Endif
+        !If (present(ctype)) Then
+        !    self%cascade_type = ctype
+        !Else
+        !    self%cascade_type = 1
+        !Endif
 
         If (present(avg_level)) Then
             if (avg_level .gt. 0) self%avg_level = avg_level
@@ -2479,14 +2479,14 @@ Contains
         ! Initialize the buffer (and then ocomm)
         rtp_spec = (rspec .and. tspec .and. pspec)
 
-        If (rtp_spec) Then
-            Call self%buffer%init(phi_indices=self%phi_global, r_indices=self%r_global, &
-                                      theta_indices = self%theta_global, &
-                                      ncache  = self%nq*self%cache_Size, &
-                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
-                                      nrec = self%cache_size, skip = 12, &
-                                      write_timestamp = .true.)
-        Endif
+        !If (rtp_spec) Then
+        !    Call self%buffer%init(phi_indices=self%phi_global, r_indices=self%r_global, &
+        !                              theta_indices = self%theta_global, &
+        !                              ncache  = self%nq*self%cache_Size, &
+        !                              cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+        !                              nrec = self%cache_size, skip = 12, &
+        !                              write_timestamp = .true.)
+        !Endif
 
         ! Once the buffer is initialized, set the ocomm info
         self%ocomm = self%buffer%ocomm%comm
