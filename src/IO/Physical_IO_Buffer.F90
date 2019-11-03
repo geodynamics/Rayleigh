@@ -27,6 +27,7 @@ Module Physical_IO_Buffer
         Integer :: npts         ! number of points I output
 
         Integer :: nlm_local, nlm   ! Number of spherical harmonic modes locally and globally
+        Integer :: nlm_out          ! Number of modes to output (same as nlm for shell_spectra)
         Integer :: lmax             ! Maximum degree ell in spherical harmonic expansion
 
         Integer, Allocatable :: r_global(:), theta_global(:)
@@ -177,6 +178,8 @@ Contains
             self%write_mode = 1
         Endif
 
+        If (present(spectral)) self%spectral = spectral
+
         !///////////////////////////////////////////////////////////
         ! Note how many fields/time-steps will be stored and output
         If (.not. present(ncache)) Then
@@ -184,6 +187,8 @@ Contains
         Else
             self%ncache = ncache
         Endif
+        If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary
+
 
         If (.not. present(nrec)) Then
             self%nrec = 1
@@ -245,7 +250,9 @@ Contains
 
         If (self%spectral)  Then
             self%lmax = (2*self%ntheta-1)/3
-            self%nlm = ((self%lmax+1)**2 + self%lmax+1 )/2
+            !self%nlm = ((self%lmax+1)**2 + self%lmax+1 )/2
+            self%nlm = (self%lmax+1)*(self%lmax+1) 
+            self%nlm_out = (self%lmax+1)*(self%lmax+1)   ! TODO: will need to modify for sph_mode_samples
         Endif
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
@@ -264,30 +271,27 @@ Contains
         If (self%r_spec .and. self%t_spec &
              .and. self%p_spec ) self%general = .true.
 
-
-        If (present(spectral)) Then
-            self%spectral = spectral
-            If (self%r_general .and. self%spectral ) Then
-                self%r_general_spectral = .true.
-            Endif
+        If (self%r_general .and. self%spectral ) Then
+            self%r_general_spectral = .true.
         Endif
+
        ! Write(6,*)self%simple, self%r_general, self%phi_general, self%general
 
 
-        
-        
         Call self%Load_Balance_IO()
 
         If (self%output_rank) Call self%set_displacements()
         
         !///////////////////// TODO:  Does this need a separate routine?
         ! Some extra work for caching data to be transformed needs to be done
-        ntot = self%ncache*self%nr_local
-        fcnt = ntot/pfi%my_1p%delta
-        k = Mod(ntot,pfi%my_1p%delta)
-        If (k .gt. 0) fcnt = fcnt+1
-        fcount(:,:) = fcnt
-        Call self%spectral_buffer%init(field_count=fcount,config='p3b')  
+        if (self%spectral) Then
+            ntot = self%ncache/2*self%nr_local
+            fcnt = ntot/pfi%my_1p%delta
+            k = Mod(ntot,pfi%my_1p%delta)
+            If (k .gt. 0) fcnt = fcnt+1
+            fcount(:,:) = fcnt
+            Call self%spectral_buffer%init(field_count=fcount,config='p3b')  
+        Endif
         !/////////////////////
 
         Call self%Initialize_IO_MPI()
@@ -302,6 +306,12 @@ Contains
             If (write_timestamp) self%rec_skip = 12
         Endif
         Call self%Allocate_Cache()
+
+
+        If (self%spectral) Then
+            WRite(6,*)'Info:  ', self%lmax, self%buffsize, self%io_buffer_size, self%nlm_out
+        Endif
+
     End Subroutine Initialize_Physical_IO_Buffer
 
 
@@ -432,13 +442,14 @@ Contains
             self%nlm_at_column(:) = 0
             Do p = 0, pfi%nprow-1
                 nm = pfi%all_3s(p)%delta
-                mp_min = pfi%all_3s(p)%min
-                mp_max = pfi%all_3s(p)%max
-                Do mp = mp_min, mp_max
-                    m_value = pfi%inds_3s(mp)
-                    self%nlm_at_column(p) = self%nlm_at_column(p) + &
-                        self%lmax-m_value +1
-                Enddo
+                !mp_min = pfi%all_3s(p)%min
+                !mp_max = pfi%all_3s(p)%max
+                self%nlm_at_column(p) = (self%lmax+1)*nm
+                !Do mp = mp_min, mp_max
+                !    m_value = pfi%inds_3s(mp)
+                !    self%nlm_at_column(p) = self%nlm_at_column(p) + &
+                !        self%lmax-m_value +1
+                !Enddo
             Enddo
             self%nlm_local = self%nlm_at_column(self%row_rank)
             Do p = 0, pfi%nprow-1
@@ -469,7 +480,7 @@ Contains
         ! Determine offsets (in bytes) for MPI-IO
         shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
 
-        If (self%spectral) shsize=self%nlm*self%nbytes
+        If (self%spectral) shsize=self%nlm_out*self%nbytes
 
         If (self%sum_theta) shsize = shsize/self%ntheta
         self%qdisp = self%nr*shsize
@@ -486,7 +497,7 @@ Contains
         Enddo
 
         self%buffsize = self%nr_out*self%nphi*self%ntheta 
-        
+        if (self%spectral) self%buffsize=self%nr_out*self%nlm_out
 
 
         self%nwrites = self%nrec*self%ncache
@@ -497,25 +508,25 @@ Contains
             self%io_buffer_size = self%buffsize
         Endif
 
-        If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
+        !If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
         If (self%sum_theta) self%buffsize = self%buffsize/self%ntheta ! Do this AFTER setting io_buffer_size
 
         Allocate(self%file_disp(1:self%nwrites))
         Allocate(self%ind(1:self%nwrites))
         Allocate(self%buffer_disp(1:self%nwrites))
-        If (self%spectral) Then
+        !If (self%spectral) Then
             ! Take into account real, imaginary striping here (in-progress)
-            Do j = 1, self%nwrites
-                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
-            Enddo
-        Else
+        !    Do j = 1, self%nwrites
+        !        self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+        !    Enddo
+        !Else
             Do j = 1, self%nwrites
                 self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%ncache)
                 self%ind(j) = j
                 self%buffer_disp(j) = 1+(j-1)*self%buffsize
             Enddo
-        Endif
+        !Endif
 
     End Subroutine Set_Displacements
 
@@ -523,19 +534,34 @@ Contains
     Subroutine Allocate_Receive_Buffers(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
-        Integer :: p, np,nr,nt
+        Integer :: p, np,nr,nt,lp1, mp_min,mp_max
         If (self%output_rank) Then
-            np = self%nphi
-            nr = self%nr_out
-            Do p = 0, pfi%nprow-1
-                nt = self%ntheta_at_column(p)
-                
-                If (self%write_mode .eq. 1) Then
-                    Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:self%ncache,1:nr))
-                Else
-                    Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:nr,1))
-                Endif
-            Enddo
+            If (self%spectral) Then
+                nr = self%nr_out
+                lp1 = self%lmax+1
+                Do p = 0, pfi%nprow-1
+                    mp_min = pfi%all_3s(p)%min
+                    mp_max = pfi%all_3s(p)%max
+                    If (self%write_mode .eq. 1) Then
+                        Allocate(self%recv_buffers(p)%data(1:lp1,mp_min:mp_max,1:self%ncache,1:nr))
+                    Else
+                        Allocate(self%recv_buffers(p)%data(1:lp1,mp_min:mp_max,1:nr,1))
+                    Endif
+                Enddo
+            Else
+                np = self%nphi
+                nr = self%nr_out
+                Do p = 0, pfi%nprow-1
+
+                    nt = self%ntheta_at_column(p)
+                    
+                    If (self%write_mode .eq. 1) Then
+                        Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:self%ncache,1:nr))
+                    Else
+                        Allocate(self%recv_buffers(p)%data(1:np,1:nt,1:nr,1))
+                    Endif
+                Enddo
+            Endif
         Endif
     End Subroutine Allocate_Receive_Buffers
 
@@ -613,19 +639,20 @@ Contains
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
-        Integer :: r, t, p
+        Integer :: r, t, p,tind
         Integer :: counter, field_ind, rind
 
         If (self%r_general_spectral) Then
 
             Do r = 1, self%nr_local
                 counter = (self%cache_index-1)*self%nr_local
-                field_ind = counter/pfi%my_1p%delta
+                field_ind = counter/pfi%my_1p%delta+1
                 rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
 
                 Do t = 1, self%ntheta_local
+                    tind = pfi%my_2p%min+t-1
                     Do p =1, self%nphi
-                        self%spectral_buffer%p3b(p,rind,t,field_ind) = vals(p,self%r_local(r),t)
+                        self%spectral_buffer%p3b(p,rind,tind,field_ind) = vals(p,self%r_local(r),t)
                     Enddo
                 Enddo
     
@@ -633,6 +660,7 @@ Contains
 
         Endif
         
+        If (.not. self%spectral) Then
         If (self%write_mode .eq. 1) Then
             ! If cascade_type is 1, we may be performing a weighted sum
             If (self%weighted_sum) Then
@@ -738,19 +766,27 @@ Contains
             Endif
 
         Endif
+        Endif
 
-        self%cache_index = MOD(self%cache_index, self%ncache)+1
+        If (self%spectral) Then
+            ! Adjust logic for real/imaginary
+            self%cache_index = MOD(self%cache_index, self%ncache/2)+1    
+        Else
+            self%cache_index = MOD(self%cache_index, self%ncache)+1
+        Endif
     End Subroutine Cache_Data
 
     Subroutine Spectral_Prep(self)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer :: p, mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
-        Integer :: nq_shell, r, rind
+        Integer :: nq, r, rind, lmax, i1, i2
         ! This routine ensures transforms phi-theta to ell-m space.
         ! It then puts the spectral data into the cache buffer
         ! in a format that is compatible with the collate and write routines.
-
+        lmax = self%lmax
+        my_mp_min = pfi%all_3s(self%row_rank)%min
+        my_mp_max = pfi%all_3s(self%row_rank)%max
         If (self%nr_local .gt. 0) Then
             !(1) Transform/transpose the phi-theta buffer to Ylm space
             Call FFT_To_Spectral(self%spectral_buffer%p3b, rsc = .true.)
@@ -764,47 +800,58 @@ Contains
             !    While that buffer has nphi and ntheta dimensions, we 
             !    alias those to n_lm and nr
             If (self%write_mode .eq. 1) Then
-                Allocate(self%cache(1:self%nlm_local, 2, &
+                Allocate(self%cache(1:self%lmax+1, my_mp_min:my_mp_max, &
                     self%ncache, 1:self%nr_local))     
             Else
-                Allocate(self%cache(1:self%nlm_local, 2, &
+                Allocate(self%cache(1:self%lmax+1, my_mp_min:my_mp_max, &
                     1:self%nr_local, self%ncache))  
             Endif
 
+            self%cache = 0.0d0
             !~~~~
 
             !field_ind = counter/pfi%my_1p%delta
             !rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
 
             nf = self%spectral_buffer%nf2b
-            my_mp_min = 0
-            my_mp_max = 0
+            nq = self%ncache/2
+            i2 = lmax+1
             Do p = 1, 2  ! Real and imaginary parts
-            Do mp = my_mp_min,my_mp_max
-                m = pfi%inds_3s(mp)
+                Do mp = my_mp_min,my_mp_max
+                    m = pfi%inds_3s(mp)
                     counter = 0
-                    Do f = 1, nq_shell
+                    i1 = m+1
+                    Do f = 1, nq
 
                         !field_ind = counter/my_nr+1
-                        field_ind = counter/pfi%my_1p%delta
+                        field_ind = counter/pfi%my_1p%delta+1
                         Do r = 1, self%nr_local   
-                                
+                         
                             !rind = MOD(counter,my_nr)+my_rmin
                             rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
+                            If (self%write_mode .eq. 1) Then                            
+                                self%cache(i1:i2,mp,f,r) = &
+                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
 
-                            !sendbuffer(m:lmax,r,f,p,mp) = &
-                            !    & self%spectral_buffer%s2b(mp)%data(m:lmax,rind,p,field_ind)
+                                self%cache(i1:i2,mp,f+nq,r) = &
+                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
+                            Else
+                                self%cache(i1:i2,mp,r,f) = &
+                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
 
-                            !self%cache(
+                                self%cache(i1:i2,mp,r, f+nq) = &
+                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
 
+                            Endif
                             counter = counter+1
                         Enddo
                     Enddo
                 Enddo
-
             Enddo
 
-            
+            Call self%spectral_buffer%deconstruct('s2b')
+            self%spectral_buffer%config ='p3b'
+            Call self%spectral_buffer%construct('p3b')  ! TODO:  Do we want p3b to effectively be persistent?
             !~~~~~
 
         Endif
@@ -830,8 +877,51 @@ Contains
 
     Subroutine Collate_Spectral(self,cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
-        Integer :: cache_ind
+        Class(IO_Buffer_Physical), Target :: self
+        Integer, Intent(In) :: cache_ind
+        Integer :: m, r, i, p, mp_min, mp_max
+        Integer :: cend, ncache, mp
+
+        DeAllocate(self%cache)
+        ncache =1
+        If (self%write_mode .eq. 1) ncache = self%ncache
+        
+        If (self%output_rank) Then
+            cend = 1
+            If (self%write_mode .eq. 1) cend = self%ncache
+            
+            self%collated_data(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend) => &
+                self%buffer(1:self%io_buffer_size)
+
+!!~~~~~~~~~~~~~~~~~~~~
+            ! TODO: allocate receive buffers as 1,mp_min, 1,1
+            !write(6,*)(shape(self%collated_data))
+            Do p = 0, pfi%nprow-1
+                mp_min = pfi%all_3s(p)%min
+                mp_max = pfi%all_3s(p)%max
+                If (self%nrecv_from_column(p) .gt. 0) Then
+                    If (self%write_mode .eq. 1) Then
+                        Do i = 1, self%ncache
+                            Do r =1, self%nr_out
+                                Do mp = mp_min, mp_max
+                                    m = pfi%inds_3s(mp)
+                                    self%collated_data(:,m+1,r,i) = self%recv_buffers(p)%data(:,mp,i,r)
+                                Enddo
+                            Enddo
+                        Enddo
+                    Else
+                        Do r =1, self%nr_out
+                            Do mp = mp_min, mp_max
+                                self%collated_data(:,m+1,r,1) = self%recv_buffers(p)%data(:,mp,r,1)
+                            Enddo
+                        Enddo                        
+                    Endif
+
+                Endif
+            Enddo    
+            Call self%deallocate_receive_buffers()
+!!~~~~~~~~~~~~~~~~
+        Endif
 
     End Subroutine Collate_Spectral
 
@@ -1062,7 +1152,5 @@ Contains
 
         Endif
     End Subroutine Write_Data
-
-
 
 End Module Physical_IO_Buffer

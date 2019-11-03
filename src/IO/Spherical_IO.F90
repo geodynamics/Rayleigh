@@ -72,7 +72,7 @@ Module Spherical_IO
         ! These arrays are large enough to hold nqmax and nshellmax values, but 
         ! typically only a small fraction of that amount will be specified at input.
         Integer :: values(1:nqmax) = -1 ! The list of values specified in an input namelist
-        Integer :: levels(1:nshellmax) = -1 ! The radial indices output (shell slices, spectra, and histograms only)
+        Integer :: levels(1:nshellmax) = -1 ! The radial indices output (shell slices, spectra only)
         Integer :: compute(1:nqmax)= -1 ! compute(i) = 1 if i was specified in values.  -1 otherwise
         
         Integer :: nq, nlevels ! Number of nonzero elements of values and levels
@@ -202,7 +202,6 @@ Module Spherical_IO
     Integer :: shellavg_values(1:nqmax)=-1, globalavg_values(1:nqmax)=-1
     Integer :: shellslice_values(1:nqmax) =-1, shellslice_levels(1:nshellmax)=-1, azavg_values(1:nqmax)=-1
     Integer :: full3d_values(1:nqmax) = -1, shellspectra_values(1:nqmax)=-1, shellspectra_levels(1:nshellmax)=-1
-    Integer :: histo_values(1:nqmax) = -1, histo_levels(1:nshellmax)=-1
     Integer :: equatorial_values(1:nqmax) = -1, meridional_values(1:nqmax) = -1, meridional_indices(1:nmeridmax) = -1
     Integer :: SPH_Mode_Values(1:nqmax) = -1, SPH_Mode_ell(1:nmodemax) = -1, SPH_Mode_Levels(1:nshellmax) = -1
     INTEGER :: point_probe_values(1:nqmax)
@@ -475,9 +474,9 @@ Contains
         ! temporary IO for testing
         fdir = 'Temp_2/'
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
-                          equslice_version, equatorial_nrec, equatorial_frequency, &
-                          values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
-                          tweights = (/ 0.5d0, 0.5d0 /) ) 
+                          shellspectra_version, shellspectra_nrec, shellspectra_frequency, &
+                          values = shellspectra_values, rinds=shellspectra_levels, &
+                          is_spectral = .true. ) 
 
         ! Converted outputs
 
@@ -521,7 +520,7 @@ Contains
 
     Subroutine Initialize_Headers
         Implicit None
-        Integer :: dims(1:4)
+        Integer :: dims(1:4), lmax
 
         !///////////////////////////////////////////////////
         ! Point Probes Header
@@ -574,6 +573,15 @@ Contains
         Call Equatorial_Slices%Add_IHeader(Equatorial_Slices%oqvals, Equatorial_Slices%nq)
         Call Equatorial_Slices%Add_DHeader(radius,nr)
 
+
+        !/////////////////////////////////////////////////////
+        ! Shell Spectra
+        lmax = maxval(pfi%inds_3s)
+        dims(1:3) = (/ lmax, Temp_IO%nr, Temp_IO%nq /)
+        Call Temp_IO%Add_IHeader(dims,3)
+        Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
+        Call Temp_IO%Add_DHeader(Temp_IO%r_vals, Temp_IO%nr)
+        Call Temp_IO%Add_IHeader(Temp_IO%r_inds, Temp_IO%nr)
         !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
 
     End Subroutine Initialize_Headers
@@ -1670,7 +1678,7 @@ Contains
         Call Meridional_Slices%write_io(iter,sim_time)
         Call Point_Probes%write_io(iter,sim_time)
         Call AZ_Averages%write_io(iter,sim_time)
-        !Call Temp_IO%write_io(iter,sim_time)
+        Call Temp_IO%write_io(iter,sim_time)
 
 	    If ((Shell_Spectra%nq > 0) .and. (Mod(iter,Shell_Spectra%frequency) .eq. 0 )) Then
             If (mem_friendly) Then
@@ -2034,7 +2042,7 @@ Contains
     Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, ctype, &
-                 avg_axes, tweights)
+                 avg_axes, tweights, is_spectral)
         Implicit None
         Integer :: i,ind
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
@@ -2050,6 +2058,8 @@ Contains
         !Averaging variables
         Integer, Intent(In), Optional :: avg_axes(1:)
         Real*8, Intent(In), Optional :: tweights(1:)
+
+        Logical, Intent(In), Optional :: is_spectral
 
         !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, modcheck
@@ -2254,11 +2264,23 @@ Contains
 
         If (rad_only) Then
             Write(6,*)'RAD INIT!'
-            Call self%buffer%init(r_indices=self%r_inds, &
-                                      ncache  = self%nq*self%cache_Size, &
-                                      cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
-                                      nrec = self%cache_size, skip = 12, &
-                                      write_timestamp = .true.)
+             
+            If (present(is_spectral)) Then
+                Call self%buffer%init(r_indices=self%r_inds, &
+                                          ncache  = self%nq*self%cache_Size, &
+                                          cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                          nrec = self%cache_size, skip = 12, &
+                                          write_timestamp = .true., spectral = is_spectral)
+
+            Else
+                Call self%buffer%init(r_indices=self%r_inds, &
+                                          ncache  = self%nq*self%cache_Size, &
+                                          cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
+                                          nrec = self%cache_size, skip = 12, &
+                                          write_timestamp = .true.)
+
+            Endif
+
         Endif
 
         If (theta_only) Then
@@ -3164,8 +3186,6 @@ Contains
         full3d_values(1:nqmax) = -1 
         shellspectra_values(1:nqmax)=-1
         shellspectra_levels(1:nshellmax)=-1
-        histo_values(1:nqmax) = -1
-        histo_levels(1:nshellmax)=-1
 
         globalavg_nrec = 1
         shellavg_nrec = 1
