@@ -26,7 +26,8 @@ Module Physical_IO_Buffer
         Integer :: ntheta_local     ! number of theta-values subsampled locally (possibly 0)
         Integer :: npts         ! number of points I output
 
-        Integer :: nlm_local, nlm_global
+        Integer :: nlm_local, nlm   ! Number of spherical harmonic modes locally and globally
+        Integer :: lmax             ! Maximum degree ell in spherical harmonic expansion
 
         Integer, Allocatable :: r_global(:), theta_global(:)
         Integer, Allocatable :: r_local(:), theta_local(:), phi_local(:)
@@ -46,6 +47,7 @@ Module Physical_IO_Buffer
         Integer, Allocatable :: nrecv_from_column(:)  ! number of points, per field, received from column X
         Integer :: nr_out = 0   ! Number of radii this process outputs
 
+        Integer, Allocatable :: nlm_at_column(:)  ! Number of spherical harmonic modes in each column
 
         Type(rmcontainer4d), Allocatable :: recv_buffers(:)
         Type(SphericalBuffer) :: spectral_buffer
@@ -173,11 +175,6 @@ Contains
         Else
             self%write_mode = 1
         Endif
-        WRite(6,*)'self_write_mode: ', self%write_mode
-        self%write_mode =1 
-
-        !self%cascade_type = 1
-        !if (present(cascade)) self%cascade_type = cascade
 
         !///////////////////////////////////////////////////////////
         ! Note how many fields/time-steps will be stored and output
@@ -185,7 +182,6 @@ Contains
             self%ncache = 1
         Else
             self%ncache = ncache
-            !Write(6,*)'ncahce is: ', self%ncache
         Endif
 
         If (.not. present(nrec)) Then
@@ -244,6 +240,11 @@ Contains
                 self%nphi=1
                 self%phi_weight = 1.0d0/pfi%n3p
             Endif
+        Endif
+
+        If (self%spectral)  Then
+            self%lmax = (2*self%ntheta-1)/3
+            self%nlm = ((self%lmax+1)**2 + self%lmax+1 )/2
         Endif
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
@@ -310,6 +311,7 @@ Contains
         Integer :: my_min, my_max
         Integer :: r, rmin, rmax
         Integer :: t, tmax, tmin
+        Integer :: nm, mp, mp_min, mp_max, m_value
         Integer, Allocatable :: tmp(:)
 
         Allocate(self%ntheta_at_column(0:pfi%nprow-1))
@@ -422,7 +424,31 @@ Contains
         self%nr_out = self%nr_out_at_column(self%row_rank)
         
 
+        If (self%spectral) Then
+            Allocate(self%nlm_at_column(0:pfi%nprow-1))
+            self%nlm_at_column(:) = 0
+            Do p = 0, pfi%nprow-1
+                nm = pfi%all_3s(p)%delta
+                mp_min = pfi%all_3s(p)%min
+                mp_max = pfi%all_3s(p)%max
+                Do mp = mp_min, mp_max
+                    m_value = pfi%inds_3s(mp)
+                    self%nlm_at_column(p) = self%nlm_at_column(p) + &
+                        self%lmax-m_value +1
+                Enddo
+            Enddo
+            self%nlm_local = self%nlm_at_column(self%row_rank)
+            Do p = 0, pfi%nprow-1
+                self%nrecv_from_column(p) = self%nr_out*2 &
+                                            *self%nlm_at_column(p) 
+            Enddo
+        Else
 
+            Do p = 0, pfi%nprow-1
+                self%nrecv_from_column(p) = self%nr_out* &
+                                            self%nphi*self%ntheta_at_column(p) 
+            Enddo
+        Endif
 
         !If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
 
@@ -435,14 +461,11 @@ Contains
         Integer(kind=MPI_OFFSET_KIND) :: shsize
         ! Only called by output ranks
 
-        Do p = 0, pfi%nprow-1
-            self%nrecv_from_column(p) = self%nr_out* &
-                                        self%nphi*self%ntheta_at_column(p) 
-        Enddo
 
         ! Determine offsets (in bytes) for MPI-IO
         shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
-        ! TODO IF spectral, do something here for shsize
+
+        If (self%spectral) shsize=self%nlm*self%nbytes
 
         If (self%sum_theta) shsize = shsize/self%ntheta
         self%qdisp = self%nr*shsize
