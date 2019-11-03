@@ -173,7 +173,8 @@ Contains
         Else
             self%write_mode = 1
         Endif
-
+        WRite(6,*)'self_write_mode: ', self%write_mode
+        self%write_mode =1 
 
         !self%cascade_type = 1
         !if (present(cascade)) self%cascade_type = cascade
@@ -458,7 +459,7 @@ Contains
         Enddo
 
         self%buffsize = self%nr_out*self%nphi*self%ntheta 
-        if (self%sum_theta) self%buffsize = self%buffsize/self%ntheta
+        
 
 
         self%nwrites = self%nrec*self%ncache
@@ -468,8 +469,10 @@ Contains
         Else
             self%io_buffer_size = self%buffsize
         Endif
+
         If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
+        If (self%sum_theta) self%buffsize = self%buffsize/self%ntheta ! Do this AFTER setting io_buffer_size
 
         Allocate(self%file_disp(1:self%nwrites))
         Allocate(self%ind(1:self%nwrites))
@@ -481,7 +484,7 @@ Contains
             Enddo
         Else
             Do j = 1, self%nwrites
-                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
+                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%ncache)
                 self%ind(j) = j
                 self%buffer_disp(j) = 1+(j-1)*self%buffsize
             Enddo
@@ -784,7 +787,8 @@ Contains
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In) :: cache_ind
-
+        Write(6,*)'Gathering data'
+    
         If (self%spectral) Call self%Spectral_Prep()
 
         Call self%cascade(cache_ind)
@@ -812,6 +816,8 @@ Contains
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
         Integer :: i, r, t, ncache
+
+        Write(6,*)'Cascade'
         Call self%Allocate_Receive_Buffers()
 
         ncache =1
@@ -894,12 +900,13 @@ Contains
         Real*8, Allocatable :: data_copy(:,:,:,:)
         Integer :: cend
         ncache =1
-        If (self%write_mode .eq.1) ncache = self%ncache
+        If (self%write_mode .eq. 1) ncache = self%ncache
         
         If (self%output_rank) Then
             cend = 1
             If (self%write_mode .eq. 1) cend = self%ncache
-            self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_local,1:cend) => &
+            Write(6,*)'T: ', self%io_buffer_size
+            self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_out,1:cend) => &
                 self%buffer(1:self%io_buffer_size)
 
             tstart = 1
@@ -927,15 +934,16 @@ Contains
 
         If (self%output_rank .and. self%sum_theta) Then
 
-            Allocate(data_copy(self%nphi,self%ntheta,self%nr_local,self%ncache))
+            Allocate(data_copy(self%nphi,self%ntheta,self%nr_out,self%ncache))
             data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
             !DeAllocate(self%collated_data)
  
-            self%collated_data(1:self%nphi,1:1,1:self%nr_local,1:self%ncache) => &
+            self%collated_data(1:self%nphi,1:1,1:self%nr_out,1:self%ncache) => &
                 self%buffer(1:self%io_buffer_size/self%ntheta)
             
-            self%collated_data = 0.0d0
+            self%collated_data(:,:,:,:) = 0.0d0
 
+            Write(6,*)'Doing this...'
             Do t = 1, self%ntheta
                 self%collated_data(:,1,:,:) = self%collated_data(:,1,:,:) + &
                         data_copy(:,t,:,:)*self%theta_weights(t)
@@ -952,7 +960,7 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
-        Integer :: funit, ierr, j, write_mode
+        Integer :: funit, ierr, j
         Logical :: error
 		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp, fdisp, bdisp
@@ -984,24 +992,27 @@ Contains
         If (.not. error) Then
 
             If (self%output_rank) Allocate(self%buffer(1:self%io_buffer_size))
-            If (write_mode .eq. 1) Call self%gather_data(-1)
+
+            If (self%write_mode .eq. 1) Call self%gather_data(-1)
 
             ! First Write the Data
             Do j = 1, self%nwrites
 
                 If (self%write_mode .gt. 1) Call self%gather_data(self%ind(j))
 
-                fdisp = self%file_disp(j)+hdisp
-                bdisp = self%buffer_disp(j)
-                Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
-                Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                    self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
-    
+                If (self%output_rank) Then
+                    fdisp = self%file_disp(j)+hdisp
+                    bdisp = self%buffer_disp(j)
+                    Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
+                    Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
+                        self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                Endif
             Enddo
 
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
                 Do j = 1, self%nrec
+                    Write(6,*)'timestamping'
                     tdisp = j*self%qdisp*self%ncache+hdisp  ! May need to account for real/imaginary here.
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
@@ -1014,7 +1025,7 @@ Contains
             Endif    
 
             If (self%output_rank) Then
-                DeAllocate(self%collated_data)
+                DeAllocate(self%buffer)
                 If (present(filename)) Then
                     Write(6,*)'closing...'
 			        Call MPI_FILE_CLOSE(funit, ierr) 
