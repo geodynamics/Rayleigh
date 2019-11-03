@@ -515,18 +515,13 @@ Contains
         Allocate(self%file_disp(1:self%nwrites))
         Allocate(self%ind(1:self%nwrites))
         Allocate(self%buffer_disp(1:self%nwrites))
-        !If (self%spectral) Then
-            ! Take into account real, imaginary striping here (in-progress)
-        !    Do j = 1, self%nwrites
-        !        self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + 12*((j-1)/self%ncache)
-        !    Enddo
-        !Else
-            Do j = 1, self%nwrites
-                self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%ncache)
-                self%ind(j) = j
-                self%buffer_disp(j) = 1+(j-1)*self%buffsize
-            Enddo
-        !Endif
+
+        Do j = 1, self%nwrites
+            self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%ncache)
+            self%ind(j) = j
+            self%buffer_disp(j) = 1+(j-1)*self%buffsize
+        Enddo
+
 
     End Subroutine Set_Displacements
 
@@ -645,7 +640,7 @@ Contains
         If (self%r_general_spectral) Then
 
             Do r = 1, self%nr_local
-                counter = (self%cache_index-1)*self%nr_local
+                counter = (self%cache_index-1)*self%nr_local +r-1
                 field_ind = counter/pfi%my_1p%delta+1
                 rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
 

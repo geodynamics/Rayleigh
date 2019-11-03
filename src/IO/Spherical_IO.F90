@@ -621,7 +621,6 @@ Contains
                 ncache = self%cache_size
 
                 If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
-
          
                 If (output_rank) Call self%OpenFile_Par(this_iter, error)
                 funit   = self%file_unit
@@ -636,7 +635,7 @@ Contains
                     Endif
                 Endif
 
-                full_disp = self%buffer%qdisp*self%nq+12  ! 12 is for the simtime+iteration at the end
+                full_disp = self%buffer%qdisp*self%buffer%ncache+12  ! 12 is for the simtime+iteration at the end; use ncache instead of nq to account for real/imaginary in spectral i/o
                 new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
 
                 omode = 1
