@@ -109,20 +109,10 @@ Module Spherical_IO
         !output as this diagnostic type, the grab_this_q will be set to true.
         !Otherwise grab_this_q remains false.
         Logical :: grab_this_q = .false.
-        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        ! Additional Organizational Arrays are required for managing shell-slice like outputs
-        Integer, Allocatable :: my_shell_levs(:), have_shell(:), my_shell_ind(:)
-        Integer, Allocatable :: shell_r_ids(:), nshells_at_rid(:)
-        Integer :: nshell_r_ids
 
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Variables used for management of SPH_Mode_Samples output
-        INTEGER, Allocatable :: l_values(:), m_values(:)
-
-        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        ! Variables used for management of Meridional Slices
-        INTEGER, Allocatable :: phi_indices(:)
-        INTEGER :: nphi_indices
+        INTEGER, Allocatable :: l_values(:)
 
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         !  Variables used for cached output (currently only used for point probes)
@@ -250,21 +240,11 @@ Module Spherical_IO
         point_probe_r_nrm    ,     point_probe_phi_nrm,  point_probe_theta_nrm, &
         sph_mode_levels_nrm,        point_probe_cache_size
 
-
     Integer :: integer_zero = 0
     Real*8, Private, Allocatable :: qty(:,:,:), f_of_r_theta(:,:,:), f_of_r(:)
     Real*8, Private, Allocatable :: shellav_outputs(:,:,:), globav_outputs(:)
 
-
-    Type(SphericalBuffer) :: sph_sample_buffer
-    Real*8, Private :: da_total, int_vol, int_dphi, int_rsquared_dr, int_sintheta_dtheta
-    Real*8, Private, Allocatable :: sintheta_dtheta(:), rsquared_dr(:)
     Character*8, Public :: i_ofmt = '(i8.8)'
-    integer :: output_ireq(1), output_status(1)
-
-    !////////////////////////////////////////////////////////////////////
-    Logical :: start_az_average, start_shell_average  !, start_shell_slice
-    Logical :: start_pdf, start_global_average, start_spectra
 
     Integer :: io_node = 0
 
@@ -1883,11 +1863,6 @@ Contains
         self%output_version = -1 
         self%grab_this_q = .false.       
 
-        If (Allocated(self%my_shell_levs)) DeAllocate(self%my_shell_levs)
-        If (Allocated(self%have_shell)) DeAllocate(self%have_shell)
-        If (Allocated(self%my_shell_ind)) DeAllocate(self%my_shell_ind)
-        If (Allocated(self%shell_r_ids)) DeAllocate(self%shell_r_ids)
-        If (Allocated(self%nshells_at_rid)) DeAllocate(self%nshells_at_rid)
         self%master = .false.
     End Subroutine CleanUP
 
@@ -1931,8 +1906,6 @@ Contains
         If (Allocated(shellav_outputs)) DeAllocate(shellav_outputs)
         If (Allocated(globav_outputs)) DeAllocate(globav_outputs)
     
-        If (Allocated(sintheta_dtheta)) DeAllocate(sintheta_dtheta)
-        If (Allocated(rsquared_dr)) DeAllocate(rsquared_dr)
         i_ofmt = '(i8.8)'  ! These should never change during a run, but just in case...
 
         io_node = 0
