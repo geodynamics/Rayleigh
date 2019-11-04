@@ -384,8 +384,6 @@ Contains
         Call            Full_3D%Init(averaging_level,compute_q,myid, &
             & 54,values = full3d_values)
 
-        Call    Global_Averages%Init(averaging_level,compute_q,myid, &
-            & 55,avg_level = 3,values = globalavg_values)
 
         Call     Shell_Averages%Init(averaging_level,compute_q,myid, &
             & 57,avg_level = 2,values = shellavg_values)
@@ -394,9 +392,6 @@ Contains
         !//////////////////////////////////////////////////
         !Next, provide the file directory, frequency info, output versions etc.
 
-        ! Global Averages
-        fdir = 'G_Avgs/'
-        Call Global_Averages%set_file_info(globalavg_version,globalavg_nrec,globalavg_frequency,fdir)    
 
         ! Shell Averages
         fdir = 'Shell_Avgs/'
@@ -411,6 +406,13 @@ Contains
         cascade_type = 1
        
         Call Full_3D_Buffer%init(mpi_tag=54)
+
+        fdir = 'G_Avgs/'
+        Call Global_Averages%Init2(averaging_level,compute_q,myid, 55, fdir, &
+                          globalavg_version, globalavg_nrec, globalavg_frequency, &
+                          values = globalavg_values, avg_level = 3, nobuffer=.true.) 
+       
+
        
         ! temporary IO for testing
         fdir = 'Temp_2/'
@@ -1108,7 +1110,7 @@ Contains
     Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
-                 avg_axes, tweights, is_spectral, lvals)
+                 avg_axes, tweights, is_spectral, lvals, nobuffer)
         Implicit None
         Integer :: i,ind
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
@@ -1126,7 +1128,7 @@ Contains
         Real*8, Intent(In), Optional :: tweights(1:)
 
         Logical, Intent(In), Optional :: is_spectral
-
+        Logical, Intent(In), Optional :: nobuffer
         !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, lcount, modcheck
         Logical :: lspec, rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only
@@ -1407,13 +1409,14 @@ Contains
         Endif
 
 
-
-        ! Once the buffer is initialized, set the ocomm info
-        self%ocomm = self%buffer%ocomm%comm
-        self%orank = self%buffer%ocomm%rank
-        self%onp = self%buffer%ocomm%np
-        If (self%orank .eq. 0) then
-            self%master = .true.    ! This process handles file headers in parallel IO
+        If (.not. present(nobuffer)) Then
+            ! Once the buffer is initialized, set the ocomm info
+            self%ocomm = self%buffer%ocomm%comm
+            self%orank = self%buffer%ocomm%rank
+            self%onp = self%buffer%ocomm%np
+            If (self%orank .eq. 0) then
+                self%master = .true.    ! This process handles file headers in parallel IO
+            Endif
         Endif
 
     End Subroutine Initialize_Diagnostic_Info2
