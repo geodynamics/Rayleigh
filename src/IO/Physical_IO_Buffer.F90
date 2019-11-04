@@ -280,6 +280,7 @@ Contains
 
         Call self%Load_Balance_IO()
 
+        self%nwrites = self%nrec*self%ncache ! TODO: Do I move this?
         If (self%output_rank) Call self%set_displacements()
         
         !///////////////////// TODO:  Does this need a separate routine?
@@ -499,8 +500,6 @@ Contains
         self%buffsize = self%nr_out*self%nphi*self%ntheta 
         if (self%spectral) self%buffsize=self%nr_out*self%nlm_out
 
-
-        self%nwrites = self%nrec*self%ncache
 
         If (self%write_mode .eq. 1) Then
             self%io_buffer_size = self%buffsize*self%nwrites
@@ -775,13 +774,14 @@ Contains
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer :: p, mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
-        Integer :: nq, r, rind, lmax, i1, i2
+        Integer :: nq, r, rind, lmax, i1, i2, my_nm, mstore
         ! This routine ensures transforms phi-theta to ell-m space.
         ! It then puts the spectral data into the cache buffer
         ! in a format that is compatible with the collate and write routines.
         lmax = self%lmax
         my_mp_min = pfi%all_3s(self%row_rank)%min
         my_mp_max = pfi%all_3s(self%row_rank)%max
+        my_nm     = my_mp_max-my_mp_min+1
         If (self%nr_local .gt. 0) Then
             !(1) Transform/transpose the phi-theta buffer to Ylm space
             Call FFT_To_Spectral(self%spectral_buffer%p3b, rsc = .true.)
@@ -795,29 +795,20 @@ Contains
             !    While that buffer has nphi and ntheta dimensions, we 
             !    alias those to n_lm and nr
             If (self%write_mode .eq. 1) Then
-                Allocate(self%cache(1:self%lmax+1, my_mp_min:my_mp_max, &
+                Allocate(self%cache(1:self%lmax+1, 1:my_nm, &
                     self%ncache, 1:self%nr_local))     
             Else
-                Allocate(self%cache(1:self%lmax+1, my_mp_min:my_mp_max, &
+                Allocate(self%cache(1:self%lmax+1, 1:my_nm, &
                     1:self%nr_local, self%ncache))  
             Endif
 
             self%cache = 0.0d0
             !~~~~
 
-            !field_ind = counter/pfi%my_1p%delta
-            !rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
 
             nf = self%spectral_buffer%nf2b
             nq = self%ncache/2
             i2 = lmax+1
-
-            !fstart = 1
-            !fend = nq
-            !If (self%write_mode .gt. 1) Then
-            !    fstart = cache_ine
-            !    fend = cache_ind
-            !Endif
 
 
             Do p = 1, 2  ! Real and imaginary parts
@@ -825,25 +816,25 @@ Contains
                     m = pfi%inds_3s(mp)
                     counter = 0
                     i1 = m+1
+                    mstore = mp-my_mp_min+1
                     Do f = 1, nq
 
                         !field_ind = counter/my_nr+1
                         field_ind = counter/pfi%my_1p%delta+1
                         Do r = 1, self%nr_local   
                          
-                            !rind = MOD(counter,my_nr)+my_rmin
                             rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
                             If (self%write_mode .eq. 1) Then                            
-                                self%cache(i1:i2,mp,f,r) = &
+                                self%cache(i1:i2,mstore,f,r) = &
                                     self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
 
-                                self%cache(i1:i2,mp,f+nq,r) = &
+                                self%cache(i1:i2,mstore,f+nq,r) = &
                                     self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
                             Else
-                                self%cache(i1:i2,mp,r,f) = &
+                                self%cache(i1:i2,mstore,r,f) = &
                                     self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
 
-                                self%cache(i1:i2,mp,r, f+nq) = &
+                                self%cache(i1:i2,mstore,r, f+nq) = &
                                     self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
 
                             Endif
@@ -865,7 +856,7 @@ Contains
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In) :: cache_ind
-        Write(6,*)'Gathering data'
+        !Write(6,*)'Gathering data'
     
         If (self%write_mode .eq. 1) Then
             If (self%spectral) Call self%Spectral_Prep()
@@ -889,8 +880,13 @@ Contains
         Integer, Intent(In) :: cache_ind
         Integer :: m, r, i, p, mp_min, mp_max
         Integer :: cend, ncache, mp
+        Logical :: free_mem
 
-        DeAllocate(self%cache)
+        free_mem = .false.
+        If (self%write_mode .eq. 1) free_mem = .true.
+        If (cache_ind .eq. self%nwrites) free_mem = .true.
+
+        If (free_mem) DeAllocate(self%cache)
         ncache =1
         If (self%write_mode .eq. 1) ncache = self%ncache
         
@@ -920,6 +916,7 @@ Contains
                     Else
                         Do r =1, self%nr_out
                             Do mp = mp_min, mp_max
+                                m = pfi%inds_3s(mp)
                                 self%collated_data(:,m+1,r,1) = self%recv_buffers(p)%data(:,mp,r,1)
                             Enddo
                         Enddo                        
@@ -927,7 +924,7 @@ Contains
 
                 Endif
             Enddo    
-            Call self%deallocate_receive_buffers()
+            If (free_mem) Call self%deallocate_receive_buffers()
 !!~~~~~~~~~~~~~~~~
         Endif
 
@@ -942,8 +939,8 @@ Contains
         Integer :: inds(4)
         Integer :: i, r, t, ncache
 
-        Write(6,*)'Cascade'
-        Call self%Allocate_Receive_Buffers()
+        Write(6,*)'Cascade', cache_ind
+        If ( (self%write_mode .eq. 1) .or. (cache_ind .eq. 1) ) Call self%Allocate_Receive_Buffers()
 
         ncache =1
         If (self%write_mode .eq.1) ncache = self%ncache
@@ -957,6 +954,7 @@ Contains
                     n = self%nrecv_from_column(p)*ncache
                     If (n .gt. 0) Then
                         nrirq =nrirq+1
+                        !Write(6,*)'rank/recvfrom: ', self%rank, p, n, cache_ind
                         Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
                                 &  source= p,tag = self%tag, grp = pfi%rcomm)	            
                     Endif
@@ -978,26 +976,29 @@ Contains
             Else
                 inds(3) = rstart
                 inds(4) = cache_ind
+                !If (self%rank .eq. 0) Write(6,*)'inds: ', inds
             Endif
             If (p .ne. self%row_rank) Then
 
                 !n = self%nr_out_at_column(p)*ncache*self%nphi*self%ntheta_local
                 n = self%nsend_to_column(p)*ncache
+                !Write(6,*)'rank/sendto', self%rank, p, n, cache_ind
                 If (n .gt. 0) Then
+
                     Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
                         grp = pfi%rcomm, indstart = inds)
                     nn = nn+1
                 Endif
 
             Else
-
+                If (self%output_rank) Then
                 rend = rstart+self%nr_out-1
                 If (self%write_mode .eq. 1) Then
                     self%recv_buffers(p)%data(:,:,:,:) = self%cache(:,:,:,rstart:rend)
                 Else
                     self%recv_buffers(p)%data(:,:,:,1) =  self%cache(:,:,rstart:rend,cache_ind)
                 Endif
-
+                Endif
             Endif
             rstart = rstart+self%nr_out_at_column(p)
         Enddo
@@ -1012,7 +1013,7 @@ Contains
         If (nsirq .gt. 0) Call IWaitAll(nsirq,sirqs)
 
         DeAllocate(sirqs)
-
+        !Write(6,*)'Completed: ', cache_ind, self%rank
     End Subroutine Cascade
 
     Subroutine Collate_Physical(self,cache_ind)
@@ -1124,7 +1125,7 @@ Contains
             ! First Write the Data
             Do j = 1, self%nwrites
 
-                If (self%write_mode .gt. 1) Call self%gather_data(self%ind(j))
+                If (self%write_mode .gt. 1) Call self%gather_data(j)
 
                 If (self%output_rank) Then
                     fdisp = self%file_disp(j)+hdisp
