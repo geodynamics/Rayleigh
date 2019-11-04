@@ -46,7 +46,7 @@ Module Checkpointing
     Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
     Character*120 :: checkpoint_prefix ='nothing'
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
-
+    Character*3 :: checkpoint_suffix(12)
     Integer :: checkpoint_iter = 0
     Real*8  :: checkpoint_dt, checkpoint_newdt
     Real*8  :: checkpoint_time
@@ -94,6 +94,11 @@ Contains
 
         if (magnetism) Then
             numfields = 6
+            checkpoint_suffix(1:12) = &
+                (/ 'W', 'P', 'T', 'Z', 'C', 'A', 'WAB', 'PAB', 'TAB', 'ZAB', 'CAB', 'AAB' /)
+        Else
+            checkpoint_suffix(1:8) = &
+                (/ 'W', 'P', 'T', 'Z', 'WAB', 'PAB', 'TAB', 'ZAB' /)
         Endif
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a')            ! This structure hangs around through the entire run
@@ -167,6 +172,92 @@ Contains
         Endif
 
     End Subroutine Initialize_Checkpointing
+
+    Subroutine Write_Checkpoint_BUFFER(abterms,iteration,dt,new_dt,elapsed_time)
+        Implicit None
+        Real*8, Intent(In) :: abterms(:,:,:,:)
+        Real*8, Intent(In) :: dt, new_dt
+        Integer, Intent(In) :: iteration
+        Integer :: mp, m, offset,nl,p,np, f, imi, r, ind
+        Integer :: dim2, lstart, i, offset_index
+        Real*8, Allocatable :: myarr(:,:), rowstrip(:,:)
+        Real*8, Intent(In) :: elapsed_time
+        Character*120 :: autostring
+        Character*120 :: iterstring
+        Character*120 :: cfile, checkfile
+        np = pfi%rcomm%np
+
+        Call chktmp%construct('p1a')
+        chktmp%config = 'p1a'
+        !Copy the RHS into chtkmp
+        Call Get_All_RHS(chktmp%p1a)
+        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
+        !Now we want to move from p1a to s2a (rlm space)
+        Call chktmp%reform()
+
+        ! This is where we cache, index by index...
+        ! Don't forget to initialize the buffer:  Call Full_3D_Buffer%Init(mpi_tag=54) 
+
+        If (ItIsTimeForAQuickSave) Then
+            write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
+            checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
+        Else
+            write(iterstring,int_out_fmt) iteration
+            checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
+        Endif
+
+
+        Do i = 1, numfields
+            ! Cache
+            checkfile = checkpoint_prefix//checkpoint_suffix(i)
+            !Call checkpoint_buffer%cache_spectra(chktmp%s2a,i)
+            !Call checkpoint_buffer%write_data(filename=checkfile)
+
+        Enddo
+
+        Call chktmp%deconstruct('s2a')
+
+        If (my_rank .eq. 0) Then
+            ! rank 0 writes out a file with the grid, etc.
+            ! This file should contain everything that needs to be known
+
+            cfile = Trim(my_path)//trim(checkpoint_prefix)//'_'//'grid_etc'
+
+            open(unit=15,file=cfile,form='unformatted', status='replace')
+            Write(15)n_r
+            Write(15)grid_type
+            Write(15)l_max
+            Write(15)dt
+            Write(15)new_dt
+            Write(15)(radius(i),i=1,N_R)
+            Write(15)elapsed_time
+            Write(15)iteration
+            Close(15)
+
+            open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
+            If (ItIsTimeForAQuickSave) Then
+                Write(15,int_minus_out_fmt)-iteration
+                Write(15,'(i2.2)')(quicksave_num+1)
+            Else
+                Write(15,int_out_fmt)iteration
+            Endif
+            Close(15)
+
+            open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
+                position='Append')
+            If (ItIsTimeForAQuickSave) Then
+                Write(iterstring,int_out_fmt)iteration
+                Write(autostring,auto_fmt)quicksave_num+1
+                Write(15,*)iterstring, ' ', autostring
+            Else
+                Write(15,int_out_fmt)iteration
+            Endif
+            Close(15)
+
+        Endif
+
+    End Subroutine Write_Checkpoint_BUFFER
+
 
 
 
