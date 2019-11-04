@@ -939,7 +939,6 @@ Contains
         Integer :: inds(4)
         Integer :: i, r, t, ncache
 
-        Write(6,*)'Cascade', cache_ind
         If ( (self%write_mode .eq. 1) .or. (cache_ind .eq. 1) ) Call self%Allocate_Receive_Buffers()
 
         ncache =1
@@ -1026,8 +1025,15 @@ Contains
         Integer :: i, tstart,tend, r, t, ncache
         Real*8, Allocatable :: data_copy(:,:,:,:)
         Integer :: cend
+        Logical :: free_mem
         ncache =1
         If (self%write_mode .eq. 1) ncache = self%ncache
+
+        free_mem = .false.
+        If (self%write_mode .eq. 1) free_mem = .true.
+        If (cache_ind .eq. self%nwrites) free_mem = .true.
+
+
         
         If (self%output_rank) Then
             cend = 1
@@ -1054,10 +1060,11 @@ Contains
                     Endif
                     tstart = tend+1
                 Endif
-            Enddo            
+            Enddo    
+            If (free_mem) Call self%deallocate_receive_buffers()
         Endif
 
-        Call self%deallocate_receive_buffers()
+       
 
         If (self%output_rank .and. self%sum_theta) Then
 
