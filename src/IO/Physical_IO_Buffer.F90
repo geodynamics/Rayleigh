@@ -36,6 +36,9 @@ Module Physical_IO_Buffer
         Integer, Allocatable :: phi_ind(:)  ! phi indices in (potentially subsampled) array 
         Integer, Allocatable :: r_local_ind(:) ! r indices in subsampled array (r-my_r%min+1)
 
+        Integer, Allocatable :: l_values(:)   ! l-values subsampled from full spectrum
+        Integer              :: n_l_samp
+
         !**Row-specific** variables related to the cascade operation
         !Everything here is true within a given row, but may different between
         !rows
@@ -68,6 +71,8 @@ Module Physical_IO_Buffer
         Logical :: r_spec = .false.
         Logical :: t_spec = .false.
         Logical :: p_spec = .false.
+        Logical :: l_spec = .false.
+
 
         ! Averaging variables
         Logical :: sum_r =.false.        ! Perform a weighted sum in r
@@ -138,10 +143,12 @@ Contains
                                              phi_indices,ncache, mpi_tag, &
                                              cascade, sum_weights_theta, nrec, &
                                              skip, write_timestamp, &
-                                             averaging_axes, spectral, mode)
+                                             averaging_axes, spectral, mode, &
+                                             l_values)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
+        Integer, Intent(In), Optional :: l_values(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
         Logical, Intent(In), Optional :: write_timestamp, spectral
@@ -253,6 +260,14 @@ Contains
             !self%nlm = ((self%lmax+1)**2 + self%lmax+1 )/2
             self%nlm = (self%lmax+1)*(self%lmax+1) 
             self%nlm_out = (self%lmax+1)*(self%lmax+1)   ! TODO: will need to modify for sph_mode_samples
+            If (present(l_values)) Then
+                self%l_spec = .true.
+                self%n_l_samp = Size(l_values)
+                self%nlm_out = SUM(l_values)+self%n_l_samp
+                Allocate(self%l_values(1:self%n_l_samp))
+                self%l_values(:) = l_values(:)
+            Endif
+
         Endif
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
@@ -503,9 +518,12 @@ Contains
 
         If (self%write_mode .eq. 1) Then
             self%io_buffer_size = self%buffsize*self%nwrites
+            If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm*self%nwrites
         Else
             self%io_buffer_size = self%buffsize
+            If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm ! buffer still needs to hold a full spectrum temporarily
         Endif
+        !If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm ! buffer still needs to hold a full spectrum temporarily
 
         !If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
@@ -879,8 +897,9 @@ Contains
         Class(IO_Buffer_Physical), Target :: self
         Integer, Intent(In) :: cache_ind
         Integer :: m, r, i, p, mp_min, mp_max
-        Integer :: cend, ncache, mp
+        Integer :: cend, ncache, mp, k, l, j, lval, ind
         Logical :: free_mem
+        Real*8, Allocatable :: data_copy(:,:,:,:)
 
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
@@ -926,6 +945,38 @@ Contains
             Enddo    
             If (free_mem) Call self%deallocate_receive_buffers()
 !!~~~~~~~~~~~~~~~~
+            If (self%l_spec) Then
+                Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
+                ! Restripe to m-l (i,j) from l-m
+                Do k = 1, cend
+                Do r = 1, self%nr_out
+                Do j = 1, self%lmax+1
+                Do i = 1, self%lmax+1
+                    data_copy(i,j,r,k) = self%collated_data(j,i,r,k)
+                Enddo
+                Enddo
+                Enddo
+                Enddo
+
+                ! next, repoint collated_data
+                self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
+                    self%buffer(1:self%nlm_out*self%nr_out*cend)
+
+                ! Grab the desired l values
+                Do k = 1, cend
+                Do r = 1, self%nr_out
+                    ind = 1
+                    Do l = 1, self%n_l_samp
+                        lval = self%l_values(l)
+                        self%collated_data(ind:ind+lval,1,r,k) = &
+                            data_copy(1:lval+1,lval+1,r,k)
+                        ind = ind+lval+1
+                    Enddo
+            
+                Enddo
+                Enddo
+                DeAllocate(data_copy)
+            Endif
         Endif
 
     End Subroutine Collate_Spectral

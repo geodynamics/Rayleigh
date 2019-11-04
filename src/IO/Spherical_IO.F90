@@ -63,7 +63,7 @@ Module Spherical_IO
     Integer, Parameter :: shellspectra_version = 3
     Integer, Parameter :: equslice_version = 1  
     Integer, Parameter :: meridslice_version = 1
-    Integer, Parameter :: sphmode_version =3
+    Integer, Parameter :: sphmode_version =4
     INTEGER, PARAMETER :: probe_version = 1
     Integer, Parameter :: full3d_version = 3    !currently unused
     Type, Public :: DiagnosticInfo
@@ -139,7 +139,7 @@ Module Spherical_IO
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Variables for subsampling the IO buffer
         Integer, Allocatable :: r_inds(:), theta_inds(:), phi_inds(:)
-        Integer :: nr, ntheta, nphi
+        Integer :: nr, ntheta, nphi, nell
         Real*8, Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
 
         !Communicatory Info for parallel writing (if used)
@@ -455,9 +455,9 @@ Contains
         If (mem_friendly) wmode =2
         Write(6,*)'WMODE IS: ', wmode
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
-                          shellspectra_version, sph_mode_nrec, sph_mode_frequency, &
+                          sphmode_version+1, sph_mode_nrec, sph_mode_frequency, &
                           values = sph_mode_values, rinds=sph_mode_levels, &
-                          is_spectral = .true. , write_mode = wmode) 
+                          is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
 
         ! Converted outputs
 
@@ -575,11 +575,12 @@ Contains
         !/////////////////////////////////////////////////////
         ! Shell Spectra
         lmax = maxval(pfi%inds_3s)
-        dims(1:3) = (/ lmax, Temp_IO%nr, Temp_IO%nq /)
+        dims(1:3) = (/ Temp_IO%nell, Temp_IO%nr, Temp_IO%nq /)
         Call Temp_IO%Add_IHeader(dims,3)
         Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
         Call Temp_IO%Add_DHeader(Temp_IO%r_vals, Temp_IO%nr)
         Call Temp_IO%Add_IHeader(Temp_IO%r_inds, Temp_IO%nr)
+        Call Temp_IO%Add_IHeader(Temp_IO%l_values, Temp_IO%nell)
         !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
 
     End Subroutine Initialize_Headers
@@ -912,6 +913,8 @@ Contains
                 If (SPH_Mode_Samples%file_open) Then
                     Do p = 1, 2
                         new_disp = disp+  (qindex-1)*qsize*2 +(p-1)*qsize +my_rdisp  
+                        ! modified ordering...
+                        !new_disp = disp+  (qindex-1)*qsize +(p-1)*qsize*nq_shell +my_rdisp  
                         Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
                         Do r = 1, my_nlevels
                         Do lv = 1, SPH_MODE_NELL                    
@@ -1447,7 +1450,7 @@ Contains
     Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
-                 avg_axes, tweights, is_spectral)
+                 avg_axes, tweights, is_spectral, lvals)
         Implicit None
         Integer :: i,ind
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
@@ -1458,7 +1461,7 @@ Contains
         Integer, Optional, Intent(In) :: levels(1:)
         Integer, Optional, Intent(In) :: phi_inds(1:)
         Integer, Intent(InOut) :: computes(1:), avg_levels(1:)
-        Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:)
+        Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:), lvals(1:)
 
         !Averaging variables
         Integer, Intent(In), Optional :: avg_axes(1:)
@@ -1467,8 +1470,8 @@ Contains
         Logical, Intent(In), Optional :: is_spectral
 
         !Real*8, Allocatable th_weights(:)
-        Integer :: rcount, tcount, pcount, modcheck
-        Logical :: rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only
+        Integer :: rcount, tcount, pcount, lcount, modcheck
+        Logical :: lspec, rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only
         Class(DiagnosticInfo) :: self 
 
         ! File info
@@ -1643,6 +1646,26 @@ Contains
             Endif
         Endif
 
+        If (present(lvals)) Then
+            lspec = .true.
+            lcount = size(lvals)
+            i = 1
+            DO WHILE ( i .le. lcount )
+                IF (lvals(i) .lt. 0) THEN
+                    lcount = i-1
+                ENDIF
+                i = i+1
+            ENDDO
+
+            IF (lcount .gt. 0) THEN
+                Allocate(self%l_values(1:lcount))
+                self%l_values(1:lcount) = lvals(1:lcount)
+                self%nell = lcount
+            ENDIF
+
+        Endif
+
+
         self%nr     = rcount
         self%ntheta = tcount
         self%nphi   = pcount
@@ -1654,7 +1677,7 @@ Contains
         rad_only = (rspec .and. (.not. tspec) .and. (.not. pspec) )
         phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
         theta_only = (tspec .and. (.not. pspec) .and. (.not. rspec) )
-
+        
         !Write(6,*)'rad only: ', rad_only, rspec, tspec, pspec
 
         If (rtp_spec) Then
@@ -1671,12 +1694,21 @@ Contains
             Write(6,*)'RAD INIT!'
              
             If (present(is_spectral)) Then
+                If (lspec) Then
+                Call self%buffer%init(r_indices=self%r_inds, &
+                                          ncache  = self%nq*self%cache_Size, &
+                                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+                                          nrec = self%cache_size, skip = 12, &
+                                          write_timestamp = .true., spectral = is_spectral, &
+                                          l_values = self%l_values)
+                Else
                 Call self%buffer%init(r_indices=self%r_inds, &
                                           ncache  = self%nq*self%cache_Size, &
                                           mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                           nrec = self%cache_size, skip = 12, &
                                           write_timestamp = .true., spectral = is_spectral)
 
+                Endif
             Else
                 Call self%buffer%init(r_indices=self%r_inds, &
                                           ncache  = self%nq*self%cache_Size, &
