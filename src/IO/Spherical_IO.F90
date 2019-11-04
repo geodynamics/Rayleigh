@@ -385,8 +385,8 @@ Contains
             & 54,values = full3d_values)
 
 
-        Call     Shell_Averages%Init(averaging_level,compute_q,myid, &
-            & 57,avg_level = 2,values = shellavg_values)
+        !Call     Shell_Averages%Init(averaging_level,compute_q,myid, &
+        !   & 57,avg_level = 2,values = shellavg_values)
 
 
         !//////////////////////////////////////////////////
@@ -394,8 +394,8 @@ Contains
 
 
         ! Shell Averages
-        fdir = 'Shell_Avgs/'
-        Call Shell_Averages%set_file_info(shellavg_version,shellavg_nrec,shellavg_frequency,fdir)    
+        !fdir = 'Shell_Avgs/'
+        !Call Shell_Averages%set_file_info(shellavg_version,shellavg_nrec,shellavg_frequency,fdir)    
 
         ! Full 3D (special because it only cares about the frequency, not nrec)
         fdir = 'Spherical_3D/'
@@ -411,6 +411,12 @@ Contains
         Call Global_Averages%Init2(averaging_level,compute_q,myid, 55, fdir, &
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, avg_level = 3, nobuffer=.true.) 
+       
+
+        fdir = 'Shell_Avgs/'
+        Call Shell_Averages%Init2(averaging_level,compute_q,myid, 57, fdir, &
+                          shellavg_version, shellavg_nrec, shellavg_frequency, &
+                          values = shellavg_values, avg_level = 2, nobuffer=.true.) 
        
 
        
