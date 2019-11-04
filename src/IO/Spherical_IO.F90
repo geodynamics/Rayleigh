@@ -169,7 +169,6 @@ Module Spherical_IO
         Procedure :: AdvanceInd
         Procedure :: AdvanceCC
         Procedure :: reset => diagnostic_output_reset
-        Procedure :: Shell_Balance
         Procedure :: OpenFile
         Procedure :: OpenFile_Par
         Procedure :: Set_File_Info
@@ -392,39 +391,6 @@ Contains
             & 57,avg_level = 2,values = shellavg_values)
 
 
-        Call       SPH_Mode_Samples%Init(averaging_level,compute_q,myid, &
-            & 62,values = sph_mode_values, levels = sph_mode_levels)
-
-        !Outputs involve saving and communicating partial shell slices (e.g. Shell_Slices or spectra)
-        !require an additional initialization step to load-balance the shells
-
-
-        Call SPH_Mode_Samples%Shell_Balance()
-
-        if (my_row_rank .eq. 0) Then
-
-
-            If (SPH_Mode_Samples%nshell_r_ids .gt. 0) Then
-                master_rank = SPH_Mode_Samples%shell_r_ids(1)
-                Call SPH_Mode_Samples%init_ocomm(pfi%ccomm%comm,nproc1,my_column_rank,master_rank) 
-            Endif
-
-        Endif
-        
-
-
-        If (SPH_Mode_Samples%nlevels .gt. 0) Then
-            !Similarly so for SPH_Mode_Samples
-            ntot = SPH_Mode_Samples%nq*SPH_Mode_Samples%my_nlevels
-            fcnt = ntot/my_nr
-            k = Mod(ntot,my_nr)
-            if (k .gt. 0) fcnt = fcnt+1
-            If (fcnt .gt. 0) Then
-                fcount(:,:) = fcnt
-           		Call sph_sample_buffer%init(field_count = fcount, config = 'p3b')		
-            Endif	
-        Endif 
-
         !//////////////////////////////////////////////////
         !Next, provide the file directory, frequency info, output versions etc.
 
@@ -435,9 +401,6 @@ Contains
         ! Shell Averages
         fdir = 'Shell_Avgs/'
         Call Shell_Averages%set_file_info(shellavg_version,shellavg_nrec,shellavg_frequency,fdir)    
-
-        fdir = 'SPH_Modes/'
-        Call SPH_Mode_Samples%set_file_info(sphmode_version,sph_mode_nrec,sph_mode_frequency,fdir) 
 
         ! Full 3D (special because it only cares about the frequency, not nrec)
         fdir = 'Spherical_3D/'
@@ -455,7 +418,7 @@ Contains
         If (mem_friendly) wmode =2
         Write(6,*)'WMODE IS: ', wmode
         Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
-                          sphmode_version+1, sph_mode_nrec, sph_mode_frequency, &
+                          sphmode_version, sph_mode_nrec, sph_mode_frequency, &
                           values = sph_mode_values, rinds=sph_mode_levels, &
                           is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
 
@@ -501,6 +464,14 @@ Contains
                           shellspectra_version, shellspectra_nrec, shellspectra_frequency, &
                           values = shellspectra_values, rinds=shellspectra_levels, &
                           is_spectral = .true. , write_mode = wmode) 
+
+        fdir = 'SPH_Modes/'
+        wmode =1
+        If (mem_friendly) wmode =2
+        Call SPH_Mode_Samples%Init2(averaging_level,compute_q,myid, 62, fdir, &
+                          sphmode_version, sph_mode_nrec, sph_mode_frequency, &
+                          values = sph_mode_values, rinds=sph_mode_levels, &
+                          is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
 
 
         Call Initialize_Headers()
@@ -573,7 +544,18 @@ Contains
 
 
         !/////////////////////////////////////////////////////
-        ! Shell Spectra
+        ! SPH Modes
+        lmax = maxval(pfi%inds_3s)
+        dims(1:3) = (/ SPH_Mode_Samples%nell, SPH_Mode_Samples%nr, SPH_Mode_Samples%nq /)
+        Call SPH_Mode_Samples%Add_IHeader(dims,3)
+        Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%oqvals, SPH_Mode_Samples%nq)
+        Call SPH_Mode_Samples%Add_DHeader(SPH_Mode_Samples%r_vals, SPH_Mode_Samples%nr)
+        Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%r_inds, SPH_Mode_Samples%nr)
+        Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%l_values, SPH_Mode_Samples%nell)
+        !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
+
+        !/////////////////////////////////////////////////////
+        ! Temp IO
         lmax = maxval(pfi%inds_3s)
         dims(1:3) = (/ Temp_IO%nell, Temp_IO%nr, Temp_IO%nq /)
         Call Temp_IO%Add_IHeader(dims,3)
@@ -581,7 +563,7 @@ Contains
         Call Temp_IO%Add_DHeader(Temp_IO%r_vals, Temp_IO%nr)
         Call Temp_IO%Add_IHeader(Temp_IO%r_inds, Temp_IO%nr)
         Call Temp_IO%Add_IHeader(Temp_IO%l_values, Temp_IO%nell)
-        !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
+
 
     End Subroutine Initialize_Headers
 
@@ -650,327 +632,6 @@ Contains
         Endif
 
 	End Subroutine Write_IO
-
-	Subroutine Get_SPH_Modes(qty)
-		Implicit None
-		Integer :: j, ilocal, shell_ind, field_ind, rind, counter
-        Integer :: k, jj
-		Real*8, Intent(In) :: qty(1:,1:,my_theta_min:)
-
-        If (SPH_Mode_Samples%nlevels .gt. 0) Then
-            shell_ind = SPH_Mode_Samples%ind
-
-            SPH_Mode_Samples%oqvals(shell_ind) = current_qval
-
-		    If (SPH_Mode_Samples%my_nlevels .gt. 0) Then
-
-		        If (SPH_Mode_Samples%begin_output) Then
-			        Call sph_sample_buffer%construct('p3b')
-                    sph_sample_buffer%p3b(:,:,:,:) = 0.0d0
-		        Endif
-
-		        Do j = 1, SPH_Mode_Samples%my_nlevels
-
-		            ilocal = SPH_Mode_Samples%my_shell_levs(j)-my_rmin+1
-
-                    counter = (shell_ind-1)*SPH_Mode_Samples%my_nlevels+ j-1 
-
-                    field_ind = counter/my_nr+1
-                    rind = MOD(counter,my_nr)+my_rmin
-
-                    Do k = 1, nphi
-                        Do jj = my_theta_min, my_theta_max
-				            sph_sample_buffer%p3b(k,rind,jj,field_ind) = &
-                                & qty(k, ilocal, jj)
-                        Enddo
-                    Enddo
-
-		        Enddo
-            Endif
-            Call SPH_Mode_Samples%AdvanceInd()
-		Endif
-
-	End Subroutine Get_SPH_Modes
-
-	Subroutine Write_SPH_Modes(this_iter,simtime)
-        ! This version mirrors the mem-friendly shell_spectra writing routine
-		Implicit None
-		Real*8, Intent(in) :: simtime
-		Integer, Intent(in) :: this_iter
-		Real*8, Allocatable :: buff(:,:,:,:,:), all_spectra(:,:,:,:,:)
-        Real*8, Allocatable :: sendbuffer(:,:,:,:,:), out_radii(:)
-        Real*8, Allocatable :: bsendbuffer(:,:,:,:,:)
-		Integer :: responsible, current_shell, s_start, s_end, this_rid
-		Integer :: i, j, k,qq, m, mp, lmax,rind,field_ind,f,r
-        Integer :: rone,  p,  counter, nf
-		Integer :: n, nn, this_nshell, nq_shell, sph_samples_tag, nmodes
-        Integer(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_rdisp, new_disp
-        Integer(kind=MPI_OFFSET_KIND)  :: qsize, qdisp, rec_size
-		Integer :: your_mp_min, your_mp_max, your_nm, your_id
-		Integer :: nelem, m_ind, m_val, current_rec
-        Integer :: funit, error, sirq, inds(5), dims(3)
-        Integer :: my_nlevels, nlevels, qindex
-        Integer :: lp1, nrirqs, ind5
-        Integer :: ierr, rcount, buffsize, lv,lval
-        Integer, Allocatable :: rirqs(:)
-        Integer :: mstatus(MPI_STATUS_SIZE)       
-
-        nlevels = SPH_Mode_Samples%nlevels             ! The total number of spectra levels that needs to be output
-        my_nlevels = SPH_Mode_Samples%my_nlevels       ! The number of radial levels that this rank needs to write out
-        nq_shell = SPH_Mode_Samples%nq                 ! The number of quantities 
-        sph_samples_tag = SPH_Mode_Samples%mpi_tag
-        funit = SPH_Mode_Samples%file_unit
-        lmax = maxval(pfi%inds_3s)
-        lp1 = lmax+1
-        nmodes = sph_mode_nmode
-		responsible = 0
-		If ( (my_row_rank .eq. 0) .and. (my_nlevels .gt. 0) )  Then
-            responsible = 1
-            Allocate(all_spectra(0:lmax,0:lmax, my_nlevels,1, 1:2))
-            Allocate(buff(0:lmax,my_nlevels,1,1:2,1:lp1))  !note - indexing starts at 1 not zero for mp_min etc.
-            nrirqs = nproc2-1
-            Allocate(rirqs(1:nrirqs))
-        Endif
-
-
-        !Before we start the main communication, all processes that contribute to the
-        ! spectral output must get their buffers in the correct form
-        If (my_nlevels .gt. 0) Then
-            !//////////////////////
-            ! First thing we do is FFT/reform the buffer/Legendre Transform
-            !
-            Call FFT_To_Spectral(sph_sample_buffer%p3b, rsc = .true.)
-            sph_sample_buffer%config ='p3b'
-            Call sph_sample_buffer%reform()
-            Call sph_sample_buffer%construct('s2b')
-            Call Legendre_Transform(sph_sample_buffer%p2b,sph_sample_buffer%s2b)
-            Call sph_sample_buffer%deconstruct('p2b')
-
-            Allocate(bsendbuffer(0:lmax,my_nlevels,nq_shell,2, my_mp_min:my_mp_max ))
-            Allocate(sendbuffer(0:lmax,my_nlevels,1,2, my_mp_min:my_mp_max ))
-            bsendbuffer = 0.0d0 
-            sendbuffer = 0.0d0
-            nf = sph_sample_buffer%nf2b
-            Do p = 1, 2  ! Real and imaginary parts
-            Do mp = my_mp_min,my_mp_max
-                m = pfi%inds_3s(mp)
-                    counter = 0
-                    Do f = 1, nq_shell
-
-                        field_ind = counter/my_nr+1
-                        Do r = 1, SPH_Mode_Samples%my_nlevels   
-                                
-                            rind = MOD(counter,my_nr)+my_rmin
-                            bsendbuffer(m:lmax,r,f,p,mp) = &
-                                & sph_sample_buffer%s2b(mp)%data(m:lmax,rind,p,field_ind)
-                            counter = counter+1
-                        Enddo
-                    Enddo
-                Enddo
-
-            Enddo
-            call sph_sample_buffer%deconstruct('s2b')
-
-        Endif
-
-
-        If (my_row_rank .eq. 0) Call SPH_Mode_Samples%OpenFile_Par(this_iter, error)
-
-        If ( (responsible .eq. 1) .and. (SPH_Mode_Samples%file_open) ) Then
-            ! Processes that take part in the write have some extra work to do
-            funit = SPH_Mode_Samples%file_unit
-            current_rec = SPH_Mode_Samples%current_rec  ! Note that we have to do this after the file is opened
-            If  ( (SPH_Mode_Samples%write_header) .and. (SPH_Mode_Samples%master) ) Then                
-
-                dims(1) =  sph_mode_nell
-                dims(2) =  nlevels
-                dims(3) =  nq_shell
-                buffsize = 3
-                call MPI_FILE_WRITE(funit, dims, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
-
-                buffsize = nq_shell
-                call MPI_FILE_WRITE(funit,SPH_Mode_Samples%oqvals, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
-
-                allocate(out_radii(1:nlevels))
-                Do i = 1, nlevels
-                    out_radii(i) = radius(SPH_Mode_Samples%levels(i))
-                Enddo
-                buffsize = nlevels
-	            call MPI_FILE_WRITE(funit, out_radii, buffsize, MPI_DOUBLE_PRECISION, & 
-                    mstatus, ierr) 
-                DeAllocate(out_radii)
-                
-	            call MPI_FILE_WRITE(funit, SPH_Mode_Samples%levels, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr) 
-
-                buffsize = sph_mode_nell
-	            call MPI_FILE_WRITE(funit, SPH_Mode_Ell, buffsize, MPI_INTEGER, & 
-                    mstatus, ierr)                 
-
-            Endif
-
-            hdisp = 24 ! dimensions+endian+version+record count
-            hdisp = hdisp+nq_shell*4 ! nq
-            hdisp = hdisp+nlevels*12  ! level indices and level values
-            hdisp = hdisp+sph_mode_nell*4  !ell-values
-            rcount = 0
-            Do p = 1, SPH_Mode_Samples%nshell_r_ids
-                if (SPH_Mode_Samples%shell_r_ids(p) .lt. my_column_rank) Then
-                    rcount = rcount+ SPH_Mode_Samples%nshells_at_rid(p)
-                Endif
-            Enddo
-            my_rdisp = rcount*nmodes*8
-
-                
-
-            ! This is the LOCAL number ELEMENTS in the real or imaginary component of
-            ! of a single quantity  (This is not in bytes)
-            !buffsize = my_nlevels*nmodes 
-
-            !This is the half-size (bytes) of a single quantity's information
-            !Each quantity has real/imaginary components, and
-            ! so the full size is twice this value.  THIS IS GLOBAL
-            qsize = nlevels*nmodes*8
-
-            !This is the size (bytes) of a single iteration's record
-            rec_size = qsize*2*nq_shell+12  ! 12 is for the simtime+iteration at the end
-
-            disp = hdisp+rec_size*(current_rec-1)
-
-        Endif
-
-
-        Do qindex = 1, nq_shell  ! Q LOOP starts here!
-
-            !Load the current quantity into the sendbuffer
-            If (my_nlevels .gt. 0) Then
-                sendbuffer(:,:,1,:,:) = & 
-                    & bsendbuffer(:,:,qindex,:,:)
-            Endif
-
-
-
-            If (responsible .eq. 1) Then
-                ! Rank 0 in reach row receives  all pieces of the shell spectra from the other nodes
-
-                all_spectra(:,:,:,:,:) = 0.0d0
-                buff(:,:,:,:,:) = 0.0d0
-
-
-                rirqs(:) = 0
-                ind5 = pfi%all_3s(0)%delta+1
-                Do nn = 1, nrirqs
-                    !Write(6,*)'Ind5: ', ind5
-                    your_id = nn
-
-                    your_nm     = pfi%all_3s(nn)%delta
-                    your_mp_min = pfi%all_3s(nn)%min
-                    your_mp_max = pfi%all_3s(nn)%max
-
-
-                    nelem = your_nm*my_nlevels*2*lp1
-
-                    inds(:) = 1
-                    inds(5) = ind5  !This is the mp_index here.
-
-                    Call Ireceive(buff, rirqs(nn), n_elements = nelem,source= your_id, &
-                        &  tag=sph_samples_tag,grp = pfi%rcomm, indstart = inds)
-                    ind5 = ind5+your_nm
-                Enddo
-
-                ! Stripe my own data into the receive buffer
-
-                Do mp = my_mp_min,  my_mp_max
-                    m = pfi%inds_3s(mp)
-                    Do p = 1,2
-                        Do r = 1, my_nlevels   
-                            buff(m:lmax,r,1,p,mp) = sendbuffer(m:lmax,r,1,p,mp) 
-                        Enddo
-                    Enddo
-                Enddo
-
-                Call IWaitAll(nrirqs,rirqs)
-
-                !Stripe the receiver buffer into the spectra buffer
-
-                !Modified stripe (we stripe m, ell  vs. ell, m as in shell_spectra)
-
-                Do mp = 1,lp1
-                    m = pfi%inds_3s(mp)
-                    Do p = 1, 2  ! Real and imaginary parts
-                        Do r = 1, my_nlevels   
-                            all_spectra(m,m:lmax,r,1,p) = buff(m:lmax,r,1,p,mp)
-                        Enddo
-                    Enddo
-                Enddo
-
-
-
-
-
-                If (SPH_Mode_Samples%file_open) Then
-                    Do p = 1, 2
-                        new_disp = disp+  (qindex-1)*qsize*2 +(p-1)*qsize +my_rdisp  
-                        ! modified ordering...
-                        !new_disp = disp+  (qindex-1)*qsize +(p-1)*qsize*nq_shell +my_rdisp  
-                        Call MPI_File_Seek(funit,new_disp,MPI_SEEK_SET,ierr)
-                        Do r = 1, my_nlevels
-                        Do lv = 1, SPH_MODE_NELL                    
-                            lval = SPH_MODE_ELL(lv)
-                            buffsize = lval+1
-                            !if ((lval .eq. 0)) Then
-                            !    Write(6,*)p, myid, my_rdisp, all_spectra(0,lval,r,1,p)
-                            !Endif
-                            Call MPI_FILE_WRITE(funit, all_spectra(0,lval,r,1,p), buffsize, & 
-                                   MPI_DOUBLE_PRECISION, mstatus, ierr)
-                        Enddo
-                        Enddo
-                    Enddo
-                Endif
-
-            Else
-			    !  Non-responsible nodes send their info
-			    If (my_nlevels .gt. 0) Then
-                    inds(:) = 1
-				    Call Isend(sendbuffer,sirq, dest = 0,tag=sph_samples_tag, grp = pfi%rcomm, indstart = inds)
-                    Call IWait(sirq)
-			    Endif
-		    Endif
-
-        Enddo  ! Q-LOOP
-
-        If ( (responsible .eq. 1) ) Then
-            disp = hdisp+rec_size*current_rec
-            disp = disp-12
-
-            If (SPH_Mode_Samples%file_open) Then
-                Call MPI_File_Seek(funit,disp,MPI_SEEK_SET,ierr)
-
-                If (SPH_Mode_Samples%master) Then
-
-                    buffsize = 1
-                    Call MPI_FILE_WRITE(funit, simtime, buffsize, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
-                    Call MPI_FILE_WRITE(funit, this_iter, buffsize, & 
-                           MPI_INTEGER, mstatus, ierr)
-                Endif
-
-            Endif
-
-            DeAllocate(all_spectra)
-            DeAllocate(buff)
-            DeAllocate(rirqs)
-        Endif
-
-
-        If (my_row_rank .eq. 0) Call SPH_Mode_Samples%closefile_par()
-        If (my_nlevels .gt. 0) Then 
-            DeAllocate(sendbuffer, bsendbuffer)
-        Endif
-
-	End Subroutine Write_SPH_Modes
 
     Function Compute_Quantity(qval) result(yesno)
         integer, intent(in) :: qval 
@@ -1070,7 +731,7 @@ Contains
 
             If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
             If (Meridional_Slices%grab_this_q) Call Meridional_Slices%Store_Values(qty)
-            If (SPH_Mode_Samples%grab_this_q)  Call Get_SPH_Modes(qty)
+            If (SPH_Mode_Samples%grab_this_q)  Call SPH_Mode_Samples%Store_Values(qty)
             If (Point_Probes%grab_this_q)      Call Point_Probes%Store_Values(qty)
 
 		    If (Shell_Slices%grab_this_q)      Call Shell_Slices%Store_Values(qty)
@@ -1095,10 +756,7 @@ Contains
         Call AZ_Averages%write_io(iter,sim_time)
         Call Shell_Spectra%write_io(iter,sim_time)
         Call Temp_IO%write_io(iter,sim_time)
-
-	    If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%frequency) .eq. 0 )) Then
-            Call Write_SPH_Modes(iter,sim_time)
-        Endif
+        Call SPH_Mode_Samples%write_io(iter, sim_time)
 
 	    If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
 	    If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%frequency) .eq. 0 )) Call Write_Global_Average(iter,sim_time)
@@ -1957,70 +1615,6 @@ Contains
         self%ind = 1
         self%begin_output = .true.
     End Subroutine Diagnostic_Output_Reset
-
-    Subroutine Shell_Balance(self)
-        ! I'm being a little sloppy here.  This method of the diagnostic class still uses
-        ! a number of module-wide variables.
-        ! Eventually, the code might be cleaner if this class were moved to its own module.
-        Implicit None
-        Class(DiagnosticInfo) :: self
-        Integer :: j, ilocal, i, pcount, your_rmax, your_rmin
-        Integer, Allocatable :: ptemp(:), ptemp2(:), ptemp3(:)
-		self%my_nlevels = 0
-		Allocate(self%my_shell_levs(1:self%nlevels))
-		Allocate(self%have_shell(1:self%nlevels))
-		Allocate(self%my_shell_ind(1:self%nlevels))
-		self%have_shell(:) = 0		
-		Do j = 1, self%nlevels
-			ilocal = self%levels(j)
-			If ((ilocal .ge. my_rmin) .and. (ilocal .le. my_rmax)) Then ! my processor has this radius
-			   self%have_shell(j) = 1
-			   self%my_nlevels = self%my_nlevels+1
-			   self%my_shell_levs(self%my_nlevels) = self%levels(j)
-			   self%my_shell_ind(self%my_nlevels) = j
-			Endif
-		Enddo
-
-        !/// ID 0 has a little more work to do
-		If (my_row_rank .eq. 0) Then
-			!Use process zero to figure out which radial processors will
-			! actually output shells.  This will make it easier to read in the input later.
-			Allocate(ptemp(1:nproc1))
-			Allocate(ptemp2(1:nproc1))
-			Allocate(ptemp3(1:nproc1))
-			ptemp(:) = 0
-			ptemp2(:) = 0
-			do i = 0, nproc1-1
-				your_rmin = pfi%all_1p(i)%min
-				your_rmax = pfi%all_1p(i)%max
-				Do j = 1, self%nlevels
-					ilocal = self%levels(j)
-					If ( (ilocal .ge. your_rmin) .and. (ilocal .le. your_rmax) ) Then
-						ptemp(i+1) = ptemp(i+1)+1	!  radial id "i" has another shell that we want to output
-					Endif	
-				Enddo
-			enddo
-			pcount =0
-			do i = 0, nproc1-1
-				if (ptemp(i+1) .ge. 1) then 
-					pcount = pcount+1					! pcount is the number of unique radial id's that have shells
-					ptemp2(pcount) = i				! ptemp2 is for storing the radial id's of that have shells to output
-					ptemp3(pcount) = ptemp(i+1)	! ptemp3 is the number of shells this radial id has
-				endif
-			enddo
-            
-			!   Resize the temporary arrays
-			Allocate(self%shell_r_ids(1:pcount))
-			Allocate(self%nshells_at_rid(1:pcount))
-			self%shell_r_ids(:) = ptemp2(1:pcount)	! These are the radial ids of the processors that have shells
-			self%nshells_at_rid(:) = ptemp3(1:pcount) ! How many shells this rid has
-			self%nshell_r_ids = pcount
-			DeAllocate(ptemp3)
-			DeAllocate(ptemp2)
-			DeAllocate(ptemp)
-		Endif
-
-    End Subroutine Shell_Balance
 
     Subroutine Init_OComm(self,pcomm,pnp,prank,mrank)
         Implicit None
