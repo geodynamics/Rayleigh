@@ -165,13 +165,11 @@ Module Spherical_IO
         ! Methods
         Contains
         Procedure :: Init => Initialize_Diagnostic_Info
-        Procedure :: Init2 => Initialize_Diagnostic_Info2
         Procedure :: AdvanceInd
         Procedure :: AdvanceCC
         Procedure :: reset => diagnostic_output_reset
         Procedure :: OpenFile
         Procedure :: OpenFile_Par
-        Procedure :: Set_File_Info
         Procedure :: CloseFile
         Procedure :: CloseFile_Par
         Procedure :: Write_Header_Data
@@ -182,7 +180,6 @@ Module Spherical_IO
         Procedure :: Store_Values
         Procedure :: update_position
         Procedure :: getq_now
-        Procedure :: init_ocomm
         Procedure :: CleanUp
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -307,7 +304,7 @@ Contains
         Call  SPH_Mode_Samples%reset()
         Call      Point_Probes%reset()
 
-        Call Temp_IO%reset()
+        !Call Temp_IO%reset()
 
         Allocate(f_of_r_theta(1,my_rmin:my_rmax,my_theta_min:my_theta_max))
         Allocate(f_of_r(my_rmin:my_rmax))
@@ -378,71 +375,42 @@ Contains
         Call Process_Coordinates()
 
         ! Map the various quantity lists etc. into their associated diagnostic structures
+        ! Numbers here are the mpi_tags used in communication for each output
+        ! In theory they can be the same, but it's probably a good idea to keep them unique.
 
-        !Numbers here are the mpi_tags used in communication for each output
-        !In theory they can be the same, but it's probably a good idea to keep them unique
-        Call            Full_3D%Init(averaging_level,compute_q,myid, &
-            & 54,values = full3d_values)
-
-
-        !Call     Shell_Averages%Init(averaging_level,compute_q,myid, &
-        !   & 57,avg_level = 2,values = shellavg_values)
-
-
-        !//////////////////////////////////////////////////
-        !Next, provide the file directory, frequency info, output versions etc.
-
-
-        ! Shell Averages
-        !fdir = 'Shell_Avgs/'
-        !Call Shell_Averages%set_file_info(shellavg_version,shellavg_nrec,shellavg_frequency,fdir)    
-
-        ! Full 3D (special because it only cares about the frequency, not nrec)
-        fdir = 'Spherical_3D/'
-        Call Full_3D%set_file_info(full3d_version,shellslice_nrec,full3d_frequency,fdir)    
-
-
-        !Revised IO
-        cascade_type = 1
-       
-        Call Full_3D_Buffer%init(mpi_tag=54)
-
+        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ! First, initialize outputs that do no rely on the I/O Buffer data structure
+        ! for caching etc.
         fdir = 'G_Avgs/'
-        Call Global_Averages%Init2(averaging_level,compute_q,myid, 55, fdir, &
+        Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, avg_level = 3, nobuffer=.true.) 
        
-
         fdir = 'Shell_Avgs/'
-        Call Shell_Averages%Init2(averaging_level,compute_q,myid, 57, fdir, &
+        Call Shell_Averages%Init(averaging_level,compute_q,myid, 57, fdir, &
                           shellavg_version, shellavg_nrec, shellavg_frequency, &
                           values = shellavg_values, avg_level = 2, nobuffer=.true.) 
        
+        fdir = 'Spherical_3D/'  ! Note: Full 3D only uses frequency, not nrec
+        Call Full_3D%Init(averaging_level,compute_q,myid, 54, fdir, &
+                          full3d_version, 1, full3d_frequency, &
+                          values = full3d_values, nobuffer=.true.) 
 
-       
-        ! temporary IO for testing
-        fdir = 'Temp_2/'
-        wmode =1
-        If (mem_friendly) wmode =2
-        Write(6,*)'WMODE IS: ', wmode
-        Call Temp_IO%Init2(averaging_level,compute_q,myid, 611, fdir, &
-                          sphmode_version, sph_mode_nrec, sph_mode_frequency, &
-                          values = sph_mode_values, rinds=sph_mode_levels, &
-                          is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
+        Call Full_3D_Buffer%Init(mpi_tag=54) ! Full 3-D uses a separate buffer (due to io semantics)
 
-        ! Converted outputs
+        ! Now, initialize those outputs that use the new I/O for caching and parallel output.
 
-        cascade_type = 1
-        if (mem_friendly) cascade_type = 2
+        wmode = 1
+        if (mem_friendly) wmode = 2
 
         fdir = 'Shell_Slices/'
-        Call Shell_Slices%Init2(averaging_level,compute_q,myid, 58, fdir, &
+        Call Shell_Slices%Init(averaging_level,compute_q,myid, 58, fdir, &
                           shellslice_version, shellslice_nrec, shellslice_frequency, &
                           values = shellslice_values, rinds = shellslice_levels, &
-                          write_mode = cascade_type)
+                          write_mode = wmode)
 
         fdir = 'Point_Probes/'
-        Call Point_Probes%Init2(averaging_level,compute_q,myid, 63, fdir, &
+        Call Point_Probes%Init(averaging_level,compute_q,myid, 63, fdir, &
                           probe_version, point_probe_nrec, point_probe_frequency, &
                           values = point_probe_values, cache_size = point_probe_cache_size, &
                           rinds = point_probe_r, tinds = point_probe_theta, & 
@@ -450,17 +418,17 @@ Contains
 
 
         fdir = 'Meridional_Slices/'
-        Call Meridional_Slices%Init2(averaging_level,compute_q,myid, 61, fdir, &
+        Call Meridional_Slices%Init(averaging_level,compute_q,myid, 61, fdir, &
                           meridslice_version, meridional_nrec, meridional_frequency, &
                           values = meridional_values, pinds = meridional_indices)
 
         fdir = 'AZ_Avgs/'
-        Call AZ_Averages%Init2(averaging_level,compute_q,myid, 56, fdir, &
+        Call AZ_Averages%Init(averaging_level,compute_q,myid, 56, fdir, &
                           azavg_version, azavg_nrec, azavg_frequency, &
                           values = azavg_values, avg_axes = (/ 1, 0, 0 /) ) !phi,r,t
 
         fdir = 'Equatorial_Slices/'
-        Call Equatorial_Slices%Init2(averaging_level,compute_q,myid, 60, fdir, &
+        Call Equatorial_Slices%Init(averaging_level,compute_q,myid, 60, fdir, &
                           equslice_version, equatorial_nrec, equatorial_frequency, &
                           values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
                           tweights = (/ 0.5d0, 0.5d0 /) ) 
@@ -468,7 +436,7 @@ Contains
         wmode =1
         If (mem_friendly) wmode =2
         fdir = 'Shell_Spectra/'
-        Call Shell_Spectra%Init2(averaging_level,compute_q,myid, 59, fdir, &
+        Call Shell_Spectra%Init(averaging_level,compute_q,myid, 59, fdir, &
                           shellspectra_version, shellspectra_nrec, shellspectra_frequency, &
                           values = shellspectra_values, rinds=shellspectra_levels, &
                           is_spectral = .true. , write_mode = wmode) 
@@ -476,11 +444,10 @@ Contains
         fdir = 'SPH_Modes/'
         wmode =1
         If (mem_friendly) wmode =2
-        Call SPH_Mode_Samples%Init2(averaging_level,compute_q,myid, 62, fdir, &
+        Call SPH_Mode_Samples%Init(averaging_level,compute_q,myid, 62, fdir, &
                           sphmode_version, sph_mode_nrec, sph_mode_frequency, &
                           values = sph_mode_values, rinds=sph_mode_levels, &
                           is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
-
 
         Call Initialize_Headers()
 
@@ -550,7 +517,6 @@ Contains
         Call Shell_Spectra%Add_DHeader(Shell_Spectra%r_vals, Shell_Spectra%nr)
         Call Shell_Spectra%Add_IHeader(Shell_Spectra%r_inds, Shell_Spectra%nr)
 
-
         !/////////////////////////////////////////////////////
         ! SPH Modes
         lmax = maxval(pfi%inds_3s)
@@ -560,18 +526,6 @@ Contains
         Call SPH_Mode_Samples%Add_DHeader(SPH_Mode_Samples%r_vals, SPH_Mode_Samples%nr)
         Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%r_inds, SPH_Mode_Samples%nr)
         Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%l_values, SPH_Mode_Samples%nell)
-        !WRite(6,*)'Check dims! ', Temp_IO%nr, Temp_IO%ntheta, Temp_IO%nphi
-
-        !/////////////////////////////////////////////////////
-        ! Temp IO
-        lmax = maxval(pfi%inds_3s)
-        dims(1:3) = (/ Temp_IO%nell, Temp_IO%nr, Temp_IO%nq /)
-        Call Temp_IO%Add_IHeader(dims,3)
-        Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
-        Call Temp_IO%Add_DHeader(Temp_IO%r_vals, Temp_IO%nr)
-        Call Temp_IO%Add_IHeader(Temp_IO%r_inds, Temp_IO%nr)
-        Call Temp_IO%Add_IHeader(Temp_IO%l_values, Temp_IO%nell)
-
 
     End Subroutine Initialize_Headers
 
@@ -667,7 +621,7 @@ Contains
                 Call SPH_Mode_Samples%getq_now(yesno)
                 Call Point_Probes%getq_now(yesno)
 
-                Call Temp_IO%getq_now(yesno)
+                !Call Temp_IO%getq_now(yesno)
 
                 Call Shell_Spectra%getq_now(yesno)
                 Call AZ_Averages%getq_now(yesno)
@@ -687,12 +641,10 @@ Contains
         If (compute_q(qval) .eq. 1) yesno = .true.
     End function Sometimes_Compute
 
-
     Function Time_To_Output(iter) result(yesno)
         integer, intent(in) :: iter 
         Logical             :: yesno 
         yesno = .false.
-
 
          If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%Frequency) .eq. 0)) yesno = .true.
          If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%Frequency) .eq. 0)) yesno = .true.        
@@ -709,9 +661,8 @@ Contains
          If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%Frequency) .eq. 0)) yesno = .true. 
          If ((Full_3D%nq > 0) .and. (Mod(iter,Full_3D%Frequency) .eq. 0)) yesno = .true.
 
-         If ((Temp_IO%nq > 0) .and. (Mod(iter,Temp_IO%Frequency) .eq. 0)) yesno = .true. 
-        
-
+         !If ((Temp_IO%nq > 0) .and. (Mod(iter,Temp_IO%Frequency) .eq. 0)) yesno = .true. 
+       
     End function Time_To_Output
 
     Subroutine Finalize_Averages()
@@ -734,7 +685,7 @@ Contains
             Endif
         Else
 
-            If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
+            !If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
             If (AZ_Averages%grab_this_q)       Call AZ_Averages%Store_Values(qty)  
 
             If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
@@ -763,7 +714,7 @@ Contains
         Call Point_Probes%write_io(iter,sim_time)
         Call AZ_Averages%write_io(iter,sim_time)
         Call Shell_Spectra%write_io(iter,sim_time)
-        Call Temp_IO%write_io(iter,sim_time)
+        !Call Temp_IO%write_io(iter,sim_time)
         Call SPH_Mode_Samples%write_io(iter, sim_time)
 
 	    If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
@@ -922,7 +873,6 @@ Contains
 
     End Subroutine Write_Global_Average
 
-
 	Subroutine Write_Shell_Average(this_iter, simtime)
 		Implicit None
         Integer, Intent(In) :: this_iter
@@ -1021,14 +971,12 @@ Contains
 		Character*4 :: qstring
 		Character*120 :: iterstring, data_file, grid_file
 
-
         ! Write the data file (Parallel I/O)
         Write(iterstring,i_ofmt) current_iteration
         Write(qstring,'(i4.4)') current_qval
         data_file = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//qstring
         Call full_3d_buffer%cache_data(qty)
         Call full_3d_buffer%write_data(filename=data_file)
-
 
         ! Rank 0 writes the grid file.
         If (myid .eq. 0) Then
@@ -1044,9 +992,7 @@ Contains
             Close(funit)
         Endif
 
-
 	End Subroutine Write_Full_3D
-
 
     !////////////////////////////////////////////////////////////////////////////////////////////////////////////
     !       Diagnostic Class Methods
@@ -1073,7 +1019,6 @@ Contains
                 ii = ii+1
             Endif
         Enddo
-
 
     End Subroutine Write_Header_Data
 
@@ -1108,12 +1053,7 @@ Contains
         self%hdisp = self%hdisp+8*n
     End Subroutine Add_DHeader
 
-        !Integer :: buffsizes(max_nheader)           ! size of each header line to write
-        !Integer :: bufftypes(max_nheader)           ! buffer type (1 -> double; 2 -> integer)
-        !Integer :: nrbuffer = 0                     ! number of real and integer buffers
-        !Integer :: nibuffer = 0 
-
-    Subroutine Initialize_Diagnostic_Info2(self,avg_levels,computes,pid,mpi_tag, &
+    Subroutine Initialize_Diagnostic_Info(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
                  avg_axes, tweights, is_spectral, lvals, nobuffer)
@@ -1414,7 +1354,6 @@ Contains
                                   write_timestamp = .true., averaging_axes = avg_axes)
         Endif
 
-
         If (.not. present(nobuffer)) Then
             ! Once the buffer is initialized, set the ocomm info
             self%ocomm = self%buffer%ocomm%comm
@@ -1423,182 +1362,6 @@ Contains
             If (self%orank .eq. 0) then
                 self%master = .true.    ! This process handles file headers in parallel IO
             Endif
-        Endif
-
-    End Subroutine Initialize_Diagnostic_Info2
-
-
-
-    Subroutine Initialize_Diagnostic_Info(self,avg_levels,computes,pid,mpi_tag,avg_level,values, &
-            levels, phi_inds, cache_size, rinds, tinds, pinds, ctype)
-        Implicit None
-        Integer :: i,ind
-        Integer, Intent(In) :: pid, mpi_tag
-        Integer, Intent(In), Optional :: cache_size, ctype
-        Integer, Optional, Intent(In) :: avg_level
-        Integer, Optional, Intent(In) :: values(1:)
-        Integer, Optional, Intent(In) :: levels(1:)
-        Integer, Optional, Intent(In) :: phi_inds(1:)
-        Integer, Intent(InOut) :: computes(1:), avg_levels(1:)
-        Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:)
-        Integer :: rcount, tcount, pcount
-        Logical :: rspec, pspec, tspec, rtp_spec
-        Class(DiagnosticInfo) :: self 
-
-        rspec = .false.
-        tspec = .false.
-        pspec = .false.
-        rtp_spec = .false.
-
-        !If (present(ctype)) Then
-        !    self%cascade_type = ctype
-        !Else
-        !    self%cascade_type = 1
-        !Endif
-
-        If (present(avg_level)) Then
-            if (avg_level .gt. 0) self%avg_level = avg_level
-        Endif
-        self%mpi_tag = mpi_tag
-        self%nq = 0
-        IF (present(cache_size)) THEN
-            IF (cache_size .ge. 1) THEN
-                self%cache_size = cache_size
-            ENDIF
-        ENDIF
-        Allocate(self%iter_save(1:self%cache_size))
-        Allocate(self%time_save(1:self%cache_size))
-
-
-        If (present(values)) Then
-            self%values(:) = values(:)  ! This is clunky - will look into getting the object attributes directly into a namelist later
-            
-            Do i = 1, nqmax
-                if(self%values(i) .gt. 0) Then 
-                    self%nq = self%nq+1
-                    ind = self%values(i)
-                    self%compute(ind) = 1
-                    computes(ind) = 1
-                    If (avg_levels(ind) .lt. self%avg_level) Then
-                        avg_levels(ind) = self%avg_level
-                    Endif
-                endif 
-            Enddo
-        Endif
-        self%my_nlevels = 0
-        If (present(levels)) Then
-            self%levels(:) = levels(:)
-            Do i = 1, nshellmax
-                if( (self%levels(i) .gt. 0) .and. (self%levels(i) .le. nr) ) Then
-                    self%nlevels = self%nlevels+1
-                Endif
-            Enddo
-        Endif
-
-        If (present(phi_inds)) Then
-            self%nphi_indices = 0
-            Do i=1,nmeridmax
-                IF (meridional_indices(i) .gt. 0) THEN
-                    IF (meridional_indices(i) .le. nphi) THEN
-                        self%nphi_indices = self%nphi_indices+1
-                    ENDIf
-                ENDIF
-            Enddo
-            IF (self%nphi_indices .gt. 0) THEN
-                ALLOCATE(self%phi_indices(1:self%nphi_indices))
-                DO i = 1, self%nphi_indices
-                    IF (meridional_indices(i) .le. nphi) THEN
-                        self%phi_indices(i) = meridional_indices(i)
-                    ENDIf
-                ENDDO
-
-            ENDIF
-        Endif
-
-        !if (pid .eq. 0) Then
-            !NOTE:  Later, we may want to do this only on the master node later, but this isn't a huge memory issue
-            Allocate(self%oqvals(1:self%nq))
-            self%oqvals(:) = nqmax+100
-        !Endif
-
-
-        ! Buffer init
-        If (present(rinds)) Then
-            rspec = .true.
-            rcount = size(rinds)
-            i = 1
-            DO WHILE ( i .le. rcount )
-                IF (rinds(i) .lt. 0) THEN
-                    rcount = i-1
-                ENDIF
-                i = i+1
-            ENDDO
-
-            If (rcount .gt. 0) Then
-                Allocate(self%r_global(1:rcount))
-                self%r_global(1:rcount) = rinds(1:rcount)
-            Endif
-
-
-        Endif
-
-        If (present(tinds)) Then
-            tspec = .true.
-            tcount = size(tinds)
-            i = 1
-            DO WHILE ( i .le. tcount )
-                IF (tinds(i) .lt. 0) THEN
-                    tcount = i-1
-                ENDIF
-                i = i+1
-            ENDDO
-
-            IF (tcount .gt. 0) THEN
-                Allocate(self%theta_global(1:tcount))
-                self%theta_global(1:tcount) = tinds(1:tcount)
-            ENDIF
-
-        Endif
-
-        If(present(pinds)) Then
-
-            pcount = size(pinds)
-            i = 1
-            Do While ( i .le. pcount )
-                If (pinds(i) .lt. 0) Then
-                    pcount = i-1
-                Endif
-                i = i+1
-            Enddo
-            If (pcount .gt. 0) Then
-                Allocate(self%phi_global(1:pcount))
-                self%phi_global(1:pcount) = pinds(1:pcount)
-            Endif
-        Endif
-
-        self%nr_global     = rcount
-        self%ntheta_global = tcount
-        self%nphi_global   = pcount
-
-
-        ! Initialize the buffer (and then ocomm)
-        rtp_spec = (rspec .and. tspec .and. pspec)
-
-        !If (rtp_spec) Then
-        !    Call self%buffer%init(phi_indices=self%phi_global, r_indices=self%r_global, &
-        !                              theta_indices = self%theta_global, &
-        !                              ncache  = self%nq*self%cache_Size, &
-        !                              cascade = self%cascade_type, mpi_tag = self%mpi_tag, &
-        !                              nrec = self%cache_size, skip = 12, &
-        !                              write_timestamp = .true.)
-        !Endif
-
-        ! Once the buffer is initialized, set the ocomm info
-        self%ocomm = self%buffer%ocomm%comm
-        self%orank = self%buffer%ocomm%rank
-        self%onp = self%buffer%ocomm%np
-        If (self%orank .eq. 0) then
-            self%master = .true.    ! This process handles file headers in parallel IO
         Endif
 
     End Subroutine Initialize_Diagnostic_Info
@@ -1624,82 +1387,6 @@ Contains
         self%ind = 1
         self%begin_output = .true.
     End Subroutine Diagnostic_Output_Reset
-
-    Subroutine Init_OComm(self,pcomm,pnp,prank,mrank)
-        Implicit None
-        Integer, Intent(In) :: pcomm, pnp, prank, mrank
-        Class(DiagnosticInfo) :: self
-        self%ocomm = pcomm
-        self%orank = prank
-        self%onp = pnp
-        If (prank .eq. mrank) then
-            self%master = .true.    ! This process handles file headers in parallel IO
-        Endif
-    End Subroutine Init_OComm
-
-    Subroutine set_file_info(self,oversion,rcount, freq, fpref,funit)
-        Implicit None
-        Class(DiagnosticInfo) :: self
-        Integer :: oversion, rcount, freq, modcheck
-        Integer, Optional, Intent(In) :: funit
-        Character*120 :: fpref
-        If (present(funit)) Then
-            self%file_unit = funit
-        Endif
-        self%file_prefix = fpref
-        self%output_version = oversion
-        self%rec_per_file = rcount
-        self%frequency = freq
-
-        !Now that we have set the file info, let's make sure the
-        !that the cache size is appropriate
-
-        If (self%cache_size .lt. 1) Then
-            If (myid .eq. 0) Then
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'
-                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
-                    Write(6,*)'   Cache_size must be at least 1.'
-                    Write(6,*)'   Specified cache_size: ', self%cache_size
-                    Write(6,*)'   Caching has been deactivated for ', self%file_prefix
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
-            Endif
-            self%cache_size = 1
-        Endif
-        If (self%cache_size .gt. self%rec_per_file) Then
-            modcheck = MOD(rcount,self%cache_size)
-            IF (modcheck .ne. 0) THEN
-
-                If (myid .eq. 0) THEN
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'
-                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
-                    Write(6,*)'   Cache_size cannot be larger than nrec.'
-                    Write(6,*)'   Cache_size: ', self%cache_size
-                    Write(6,*)'   nrec      : ', self%rec_per_file
-                    Write(6,*)'   Cache_size has been set to nrec.'
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
-                ENDIF
-                self%cache_size = self%rec_per_file
-            ENDIF
-        Endif
-        
-        If (self%cache_size .gt. 1) Then
-            modcheck = MOD(rcount,self%cache_size)
-            IF (modcheck .ne. 0) THEN
-
-                If (myid .eq. 0) THEN
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'
-                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
-                    Write(6,*)'   Cache_size must divide evenly into nrec.'
-                    Write(6,*)'   Cache_size: ', self%cache_size
-                    Write(6,*)'   nrec      : ', self%rec_per_file
-                    Write(6,*)'   Caching has been deactivated for ', self%file_prefix
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
-                ENDIF
-                self%cache_size = 1
-            ENDIF
-        Endif
-
-    End Subroutine set_file_info
 
     Subroutine OpenFile(self,iter,errcheck)
         Implicit None
@@ -1785,7 +1472,6 @@ Contains
         Endif
 
     End Subroutine OpenFile
-
 
     Subroutine OpenFile_Par(self,iter,ierr)
         !Performs the same tasks as OpenFile, but uses MPI-IO
@@ -1955,8 +1641,6 @@ Contains
         If (ierr .ne. 0) Write(6,*)'Error closing file.  Error code: ',ierr, myid, self%file_prefix
     End Subroutine CloseFile_Par
 
-
-
     Subroutine Update_Position(self)
         Implicit None
         Class(DiagnosticInfo) :: self
@@ -1978,7 +1662,6 @@ Contains
             Endif
         Endif
     End Subroutine getq_now
-
 
     !/////////////////////////////////////////
     ! (Presently) Random Utility routines
@@ -2069,7 +1752,6 @@ Contains
         DeAllocate(tmp_buffer)
 
     End Subroutine IOComputeEll0
-
 
     Subroutine Compute_Radial_Average(inbuff,outbuff)
         Real*8, Intent(In) :: inbuff(my_rmin:,1:)
@@ -2402,8 +2084,6 @@ Contains
         DEALLOCATE(indices_out)
         IF (present(indcount)) indcount = ind-1        
     End Subroutine Parse_Inds
-
-
 
     SUBROUTINE PROCESS_COORDINATES()
         IMPLICIT NONE
