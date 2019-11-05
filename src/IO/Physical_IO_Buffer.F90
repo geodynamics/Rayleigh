@@ -67,6 +67,8 @@ Module Physical_IO_Buffer
 
         Logical :: spectral = .false.
         Logical :: r_general_spectral = .false.
+        Logical :: cache_spectral = .false.  ! cache in spectral configuration
+        Logical :: spec_comp = .false.   ! rather than 2-d array, write out the "triangle" only
 
         Logical :: r_spec = .false.
         Logical :: t_spec = .false.
@@ -118,9 +120,9 @@ Module Physical_IO_Buffer
     Contains
         Procedure :: init => Initialize_Physical_IO_Buffer
         Procedure :: cache_data
+        Procedure :: cache_data_spectral
         Procedure :: allocate_cache
         Procedure :: timestamp
-        !Procedure :: collate
         Procedure :: Initialize_IO_MPI
         Procedure :: Load_Balance_IO
         Procedure :: Allocate_Receive_Buffers
@@ -144,18 +146,17 @@ Contains
                                              cascade, sum_weights_theta, nrec, &
                                              skip, write_timestamp, &
                                              averaging_axes, spectral, mode, &
-                                             l_values)
+                                             l_values, cache_spectral, spec_comp)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: l_values(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
         Real*8, Intent(In), Optional :: sum_weights_theta(:)
-        Logical, Intent(In), Optional :: write_timestamp, spectral
+        Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
 
-        Integer, Allocatable :: tmp(:)
         Integer :: r, ii, ind, my_min, my_max
 
         Integer :: k, ntot, fcount(3,2), fcnt
@@ -186,6 +187,7 @@ Contains
         Endif
 
         If (present(spectral)) self%spectral = spectral
+        If (present(cache_spectral)) self%cache_spectral = cache_spectral
 
         !///////////////////////////////////////////////////////////
         ! Note how many fields/time-steps will be stored and output
@@ -256,10 +258,12 @@ Contains
         Endif
 
         If (self%spectral)  Then
+            If (present(spec_comp)) self%spec_comp = spec_comp
             self%lmax = (2*self%ntheta-1)/3
             !self%nlm = ((self%lmax+1)**2 + self%lmax+1 )/2
             self%nlm = (self%lmax+1)*(self%lmax+1) 
             self%nlm_out = (self%lmax+1)*(self%lmax+1)   ! TODO: will need to modify for sph_mode_samples
+            If (self%spec_comp) self%nlm_out = ((self%lmax+1)**2 + self%lmax+1)/2
             If (present(l_values)) Then
                 self%l_spec = .true.
                 self%n_l_samp = Size(l_values)
@@ -515,17 +519,14 @@ Contains
         self%buffsize = self%nr_out*self%nphi*self%ntheta 
         if (self%spectral) self%buffsize=self%nr_out*self%nlm_out
 
-
         If (self%write_mode .eq. 1) Then
             self%io_buffer_size = self%buffsize*self%nwrites
-            If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm*self%nwrites
+            If (self%l_spec .or. self%spec_comp) self%io_buffer_size = self%nr_out*self%nlm*self%nwrites
+          
         Else
             self%io_buffer_size = self%buffsize
             If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm ! buffer still needs to hold a full spectrum temporarily
         Endif
-        !If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm ! buffer still needs to hold a full spectrum temporarily
-
-        !If (self%spectral) self%io_buffer_size = self%io_buffer_size*2 !real/imaginary
 
         If (self%sum_theta) self%buffsize = self%buffsize/self%ntheta ! Do this AFTER setting io_buffer_size
 
@@ -625,8 +626,11 @@ Contains
             self%cache(:,:,:,:) = 0.0d0
 
         Else
-
-            Call self%spectral_buffer%construct('p3b')
+            If (self%cache_spectral) Then
+                Call self%spectral_buffer%construct('s2b')
+            Else    
+                Call self%spectral_buffer%construct('p3b')
+            Endif
         Endif
         If (self%write_timestamp) Then
             Allocate(self%iter(1:self%nrec))
@@ -647,15 +651,38 @@ Contains
         Endif
     End Subroutine Timestamp
 
-    Subroutine Cache_Data(self,vals)
+    Subroutine Cache_Data_Spectral(self, spec_vals,in_cache)
+        Implicit None
+        Class(IO_Buffer_Physical) :: self
+        Type(rmcontainer4D), Intent(In) :: spec_vals(1:)
+        Integer, Intent(In) :: in_cache
+        Integer :: my_mp_min, my_mp_max, mp
+
+        my_mp_min = pfi%all_3s(self%row_rank)%min
+        my_mp_max = pfi%all_3s(self%row_rank)%max
+
+        ! This bit was added for checkpoints
+        ! It is assumed that no sampling takes place in this mode
+        ! No caching either (1 at a time)
+        Do mp = my_mp_min,my_mp_max                          
+            self%spectral_buffer%s2b(mp)%data(:,:,:,1) = &
+                spec_vals(mp-my_mp_min+1)%data(:,:,:,in_cache)
+        Enddo
+        
+    End Subroutine Cache_Data_Spectral
+
+    Subroutine Cache_Data(self,vals, spec_vals, in_cache)
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
+        Type(rmcontainer4D), Intent(In), Optional :: spec_vals(1:)
+        Integer, Intent(In), Optional :: in_cache
         Integer :: r, t, p,tind
         Integer :: counter, field_ind, rind
+        Integer :: my_mp_min, my_mp_max, mp
 
         If (self%r_general_spectral) Then
-
+   
             Do r = 1, self%nr_local
                 counter = (self%cache_index-1)*self%nr_local +r-1
                 field_ind = counter/pfi%my_1p%delta+1
@@ -667,7 +694,7 @@ Contains
                         self%spectral_buffer%p3b(p,rind,tind,field_ind) = vals(p,self%r_local(r),t)
                     Enddo
                 Enddo
-    
+
             Enddo
 
         Endif
@@ -767,7 +794,6 @@ Contains
             Endif
 
             If (self%phi_general) Then
-                !Write(6,*)'cascade type 2'
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
                         Do p = 1, self%nphi
@@ -801,14 +827,15 @@ Contains
         my_mp_max = pfi%all_3s(self%row_rank)%max
         my_nm     = my_mp_max-my_mp_min+1
         If (self%nr_local .gt. 0) Then
-            !(1) Transform/transpose the phi-theta buffer to Ylm space
-            Call FFT_To_Spectral(self%spectral_buffer%p3b, rsc = .true.)
-            self%spectral_buffer%config ='p3b'
-            Call self%spectral_buffer%reform()
-            Call self%spectral_buffer%construct('s2b')
-            Call Legendre_Transform(self%spectral_buffer%p2b,self%spectral_buffer%s2b)
-            Call self%spectral_buffer%deconstruct('p2b')
-
+            If (.not. self%cache_spectral) Then
+                !(1) Transform/transpose the phi-theta buffer to Ylm space
+                Call FFT_To_Spectral(self%spectral_buffer%p3b, rsc = .true.)
+                self%spectral_buffer%config ='p3b'
+                Call self%spectral_buffer%reform()
+                Call self%spectral_buffer%construct('s2b')
+                Call Legendre_Transform(self%spectral_buffer%p2b,self%spectral_buffer%s2b)
+                Call self%spectral_buffer%deconstruct('p2b')
+            Endif
             !(2) Stripe the spectral data into the self%cache buffer
             !    While that buffer has nphi and ntheta dimensions, we 
             !    alias those to n_lm and nr
@@ -821,15 +848,12 @@ Contains
             Endif
 
             self%cache = 0.0d0
-            !~~~~
-
 
             nf = self%spectral_buffer%nf2b
             nq = self%ncache/2
             i2 = lmax+1
 
-
-            Do p = 1, 2  ! Real and imaginary parts
+            Do p = 1, 2  ! Real and imaginary parts TODO:  I don't think this loop is here anymore...
                 Do mp = my_mp_min,my_mp_max
                     m = pfi%inds_3s(mp)
                     counter = 0
@@ -862,9 +886,11 @@ Contains
                 Enddo
             Enddo
 
-            Call self%spectral_buffer%deconstruct('s2b')
-            self%spectral_buffer%config ='p3b'
-            Call self%spectral_buffer%construct('p3b')  ! TODO:  Do we want p3b to effectively be persistent?
+            If (.not. self%cache_spectral) Then
+                Call self%spectral_buffer%deconstruct('s2b')
+                self%spectral_buffer%config ='p3b'
+                Call self%spectral_buffer%construct('p3b')  ! TODO:  Do we want p3b to effectively be persistent?
+            Endif
             !~~~~~
 
         Endif
@@ -897,13 +923,14 @@ Contains
         Class(IO_Buffer_Physical), Target :: self
         Integer, Intent(In) :: cache_ind
         Integer :: m, r, i, p, mp_min, mp_max
-        Integer :: cend, ncache, mp, k, l, j, lval, ind
+        Integer :: cend, ncache, mp, k, l, j, lval, lmax, ind, ind2
         Logical :: free_mem
         Real*8, Allocatable :: data_copy(:,:,:,:)
 
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
         If (cache_ind .eq. self%nwrites) free_mem = .true.
+
 
         If (free_mem) DeAllocate(self%cache)
         ncache =1
@@ -916,9 +943,6 @@ Contains
             self%collated_data(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend) => &
                 self%buffer(1:self%io_buffer_size)
 
-!!~~~~~~~~~~~~~~~~~~~~
-            ! TODO: allocate receive buffers as 1,mp_min, 1,1
-            !write(6,*)(shape(self%collated_data))
             Do p = 0, pfi%nprow-1
                 mp_min = pfi%all_3s(p)%min
                 mp_max = pfi%all_3s(p)%max
@@ -944,8 +968,8 @@ Contains
                 Endif
             Enddo    
             If (free_mem) Call self%deallocate_receive_buffers()
-!!~~~~~~~~~~~~~~~~
-            If (self%l_spec) Then
+
+            If (self%l_spec ) Then
                 Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
                 ! Restripe to m-l (i,j) from l-m
                 Do k = 1, cend
@@ -961,22 +985,50 @@ Contains
                 ! next, repoint collated_data
                 self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
                     self%buffer(1:self%nlm_out*self%nr_out*cend)
+                If (self%l_spec) Then   
+                    ! Grab the desired l values
+                    Do k = 1, cend
+                    Do r = 1, self%nr_out
+                        ind = 1
+                        Do l = 1, self%n_l_samp
+                            lval = self%l_values(l)
+                            self%collated_data(ind:ind+lval,1,r,k) = &
+                                data_copy(1:lval+1,lval+1,r,k)
+                            ind = ind+lval+1
+                        Enddo
+                
+                    Enddo
+                    Enddo
+                Endif
+                DeAllocate(data_copy)
+            Endif
+            If (self%spec_comp) Then
+
+                Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
+                data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
+
+                 Write(6,*)'nlmout: ', self%nlm_out
+                self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
+                    self%buffer(1:self%nlm_out*self%nr_out*cend)
+
+                lmax=self%lmax
 
                 ! Grab the desired l values
                 Do k = 1, cend
                 Do r = 1, self%nr_out
                     ind = 1
-                    Do l = 1, self%n_l_samp
-                        lval = self%l_values(l)
-                        self%collated_data(ind:ind+lval,1,r,k) = &
-                            data_copy(1:lval+1,lval+1,r,k)
-                        ind = ind+lval+1
+                    Do m = 1, lmax+1
+                        ind2 = ind + lmax+1-m
+                        self%collated_data(ind:ind2,1,r,k) = &
+                            data_copy(m:lmax+1,m,r,k)
+                        ind = ind2+1
                     Enddo
             
                 Enddo
                 Enddo
                 DeAllocate(data_copy)
             Endif
+
         Endif
 
     End Subroutine Collate_Spectral
@@ -1004,7 +1056,6 @@ Contains
                     n = self%nrecv_from_column(p)*ncache
                     If (n .gt. 0) Then
                         nrirq =nrirq+1
-                        !Write(6,*)'rank/recvfrom: ', self%rank, p, n, cache_ind
                         Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
                                 &  source= p,tag = self%tag, grp = pfi%rcomm)	            
                     Endif

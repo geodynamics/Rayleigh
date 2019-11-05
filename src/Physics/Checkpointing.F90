@@ -29,6 +29,7 @@ Module Checkpointing
     Use Controls
     Use RA_MPI_BASE
     Use Chebyshev_Polynomials_Alt
+    Use Physical_IO_Buffer
 
     Use BufferedOutput
     ! Simple Checkpointing Module
@@ -66,6 +67,9 @@ Module Checkpointing
     Real*8  :: quicksave_seconds = -1  ! Time between quick saves
 
     Type(Cheby_Transform_Interface) :: cheby_info
+
+    Type(io_buffer_physical) :: checkpoint_buffer
+
 Contains
 
     !//////////////////////////////////////////////////////////
@@ -95,13 +99,16 @@ Contains
         if (magnetism) Then
             numfields = 6
             checkpoint_suffix(1:12) = &
-                (/ 'W', 'P', 'T', 'Z', 'C', 'A', 'WAB', 'PAB', 'TAB', 'ZAB', 'CAB', 'AAB' /)
+                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'C  ', 'A  ', 'WAB', 'PAB', 'TAB', 'ZAB', 'CAB', 'AAB' /)
         Else
             checkpoint_suffix(1:8) = &
-                (/ 'W', 'P', 'T', 'Z', 'WAB', 'PAB', 'TAB', 'ZAB' /)
+                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'WAB', 'PAB', 'TAB', 'ZAB' /)
         Endif
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a')            ! This structure hangs around through the entire run
+
+        Call checkpoint_buffer%Init(mpi_tag=54,spectral=.true., cache_spectral = .true., &
+                                    spec_comp = .true.)
 
         !//////////////////////////////////////////////////
         ! Revisions for mem-friendly I/O
@@ -200,18 +207,20 @@ Contains
 
         If (ItIsTimeForAQuickSave) Then
             write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
-            checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
+            checkpoint_prefix = 'Checkpoints2/quicksave_'//trim(autostring)
         Else
             write(iterstring,int_out_fmt) iteration
-            checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
+            checkpoint_prefix = 'Checkpoints2/'//trim(iterstring)
         Endif
 
 
-        Do i = 1, numfields
+        Do i = 1, numfields*2
             ! Cache
-            checkfile = checkpoint_prefix//checkpoint_suffix(i)
-            !Call checkpoint_buffer%cache_spectra(chktmp%s2a,i)
-            !Call checkpoint_buffer%write_data(filename=checkfile)
+
+            checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
+            Write(6,*)'Checkpoint_suffix: ', checkpoint_suffix(i), checkfile
+            Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
+            Call checkpoint_buffer%write_data(filename=checkfile)
 
         Enddo
 
@@ -273,6 +282,8 @@ Contains
         Character*120 :: autostring
         Character*120 :: iterstring
         Character*120 :: cfile
+
+        Call Write_Checkpoint_Buffer(abterms,iteration,dt,new_dt,elapsed_time)
         np = pfi%rcomm%np
 
         Call chktmp%construct('p1a')
