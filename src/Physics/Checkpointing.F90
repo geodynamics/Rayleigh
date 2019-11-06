@@ -53,8 +53,8 @@ Module Checkpointing
     Real*8  :: checkpoint_time
     !//////////////////////////
     ! New variables for new checkpointing style
-    Integer :: Noutputs_per_row, Nradii_per_output
-    Integer, Allocatable :: Nradii_at_rank(:), Rstart_at_rank(:)
+    !Integer :: Noutputs_per_row, Nradii_per_output
+    !Integer, Allocatable :: Nradii_at_rank(:), Rstart_at_rank(:)
     Logical :: I_Will_Output = .False.
 
     !///////////////////////////////////////////////////////////
@@ -110,38 +110,10 @@ Contains
         Call checkpoint_buffer%Init(mpi_tag=checkpoint_tag,spectral=.true., cache_spectral = .true., &
                                     spec_comp = .true.)
 
-        !//////////////////////////////////////////////////
-        ! Revisions for mem-friendly I/O
-
-        !Write(6,*)'NPOUT: ', npout
-        Noutputs_per_row = npout! # of processors outputting within row
-        If (Noutputs_per_row .gt. my_r%delta) Then
-            Noutputs_per_row = my_r%delta
-        Endif
-        If (Noutputs_per_row .gt. nprow) Then
-                Noutputs_per_row = nprow
-        Endif
-        Nradii_per_output = my_r%delta/Noutputs_per_row    ! Number of radii each processor outputs
-        rextra = Mod(my_r%delta,Noutputs_per_row)           ! Remainder
-        Allocate(nradii_at_rank(0:Noutputs_per_row-1))    ! Number of radii output by each rank
-        Allocate(rstart_at_rank(0:Noutputs_per_row-1))    ! First radial index (local) this rank receives
-        Do p = 0, Noutputs_per_row -1
-            Nradii_at_rank(p) = Nradii_per_output
-            If (rextra .gt. 0) Then
-                If (p .lt. rextra) Then
-                    Nradii_at_rank(p) = Nradii_at_rank(p)+1
-                Endif
-            Endif
-        Enddo
-        rstart_at_rank(0) = 1
-        Do p = 1, Noutputs_per_row-1
-            rstart_at_rank(p) = rstart_at_rank(p-1)+nradii_at_rank(p-1)
-        Enddo
-        ! Determine if each rank will output
-        If (my_row_rank .lt. Noutputs_per_row) Then
+ 
+        If (my_row_rank .lt. 1) Then
             I_Will_Output = .true.
         Endif
-
 
         np = pfi%rcomm%np
         Allocate(mode_count(0:np-1))
@@ -170,9 +142,7 @@ Contains
             Do p = 1, my_column_rank
                 my_check_disp = my_check_disp+pfi%all_1p(p-1)%delta
             enddo
-            my_check_disp2 = (my_check_disp+rstart_at_rank(my_row_rank)-1)*nlm_total    ! for new checkpointing style
             my_check_disp = my_check_disp*nlm_total  ! for old Checkpointing style
-            buffsize2 = nlm_total*nradii_at_rank(my_row_rank)    ! for new
             buffsize = nlm_total*my_r%delta  ! for old
             full_disp = N_r
             full_disp = full_disp*nlm_total
@@ -182,18 +152,11 @@ Contains
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time)
         Implicit None
-        Real*8, Intent(In) :: abterms(:,:,:,:)
-        Real*8, Intent(In) :: dt, new_dt
+        Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
-        Integer :: mp, m, offset,nl,p,np, f, imi, r, ind
-        Integer :: dim2, lstart, i, offset_index
-        Real*8, Allocatable :: myarr(:,:), rowstrip(:,:)
-        Real*8, Intent(In) :: elapsed_time
-        Character*120 :: autostring
-        Character*120 :: iterstring
-        Character*120 :: cfile, checkfile
-        np = pfi%rcomm%np
-
+        Integer :: mp, m, i
+        Character*120 :: autostring, iterstring, cfile, checkfile
+ 
         Call chktmp%construct('p1a')
         chktmp%config = 'p1a'
         !Copy the RHS into chtkmp
@@ -271,28 +234,17 @@ Contains
         Integer, Intent(In) :: iteration, read_pars(1:2)
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old, nr_read
-        Integer :: i, ierr, nlm_total_old, m, nl,p, np, mxread
-        Integer :: maxl, dim2,offset, nl_load,lstart,mp, offset_index
-        Integer :: old_pars(5)
-        Integer, Allocatable :: lmstart_old(:)
-        Real*8, Allocatable :: old_radius(:), radius_old(:)
-        Real*8, Allocatable :: rowstrip(:,:), myarr(:,:), sendarr(:,:)
-        Real*8 :: dt_pars(3),dt,new_dt
-        Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
-        Character*120 :: iterstring, checkfile
-        Character*120 :: autostring
-        Character*120 :: dstring
-        Character*120 :: cfile
-        Integer :: fcount(3,2)
-        Integer :: lb,ub, f, imi, r, ind
+        Integer :: i, ierr, m, p, np, mp, lb,ub, f,  r, ind
+        Integer :: old_pars(5), fcount(3,2)
         Integer :: last_iter, last_auto
-        Real*8 :: mxvt, mxvp
         Integer :: read_magnetism = 0, read_hydro = 0
+        Real*8 :: dt_pars(3),dt,new_dt
+        Real*8, Allocatable :: old_radius(:), radius_old(:)
+        Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
+        Character*120 :: autostring, cfile, checkfile, dstring, iterstring
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
-
-        dim2 = tnr*numfields*2
         checkpoint_iter = iteration
 
         If (my_rank .eq. 0) Then
@@ -325,7 +277,6 @@ Contains
                 Write(iterstring,int_in_fmt) iteration
                 checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
             Endif
-
 
             !process zero reads all the old info and broadcasts to all other ranks
             cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
@@ -405,7 +356,6 @@ Contains
             checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
         Endif
 
-
         !///////// Later we only want to do this if the grid is actually different
         If (my_rank .ne. 0) Then
             Allocate(old_radius(1:n_r_old))
@@ -437,10 +387,7 @@ Contains
         Call checkpoint_inbuffer%Init(mpi_tag=checkpoint_tag,spectral=.true., cache_spectral = .true., &
                                     spec_comp = .true., lmax_in = l_max_old, mode = 2)
         Do i = 1, numfields*2
-            !WRite(6,*)
             checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
-            !Write(6,*)'Checkpoint_suffix: ', checkpoint_suffix(i), checkfile
-
             Write(6,*)'Grabbing data from file: ', checkfile
             Call checkpoint_inbuffer%read_data(filename=checkfile)
             Call checkpoint_inbuffer%grab_data_spectral(chktmp%s2b,i)
@@ -448,7 +395,6 @@ Contains
 
 
         Call chktmp%reform()    ! move to p1b
-
 
 
         ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
@@ -519,6 +465,50 @@ Contains
         DeAllocate(old_radius)
 
     End Subroutine Read_Checkpoint_Buffer
+
+    Subroutine IsItTimeForACheckpoint(iter)
+        Implicit None
+        Integer, Intent(In) :: iter
+        ItIsTimeForACheckpoint = .false.
+        ItIsTimeForAQuickSave = .false.
+        If (Mod(iter,checkpoint_interval) .eq. 0) Then
+            ItIsTimeForACheckpoint = .true.
+            checkpoint_t0 = checkpoint_elapsed      ! quicksaves not written
+            checkpoint_elapsed = 0.0d0
+            !If the long interval check is satisfied, nothing,
+            ! nothing related to the short interval is executed.
+        Else
+
+            !Check for quick-save status.  This will be based on either iteration #
+            ! OR on the time since the last checkpoint
+
+            If (quicksave_interval .gt. 0) Then
+                If (Mod(iter,quicksave_interval) .eq. 0) Then
+                    ItIsTimeForACheckpoint = .true.
+                    ItIsTimeForAQuickSave = .true.
+                    quicksave_num = quicksave_num+1
+                    quicksave_num = Mod(quicksave_num,num_quicksaves)
+
+                Endif
+            Endif
+
+            If (quicksave_seconds .gt. 0) Then
+                checkpoint_elapsed = global_msgs(2) - checkpoint_t0
+                If (checkpoint_elapsed .gt. quicksave_seconds) Then
+
+                    checkpoint_t0 = global_msgs(2)
+                    checkpoint_elapsed = 0.0d0
+                    ItIsTimeForACheckpoint = .true.
+                    ItIsTimeForAQuickSave = .true.
+                    quicksave_num = quicksave_num+1
+                    quicksave_num = Mod(quicksave_num,num_quicksaves)
+
+                Endif
+
+            Endif
+
+        Endif
+    End Subroutine
 
 
 
@@ -996,428 +986,5 @@ Contains
     End Subroutine Read_Field
 
 
-    Subroutine IsItTimeForACheckpoint(iter)
-        Implicit None
-        Integer, Intent(In) :: iter
-        ItIsTimeForACheckpoint = .false.
-        ItIsTimeForAQuickSave = .false.
-        If (Mod(iter,checkpoint_interval) .eq. 0) Then
-            ItIsTimeForACheckpoint = .true.
-            checkpoint_t0 = checkpoint_elapsed      ! quicksaves not written
-            checkpoint_elapsed = 0.0d0
-            !If the long interval check is satisfied, nothing,
-            ! nothing related to the short interval is executed.
-        Else
-
-            !Check for quick-save status.  This will be based on either iteration #
-            ! OR on the time since the last checkpoint
-
-            If (quicksave_interval .gt. 0) Then
-                If (Mod(iter,quicksave_interval) .eq. 0) Then
-                    ItIsTimeForACheckpoint = .true.
-                    ItIsTimeForAQuickSave = .true.
-                    quicksave_num = quicksave_num+1
-                    quicksave_num = Mod(quicksave_num,num_quicksaves)
-
-                Endif
-            Endif
-
-            If (quicksave_seconds .gt. 0) Then
-                checkpoint_elapsed = global_msgs(2) - checkpoint_t0
-                If (checkpoint_elapsed .gt. quicksave_seconds) Then
-
-                    checkpoint_t0 = global_msgs(2)
-                    checkpoint_elapsed = 0.0d0
-                    ItIsTimeForACheckpoint = .true.
-                    ItIsTimeForAQuickSave = .true.
-                    quicksave_num = quicksave_num+1
-                    quicksave_num = Mod(quicksave_num,num_quicksaves)
-
-                Endif
-
-            Endif
-
-        Endif
-    End Subroutine
-
-    Subroutine Read_Spectral_Field3D(arrin,ind,tag)
-        ! Parallel Reading Routine For Fields in Spectral rlm configuration
-        ! ISends and IReceives are used
-        ! DOES NOT SUPPORT CHANGES IN PROBLEM SIZE (LMAX OR NR) CURRENTLY
-        ! IN A HURRY FOR INCITE PROFILING >>>> WILL FIX THIS IN JULY
-
-        ! NOTE - MAY NEED TO CHECK MPI GROUP FOR FILE READ AND WRITE.
-        ! SHOULD PROBABLY BE GCOMM NOW -
-
-        Implicit None
-        Integer :: var_offset, offset, new_off
-        Integer :: nrirq, nsirq, irq_ind, rtag, stag
-        Integer, Allocatable :: rirqs(:), sirqs(:)
-        Integer :: rone, rtwo, my_nrad, num_el
-        Integer :: i, mp, m, lstart, nl,p,r
-        Integer :: indstart(2)
-        Real*8, Intent(InOut) :: arrin(1:,1:)
-        Real*8, Allocatable :: arr(:,:,:), tarr(:)
-        Integer, Intent(In) :: ind
-        Character*3, Intent(In) :: tag
-        Character*120 :: cfile
-        integer ierr, funit
-        integer(kind=MPI_OFFSET_KIND) disp1,disp2
-        Integer :: mstatus(MPI_STATUS_SIZE)
-
-        cfile = trim(checkpoint_prefix)//'_'//trim(tag)
-
-
-        var_offset = (ind-1)*tnr
-        If (I_Will_Output) Then
-            my_nrad = nradii_at_rank(my_row_rank)
-            Allocate( arr(1:nlm_total,1:my_nrad,2))
-            Allocate(tarr(1:nlm_total*my_nrad))
-
-            Call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
-                MPI_MODE_RDONLY, &
-            MPI_INFO_NULL, funit, ierr)
-            disp1 = my_check_disp2*8
-            disp2 = (my_check_disp2+full_disp)*8
-
-            Call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &     ! Real part
-              MPI_DOUBLE_PRECISION, 'native', &
-              MPI_INFO_NULL, ierr)
-            Call MPI_FILE_READ(funit, arr(1,1,1), buffsize2, MPI_DOUBLE_PRECISION, &
-              mstatus, ierr)
-
-            Call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, &     ! Imaginary part
-              MPI_DOUBLE_PRECISION, 'native', &
-              MPI_INFO_NULL, ierr)
-            Call MPI_FILE_READ(funit, arr(1,1,2), buffsize2, MPI_DOUBLE_PRECISION, &
-              mstatus, ierr)
-
-            Call MPI_FILE_CLOSE(funit, ierr)
-
-
-            !////////////////////////////////
-            nrirq = Noutputs_per_Row-1
-            Allocate(rirqs(1:nrirq))
-            nsirq = nprow-1
-            Allocate(sirqs(1:nsirq))
-            Do i = 1, 2
-                rone = var_offset+rstart_at_rank(my_row_rank)+(i-1)*my_r%delta
-                rtwo = rone+my_nrad-1
-                ! File Data into Temporary Array
-                offset = 1
-                Do p = 0, nprow-1
-                    Do r = 1, my_nrad
-                    Do mp = pfi%all_3s(p)%min, pfi%all_3s(p)%max
-                        m = m_values(mp)
-                        nl = l_max-m+1
-                        lstart = lmstart(m)
-                        tarr(offset:offset+nl-1) = arr(lstart:lstart+nl-1,r,i)
-                        offset = offset+nl
-                    Enddo
-                    Enddo
-                Enddo
-                ! Post receives
-                irq_ind = 1
-                Do p = 0, Noutputs_per_Row-1
-                        If (p .ne. my_row_rank) Then
-                            rtag = p*(i+1)
-                            num_el = mode_count(my_row_rank)*nradii_at_rank(p)
-                            indstart(1) = 1
-                            indstart(2) = var_offset+rstart_at_rank(p)+(i-1)*my_r%delta
-                            Call IReceive(arrin, rirqs(irq_ind),num_el, p, rtag, pfi%rcomm, indstart)
-                            irq_ind = irq_ind+1
-                        Endif
-                Enddo
-
-
-
-                ! Post sends
-                offset = 1
-                irq_ind = 1
-                Do p = 0, nprow-1
-                    If (p .ne. my_row_rank) Then
-                        stag = my_row_rank*(i+1)
-                        num_el = mode_count(p)*my_nrad
-                        Call ISend(tarr, sirqs(irq_ind),num_el, offset,p, stag, pfi%rcomm)
-                        irq_ind = irq_ind+1
-                    Else
-                        new_off = offset
-                        Do r = rone, rtwo
-                            Do m = 1, mode_count(p)
-                                !tarr(new_off) = arrin(m,r)
-                                arrin(m,r) = tarr(new_off)
-                                new_off = new_off+1
-                            Enddo
-                        Enddo
-                    Endif
-                    offset = offset+mode_count(p)*my_nrad
-                Enddo
-                Call IWaitAll(nsirq, sirqs)
-                Call IWaitAll(nrirq, rirqs)
-            Enddo
-            DeAllocate(rirqs,sirqs)
-            DeAllocate(tarr)
-            DeAllocate(arr)
-        Else
-            ! This rank does not output
-            ! Post sends to all output processes in my row
-            nrirq = Noutputs_per_row
-            Allocate(rirqs(1:nrirq))
-
-            Do i = 1, 2
-                irq_ind = 1
-                Do p = 0, Noutputs_per_Row-1
-                    num_el = mode_count(my_row_rank)*nradii_at_rank(p)
-                    rtag = p*(i+1)
-                    indstart(1) = 1
-                    indstart(2) = var_offset+rstart_at_rank(p)+(i-1)*my_r%delta
-                    Call IReceive(arrin, rirqs(irq_ind),num_el, p, rtag, pfi%rcomm, indstart)
-                    irq_ind = irq_ind+1
-                Enddo
-
-
-                Call IWaitAll(nrirq, rirqs)
-
-
-            Enddo
-            DeAllocate(rirqs)
-        Endif
-
-    End Subroutine Read_Spectral_Field3D
-
-    Subroutine Read_Checkpoint_Alt(fields, abterms,iteration,read_pars)
-        Implicit None
-        !///////////////////////////////////////
-        ! DOES NOT YET PROPERLY HANDLE CHANGE IN RESOLUTION
-        ! NEW MEMORY FRIENDLY VERSION FOR MIRA
-        Integer, Intent(In) :: iteration, read_pars(1:2)
-        Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
-        Integer :: n_r_old, l_max_old, grid_type_old
-        Integer :: i, ierr,  m, nl, r, f, imi, ind
-        Integer :: dim2,offset, mp, offset_index
-        Integer :: old_pars(5)
-
-        Real*8, Allocatable :: old_radius(:)
-        Real*8, Allocatable ::  myarr(:,:)
-        Real*8 :: dt_pars(3),dt,new_dt
-        Character*120 :: iterstring
-        Character*120 :: autostring
-        Character*120 :: cfile
-        Integer :: read_hydro = 0, read_magnetism = 0
-        Integer :: last_iter, last_auto
-
-        read_hydro = read_pars(1)
-        read_magnetism = read_pars(2)
-
-        dim2 = tnr*numfields*2
-        checkpoint_iter = iteration
-        Write(iterstring,int_in_fmt) iteration
-        If (my_rank .eq. 0) Then
-            old_pars(4) = checkpoint_iter
-            old_pars(5) = -1
-            If (checkpoint_iter .eq. 0) Then
-                open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='old')
-                read(15,int_minus_in_fmt)last_iter
-                If (last_iter .lt. 0) Then  !Indicates a quicksave
-                    Read(15,auto_fmt)last_auto
-                    old_pars(4) = -last_iter
-                    old_pars(5) = last_auto
-                    Write(autostring,auto_fmt)last_auto
-                    checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
-                Else
-                    !Not a quicksave
-                    old_pars(4) = last_iter
-                    Write(iterstring,int_in_fmt) last_iter
-                    checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
-                Endif
-
-                Close(15)
-            ElseIf (checkpoint_iter .lt. 0) Then
-                !User has specified a particular quicksave file
-                    last_auto = -checkpoint_iter
-                    old_pars(5) = -checkpoint_iter
-                    Write(autostring,auto_fmt)-checkpoint_iter
-                    checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
-            Else
-                Write(iterstring,int_in_fmt) iteration
-                checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
-            Endif
-
-
-            !process zero reads all the old info and broadcasts to all other ranks
-            cfile = trim(checkpoint_prefix)//'_'//'grid_etc'
-            open(unit=15,file=cfile,form='unformatted', status='old')
-            Read(15)n_r_old
-            Read(15)grid_type_old
-            Read(15)l_max_old
-            Read(15)dt
-            Read(15)new_dt
-            Allocate(old_radius(1:N_r_old))
-            Read(15)(old_radius(i),i=1,N_R)
-            Read(15)Checkpoint_time
-            If (checkpoint_iter .lt. 0) Then
-                ! We're loading a quicksave file
-                ! Need to retrieve iteration from the grid_etc file because
-                ! iteration specified in main_input was a low, negative number
-                Read(15)Checkpoint_iter
-                old_pars(4) = Checkpoint_iter
-            Endif
-
-            Close(15)
-            old_pars(1) = n_r_old
-            old_pars(2) = grid_type_old
-            old_pars(3) = l_max_old
-            dt_pars(1) = dt
-            dt_pars(2) = new_dt
-            dt_pars(3) = checkpoint_time
-
-            If (l_max_old .lt. l_max) Then
-                Write(6,*)' '
-                Write(6,*)'#####################################################################'
-                Write(6,*)'# '
-                Write(6,*)'#  Checkpoint horizontal resolution is lower than current resolution.'
-                Write(6,*)'#  The old solution will be interpolated onto horizontal grid with '
-                Write(6,*)'#  higher resolution corresponding to the new l_max.'
-                Write(6,*)'#  Old l_max: ', l_max_old
-                Write(6,*)'#  New l_max: ', l_max
-                Write(6,*)'# '
-                Write(6,*)'#####################################################################'
-                Write(6,*)' '
-            Endif
-            If (l_max_old .gt. l_max) Then
-                Write(6,*)' '
-                Write(6,*)'#####################################################################'
-                Write(6,*)'# '
-                Write(6,*)'#  Checkpoint horizontal resolution is higher than current resolution.'
-                Write(6,*)'#  The old SPH expansion will be truncated at the new l_max.'
-                Write(6,*)'#  This might not be a good idea.'
-                Write(6,*)'#  Old l_max: ', l_max_old
-                Write(6,*)'#  New l_max: ', l_max
-                Write(6,*)'# '
-                Write(6,*)'#####################################################################'
-                Write(6,*)' '
-            Endif
-        Endif
-        Call MPI_Bcast(old_pars,5, MPI_INTEGER, 0, pfi%gcomm%comm, ierr)
-
-        n_r_old = old_pars(1)
-        grid_type_old = old_pars(2)
-        l_max_old = old_pars(3)
-        checkpoint_iter = old_pars(4)
-        last_auto = old_pars(5)
-        If (last_auto .ne. -1) Then
-            !The prefix should be formed using quicksave
-            Write(autostring,auto_fmt)last_auto
-            checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
-        Else
-            !The prefix should reflect that this is a normal checkpoint file
-            Write(iterstring,int_in_fmt) checkpoint_iter
-            checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
-        Endif
-
-
-        !///////// Later we only want to do this if the grid is actually different
-        If (my_rank .ne. 0) Then
-            Allocate(old_radius(1:n_r_old))
-        Endif
-        !Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%gcomm%comm, ierr)
-        !Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%gcomm%comm, ierr)
-
-        If (my_row_rank .eq. 0) Then
-            Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%ccomm%comm, ierr)
-        Endif
-        Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%rcomm%comm, ierr)
-
-        If (my_row_rank .eq. 0) Then
-            Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%ccomm%comm, ierr)
-        Endif
-        Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%rcomm%comm, ierr)
-
-
-        checkpoint_dt = dt_pars(1)
-        checkpoint_newdt = dt_pars(2)
-        checkpoint_time = dt_pars(3)
-
-        !////////////////////////////
-        ! Next, each process stripes their s2a array into a true 2-D array
-        dim2 = tnr*numfields*2
-        Allocate(myarr(1:mode_count(my_row_rank),1:dim2))
-        myarr(:,:) = 0.0d0
-        If (read_hydro .eq. 1) Then
-            Call Read_Spectral_Field3D(myarr,1,wchar)
-            Call Read_Spectral_Field3D(myarr,2,pchar)
-            Call Read_Spectral_Field3D(myarr,3,tchar)
-            Call Read_Spectral_Field3D(myarr,4,zchar)
-        Endif
-        offset_index = 4
-        If (magnetism) Then
-            If (read_magnetism .eq. 1) Then
-                Call Read_Spectral_Field3D(myarr,5,cchar)
-                Call Read_Spectral_Field3D(myarr,6,achar)
-            Endif
-            offset_index = 6
-        Endif
-
-        If (read_hydro .eq. 1) Then
-            Call Read_Spectral_Field3D(myarr,offset_index+1,'WAB')
-            Call Read_Spectral_Field3D(myarr,offset_index+2,'PAB')
-            Call Read_Spectral_Field3D(myarr,offset_index+3,'TAB')
-            Call Read_Spectral_Field3D(myarr,offset_index+4,'ZAB')
-        Endif
-        If (magnetism) Then
-            If (read_magnetism .eq. 1) Then
-                Call Read_Spectral_Field3D(myarr,offset_index+5,'CAB')
-                Call Read_Spectral_Field3D(myarr,offset_index+6,'AAB')
-            Endif
-        Endif
-
-
-        Call chktmp%construct('s2b')
-        chktmp%config = 's2b'
-        offset =1
-        Do mp = my_mp%min, my_mp%max
-                m = m_values(mp)
-                nl = l_max-m+1
-                ind = 1
-                Do f = 1, numfields*2
-                Do imi = 1, 2
-                Do r = my_r%min, my_r%max
-                    chktmp%s2b(mp)%data(m:l_max,r,imi,f) = myarr(offset:offset+nl-1,ind)
-                    ind = ind+1
-                Enddo
-                Enddo
-                Enddo
-                offset = offset+nl
-        Enddo
-
-      DeAllocate(myarr)
-
-
-        !//////////////////////////
-        Call chktmp%reform()    ! move to p1b
-
-        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
-        ! fields.  Otherwise, we need to interpolate onto the current grid
-        If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
-            ! Interpolate
-            ! We will assume the user kept the same radial domain bounds.
-            ! If they  have not, this will end badly.
-            If (my_rank .eq. 0) Then
-                Write(6,*)'Grid has changed.  Interpolating onto new grid.'
-                Write(6,*)'Old grid_type:     ', grid_type_old
-                Write(6,*)'Current grid_type: ', grid_type
-                Write(6,*)'Old N_R:           ', n_r_old
-                Write(6,*)'Current N_R:           ', n_r
-            Endif
-        Endif
-
-        ! Interpolation is complete, now we just copy into the other arrays
-        fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
-        abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
-
-        Call chktmp%deconstruct('p1b')
-        DeAllocate(old_radius)
-
-    End Subroutine Read_Checkpoint_Alt
 
 End Module Checkpointing
