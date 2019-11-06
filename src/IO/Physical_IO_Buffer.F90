@@ -930,7 +930,7 @@ Contains
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
         If (cache_ind .eq. self%nwrites) free_mem = .true.
-
+        If (self%nr_local .eq. 0) free_mem=.false.
 
         If (free_mem) DeAllocate(self%cache)
         ncache =1
@@ -1007,7 +1007,7 @@ Contains
                 Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
                 data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
 
-                 Write(6,*)'nlmout: ', self%nlm_out
+                ! Write(6,*)'nlmout: ', self%nlm_out
                 self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
                     self%buffer(1:self%nlm_out*self%nr_out*cend)
 
@@ -1140,7 +1140,7 @@ Contains
         If (self%output_rank) Then
             cend = 1
             If (self%write_mode .eq. 1) cend = self%ncache
-            Write(6,*)'T: ', self%io_buffer_size
+            !Write(6,*)'T: ', self%io_buffer_size
             self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_out,1:cend) => &
                 self%buffer(1:self%io_buffer_size)
 
@@ -1263,7 +1263,7 @@ Contains
             If (self%output_rank) Then
                 DeAllocate(self%buffer)
                 If (present(filename)) Then
-                    Write(6,*)'closing...'
+                    !Write(6,*)'closing...'
 			        Call MPI_FILE_CLOSE(funit, ierr) 
                 Endif
             Endif
