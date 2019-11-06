@@ -26,7 +26,7 @@ Module Initial_Conditions
     Use Legendre_Transforms, Only : Legendre_Transform
     Use SendReceive
     Use Math_Constants
-    Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
+    Use Checkpointing, Only : read_checkpoint, read_checkpoint_buffer
     Use Generic_Input, Only : read_input
     Use Controls
     Use Timers
@@ -251,7 +251,7 @@ Contains
 
         Call StopWatch(cread_time)%StartClock()
         If (read_chk_type .eq. 2) Then
-            Call Read_Checkpoint_Alt(tempfield%p1a,wsp%p1b,iteration,rpars)
+            Call Read_Checkpoint_Buffer(tempfield%p1a,wsp%p1b,iteration,rpars)
         Else
             Call Read_Checkpoint(tempfield%p1a,wsp%p1b,iteration,rpars)
         Endif

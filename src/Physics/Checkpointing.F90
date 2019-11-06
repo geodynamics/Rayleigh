@@ -68,7 +68,7 @@ Module Checkpointing
 
     Type(Cheby_Transform_Interface) :: cheby_info
 
-    Type(io_buffer_physical) :: checkpoint_buffer
+    Type(io_buffer_physical) :: checkpoint_buffer, checkpoint_inbuffer
 
 Contains
 
@@ -265,8 +265,264 @@ Contains
 
     End Subroutine Write_Checkpoint
 
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Subroutine Read_Checkpoint_Buffer(fields, abterms,iteration,read_pars)
+        Implicit None
+        Integer, Intent(In) :: iteration, read_pars(1:2)
+        Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
+        Integer :: n_r_old, l_max_old, grid_type_old, nr_read
+        Integer :: i, ierr, nlm_total_old, m, nl,p, np, mxread
+        Integer :: maxl, dim2,offset, nl_load,lstart,mp, offset_index
+        Integer :: old_pars(5)
+        Integer, Allocatable :: lmstart_old(:)
+        Real*8, Allocatable :: old_radius(:), radius_old(:)
+        Real*8, Allocatable :: rowstrip(:,:), myarr(:,:), sendarr(:,:)
+        Real*8 :: dt_pars(3),dt,new_dt
+        Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
+        Character*120 :: iterstring, checkfile
+        Character*120 :: autostring
+        Character*120 :: dstring
+        Character*120 :: cfile
+        Integer :: fcount(3,2)
+        Integer :: lb,ub, f, imi, r, ind
+        Integer :: last_iter, last_auto
+        Real*8 :: mxvt, mxvp
+        Integer :: read_magnetism = 0, read_hydro = 0
+
+        read_hydro = read_pars(1)
+        read_magnetism = read_pars(2)
+
+        dim2 = tnr*numfields*2
+        checkpoint_iter = iteration
+
+        If (my_rank .eq. 0) Then
+            old_pars(4) = checkpoint_iter
+            old_pars(5) = -1
+            If (checkpoint_iter .eq. 0) Then
+                open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='old')
+                read(15,int_minus_in_fmt)last_iter
+                If (last_iter .lt. 0) Then  !Indicates a quicksave
+                    Read(15,'(i2.2)')last_auto
+                    old_pars(4) = -last_iter
+                    old_pars(5) = last_auto
+                    Write(autostring,auto_fmt)last_auto
+                    checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
+                Else
+                    !Not a quicksave
+                    old_pars(4) = last_iter
+                    Write(iterstring,int_in_fmt) last_iter
+                    checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
+                Endif
+
+                Close(15)
+            ElseIf (checkpoint_iter .lt. 0) Then
+                !User has specified a particular quicksave file
+                    last_auto = -checkpoint_iter
+                    old_pars(5) = last_auto
+                    Write(autostring,auto_fmt) last_auto
+                    checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
+            Else
+                Write(iterstring,int_in_fmt) iteration
+                checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
+            Endif
 
 
+            !process zero reads all the old info and broadcasts to all other ranks
+            cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
+            open(unit=15,file=cfile,form='unformatted', status='old')
+            Read(15)n_r_old
+            Read(15)grid_type_old
+            Read(15)l_max_old
+            Read(15)dt
+            Read(15)new_dt
+            Allocate(old_radius(1:N_r_old))
+            Read(15)(old_radius(i),i=1,N_R_old)
+            Read(15)Checkpoint_time
+            If (checkpoint_iter .lt. 0) Then
+                ! We're loading a quicksave file
+                ! Need to retrieve iteration from the grid_etc file because
+                ! iteration specified in main_input was a low, negative number
+                Read(15)Checkpoint_iter
+                old_pars(4) = Checkpoint_iter
+            Endif
+            Close(15)
+
+            write(dstring,sci_note_fmt)checkpoint_time
+            call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
+            old_pars(1) = n_r_old
+            old_pars(2) = grid_type_old
+            old_pars(3) = l_max_old
+            dt_pars(1) = dt
+            dt_pars(2) = new_dt
+            dt_pars(3) = checkpoint_time
+
+            If (l_max_old .lt. l_max) Then
+                    Write(6,*)' '
+                    Write(6,*)'#####################################################################'
+                    Write(6,*)'# '
+                    Write(6,*)'#  Checkpoint horizontal resolution is lower than current resolution.'
+                    Write(6,*)'#  The old solution will be interpolated onto horizontal grid with '
+                    Write(6,*)'#  higher resolution corresponding to the new l_max.'
+                    Write(6,*)'#  Old l_max: ', l_max_old
+                    Write(6,*)'#  New l_max: ', l_max
+                    Write(6,*)'# '
+                    Write(6,*)'#####################################################################'
+                    Write(6,*)' '
+            Endif
+            If (l_max_old .gt. l_max) Then
+                    Write(6,*)' '
+                    Write(6,*)'#####################################################################'
+                    Write(6,*)'# '
+                    Write(6,*)'#  Checkpoint horizontal resolution is higher than current resolution.'
+                    Write(6,*)'#  The old SPH expansion will be truncated at the new l_max.'
+                    Write(6,*)'#  This might not be a good idea.'
+                    Write(6,*)'#  Old l_max: ', l_max_old
+                    Write(6,*)'#  New l_max: ', l_max
+                    Write(6,*)'# '
+                    Write(6,*)'#####################################################################'
+                    Write(6,*)' '
+            Endif
+        Endif
+
+        If (my_row_rank .eq. 0) Then    !2-D broadcast pattern
+            Call MPI_Bcast(old_pars,5, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
+        Endif
+        Call MPI_Bcast(old_pars,5, MPI_INTEGER, 0, pfi%rcomm%comm, ierr)
+
+        n_r_old       = old_pars(1)
+        grid_type_old = old_pars(2)
+        l_max_old     = old_pars(3)
+        checkpoint_iter = old_pars(4)
+        last_auto = old_pars(5)
+
+        If (last_auto .ne. -1) Then
+            !The prefix should be formed using quicksave
+            Write(autostring,auto_fmt)last_auto
+            checkpoint_prefix = Trim(my_path)//'Checkpoints/quicksave_'//Trim(autostring)
+        Else
+            !The prefix should reflect that this is a normal checkpoint file
+            Write(iterstring,int_in_fmt) checkpoint_iter
+            checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
+        Endif
+
+
+        !///////// Later we only want to do this if the grid is actually different
+        If (my_rank .ne. 0) Then
+            Allocate(old_radius(1:n_r_old))
+        Endif
+
+        If (my_row_rank .eq. 0) Then
+            Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%ccomm%comm, ierr)
+        Endif
+        Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%rcomm%comm, ierr)
+
+        If (my_row_rank .eq. 0) Then
+            Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%ccomm%comm, ierr)
+        Endif
+        Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%rcomm%comm, ierr)
+
+        checkpoint_dt    = dt_pars(1)
+        checkpoint_newdt = dt_pars(2)
+        checkpoint_Time  = dt_pars(3)
+
+        Call chktmp%construct('s2b')
+        chktmp%config = 's2b'
+        Do mp = my_mp%min, my_mp%max
+            chktmp%s2b(mp)%data(:,:,:,:) = 0.0d0
+        Enddo
+
+
+        ! Initialize the input buffer  (still need to deal properly with nr_old .ne. nr)
+
+        Call checkpoint_inbuffer%Init(mpi_tag=checkpoint_tag,spectral=.true., cache_spectral = .true., &
+                                    spec_comp = .true., lmax_in = l_max_old, mode = 2)
+        Do i = 1, numfields*2
+            !WRite(6,*)
+            checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
+            !Write(6,*)'Checkpoint_suffix: ', checkpoint_suffix(i), checkfile
+
+            Write(6,*)'Grabbing data from file: ', checkfile
+            Call checkpoint_inbuffer%read_data(filename=checkfile)
+            Call checkpoint_inbuffer%grab_data_spectral(chktmp%s2b,i)
+        Enddo
+
+
+        Call chktmp%reform()    ! move to p1b
+
+
+
+        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
+        ! fields.  Otherwise, we need to interpolate onto the current grid
+        If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
+            ! Interpolate
+            ! We will assume the user kept the same radial domain bounds.
+            ! If they  have not, this will end badly.
+            If (my_rank .eq. 0) Then
+                Write(6,*)'Grid has changed.  Interpolating onto new grid.'
+                Write(6,*)'Old grid_type:     ', grid_type_old
+                Write(6,*)'Current grid_type: ', grid_type
+                Write(6,*)'Old N_R:           ', n_r_old
+                Write(6,*)'Current N_R:           ', n_r
+            Endif
+            If (chebyshev) Then
+                If (n_r_old .lt. n_r) Then
+
+                    ! The fields are OK - they are already in chebyshev space
+                    fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+
+                    ! The AB terms are stored in physical space (in radius).
+                    ! They need to be transformed, coefficients copied, and transformed back..
+                    ! First, we need to initialize the old chebyshev grid.
+                    Allocate(radius_old(1:n_r_old))
+                    Call cheby_info%Init(radius_old,rmin,rmax)  ! We assume that rmax and rmin do not change
+                    fcount(:,:) = numfields
+                    Call chktmp2%init(field_count = fcount, config = 'p1a')
+                    Call chktmp2%construct('p1a')
+                    chktmp2%p1a(:,:,:,:) = 0.0d0
+                    ! Allocate tempfield1, tempfield2
+                    lb = lbound(chktmp%p1b,3)
+                    ub = ubound(chktmp%p1b,3)
+                    allocate(tempfield1(1:n_r_old,1:2,lb:ub,1))
+                    allocate(tempfield2(1:n_r_old,1:2,lb:ub,1))
+
+                    Do i = 1, numfields
+                        tempfield1(:,:,:,:) = 0.0d0
+                        tempfield2(:,:,:,:) = 0.0d0
+                        tempfield1(1:n_r_old,:,:,1) = chktmp%p1b(1:n_r_old,:,:,numfields+i)
+                        call cheby_info%tospec4d(tempfield1,tempfield2)
+                        chktmp2%p1a(1:n_r_old,:,:,i) = tempfield2(1:n_r_old,:,:,1)
+                    Enddo
+                    DeAllocate(tempfield1,tempfield2)
+
+
+                    Call chktmp2%construct('p1b')
+                    !Normal transform(p1a,p1b)
+                    Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
+
+                    abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
+                    Call cheby_info%destroy()
+                    Call chktmp2%deconstruct('p1a')
+                    Call chktmp2%deconstruct('p1b')
+                    Deallocate(radius_old)
+                Endif
+            Else
+                Write(6,*)'Interpolation for FD not supported yet'
+            Endif
+        Else
+
+            ! Interpolation is complete, now we just copy into the other arrays
+            fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+            abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
+
+        Endif
+        Call chktmp%deconstruct('p1b')
+        DeAllocate(old_radius)
+
+    End Subroutine Read_Checkpoint_Buffer
+
+
+
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
     Subroutine Read_Checkpoint(fields, abterms,iteration,read_pars)

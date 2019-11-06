@@ -1267,7 +1267,7 @@ Contains
         !Write(6,*)'rad only: ', rad_only, rspec, tspec, pspec
 
         If (rtp_spec) Then
-            Write(6,*)'PP INIT!'
+            !Write(6,*)'PP INIT!'
             Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
                                       theta_indices = self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
@@ -1277,7 +1277,7 @@ Contains
         Endif
 
         If (rad_only) Then
-            Write(6,*)'RAD INIT!'
+            !Write(6,*)'RAD INIT!'
              
             If (present(is_spectral)) Then
                 If (lspec) Then
@@ -1307,7 +1307,7 @@ Contains
         Endif
 
         If (theta_only) Then
-            Write(6,*)'THETA INIT!'
+            !Write(6,*)'THETA INIT!'
             If (.not. present(tweights)) Write(6,*)'Warning! tweights must be specified in this mode!'
             Call self%buffer%init(theta_indices=self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
@@ -1317,7 +1317,7 @@ Contains
         Endif
 
         If (phi_only) Then
-            Write(6,*)'PHI INIT!'
+            !Write(6,*)'PHI INIT!'
             Call self%buffer%init(phi_indices=self%phi_inds, &
                                       ncache  = self%nq*self%cache_Size, &
                                       mode = self%write_mode, mpi_tag = self%mpi_tag, &
@@ -1327,7 +1327,7 @@ Contains
 
         If (present(avg_axes)) Then  ! Assume if it's set, it's true
 
-            Write(6,*)'AVG_INIT!', avg_axes
+            !Write(6,*)'AVG_INIT!', avg_axes
             Call self%buffer%init(ncache  = self%nq*self%cache_Size, &
                                   mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                   nrec = self%cache_size, skip = 12, &
