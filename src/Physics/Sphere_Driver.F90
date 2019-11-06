@@ -255,13 +255,7 @@ Contains
             Call IsItTimeForACheckpoint(iteration)
             If (ItIsTimeForACheckpoint) Then
                 Call StopWatch(cwrite_time)%StartClock()
-                If (chk_type .ne. 2) Then
-                    Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
-
-                Else
-                    Call Write_Checkpoint_Alt(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
-
-                Endif
+                Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
                 Call StopWatch(cwrite_time)%Increment()
             Endif
 

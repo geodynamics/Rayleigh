@@ -107,7 +107,7 @@ Contains
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a')            ! This structure hangs around through the entire run
 
-        Call checkpoint_buffer%Init(mpi_tag=54,spectral=.true., cache_spectral = .true., &
+        Call checkpoint_buffer%Init(mpi_tag=checkpoint_tag,spectral=.true., cache_spectral = .true., &
                                     spec_comp = .true.)
 
         !//////////////////////////////////////////////////
@@ -180,7 +180,7 @@ Contains
 
     End Subroutine Initialize_Checkpointing
 
-    Subroutine Write_Checkpoint_BUFFER(abterms,iteration,dt,new_dt,elapsed_time)
+    Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time)
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:)
         Real*8, Intent(In) :: dt, new_dt
@@ -207,17 +207,15 @@ Contains
 
         If (ItIsTimeForAQuickSave) Then
             write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
-            checkpoint_prefix = 'Checkpoints2/quicksave_'//trim(autostring)
+            checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
         Else
             write(iterstring,int_out_fmt) iteration
-            checkpoint_prefix = 'Checkpoints2/'//trim(iterstring)
+            checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
         Endif
 
 
         Do i = 1, numfields*2
-            ! Cache
-
-            checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
+            checkfile = Trim(my_path)//trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
             Write(6,*)'Checkpoint_suffix: ', checkpoint_suffix(i), checkfile
             Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
             Call checkpoint_buffer%write_data(filename=checkfile)
@@ -265,161 +263,11 @@ Contains
 
         Endif
 
-    End Subroutine Write_Checkpoint_BUFFER
-
-
-
-
-    Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time)
-        Implicit None
-        Real*8, Intent(In) :: abterms(:,:,:,:)
-        Real*8, Intent(In) :: dt, new_dt
-        Integer, Intent(In) :: iteration
-        Integer :: mp, m, offset,nl,p,np, f, imi, r, ind
-        Integer :: dim2, lstart, i, offset_index
-        Real*8, Allocatable :: myarr(:,:), rowstrip(:,:)
-        Real*8, Intent(In) :: elapsed_time
-        Character*120 :: autostring
-        Character*120 :: iterstring
-        Character*120 :: cfile
-
-        Call Write_Checkpoint_Buffer(abterms,iteration,dt,new_dt,elapsed_time)
-        np = pfi%rcomm%np
-
-        Call chktmp%construct('p1a')
-        chktmp%config = 'p1a'
-        !Copy the RHS into chtkmp
-        Call Get_All_RHS(chktmp%p1a)
-        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
-        !Now we want to move from p1a to s2a (rlm space)
-        Call chktmp%reform()
-
-        ! Next, each process stripes their s2a array into a true 2-D array
-        dim2 = tnr*numfields*2
-        Allocate(myarr(1:mode_count(my_row_rank),1:dim2))
-        offset =1
-        Do mp = my_mp%min, my_mp%max
-                m = m_values(mp)
-                nl = l_max-m+1
-                ind = 1
-                Do f = 1, numfields*2
-                Do imi = 1, 2
-                Do r = my_r%min, my_r%max
-                myarr(offset:offset+nl-1,ind) = chktmp%s2a(mp)%data(m:l_max,r,imi,f)
-                ind = ind+1
-                Enddo
-                Enddo
-                Enddo
-
-                offset = offset+nl
-        Enddo
-        Call chktmp%deconstruct('s2a')
-
-        ! Everyone sends to then 0 process of each row, who organizes the data into one large strip for output.
-
-
-        If (my_row_rank .ne. 0) Then
-            ! Send myarr
-
-            Call Send(myarr, dest = 0, tag = checkpoint_tag, grp = pfi%rcomm)
-            DeAllocate(myarr)
-        Else
-            Allocate( rowstrip(1:nlm_total, 1:tnr*numfields*2))
-            ! first, copy myarr into the larger array
-            offset = 1
-            Do mp = my_mp%min, my_mp%max
-                m = m_values(mp)
-                nl = l_max-m+1
-                lstart = lmstart(m)
-                rowstrip(lstart:lstart+nl-1,:) = myarr(offset:offset+nl-1,:)
-                offset = offset+nl
-            Enddo
-            DeAllocate(myarr)
-            Do p = 1, np -1
-                    Allocate(myarr(1:mode_count(p),1:dim2))
-                    ! Receive
-                    Call receive(myarr, source= p,tag=checkpoint_tag,grp = pfi%rcomm)
-                    offset = 1
-                    Do mp = pfi%all_3s(p)%min, pfi%all_3s(p)%max
-                        m = m_values(mp)
-                        nl = l_max-m+1
-                        lstart = lmstart(m)
-                        rowstrip(lstart:lstart+nl-1,:) = myarr(offset:offset+nl-1,:)
-                        offset = offset+nl
-                    Enddo
-                    DeAllocate(myarr)
-            Enddo
-                If (ItIsTimeForAQuickSave) Then
-                    write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
-                    checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
-                Else
-                    write(iterstring,int_out_fmt) iteration
-                    checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
-                Endif
-
-                Call Write_Field(rowstrip,1,wchar, iteration)
-                Call Write_Field(rowstrip,2,pchar, iteration)
-                Call Write_Field(rowstrip,3,tchar, iteration)
-                Call Write_Field(rowstrip,4,zchar, iteration)
-                offset_index = 4
-                If (magnetism) Then
-                    Call Write_Field(rowstrip,5,cchar, iteration)
-                    Call Write_Field(rowstrip,6,achar, iteration)
-                    offset_index = 6
-                Endif
-
-                Call Write_Field(rowstrip,offset_index+1,'WAB', iteration)
-                Call Write_Field(rowstrip,offset_index+2,'PAB', iteration)
-                Call Write_Field(rowstrip,offset_index+3,'TAB', iteration)
-                Call Write_Field(rowstrip,offset_index+4,'ZAB', iteration)
-                If (magnetism) Then
-                    Call Write_Field(rowstrip,offset_index+5,'CAB', iteration)
-                    Call Write_Field(rowstrip,offset_index+6,'AAB', iteration)
-                Endif
-            DeAllocate(rowstrip)
-            If (my_column_rank .eq. 0) Then
-                ! row/column 0 writes out a file with the grid, etc.
-                ! This file should contain everything that needs to be known
-
-
-                cfile = Trim(my_path)//trim(checkpoint_prefix)//'_'//'grid_etc'
-
-                open(unit=15,file=cfile,form='unformatted', status='replace')
-                Write(15)n_r
-                Write(15)grid_type
-                Write(15)l_max
-                Write(15)dt
-                Write(15)new_dt
-                Write(15)(radius(i),i=1,N_R)
-                Write(15)elapsed_time
-                Write(15)iteration
-                Close(15)
-
-                open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
-                If (ItIsTimeForAQuickSave) Then
-                    Write(15,int_minus_out_fmt)-iteration
-                    Write(15,'(i2.2)')(quicksave_num+1)
-                Else
-                    Write(15,int_out_fmt)iteration
-                Endif
-                Close(15)
-
-                open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
-                    position='Append')
-                If (ItIsTimeForAQuickSave) Then
-                    Write(iterstring,int_out_fmt)iteration
-                    Write(autostring,auto_fmt)quicksave_num+1
-                    Write(15,*)iterstring, ' ', autostring
-                Else
-                    Write(15,int_out_fmt)iteration
-                Endif
-                Close(15)
-
-            Endif
-        Endif
-
-
     End Subroutine Write_Checkpoint
+
+
+
+
 
     Subroutine Read_Checkpoint(fields, abterms,iteration,read_pars)
         Implicit None
@@ -826,60 +674,6 @@ Contains
 
     End Subroutine Read_Checkpoint
 
-    Subroutine Write_Field(arr,ind,tag,iter)
-        Implicit None
-        Integer, Intent(In) :: ind, iter
-        Real*8, Intent(In) :: arr(1:,1:)
-        Character*3, Intent(In) :: tag
-        Character*120 :: cfile
-
-        integer ierr, funit , v_offset1, v_offset2
-        integer(kind=MPI_OFFSET_KIND) disp1,disp2
-        Integer :: mstatus(MPI_STATUS_SIZE)
-
-        cfile = Trim(my_path)//Trim(checkpoint_prefix)//'_'//Trim(tag)
-         ! We have to be careful here.  Each processor does TWO writes.
-        ! The first write places the real part of the field into the file.
-        ! The view then changes and advances to the appropriate location of the
-        ! imaginary part.  This step is crucial for checkpoints to work with
-        ! Different processor configurations.
-        v_offset1 = (ind-1)*tnr+1
-        v_offset2 = v_offset1+my_r%delta
-
-        call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
-               MPI_MODE_WRONLY + MPI_MODE_CREATE, &
-               MPI_INFO_NULL, funit, ierr)
-        if (ierr .ne. 0) Then
-            Write(6,*)'Error Opening File: ', pfi%ccomm%rank
-        Endif
-
-        disp1 = my_check_disp*8
-        disp2 = (my_check_disp+full_disp)*8
-
-
-        Call MPI_File_Seek(funit,disp1,MPI_SEEK_SET,ierr)
-        If (ierr .ne. 0) Write(6,*)'Error Seeking 1: ', pfi%ccomm%rank
-
-
-        Call MPI_FILE_WRITE(funit, arr(1,v_offset1), buffsize, MPI_DOUBLE_PRECISION, &
-                mstatus, ierr)
-        If (ierr .ne. 0) Write(6,*)'Error Writing 1: ', pfi%ccomm%rank
-
-
-        Call MPI_File_Seek(funit,disp2,MPI_SEEK_SET,ierr)
-        If (ierr .ne. 0) Write(6,*)'Error Seeking 2: ', pfi%ccomm%rank
-
-
-        Call MPI_FILE_WRITE(funit, arr(1,v_offset2), buffsize, MPI_DOUBLE_PRECISION, &
-                mstatus, ierr)
-        If (ierr .ne. 0) Write(6,*)'Error Writing 2: ', pfi%ccomm%rank
-
-
-        Call MPI_FILE_CLOSE(funit, ierr)
-        if (ierr .ne. 0) Write(6,*)'Error Closing File: ', pfi%ccomm%rank
-
-    End Subroutine Write_Field
-
     Subroutine Read_Field(arr,ind,tag,iter,nread,nlm)
         Implicit None
         Integer, Intent(In) :: ind, iter,nread, nlm
@@ -989,282 +783,6 @@ Contains
 
         Endif
     End Subroutine
-
-    Subroutine Write_Spectral_Field3D(arrin,ind,tag)
-        ! Parallel Writing Routine For Fields in Spectral rlm configuration
-        ! ISends and IReceives are used
-        Implicit None
-        Integer :: var_offset, offset, new_off
-        Integer :: nrirq, nsirq, irq_ind, rtag, stag
-        Integer, Allocatable :: rirqs(:), sirqs(:)
-        Integer :: rone, rtwo, my_nrad, num_el
-        Integer :: i, mp, m, lstart, nl,p,r
-        Integer :: indstart(2)
-        Real*8, Intent(In) :: arrin(1:,1:)
-        Real*8, Allocatable :: arr(:,:,:), tarr(:)
-        Integer, Intent(In) :: ind
-        Character*3, Intent(In) :: tag
-        Character*120 :: cfile
-        integer ierr, funit
-        integer(kind=MPI_OFFSET_KIND) disp1,disp2
-        Integer :: mstatus(MPI_STATUS_SIZE)
-        cfile = Trim(checkpoint_prefix)//'_'//trim(tag)
-
-        var_offset = (ind-1)*tnr
-        If (I_Will_Output) Then
-            my_nrad = nradii_at_rank(my_row_rank)
-            Allocate( arr(1:nlm_total,1:my_nrad,2))
-            Allocate(tarr(1:nlm_total*my_nrad))
-
-            nrirq = nprow-1
-            Allocate(rirqs(1:nrirq))
-            nsirq = Noutputs_per_row-1
-            Allocate(sirqs(1:nsirq))
-
-            Do i = 1, 2        ! 2 passess.  Real and imaginary.   Could do one, but worried about Memory.
-                rone = var_offset+rstart_at_rank(my_row_rank)+(i-1)*my_r%delta
-                rtwo = rone+my_nrad-1
-                ! Post receives for everyone in my row
-                ! tag depends on i & p
-                offset = 1
-                irq_ind = 1
-                Do p = 0, nprow-1
-                        If (p .ne. my_row_rank) Then
-                            rtag = p*(i+1)
-                            num_el = mode_count(p)*my_nrad
-                            Call IReceive(tarr, rirqs(irq_ind),num_el, offset,p, rtag, pfi%rcomm)
-                            irq_ind = irq_ind+1
-                        Else
-                            ! File my stuff into tarr here
-                            new_off = offset
-                            Do r = rone, rtwo
-                                Do m = 1, mode_count(p)
-                                    tarr(new_off) = arrin(m,r)
-                                    new_off = new_off+1
-                                Enddo
-                            Enddo
-                        Endif
-
-                        offset = offset+mode_count(p)*my_nrad
-                Enddo
-
-
-                ! Post sends to all output processes in my row
-                irq_ind = 1
-                Do p = 0, Noutputs_per_Row-1
-                    If (p .ne. my_row_rank) Then
-                        num_el = mode_count(my_row_rank)*nradii_at_rank(p)
-                        stag = my_row_rank*(i+1)
-                        indstart(1) = 1
-                        indstart(2) = var_offset+rstart_at_rank(p)+(i-1)*my_r%delta
-                        Call ISend(arrin, sirqs(irq_ind),num_el, p, stag, pfi%rcomm, indstart)
-                        irq_ind = irq_ind+1
-                    Endif
-                Enddo
-
-                ! Block and wait on receive irqs
-
-                Call IWaitAll(nrirq, rirqs)
-
-                ! File Data into Main Array
-                offset = 1
-                Do p = 0, nprow-1
-                    Do r = 1, my_nrad
-                    Do mp = pfi%all_3s(p)%min, pfi%all_3s(p)%max
-                        m = m_values(mp)
-                        nl = l_max-m+1
-                        lstart = lmstart(m)
-                        arr(lstart:lstart+nl-1,r,i) = tarr(offset:offset+nl-1)
-                        offset = offset+nl
-                    Enddo
-                    Enddo
-                Enddo
-
-                Call IWaitAll(nsirq, sirqs)
-
-
-            Enddo
-            DeAllocate(sirqs)
-            DeAllocate(tarr)
-            DeAllocate(rirqs)
-            !//////////////////////////////
-            !  MPI Write
-
-             ! We have to be careful here.  Each processor does TWO writes.
-            ! The first write places the real part of the field into the file.
-            ! The view then changes and advances to the appropriate location of the
-            ! imaginary part.  This step is crucial for checkpoints to work with
-            ! Different processor configurations.   The Real stuff sits at the
-            ! Beginning of the file.  The imaginary stuff sits at the end.
-
-
-            !///// NEED TO SET THESE DISPLACEMENTS
-
-            Call MPI_FILE_OPEN(pfi%ccomm%comm, cfile, &
-                MPI_MODE_WRONLY + MPI_MODE_CREATE, &
-            MPI_INFO_NULL, funit, ierr)
-            disp1 = my_check_disp2*8
-            disp2 = (my_check_disp2+full_disp)*8
-
-            Call MPI_FILE_SET_VIEW(funit, disp1, MPI_DOUBLE_PRECISION, &     ! Real part
-              MPI_DOUBLE_PRECISION, 'native', &
-              MPI_INFO_NULL, ierr)
-            Call MPI_FILE_WRITE(funit, arr(1,1,1), buffsize2, MPI_DOUBLE_PRECISION, &
-              mstatus, ierr)
-
-            Call MPI_FILE_SET_VIEW(funit, disp2, MPI_DOUBLE_PRECISION, &     ! Imaginary part
-              MPI_DOUBLE_PRECISION, 'native', &
-              MPI_INFO_NULL, ierr)
-            Call MPI_FILE_WRITE(funit, arr(1,1,2), buffsize2, MPI_DOUBLE_PRECISION, &
-              mstatus, ierr)
-
-            Call MPI_FILE_CLOSE(funit, ierr)
-
-
-            !////////////////////////////////
-            DeAllocate(arr)
-        Else
-            ! This rank does not output
-            ! Post sends to all output processes in my row
-            nsirq = Noutputs_per_row
-            Allocate(sirqs(1:nsirq))
-
-            Do i = 1, 2
-                irq_ind = 1
-                Do p = 0, Noutputs_per_Row-1
-                    num_el = mode_count(my_row_rank)*nradii_at_rank(p)
-                    stag = my_row_rank*(i+1)
-                    indstart(1) = 1
-                    indstart(2) = var_offset+rstart_at_rank(p)+(i-1)*my_r%delta
-                    Call ISend(arrin, sirqs(irq_ind),num_el, p, stag, pfi%rcomm, indstart)
-                    irq_ind = irq_ind+1
-                Enddo
-
-
-                Call IWaitAll(nsirq, sirqs)
-
-
-            Enddo
-            DeAllocate(sirqs)
-        Endif
-
-    End Subroutine Write_Spectral_Field3D
-
-
-    Subroutine Write_Checkpoint_Alt(abterms,iteration,dt,new_dt,elapsed_time)
-        ! This uses the memory friendly framework
-        Implicit None
-        Real*8, Intent(In) :: abterms(:,:,:,:)
-        Real*8, Intent(In) :: dt, new_dt, elapsed_time
-        Integer, Intent(In) :: iteration
-        Integer :: mp, m, offset,nl,np
-        Integer :: dim2, i, offset_index, r, imi,f,ind
-        Real*8, Allocatable :: myarr(:,:)
-        Character*120 :: autostring
-        Character*120 :: iterstring
-        Character*120 :: cfile
-        np = pfi%rcomm%np
-
-        Call chktmp%construct('p1a')
-        chktmp%config = 'p1a'
-        !Copy the RHS into chtkmp
-        Call Get_All_RHS(chktmp%p1a)
-        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
-        !Now we want to move from p1a to s2a (rlm space)
-        Call chktmp%reform()
-
-        ! Next, each process stripes their s2a array into a true 2-D array
-        dim2 = tnr*numfields*2
-        Allocate(myarr(1:mode_count(my_row_rank),1:dim2))
-        offset =1
-        Do mp = my_mp%min, my_mp%max
-                m = m_values(mp)
-                nl = l_max-m+1
-                ind = 1
-                Do f = 1, numfields*2
-                Do imi = 1, 2
-                Do r = my_r%min, my_r%max
-                    myarr(offset:offset+nl-1,ind) = chktmp%s2a(mp)%data(m:l_max,r,imi,f)
-                    ind = ind+1
-                Enddo
-                Enddo
-                Enddo
-                offset = offset+nl
-        Enddo
-        Call chktmp%deconstruct('s2a')
-        If (ItIsTimeForAQuickSave) Then
-            write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
-            checkpoint_prefix = trim(my_path)//'Checkpoints/quicksave_'//trim(autostring)
-        Else
-            write(iterstring,int_out_fmt) iteration
-            checkpoint_prefix = trim(my_path)//'Checkpoints/'//trim(iterstring)
-        Endif
-
-        Call Write_Spectral_Field3D(myarr,1,wchar)
-        Call Write_Spectral_Field3D(myarr,2,pchar)
-        Call Write_Spectral_Field3D(myarr,3,tchar)
-        Call Write_Spectral_Field3D(myarr,4,zchar)
-        offset_index = 4
-        If (magnetism) Then
-            Call Write_Spectral_Field3D(myarr,5,cchar)
-            Call Write_Spectral_Field3D(myarr,6,achar)
-            offset_index = 6
-        Endif
-
-        Call Write_Spectral_Field3D(myarr,offset_index+1,'WAB')
-        Call Write_Spectral_Field3D(myarr,offset_index+2,'PAB')
-        Call Write_Spectral_Field3D(myarr,offset_index+3,'TAB')
-        Call Write_Spectral_Field3D(myarr,offset_index+4,'ZAB')
-        If (magnetism) Then
-            Call Write_Spectral_Field3D(myarr,offset_index+5,'CAB')
-            Call Write_Spectral_Field3D(myarr,offset_index+6,'AAB')
-        Endif
-      DeAllocate(myarr)
-
-    If (my_column_rank .eq. 0) Then
-    If (my_row_rank .eq. 0) Then
-        ! row/column 0 writes out a file with the grid, etc.
-        ! This file should contain everything that needs to be known
-        write(iterstring,int_out_fmt) iteration
-        cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
-        open(unit=15,file=cfile,form='unformatted', status='replace')
-        Write(15)n_r
-        Write(15)grid_type
-        Write(15)l_max
-        Write(15)dt
-        Write(15)new_dt
-        Write(15)(radius(i),i=1,N_R)
-        Write(15)elapsed_time
-        Write(15)iteration
-        Close(15)
-        Close(15)
-
-
-        open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
-        If (ItIsTimeForAQuickSave) Then
-            Write(15,int_minus_out_fmt)-iteration
-            Write(15,auto_fmt)(quicksave_num+1)
-        Else
-            Write(15,int_out_fmt)iteration
-        Endif
-        Close(15)
-
-        open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
-            position='Append')
-        If (ItIsTimeForAQuickSave) Then
-            Write(iterstring,int_out_fmt)iteration
-            Write(autostring,auto_fmt)quicksave_num+1
-            Write(15,*)iterstring, ' ', autostring
-
-        Else
-            Write(15,int_out_fmt)iteration
-        Endif
-        Close(15)
-
-        Endif
-        Endif
-
-    End Subroutine Write_Checkpoint_Alt
 
     Subroutine Read_Spectral_Field3D(arrin,ind,tag)
         ! Parallel Reading Routine For Fields in Spectral rlm configuration
