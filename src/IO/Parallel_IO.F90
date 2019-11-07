@@ -1,4 +1,4 @@
-Module Physical_IO_Buffer
+Module Parallel_IO
     Use RA_MPI_Base
     Use Parallel_Framework
     Use Structures
@@ -8,7 +8,7 @@ Module Physical_IO_Buffer
     Use Legendre_Transforms, Only : Legendre_Transform
     Use Spherical_Buffer
 
-    Type, Public :: IO_Buffer_Physical
+    Type, Public :: io_buffer
 
         ! MPI-related variables
         Integer :: col_rank, row_rank, rank  ! column, row, and global ranks
@@ -147,7 +147,7 @@ Module Physical_IO_Buffer
         Procedure :: despectral_prep
         Procedure :: decascade
 
-    End Type IO_Buffer_Physical
+    End Type io_buffer
 
 Contains
 
@@ -159,7 +159,7 @@ Contains
                                              l_values, cache_spectral, spec_comp, &
                                              lmax_in)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In), Optional :: l_values(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
@@ -341,7 +341,7 @@ Contains
 
     Subroutine Load_Balance_IO(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: m, n, p,  nextra, shsize, nout_cols
         Integer :: my_min, my_max
         Integer :: r, rmin, rmax
@@ -483,7 +483,7 @@ Contains
 
     Subroutine Set_Displacements(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: j,n, p
         Integer(kind=MPI_OFFSET_KIND) :: shsize
         ! This routine is only called by output ranks.
@@ -544,7 +544,7 @@ Contains
 
     Subroutine Allocate_Receive_Buffers(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: p, np,nr,nt,lp1, mp_min,mp_max
         If (self%output_rank) Then
             If (self%spectral) Then
@@ -580,7 +580,7 @@ Contains
 
     Subroutine DeAllocate_Receive_Buffers(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: p
         If (self%output_rank) Then
             Do p = 0, pfi%nprow -1
@@ -591,7 +591,7 @@ Contains
 
     Subroutine Initialize_IO_MPI(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: p
         Integer :: nout_cols
         Integer :: color, ierr
@@ -612,7 +612,7 @@ Contains
 
     Subroutine Allocate_Cache(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
 
         If (.not. self%spectral) Then
             If (self%write_mode .eq. 1) Then
@@ -639,7 +639,7 @@ Contains
 
     Subroutine Timestamp(self,ival,tval)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In) :: ival
         Real*8, Intent(In) :: tval
         If (self%write_timestamp) Then
@@ -651,7 +651,7 @@ Contains
 
     Subroutine Cache_Data_Spectral(self, spec_vals,in_cache)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Type(rmcontainer4D), Intent(In) :: spec_vals(1:)
         Integer, Intent(In) :: in_cache
         Integer :: my_mp_min, my_mp_max, mp
@@ -671,7 +671,7 @@ Contains
 
     Subroutine Grab_Data_Spectral(self, spec_vals,in_cache)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Type(rmcontainer4D), Intent(InOut) :: spec_vals(1:)
         Integer, Intent(In) :: in_cache
         Integer :: my_mp_min, my_mp_max, mp
@@ -694,7 +694,7 @@ Contains
 
     Subroutine Cache_Data(self,vals, spec_vals, in_cache)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
         Type(rmcontainer4D), Intent(In), Optional :: spec_vals(1:)
         Integer, Intent(In), Optional :: in_cache
@@ -832,7 +832,7 @@ Contains
 
     Subroutine Spectral_Prep(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: p, mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
         Integer :: nq, r, rind, lmax, i1, i2, my_nm, mstore
         ! This routine transforms phi-theta to ell-m space.
@@ -913,7 +913,7 @@ Contains
 
     Subroutine Gather_Data(self, cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
     
         If (self%write_mode .eq. 1) Then
@@ -934,7 +934,7 @@ Contains
 
     Subroutine Distribute_Data(self, cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
 
         !NOTE:  Assuming we are spectral for distribution
@@ -947,7 +947,7 @@ Contains
 
     Subroutine Collate_Spectral(self,cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical), Target :: self
+        Class(io_buffer), Target :: self
         Integer, Intent(In) :: cache_ind
         Integer :: m, r, i, p, mp_min, mp_max
         Integer :: cend, ncache, mp, k, l, j, lval, lmax, ind, ind2
@@ -1061,7 +1061,7 @@ Contains
 
     Subroutine DeCollate_Spectral(self)
         Implicit None
-        Class(IO_Buffer_Physical), Target :: self
+        Class(io_buffer), Target :: self
         Integer :: m, r, i, p, mp_min, mp_max,mm, lmax, maxl
         Integer :: mp, k, l, j,  ind1, ind2, loff, lmax_in, dind
         ! restripe i/o buffer into send/recv buffers for each rank
@@ -1104,7 +1104,7 @@ Contains
 
     Subroutine DeCascade(self)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
@@ -1182,7 +1182,7 @@ Contains
 
     Subroutine DeSpectral_Prep(self, cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
         Integer :: p, mp, f,m, my_mp_min, my_mp_max, myrmin
         Integer :: r, lmax, i1, i2, my_nm, mstore
@@ -1212,7 +1212,7 @@ Contains
 
     Subroutine Cascade(self,cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
@@ -1293,7 +1293,7 @@ Contains
 
     Subroutine Collate_Physical(self,cache_ind)
         Implicit None
-        Class(IO_Buffer_Physical), Target :: self
+        Class(io_buffer), Target :: self
         Integer, Intent(In), Optional :: cache_ind
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
@@ -1361,7 +1361,7 @@ Contains
 
     Subroutine Write_Data(self,disp,file_unit,filename)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
         Integer :: funit, ierr, j
@@ -1439,7 +1439,7 @@ Contains
 
     Subroutine Read_Data(self,disp,file_unit,filename)
         Implicit None
-        Class(IO_Buffer_Physical) :: self
+        Class(io_buffer) :: self
         Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
         Integer :: funit, ierr, j
@@ -1501,4 +1501,4 @@ Contains
         Endif
     End Subroutine Read_Data
 
-End Module Physical_IO_Buffer
+End Module Parallel_IO

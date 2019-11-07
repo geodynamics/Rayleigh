@@ -31,7 +31,7 @@ Module Spherical_IO
 #ifdef INTEL_COMPILER 
     USE IFPORT
 #endif
-    Use Physical_IO_Buffer
+    Use Parallel_IO
 	Implicit None
 	! This module contains routines for outputing spherical data as:
 	! 1. Slices of sphere
@@ -149,7 +149,7 @@ Module Spherical_IO
         Integer(kind=MPI_OFFSET_KIND) :: hdisp = 12
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         !I/O Buffer
-        Type(IO_Buffer_Physical) :: buffer
+        Type(io_buffer) :: buffer
         Integer :: write_mode =1
 
         ! Methods
@@ -179,7 +179,7 @@ Module Spherical_IO
     Type(DiagnosticInfo) :: Equatorial_Slices, Meridional_Slices, SPH_Mode_Samples, Point_Probes
     Type(DiagnosticInfo) :: temp_io
 
-    Type(IO_Buffer_Physical) :: full_3d_buffer
+    Type(io_buffer) :: full_3d_buffer
     
     Integer :: current_averaging_level = 0
     Integer :: current_qval = 0
