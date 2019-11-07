@@ -7,8 +7,8 @@ Module Physical_IO_Buffer
     Use Fourier_Transform
     Use Legendre_Transforms, Only : Legendre_Transform
     Use Spherical_Buffer
-    Type, Public :: IO_Buffer_Physical
 
+    Type, Public :: IO_Buffer_Physical
 
         ! MPI-related variables
         Integer :: col_rank, row_rank, rank  ! column, row, and global ranks
@@ -151,7 +151,6 @@ Module Physical_IO_Buffer
 
 Contains
 
-
     Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
                                              phi_indices,ncache, mpi_tag, &
                                              cascade, sum_weights_theta, nrec, &
@@ -169,9 +168,7 @@ Contains
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
         Integer, Intent(In), Optional :: lmax_in
-
         Integer :: r, ii, ind, my_min, my_max
-
         Integer :: k, ntot, fcount(3,2), fcnt
 
         !//////////////////////////////////////////////
@@ -231,7 +228,6 @@ Contains
 
         !///////////////////////////////////////////////////////////
         ! Establish how this buffer will be subsampled, if at all
-
         If (present(r_indices)) Then
             self%nr = size(r_indices)
             Allocate(self%r_global(1:self%nr))
@@ -256,12 +252,10 @@ Contains
         Endif
 
         If (present(phi_indices)) Then
-            !Write(6,*)'here...phi', present(phi_indices), phi_indices
             self%nphi = size(phi_indices)
             Allocate(self%phi_local(1:self%nphi))
             self%phi_local(:) = phi_indices(:)
             self%p_spec = .true.
-            !Write(6,*)'phi: ', phi_indices
         Else
             self%nphi = pfi%n3p
             If (self%sum_phi) Then
@@ -315,9 +309,6 @@ Contains
             self%r_general_spectral = .true.
         Endif
 
-       ! Write(6,*)self%simple, self%r_general, self%phi_general, self%general
-
-
         Call self%Load_Balance_IO()
 
         self%nwrites = self%nrec*self%ncache ! TODO: Do I move this?
@@ -337,9 +328,6 @@ Contains
 
         Call self%Initialize_IO_MPI()
 
-
-        !If (self%general) Write(6,*)'check: ', self%nr_local, self%ntheta_local, self%nphi, self%buffsize
-
         If (present(write_timestamp)) Then
             If ((self%output_rank) .and. (self%ocomm%rank .eq. 0) ) Then
                 self%write_timestamp = write_timestamp
@@ -347,11 +335,6 @@ Contains
             If (write_timestamp) self%rec_skip = 12
         Endif
         Call self%Allocate_Cache()
-
-
-        !If (self%spectral) Then
-        !    WRite(6,*)'Info:  ', self%lmax, self%buffsize, self%io_buffer_size, self%nlm_out
-        !Endif
 
     End Subroutine Initialize_Physical_IO_Buffer
 
@@ -419,7 +402,7 @@ Contains
             my_min = pfi%all_1p(self%col_rank)%min
             my_max = pfi%all_1p(self%col_rank)%max
 
-            Allocate(tmp(1:(my_max-my_min)))
+            Allocate(tmp(1:(my_max-my_min+1)))
 
             Do p = 0, pfi%npcol-1
                 rmin = pfi%all_1p(p)%min
@@ -461,9 +444,7 @@ Contains
         self%nout_cols = nout_cols
         If (self%row_rank .lt. nout_cols) self%output_rank = .true.
 
-
         !Determine how many radii each rank in this row outputs
-
         If (self%nout_cols .gt. 0) Then
             n = self%nr_local / self%nout_cols
             nextra = Mod(self%nr_local,self%nout_cols)
@@ -477,7 +458,6 @@ Contains
         Endif
         self%nr_out = self%nr_out_at_column(self%row_rank)
         
-
         If (self%spectral) Then
             Allocate(self%nlm_at_column(0:pfi%nprow-1))
             self%nlm_at_column(:) = 0
@@ -499,8 +479,6 @@ Contains
             Enddo
         Endif
 
-        !If (self%row_rank .eq. 0) Write(6,*)'c: ', self%col_rank, self%nr_out_at_column(:), self%nr_out_at_row(self%col_rank)
-
     End Subroutine Load_Balance_IO
 
     Subroutine Set_Displacements(self)
@@ -508,10 +486,8 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Integer :: j,n, p
         Integer(kind=MPI_OFFSET_KIND) :: shsize
-        ! Only called by output ranks
-
-
-        ! Determine offsets (in bytes) for MPI-IO
+        ! This routine is only called by output ranks.
+        ! Determine offsets (in bytes) for MPI-IO.
         shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
 
         If (self%spectral) shsize=self%nlm_out*self%nbytes
@@ -564,9 +540,7 @@ Contains
         Enddo
         If (self%write_mode .ne. 1) self%buffer_disp(:) = 1  
         
-
     End Subroutine Set_Displacements
-
 
     Subroutine Allocate_Receive_Buffers(self)
         Implicit None
@@ -634,7 +608,6 @@ Contains
             Allocate(self%recv_buffers(0:pfi%nprow-1))
         Endif
 
-
     End Subroutine Initialize_IO_MPI
 
     Subroutine Allocate_Cache(self)
@@ -670,7 +643,6 @@ Contains
         Integer, Intent(In) :: ival
         Real*8, Intent(In) :: tval
         If (self%write_timestamp) Then
-            !Write(6,*)'True!', self%output_rank, self%ocomm%rank,self%nrec
             self%iter(self%time_index) = ival
             self%time(self%time_index) = tval
             self%time_index = MOD(self%time_index, self%nrec)+1
@@ -707,17 +679,18 @@ Contains
         my_mp_min = pfi%all_3s(self%row_rank)%min
         my_mp_max = pfi%all_3s(self%row_rank)%max
 
-        ! This is also for checkpoints
-        ! It is assumed that no sampling takes place in this mode
-        ! No caching either (1 at a time)
-        Do mp = my_mp_min,my_mp_max                          
-            spec_vals(mp-my_mp_min+1)%data(:,:,:,in_cache) = &
-                self%spectral_buffer%s2b(mp)%data(:,:,:,1)
-                
-        Enddo
+        ! This is also used for checkpoints.
+        ! It is assumed that no sampling takes place in this mode.
+        ! No caching either (1 at a time).
+        If (self%nr_local .gt. 0) Then
+            Do mp = my_mp_min,my_mp_max                          
+                spec_vals(mp-my_mp_min+1)%data(:,:,:,in_cache) = &
+                    self%spectral_buffer%s2b(mp)%data(:,:,:,1)
+                    
+            Enddo
+        Endif
         
     End Subroutine Grab_Data_Spectral
-
 
     Subroutine Cache_Data(self,vals, spec_vals, in_cache)
         Implicit None
@@ -749,13 +722,9 @@ Contains
         
         If (.not. self%spectral) Then
         If (self%write_mode .eq. 1) Then
-            ! If cascade_type is 1, we may be performing a weighted sum
+            ! If write_mode is 1, we may be performing a weighted sum
             If (self%weighted_sum) Then
 
-                ! sum_phi sum_theta sum_r
-
-                ! sum_phi and sum_theta
-                
                 If (self%sum_phi) Then  ! Put this one last (logical ordering)
                     Do t = 1, self%ntheta_local
                         Do r = 1, self%nr_local
@@ -765,7 +734,6 @@ Contains
                 Endif
 
             Else
-
 
                 If (self%simple) Then
                     Do t = 1, self%ntheta_local
@@ -867,7 +835,7 @@ Contains
         Class(IO_Buffer_Physical) :: self
         Integer :: p, mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
         Integer :: nq, r, rind, lmax, i1, i2, my_nm, mstore
-        ! This routine ensures transforms phi-theta to ell-m space.
+        ! This routine transforms phi-theta to ell-m space.
         ! It then puts the spectral data into the cache buffer
         ! in a format that is compatible with the collate and write routines.
         lmax = self%lmax
@@ -909,7 +877,6 @@ Contains
                     mstore = mp-my_mp_min+1
                     Do f = 1, nq
 
-                        !field_ind = counter/my_nr+1
                         field_ind = counter/pfi%my_1p%delta+1
                         Do r = 1, self%nr_local   
                          
@@ -948,7 +915,6 @@ Contains
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In) :: cache_ind
-        !Write(6,*)'Gathering data'
     
         If (self%write_mode .eq. 1) Then
             If (self%spectral) Call self%Spectral_Prep()
@@ -970,7 +936,6 @@ Contains
         Implicit None
         Class(IO_Buffer_Physical) :: self
         Integer, Intent(In) :: cache_ind
-        !Write(6,*)'Gathering data'
 
         !NOTE:  Assuming we are spectral for distribution
 
@@ -1005,7 +970,7 @@ Contains
             self%collated_data(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend) => &
                 self%buffer(1:self%io_buffer_size)
 
-            Do p = 0, pfi%nprow-1           ! TODO:   we should always be 'spec_comp' -- even for shell_spectra
+            Do p = 0, pfi%nprow-1    ! TODO:   we should really convert shell_spectra to compressed format
                 mp_min = pfi%all_3s(p)%min
                 mp_max = pfi%all_3s(p)%max
                 If (self%nrecv_from_column(p) .gt. 0) Then
@@ -1069,7 +1034,6 @@ Contains
                 Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
                 data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
 
-                ! Write(6,*)'nlmout: ', self%nlm_out
                 self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
                     self%buffer(1:self%nlm_out*self%nr_out*cend)
 
@@ -1152,7 +1116,7 @@ Contains
         ! We Reuse variables but flip send/receive logic from cascade here.
 
         my_nm = pfi%all_3s(self%row_rank)%delta
-        Allocate(self%cache(1:self%lmax+1, 1:my_nm, &
+        if (self%nr_local .gt. 0) Allocate(self%cache(1:self%lmax+1, 1:my_nm, &
             1:self%nr_local, 1))  
 
         If (self%output_rank) Then
@@ -1290,13 +1254,10 @@ Contains
             Else
                 inds(3) = rstart
                 inds(4) = cache_ind
-                !If (self%rank .eq. 0) Write(6,*)'inds: ', inds
             Endif
             If (p .ne. self%row_rank) Then
 
-                !n = self%nr_out_at_column(p)*ncache*self%nphi*self%ntheta_local
                 n = self%nsend_to_column(p)*ncache
-                !Write(6,*)'rank/sendto', self%rank, p, n, cache_ind
                 If (n .gt. 0) Then
 
                     Call ISend(self%cache, sirqs(nn),n_elements = n, dest = p, tag = self%tag, & 
@@ -1327,7 +1288,7 @@ Contains
         If (nsirq .gt. 0) Call IWaitAll(nsirq,sirqs)
 
         DeAllocate(sirqs)
-        !Write(6,*)'Completed: ', cache_ind, self%rank
+
     End Subroutine Cascade
 
     Subroutine Collate_Physical(self,cache_ind)
@@ -1347,18 +1308,15 @@ Contains
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
         If (cache_ind .eq. self%nwrites) free_mem = .true.
-
-
         
         If (self%output_rank) Then
             cend = 1
             If (self%write_mode .eq. 1) cend = self%ncache
-            !Write(6,*)'T: ', self%io_buffer_size
+
             self%collated_data(1:self%nphi,1:self%ntheta,1:self%nr_out,1:cend) => &
                 self%buffer(1:self%io_buffer_size)
 
             tstart = 1
-            !write(6,*)(shape(self%collated_data))
             Do p = 0, pfi%nprow-1
                 If (self%nrecv_from_column(p) .gt. 0) Then
                     tend = tstart+self%ntheta_at_column(p)-1
@@ -1379,13 +1337,10 @@ Contains
             If (free_mem) Call self%deallocate_receive_buffers()
         Endif
 
-       
-
         If (self%output_rank .and. self%sum_theta) Then
 
             Allocate(data_copy(self%nphi,self%ntheta,self%nr_out,self%ncache))
             data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
-            !DeAllocate(self%collated_data)
  
             self%collated_data(1:self%nphi,1:1,1:self%nr_out,1:self%ncache) => &
                 self%buffer(1:self%io_buffer_size/self%ntheta)
@@ -1419,7 +1374,6 @@ Contains
         If (present(disp)) hdisp = disp
       
         ! The file can be opened previously or opened by this routine
-
         error = .false.
 
         If (present(file_unit)) Then
@@ -1461,7 +1415,7 @@ Contains
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
                 Do j = 1, self%nrec
-                    Write(6,*)'timestamping'
+
                     tdisp = j*self%qdisp*self%ncache+hdisp  ! May need to account for real/imaginary here.
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
@@ -1476,7 +1430,6 @@ Contains
             If (self%output_rank) Then
                 DeAllocate(self%buffer)
                 If (present(filename)) Then
-                    !Write(6,*)'closing...'
 			        Call MPI_FILE_CLOSE(funit, ierr) 
                 Endif
             Endif
@@ -1547,7 +1500,5 @@ Contains
 
         Endif
     End Subroutine Read_Data
-
-
 
 End Module Physical_IO_Buffer
