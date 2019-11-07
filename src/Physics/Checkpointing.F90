@@ -29,7 +29,7 @@ Module Checkpointing
     Use Controls
     Use RA_MPI_BASE
     Use Chebyshev_Polynomials_Alt
-    Use Physical_IO_Buffer
+    Use Parallel_IO
 
     Use BufferedOutput
     ! Simple Checkpointing Module
@@ -59,7 +59,7 @@ Module Checkpointing
 
     Type(Cheby_Transform_Interface) :: cheby_info
 
-    Type(io_buffer_physical) :: checkpoint_buffer, checkpoint_inbuffer
+    Type(io_buffer) :: checkpoint_buffer, checkpoint_inbuffer
 
 Contains
 
