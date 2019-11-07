@@ -38,7 +38,7 @@ Module Checkpointing
     Type(SphericalBuffer) :: chktmp, chktmp2
     Integer, private :: numfields = 4 ! 6 for MHD
     Integer,private,Allocatable :: mode_count(:)
-    Integer,private :: checkpoint_tag = 425
+    Integer,private :: checkpoint_tag = 425, read_var(1:12)
     Integer, Allocatable, Private :: lmstart(:)
     Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
     Character*120 :: checkpoint_prefix ='nothing'
@@ -199,6 +199,17 @@ Contains
         read_magnetism = read_pars(2)
         checkpoint_iter = iteration
 
+        read_var(:) = 0
+        If (magnetism) Then
+            ! hydro, magnetic, or both sets of field can be read
+            read_var(1:4)   = read_hydro
+            read_var(7:10)  = read_hydro
+            read_var(5:6)   = read_magnetism
+            read_var(11:12) = read_magnetism
+        Else
+            read_var(:) = 1
+        Endif
+
         If (my_rank .eq. 0) Then
             old_pars(4) = checkpoint_iter
             old_pars(5) = -1
@@ -348,14 +359,14 @@ Contains
             DeAllocate(rinds)
         Endif
         Do i = 1, numfields*2
-            checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
-            Call checkpoint_inbuffer%read_data(filename=checkfile)
-            Call checkpoint_inbuffer%grab_data_spectral(chktmp%s2b,i)
+            If (read_var(i) .eq. 1) Then
+                checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
+                Call checkpoint_inbuffer%read_data(filename=checkfile)
+                Call checkpoint_inbuffer%grab_data_spectral(chktmp%s2b,i)
+            Endif
         Enddo
 
-
         Call chktmp%reform()    ! move to p1b
-
 
         ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
         ! fields.  Otherwise, we need to interpolate onto the current grid
