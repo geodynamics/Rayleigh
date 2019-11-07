@@ -150,6 +150,75 @@ Contains
 
     End Subroutine Initialize_Checkpointing
 
+    Subroutine gen_data()
+        Implicit None
+        Integer :: mp, m, r, l, imi
+        Character*120 :: testfile='test_data'
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            chktmp%s2a(mp)%data(:,:,:,1) = 0.0d0
+            
+
+            Do imi = 1, 2
+            Do r = my_r%min, my_r%max
+            Do l = m, l_max
+                chktmp%s2a(mp)%data(l,r,imi,1) = (m+1)*(1.0d0+imi)*(r + l)
+            Enddo
+            Enddo
+            Enddo
+
+        Enddo
+        Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,1)
+        Call checkpoint_buffer%write_data(filename=testfile)
+    End Subroutine gen_data
+
+    Subroutine Check_Data
+        Implicit None
+        Type(IO_Buffer_Physical) :: inbuffer(3)
+        Character*120 :: files(3)
+        Integer :: i, lmaxes(3), mp, m, r, l, imi
+        Real*8 :: maxdiff, diff
+        files(1) = 'test_data_32'
+        files(2) = 'test_data_64'
+        files(3) = 'test_data_128'
+
+        lmaxes(1) = 31
+        lmaxes(2) = 63
+        lmaxes(3) = 127
+        Write(6,*)'lmax is: ', l_max
+        Do i = 1,3
+            Call inbuffer(i)%Init(mpi_tag=checkpoint_tag,spectral=.true., cache_spectral = .true., &
+                spec_comp = .true., lmax_in = lmaxes(i), mode = 2)
+            Call inbuffer(i)%read_data(filename=files(i))
+
+            Do mp = my_mp%min, my_mp%max
+                chktmp%s2a(mp)%data(:,:,:,1) = 0.0d0
+            Enddo
+
+            Call inbuffer(i)%grab_data_spectral(chktmp%s2a,1)
+            maxdiff = 0.0d0
+            Do mp = my_mp%min, my_mp%max
+                m = m_values(mp)
+
+                Do imi = 1, 2
+                Do r = my_r%min, my_r%max
+                Do l = m, l_max
+                    If (l .le. lmaxes(i)) then
+                        diff  =  chktmp%s2a(mp)%data(l,r,imi,1)- (m+1)*(1.0d0+imi)*(r + l)
+                    Else
+                        diff  =  chktmp%s2a(mp)%data(l,r,imi,1) ! should be zero
+                    Endif
+                    diff = abs(diff)
+                    if (diff .gt. maxdiff) maxdiff = diff
+                Enddo
+                Enddo
+                Enddo
+
+            Enddo
+            Write(6,*)'i/maxdiff', i, maxdiff
+        Enddo
+    End Subroutine Check_Data
+
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time)
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
@@ -179,11 +248,13 @@ Contains
 
         Do i = 1, numfields*2
             checkfile = Trim(my_path)//trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
-            Write(6,*)'Checkpoint_suffix: ', checkpoint_suffix(i), checkfile
+            !Write(6,*)'Checkpoint_suffix: ', checkpoint_suffix(i), checkfile
             Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
             Call checkpoint_buffer%write_data(filename=checkfile)
 
         Enddo
+        !        Call Gen_Data()
+        Call Check_Data()
 
         Call chktmp%deconstruct('s2a')
 

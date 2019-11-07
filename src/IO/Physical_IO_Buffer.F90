@@ -531,7 +531,7 @@ Contains
         Enddo
         If (self%spectral) Then
         self%base_disp_in = self%base_disp/self%nlm_out*self%nlm_in
-        self%qdisp_in = self%base_disp/self%nlm_out*self%nlm_in
+        self%qdisp_in = self%qdisp/self%nlm_out*self%nlm_in
         Endif
 
         self%buffsize = self%nr_out*self%nphi*self%ntheta 
@@ -1523,13 +1523,13 @@ Contains
             If (self%output_rank) Then
                 Allocate(self%buffer(1:self%in_buffer_size))
                 self%buffer(:) = 0.0d0
-                Write(6,*)'inbuffer: ', self%in_buffer_size, self%nlm_in, self%nr_out
+                !Write(6,*)'inbuffer: ', self%in_buffer_size, self%nlm_in, self%nr_out
             Endif
             ! Read the Data
             Do j = 1, self%nwrites
                 If (self%output_rank) Then
-                    fdisp = self%file_disp(j)+hdisp
-                    Write(6,*)'j is: ',j, fdisp
+                    fdisp = self%file_disp_in(j)+hdisp
+                    !Write(6,*)'j is: ',j, fdisp, self%in_buffer_size
                     !bdisp = self%buffer_indisp(j)
                     Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                     Call MPI_FILE_READ(funit, self%buffer(1), & 
