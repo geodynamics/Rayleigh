@@ -160,15 +160,24 @@ line (overriding the values in main_input) via:
 
    mpiexec -np 8 ./rayleigh.opt -nr 48 -ntheta 96
 
-If desired, the maximal spherical harmonic degree
-:math:`\ell_\mathrm{max}\equiv N_\ell-1` can be specified in lieu of
-:math:`N_\theta`. The example above may equivalently be written:
+If desired, the number of spherical harmonic degrees :math:`N_\ell` or the maximal spherical harmonic degree
+:math:`\ell_\mathrm{max}\equiv N_\ell-1` may be specified in lieu of
+:math:`N_\theta`.  The example above may equivalently be written as
 
 ::
 
    &problemsize_namelist
     n_r = 48
     l_max = 63
+   /
+
+or
+
+::
+
+   &problemsize_namelist
+    n_r = 48
+    n_l = 64
    /
 
 The radial domain bounds are determined by the namelist variables

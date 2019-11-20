@@ -41,8 +41,8 @@ Module ProblemSize
     !//////////////////////////////////////////////////////////////
     ! Horizontal Grid Variables
     Integer              :: n_theta = -1, n_phi
-    Integer              :: l_max = -1
-    Integer              :: m_max, n_l, n_m
+    Integer              :: l_max = -1, n_l=-1
+    Integer              :: m_max, n_m
     Logical              :: dealias = .True.
     Integer, Allocatable :: m_values(:)
     Real*8, Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
@@ -87,7 +87,7 @@ Module ProblemSize
 
 
     Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, &
-            &  precise_bounds,grid_type, l_max, &
+            &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
             &  n_uniform_domains, uniform_bounds
 Contains
@@ -252,8 +252,8 @@ Contains
         rmax = domain_bounds(bounds_count)
 
         shell_volume = four_pi*one_third*(rmax**3-rmin**3)
-        If (l_max .le. 0) Then
 
+        If ( (l_max .le. 0) .and. (n_l .le. 0) ) Then
 
             If (dealias) Then
                 l_max = (2*n_theta-1)/3
@@ -261,7 +261,8 @@ Contains
                 l_max = n_theta-1
             Endif
 
-        Else
+        Else 
+            If (l_max .le. 0) l_max = n_l-1
             !base n_theta on l_max
             If (dealias) Then
                 n_theta = (3*(l_max+1))/2
@@ -269,7 +270,6 @@ Contains
                 n_theta = l_max+1
             Endif
         Endif
-
 
         n_phi = 2*n_theta
         m_max = l_max
