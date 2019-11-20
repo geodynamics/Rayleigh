@@ -298,13 +298,16 @@ Contains
 
 
 
-    Subroutine Finalize_Framework(self)
+    Subroutine Finalize_Framework(self,ecode)
         Class(Parallel_Interface) :: self
-        Integer :: error
+        Integer, Intent(In), Optional :: ecode
+        Integer :: error,exit_status
+        exit_status=0
+        If (present(ecode)) exit_status = ecode
         self%n1p = 0    ! This line is here purely so that the intel compiler does not
         ! throw an unused variable warning when warn-all is used.
         Call Exit_Comm_Lib(error)
-        !STOP
+        Call Exit(exit_status)
     End Subroutine Finalize_Framework
 
 End Module Parallel_Framework
