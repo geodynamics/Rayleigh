@@ -449,11 +449,12 @@ Contains
 
     Subroutine Halt_On_Error()
 
-        Integer :: esize, i,j,tmp
+        Integer :: esize, i,j,tmp, ecode
         Character*6 :: istr, istr2
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         If (maxval(perr) .gt. 0) Then
+            ecode = maxval(perr)
             If (my_rank .eq. 0) Then
                 Call stdout%print(' /////////////////////////////////////////////////////////////////')
                 Call stdout%print(' The following errors(s) were detected during grid initialization: ')
@@ -522,7 +523,7 @@ Contains
 
                 Call stdout%finalize()
             Endif
-            Call pfi%exit()
+            Call pfi%exit(ecode)
         Endif
     End Subroutine Halt_On_Error
 End Module ProblemSize
