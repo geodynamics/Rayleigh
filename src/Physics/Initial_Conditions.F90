@@ -899,14 +899,14 @@ Contains
             tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             If (m .eq. 0) Then
                 Do r = my_r%min, my_r%max
-                    tempfield%s2b(mp)%data(1,r,1,1) = C10_bottom/radius(r)
+                    tempfield%s2b(mp)%data(1,r,1,1) = C10_bottom*rmin/radius(r)
                 Enddo
             Endif
 
             If (m .eq. 1) Then
                 Do r = my_r%min, my_r%max
-                    tempfield%s2b(mp)%data(1,r,1,1) = C11_bottom/radius(r)
-                    tempfield%s2b(mp)%data(1,r,2,1) = C1m1_bottom/radius(r)
+                    tempfield%s2b(mp)%data(1,r,1,1) = C11_bottom*rmin/radius(r)
+                    tempfield%s2b(mp)%data(1,r,2,1) = C1m1_bottom*rmin/radius(r)
                 Enddo
             Endif
 
