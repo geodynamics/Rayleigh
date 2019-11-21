@@ -32,7 +32,7 @@ Module ProblemSize
 
     !//////////////////////////////////////////////////////////////
     ! Processor Configuration
-    Integer :: ncpu = 1, nprow = 1, npcol =1 , npout = 1
+    Integer :: ncpu = 1, nprow = -1, npcol =-1 , npout = 1
     Integer :: my_rank      ! This is the rank within a run communicator
     Integer :: global_rank  ! This differs from my_rank only when multi-run mode is active
     Integer :: ncpu_global  ! Same as ncpu unless multi-run mode is active
@@ -171,6 +171,151 @@ Contains
         Call StopWatch(walltime)%startclock()
     End Subroutine Init_Comm
 
+    Subroutine Auto_Assign_Domain_Decomp()
+        Implicit None
+        Integer :: f1, f2, imax, i, j, npairs, sind, i3, i4, ii, jj
+        Integer :: fcount, nfact_ok
+        Integer :: nprow_max, npcol_max, jinds(1:3), iinds(1:4)
+        Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu, factor_diff
+        Integer, Allocatable :: factor_type(:), suitable_factors(:,:,:)
+        Logical, Allocatable :: factor_balanced(:), have_pair(:,:)
+        Real*8 :: ncpu_sqrt,r, rval, min_ratio, rdiff, rtol
+        Real*8, Allocatable :: ratio_measure(:,:)
+        Logical :: fewer_npcol, hbal, rbal, need_pair
+        ncpu_sqrt = sqrt(dble(ncpu))
+        npairs = n_l/2   ! Number of high-m, low-m pairs
+        imax = int(ncpu_sqrt)+1
+        npcol_max = n_r
+        nprow_max = n_l/2 + Mod(n_l,2)
+
+        Allocate(factors_of_ncpu(2,imax))
+
+        Allocate(ratio_measure(1:4,1:3), have_pair(1:4,1:3))  
+        Allocate(factor_type(1:imax*2))
+        Allocate(factor_balanced(1:imax*2))
+        Allocate(suitable_factors(1:2,1:4,1:3)) ! 1=> (f1,f2) -> (nprow, npcol), 2=> (f1,f2) -> (npcol,nprow)
+        fewer_npcol = .true.   ! favor configurations with npcol < nprow when nprow == npcol is not possible
+
+        factor_balanced(:) = .false.
+        factor_type(:) = 0
+
+        ratio_measure(:,:) = 2*ncpu  ! unachievably large, undesired ratio
+        have_pair(:,:) = .false.
+        suitable_factors(:,:,:) = 0
+
+        ! Identify all factors of ncpu
+        fcount = 0
+        Do f1 = 1, imax
+            If (Mod(ncpu,f1) .eq. 0) Then
+                f2 = ncpu/f1
+                If (Min(f1,f2) .ge. 2) Then  ! nprow and npcol must be at least 2
+                    fcount = fcount+1
+                    factors_of_ncpu(1:2,fcount) = (/ f1, f2 /)
+                    !If (global_rank .eq. 0) Write(6,*)'f1,f2: ',f1,f2 , ncpu
+                Endif
+            Endif
+        Enddo
+
+        ! Test whether each (f1,f2) pair is suitable,
+        ! but not necessarily optimal, as a choice for
+        ! (nprow, npcol), (npcol, nprow), or both.
+        ! The ideal combination is load balanced in radius and in the horizontal,
+        ! with f1 = f2.  That combination may not be achieved, and so we store
+        ! each combo in suitable_pairs(1:2, i, j)
+
+        ! i = 1 => load balanced in both directions
+        ! i = 2 => load balanced in the horizontal only
+        ! i = 3 => load balanced in radius only
+        ! i = 4 => not load balanced at all
+
+        ! j = 1 => nprow == npcol
+        ! j = 2 nprow > npcol
+        ! j = 3 npcol < nprow 
+
+        ! For each i,j combination, we store the pair with the smallest ratio
+        ! of nprow/npcol or npcol/nprow (smaller of the two is used via MIN function)
+        Do i = 1, fcount
+            Do j = 1, 2
+                ! Check both possible combinations (f1 = nprow, f2 = npcol) and (f2 = nprow, f1 = npcol)
+                If (j .eq. 1) Then
+                    f1 = factors_of_ncpu(1,i)
+                    f2 = factors_of_ncpu(2,i)
+                Else
+                    f2 = factors_of_ncpu(1,i)
+                    f1 = factors_of_ncpu(2,i)
+                Endif
+                If ((f1 .le. nprow_max) .and. (f2 .le. npcol_max) ) Then
+                    ! Determine whether row > col or col > row or row == col
+                    i4 = 1              ! assume equal
+                    If (f1 > f2) i4 =2  ! row > col
+                    If (f2 > f1) i4 = 3 ! col > row
+
+                    ! Determine how these factors load balance
+                    rbal = .false.
+                    hbal = .false.
+                    If ( Mod(N_R,f2) .eq. 0) rbal = .true.
+                    If ( Mod(npairs,f1) .eq. 0) hbal = .true.
+                    i3 = 4                              ! Not balanced in either direction.
+                    If (rbal .and. (.not. hbal)) i3 = 3 ! Balanced in radial direction.
+                    If (hbal .and. (.not. rbal)) i3 = 2 ! Balanced in theta direction.
+                    If (rbal .and. hbal)         i3 = 1 ! Balanced in both directions.
+                    
+                    rval = ABS(1.0d0-MAX(DBLE(f1)/DBLE(f2),DBLE(f2)/DBLE(f1)))
+    
+                    !If (global_rank .eq. 0) Write(6,*)'nprow / npcol: ',f1,f2, rval, i3,i4
+                    If (rval .lt. ratio_measure(i3,i4) ) Then
+                        ! This is a better combination for these parameters than we've encountered yet
+                        suitable_factors(1:2,i3,i4) = (/ f1, f2 /)
+                        ratio_measure(i3,i4) = rval
+                        have_pair(i3,i4) = .true.
+                        !If (global_rank .eq. 0) Write(6,*)'            ^-------------- Storing that one'
+                    Endif                
+                Endif
+            Enddo
+        Enddo
+
+
+        ! Next, identify the smallest possible ratio
+        min_ratio = MINVAL(ratio_measure)
+        rtol = 2.0d0
+        !If (global_rank .eq. 0) Write(6,*)'min ratio: ', min_ratio
+        need_pair = .true.
+
+        ! Now, parse the array of suitable pairs in such an order
+        ! that our preferences in terms of nprow >,<,== npcol, and
+        ! in terms of load balancing are respected
+        iinds(1:4) = (/ 1, 2, 3, 4 /)  ! This really is probably the best order
+        jinds(1:3) = (/ 1, 2, 3 /)
+        If (.not. fewer_npcol) jinds = (/ 1, 3, 2 /)
+        jj = 1
+        Do While( need_pair .and. (jj .le. 3) )
+            j = jinds(jj)
+            ii = 1
+            Do While (need_pair .and. (ii .le. 4) )
+                i = iinds(ii)
+                If (have_pair(i,j)) Then
+                    rdiff = ratio_measure(i,j) - min_ratio
+                    If (rdiff .le. rtol) Then
+                        need_pair = .false.
+                        nprow = suitable_factors(1,i,j)
+                        npcol = suitable_factors(2,i,j)
+                    Endif
+                Endif
+
+                ii = ii + 1
+            Enddo
+            jj = jj+1
+        Enddo
+        If (need_pair .and. (global_rank .eq. 0) ) Then
+             Call stdout%print(' ')
+             Call stdout%print('  /////////////////////////////////////////////////////////////////////////////// ')
+             Call stdout%print('  ERROR:  Could not suitably factor specified process count for this problem size.')
+             Call stdout%print('          Setting nprow and npcol to -1.')
+             Call stdout%print('          Make sure not to run with a prime number of MPI ranks.')
+             Call stdout%print(' ')
+        Endif
+    End Subroutine Auto_Assign_Domain_Decomp
+
     Subroutine Establish_Grid_Parameters()
         Implicit None
         Integer :: cheby_count, bounds_count, i,r
@@ -275,6 +420,15 @@ Contains
         m_max = l_max
         n_l = l_max+1
         n_m = m_max+1
+        If (.not. multi_run_mode) Then
+            ! For single runs, Rayleigh will attempt to identify a
+            ! sensible value of nprow and npcol if they were not
+            ! specified by the user.
+            If ((nprow .lt. 0) .and. (npcol .lt. 0) ) Then
+                ncpu = ncpu_global
+                Call Auto_Assign_Domain_Decomp()
+            Endif
+        Endif
         Call Consistency_Check()  ! Identify issues related to the grid setup
 
     End Subroutine Establish_Grid_Parameters
