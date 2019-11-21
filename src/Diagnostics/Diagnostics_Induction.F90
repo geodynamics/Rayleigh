@@ -1053,7 +1053,7 @@ Contains
                         2.0d0*costheta(t)*fbuffer(PSI,dbpdp) ) )
 
 
-                qty(PSI) = eta(r)*(del2b-fbuffer(PSI,curlbphi)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b+fbuffer(PSI,curlbphi)*dlneta(r))
 
             END_DO
 
@@ -1081,7 +1081,7 @@ Contains
                         ovs2theta(t)*(   fbuffer(PSI,bphi) - &
                         2.0d0*costheta(t)*fbuffer(PSI,dbtdp) ) )
 
-                qty(PSI) = eta(r)*(del2b+fbuffer(PSI,curlbtheta)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b-fbuffer(PSI,curlbtheta)*dlneta(r))
             END_DO
 
 
