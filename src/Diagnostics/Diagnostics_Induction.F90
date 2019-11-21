@@ -955,7 +955,7 @@ Contains
                         2.0d0*costheta(t)*buffer(PSI,dbpdp) ) )
 
                 ! Add the contribution from a gradient in eta
-                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbphi)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbphi)*dlneta(r))
 
             END_DO
 
@@ -986,7 +986,7 @@ Contains
                         ovs2theta(t)*(   buffer(PSI,bphi) - &
                         2.0d0*costheta(t)*buffer(PSI,dbtdp) ) )
 
-                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbtheta)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbtheta)*dlneta(r))
 
             END_DO
 
