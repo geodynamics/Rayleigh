@@ -1142,7 +1142,7 @@ Contains
                         ovs2theta(t)*(   m0_values(PSI2,btheta) + &
                         2.0d0*costheta(t)*m0_values(PSI2,dbpdp) ) )
 
-                qty(PSI) = eta(r)*(del2b-m0_values(PSI2,curlbphi)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b+m0_values(PSI2,curlbphi)*dlneta(r))
             END_DO
 
 
@@ -1169,7 +1169,7 @@ Contains
                 del2b = del2b +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dbrdp)*ovstheta(t) - &
                         ovs2theta(t)*(   m0_values(PSI2,bphi) - &
                         2.0d0*costheta(t)*m0_values(PSI2,dbtdp) ) )
-                qty(PSI) = eta(r)*(del2b+m0_values(PSI2,curlbtheta)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b-m0_values(PSI2,curlbtheta)*dlneta(r))
 
 
 
