@@ -1033,7 +1033,7 @@ Contains
             Endif
             If (compute_quantity(idiff_work_pp)) Then
                 DO_PSI
-                    tmp1(PSI) = qty(PSI)*buffer(PSI,br)
+                    tmp1(PSI) = qty(PSI)*fbuffer(PSI,br)
                 END_DO
             Endif
         Endif
@@ -1062,7 +1062,7 @@ Contains
             Endif
             If (compute_quantity(idiff_work_pp)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*buffer(PSI,btheta)
+                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*fbuffer(PSI,btheta)
                 END_DO
             Endif
         Endif
@@ -1090,7 +1090,7 @@ Contains
             Endif
             If (compute_quantity(idiff_work_pp)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*buffer(PSI,bphi)
+                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*fbuffer(PSI,bphi)
                 END_DO
                 Call Add_Quantity(tmp1)
             Endif
