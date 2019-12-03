@@ -430,6 +430,11 @@ do
       BLANKMACHINE="TRUE";
       ;;
 
+    *)
+      echo "unknown option: $option"
+      exit 1
+      ;;
+
     esac
 done
 echo ""
