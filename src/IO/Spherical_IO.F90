@@ -359,7 +359,7 @@ Contains
         ! In theory they can be the same, but it's probably a good idea to keep them unique.
 
         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! First, initialize outputs that do no rely on the I/O Buffer data structure
+        ! First, initialize outputs that do not rely on the I/O Buffer data structure
         ! for caching etc.
         fdir = 'G_Avgs/'
         Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
@@ -526,11 +526,9 @@ Contains
 		Real*8, Intent(in) :: simtime
 		Integer, Intent(in) :: this_iter
         Class(DiagnosticInfo) :: self
-
 		INTEGER(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_pdisp, new_disp, qdisp, full_disp, tdisp
         Logical :: responsible, output_rank
         Integer :: orank, funit, error, ncache, omode
-
 
 	    If ((self%nq > 0) .and. (Mod(this_iter,self%frequency) .eq. 0 )) Then
 
@@ -650,10 +648,12 @@ Contains
         Call IOComputeEll0(IOm0_values,IOell0_values)
         Call Shell_Averages%reset() !need to reset the index counter
     End Subroutine Finalize_Averages
+
     Subroutine Set_Avg_Flag(flag_val)
         Integer, Intent(In) :: flag_val
         IOavg_flag = flag_val
     End Subroutine Set_Avg_Flag
+
 	Subroutine Add_Quantity(qty)
 		Implicit None
 		Real*8, Intent(In) :: qty(:,:,:)
@@ -681,7 +681,6 @@ Contains
 		    If (full_3d%grab_this_q) Call write_full_3d(qty)
         Endif
 
-
 	End Subroutine	Add_Quantity
 
 	Subroutine Complete_Output(iter, sim_time)
@@ -704,6 +703,7 @@ Contains
         DeAllocate(f_of_r)
         DeAllocate(IOm0_values)
         DeAllocate(IOell0_values)
+
 	End Subroutine Complete_Output
 
 	Subroutine Get_Averages(qty)
@@ -728,7 +728,6 @@ Contains
 
 		    f_of_r_theta = f_of_r_theta*over_nphi_double     ! average in phi
 
-
         Endif
 
         !/////////////////////
@@ -739,7 +738,6 @@ Contains
             Do t = my_theta_min, my_theta_max
                 f_of_r(:) = f_of_r(:) + f_of_r_theta(1,:,t)*theta_integration_weights(t)
             Enddo
-
 
 		    If (Shell_Averages%grab_this_q) Then
 
@@ -779,9 +777,9 @@ Contains
         If (current_averaging_level .ge. 3) Then
 
             this_average =0.0d0
-            do i = my_rmin, my_rmax
+            Do i = my_rmin, my_rmax
                 this_average = this_average+f_of_r(i)*r_integration_weights(i)
-            enddo
+            Enddo
 
 		    If (Global_Averages%grab_this_q) Then
     		    If (.not. Allocated(globav_outputs)) Then			
@@ -795,7 +793,7 @@ Contains
 
         Endif
 
-	END Subroutine Get_Averages
+	End Subroutine Get_Averages
 
     Subroutine Write_Global_Average(this_iter,simtime)
         Implicit None
@@ -811,7 +809,6 @@ Contains
         global_avg_tag = Global_Averages%mpi_tag
         funit = Global_Averages%file_unit
 
-
         !///////////////////////////////
         ! Sum across rows, and then across the first column
 
@@ -826,8 +823,6 @@ Contains
         Endif
 
         !//////////////////////////////
-       
-
         If (myid .eq. io_node) Then
 
             Call Global_Averages%OpenFile(this_iter, error)
@@ -1067,11 +1062,11 @@ Contains
         self%frequency = frequency
 
         !Check that the cache size is appropriate
-        IF (present(cache_size)) THEN
-            IF (cache_size .ge. 1) THEN
+        If (present(cache_size)) Then
+            If (cache_size .ge. 1) Then
                 self%cache_size = cache_size
-            ENDIF
-        ENDIF
+            Endif
+        Endif
         If (self%cache_size .lt. 1) Then
             If (myid .eq. 0) Then
                     Write(6,*)'////////////////////////////////////////////////////////////////////'
@@ -1085,9 +1080,9 @@ Contains
         Endif
         If (self%cache_size .gt. self%rec_per_file) Then
             modcheck = MOD(self%rec_per_file,self%cache_size)
-            IF (modcheck .ne. 0) THEN
+            If (modcheck .ne. 0) Then
 
-                If (myid .eq. 0) THEN
+                If (myid .eq. 0) Then
                     Write(6,*)'////////////////////////////////////////////////////////////////////'
                     Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
                     Write(6,*)'   Cache_size cannot be larger than nrec.'
@@ -1095,16 +1090,16 @@ Contains
                     Write(6,*)'   nrec      : ', self%rec_per_file
                     Write(6,*)'   Cache_size has been set to nrec.'
                     Write(6,*)'////////////////////////////////////////////////////////////////////'                    
-                ENDIF
+                Endif
                 self%cache_size = self%rec_per_file
-            ENDIF
+            Endif
         Endif
         
         If (self%cache_size .gt. 1) Then
             modcheck = MOD(self%rec_per_file,self%cache_size)
-            IF (modcheck .ne. 0) THEN
+            If (modcheck .ne. 0) Then
 
-                If (myid .eq. 0) THEN
+                If (myid .eq. 0) Then
                     Write(6,*)'////////////////////////////////////////////////////////////////////'
                     Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
                     Write(6,*)'   Cache_size must divide evenly into nrec.'
@@ -1112,14 +1107,10 @@ Contains
                     Write(6,*)'   nrec      : ', self%rec_per_file
                     Write(6,*)'   Caching has been deactivated for ', self%file_prefix
                     Write(6,*)'////////////////////////////////////////////////////////////////////'                    
-                ENDIF
+                Endif
                 self%cache_size = 1
-            ENDIF
+            Endif
         Endif
-
-
-        !~~~~~~~~~~~~~~~~~~~~
-
 
         ! These variables describe which indices have been specified
         rspec = .false.
@@ -1146,9 +1137,8 @@ Contains
         Allocate(self%iter_save(1:self%cache_size))
         Allocate(self%time_save(1:self%cache_size))
 
-
         If (present(values)) Then
-            self%values(:) = values(:)  ! This is clunky - will look into getting the object attributes directly into a namelist later
+            self%values(:) = values(:) 
             
             Do i = 1, nqmax
                 if(self%values(i) .gt. 0) Then 
@@ -1171,12 +1161,12 @@ Contains
             rspec = .true.
             rcount = size(rinds)
             i = 1
-            DO WHILE ( i .le. rcount )
-                IF (rinds(i) .lt. 0) THEN
+            Do While ( i .le. rcount )
+                If (rinds(i) .lt. 0) Then
                     rcount = i-1
-                ENDIF
+                Endif
                 i = i+1
-            ENDDO
+            Enddo
 
             If (rcount .gt. 0) Then
                 Allocate(self%r_inds(1:rcount))
@@ -1187,32 +1177,41 @@ Contains
                 Enddo
             Endif
 
-
+        Else
+            Allocate(self%r_inds(1:1))
+            Allocate(self%r_vals(1:1))
+            self%r_inds(1) = -1
+            self%r_vals(1) = -1
         Endif
 
         If (present(tinds)) Then
             tspec = .true.
             tcount = size(tinds)
             i = 1
-            DO WHILE ( i .le. tcount )
-                IF (tinds(i) .lt. 0) THEN
+            DO While ( i .le. tcount )
+                If (tinds(i) .lt. 0) Then
                     tcount = i-1
-                ENDIF
+                Endif
                 i = i+1
-            ENDDO
+            Enddo
 
-            IF (tcount .gt. 0) THEN
+            If (tcount .gt. 0) Then
                 Allocate(self%theta_inds(1:tcount))
                 Allocate(self%theta_vals(1:tcount))
                 self%theta_inds(1:tcount) = tinds(1:tcount)
                 Do i = 1, tcount
                     self%theta_vals(i) = costheta(tinds(i))
                 Enddo
-            ENDIF
+            Endif
 
+        Else
+            Allocate(self%theta_inds(1:1))
+            Allocate(self%theta_vals(1:1))
+            self%theta_inds(1) = -1
+            self%theta_vals(1) = -1
         Endif
 
-        If(present(pinds)) Then
+        If (present(pinds)) Then
             pspec = .true.
             pcount = size(pinds)
             i = 1
@@ -1230,32 +1229,44 @@ Contains
                     self%phi_vals(i) = (pinds(i)-1)*(two_pi/nphi)   
                 Enddo
             Endif
+        Else
+            Allocate(self%phi_inds(1:1))
+            Allocate(self%phi_vals(1:1))
+            self%phi_inds(1) = -1
+            self%phi_vals(1) = -1
         Endif
+
 
         If (present(lvals)) Then
             lspec = .true.
             lcount = size(lvals)
             i = 1
-            DO WHILE ( i .le. lcount )
-                IF (lvals(i) .lt. 0) THEN
+            Do While ( i .le. lcount )
+                If (lvals(i) .lt. 0) Then
                     lcount = i-1
-                ENDIF
+                Endif
                 i = i+1
-            ENDDO
+            Enddo
 
-            IF (lcount .gt. 0) THEN
+            If (lcount .gt. 0) Then
                 Allocate(self%l_values(1:lcount))
                 self%l_values(1:lcount) = lvals(1:lcount)
                 self%nell = lcount
-            ENDIF
-
+            Endif
+        Else
+            Allocate(self%l_values(1:1))
+            self%l_values(1) = -1
         Endif
 
+        If (present(is_spectral)) Then
+            spectral_buffer = is_spectral
+        Else
+            spectral_buffer = .false.
+        Endif
 
         self%nr     = rcount
         self%ntheta = tcount
         self%nphi   = pcount
-
 
         ! Initialize the buffer (and then ocomm)
         rtp_spec = (rspec .and. tspec .and. pspec)
@@ -1264,10 +1275,9 @@ Contains
         phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
         theta_only = (tspec .and. (.not. pspec) .and. (.not. rspec) )
         
-        !Write(6,*)'rad only: ', rad_only, rspec, tspec, pspec
 
         If (rtp_spec) Then
-            !Write(6,*)'PP INIT!'
+            ! Essentially for Point Probes
             Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
                                       theta_indices = self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
@@ -1277,7 +1287,7 @@ Contains
         Endif
 
         If (rad_only) Then
-            !Write(6,*)'RAD INIT!'
+            !Shell Slices are Shell Spectra
              
             If (present(is_spectral)) Then
                 If (lspec) Then
@@ -1307,7 +1317,7 @@ Contains
         Endif
 
         If (theta_only) Then
-            !Write(6,*)'THETA INIT!'
+            !Equatorial Slices
             If (.not. present(tweights)) Write(6,*)'Warning! tweights must be specified in this mode!'
             Call self%buffer%init(theta_indices=self%theta_inds, &
                                       ncache  = self%nq*self%cache_Size, &
@@ -1317,7 +1327,7 @@ Contains
         Endif
 
         If (phi_only) Then
-            !Write(6,*)'PHI INIT!'
+            !Meridional Slices
             Call self%buffer%init(phi_indices=self%phi_inds, &
                                       ncache  = self%nq*self%cache_Size, &
                                       mode = self%write_mode, mpi_tag = self%mpi_tag, &
@@ -1326,8 +1336,7 @@ Contains
         Endif
 
         If (present(avg_axes)) Then  ! Assume if it's set, it's true
-
-            !Write(6,*)'AVG_INIT!', avg_axes
+            !AZ Averages
             Call self%buffer%init(ncache  = self%nq*self%cache_Size, &
                                   mode = self%write_mode, mpi_tag = self%mpi_tag, &
                                   nrec = self%cache_size, skip = 12, &

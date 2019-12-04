@@ -269,7 +269,7 @@ Contains
             self%lmax = (2*self%ntheta-1)/3
             self%lmax_in = self%lmax
             self%nlm = (self%lmax+1)*(self%lmax+1) 
-            self%nlm_out = (self%lmax+1)*(self%lmax+1)   ! TODO: will need to modify for sph_mode_samples
+            self%nlm_out = (self%lmax+1)*(self%lmax+1)   
 
             If (present(lmax_in)) Then
                 self%lmax_in = lmax_in
@@ -297,7 +297,6 @@ Contains
 
         If ( (self%t_spec ) .and. (.not. self%r_spec) &
              .and. (.not. self%p_spec) ) self%theta_general = .true.
-
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
              .and. (self%p_spec) ) self%phi_general = .true.
