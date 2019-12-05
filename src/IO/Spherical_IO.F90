@@ -405,7 +405,7 @@ Contains
         fdir = 'AZ_Avgs/'
         Call AZ_Averages%Init(averaging_level,compute_q,myid, 56, fdir, &
                           azavg_version, azavg_nrec, azavg_frequency, &
-                          values = azavg_values, avg_axes = (/ 1, 0, 0 /) ) !phi,r,t
+                          values = azavg_values, average_in_phi = .true. )
 
         fdir = 'Equatorial_Slices/'
         Call Equatorial_Slices%Init(averaging_level,compute_q,myid, 60, fdir, &
@@ -1031,7 +1031,8 @@ Contains
     Subroutine Initialize_Diagnostic_Info(self,avg_levels,computes,pid,mpi_tag, &
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
-                 avg_axes, tweights, is_spectral, lvals, nobuffer)
+                 tweights, is_spectral, lvals, nobuffer, &
+                 average_in_phi, average_in_radius, average_in_theta)
         Implicit None
         Integer :: i,ind
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
@@ -1045,14 +1046,14 @@ Contains
         Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:), lvals(1:)
 
         !Averaging variables
-        Integer, Intent(In), Optional :: avg_axes(1:)
         Real*8, Intent(In), Optional :: tweights(1:)
 
         Logical, Intent(In), Optional :: is_spectral
-        Logical, Intent(In), Optional :: nobuffer
+        Logical, Intent(In), Optional :: nobuffer, average_in_phi, average_in_theta, average_in_radius
         !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, lcount, modcheck
-        Logical :: lspec, rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only
+        Logical :: lspec, rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only, spectral_buffer
+        Integer :: avg_axes(1:3)
         Class(DiagnosticInfo) :: self 
 
         ! File info
@@ -1274,7 +1275,24 @@ Contains
         rad_only = (rspec .and. (.not. tspec) .and. (.not. pspec) )
         phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
         theta_only = (tspec .and. (.not. pspec) .and. (.not. rspec) )
-        
+ 
+        Allocate(avg_axes(1:3))
+        avg_axes(:) = 0  ! phi, r, theta
+        If (present(average_in_phi)) Then
+            If (average_in_phi) avg_axes(1) = 1            
+        Endif
+
+        Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
+                                  theta_indices = self%theta_inds, l_values = self%l_values, &
+                                  mode = self%write_mode, mpi_tag = self%mpi_tag, &
+                                  ncache  = self%nq*self%cache_Size, &
+                                  nrec = self%cache_size, skip = 12, &
+                                  write_timestamp = .true., averaging_axes = avg_axes)
+
+
+        rtp_spec = .false.
+        rad_only = .false.
+        theta_only = .false.
 
         If (rtp_spec) Then
             ! Essentially for Point Probes
