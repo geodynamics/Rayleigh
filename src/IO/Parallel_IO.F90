@@ -151,19 +151,20 @@ Module Parallel_IO
 
 Contains
 
-    Subroutine Initialize_Physical_IO_Buffer(self,r_indices, theta_indices, &
-                                             phi_indices,ncache, mpi_tag, &
-                                             cascade, sum_weights_theta, nrec, &
+    Subroutine Initialize_Physical_IO_Buffer(self,grid_pars, &
+                                             ncache, mpi_tag, &
+                                             cascade, averaging_weights, nrec, &
                                              skip, write_timestamp, &
                                              averaging_axes, spectral, mode, &
                                              l_values, cache_spectral, spec_comp, &
                                              lmax_in)
         Implicit None
         Class(io_buffer) :: self
-        Integer, Intent(In), Optional :: r_indices(1:), theta_indices(1:), phi_indices(1:)
+        !Integer, Intent(In) :: r_indices(1:), theta_indices(1:), phi_indices(1:)
+        Integer, Intent(In) :: grid_pars(1:,1:)
         Integer, Intent(In), Optional :: l_values(1:)
         Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
-        Real*8, Intent(In), Optional :: sum_weights_theta(:)
+        Real*8 , Intent(In), Optional :: averaging_weights(1:,1:)
         Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
@@ -228,33 +229,35 @@ Contains
 
         !///////////////////////////////////////////////////////////
         ! Establish how this buffer will be subsampled, if at all
-        If (present(r_indices)) Then
-            self%nr = size(r_indices)
+        If (grid_pars(1,1) .ne. -1) Then
+            self%nr = grid_pars(1,5)
             Allocate(self%r_global(1:self%nr))
-            self%r_global(:) =r_indices(:)
+            self%r_global(:) =grid_pars(1:self%nr,1)
             self%r_spec = .true.
         Else
             self%nr = pfi%n1p
         Endif
 
-        If (present(theta_indices)) Then
-            self%ntheta = size(theta_indices)
+        If (grid_pars(1,2) .ne. -1) Then
+            self%ntheta = grid_pars(2,5)
             Allocate(self%theta_global(1:self%ntheta))
-            self%theta_global(:) = theta_indices(:)
+            self%theta_global(:) = grid_pars(1:self%ntheta,2)
             self%t_spec = .true.
-            If (present(sum_weights_theta)) Then
+            If (present(averaging_weights)) Then
+            If (averaging_weights(1,2) .gt. -1.0d-8) Then
                 Allocate(self%theta_weights(1:self%ntheta))
-                self%theta_weights(:) = sum_weights_theta(:)
+                self%theta_weights(:) = averaging_weights(1:self%ntheta,2)
                 self%sum_theta = .true.
+            Endif
             Endif
         Else
             self%ntheta = pfi%n2p
         Endif
 
-        If (present(phi_indices)) Then
-            self%nphi = size(phi_indices)
+        If (grid_pars(1,3) .ne. -1) Then
+            self%nphi = grid_pars(3,5)
             Allocate(self%phi_local(1:self%nphi))
-            self%phi_local(:) = phi_indices(:)
+            self%phi_local(:) = grid_pars(1:self%nphi,3)
             self%p_spec = .true.
         Else
             self%nphi = pfi%n3p
@@ -279,12 +282,12 @@ Contains
                 self%nlm_out = ((self%lmax+1)**2 + self%lmax+1)/2
                 self%nlm_in = ((self%lmax_in+1)**2 + self%lmax_in+1)/2
             Endif
-            If (present(l_values)) Then
+            If (grid_pars(1,4) .ne. -1) Then
                 self%l_spec = .true.
-                self%n_l_samp = Size(l_values)
-                self%nlm_out = SUM(l_values)+self%n_l_samp
+                self%n_l_samp = grid_pars(4,5)
                 Allocate(self%l_values(1:self%n_l_samp))
-                self%l_values(:) = l_values(:)
+                self%l_values(:) = grid_pars(1:self%n_l_samp,4)
+                self%nlm_out = SUM(self%l_values)+self%n_l_samp
             Endif
 
         Endif

@@ -304,6 +304,7 @@ Contains
         Character*120 :: fdir
         Character*120, Intent(In) :: file_path
         Character*8, Intent(In) :: digfmt
+        Integer, Allocatable :: gpars(:,:)
 
         ! Set format code for integer file names
         i_ofmt=digfmt
@@ -376,7 +377,10 @@ Contains
                           full3d_version, 1, full3d_frequency, &
                           values = full3d_values, nobuffer=.true.) 
 
-        Call Full_3D_Buffer%Init(mpi_tag=54) ! Full 3-D uses a separate buffer (due to io semantics)
+        Allocate(gpars(1:5,1:5))
+        gpars(:,:) = -1
+        Call Full_3D_Buffer%Init(gpars, mpi_tag=54) ! Full 3-D uses a separate buffer (due to io semantics)
+        DeAllocate(gpars)
 
         ! Now, initialize those outputs that use the new I/O for caching and parallel output.
 
@@ -1051,9 +1055,12 @@ Contains
         Logical, Intent(In), Optional :: is_spectral
         Logical, Intent(In), Optional :: nobuffer, average_in_phi, average_in_theta, average_in_radius
         !Real*8, Allocatable th_weights(:)
-        Integer :: rcount, tcount, pcount, lcount, modcheck
-        Logical :: lspec, rspec, pspec, tspec, rtp_spec, rad_only, phi_only, theta_only, spectral_buffer
+        Integer :: rcount, tcount, pcount, lcount, modcheck, nmax
+        Logical :: lspec, rspec, pspec, tspec, rtp_spec, spectral_io
+        Logical :: rad_only, phi_only, theta_only, spectral_buffer
         Integer :: avg_axes(1:3)
+        Integer, Allocatable :: indices(:,:)
+        Real*8, Allocatable :: avg_weights(:,:)
         Class(DiagnosticInfo) :: self 
 
         ! File info
@@ -1061,6 +1068,19 @@ Contains
         self%output_version = version
         self%rec_per_file = nrec
         self%frequency = frequency
+
+        ! Indices array
+        nmax = Maxval((/ nr, ntheta, nphi /) )
+        Allocate(indices(1:nmax,1:5))
+        If (present(tweights)) Then
+            Allocate(avg_weights(1:size(tweights),1:3))
+            avg_weights(:,2) = tweights
+        Else
+            Allocate(avg_weights(1,1:3))
+            avg_weights(:,:) = -1.0d0
+        Endif
+        indices(:,:) = -1
+
 
         !Check that the cache size is appropriate
         If (present(cache_size)) Then
@@ -1176,6 +1196,8 @@ Contains
                 Do i = 1, rcount
                     self%r_vals(i) = radius(rinds(i))
                 Enddo
+                indices(1,5) = rcount
+                indices(1:rcount,1) = self%r_vals(1:rcount)
             Endif
 
         Else
@@ -1203,6 +1225,8 @@ Contains
                 Do i = 1, tcount
                     self%theta_vals(i) = costheta(tinds(i))
                 Enddo
+                indices(2,5) = tcount
+                indices(1:tcount,2) = self%theta_vals(1:tcount)
             Endif
 
         Else
@@ -1229,6 +1253,8 @@ Contains
                 Do i = 1, pcount
                     self%phi_vals(i) = (pinds(i)-1)*(two_pi/nphi)   
                 Enddo
+                indices(3,5) = pcount
+                indices(1:pcount,3) = self%phi_vals(1:pcount)
             Endif
         Else
             Allocate(self%phi_inds(1:1))
@@ -1253,6 +1279,8 @@ Contains
                 Allocate(self%l_values(1:lcount))
                 self%l_values(1:lcount) = lvals(1:lcount)
                 self%nell = lcount
+                indices(1:self%nell,4) = lvals(1:lcount)
+                indices(4,5) = self%nell
             Endif
         Else
             Allocate(self%l_values(1:1))
@@ -1276,19 +1304,23 @@ Contains
         phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
         theta_only = (tspec .and. (.not. pspec) .and. (.not. rspec) )
  
-        Allocate(avg_axes(1:3))
         avg_axes(:) = 0  ! phi, r, theta
         If (present(average_in_phi)) Then
             If (average_in_phi) avg_axes(1) = 1            
         Endif
 
-        Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
-                                  theta_indices = self%theta_inds, l_values = self%l_values, &
-                                  mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                  ncache  = self%nq*self%cache_Size, &
-                                  nrec = self%cache_size, skip = 12, &
-                                  write_timestamp = .true., averaging_axes = avg_axes)
+        spectral_io = .false.
+        If (present(is_spectral)) spectral_io = is_spectral
 
+        Call self%buffer%init( indices, &
+                              mode = self%write_mode, mpi_tag = self%mpi_tag, &
+                              ncache  = self%nq*self%cache_Size, &
+                              nrec = self%cache_size, skip = 12, &
+                              write_timestamp = .true., averaging_axes = avg_axes, &
+                              averaging_weights = avg_weights, spectral=spectral_io)
+
+        DeAllocate(indices)
+        DeAllocate(avg_weights)
 
         rtp_spec = .false.
         rad_only = .false.
@@ -1296,12 +1328,11 @@ Contains
 
         If (rtp_spec) Then
             ! Essentially for Point Probes
-            Call self%buffer%init(phi_indices=self%phi_inds, r_indices=self%r_inds, &
-                                      theta_indices = self%theta_inds, &
-                                      ncache  = self%nq*self%cache_Size, &
-                                      mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                      nrec = self%cache_size, skip = 12, &
-                                      write_timestamp = .true.)
+            !Call self%buffer%init(self%r_inds, self%theta_inds, self%phi_inds, &
+            !                          ncache  = self%nq*self%cache_Size, &
+            !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+            !                          nrec = self%cache_size, skip = 12, &
+            !                          write_timestamp = .true.)
         Endif
 
         If (rad_only) Then
@@ -1309,26 +1340,26 @@ Contains
              
             If (present(is_spectral)) Then
                 If (lspec) Then
-                Call self%buffer%init(r_indices=self%r_inds, &
-                                          ncache  = self%nq*self%cache_Size, &
-                                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                          nrec = self%cache_size, skip = 12, &
-                                          write_timestamp = .true., spectral = is_spectral, &
-                                          l_values = self%l_values)
+                !Call self%buffer%init(r_indices=self%r_inds, &
+                !                          ncache  = self%nq*self%cache_Size, &
+                !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+                !                          nrec = self%cache_size, skip = 12, &
+                !                          write_timestamp = .true., spectral = is_spectral, &
+                !                          l_values = self%l_values)
                 Else
-                Call self%buffer%init(r_indices=self%r_inds, &
-                                          ncache  = self%nq*self%cache_Size, &
-                                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                          nrec = self%cache_size, skip = 12, &
-                                          write_timestamp = .true., spectral = is_spectral)
+                !Call self%buffer%init(r_indices=self%r_inds, &
+                !                          ncache  = self%nq*self%cache_Size, &
+                !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+                !                          nrec = self%cache_size, skip = 12, &
+                !                          write_timestamp = .true., spectral = is_spectral)
 
                 Endif
             Else
-                Call self%buffer%init(r_indices=self%r_inds, &
-                                          ncache  = self%nq*self%cache_Size, &
-                                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                          nrec = self%cache_size, skip = 12, &
-                                          write_timestamp = .true.)
+                !Call self%buffer%init(r_indices=self%r_inds, &
+                !                          ncache  = self%nq*self%cache_Size, &
+                !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+                !                          nrec = self%cache_size, skip = 12, &
+                !                          write_timestamp = .true.)
 
             Endif
 
@@ -1337,29 +1368,29 @@ Contains
         If (theta_only) Then
             !Equatorial Slices
             If (.not. present(tweights)) Write(6,*)'Warning! tweights must be specified in this mode!'
-            Call self%buffer%init(theta_indices=self%theta_inds, &
-                                      ncache  = self%nq*self%cache_Size, &
-                                      mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                      nrec = self%cache_size, skip = 12, &
-                                      write_timestamp = .true., sum_weights_theta=tweights)
+            !Call self%buffer%init(theta_indices=self%theta_inds, &
+            !                          ncache  = self%nq*self%cache_Size, &
+            !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+            !                          nrec = self%cache_size, skip = 12, &
+            !                          write_timestamp = .true., sum_weights_theta=tweights)
         Endif
 
         If (phi_only) Then
             !Meridional Slices
-            Call self%buffer%init(phi_indices=self%phi_inds, &
-                                      ncache  = self%nq*self%cache_Size, &
-                                      mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                      nrec = self%cache_size, skip = 12, &
-                                      write_timestamp = .true.)
+            !Call self%buffer%init(phi_indices=self%phi_inds, &
+            !                          ncache  = self%nq*self%cache_Size, &
+            !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+            !                          nrec = self%cache_size, skip = 12, &
+            !                          write_timestamp = .true.)
         Endif
 
-        If (present(avg_axes)) Then  ! Assume if it's set, it's true
+        !If (present(avg_axes)) Then  ! Assume if it's set, it's true
             !AZ Averages
-            Call self%buffer%init(ncache  = self%nq*self%cache_Size, &
-                                  mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                                  nrec = self%cache_size, skip = 12, &
-                                  write_timestamp = .true., averaging_axes = avg_axes)
-        Endif
+        !    Call self%buffer%init(ncache  = self%nq*self%cache_Size, &
+        !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
+        !                          nrec = self%cache_size, skip = 12, &
+        !                          write_timestamp = .true., averaging_axes = avg_axes)
+        !Endif
 
         If (.not. present(nobuffer)) Then
             ! Once the buffer is initialized, set the ocomm info

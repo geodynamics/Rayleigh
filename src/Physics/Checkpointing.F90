@@ -69,6 +69,7 @@ Contains
         Implicit None
         Integer :: nfs(6)
         Integer :: p, np, nl, m, mp, rextra
+        Integer, Allocatable :: gpars(:,:)
 
         checkpoint_t0 = stopwatch(walltime)%elapsed
         If (check_frequency .gt. 0) Then
@@ -98,9 +99,11 @@ Contains
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a')            ! This structure hangs around through the entire run
 
-        Call checkpoint_buffer%Init(mpi_tag=checkpoint_tag,spectral=.true., cache_spectral = .true., &
-                                    spec_comp = .true.)
-
+        Allocate(gpars(1:5,1:5))
+        gpars(:,:) = -1
+        Call checkpoint_buffer%Init(gpars, mpi_tag=checkpoint_tag, &
+                spectral=.true., cache_spectral = .true., spec_comp = .true.)
+        DeAllocate(gpars)
     End Subroutine Initialize_Checkpointing
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time)
@@ -194,6 +197,7 @@ Contains
         Real*8, Allocatable :: old_radius(:), radius_old(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
         Character*120 :: autostring, cfile, checkfile, dstring, iterstring
+        Integer, Allocatable :: gpars(:,:)
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
@@ -346,17 +350,26 @@ Contains
 
         ! Initialize the input buffer  (still need to deal properly with nr_old .ne. nr)
         If (n_r_old .eq. n_r) Then
-            Call checkpoint_inbuffer%Init(mpi_tag=checkpoint_tag,spectral=.true., & 
-                           cache_spectral = .true., spec_comp = .true., lmax_in = l_max_old, mode = 2)
+            Allocate(gpars(1:5,1:5))
+            gpars(:,:) = -1
+            Call checkpoint_inbuffer%Init(gpars, mpi_tag=checkpoint_tag, &
+                        spectral=.true., cache_spectral = .true., spec_comp = .true., &
+                        lmax_in = l_max_old, mode = 2)
+            DeAllocate(gpars)
         Else
             Allocate(rinds(1:n_r_old))
             Do i = 1, n_r_old
                 rinds(i) = i
             Enddo
-            Call checkpoint_inbuffer%Init(mpi_tag=checkpoint_tag,spectral=.true., & 
+            Allocate(gpars(1:size(rinds),1:5))
+            gpars(:,:) = -1
+            gpars(1,:) = rinds(:)
+            gpars(1,5) = size(rinds) 
+            Call checkpoint_inbuffer%Init(gpars, mpi_tag=checkpoint_tag,spectral=.true., & 
                            cache_spectral = .true., spec_comp = .true., &
-                           lmax_in = l_max_old, mode = 2, r_indices=rinds )
+                           lmax_in = l_max_old, mode = 2)
             DeAllocate(rinds)
+            DeAllocate(gpars)
         Endif
         Do i = 1, numfields*2
             If (read_var(i) .eq. 1) Then
