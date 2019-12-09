@@ -28,6 +28,7 @@ Module Spherical_IO
     Use Legendre_Transforms, Only : Legendre_Transform
     Use BufferedOutput
     Use Math_Constants
+    Use MakeDir
 #ifdef INTEL_COMPILER 
     USE IFPORT
 #endif
@@ -1051,14 +1052,12 @@ Contains
 
         !Averaging variables
         Real*8, Intent(In), Optional :: tweights(1:)
-
         Logical, Intent(In), Optional :: is_spectral
         Logical, Intent(In), Optional :: nobuffer, average_in_phi, average_in_theta, average_in_radius
         !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, lcount, modcheck, nmax
-        Logical :: lspec, rspec, pspec, tspec, rtp_spec, spectral_io
-        Logical :: rad_only, phi_only, theta_only, spectral_buffer
-        Integer :: avg_axes(1:3)
+        Logical ::  spectral_io, spectral_buffer
+        Integer :: avg_axes(1:3), ecode
         Integer, Allocatable :: indices(:,:)
         Real*8, Allocatable :: avg_weights(:,:)
         Class(DiagnosticInfo) :: self 
@@ -1069,6 +1068,7 @@ Contains
         self%rec_per_file = nrec
         self%frequency = frequency
 
+        If (myid .eq. 0) Call Make_Directory(trim(local_file_path)//trim(self%file_prefix) ,ecode)
         ! Indices array
         nmax = Maxval((/ nr, ntheta, nphi /) )
         Allocate(indices(1:nmax,1:5))
@@ -1133,16 +1133,6 @@ Contains
             Endif
         Endif
 
-        ! These variables describe which indices have been specified
-        rspec = .false.
-        tspec = .false.
-        pspec = .false.
-
-        ! These variables describe which COMBINATION of indices have been specified
-        rtp_spec = .false.
-        rad_only = .false.
-        theta_only = .false.
-
         If (present(write_mode)) Then
             self%write_mode = write_mode
         Else
@@ -1179,7 +1169,6 @@ Contains
 
         ! Buffer init
         If (present(rinds)) Then
-            rspec = .true.
             rcount = size(rinds)
             i = 1
             Do While ( i .le. rcount )
@@ -1208,7 +1197,6 @@ Contains
         Endif
 
         If (present(tinds)) Then
-            tspec = .true.
             tcount = size(tinds)
             i = 1
             DO While ( i .le. tcount )
@@ -1237,7 +1225,6 @@ Contains
         Endif
 
         If (present(pinds)) Then
-            pspec = .true.
             pcount = size(pinds)
             i = 1
             Do While ( i .le. pcount )
@@ -1265,7 +1252,6 @@ Contains
 
 
         If (present(lvals)) Then
-            lspec = .true.
             lcount = size(lvals)
             i = 1
             Do While ( i .le. lcount )
@@ -1287,23 +1273,11 @@ Contains
             self%l_values(1) = -1
         Endif
 
-        If (present(is_spectral)) Then
-            spectral_buffer = is_spectral
-        Else
-            spectral_buffer = .false.
-        Endif
-
         self%nr     = rcount
         self%ntheta = tcount
         self%nphi   = pcount
 
         ! Initialize the buffer (and then ocomm)
-        rtp_spec = (rspec .and. tspec .and. pspec)
-
-        rad_only = (rspec .and. (.not. tspec) .and. (.not. pspec) )
-        phi_only = (pspec .and. (.not. tspec) .and. (.not. rspec) )
-        theta_only = (tspec .and. (.not. pspec) .and. (.not. rspec) )
- 
         avg_axes(:) = 0  ! phi, r, theta
         If (present(average_in_phi)) Then
             If (average_in_phi) avg_axes(1) = 1            
@@ -1321,76 +1295,6 @@ Contains
 
         DeAllocate(indices)
         DeAllocate(avg_weights)
-
-        rtp_spec = .false.
-        rad_only = .false.
-        theta_only = .false.
-
-        If (rtp_spec) Then
-            ! Essentially for Point Probes
-            !Call self%buffer%init(self%r_inds, self%theta_inds, self%phi_inds, &
-            !                          ncache  = self%nq*self%cache_Size, &
-            !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-            !                          nrec = self%cache_size, skip = 12, &
-            !                          write_timestamp = .true.)
-        Endif
-
-        If (rad_only) Then
-            !Shell Slices are Shell Spectra
-             
-            If (present(is_spectral)) Then
-                If (lspec) Then
-                !Call self%buffer%init(r_indices=self%r_inds, &
-                !                          ncache  = self%nq*self%cache_Size, &
-                !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                !                          nrec = self%cache_size, skip = 12, &
-                !                          write_timestamp = .true., spectral = is_spectral, &
-                !                          l_values = self%l_values)
-                Else
-                !Call self%buffer%init(r_indices=self%r_inds, &
-                !                          ncache  = self%nq*self%cache_Size, &
-                !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                !                          nrec = self%cache_size, skip = 12, &
-                !                          write_timestamp = .true., spectral = is_spectral)
-
-                Endif
-            Else
-                !Call self%buffer%init(r_indices=self%r_inds, &
-                !                          ncache  = self%nq*self%cache_Size, &
-                !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                !                          nrec = self%cache_size, skip = 12, &
-                !                          write_timestamp = .true.)
-
-            Endif
-
-        Endif
-
-        If (theta_only) Then
-            !Equatorial Slices
-            If (.not. present(tweights)) Write(6,*)'Warning! tweights must be specified in this mode!'
-            !Call self%buffer%init(theta_indices=self%theta_inds, &
-            !                          ncache  = self%nq*self%cache_Size, &
-            !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-            !                          nrec = self%cache_size, skip = 12, &
-            !                          write_timestamp = .true., sum_weights_theta=tweights)
-        Endif
-
-        If (phi_only) Then
-            !Meridional Slices
-            !Call self%buffer%init(phi_indices=self%phi_inds, &
-            !                          ncache  = self%nq*self%cache_Size, &
-            !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-            !                          nrec = self%cache_size, skip = 12, &
-            !                          write_timestamp = .true.)
-        Endif
-
-        !If (present(avg_axes)) Then  ! Assume if it's set, it's true
-            !AZ Averages
-        !    Call self%buffer%init(ncache  = self%nq*self%cache_Size, &
-        !                          mode = self%write_mode, mpi_tag = self%mpi_tag, &
-        !                          nrec = self%cache_size, skip = 12, &
-        !                          write_timestamp = .true., averaging_axes = avg_axes)
-        !Endif
 
         If (.not. present(nobuffer)) Then
             ! Once the buffer is initialized, set the ocomm info
@@ -1830,15 +1734,11 @@ Contains
 
     Subroutine IOComputeM0(qty)
         Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:)
-
-
         Integer :: q,nq,r,t,p, ind
         !Averages over phi to get the azimuthally symmetric mean of all
         ! fields in inbuff at each radii and theta value.
         ! inbuff is expected to be dimensioned as (1:nphi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:nfields)
         ! outbuff is dimensioned as outbuff(my_r%min:my_rmax,my_theta_min:my_theta_max,1:nfields)
-
-
 
         ind = Shell_Averages%ind
 

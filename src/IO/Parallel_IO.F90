@@ -123,6 +123,7 @@ Module Parallel_IO
 
     Contains
         Procedure :: init => Initialize_Physical_IO_Buffer
+        Procedure :: Initialize_Sampled_Grid
         Procedure :: cache_data
         Procedure :: cache_data_spectral
         Procedure :: allocate_cache
@@ -169,8 +170,8 @@ Contains
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
         Integer, Intent(In), Optional :: lmax_in
-        Integer :: r, ii, ind, my_min, my_max
-        Integer :: k, ntot, fcount(3,2), fcnt
+        Integer :: r, ii, ind, my_min, my_max, adim(2), in_lmax
+        Real*8, Allocatable :: avg_weights(:,:)
 
         !//////////////////////////////////////////////
         ! Establish my identity
@@ -216,8 +217,22 @@ Contains
             self%nrec = nrec
         Endif
         self%ncache_per_rec = self%ncache/self%nrec
+        self%nwrites = self%nrec*self%ncache
 
         If (present(skip)) self%rec_skip = skip
+        If (present(spec_comp)) self%spec_comp = spec_comp
+
+        If (present(averaging_weights)) Then
+            adim = shape(averaging_weights)
+            Allocate(avg_weights(adim(1),adim(2)))
+            avg_weights(:,:) = averaging_weights(:,:)
+        Else  ! No averaging to be done.  Minimal-size array, init to -1
+            Allocate(avg_weights(3,3))
+            avg_weights(:,:) = -1
+        Endif
+        in_lmax = -1
+        If (present(lmax_in)) in_lmax = lmax_in
+
 
         !/////////////////////////////////////////////////
         ! Set a unique tag for message exchange
@@ -229,6 +244,36 @@ Contains
 
         !///////////////////////////////////////////////////////////
         ! Establish how this buffer will be subsampled, if at all
+
+        Call self%Initialize_Sampled_Grid(grid_pars, avg_weights, in_lmax)
+        DeAllocate(avg_weights)
+
+        !///////////////////////
+
+
+        Call self%Load_Balance_IO()
+
+        If (self%output_rank) Call self%Set_Displacements()
+        
+        Call self%Initialize_IO_MPI()
+
+        If (present(write_timestamp)) Then
+            If ((self%output_rank) .and. (self%ocomm%rank .eq. 0) ) Then
+                self%write_timestamp = write_timestamp
+            Endif
+            If (write_timestamp) self%rec_skip = 12
+        Endif
+        Call self%Allocate_Cache()
+
+    End Subroutine Initialize_Physical_IO_Buffer
+
+    Subroutine Initialize_Sampled_Grid(self,grid_pars, averaging_weights, lmax_in)
+        Implicit None
+        Class(io_buffer) :: self
+        Integer, Intent(In) :: grid_pars(1:,1:), lmax_in
+        Real*8, Intent(In) :: averaging_weights(1:,1:)
+
+
         If (grid_pars(1,1) .ne. -1) Then
             self%nr = grid_pars(1,5)
             Allocate(self%r_global(1:self%nr))
@@ -243,13 +288,13 @@ Contains
             Allocate(self%theta_global(1:self%ntheta))
             self%theta_global(:) = grid_pars(1:self%ntheta,2)
             self%t_spec = .true.
-            If (present(averaging_weights)) Then
+
             If (averaging_weights(1,2) .gt. -1.0d-8) Then
                 Allocate(self%theta_weights(1:self%ntheta))
                 self%theta_weights(:) = averaging_weights(1:self%ntheta,2)
                 self%sum_theta = .true.
             Endif
-            Endif
+
         Else
             self%ntheta = pfi%n2p
         Endif
@@ -268,13 +313,13 @@ Contains
         Endif
 
         If (self%spectral)  Then
-            If (present(spec_comp)) self%spec_comp = spec_comp
+            
             self%lmax = (2*self%ntheta-1)/3
             self%lmax_in = self%lmax
             self%nlm = (self%lmax+1)*(self%lmax+1) 
             self%nlm_out = (self%lmax+1)*(self%lmax+1)   
 
-            If (present(lmax_in)) Then
+            If (lmax_in .gt. -1) Then
                 self%lmax_in = lmax_in
             Endif
             self%nlm_in = (self%lmax_in+1)*(self%lmax_in+1)
@@ -290,6 +335,8 @@ Contains
                 self%nlm_out = SUM(self%l_values)+self%n_l_samp
             Endif
 
+
+
         Endif
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
@@ -301,6 +348,7 @@ Contains
         If ( (self%t_spec ) .and. (.not. self%r_spec) &
              .and. (.not. self%p_spec) ) self%theta_general = .true.
 
+
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
              .and. (self%p_spec) ) self%phi_general = .true.
 
@@ -311,35 +359,8 @@ Contains
             self%r_general_spectral = .true.
         Endif
 
-        Call self%Load_Balance_IO()
 
-        self%nwrites = self%nrec*self%ncache ! TODO: Do I move this?
-        If (self%output_rank) Call self%set_displacements()
-        
-        !///////////////////// TODO:  Does this need a separate routine?
-        ! Some extra work for caching data to be transformed needs to be done
-        if (self%spectral) Then
-            ntot = self%ncache/2*self%nr_local
-            fcnt = ntot/pfi%my_1p%delta
-            k = Mod(ntot,pfi%my_1p%delta)
-            If (k .gt. 0) fcnt = fcnt+1
-            fcount(:,:) = fcnt
-            Call self%spectral_buffer%init(field_count=fcount,config='p3b')  
-        Endif
-        !/////////////////////
-
-        Call self%Initialize_IO_MPI()
-
-        If (present(write_timestamp)) Then
-            If ((self%output_rank) .and. (self%ocomm%rank .eq. 0) ) Then
-                self%write_timestamp = write_timestamp
-            Endif
-            If (write_timestamp) self%rec_skip = 12
-        Endif
-        Call self%Allocate_Cache()
-
-    End Subroutine Initialize_Physical_IO_Buffer
-
+    End Subroutine Initialize_Sampled_Grid
 
     Subroutine Load_Balance_IO(self)
         Implicit None
@@ -350,6 +371,7 @@ Contains
         Integer :: t, tmax, tmin
         Integer :: nm, mp, mp_min, mp_max, m_value
         Integer, Allocatable :: tmp(:)
+        Integer :: k, ntot, fcount(3,2), fcnt
 
         Allocate(self%ntheta_at_column(0:pfi%nprow-1))
         Allocate(self%npts_at_column(0:pfi%nprow-1))
@@ -472,6 +494,19 @@ Contains
                 self%nrecv_from_column(p) = self%nr_out*self%nlm_at_column(p) 
                 self%nsend_to_column(p) = self%nr_out_at_column(p)*self%nlm_local
             Enddo
+
+            ! To save space, fields sampled for spectra are
+            ! stored at different radii/quantity indices within
+            ! a spectral buffer.  Logic for that mapping is taken
+            ! care of here.
+            ntot = self%ncache/2*self%nr_local
+            fcnt = ntot/pfi%my_1p%delta
+            k = Mod(ntot,pfi%my_1p%delta)
+            If (k .gt. 0) fcnt = fcnt+1
+            fcount(:,:) = fcnt
+            Call self%spectral_buffer%init(field_count=fcount,config='p3b')  
+
+
         Else
 
             Do p = 0, pfi%nprow-1
@@ -480,6 +515,8 @@ Contains
                 self%nsend_to_column(p) = self%nr_out_at_column(p)*self%ntheta_local*self%nphi
             Enddo
         Endif
+
+
 
     End Subroutine Load_Balance_IO
 
@@ -1349,7 +1386,6 @@ Contains
             
             self%collated_data(:,:,:,:) = 0.0d0
 
-            Write(6,*)'Doing this...'
             Do t = 1, self%ntheta
                 self%collated_data(:,1,:,:) = self%collated_data(:,1,:,:) + &
                         data_copy(:,t,:,:)*self%theta_weights(t)
@@ -1399,7 +1435,7 @@ Contains
             If (self%output_rank) Allocate(self%buffer(1:self%io_buffer_size))
 
             If (self%write_mode .eq. 1) Call self%gather_data(-1)
-
+            
             ! First Write the Data
             Do j = 1, self%nwrites
 
