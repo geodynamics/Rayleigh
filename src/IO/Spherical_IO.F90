@@ -2032,7 +2032,6 @@ Contains
             tmp_phi(i) = (i-1)*two_pi/DBLE(nphi)
         ENDDO
 
-
         CALL INTERPRET_INDICES(      point_probe_r_nrm, radius   , point_probe_r,      revg =.true.)
         CALL INTERPRET_INDICES(  point_probe_theta_nrm, tmp_theta, point_probe_theta,  revg=.true.)
         CALL INTERPRET_INDICES(    point_probe_phi_nrm, tmp_phi  , point_probe_phi)
