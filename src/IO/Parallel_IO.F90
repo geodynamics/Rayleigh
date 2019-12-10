@@ -217,7 +217,7 @@ Contains
             self%nrec = nrec
         Endif
         self%ncache_per_rec = self%ncache/self%nrec
-        self%nwrites = self%nrec*self%ncache
+        self%nwrites = self%ncache ! self%nrec*self%ncache
 
         If (present(skip)) self%rec_skip = skip
         If (present(spec_comp)) self%spec_comp = spec_comp
@@ -571,7 +571,7 @@ Contains
         Allocate(self%file_disp_in(1:self%nwrites))
 
         Do j = 1, self%nwrites
-            self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%ncache)
+            self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/(self%ncache/self%nrec))
             self%file_disp_in(j) = self%base_disp_in + self%qdisp_in*(j-1) ! no timestamps on input
             self%ind(j) = j
             self%buffer_disp(j) = 1+(j-1)*self%buffsize
@@ -1443,17 +1443,20 @@ Contains
                 If (self%output_rank) Then
                     fdisp = self%file_disp(j)+hdisp
                     bdisp = self%buffer_disp(j)
+                    If (self%orank .eq. 0) Write(6,*)'fdisp: ', j, self%file_disp(j), self%buffsize
                     Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                     Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
                         self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                 Endif
             Enddo
+            if (self%output_rank ) WRite(6,*)'hdisp: ', hdisp
 
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
                 Do j = 1, self%nrec
 
-                    tdisp = j*self%qdisp*self%ncache+hdisp  ! May need to account for real/imaginary here.
+                    tdisp = j*self%qdisp*(self%ncache/self%nrec)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
+                    WRite(6,*)'tdisp: ', tdisp
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
@@ -1516,6 +1519,7 @@ Contains
                 !Write(6,*)'inbuffer: ', self%in_buffer_size, self%nlm_in, self%nr_out
             Endif
             ! Read the Data
+
             Do j = 1, self%nwrites
                 If (self%output_rank) Then
                     fdisp = self%file_disp_in(j)+hdisp
