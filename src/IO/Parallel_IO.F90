@@ -19,7 +19,8 @@ Module Parallel_IO
         Integer :: nr            ! number of r-values in potentially subsampled array
         Integer :: ntheta        ! number of theta values in (potentially subsampled) array
         Integer :: nphi          ! number of phi values in the (potentially subsampled) array
-        Integer :: ncache        ! number of fields (or fields/time indices) in the array
+        Integer :: nvals         ! number of fields stored
+        Integer :: ncache        ! number of fields * time indices in the array
         Integer :: cache_index=1 ! current index within cache
 
         Integer :: nr_local     ! number of r-values subsampled locally (possibly 0)
@@ -153,7 +154,7 @@ Module Parallel_IO
 Contains
 
     Subroutine Initialize_Physical_IO_Buffer(self,grid_pars, &
-                                             ncache, mpi_tag, &
+                                             nvals, mpi_tag, &
                                              cascade, averaging_weights, nrec, &
                                              skip, write_timestamp, &
                                              averaging_axes, spectral, mode, &
@@ -164,7 +165,7 @@ Contains
         !Integer, Intent(In) :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In) :: grid_pars(1:,1:)
         Integer, Intent(In), Optional :: l_values(1:)
-        Integer, Intent(In), Optional :: ncache, mpi_tag, cascade, nrec, skip
+        Integer, Intent(In), Optional :: nvals, mpi_tag, cascade, nrec, skip
         Real*8 , Intent(In), Optional :: averaging_weights(1:,1:)
         Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
@@ -201,21 +202,30 @@ Contains
         If (present(spectral)) self%spectral = spectral
         If (present(cache_spectral)) self%cache_spectral = cache_spectral
 
-        !///////////////////////////////////////////////////////////
-        ! Note how many fields/time-steps will be stored and output
-        If (.not. present(ncache)) Then
-            self%ncache = 1
-        Else
-            self%ncache = ncache
-        Endif
-        If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary
 
-
+        ! Nrec indicates how many records (timesteps) are stored
         If (.not. present(nrec)) Then
             self%nrec = 1
         Else
             self%nrec = nrec
         Endif
+
+        !///////////////////////////////////////////////////////////
+        ! Note how many fields will be stored and output
+        If (.not. present(nvals)) Then
+            self%nvals = 1
+        Else
+            self%nvals = nvals
+        Endif
+        
+        !//////////////////////////////////////////////////////////
+        ! Finally, how many distinct "things" do we need to cache?
+        self%ncache = self%nrec*self%nvals
+        If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary are treated as two different quantities
+
+
+
+
         self%ncache_per_rec = self%ncache/self%nrec
         self%nwrites = self%ncache ! self%nrec*self%ncache
 
@@ -571,7 +581,7 @@ Contains
         Allocate(self%file_disp_in(1:self%nwrites))
 
         Do j = 1, self%nwrites
-            self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/(self%ncache/self%nrec))
+            self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%nvals)
             self%file_disp_in(j) = self%base_disp_in + self%qdisp_in*(j-1) ! no timestamps on input
             self%ind(j) = j
             self%buffer_disp(j) = 1+(j-1)*self%buffsize
@@ -1455,7 +1465,7 @@ Contains
             If (self%write_timestamp) Then  ! (output_rank 0)
                 Do j = 1, self%nrec
 
-                    tdisp = j*self%qdisp*(self%ncache/self%nrec)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
+                    tdisp = j*self%qdisp*(self%nvals)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
                     WRite(6,*)'tdisp: ', tdisp
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 

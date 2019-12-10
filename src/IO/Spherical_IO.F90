@@ -561,7 +561,7 @@ Contains
                     Endif
                 Endif
 
-                full_disp = self%buffer%qdisp*self%buffer%ncache/ncache+12  ! 12 is for the simtime+iteration at the end; use ncache instead of nq to account for real/imaginary in spectral i/o
+                full_disp = self%buffer%qdisp*self%buffer%nvals+12  ! 12 is for the simtime+iteration at the end; use ncache instead of nq to account for real/imaginary in spectral i/o
                 new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
                 If (responsible) Write(6,*)'check disp: ', self%buffer%qdisp, self%buffer%ncache, self%buffer%spectral
                 !omode = 1
@@ -1290,7 +1290,7 @@ Contains
 
         Call self%buffer%init( indices, &
                               mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                              ncache  = self%nq*self%cache_size, &
+                              nvals  = self%nq, &
                               nrec = self%cache_size, skip = 12, &
                               write_timestamp = .true., averaging_axes = avg_axes, &
                               averaging_weights = avg_weights, spectral=spectral_io)
