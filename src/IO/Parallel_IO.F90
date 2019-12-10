@@ -273,7 +273,6 @@ Contains
         Integer, Intent(In) :: grid_pars(1:,1:), lmax_in
         Real*8, Intent(In) :: averaging_weights(1:,1:)
 
-
         If (grid_pars(1,1) .ne. -1) Then
             self%nr = grid_pars(1,5)
             Allocate(self%r_global(1:self%nr))
@@ -312,6 +311,8 @@ Contains
             Endif
         Endif
 
+        If (self%rank .eq. 0) Write(6,*)'check: ', self%nr, self%ntheta, self%nphi
+
         If (self%spectral)  Then
             
             self%lmax = (2*self%ntheta-1)/3
@@ -334,8 +335,6 @@ Contains
                 self%l_values(:) = grid_pars(1:self%n_l_samp,4)
                 self%nlm_out = SUM(self%l_values)+self%n_l_samp
             Endif
-
-
 
         Endif
 

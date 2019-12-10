@@ -1186,7 +1186,7 @@ Contains
                     self%r_vals(i) = radius(rinds(i))
                 Enddo
                 indices(1,5) = rcount
-                indices(1:rcount,1) = self%r_vals(1:rcount)
+                indices(1:rcount,1) = self%r_inds(1:rcount)
             Endif
 
         Else
@@ -1214,7 +1214,7 @@ Contains
                     self%theta_vals(i) = costheta(tinds(i))
                 Enddo
                 indices(2,5) = tcount
-                indices(1:tcount,2) = self%theta_vals(1:tcount)
+                indices(1:tcount,2) = self%theta_inds(1:tcount)
             Endif
 
         Else
@@ -1241,7 +1241,7 @@ Contains
                     self%phi_vals(i) = (pinds(i)-1)*(two_pi/nphi)   
                 Enddo
                 indices(3,5) = pcount
-                indices(1:pcount,3) = self%phi_vals(1:pcount)
+                indices(1:pcount,3) = self%phi_inds(1:pcount)
             Endif
         Else
             Allocate(self%phi_inds(1:1))
@@ -1285,6 +1285,8 @@ Contains
 
         spectral_io = .false.
         If (present(is_spectral)) spectral_io = is_spectral
+
+        If (myid .eq. 0) WRite(6,*)dir, indices(1:3,5)
 
         Call self%buffer%init( indices, &
                               mode = self%write_mode, mpi_tag = self%mpi_tag, &
