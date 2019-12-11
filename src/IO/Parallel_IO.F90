@@ -525,8 +525,6 @@ Contains
             Enddo
         Endif
 
-
-
     End Subroutine Load_Balance_IO
 
     Subroutine Set_Displacements(self)
@@ -772,6 +770,14 @@ Contains
         If (self%write_mode .eq. 1) Then
             ! If write_mode is 1, we may be performing a weighted sum
             If (self%weighted_sum) Then
+                If (self%sum_theta_phi) Then
+                    Do t = 1, self%ntheta_local
+                        Do r = 1, self%nr_local
+                            self%cache(1,1,self%cache_index,r) = self%cache(1,1,self%cache_index,r) + &
+                                vals(p,r,t)*self%phi_weight*self%theta_weight(t)
+                        Enddo
+                    Enddo                      
+                Endif
 
                 If (self%sum_phi) Then  ! Put this one last (logical ordering)
                     Do t = 1, self%ntheta_local

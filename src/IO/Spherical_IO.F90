@@ -67,6 +67,7 @@ Module Spherical_IO
     Integer, Parameter :: sphmode_version =4
     INTEGER, PARAMETER :: probe_version = 1
     Integer, Parameter :: full3d_version = 3    !currently unused
+    Integer, Parameter :: tempio_version = 4    ! set to version # from above testing against, or to 1 for new input testing
     Type, Public :: DiagnosticInfo
         ! Need to see if we can make these allocatable, but for now..
         ! Each instance of this class has two static arrays used for reading in namelist input
@@ -205,8 +206,8 @@ Module Spherical_IO
     Integer :: shellspectra_frequency=reallybig, equatorial_frequency = reallybig
     Integer :: meridional_frequency=reallybig, sph_mode_frequency = reallybig
     Integer :: point_probe_frequency = reallybig
-
     Integer :: full3d_frequency= reallybig
+
     Character*120 :: local_file_path=''
     Logical :: mem_friendly = .false.
 
@@ -219,6 +220,19 @@ Module Spherical_IO
     REAL*8 :: point_probe_theta_nrm(1:nprobemax)  = -3.0d0
     REAL*8 ::   point_probe_phi_nrm(1:nprobemax)  = -3.0d0
     Integer :: point_probe_cache_size = 1
+
+    !/////////////////////////////////////////////////////////////////////
+    ! DEVELOPER:  For creating a new output type, we have provided
+    ! infrastructure here for testing.  Temp_IO shares common input semantics
+    ! with all output types. Indices and levels are redunant with phi and radius.
+    ! We use phi and radius here, rather than indices and levels.
+    Integer :: temp_io_frequency = reallybig, temp_io_nrec = -1 , temp_io_cache_size=1
+    Integer :: temp_io_values(1:nqmax)=-1, temp_io_ell(1:nmodemax)=-1
+    Integer :: temp_io_r(1:nprobemax) = -1, temp_io_theta(1:nprobemax) = -1, temp_io_phi(1:nprobemax) = -1
+    Real*8 ::  temp_io_r_nrm(1:nprobemax)  = -3.0d0, temp_io_theta_nrm(1:nprobemax)  = -3.0d0
+    Real*8 ::  temp_io_phi_nrm(1:nprobemax)  = -3.0d0
+    Logical :: use_temp_io = .false.      ! Set this to true when developing new output types.
+
 
     Namelist /output_namelist/ mem_friendly, &
         ! All output types require that a minimal set of information is specified 
@@ -239,8 +253,12 @@ Module Spherical_IO
 
         shellslice_levels_nrm, shellspectra_levels_nrm, meridional_indices_nrm, &
         point_probe_r_nrm    ,     point_probe_phi_nrm,  point_probe_theta_nrm, &
-        sph_mode_levels_nrm,        point_probe_cache_size
+        sph_mode_levels_nrm,        point_probe_cache_size, &
 
+        ! DEVELOPER:  Finally, the temp_io variables
+        temp_io_values, temp_io_frequency, temp_io_nrec, temp_io_cache_size, &
+        temp_io_ell, temp_io_r, temp_io_theta, temp_io_phi, temp_io_r_nrm, &
+        temp_io_theta_nrm, temp_io_phi_nrm
     Integer :: integer_zero = 0
     Real*8, Private, Allocatable :: qty(:,:,:), f_of_r_theta(:,:,:), f_of_r(:)
     Real*8, Private, Allocatable :: shellav_outputs(:,:,:), globav_outputs(:)
@@ -2041,6 +2059,11 @@ Contains
         CALL INTERPRET_INDICES(shellspectra_levels_nrm, radius   , shellspectra_levels,revg=.true.)
         CALL INTERPRET_INDICES(sph_mode_levels_nrm, radius   , sph_mode_levels,revg=.true.)
         CALL INTERPRET_INDICES( meridional_indices_nrm, tmp_phi  , meridional_indices, revg=.true.)
+
+        !DEVELOPER:  Temp_IO-related variables for testing
+        CALL INTERPRET_INDICES(      temp_io_r_nrm, radius   , temp_io_r,      revg =.true.)
+        CALL INTERPRET_INDICES(  temp_io_theta_nrm, tmp_theta, temp_io_theta,  revg=.true.)
+        CALL INTERPRET_INDICES(    temp_io_phi_nrm, tmp_phi  , temp_io_phi)
 
         DeALLOCATE(tmp_theta,tmp_phi)
         
