@@ -617,7 +617,7 @@ Contains
         If (self%sum_all) Then
             
             If (self%col_rank .eq. 0) Then
-                self%buffsize = self%ncache
+                self%buffsize = 1 ! self%ncache
             Else
                 self%buffsize = 0
                 self%file_disp(:) = 0
@@ -1465,7 +1465,7 @@ Contains
                 self%collated_data(1,1,1,:) = tmp2(:)
                 DeAllocate(tmp1,tmp2)
             Endif
-            Write(6,*)'in here'
+            !Write(6,*)'in here'
             DeAllocate(data_copy)
 
         Else If (self%output_rank .and. self%sum_theta) Then
@@ -1534,18 +1534,23 @@ Contains
                 If (self%write_mode .gt. 1) Call self%gather_data(j)
 
                 If (self%output_rank) Then
-                    fdisp = self%file_disp(j)+hdisp
-                    bdisp = self%buffer_disp(j)
+
                     !If (self%orank .eq. 0) Write(6,*)'fdisp: ', j, self%file_disp(j), self%buffsize
-                    Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
-                    Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                        self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    If (self%buffsize .ne. 0) Then
+                        fdisp = self%file_disp(j)+hdisp
+                        bdisp = self%buffer_disp(j)
+                        Write(6,*)'bsize: ', hdisp, fdisp, self%buffsize
+                        Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
+                        Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
+                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    Endif
                 Endif
             Enddo
-            if (self%output_rank ) WRite(6,*)'hdisp: ', hdisp
+            !if (self%output_rank ) WRite(6,*)'hdisp: ', hdisp
 
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
+                Write(6,*)'hmm...', self%orank
                 Do j = 1, self%nrec
 
                     tdisp = j*self%qdisp*(self%nvals)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
