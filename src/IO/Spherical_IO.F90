@@ -388,10 +388,10 @@ Contains
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, avg_level = 3, nobuffer=.true.) 
        
-        fdir = 'Shell_Avgs/'
-        Call Shell_Averages%Init(averaging_level,compute_q,myid, 57, fdir, &
-                          shellavg_version, shellavg_nrec, shellavg_frequency, &
-                          values = shellavg_values, avg_level = 2, nobuffer=.true.) 
+        !fdir = 'Shell_Avgs/'
+        !Call Shell_Averages%Init(averaging_level,compute_q,myid, 57, fdir, &
+        !                  shellavg_version, shellavg_nrec, shellavg_frequency, &
+        !                  values = shellavg_values, avg_level = 2, nobuffer=.true.) 
        
         fdir = 'Spherical_3D/'  ! Note: Full 3D only uses frequency, not nrec
         Call Full_3D%Init(averaging_level,compute_q,myid, 54, fdir, &
@@ -412,8 +412,13 @@ Contains
         Call Temp_IO%Init(averaging_level,compute_q,myid, 156, fdir, &
                           shellavg_version, shellavg_nrec, shellavg_frequency, &
                           values = shellavg_values, average_in_phi = .true. , &
-                          average_in_theta = .true., moments=4)
+                          average_in_theta = .true.)
 
+        fdir = 'Shell_Avgs/'
+        Call Shell_Averages%Init(averaging_level,compute_q,myid, 156, fdir, &
+                          shellavg_version, shellavg_nrec, shellavg_frequency, &
+                          values = shellavg_values, average_in_phi = .true. , &
+                          average_in_theta = .true., moments=4)
 
 
         fdir = 'Shell_Slices/'
@@ -542,10 +547,19 @@ Contains
 
         !////////////////////////////////////////////////////
         ! Shell_Averages
+        dims(1:2) = (/ nr, Shell_Averages%nq /)
+        Call Shell_Averages%Add_IHeader(dims,2)
+        Call Shell_Averages%Add_IHeader(Shell_Averages%oqvals, Shell_Averages%nq)
+        Call Shell_Averages%Add_DHeader(radius,nr)
+
+
+        !////////////////////////////////////////////////////
+        ! Shell_Averages
         dims(1:2) = (/ nr, Temp_IO%nq /)
         Call Temp_IO%Add_IHeader(dims,2)
         Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
         Call Temp_IO%Add_DHeader(radius,nr)
+
     End Subroutine Initialize_Headers
 
     Subroutine Store_Values(self,qty)
@@ -686,7 +700,6 @@ Contains
         ! Use the azimuthal averages to compute the ell=0 mean
         Call IOComputeEll0(IOm0_values,IOell0_values)
         Call Shell_Averages%reset() !need to reset the index counter
-        Call Temp_IO%reset()
     End Subroutine Finalize_Averages
 
     Subroutine Set_Avg_Flag(flag_val)
@@ -705,27 +718,28 @@ Contains
             Endif
         Else
 
-            If (Temp_IO%grab_this_q)  Then  ! Shellavg moments
-                Call Temp_IO%Store_Values(qty) ! Store the mean
-                Temp_IO%ind = temp_IO%ind-1
-                If (myid .eq. 0) WRite(6,*)'shell, temp: ', Shell_Averages%ind, Temp_IO%ind
+            If (Shell_Averages%grab_this_q)  Then  ! Shellavg moments
+                Call Shell_Averages%Store_Values(qty) ! Store the mean
+                Shell_Averages%ind = Shell_Averages%ind-1
                 ! Now, the moments - rms, skewness, kurtosis
+                ! We have to hack the index advancement for now due to the moments...
                 Do m = 2, 4
                     Do t = my_theta_min, my_theta_max
                         Do r = my_rmin, my_rmax
-                         !Do t = 1, my_ntheta
-                         !Do r = 1, my_nr
                             Do p = 1, nphi
-                                tmp_qty(p,r,t) = (qty(p,r,t)-IOell0_values(r,Temp_IO%ind) )**m
+                                tmp_qty(p,r,t) = (qty(p,r,t)-IOell0_values(r,Shell_Averages%ind) )**m
                             Enddo
                         Enddo
                     Enddo
-                    Call Temp_IO%Store_values(tmp_qty)
-                    Temp_IO%ind = Temp_IO%ind-1
+                    Call Shell_Averages%Store_values(tmp_qty)
+                    Shell_Averages%ind = Shell_Averages%ind-1
                 Enddo
                 
-                Call Temp_IO%AdvanceInd()
+                Call Shell_Averages%AdvanceInd()
             Endif
+
+            If (Temp_IO%grab_this_q) Call Temp_IO%Store_Values(qty)
+
             If (AZ_Averages%grab_this_q)       Call AZ_Averages%Store_Values(qty)  
 
             If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
@@ -747,6 +761,9 @@ Contains
 		Integer, Intent(In) :: iter
 		Real*8, Intent(In) :: sim_time
 
+        Call Shell_Averages%write_io(iter, sim_time)
+
+
         Call Shell_Slices%write_io(iter,sim_time)    
         Call Equatorial_Slices%Write_IO(iter,sim_time)
         Call Meridional_Slices%write_io(iter,sim_time)
@@ -756,7 +773,7 @@ Contains
         Call Temp_IO%write_io(iter,sim_time)
         Call SPH_Mode_Samples%write_io(iter, sim_time)
 
-	    If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
+	    !If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
 	    If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%frequency) .eq. 0 )) Call Write_Global_Average(iter,sim_time)
 
         DeAllocate(f_of_r_theta)
@@ -800,37 +817,7 @@ Contains
                 f_of_r(:) = f_of_r(:) + f_of_r_theta(1,:,t)*theta_integration_weights(t)
             Enddo
 
-		    If (Shell_Averages%grab_this_q) Then
-
-                If (.not. Allocated(shellav_outputs)) Then
-			        Allocate(shellav_outputs(my_rmin:my_rmax,1:4,1:Shell_Averages%nq))  ! four moments
-                    shellav_outputs(:,:,:) = 0.0d0
-                Endif
-
-                shellav_ind = Shell_Averages%ind
-
-                !First, add the partially integrated spherically symmetric mean ( f_of_r )
-                Do r = my_rmin, my_rmax
-                    shellav_outputs(r,1,shellav_ind) = f_of_r(r)
-                Enddo
-
-                ! Now, the moments - rms, skewness, kurtosis
-                Do m = 2, 4
-                    Do t = my_theta_min, my_theta_max
-                        wght = theta_integration_weights(t)*over_nphi_double
-                        Do r = my_rmin, my_rmax
-                            Do p = 1, nphi
-                            shellav_outputs(r,m,shellav_ind) = shellav_outputs(r,m,shellav_ind) + &
-                                & wght*(qty(p,r,t)-IOell0_values(r,shellav_ind))**m
-                            Enddo
-                            
-                        Enddo
-                    Enddo
-                Enddo
-
-                If (myid .eq. 0) Shell_Averages%oqvals(shellav_ind) = current_qval
-                Call Shell_Averages%AdvanceInd()
-		    Endif
+		    
         Endif
 
         !////////////////////////
