@@ -85,6 +85,8 @@ Module Parallel_IO
         Logical :: sum_theta = .false.   ! Perform a weighted sum in theta
         Logical :: sum_phi = .false.     ! Straight average in phi (weighted sum not supported)
         Logical :: weighted_sum = .false. 
+        Logical :: sum_theta_phi =.false.   ! Averaging in phi and in theta
+        Logical :: sum_all = .false.        ! Average over all three directions
         Real*8, Allocatable :: theta_weights(:)  ! For summing over theta points
         Real*8, Allocatable :: radial_weights(:)
         Real*8 :: phi_weight = 0.0d0
@@ -181,12 +183,14 @@ Contains
         self%rank     = pfi%gcomm%rank
 
         If (present(averaging_axes)) Then
-            If (averaging_axes(2) .eq. 1) self%sum_r = .true.
-            If (averaging_axes(3) .eq. 1) self%sum_theta = .true.
-            If (averaging_axes(1) .eq. 1) self%sum_phi = .true.
+            If (averaging_axes(1) .eq. 1) self%sum_r = .true.
+            If (averaging_axes(2) .eq. 1) self%sum_theta = .true.
+            If (averaging_axes(3) .eq. 1) self%sum_phi = .true.
         Endif
 
         self%weighted_sum = (self%sum_r .or. self%sum_theta .or. self%sum_phi)
+        self%sum_theta_phi = self%sum_theta .and. self%sum_phi
+        self%sum_all = self%sum_theta_phi .and. self%sum_r
 
         ! The write can be conducted in various ways:
         !   1.)  Full write -- everything stored in the output ranks
@@ -222,8 +226,6 @@ Contains
         ! Finally, how many distinct "things" do we need to cache?
         self%ncache = self%nrec*self%nvals
         If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary are treated as two different quantities
-
-
 
 
         self%ncache_per_rec = self%ncache/self%nrec
@@ -282,6 +284,7 @@ Contains
         Class(io_buffer) :: self
         Integer, Intent(In) :: grid_pars(1:,1:), lmax_in
         Real*8, Intent(In) :: averaging_weights(1:,1:)
+        Integer :: n
 
         If (grid_pars(1,1) .ne. -1) Then
             self%nr = grid_pars(1,5)
@@ -304,6 +307,14 @@ Contains
                 self%sum_theta = .true.
             Endif
 
+        Else If (self%sum_theta_phi .or. self%sum_all) Then
+            If (self%sum_theta_phi) Then
+                self%ntheta = pfi%rcomm%np
+                n = grid_pars(2,5)
+                Allocate(self%theta_weights(1:n))
+                self%theta_weights(1:n) = averaging_weights(1:n,2)
+                Write(6,*)'Testing: ', MAXVAL(averaging_weights(1:n,2))
+            Endif
         Else
             self%ntheta = pfi%n2p
         Endif
@@ -417,10 +428,15 @@ Contains
                     Endif
                 Enddo
             Enddo
+
+
             self%ntheta_local = self%ntheta_at_column(self%row_rank)
             Allocate(self%theta_local(1:self%ntheta_local))
             self%theta_local(1:self%ntheta_local) = tmp(1:self%ntheta_local)
             DeAllocate(tmp)
+        Else If ( (self%sum_theta_phi) .or. (self%sum_all) ) Then
+            self%ntheta_local = 1
+            self%ntheta_at_column(:) = 1
         Else
             self%ntheta_local = pfi%all_2p(self%row_rank)%delta
             Do p = 0, pfi%nprow-1
@@ -743,6 +759,7 @@ Contains
         Class(io_buffer) :: self
         Real*8, Intent(In) :: vals(1:,1:,1:)
         Type(rmcontainer4D), Intent(In), Optional :: spec_vals(1:)
+        Real*8 :: wgt
         Integer, Intent(In), Optional :: in_cache
         Integer :: r, t, p,tind
         Integer :: counter, field_ind, rind
@@ -770,16 +787,21 @@ Contains
         If (self%write_mode .eq. 1) Then
             ! If write_mode is 1, we may be performing a weighted sum
             If (self%weighted_sum) Then
-                If (self%sum_theta_phi) Then
-                    Do t = 1, self%ntheta_local
+                If (self%sum_all) Then
+                    wgt = 1.0d0
+
+                Else If (self%sum_theta_phi) Then
+                    !Write(6,*)'caching', MAXVAL(self%theta_weights)
+                    self%cache(1,1,self%cache_index,:) = 0.0d0
+                    Do t = 1, size(self%theta_weights)
+                        wgt = self%phi_weight*self%theta_weights(t)
+                        
                         Do r = 1, self%nr_local
                             self%cache(1,1,self%cache_index,r) = self%cache(1,1,self%cache_index,r) + &
-                                vals(p,r,t)*self%phi_weight*self%theta_weight(t)
+                                SUM(vals(:,r,t))*wgt
                         Enddo
                     Enddo                      
-                Endif
-
-                If (self%sum_phi) Then  ! Put this one last (logical ordering)
+                Else If (self%sum_phi) Then  ! Put this one last (logical ordering)
                     Do t = 1, self%ntheta_local
                         Do r = 1, self%nr_local
                             self%cache(1,t,self%cache_index,r) = SUM(vals(:,r,t))*self%phi_weight
@@ -1377,6 +1399,7 @@ Contains
                     If (self%write_mode .eq. 1) Then
                         Do i = 1, self%ncache
                             Do r =1, self%nr_out
+                                !WRite(6,*)'test2: ', shape(self%collated_data), shape(self%recv_buffers(p)%data)
                                 self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
                             Enddo
                         Enddo
@@ -1391,7 +1414,24 @@ Contains
             If (free_mem) Call self%deallocate_receive_buffers()
         Endif
 
-        If (self%output_rank .and. self%sum_theta) Then
+        If (self%output_rank .and. self%sum_theta_phi) Then
+
+            Allocate(data_copy(self%nphi,self%ntheta,self%nr_out,self%ncache))
+            data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
+ 
+            self%collated_data(1:self%nphi,1:1,1:self%nr_out,1:self%ncache) => &
+                self%buffer(1:self%io_buffer_size/self%ntheta)
+            
+            self%collated_data(:,:,:,:) = 0.0d0
+
+            Do t = 1, self%ntheta
+                self%collated_data(1,1,:,:) = self%collated_data(1,1,:,:) + &
+                        data_copy(1,t,:,:)
+            Enddo   
+            Write(6,*)'in here'
+            DeAllocate(data_copy)
+
+        Else If (self%output_rank .and. self%sum_theta) Then
 
             Allocate(data_copy(self%nphi,self%ntheta,self%nr_out,self%ncache))
             data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
@@ -1459,7 +1499,7 @@ Contains
                 If (self%output_rank) Then
                     fdisp = self%file_disp(j)+hdisp
                     bdisp = self%buffer_disp(j)
-                    If (self%orank .eq. 0) Write(6,*)'fdisp: ', j, self%file_disp(j), self%buffsize
+                    !If (self%orank .eq. 0) Write(6,*)'fdisp: ', j, self%file_disp(j), self%buffsize
                     Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                     Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
                         self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
@@ -1472,7 +1512,7 @@ Contains
                 Do j = 1, self%nrec
 
                     tdisp = j*self%qdisp*(self%nvals)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
-                    WRite(6,*)'tdisp: ', tdisp
+                    !WRite(6,*)'tdisp: ', tdisp
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 

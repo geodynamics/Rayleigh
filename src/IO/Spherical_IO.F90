@@ -283,7 +283,7 @@ Module Spherical_IO
     ! These two arrays contain the ell0 and m0 representation of all quantities
     !   computed in shell- and (eventually) azimuthal- averaging.
     ! These two averages are used to compute moments
-    Real*8, Private, Allocatable :: IOell0_values(:,:), IOm0_values(:,:,:)
+    Real*8, Private, Allocatable :: IOell0_values(:,:), IOm0_values(:,:,:), tmp_qty(:,:,:)
     Integer, Private :: num_avg_store ! number of averages to store in the two arrays above
     Integer, Private :: IOavg_flag = -1
 Contains
@@ -303,7 +303,7 @@ Contains
         Call  SPH_Mode_Samples%reset()
         Call      Point_Probes%reset()
 
-        !Call Temp_IO%reset()
+        Call Temp_IO%reset()
 
         Allocate(f_of_r_theta(1,my_rmin:my_rmax,my_theta_min:my_theta_max))
         Allocate(f_of_r(my_rmin:my_rmax))
@@ -311,6 +311,8 @@ Contains
         num_avg_store = shell_averages%nq
         Allocate(IOm0_values(my_rmin:my_rmax,my_theta_min:my_theta_max,1:num_avg_store))
         Allocate(IOell0_values(my_rmin:my_rmax,1:num_avg_store))
+        Allocate(tmp_qty(1:nphi,my_rmin:my_rmax, my_theta_min:my_theta_max))
+        !Allocate(tmp_qty(1:nphi,1:my_nr, 1:my_ntheta))
         IOm0_values(:,:,:) = 0.0d0
         IOell0_values(:,:) = 0.0d0
     End Subroutine Begin_Outputting
@@ -405,6 +407,14 @@ Contains
 
         wmode = 1
         if (mem_friendly) wmode = 2
+
+        fdir = 'Temp_IO/'
+        Call Temp_IO%Init(averaging_level,compute_q,myid, 156, fdir, &
+                          shellavg_version, shellavg_nrec, shellavg_frequency, &
+                          values = shellavg_values, average_in_phi = .true. , &
+                          average_in_theta = .true., moments=4)
+
+
 
         fdir = 'Shell_Slices/'
         Call Shell_Slices%Init(averaging_level,compute_q,myid, 58, fdir, &
@@ -530,6 +540,12 @@ Contains
         Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%r_inds, SPH_Mode_Samples%nr)
         Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%l_values, SPH_Mode_Samples%nell)
 
+        !////////////////////////////////////////////////////
+        ! Shell_Averages
+        dims(1:2) = (/ nr, Temp_IO%nq /)
+        Call Temp_IO%Add_IHeader(dims,2)
+        Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
+        Call Temp_IO%Add_DHeader(radius,nr)
     End Subroutine Initialize_Headers
 
     Subroutine Store_Values(self,qty)
@@ -622,7 +638,7 @@ Contains
                 Call SPH_Mode_Samples%getq_now(yesno)
                 Call Point_Probes%getq_now(yesno)
 
-                !Call Temp_IO%getq_now(yesno)
+                Call Temp_IO%getq_now(yesno)
 
                 Call Shell_Spectra%getq_now(yesno)
                 Call AZ_Averages%getq_now(yesno)
@@ -662,7 +678,7 @@ Contains
          If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%Frequency) .eq. 0)) yesno = .true. 
          If ((Full_3D%nq > 0) .and. (Mod(iter,Full_3D%Frequency) .eq. 0)) yesno = .true.
 
-         !If ((Temp_IO%nq > 0) .and. (Mod(iter,Temp_IO%Frequency) .eq. 0)) yesno = .true. 
+         If ((Temp_IO%nq > 0) .and. (Mod(iter,Temp_IO%Frequency) .eq. 0)) yesno = .true. 
        
     End function Time_To_Output
 
@@ -670,6 +686,7 @@ Contains
         ! Use the azimuthal averages to compute the ell=0 mean
         Call IOComputeEll0(IOm0_values,IOell0_values)
         Call Shell_Averages%reset() !need to reset the index counter
+        Call Temp_IO%reset()
     End Subroutine Finalize_Averages
 
     Subroutine Set_Avg_Flag(flag_val)
@@ -679,8 +696,8 @@ Contains
 
 	Subroutine Add_Quantity(qty)
 		Implicit None
-		Real*8, Intent(In) :: qty(:,:,:)
-
+		Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:) !qty(:,:,:)
+        Integer :: i, m ,t ,r , p
         If (IOavg_flag .eq. 1) Then
             !Compute and store the azimuthal average of qty
             If (shell_averages%grab_this_q) Then
@@ -688,7 +705,27 @@ Contains
             Endif
         Else
 
-            !If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
+            If (Temp_IO%grab_this_q)  Then  ! Shellavg moments
+                Call Temp_IO%Store_Values(qty) ! Store the mean
+                Temp_IO%ind = temp_IO%ind-1
+                If (myid .eq. 0) WRite(6,*)'shell, temp: ', Shell_Averages%ind, Temp_IO%ind
+                ! Now, the moments - rms, skewness, kurtosis
+                Do m = 2, 4
+                    Do t = my_theta_min, my_theta_max
+                        Do r = my_rmin, my_rmax
+                         !Do t = 1, my_ntheta
+                         !Do r = 1, my_nr
+                            Do p = 1, nphi
+                                tmp_qty(p,r,t) = (qty(p,r,t)-IOell0_values(r,Temp_IO%ind) )**m
+                            Enddo
+                        Enddo
+                    Enddo
+                    Call Temp_IO%Store_values(tmp_qty)
+                    Temp_IO%ind = Temp_IO%ind-1
+                Enddo
+                
+                Call Temp_IO%AdvanceInd()
+            Endif
             If (AZ_Averages%grab_this_q)       Call AZ_Averages%Store_Values(qty)  
 
             If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
@@ -716,7 +753,7 @@ Contains
         Call Point_Probes%write_io(iter,sim_time)
         Call AZ_Averages%write_io(iter,sim_time)
         Call Shell_Spectra%write_io(iter,sim_time)
-        !Call Temp_IO%write_io(iter,sim_time)
+        Call Temp_IO%write_io(iter,sim_time)
         Call SPH_Mode_Samples%write_io(iter, sim_time)
 
 	    If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
@@ -726,6 +763,7 @@ Contains
         DeAllocate(f_of_r)
         DeAllocate(IOm0_values)
         DeAllocate(IOell0_values)
+        DeAllocate(tmp_qty)
 
 	End Subroutine Complete_Output
 
@@ -1055,13 +1093,13 @@ Contains
                  dir, version, nrec, frequency, avg_level,values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
                  tweights, is_spectral, lvals, nobuffer, &
-                 average_in_phi, average_in_radius, average_in_theta)
+                 average_in_phi, average_in_radius, average_in_theta, moments)
         Implicit None
-        Integer :: i,ind
+        Integer :: i,ind, nmom
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
         Integer, Intent(In), Optional :: cache_size, write_mode
         Character*120, Intent(In) :: dir
-        Integer, Optional, Intent(In) :: avg_level
+        Integer, Optional, Intent(In) :: avg_level, moments
         Integer, Optional, Intent(In) :: values(1:)
         Integer, Optional, Intent(In) :: levels(1:)
         Integer, Optional, Intent(In) :: phi_inds(1:)
@@ -1080,6 +1118,9 @@ Contains
         Real*8, Allocatable :: avg_weights(:,:)
         Class(DiagnosticInfo) :: self 
 
+        nmom = 1
+        If (present(moments)) nmom = moments
+
         ! File info
         self%file_prefix = dir
         self%output_version = version
@@ -1090,14 +1131,23 @@ Contains
         ! Indices array
         nmax = Maxval((/ nr, ntheta, nphi /) )
         Allocate(indices(1:nmax,1:5))
+        indices(:,:) = -1
         If (present(tweights)) Then
             Allocate(avg_weights(1:size(tweights),1:3))
             avg_weights(:,2) = tweights
+        Else If (present(average_in_theta) .and. present(average_in_radius)) Then
+            nmax = Maxval((/ nr, ntheta, nphi /) )
+        Else If (present(average_in_theta)) Then
+            Allocate(avg_weights(1:my_ntheta , 1:3))
+            avg_weights(:,:) = -1.0d0
+            avg_weights(:,2) = theta_integration_weights(my_theta_min:my_theta_max)
+            indices(2,5) = my_ntheta
+            Write(6,*)'Test1: ', MAXVAL( avg_weights(:,2))
         Else
             Allocate(avg_weights(1,1:3))
             avg_weights(:,:) = -1.0d0
         Endif
-        indices(:,:) = -1
+        
 
 
         !Check that the cache size is appropriate
@@ -1296,9 +1346,12 @@ Contains
         self%nphi   = pcount
 
         ! Initialize the buffer (and then ocomm)
-        avg_axes(:) = 0  ! phi, r, theta
+        avg_axes(:) = 0  ! r, theta, phi
         If (present(average_in_phi)) Then
-            If (average_in_phi) avg_axes(1) = 1            
+            If (average_in_phi) avg_axes(3) = 1            
+        Endif
+        If (present(average_in_theta)) Then
+            If (average_in_theta) avg_axes(2) = 1
         Endif
 
         spectral_io = .false.
@@ -1308,7 +1361,7 @@ Contains
 
         Call self%buffer%init( indices, &
                               mode = self%write_mode, mpi_tag = self%mpi_tag, &
-                              nvals  = self%nq, &
+                              nvals  = self%nq*nmom, &
                               nrec = self%cache_size, skip = 12, &
                               write_timestamp = .true., averaging_axes = avg_axes, &
                               averaging_weights = avg_weights, spectral=spectral_io)
@@ -1902,7 +1955,7 @@ Contains
         Call Shell_Spectra%cleanup
         Call Point_Probes%cleanup
 
-        !Call Temp_IO%cleanup
+        Call Temp_IO%cleanup
 
         !Call spectra_buffer%cleanup
 
