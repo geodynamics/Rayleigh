@@ -410,9 +410,9 @@ Contains
 
         fdir = 'Temp_IO/'
         Call Temp_IO%Init(averaging_level,compute_q,myid, 156, fdir, &
-                          shellavg_version, shellavg_nrec, shellavg_frequency, &
-                          values = shellavg_values, average_in_phi = .true. , &
-                          average_in_theta = .true.)
+                          globalavg_version, globalavg_nrec, globalavg_frequency, &
+                          values = globalavg_values, average_in_phi = .true. , &
+                          average_in_theta = .true., average_in_radius = .true.)
 
         fdir = 'Shell_Avgs/'
         Call Shell_Averages%Init(averaging_level,compute_q,myid, 156, fdir, &
@@ -552,13 +552,11 @@ Contains
         Call Shell_Averages%Add_IHeader(Shell_Averages%oqvals, Shell_Averages%nq)
         Call Shell_Averages%Add_DHeader(radius,nr)
 
-
         !////////////////////////////////////////////////////
-        ! Shell_Averages
-        dims(1:2) = (/ nr, Temp_IO%nq /)
-        Call Temp_IO%Add_IHeader(dims,2)
+        ! Global Averages
+        dims(1) = Temp_IO%nq
+        Call Temp_IO%Add_IHeader(dims,1)
         Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
-        Call Temp_IO%Add_DHeader(radius,nr)
 
     End Subroutine Initialize_Headers
 
@@ -1123,7 +1121,13 @@ Contains
             Allocate(avg_weights(1:size(tweights),1:3))
             avg_weights(:,2) = tweights
         Else If (present(average_in_theta) .and. present(average_in_radius)) Then
-            nmax = Maxval((/ nr, ntheta, nphi /) )
+            nmax = Maxval((/ nr, ntheta  /) )
+            Allocate(avg_weights(1:nmax , 1:3))
+            avg_weights(:,:) = -1.0d0
+            avg_weights(1:my_nr,1) = r_integration_weights(my_rmin:my_rmax) 
+            avg_weights(1:my_ntheta,2) = theta_integration_weights(my_theta_min:my_theta_max)
+            indices(1,5) = my_nr
+            indices(2,5) = my_ntheta
         Else If (present(average_in_theta)) Then
             Allocate(avg_weights(1:my_ntheta , 1:3))
             avg_weights(:,:) = -1.0d0
@@ -1339,6 +1343,9 @@ Contains
         Endif
         If (present(average_in_theta)) Then
             If (average_in_theta) avg_axes(2) = 1
+        Endif
+        If (present(average_in_radius)) Then
+            If (average_in_radius) avg_axes(1) = 1
         Endif
 
         spectral_io = .false.

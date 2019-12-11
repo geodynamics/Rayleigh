@@ -7,6 +7,7 @@ Module Parallel_IO
     Use Fourier_Transform
     Use Legendre_Transforms, Only : Legendre_Transform
     Use Spherical_Buffer
+    Use General_MPI
 
     Type, Public :: io_buffer
 
@@ -291,6 +292,11 @@ Contains
             Allocate(self%r_global(1:self%nr))
             self%r_global(:) =grid_pars(1:self%nr,1)
             self%r_spec = .true.
+        Else If (self%sum_r) Then
+            n = grid_pars(1,5)
+            Allocate(self%radial_weights(1:n))
+            self%radial_weights(1:n) = averaging_weights(1:n,1)
+            self%nr = 1 ! ?
         Else
             self%nr = pfi%n1p
         Endif
@@ -470,6 +476,10 @@ Contains
             Allocate(self%r_local(1:self%nr_local))
             self%r_local(1:self%nr_local) = tmp(1:self%nr_local)
             DeAllocate(tmp)
+        Else If ( self%sum_r ) Then
+            self%nr_local = 1
+            !self%ntheta_at_column(:) = 1
+
         Else
             self%nr_local = pfi%all_1p(self%col_rank)%delta
             Do p = 0, pfi%npcol-1
@@ -556,12 +566,14 @@ Contains
 
         If (self%sum_theta) shsize = shsize/self%ntheta
         self%qdisp = self%nr*shsize
+        if (self%sum_all) self%qdisp=self%nbytes
 
         self%base_disp = 0
         Do p = 0, self%col_rank-1
             n = self%nr_out_at_row(p)*shsize
             self%base_disp = self%base_disp+n
         Enddo
+        if (self%sum_all) self%base_disp = 0
 
         Do p = 0, self%row_rank-1
             n = self%nr_out_at_column(p)*shsize
@@ -601,7 +613,16 @@ Contains
             self%buffer_disp(j) = 1+(j-1)*self%buffsize
         Enddo
         If (self%write_mode .ne. 1) self%buffer_disp(:) = 1  
-        
+        ! Hack for global average
+        If (self%sum_all) Then
+            
+            If (self%col_rank .eq. 0) Then
+                self%buffsize = self%ncache
+            Else
+                self%buffsize = 0
+                self%file_disp(:) = 0
+            Endif 
+       Endif
     End Subroutine Set_Displacements
 
     Subroutine Allocate_Receive_Buffers(self)
@@ -788,8 +809,15 @@ Contains
             ! If write_mode is 1, we may be performing a weighted sum
             If (self%weighted_sum) Then
                 If (self%sum_all) Then
-                    wgt = 1.0d0
-
+                    self%cache(1,1,self%cache_index,1) = 0.0d0
+                    Do t = 1, size(self%theta_weights)
+                        wgt = self%phi_weight*self%theta_weights(t)
+                        
+                        Do r = 1, size(self%radial_weights)
+                            self%cache(1,1,self%cache_index,1) = self%cache(1,1,self%cache_index,1) + &
+                                SUM(vals(:,r,t))*wgt*self%radial_weights(r)
+                        Enddo
+                    Enddo          
                 Else If (self%sum_theta_phi) Then
                     !Write(6,*)'caching', MAXVAL(self%theta_weights)
                     self%cache(1,1,self%cache_index,:) = 0.0d0
@@ -1375,7 +1403,7 @@ Contains
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
         Integer :: i, tstart,tend, r, t, ncache
-        Real*8, Allocatable :: data_copy(:,:,:,:)
+        Real*8, Allocatable :: data_copy(:,:,:,:), tmp1(:), tmp2(:)
         Integer :: cend
         Logical :: free_mem
         ncache =1
@@ -1428,6 +1456,15 @@ Contains
                 self%collated_data(1,1,:,:) = self%collated_data(1,1,:,:) + &
                         data_copy(1,t,:,:)
             Enddo   
+            If (self%sum_all) Then
+                ! Perform a reduction along column 0
+                Allocate(tmp1(1:self%ncache))
+                Allocate(tmp2(1:self%ncache))
+                tmp1(:) = self%collated_data(1,1,1,:)
+                Call DSUM1D(tmp1, tmp2, pfi%ccomm)
+                self%collated_data(1,1,1,:) = tmp2(:)
+                DeAllocate(tmp1,tmp2)
+            Endif
             Write(6,*)'in here'
             DeAllocate(data_copy)
 
