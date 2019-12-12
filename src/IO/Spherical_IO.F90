@@ -257,7 +257,7 @@ Module Spherical_IO
         temp_io_ell, temp_io_r, temp_io_theta, temp_io_phi, temp_io_r_nrm, &
         temp_io_theta_nrm, temp_io_phi_nrm
     Integer :: integer_zero = 0
-    Real*8, Private, Allocatable :: qty(:,:,:), f_of_r_theta(:,:,:), f_of_r(:)
+    Real*8, Private, Allocatable :: qty(:,:,:)
     Real*8, Private, Allocatable :: shellav_outputs(:,:,:), globav_outputs(:)
 
     Character*8, Public :: i_ofmt = '(i8.8)'
@@ -301,9 +301,6 @@ Contains
         Call      Point_Probes%reset()
 
         Call Temp_IO%reset()
-
-        Allocate(f_of_r_theta(1,my_rmin:my_rmax,my_theta_min:my_theta_max))
-        Allocate(f_of_r(my_rmin:my_rmax))
 
         num_avg_store = shell_averages%nq
         Allocate(IOm0_values(my_rmin:my_rmax,my_theta_min:my_theta_max,1:num_avg_store))
@@ -782,8 +779,6 @@ Contains
         Call Global_Averages%write_io(iter, sim_time)
 
 
-        DeAllocate(f_of_r_theta)
-        DeAllocate(f_of_r)
         DeAllocate(IOm0_values)
         DeAllocate(IOell0_values)
         DeAllocate(tmp_qty)
@@ -1632,8 +1627,7 @@ Contains
 
         integer_zero = 0
         If (Allocated(qty)) DeAllocate(qty)
-        If (Allocated(f_of_r_theta)) DeAllocate(f_of_r_theta)
-        If (Allocated(f_of_r)) DeAllocate(f_of_r)
+
         If (Allocated(shellav_outputs)) DeAllocate(shellav_outputs)
         If (Allocated(globav_outputs)) DeAllocate(globav_outputs)
     
@@ -1656,8 +1650,6 @@ Contains
         Call Point_Probes%cleanup
 
         Call Temp_IO%cleanup
-
-        !Call spectra_buffer%cleanup
 
     End Subroutine CleanUP_Spherical_IO
 
