@@ -1186,7 +1186,6 @@ Contains
                  MPI_MODE_RDWR, & 
                  MPI_INFO_NULL, funit, ierr) 
 
-
             self%file_unit = funit
             self%write_header = .false.
 
@@ -1198,13 +1197,11 @@ Contains
             Call stdout%print(' Unable to open file: '//trim(filename))
         Endif
 
-
         If (self%file_open) Then
 
             If (self%write_header) Then
 
                 If (self%master) Then     
-
 
                     buffsize = 1
                     Call MPI_FILE_WRITE(self%file_unit, endian_tag, buffsize, &
