@@ -160,9 +160,7 @@ Module Spherical_IO
         Procedure :: AdvanceInd
         Procedure :: AdvanceCC
         Procedure :: reset => diagnostic_output_reset
-        Procedure :: OpenFile
         Procedure :: OpenFile_Par
-        Procedure :: CloseFile
         Procedure :: CloseFile_Par
         Procedure :: Write_Header_Data
         Procedure :: Write_IO
@@ -170,7 +168,6 @@ Module Spherical_IO
         Procedure :: Add_IHeader
         Procedure :: Set_IHeader_Line
         Procedure :: Store_Values
-        Procedure :: update_position
         Procedure :: getq_now
         Procedure :: CleanUp
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1205,91 +1202,6 @@ Contains
         self%begin_output = .true.
     End Subroutine Diagnostic_Output_Reset
 
-    Subroutine OpenFile(self,iter,errcheck)
-        Implicit None
-        Class(DiagnosticInfo) :: self
-        Integer, Intent(In) :: iter
-        Integer, Intent(InOut) :: errcheck
-        Character*120 :: iterstring,istr
-        Character*120 :: filename, omsg
-        Integer :: modcheck, imod, file_iter, next_iter, ibelong
-        Integer :: fstat
-        Logical :: create_file
-        Logical :: file_exists
-
-        create_file = .false.
-        file_exists = .false.
-
-        self%file_open    = .false.
-        self%write_header = .false.
-
-        ! Determine which file # this data belongs to
-        modcheck = self%frequency*self%rec_per_file
-        imod = Mod(iter,modcheck) 
-        If (imod .eq. 0) Then
-            ibelong = iter
-        Else
-            ibelong = iter-imod+modcheck    ! Data belongs to file #ibelong
-        Endif
-
-        Write(iterstring,i_ofmt) ibelong
-        filename = trim(local_file_path)//trim(self%file_prefix)//trim(iterstring)
-
-        If ( (imod .eq. self%frequency) .or. (self%rec_per_file .eq. 1) ) Then   
-            ! Time to begin a new file 
-            create_file = .true.
-        Else
-            ! We are either:
-            ! (a)  Appending to an existing file or
-            ! (b)  The user has changed the output cadence in between checkpoints.
-            !      In that case, we're "off-cycle" and need to create the file.
-            Inquire(File=filename, Exist=file_exists)
-            If (.not. file_exists) create_file = .true.
-        Endif
-
-        
-        If (create_file) Then
-            Call stdout%print(' Creating Filename: '//trim(filename))
-            Open(unit=self%file_unit,file=filename,form='unformatted', &
-                & status='replace',access='stream',iostat = errcheck)
-
-            self%write_header = .true.            
-        Else
-            Open(unit=self%file_unit,file=filename,form='unformatted', status='old',access='stream', &
-                & iostat = errcheck, POSITION = 'APPEND')    
-            self%write_header = .false.
-        Endif
-
-        If (errcheck .eq. 0) Then
-            self%file_open = .true.
-        Else
-            Call stdout%print(' Unable to open file: '//trim(filename))
-        Endif
-        
-        If (self%file_open) Then
-
-            If (self%write_header) Then
-
-                Write(self%file_unit)endian_tag
-                Write(self%file_unit)self%output_version
-                ! We write zero initially - only update nrec after the data is actually written
-                Write(self%file_unit)integer_zero 
-                self%current_rec = 1            
-            Else
-
-                Call self%update_position                    ! save current position
-                Read(self%file_unit,POS = 9)self%current_rec ! read previous record #
-                self%current_rec = self%current_rec+1
-#ifdef INTEL_COMPILER 
-                fstat=fseek(self%file_unit, self%file_position, 0) ! return to end of file 
-#else
-                Call fseek(self%file_unit, self%file_position, 0, fstat) ! return to end of file 
-#endif
-            Endif
-        Endif
-
-    End Subroutine OpenFile
-
     Subroutine OpenFile_Par(self,iter,ierr)
         !Performs the same tasks as OpenFile, but uses MPI-IO
         ! Opens file, advances record count, writes header etc.
@@ -1421,14 +1333,6 @@ Contains
 
     End Subroutine OpenFile_Par
 
-    Subroutine CloseFile(self)
-        Implicit None
-        Class(DiagnosticInfo) :: self
-        Call self%update_position()
-        Write(self%file_unit,POS = 9)self%current_rec
-        Close(self%file_unit)
-    End Subroutine CloseFile
-
     Subroutine CloseFile_Par(self)
         USE RA_MPI_BASE
         Implicit None
@@ -1457,12 +1361,6 @@ Contains
         Call MPI_FILE_CLOSE(self%file_unit, ierr)
         If (ierr .ne. 0) Write(6,*)'Error closing file.  Error code: ',ierr, myid, self%file_prefix
     End Subroutine CloseFile_Par
-
-    Subroutine Update_Position(self)
-        Implicit None
-        Class(DiagnosticInfo) :: self
-        self%file_position=ftell(self%file_unit)
-    End Subroutine Update_Position
 
     Subroutine getq_now(self,yesno)
         Implicit None
