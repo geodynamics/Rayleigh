@@ -20,8 +20,8 @@
 
 Module Spherical_IO
     Use Spherical_Buffer
-	Use Parallel_Framework
-	Use SendReceive
+    Use Parallel_Framework
+    Use SendReceive
     Use ISendReceive
     Use General_MPI
     Use Fourier_Transform
@@ -33,19 +33,19 @@ Module Spherical_IO
     USE IFPORT
 #endif
     Use Parallel_IO
-	Implicit None
-	! This module contains routines for outputing spherical data as:
-	! 1. Slices of sphere
-	! 2. Phi-Averages over sphere (f(r,theta))
-	! 3. Phi/theta Averages over sphere ((f(r))
-	! 4. Volume averages over sphere
+    Implicit None
+    ! This module contains routines for outputing spherical data as:
+    ! 1. Slices of sphere
+    ! 2. Phi-Averages over sphere (f(r,theta))
+    ! 3. Phi/theta Averages over sphere ((f(r))
+    ! 4. Volume averages over sphere
     ! 5. 3-D Output on Spherical grid
     ! 6. Spectra on slices of the sphere
     ! 7. Sampled via individual spherical harmonic modes
     ! 8. Meridional Slices
     ! 9. Equatorial Slices
 
-	!////////////////////////////////////////////
+    !////////////////////////////////////////////
     Integer, Parameter :: nqmax=4000, nshellmax=2048, nmeridmax=8192, nmodemax=2048
     Integer, Parameter :: nprobemax=4096
     Integer, Parameter :: endian_tag = 314      ! first 4 bits of each diagnostic file - used for assessing endianness on read-in
@@ -97,8 +97,6 @@ Module Spherical_IO
         Logical :: file_open = .false.    ! Was the file opened successfully?
         Logical :: write_header = .false. ! Do we need to write header information
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        Integer :: avg_level = 0       ! global_averages = 3, shell_averages = 1, az_averages = 1, all others = 0
 
         Integer :: ind = 1              ! index of current diagnostic being stored (advances throughout an output calculation)
         Logical :: begin_output = .false.
@@ -163,7 +161,7 @@ Module Spherical_IO
         Procedure :: OpenFile_Par
         Procedure :: CloseFile_Par
         Procedure :: Write_Header_Data
-        Procedure :: Write_IO
+        Procedure :: Write_to_Disk
         Procedure :: Add_DHeader
         Procedure :: Add_IHeader
         Procedure :: Set_IHeader_Line
@@ -174,16 +172,19 @@ Module Spherical_IO
 
     End Type DiagnosticInfo
 
-    Type(DiagnosticInfo) :: Shell_Averages, Shell_Slices, Global_Averages, AZ_Averages, Full_3D, Shell_Spectra
-    Type(DiagnosticInfo) :: Equatorial_Slices, Meridional_Slices, SPH_Mode_Samples, Point_Probes
-    Type(DiagnosticInfo) :: temp_io
+    Integer, Parameter :: Spherical_3D=1, Shell_Avgs=2  ! These two should always be first, in this order
+    Integer, Parameter :: G_Avgs=3, AZ_avgs=4, Equatorial_Slices=5, Meridional_Slices=6, Shell_Slices=7
+    Integer, Parameter :: Point_Probes=8, Shell_Spectra=9, SPH_Modes=10
+    Integer, Parameter :: Temp_IO = 11                  ! This one should always be last
+    Type(DiagnosticInfo), Allocatable :: Outputs(:)
+    Logical :: Test_IO = .true. !DEVEL:  Set this to .true. if you want to try a new output using Temp_IO
+    Integer :: n_outputs
 
     Type(io_buffer) :: full_3d_buffer
     
-    Integer :: current_averaging_level = 0
     Integer :: current_qval = 0
 
-    Integer :: averaging_level(1:nqmax) = 0, compute_q(1:nqmax) = 0
+    Integer :: compute_q(1:nqmax) = 0
     Integer :: shellavg_values(1:nqmax)=-1, globalavg_values(1:nqmax)=-1
     Integer :: shellslice_values(1:nqmax) =-1, shellslice_levels(1:nshellmax)=-1, azavg_values(1:nqmax)=-1
     Integer :: full3d_values(1:nqmax) = -1, shellspectra_values(1:nqmax)=-1, shellspectra_levels(1:nshellmax)=-1
@@ -260,8 +261,6 @@ Module Spherical_IO
     Real*8, Private, Allocatable :: qty(:,:,:)
     Character*8, Public :: i_ofmt = '(i8.8)'
 
-    Integer :: io_node = 0
-
     Integer, Private :: current_iteration
     !///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ! We store some redundant information just to keep the IO level as independent of the Physics level as possible
@@ -269,7 +268,7 @@ Module Spherical_IO
     Real*8, Allocatable,Private :: theta_integration_weights(:), r_integration_weights(:)
     Integer, Private :: my_theta_min, my_theta_max, my_rmin, my_rmax, my_mp_max, my_mp_min
     Integer, Private :: nr, nphi, ntheta, my_ntheta
-    Integer, Private :: nproc1, nproc2, myid, nproc, my_row_rank, my_column_rank, my_nr
+    Integer, Private :: myid,  my_row_rank, my_column_rank, my_nr
     Real*8, Allocatable, Private :: radius(:),sintheta(:),costheta(:) 
     Real*8 :: over_nphi_double
 
@@ -279,178 +278,141 @@ Module Spherical_IO
     !   computed in shell- and (eventually) azimuthal- averaging.
     ! These two averages are used to compute moments
     Real*8, Private, Allocatable :: IOell0_values(:,:), IOm0_values(:,:,:), tmp_qty(:,:,:)
-    Integer, Private :: num_avg_store ! number of averages to store in the two arrays above
+    Integer, Private :: num_avg_store ! number of averages to store in the two IO arrays above
     Integer, Private :: IOavg_flag = -1
 Contains
 
-    Subroutine Begin_Outputting(iter)
-		  Implicit None
-		  Integer, Intent(In) :: iter
-		  current_iteration = iter
-
-        Call   Global_Averages%reset()
-        Call    Shell_Averages%reset()
-        Call       AZ_Averages%reset()
-        Call      Shell_Slices%reset()
-        Call     Shell_Spectra%reset()
-        Call Equatorial_Slices%reset()
-        Call Meridional_Slices%reset()
-        Call  SPH_Mode_Samples%reset()
-        Call      Point_Probes%reset()
-
-        Call Temp_IO%reset()
-
-        num_avg_store = shell_averages%nq
-        Allocate(IOm0_values(my_rmin:my_rmax,my_theta_min:my_theta_max,1:num_avg_store))
-        Allocate(IOell0_values(my_rmin:my_rmax,1:num_avg_store))
-        Allocate(tmp_qty(1:nphi,my_rmin:my_rmax, my_theta_min:my_theta_max))
-        !Allocate(tmp_qty(1:nphi,1:my_nr, 1:my_ntheta))
-        IOm0_values(:,:,:) = 0.0d0
-        IOell0_values(:,:) = 0.0d0
-    End Subroutine Begin_Outputting
-
-	Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
-		Implicit None
-		Integer :: k, fcount(3,2), ntot, fcnt, master_rank, i
-        Integer :: nn, cascade_type, wmode
-		Real*8, Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
-        Character*120 :: fdir
+    Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
+        Implicit None
+        Real*8,        Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120, Intent(In) :: file_path
-        Character*8, Intent(In) :: digfmt
-        Integer, Allocatable :: gpars(:,:)
+        Character*8,   Intent(In) :: digfmt
+        Character*120 :: fdir
+        Integer       :: wmode, gpars(1:5,1:5)
 
-        ! Set format code for integer file names
-        i_ofmt=digfmt
-
+        ! Set File Info
+        i_ofmt=digfmt   ! format code for integer file names
         local_file_path = file_path
-		! Handles output bookkeeping
 
-		my_theta_min = pfi%my_2p%min
-		my_theta_max = pfi%my_2p%max
-		my_rmin = pfi%my_1p%min
-		my_rmax = pfi%my_1p%max
-        
-        my_mp_min = pfi%my_3s%min
-        my_mp_max = pfi%my_3s%max
+        ! MPI rank information
+        myid           = pfi%gcomm%rank
+        my_row_rank    = pfi%rcomm%rank
+        my_column_rank = pfi%ccomm%rank
 
-		my_nr = pfi%my_1p%delta
-        my_ntheta = pfi%my_2p%delta
+        ! Load-balancing
+        my_theta_min = pfi%my_2p%min
+        my_theta_max = pfi%my_2p%max
+        my_rmin      = pfi%my_1p%min
+        my_rmax      = pfi%my_1p%max        
+        my_mp_min    = pfi%my_3s%min
+        my_mp_max    = pfi%my_3s%max
+        my_nr        = pfi%my_1p%delta
+        my_ntheta    = pfi%my_2p%delta
 
-        nproc  = pfi%gcomm%np
-		nproc1 = pfi%ccomm%np		! processor's per column (radius split among these)
-		nproc2 = pfi%rcomm%np      ! processor's per row  (theta split among these)
-		myid   = pfi%gcomm%rank
-		my_row_rank = pfi%rcomm%rank
-		my_column_rank = pfi%ccomm%rank
-		nphi = pfi%n3p
-		ntheta = pfi%n2p
-		nr = pfi%n1p
+        ! Grid description
+        nphi   = pfi%n3p
+        ntheta = pfi%n2p
+        nr     = pfi%n1p
 
+        Allocate(radius(1:nr), r_integration_weights(1:nr))
+        Allocate(theta_integration_weights(1:ntheta))
+        Allocate(sintheta(1:ntheta), costheta(1:ntheta))
+
+        radius(:) = rad_in(:)
+        r_integration_weights(:) = rw_in(:)
+        sintheta(:) = sintheta_in(:)
+        costheta(:) = costheta_in(:)
+        theta_integration_weights(:) = tw_in(:)        
         over_nphi_double = 1.0d0/nphi
 
-		Allocate(sintheta(1:ntheta))
-		Allocate(costheta(1:ntheta))
-
-		sintheta(:) = sintheta_in(:)
-		costheta(:) = costheta_in(:)
-		Allocate(radius(1:nr))
-		radius(:) = rad_in(:)
-
-        Allocate(r_integration_weights(1:nr))
-        Allocate(theta_integration_weights(1:ntheta))
-
-        r_integration_weights(:) = rw_in(:)
-        theta_integration_weights(:) = tw_in(:)		
-
-        ! Before initializing the different output types, we check to see if
-        ! the user has specified shell-slice levels etc. using normalized
-        ! physical coordinates or negative-index shorthand
+        ! See if the user has specified shell-slice levels etc. using
+        ! normalized physical coordinates or negative-index shorthand.
 
         Call Process_Coordinates()
 
-        ! Map the various quantity lists etc. into their associated diagnostic structures
+        ! Initialize each diagnostic type.
         ! Numbers here are the mpi_tags used in communication for each output
-        ! In theory they can be the same, but it's probably a good idea to keep them unique.
+        ! In theory they can be the same, but it's a good idea to keep them unique.
        
+        n_outputs = SPH_Modes
+        If (test_io) n_outputs = Temp_IO    ! For development/testing
+        Allocate(Outputs(1:n_outputs))
+
+        ! First, initialize Spherical_3D.   It uses a separate buffer due to I/O semantics.
         fdir = 'Spherical_3D/'  ! Note: Full 3D only uses frequency, not nrec
-        Call Full_3D%Init(averaging_level,compute_q,myid, 54, fdir, &
+        Call Outputs(Spherical_3D)%Init(compute_q,myid, 54, fdir, &
                           full3d_version, 1, full3d_frequency, &
                           values = full3d_values, nobuffer=.true.) 
 
-        Allocate(gpars(1:5,1:5))
-        gpars(:,:) = -1
-        Call Full_3D_Buffer%Init(gpars, mpi_tag=54) ! Full 3-D uses a separate buffer (due to io semantics)
-        DeAllocate(gpars)
+        gpars(:,:) = -1 ! Nothing will be done with this array, but it's expected by Init
+        Call Full_3D_Buffer%Init(gpars, mpi_tag=54) 
 
         ! Now, initialize those outputs that use the new I/O for caching and parallel output.
-
-        wmode = 1
-        if (mem_friendly) wmode = 2
-
         fdir = 'G_Avgs/'
-        Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
-                          globalavg_version, globalavg_nrec, globalavg_frequency, &
-                          values = globalavg_values, average_in_phi = .true. , &
-                          average_in_theta = .true., average_in_radius = .true.)
-
-        fdir = 'Temp_IO/'
-        Call Temp_IO%Init(averaging_level,compute_q,myid, 156, fdir, &
+        Call Outputs(G_Avgs)%Init(compute_q,myid, 55, fdir, &
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, average_in_phi = .true. , &
                           average_in_theta = .true., average_in_radius = .true.)
 
         fdir = 'Shell_Avgs/'
-        Call Shell_Averages%Init(averaging_level,compute_q,myid, 156, fdir, &
+        Call Outputs(Shell_Avgs)%Init(compute_q,myid, 156, fdir, &
                           shellavg_version, shellavg_nrec, shellavg_frequency, &
                           values = shellavg_values, average_in_phi = .true. , &
                           average_in_theta = .true., moments=4)
 
-
-        fdir = 'Shell_Slices/'
-        Call Shell_Slices%Init(averaging_level,compute_q,myid, 58, fdir, &
-                          shellslice_version, shellslice_nrec, shellslice_frequency, &
-                          values = shellslice_values, rinds = shellslice_levels, &
-                          write_mode = wmode)
-
         fdir = 'Point_Probes/'
-        Call Point_Probes%Init(averaging_level,compute_q,myid, 63, fdir, &
+        Call Outputs(Point_Probes)%Init(compute_q,myid, 63, fdir, &
                           probe_version, point_probe_nrec, point_probe_frequency, &
                           values = point_probe_values, cache_size = point_probe_cache_size, &
                           rinds = point_probe_r, tinds = point_probe_theta, & 
                           pinds = point_probe_phi)
 
-
         fdir = 'Meridional_Slices/'
-        Call Meridional_Slices%Init(averaging_level,compute_q,myid, 61, fdir, &
+        Call Outputs(Meridional_Slices)%Init(compute_q,myid, 61, fdir, &
                           meridslice_version, meridional_nrec, meridional_frequency, &
                           values = meridional_values, pinds = meridional_indices)
 
         fdir = 'AZ_Avgs/'
-        Call AZ_Averages%Init(averaging_level,compute_q,myid, 56, fdir, &
+        Call Outputs(AZ_Avgs)%Init(compute_q,myid, 56, fdir, &
                           azavg_version, azavg_nrec, azavg_frequency, &
                           values = azavg_values, average_in_phi = .true. )
 
         fdir = 'Equatorial_Slices/'
-        Call Equatorial_Slices%Init(averaging_level,compute_q,myid, 60, fdir, &
+        Call Outputs(Equatorial_Slices)%Init(compute_q,myid, 60, fdir, &
                           equslice_version, equatorial_nrec, equatorial_frequency, &
                           values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
                           tweights = (/ 0.5d0, 0.5d0 /) ) 
 
-        wmode =1
-        If (mem_friendly) wmode =2
+        ! Shell Slices and Spectra can be so large that in some situations, it's
+        ! best to communicate one quantity at a time during the write (wmode=2).
+        ! Default (wmode=1) is to broadcast all quantities at once.
+        wmode = 1
+        if (mem_friendly) wmode = 2
+        fdir = 'Shell_Slices/'
+        Call Outputs(Shell_Slices)%Init(compute_q,myid, 58, fdir, &
+                          shellslice_version, shellslice_nrec, shellslice_frequency, &
+                          values = shellslice_values, rinds = shellslice_levels, &
+                          write_mode = wmode)
+
         fdir = 'Shell_Spectra/'
-        Call Shell_Spectra%Init(averaging_level,compute_q,myid, 59, fdir, &
+        Call Outputs(Shell_Spectra)%Init(compute_q,myid, 59, fdir, &
                           shellspectra_version, shellspectra_nrec, shellspectra_frequency, &
                           values = shellspectra_values, rinds=shellspectra_levels, &
                           is_spectral = .true. , write_mode = wmode) 
 
         fdir = 'SPH_Modes/'
-        wmode =1
-        If (mem_friendly) wmode =2
-        Call SPH_Mode_Samples%Init(averaging_level,compute_q,myid, 62, fdir, &
+        Call Outputs(SPH_Modes)%Init(compute_q,myid, 62, fdir, &
                           sphmode_version, sph_mode_nrec, sph_mode_frequency, &
                           values = sph_mode_values, rinds=sph_mode_levels, &
                           is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
+
+        If (Test_IO) Then
+            fdir = 'Temp_IO/'
+            Call Outputs(Temp_IO)%Init(compute_q,myid, 156, fdir, &
+                              globalavg_version, globalavg_nrec, globalavg_frequency, &
+                              values = globalavg_values, average_in_phi = .true. , &
+                              average_in_theta = .true., average_in_radius = .true.)
+        Endif
 
         Call Initialize_Headers()
 
@@ -459,195 +421,176 @@ Contains
     Subroutine Initialize_Headers
         Implicit None
         Integer :: dims(1:4), lmax
+        !////////////////////////////////////////////////////////////////////
+        ! Each diagnostic type comes with a unique header format.  The header
+        ! contains a series of integer and double-precision 1-D arrays.  We
+        ! initialize those here.  They are written during each output call.
 
-        !///////////////////////////////////////////////////
+        !///////////////////////////////////////////////////////////////////
         ! Point Probes Header
-        ! Dimensions ------------------
-        dims(1:4) = (/ Point_Probes%nr, Point_Probes%ntheta, &
-                       Point_Probes%nphi, Point_Probes%nq /)
-        Call Point_Probes%Add_IHeader(dims,4)
-        Call Point_Probes%Add_IHeader(Point_Probes%oqvals*0,Point_Probes%nq)
-        ! Radial grid -----------------------------------
-        Call Point_Probes%Add_DHeader(Point_Probes%r_vals,Point_Probes%nr)
-        Call Point_Probes%Add_IHeader(Point_Probes%r_inds, Point_Probes%nr)
-        !Theta grid-----------------------------------------
-        Call Point_Probes%Add_DHeader(Point_Probes%theta_vals,Point_Probes%ntheta)
-        Call Point_Probes%Add_IHeader(Point_Probes%theta_inds, Point_Probes%ntheta)
-        !Phi grid-----------------------------------------
-        Call Point_Probes%Add_DHeader(Point_Probes%phi_vals,Point_Probes%nphi)
-        Call Point_Probes%Add_IHeader(Point_Probes%phi_inds, Point_Probes%nphi)
+        dims(1:4) = (/ Outputs(Point_Probes)%nr, Outputs(Point_Probes)%ntheta, &
+                       Outputs(Point_Probes)%nphi, Outputs(Point_Probes)%nq /)
+        Call Outputs(Point_Probes)%Add_IHeader(dims,4)
+        Call Outputs(Point_Probes)%Add_IHeader(Outputs(Point_Probes)%oqvals*0,Outputs(Point_Probes)%nq)
+        Call Outputs(Point_Probes)%Add_DHeader(Outputs(Point_Probes)%r_vals,Outputs(Point_Probes)%nr)
+        Call Outputs(Point_Probes)%Add_IHeader(Outputs(Point_Probes)%r_inds, Outputs(Point_Probes)%nr)
+        Call Outputs(Point_Probes)%Add_DHeader(Outputs(Point_Probes)%theta_vals,Outputs(Point_Probes)%ntheta)
+        Call Outputs(Point_Probes)%Add_IHeader(Outputs(Point_Probes)%theta_inds, Outputs(Point_Probes)%ntheta)
+        Call Outputs(Point_Probes)%Add_DHeader(Outputs(Point_Probes)%phi_vals,Outputs(Point_Probes)%nphi)
+        Call Outputs(Point_Probes)%Add_IHeader(Outputs(Point_Probes)%phi_inds, Outputs(Point_Probes)%nphi)
 
         !////////////////////////////////////////////////////
         ! Shell Slices
-        dims(1:3) = (/ ntheta, Shell_Slices%nr, Shell_Slices%nq /)
-        Call Shell_Slices%Add_IHeader(dims,3)
-        Call Shell_Slices%Add_IHeader(Shell_Slices%oqvals, Shell_Slices%nq)
-
-        Call Shell_Slices%Add_DHeader(Shell_Slices%r_vals, Shell_Slices%nr)
-        Call Shell_Slices%Add_IHeader(Shell_Slices%r_inds, Shell_Slices%nr)
-        Call Shell_Slices%Add_DHeader(costheta,ntheta)  
+        dims(1:3) = (/ ntheta, Outputs(Shell_Slices)%nr, Outputs(Shell_Slices)%nq /)
+        Call Outputs(Shell_Slices)%Add_IHeader(dims,3)
+        Call Outputs(Shell_Slices)%Add_IHeader(Outputs(Shell_Slices)%oqvals, Outputs(Shell_Slices)%nq)
+        Call Outputs(Shell_Slices)%Add_DHeader(Outputs(Shell_Slices)%r_vals, Outputs(Shell_Slices)%nr)
+        Call Outputs(Shell_Slices)%Add_IHeader(Outputs(Shell_Slices)%r_inds, Outputs(Shell_Slices)%nr)
+        Call Outputs(Shell_Slices)%Add_DHeader(costheta,ntheta)  
 
         !//////////////////////////////////////////////////////
         ! Meridional Slices
-        dims(1:4) = (/ nr, ntheta, Meridional_Slices%nphi, Meridional_Slices%nq /)       
-        Call Meridional_Slices%Add_IHeader(dims,4)
-        Call Meridional_Slices%Add_IHeader(Meridional_Slices%oqvals, Meridional_Slices%nq)
-        Call Meridional_Slices%Add_DHeader(radius,nr)
-        Call Meridional_Slices%Add_DHeader(costheta,ntheta)
-        Call Meridional_Slices%Add_IHeader(Meridional_Slices%phi_inds, Meridional_Slices%nphi)
+        dims(1:4) = (/ nr, ntheta, Outputs(Meridional_Slices)%nphi, Outputs(Meridional_Slices)%nq /)       
+        Call Outputs(Meridional_Slices)%Add_IHeader(dims,4)
+        Call Outputs(Meridional_Slices)%Add_IHeader(Outputs(Meridional_Slices)%oqvals, Outputs(Meridional_Slices)%nq)
+        Call Outputs(Meridional_Slices)%Add_DHeader(radius,nr)
+        Call Outputs(Meridional_Slices)%Add_DHeader(costheta,ntheta)
+        Call Outputs(Meridional_Slices)%Add_IHeader(Outputs(Meridional_Slices)%phi_inds, Outputs(Meridional_Slices)%nphi)
 
         !//////////////////////////////////////////////////////
         ! AZ_Averages
-        dims(1:3) = (/ nr, ntheta,  AZ_Averages%nq /)       
-        Call AZ_Averages%Add_IHeader(dims,3)
-        Call AZ_Averages%Add_IHeader(AZ_Averages%oqvals, AZ_Averages%nq)
-        Call AZ_Averages%Add_DHeader(radius,nr)
-        Call AZ_Averages%Add_DHeader(costheta,ntheta)
+        dims(1:3) = (/ nr, ntheta,  Outputs(AZ_Avgs)%nq /)       
+        Call Outputs(AZ_Avgs)%Add_IHeader(dims,3)
+        Call Outputs(AZ_Avgs)%Add_IHeader(Outputs(AZ_Avgs)%oqvals, Outputs(AZ_Avgs)%nq)
+        Call Outputs(AZ_Avgs)%Add_DHeader(radius,nr)
+        Call Outputs(AZ_Avgs)%Add_DHeader(costheta,ntheta)
 
         !//////////////////////////////////////////////////////
         ! Equatorial Slices
-        dims(1:3) = (/ nphi, nr,  Equatorial_Slices%nq /)       
-        Call Equatorial_Slices%Add_IHeader(dims,3)
-        Call Equatorial_Slices%Add_IHeader(Equatorial_Slices%oqvals, Equatorial_Slices%nq)
-        Call Equatorial_Slices%Add_DHeader(radius,nr)
+        dims(1:3) = (/ nphi, nr,  Outputs(Equatorial_Slices)%nq /)       
+        Call Outputs(Equatorial_Slices)%Add_IHeader(dims,3)
+        Call Outputs(Equatorial_Slices)%Add_IHeader(Outputs(Equatorial_Slices)%oqvals, Outputs(Equatorial_Slices)%nq)
+        Call Outputs(Equatorial_Slices)%Add_DHeader(radius,nr)
 
         !/////////////////////////////////////////////////////
         ! Shell Spectra
         lmax = maxval(pfi%inds_3s)
-        dims(1:3) = (/ lmax, Shell_Spectra%nr, Shell_Spectra%nq /)
-        Call Shell_Spectra%Add_IHeader(dims,3)
-        Call Shell_Spectra%Add_IHeader(Shell_Spectra%oqvals, Shell_Spectra%nq)
-        Call Shell_Spectra%Add_DHeader(Shell_Spectra%r_vals, Shell_Spectra%nr)
-        Call Shell_Spectra%Add_IHeader(Shell_Spectra%r_inds, Shell_Spectra%nr)
+        dims(1:3) = (/ lmax, Outputs(Shell_Spectra)%nr, Outputs(Shell_Spectra)%nq /)
+        Call Outputs(Shell_Spectra)%Add_IHeader(dims,3)
+        Call Outputs(Shell_Spectra)%Add_IHeader(Outputs(Shell_Spectra)%oqvals, Outputs(Shell_Spectra)%nq)
+        Call Outputs(Shell_Spectra)%Add_DHeader(Outputs(Shell_Spectra)%r_vals, Outputs(Shell_Spectra)%nr)
+        Call Outputs(Shell_Spectra)%Add_IHeader(Outputs(Shell_Spectra)%r_inds, Outputs(Shell_Spectra)%nr)
 
         !/////////////////////////////////////////////////////
         ! SPH Modes
         lmax = maxval(pfi%inds_3s)
-        dims(1:3) = (/ SPH_Mode_Samples%nell, SPH_Mode_Samples%nr, SPH_Mode_Samples%nq /)
-        Call SPH_Mode_Samples%Add_IHeader(dims,3)
-        Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%oqvals, SPH_Mode_Samples%nq)
-        Call SPH_Mode_Samples%Add_DHeader(SPH_Mode_Samples%r_vals, SPH_Mode_Samples%nr)
-        Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%r_inds, SPH_Mode_Samples%nr)
-        Call SPH_Mode_Samples%Add_IHeader(SPH_Mode_Samples%l_values, SPH_Mode_Samples%nell)
+        dims(1:3) = (/ Outputs(SPH_Modes)%nell, Outputs(SPH_Modes)%nr, Outputs(SPH_Modes)%nq /)
+        Call Outputs(SPH_Modes)%Add_IHeader(dims,3)
+        Call Outputs(SPH_Modes)%Add_IHeader(Outputs(SPH_Modes)%oqvals, Outputs(SPH_Modes)%nq)
+        Call Outputs(SPH_Modes)%Add_DHeader(Outputs(SPH_Modes)%r_vals, Outputs(SPH_Modes)%nr)
+        Call Outputs(SPH_Modes)%Add_IHeader(Outputs(SPH_Modes)%r_inds, Outputs(SPH_Modes)%nr)
+        Call Outputs(SPH_Modes)%Add_IHeader(Outputs(SPH_Modes)%l_values, Outputs(SPH_Modes)%nell)
 
         !////////////////////////////////////////////////////
         ! Shell_Averages
-        dims(1:2) = (/ nr, Shell_Averages%nq /)
-        Call Shell_Averages%Add_IHeader(dims,2)
-        Call Shell_Averages%Add_IHeader(Shell_Averages%oqvals, Shell_Averages%nq)
-        Call Shell_Averages%Add_DHeader(radius,nr)
+        dims(1:2) = (/ nr, Outputs(Shell_Avgs)%nq /)
+        Call Outputs(Shell_Avgs)%Add_IHeader(dims,2)
+        Call Outputs(Shell_Avgs)%Add_IHeader(Outputs(Shell_Avgs)%oqvals, Outputs(Shell_Avgs)%nq)
+        Call Outputs(Shell_Avgs)%Add_DHeader(radius,nr)
 
         !////////////////////////////////////////////////////
         ! Global Averages
-        dims(1) = Global_Averages%nq
-        Call Global_Averages%Add_IHeader(dims,1)
-        Call Global_Averages%Add_IHeader(Global_Averages%oqvals, Global_Averages%nq)
+        dims(1) = Outputs(G_Avgs)%nq
+        Call Outputs(G_Avgs)%Add_IHeader(dims,1)
+        Call Outputs(G_Avgs)%Add_IHeader(Outputs(G_Avgs)%oqvals, Outputs(G_Avgs)%nq)
 
         !////////////////////////////////////////////////////
         ! DEVEL:  Temp_IO (just a copy of global averages)
-        dims(1) = Temp_IO%nq
-        Call Temp_IO%Add_IHeader(dims,1)
-        Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
-
+        If (Test_IO) Then
+            dims(1) = Outputs(Temp_IO)%nq
+            Call Outputs(Temp_IO)%Add_IHeader(dims,1)
+            Call Outputs(Temp_IO)%Add_IHeader(Outputs(Temp_IO)%oqvals, Outputs(Temp_IO)%nq)
+        Endif
     End Subroutine Initialize_Headers
 
-    Subroutine Store_Values(self,qty)
+    Subroutine Begin_Outputting(iter)
         Implicit None
-        Class(DiagnosticInfo) :: self
-        REAL*8, INTENT(IN) :: qty(:,my_rmin:,my_theta_min:)
- 
-        Call self%buffer%cache_data(qty)
-        self%oqvals(self%ind) = current_qval
-        Call self%AdvanceInd()
+        Integer, Intent(In) :: iter
+        Integer :: i
 
-    End Subroutine Store_Values
+        current_iteration = iter
+        Do i = 1, n_outputs
+            Call Outputs(i)%reset()
+        Enddo
 
-	Subroutine Write_IO(self,this_iter,simtime)
-        USE RA_MPI_BASE
-		Implicit None
-		Real*8, Intent(in) :: simtime
-		Integer, Intent(in) :: this_iter
-        Class(DiagnosticInfo) :: self
-		INTEGER(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_pdisp, new_disp, qdisp, full_disp, tdisp
-        Logical :: responsible, output_rank
-        Integer :: orank, funit, error, ncache, omode
+        num_avg_store = Outputs(Shell_Avgs)%nq
+        Allocate(IOm0_values(my_rmin:my_rmax,my_theta_min:my_theta_max,1:num_avg_store))
+        Allocate(IOell0_values(my_rmin:my_rmax,1:num_avg_store))
+        Allocate(tmp_qty(1:nphi,my_rmin:my_rmax, my_theta_min:my_theta_max))
 
-	    If ((self%nq > 0) .and. (Mod(this_iter,self%frequency) .eq. 0 )) Then
+        IOm0_values(:,:,:) = 0.0d0
+        IOell0_values(:,:) = 0.0d0
+    End Subroutine Begin_Outputting
 
-            Call self%Buffer%timestamp(this_iter, simtime)
+    Subroutine Add_Quantity(qty)
+        Implicit None
+        Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:) 
+        Integer :: i, m ,t ,r , p
+        If (IOavg_flag .eq. 1) Then
+            !On first pass, store the azimuthal average of shell_avg qtys
+            If (Outputs(Shell_Avgs)%grab_this_q) Then
+                Call IOComputeM0(qty)
+            Endif
+        Else
+            !Shell_Avgs and Spherical_3D work slightly different from the rest here
+            If (Outputs(Shell_Avgs)%grab_this_q)  Then  ! Shellavg moments
 
-            If ((self%cache_size-1) .eq. self%cc) Then
+                Call Outputs(Shell_Avgs)%Store_Values(qty,no_advance=.true.) ! Store the mean
+                Outputs(Shell_Avgs)%ind = Outputs(Shell_Avgs)%ind-1
+                
+                Do m = 2, 4             ! Now, the moments - rms, skewness, kurtosis
+                    Do t = my_theta_min, my_theta_max
+                        Do r = my_rmin, my_rmax
+                            Do p = 1, nphi
+                                tmp_qty(p,r,t) = (qty(p,r,t)-IOell0_values(r,Outputs(Shell_Avgs)%ind) )**m
+                            Enddo
+                        Enddo
+                    Enddo
+                    Call Outputs(Shell_Avgs)%Store_values(tmp_qty,no_advance=.true.)
+                Enddo
+                
+                Call Outputs(Shell_Avgs)%AdvanceInd()
+            Endif
 
-                orank       = self%Buffer%ocomm%rank
-                output_rank = self%Buffer%output_rank
-                responsible = .false.
-                ncache = self%cache_size
+            If (Outputs(Spherical_3d)%grab_this_q) Call write_full_3d(qty)
 
-                If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
-         
-                If (output_rank) Call self%OpenFile_Par(this_iter, error)
-                funit   = self%file_unit
-
-                If ( responsible .and. self%file_open ) Then   
-                    funit = self%file_unit
-                    If (self%current_rec .eq. ncache) Then                                        
-                        If ( responsible .and. (self%write_header) ) Then    !           
-                            Call self%Set_IHeader_Line(2,self%oqvals) 
-                            Call self%Write_Header_Data()
-                        Endif
-                    Endif
-                Endif
-
-                full_disp = self%buffer%qdisp*self%buffer%nvals+12  ! 12 is for the simtime+iteration at the end; use ncache instead of nq to account for real/imaginary in spectral i/o
-                new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
-                If (responsible) Write(6,*)'check disp: ', self%buffer%qdisp, self%buffer%ncache, self%buffer%spectral
-                !omode = 1
-                !If (mem_friendly .and. (self%cascade_type .ne. 1)) omode = 3
-                Call self%buffer%write_data(disp=new_disp,file_unit=funit) ! , mode = omode)
-            
-                If (output_rank) Call self%closefile_par()
-
-            Endif            
-
-            Call self%AdvanceCC() 
+            Do i = G_Avgs, n_outputs
+                If (Outputs(i)%grab_this_q) Call Outputs(i)%Store_Values(qty)
+            Enddo
 
         Endif
 
-	End Subroutine Write_IO
+    End Subroutine  Add_Quantity
 
     Function Compute_Quantity(qval) result(yesno)
-        integer, intent(in) :: qval 
+        Implicit None
+        Integer, intent(in) :: qval 
         Logical             :: yesno 
+        Integer :: i 
         current_qval = qval
         yesno = .false.
 
         If (IOAvg_Flag .eq. 1) Then
-            ! We check only the shell_averages so we can compute averages for moments
-            If (Shell_Averages%compute(qval) .eq. 1) Then
-                Call Shell_Averages%getq_now(yesno)
+            ! On first pass, check only the Shell_Avgs (for computing moments)
+            If (Outputs(Shell_Avgs)%compute(qval) .eq. 1) Then
+                Call Outputs(Shell_Avgs)%getq_now(yesno)
             Endif
         Else
             ! Otherwise, check everything - normal output
             If (compute_q(qval) .eq. 1) Then
-
-                ! We check all diagnostic types and their respective frequencies
-                ! While doing so, we modify the averaging level
-                Call Full_3D%getq_now(yesno)
-                Call Shell_Slices%getq_now(yesno)
-                Call Equatorial_Slices%getq_now(yesno)
-
-                Call Meridional_Slices%getq_now(yesno)
-
-                Call SPH_Mode_Samples%getq_now(yesno)
-                Call Point_Probes%getq_now(yesno)
-
-                Call Temp_IO%getq_now(yesno)
-
-                Call Shell_Spectra%getq_now(yesno)
-                Call AZ_Averages%getq_now(yesno)
-                Call Shell_Averages%getq_now(yesno)
-                Call Global_Averages%getq_now(yesno)
-
+                Do i = 1, n_outputs
+                    Call Outputs(i)%getq_now(yesno)
+                Enddo
             Endif
         Endif
     End function Compute_quantity
@@ -662,33 +605,22 @@ Contains
     End function Sometimes_Compute
 
     Function Time_To_Output(iter) result(yesno)
-        integer, intent(in) :: iter 
+        Implicit None
+        Integer, intent(in) :: iter 
         Logical             :: yesno 
+        Integer             :: i
+
         yesno = .false.
-
-         If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%Frequency) .eq. 0)) yesno = .true.
-         If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%Frequency) .eq. 0)) yesno = .true.        
-         If ((Shell_Spectra%nq > 0) .and. (Mod(iter,Shell_Spectra%Frequency) .eq. 0)) yesno = .true.            
-         If ((Equatorial_Slices%nq > 0) .and. (Mod(iter,Equatorial_Slices%Frequency) .eq. 0)) yesno = .true. 
-
-         If ((Meridional_Slices%nq > 0) .and. (Mod(iter,Meridional_Slices%Frequency) .eq. 0)) yesno = .true. 
-
-         If ((SPH_Mode_Samples%nq > 0) .and. (Mod(iter,SPH_Mode_Samples%Frequency) .eq. 0)) yesno = .true. 
-         If ((Point_Probes%nq > 0) .and. (Mod(iter,Point_Probes%Frequency) .eq. 0)) yesno = .true. 
-     
-
-         If ((AZ_Averages%nq > 0) .and. (Mod(iter,AZ_Averages%Frequency) .eq. 0)) yesno = .true.
-         If ((Shell_Slices%nq > 0) .and. (Mod(iter,Shell_Slices%Frequency) .eq. 0)) yesno = .true. 
-         If ((Full_3D%nq > 0) .and. (Mod(iter,Full_3D%Frequency) .eq. 0)) yesno = .true.
-
-         If ((Temp_IO%nq > 0) .and. (Mod(iter,Temp_IO%Frequency) .eq. 0)) yesno = .true. 
+        Do i = 1, n_outputs
+            If ((Outputs(i)%nq > 0) .and. (Mod(iter,Outputs(i)%Frequency) .eq. 0)) yesno = .true.
+        Enddo
        
     End function Time_To_Output
 
     Subroutine Finalize_Averages()
         ! Use the azimuthal averages to compute the ell=0 mean
         Call IOComputeEll0(IOm0_values,IOell0_values)
-        Call Shell_Averages%reset() !need to reset the index counter
+        Call Outputs(Shell_Avgs)%reset() !need to reset the index counter
     End Subroutine Finalize_Averages
 
     Subroutine Set_Avg_Flag(flag_val)
@@ -696,86 +628,29 @@ Contains
         IOavg_flag = flag_val
     End Subroutine Set_Avg_Flag
 
-	Subroutine Add_Quantity(qty)
-		Implicit None
-		Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:) !qty(:,:,:)
-        Integer :: i, m ,t ,r , p
-        If (IOavg_flag .eq. 1) Then
-            !Compute and store the azimuthal average of qty
-            If (shell_averages%grab_this_q) Then
-                Call IOComputeM0(qty)
-            Endif
-        Else
+    Subroutine Complete_Output(iter, sim_time)
+        Implicit None
+        Integer, Intent(In) :: iter
+        Real*8, Intent(In) :: sim_time
+        Integer :: i 
 
-            If (Shell_Averages%grab_this_q)  Then  ! Shellavg moments
-                Call Shell_Averages%Store_Values(qty) ! Store the mean
-                Shell_Averages%ind = Shell_Averages%ind-1
-                ! Now, the moments - rms, skewness, kurtosis
-                ! We have to hack the index advancement for now due to the moments...
-                Do m = 2, 4
-                    Do t = my_theta_min, my_theta_max
-                        Do r = my_rmin, my_rmax
-                            Do p = 1, nphi
-                                tmp_qty(p,r,t) = (qty(p,r,t)-IOell0_values(r,Shell_Averages%ind) )**m
-                            Enddo
-                        Enddo
-                    Enddo
-                    Call Shell_Averages%Store_values(tmp_qty)
-                    Shell_Averages%ind = Shell_Averages%ind-1
-                Enddo
-                
-                Call Shell_Averages%AdvanceInd()
-            Endif
-
-            If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
-            If (Global_Averages%grab_this_q)   Call Global_Averages%Store_Values(qty)
-            If (AZ_Averages%grab_this_q)       Call AZ_Averages%Store_Values(qty)  
-
-            If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
-            If (Meridional_Slices%grab_this_q) Call Meridional_Slices%Store_Values(qty)
-            If (SPH_Mode_Samples%grab_this_q)  Call SPH_Mode_Samples%Store_Values(qty)
-            If (Point_Probes%grab_this_q)      Call Point_Probes%Store_Values(qty)
-
-		    If (Shell_Slices%grab_this_q)      Call Shell_Slices%Store_Values(qty)
-		    If (Shell_Spectra%grab_this_q)     Call Shell_Spectra%Store_Values(qty)
-
-            !Call Get_Averages(qty)  ! -> Global Averages, Shell Averages, Azimuthal Averages
-
-		    If (full_3d%grab_this_q) Call write_full_3d(qty)
-        Endif
-
-	End Subroutine	Add_Quantity
-
-	Subroutine Complete_Output(iter, sim_time)
-		Integer, Intent(In) :: iter
-		Real*8, Intent(In) :: sim_time
-
-        Call Shell_Averages%write_io(iter, sim_time)
-
-
-        Call Shell_Slices%write_io(iter,sim_time)    
-        Call Equatorial_Slices%Write_IO(iter,sim_time)
-        Call Meridional_Slices%write_io(iter,sim_time)
-        Call Point_Probes%write_io(iter,sim_time)
-        Call AZ_Averages%write_io(iter,sim_time)
-        Call Shell_Spectra%write_io(iter,sim_time)
-        Call Temp_IO%write_io(iter,sim_time)
-        Call SPH_Mode_Samples%write_io(iter, sim_time)
-        Call Global_Averages%write_io(iter, sim_time)
-
+        ! All data is stored.  Now, output (spherical_3D already written)
+        Do i = Shell_Avgs, n_outputs
+           Call Outputs(i)%Write_to_Disk(iter, sim_time) 
+        Enddo
 
         DeAllocate(IOm0_values)
         DeAllocate(IOell0_values)
         DeAllocate(tmp_qty)
 
-	End Subroutine Complete_Output
+    End Subroutine Complete_Output
 
-	Subroutine Write_Full_3D(qty)
-		Implicit None		
-		Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
-		Integer :: i, funit
-		Character*4 :: qstring
-		Character*120 :: iterstring, data_file, grid_file
+    Subroutine Write_Full_3D(qty)
+        Implicit None        
+        Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
+        Integer :: i, funit
+        Character*4 :: qstring
+        Character*120 :: iterstring, data_file, grid_file
 
         ! Write the data file (Parallel I/O)
         Write(iterstring,i_ofmt) current_iteration
@@ -798,7 +673,7 @@ Contains
             Close(funit)
         Endif
 
-	End Subroutine Write_Full_3D
+    End Subroutine Write_Full_3D
 
     !////////////////////////////////////////////////////////////////////////////////////////////////////////////
     !       Diagnostic Class Methods
@@ -827,6 +702,70 @@ Contains
         Enddo
 
     End Subroutine Write_Header_Data
+
+    Subroutine Store_Values(self,qty,no_advance)
+        Implicit None
+        Class(DiagnosticInfo) :: self
+        REAL*8, INTENT(IN) :: qty(:,my_rmin:,my_theta_min:)
+        Logical, Intent(In), Optional  :: no_advance 
+
+        Call self%buffer%cache_data(qty)
+        self%oqvals(self%ind) = current_qval
+        If (.not. present(no_advance)) Call self%AdvanceInd()
+
+    End Subroutine Store_Values
+
+    Subroutine Write_to_Disk(self,this_iter,simtime)
+        USE RA_MPI_BASE
+        Implicit None
+        Real*8, Intent(in) :: simtime
+        Integer, Intent(in) :: this_iter
+        Class(DiagnosticInfo) :: self
+        INTEGER(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_pdisp, new_disp, qdisp, full_disp, tdisp
+        Logical :: responsible, output_rank
+        Integer :: orank, funit, error, ncache, omode
+
+        If ((self%nq > 0) .and. (Mod(this_iter,self%frequency) .eq. 0 )) Then
+
+            Call self%Buffer%timestamp(this_iter, simtime)
+
+            If ((self%cache_size-1) .eq. self%cc) Then
+
+                orank       = self%Buffer%ocomm%rank
+                output_rank = self%Buffer%output_rank
+                responsible = .false.
+                ncache = self%cache_size
+
+                If ((output_rank) .and. (orank .eq. 0) ) responsible = .true.
+         
+                If (output_rank) Call self%OpenFile_Par(this_iter, error)
+                funit   = self%file_unit
+
+                If ( responsible .and. self%file_open ) Then   
+                    funit = self%file_unit
+                    If (self%current_rec .eq. ncache) Then                                        
+                        If ( responsible .and. (self%write_header) ) Then    !           
+                            Call self%Set_IHeader_Line(2,self%oqvals) 
+                            Call self%Write_Header_Data()
+                        Endif
+                    Endif
+                Endif
+                ! 12 is for the simtime+iteration at the end.
+                full_disp = self%buffer%qdisp*self%buffer%nvals+12 
+                new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
+                If (responsible) Write(6,*)'check disp: ', self%buffer%qdisp, self%buffer%ncache, self%buffer%spectral
+
+                Call self%buffer%write_data(disp=new_disp,file_unit=funit)
+            
+                If (output_rank) Call self%closefile_par()
+
+            Endif            
+
+            Call self%AdvanceCC() 
+
+        Endif
+
+    End Subroutine Write_to_Disk
 
     Subroutine Add_IHeader(self,invals,n)
         Class(DiagnosticInfo) :: self
@@ -859,8 +798,8 @@ Contains
         self%hdisp = self%hdisp+8*n
     End Subroutine Add_DHeader
 
-    Subroutine Initialize_Diagnostic_Info(self,avg_levels,computes,pid,mpi_tag, &
-                 dir, version, nrec, frequency, avg_level,values, &
+    Subroutine Initialize_Diagnostic_Info(self,computes,pid,mpi_tag, &
+                 dir, version, nrec, frequency, values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
                  tweights, is_spectral, lvals, nobuffer, &
                  average_in_phi, average_in_radius, average_in_theta, moments)
@@ -869,11 +808,11 @@ Contains
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
         Integer, Intent(In), Optional :: cache_size, write_mode
         Character*120, Intent(In) :: dir
-        Integer, Optional, Intent(In) :: avg_level, moments
+        Integer, Optional, Intent(In) :: moments
         Integer, Optional, Intent(In) :: values(1:)
         Integer, Optional, Intent(In) :: levels(1:)
         Integer, Optional, Intent(In) :: phi_inds(1:)
-        Integer, Intent(InOut) :: computes(1:), avg_levels(1:)
+        Integer, Intent(InOut) :: computes(1:)
         Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:), lvals(1:)
 
         !Averaging variables
@@ -983,9 +922,6 @@ Contains
             self%write_mode = 1
         Endif
 
-        If (present(avg_level)) Then
-            if (avg_level .gt. 0) self%avg_level = avg_level
-        Endif
         self%mpi_tag = mpi_tag
         self%nq = 0
 
@@ -1001,9 +937,6 @@ Contains
                     ind = self%values(i)
                     self%compute(ind) = 1
                     computes(ind) = 1
-                    If (avg_levels(ind) .lt. self%avg_level) Then
-                        avg_levels(ind) = self%avg_level
-                    Endif
                 endif 
             Enddo
         Endif
@@ -1240,7 +1173,7 @@ Contains
         If (create_file) Then
 
             If (self%master) Call stdout%print(' Creating Filename: '//trim(filename))
-    	    Call MPI_FILE_OPEN(self%ocomm, filename, & 
+            Call MPI_FILE_OPEN(self%ocomm, filename, & 
                  MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
                  MPI_INFO_NULL, funit, ierr) 
 
@@ -1249,7 +1182,7 @@ Contains
 
         Else
 
-    		Call MPI_FILE_OPEN(self%ocomm, filename, & 
+            Call MPI_FILE_OPEN(self%ocomm, filename, & 
                  MPI_MODE_RDWR, & 
                  MPI_INFO_NULL, funit, ierr) 
 
@@ -1352,7 +1285,6 @@ Contains
             modcheck = Mod(current_iteration,self%frequency)
             If (modcheck .eq. 0) Then
                 yesno = .true.
-                current_averaging_level = Max(current_averaging_level,self%avg_level)
                 self%grab_this_q = .true.
             Endif
         Endif
@@ -1373,7 +1305,6 @@ Contains
         ! ** Note that this routine should be used sparingly because it requires 
         ! **   a collective operation (allreduce) across process rows
         ! ** One way to do this is to aggregate several fields into the inbuff when calling this routine
-
 
         bdims = shape(inbuff)
         nq = bdims(4)
@@ -1419,7 +1350,6 @@ Contains
         ! **   a collective operation (allreduce) across process rows
         ! ** One way to do this is to aggregate several fields into the inbuff when calling this routine
 
-
         bdims = shape(inbuff)
         nq = bdims(3)
 
@@ -1462,7 +1392,6 @@ Contains
         ! **   a collective operation (allreduce) across process rows
         ! ** One way to do this is to aggregate several fields into the inbuff when calling this routine
 
-
         bdims = shape(inbuff)
         nq = bdims(2)
 
@@ -1493,7 +1422,7 @@ Contains
         ! inbuff is expected to be dimensioned as (1:nphi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:nfields)
         ! outbuff is dimensioned as outbuff(my_r%min:my_rmax,my_theta_min:my_theta_max,1:nfields)
 
-        ind = Shell_Averages%ind
+        ind = Outputs(Shell_Avgs)%ind
 
         ! Perform phi-integration
 
@@ -1506,7 +1435,7 @@ Contains
             Enddo
         Enddo
 
-        Call Shell_Averages%AdvanceInd()
+        Call Outputs(Shell_Avgs)%AdvanceInd()
 
     End Subroutine IOComputeM0
 
@@ -1565,7 +1494,6 @@ Contains
         self%file_header_size =0 
         self%file_record_size = 0 
         self%file_position = 1   
-        self%avg_level = 0       
 
         self%ind = 1              
         self%begin_output = .false.
@@ -1579,12 +1507,11 @@ Contains
 
     Subroutine CleanUP_Spherical_IO
         Implicit None
+        Integer :: i
         !DeAllocates all allocated module arrays
         !Re-initializes module variables to their default values (if any)
-        current_averaging_level = 0
         current_qval = 0
 
-        averaging_level(1:nqmax) = 0
         compute_q(1:nqmax) = 0
         shellavg_values(1:nqmax)=-1 
         globalavg_values(1:nqmax)=-1
@@ -1615,23 +1542,15 @@ Contains
     
         i_ofmt = '(i8.8)'  ! These should never change during a run, but just in case...
 
-        io_node = 0
         If (Allocated(theta_integration_weights)) DeAllocate(theta_integration_weights)
         If (Allocated(r_integration_weights))   DeAllocate(r_integration_weights)
         If (Allocated(radius)) DeAllocate(radius)
         If (Allocated(sintheta)) DeAllocate(sintheta)
         If (Allocated(costheta)) DeAllocate(costheta)
 
-
-        Call Full_3D%cleanup
-        Call Global_Averages%cleanup
-        Call AZ_Averages%cleanup
-        Call Shell_Averages%cleanup
-        Call Shell_Slices%cleanup
-        Call Shell_Spectra%cleanup
-        Call Point_Probes%cleanup
-
-        Call Temp_IO%cleanup
+        Do i = 1, n_outputs
+            Call Outputs(i)%CleanUp()
+        Enddo
 
     End Subroutine CleanUP_Spherical_IO
 
