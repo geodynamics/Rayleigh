@@ -95,7 +95,6 @@ Module Parallel_IO
         ! Caching variables
         Integer :: ncache_per_rec = 1
         Integer :: nrec = 1
-        Integer :: nwrites=1
         Integer :: rec_skip = 0 ! number of bytes to skip between cached records
         Integer :: time_index = 1
 
@@ -126,8 +125,8 @@ Module Parallel_IO
         Integer, Allocatable :: ind(:)
 
     Contains
-        Procedure :: init => Initialize_Physical_IO_Buffer
-        Procedure :: Initialize_Sampled_Grid
+        Procedure :: init => Initialize_IO_Buffer
+        Procedure :: Subsample_Grid
         Procedure :: cache_data
         Procedure :: cache_data_spectral
         Procedure :: allocate_cache
@@ -156,25 +155,22 @@ Module Parallel_IO
 
 Contains
 
-    Subroutine Initialize_Physical_IO_Buffer(self,grid_pars, &
-                                             nvals, mpi_tag, &
-                                             cascade, averaging_weights, nrec, &
-                                             skip, write_timestamp, &
-                                             averaging_axes, spectral, mode, &
-                                             l_values, cache_spectral, spec_comp, &
-                                             lmax_in)
+    Subroutine Initialize_IO_Buffer(self,grid_pars, nvals, mpi_tag, &
+                                    averaging_weights, nrec, skip,  &
+                                    write_timestamp, averaging_axes, & 
+                                    spectral, mode, l_values, cache_spectral, &
+                                    spec_comp, lmax_in)
         Implicit None
         Class(io_buffer) :: self
-        !Integer, Intent(In) :: r_indices(1:), theta_indices(1:), phi_indices(1:)
         Integer, Intent(In) :: grid_pars(1:,1:)
         Integer, Intent(In), Optional :: l_values(1:)
-        Integer, Intent(In), Optional :: nvals, mpi_tag, cascade, nrec, skip
+        Integer, Intent(In), Optional :: nvals, mpi_tag, nrec, skip
         Real*8 , Intent(In), Optional :: averaging_weights(1:,1:)
         Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
         Integer, Intent(In), Optional :: lmax_in
-        Integer :: r, ii, ind, my_min, my_max, adim(2), in_lmax
+        Integer ::  adim(2), in_lmax
         Real*8, Allocatable :: avg_weights(:,:)
 
         !//////////////////////////////////////////////
@@ -193,10 +189,9 @@ Contains
         self%sum_theta_phi = self%sum_theta .and. self%sum_phi
         self%sum_all = self%sum_theta_phi .and. self%sum_r
 
-        ! The write can be conducted in various ways:
-        !   1.)  Full write -- everything stored in the output ranks
-        !   2.)  Single cache item write -- specified index is cascaded and written
-        !   3.)  Iterative cache write -- All cache items written, but communicated one-at-a-time
+        ! The write_mode determines how communication takes place during I/O time.
+        ! 1.)  Full write -- everything stored in the output ranks
+        ! 2.)  Iterative cache write -- All cache items written, but communicated one-at-a-time
 
         If (present(mode)) Then
             If ((mode .gt. 0) .and. (mode .le. 3)) self%write_mode = mode
@@ -223,14 +218,13 @@ Contains
             self%nvals = nvals
         Endif
         
-        !//////////////////////////////////////////////////////////
-        ! Finally, how many distinct "things" do we need to cache?
+        !///////////////////////////////////////////////////////////////////////////////
+        ! Finally, how many quantities/timesteps do we need to cache and ultimately write?
         self%ncache = self%nrec*self%nvals
-        If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary are treated as two different quantities
+        If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary are treated as distinct entities
         If (self%spectral) self%nvals = self%nvals*2
 
         self%ncache_per_rec = self%ncache/self%nrec
-        self%nwrites = self%ncache ! self%nrec*self%ncache
 
         If (present(skip)) self%rec_skip = skip
         If (present(spec_comp)) self%spec_comp = spec_comp
@@ -243,9 +237,9 @@ Contains
             Allocate(avg_weights(3,3))
             avg_weights(:,:) = -1
         Endif
+
         in_lmax = -1
         If (present(lmax_in)) in_lmax = lmax_in
-
 
         !/////////////////////////////////////////////////
         ! Set a unique tag for message exchange
@@ -255,20 +249,13 @@ Contains
             self%tag = mpi_tag
         Endif
 
-        !///////////////////////////////////////////////////////////
-        ! Establish how this buffer will be subsampled, if at all
-
-        Call self%Initialize_Sampled_Grid(grid_pars, avg_weights, in_lmax)
-        DeAllocate(avg_weights)
-
-        !///////////////////////
-
-
-        Call self%Load_Balance_IO()
-
-        If (self%output_rank) Call self%Set_Displacements()
+        Call self%Subsample_Grid(grid_pars, avg_weights, in_lmax) ! Establish how this buffer will be subsampled.
         
-        Call self%Initialize_IO_MPI()
+        Call self%Load_Balance_IO()                          ! Decipher which points belong to which ranks / designate output ranks.
+
+        If (self%output_rank) Call self%Set_Displacements()  ! Organize the MPI-IO writes/reads.
+        
+        Call self%Initialize_IO_MPI()                        ! Define an I/O communicator for this buffer.
 
         If (present(write_timestamp)) Then
             If ((self%output_rank) .and. (self%ocomm%rank .eq. 0) ) Then
@@ -276,72 +263,79 @@ Contains
             Endif
             If (write_timestamp) self%rec_skip = 12
         Endif
-        Call self%Allocate_Cache()
 
-    End Subroutine Initialize_Physical_IO_Buffer
+        Call self%Allocate_Cache()                            ! Allocate storage space
 
-    Subroutine Initialize_Sampled_Grid(self,grid_pars, averaging_weights, lmax_in)
+        DeAllocate(avg_weights)
+
+    End Subroutine Initialize_IO_Buffer
+
+    Subroutine Subsample_Grid(self,grid_pars, averaging_weights, lmax_in)
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: grid_pars(1:,1:), lmax_in
-        Real*8, Intent(In) :: averaging_weights(1:,1:)
+        Real*8 , Intent(In) :: averaging_weights(1:,1:)
         Integer :: n
 
-        If (grid_pars(1,1) .ne. -1) Then
+        ! This routine decides how the grid is subsampled,
+        ! The first four columns of grid_pars contain the grid
+        ! to be sampled in each direction or in ell.
+        ! The last column provides nr, ntheta, etc. for sampling.
+
+        ! Radius
+        If (grid_pars(1,1) .ne. -1) Then  ! Subsampled in radius.
             self%nr = grid_pars(1,5)
             Allocate(self%r_global(1:self%nr))
             self%r_global(:) =grid_pars(1:self%nr,1)
             self%r_spec = .true.
-        Else If (self%sum_r) Then
+        Else If (self%sum_r) Then         ! Averaged in radius.
             n = grid_pars(1,5)
             Allocate(self%radial_weights(1:n))
             self%radial_weights(1:n) = averaging_weights(1:n,1)
-            self%nr = 1 ! ?
-        Else
+            self%nr = 1 
+        Else                              ! Full radial grid.
             self%nr = pfi%n1p
         Endif
 
-        If (grid_pars(1,2) .ne. -1) Then
+        ! Theta
+        If (grid_pars(1,2) .ne. -1) Then                     ! Subsampled in theta.
             self%ntheta = grid_pars(2,5)
             Allocate(self%theta_global(1:self%ntheta))
             self%theta_global(:) = grid_pars(1:self%ntheta,2)
             self%t_spec = .true.
 
-            If (averaging_weights(1,2) .gt. -1.0d-8) Then
+            If (averaging_weights(1,2) .gt. -1.0d-8) Then    ! Subsampled with weighted sum.
                 Allocate(self%theta_weights(1:self%ntheta))
                 self%theta_weights(:) = averaging_weights(1:self%ntheta,2)
                 self%sum_theta = .true.
             Endif
 
-        Else If (self%sum_theta_phi .or. self%sum_all) Then
+        Else If (self%sum_theta_phi .or. self%sum_all) Then  ! Averaged in theta.
             If (self%sum_theta_phi) Then
                 self%ntheta = pfi%rcomm%np
                 n = grid_pars(2,5)
                 Allocate(self%theta_weights(1:n))
                 self%theta_weights(1:n) = averaging_weights(1:n,2)
-                Write(6,*)'Testing: ', MAXVAL(averaging_weights(1:n,2))
             Endif
-        Else
+        Else                                                 ! Full theta grid.
             self%ntheta = pfi%n2p
         Endif
 
-        If (grid_pars(1,3) .ne. -1) Then
+        ! Phi
+        If (grid_pars(1,3) .ne. -1) Then                 ! Subsampled in Phi
             self%nphi = grid_pars(3,5)
             Allocate(self%phi_local(1:self%nphi))
             self%phi_local(:) = grid_pars(1:self%nphi,3)
             self%p_spec = .true.
+        Else If (self%sum_phi) Then                      ! Averaged in phi.
+            self%nphi=1
+            self%phi_weight = 1.0d0/pfi%n3p
         Else
-            self%nphi = pfi%n3p
-            If (self%sum_phi) Then
-                self%nphi=1
-                self%phi_weight = 1.0d0/pfi%n3p
-            Endif
+            self%nphi = pfi%n3p                          ! Full phi grid.
         Endif
 
-        !If (self%rank .eq. 0) Write(6,*)'check: ', self%nr, self%ntheta, self%nphi
-
         If (self%spectral)  Then
-            
+            ! Full spectral grid (can restrict via lmax_in for reading Checkpoints as lower resolution.)
             self%lmax = (2*self%ntheta-1)/3
             self%lmax_in = self%lmax
             self%nlm = (self%lmax+1)*(self%lmax+1) 
@@ -350,12 +344,14 @@ Contains
             If (lmax_in .gt. -1) Then
                 self%lmax_in = lmax_in
             Endif
+
             self%nlm_in = (self%lmax_in+1)*(self%lmax_in+1)
             If (self%spec_comp) Then 
                 self%nlm_out = ((self%lmax+1)**2 + self%lmax+1)/2
                 self%nlm_in = ((self%lmax_in+1)**2 + self%lmax_in+1)/2
             Endif
-            If (grid_pars(1,4) .ne. -1) Then
+
+            If (grid_pars(1,4) .ne. -1) Then        ! Subsampled in ell
                 self%l_spec = .true.
                 self%n_l_samp = grid_pars(4,5)
                 Allocate(self%l_values(1:self%n_l_samp))
@@ -365,6 +361,7 @@ Contains
 
         Endif
 
+        ! Set some logical flags that describe the combination of subsampling selected.
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
              .and. (.not. self%p_spec) ) self%simple = .true.
 
@@ -373,7 +370,6 @@ Contains
 
         If ( (self%t_spec ) .and. (.not. self%r_spec) &
              .and. (.not. self%p_spec) ) self%theta_general = .true.
-
 
         If ((.not. self%r_spec ) .and. (.not. self%t_spec) &
              .and. (self%p_spec) ) self%phi_general = .true.
@@ -385,8 +381,7 @@ Contains
             self%r_general_spectral = .true.
         Endif
 
-
-    End Subroutine Initialize_Sampled_Grid
+    End Subroutine Subsample_Grid
 
     Subroutine Load_Balance_IO(self)
         Implicit None
@@ -399,6 +394,8 @@ Contains
         Integer, Allocatable :: tmp(:)
         Integer :: k, ntot, fcount(3,2), fcnt
 
+        ! Decide who receives data, who sends data, and
+        ! how much is sent/received.   Designate output ranks.
         Allocate(self%ntheta_at_column(0:pfi%nprow-1))
         Allocate(self%npts_at_column(0:pfi%nprow-1))
         Allocate(self%nr_out_at_column(0:pfi%nprow-1))
@@ -413,7 +410,7 @@ Contains
         self%nrecv_from_column(:) = 0
         self%nsend_to_column(:) = 0
 
-        If (self%t_spec) Then
+        If (self%t_spec) Then       ! Sampled in theta.
 
             self%ntheta_local = 0
             my_min = pfi%all_2p(self%row_rank)%min
@@ -440,10 +437,10 @@ Contains
             Allocate(self%theta_local(1:self%ntheta_local))
             self%theta_local(1:self%ntheta_local) = tmp(1:self%ntheta_local)
             DeAllocate(tmp)
-        Else If ( (self%sum_theta_phi) .or. (self%sum_all) ) Then
+        Else If ( (self%sum_theta_phi) .or. (self%sum_all) ) Then  ! Averaged in theta.
             self%ntheta_local = 1
             self%ntheta_at_column(:) = 1
-        Else
+        Else                                                       ! Full theta grid
             self%ntheta_local = pfi%all_2p(self%row_rank)%delta
             Do p = 0, pfi%nprow-1
                 n = pfi%all_2p(p)%delta
@@ -451,7 +448,7 @@ Contains
             Enddo
         Endif
 
-        If (self%r_spec) Then
+        If (self%r_spec) Then                                      ! Sampled in r.
 
             self%nr_local = 0
             my_min = pfi%all_1p(self%col_rank)%min
@@ -476,19 +473,16 @@ Contains
             Allocate(self%r_local(1:self%nr_local))
             self%r_local(1:self%nr_local) = tmp(1:self%nr_local)
             DeAllocate(tmp)
-        Else If ( self%sum_r ) Then
+        Else If ( self%sum_r ) Then                             ! Averaged in r.
             self%nr_local = 1
-            !self%ntheta_at_column(:) = 1
-
-        Else
+        Else                                                    ! Full radial grid.
             self%nr_local = pfi%all_1p(self%col_rank)%delta
             Do p = 0, pfi%npcol-1
                 self%nr_out_at_row(p) = pfi%all_1p(p)%delta
             Enddo
         Endif
 
-        !If Phi indices are specified, no extra logic is required
-        !since phi is always in-process
+        !No additional load-balancing logic is required for phi (always in process)
 
         Do p = 0, pfi%nprow-1
             n = self%ntheta_at_column(p)
@@ -503,7 +497,9 @@ Contains
         self%nout_cols = nout_cols
         If (self%row_rank .lt. nout_cols) self%output_rank = .true.
 
-        !Determine how many radii each rank in this row outputs
+        ! Determine how many radii each rank in this row outputs
+        ! If nout_cols is set, shells within a row will be 
+        ! distributed across up to nout_cols columns within a row.
         If (self%nout_cols .gt. 0) Then
             n = self%nr_local / self%nout_cols
             nextra = Mod(self%nr_local,self%nout_cols)
@@ -517,7 +513,10 @@ Contains
         Endif
         self%nr_out = self%nr_out_at_column(self%row_rank)
         
+        ! Finally, establish how many points total we receive from
+        ! each rank within our row.
         If (self%spectral) Then
+
             Allocate(self%nlm_at_column(0:pfi%nprow-1))
             self%nlm_at_column(:) = 0
             Do p = 0, pfi%nprow-1
@@ -541,7 +540,6 @@ Contains
             fcount(:,:) = fcnt
             Call self%spectral_buffer%init(field_count=fcount,config='p3b')  
 
-
         Else
 
             Do p = 0, pfi%nprow-1
@@ -559,63 +557,65 @@ Contains
         Integer :: j,n, p
         Integer(kind=MPI_OFFSET_KIND) :: shsize
         ! This routine is only called by output ranks.
-        ! Determine offsets (in bytes) for MPI-IO.
-        shsize = self%ntheta*self%nphi*self%nbytes  ! size in bytes of a single shell
+        ! Determine offsets (in bytes) for each quantity written via MPI-IO.
 
-        If (self%spectral) shsize=self%nlm_out*self%nbytes
+        shsize = self%ntheta*self%nphi*self%nbytes         ! Size in bytes of a single shell
+        If (self%spectral) shsize=self%nlm_out*self%nbytes ! (or collection of modes)
+        If (self%sum_theta) shsize = shsize/self%ntheta    ! Only 1 theta point output
 
-        If (self%sum_theta) shsize = shsize/self%ntheta
-        self%qdisp = self%nr*shsize
-        if (self%sum_all) self%qdisp=self%nbytes
+        self%qdisp = self%nr*shsize                        ! Size in bytes of one complete output variable
+        if (self%sum_all) self%qdisp=self%nbytes           ! Single element when summing over all points
 
-        self%base_disp = 0
-        Do p = 0, self%col_rank-1
+        self%base_disp = 0                                 ! Within each block of a single-quantity's data
+        Do p = 0, self%col_rank-1                          ! where does this rank begin it's write?
             n = self%nr_out_at_row(p)*shsize
             self%base_disp = self%base_disp+n
         Enddo
-        if (self%sum_all) self%base_disp = 0
+        if (self%sum_all) self%base_disp = 0               ! Only rank zero does a write
 
-        Do p = 0, self%row_rank-1
+        Do p = 0, self%row_rank-1                          ! Adjust for multiple columns participating in I/O
             n = self%nr_out_at_column(p)*shsize
             self%base_disp = self%base_disp+n
         Enddo
-        If (self%spectral) Then
-        self%base_disp_in = self%base_disp/self%nlm_out*self%nlm_in
-        self%qdisp_in = self%qdisp/self%nlm_out*self%nlm_in
+
+        If (self%spectral) Then                            ! For input (checkpoints and eventually generic_IO)
+            self%base_disp_in = self%base_disp/self%nlm_out*self%nlm_in
+            self%qdisp_in = self%qdisp/self%nlm_out*self%nlm_in
         Endif
 
-        self%buffsize = self%nr_out*self%nphi*self%ntheta 
+        self%buffsize = self%nr_out*self%nphi*self%ntheta   ! How many points does this rank write during each MPI_Write
         if (self%spectral) self%buffsize=self%nr_out*self%nlm_out
 
-        self%in_buffer_size = self%nlm_in*self%nr_out ! Only used in spectral mode, one field at a time
+        self%in_buffer_size = self%nlm_in*self%nr_out       ! Same, but for input (spectral only)
 
         If (self%write_mode .eq. 1) Then
-            self%io_buffer_size = self%buffsize*self%nwrites
-            If (self%l_spec .or. self%spec_comp) self%io_buffer_size = self%nr_out*self%nlm*self%nwrites
+            self%io_buffer_size = self%buffsize*self%ncache  ! How big of an array do we need to hold everything we write?
+            If (self%l_spec .or. self%spec_comp) self%io_buffer_size = self%nr_out*self%nlm*self%ncache
           
         Else
-            self%io_buffer_size = self%buffsize
+            self%io_buffer_size = self%buffsize     ! Alternatively, array needs to be big enough for just one quantity
             
-            If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm ! buffer still needs to hold a full spectrum temporarily
+            If (self%l_spec) self%io_buffer_size = self%nr_out*self%nlm ! Buffer always needs to hold a full spectrum temporarily
         Endif
 
         If (self%sum_theta) self%buffsize = self%buffsize/self%ntheta ! Do this AFTER setting io_buffer_size
 
-        Allocate(self%file_disp(1:self%nwrites))
-        Allocate(self%ind(1:self%nwrites))
-        Allocate(self%buffer_disp(1:self%nwrites))
-        Allocate(self%file_disp_in(1:self%nwrites))
+        ! Set displacements within the file and within the io_buffer for each cached item to be written
+        Allocate(self%file_disp(1:self%ncache))
+        Allocate(self%ind(1:self%ncache))
+        Allocate(self%buffer_disp(1:self%ncache))
+        Allocate(self%file_disp_in(1:self%ncache))
 
-        Do j = 1, self%nwrites
+        Do j = 1, self%ncache
             self%file_disp(j) = self%base_disp + self%qdisp*(j-1) + self%rec_skip*((j-1)/self%nvals)
             self%file_disp_in(j) = self%base_disp_in + self%qdisp_in*(j-1) ! no timestamps on input
             self%ind(j) = j
             self%buffer_disp(j) = 1+(j-1)*self%buffsize
         Enddo
         If (self%write_mode .ne. 1) self%buffer_disp(:) = 1  
-        ! Hack for global average
-        If (self%sum_all) Then
-            
+
+        ! Logical modifications or case of a full-volume sum.
+        If (self%sum_all) Then            
             If (self%col_rank .eq. 0) Then
                 self%buffsize = 1 ! self%ncache
             Else
@@ -623,12 +623,36 @@ Contains
                 self%file_disp(:) = 0
             Endif 
        Endif
+
     End Subroutine Set_Displacements
+
+    Subroutine Initialize_IO_MPI(self)
+        Implicit None
+        Class(io_buffer) :: self
+        Integer :: p
+        Integer :: nout_cols
+        Integer :: color, ierr
+        ! Define a unique MPI communicator for all output_ranks associated
+        ! with this object.
+        color = 0
+        If (self%output_rank) color = 1
+
+        Call mpi_comm_split(pfi%gcomm%comm, color, self%rank, self%ocomm%comm, ierr)
+        Call mpi_comm_size(self%ocomm%comm, self%ocomm%np, ierr)
+        Call mpi_comm_rank(self%ocomm%comm, self%ocomm%rank, ierr)
+
+        self%orank = self%ocomm%rank
+        If (self%output_rank) Then  ! Initialize the receive-buffer container
+            Allocate(self%recv_buffers(0:pfi%nprow-1))
+        Endif
+
+    End Subroutine Initialize_IO_MPI
 
     Subroutine Allocate_Receive_Buffers(self)
         Implicit None
         Class(io_buffer) :: self
         Integer :: p, np,nr,nt,lp1, mp_min,mp_max
+        ! For output ranks, a unique receive buffer is allocated, corresponding to each sending rank.
         If (self%output_rank) Then
             If (self%spectral) Then
                 nr = self%nr_out
@@ -672,31 +696,10 @@ Contains
         Endif
     End Subroutine DeAllocate_Receive_Buffers
 
-    Subroutine Initialize_IO_MPI(self)
-        Implicit None
-        Class(io_buffer) :: self
-        Integer :: p
-        Integer :: nout_cols
-        Integer :: color, ierr
-
-        color = 0
-        If (self%output_rank) color = 1
-
-        Call mpi_comm_split(pfi%gcomm%comm, color, self%rank, self%ocomm%comm, ierr)
-        Call mpi_comm_size(self%ocomm%comm, self%ocomm%np, ierr)
-        Call mpi_comm_rank(self%ocomm%comm, self%ocomm%rank, ierr)
-
-        self%orank = self%ocomm%rank
-        If (self%output_rank) Then
-            Allocate(self%recv_buffers(0:pfi%nprow-1))
-        Endif
-
-    End Subroutine Initialize_IO_MPI
-
     Subroutine Allocate_Cache(self)
         Implicit None
         Class(io_buffer) :: self
-
+        ! Create space for storing sampled/averaged quantities
         If (.not. self%spectral) Then
             If (self%write_mode .eq. 1) Then
                 Allocate(self%cache(1:self%nphi, 1:self%ntheta_local, &
@@ -725,6 +728,7 @@ Contains
         Class(io_buffer) :: self
         Integer, Intent(In) :: ival
         Real*8, Intent(In) :: tval
+        ! Save timestamp information for appending to end of each record.
         If (self%write_timestamp) Then
             self%iter(self%time_index) = ival
             self%time(self%time_index) = tval
@@ -738,13 +742,12 @@ Contains
         Type(rmcontainer4D), Intent(In) :: spec_vals(1:)
         Integer, Intent(In) :: in_cache
         Integer :: my_mp_min, my_mp_max, mp
+        ! Store output full spectral data (Checkpoints).
+        ! No sampling takes place in this mode.  One cache-item at a time only.
 
         my_mp_min = pfi%all_3s(self%row_rank)%min
         my_mp_max = pfi%all_3s(self%row_rank)%max
 
-        ! This bit was added for checkpoints
-        ! It is assumed that no sampling takes place in this mode
-        ! No caching either (1 at a time)
         Do mp = my_mp_min,my_mp_max                          
             self%spectral_buffer%s2b(mp)%data(:,:,:,1) = &
                 spec_vals(mp-my_mp_min+1)%data(:,:,:,in_cache)
@@ -758,13 +761,11 @@ Contains
         Type(rmcontainer4D), Intent(InOut) :: spec_vals(1:)
         Integer, Intent(In) :: in_cache
         Integer :: my_mp_min, my_mp_max, mp
+        ! Same as Cache_Data_Spectral for for inputs (Checkpoints & eventually Generic IO)
 
         my_mp_min = pfi%all_3s(self%row_rank)%min
         my_mp_max = pfi%all_3s(self%row_rank)%max
 
-        ! This is also used for checkpoints.
-        ! It is assumed that no sampling takes place in this mode.
-        ! No caching either (1 at a time).
         If (self%nr_local .gt. 0) Then
             Do mp = my_mp_min,my_mp_max                          
                 spec_vals(mp-my_mp_min+1)%data(:,:,:,in_cache) = &
@@ -786,9 +787,12 @@ Contains
         Integer :: counter, field_ind, rind
         Integer :: my_mp_min, my_mp_max, mp
 
+        ! Perform desired sampling/averaging on the input vals array.
+
         If (self%r_general_spectral) Then
    
             Do r = 1, self%nr_local
+                ! Some logic for mapping shell_spectra/SPH_Mode data into buffer.
                 counter = (self%cache_index-1)*self%nr_local +r-1
                 field_ind = counter/pfi%my_1p%delta+1
                 rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
@@ -805,10 +809,11 @@ Contains
         Endif
         
         If (.not. self%spectral) Then
-        If (self%write_mode .eq. 1) Then
-            ! If write_mode is 1, we may be performing a weighted sum
+        If (self%write_mode .eq. 1) Then    ! Radial index is last (all cache items communicated at once).
+
             If (self%weighted_sum) Then
                 If (self%sum_all) Then
+
                     self%cache(1,1,self%cache_index,1) = 0.0d0
                     Do t = 1, size(self%theta_weights)
                         wgt = self%phi_weight*self%theta_weights(t)
@@ -817,9 +822,10 @@ Contains
                             self%cache(1,1,self%cache_index,1) = self%cache(1,1,self%cache_index,1) + &
                                 SUM(vals(:,r,t))*wgt*self%radial_weights(r)
                         Enddo
-                    Enddo          
+                    Enddo   
+       
                 Else If (self%sum_theta_phi) Then
-                    !Write(6,*)'caching', MAXVAL(self%theta_weights)
+
                     self%cache(1,1,self%cache_index,:) = 0.0d0
                     Do t = 1, size(self%theta_weights)
                         wgt = self%phi_weight*self%theta_weights(t)
@@ -828,13 +834,16 @@ Contains
                             self%cache(1,1,self%cache_index,r) = self%cache(1,1,self%cache_index,r) + &
                                 SUM(vals(:,r,t))*wgt
                         Enddo
-                    Enddo                      
+                    Enddo            
+          
                 Else If (self%sum_phi) Then  ! Put this one last (logical ordering)
+
                     Do t = 1, self%ntheta_local
                         Do r = 1, self%nr_local
                             self%cache(1,t,self%cache_index,r) = SUM(vals(:,r,t))*self%phi_weight
                         Enddo
                     Enddo          
+
                 Endif
 
             Else
@@ -892,7 +901,7 @@ Contains
 
             Endif
 
-        Else
+        Else                ! Cache index is last -- one item at a time communicated/written.
             If (self%simple) then
                 Do t = 1, self%ntheta_local
                     Do r = 1, self%nr_local
@@ -926,8 +935,8 @@ Contains
         Endif
         Endif
 
-        If (self%spectral) Then
-            ! Adjust logic for real/imaginary
+        If (self%spectral) Then     ! Keep track of where in the buffer we're storing data.
+            ! Logic for real/imaginary treated as two entities.
             self%cache_index = MOD(self%cache_index, self%ncache/2)+1    
         Else
             self%cache_index = MOD(self%cache_index, self%ncache)+1
@@ -973,34 +982,33 @@ Contains
             nq = self%ncache/2
             i2 = lmax+1
 
-            Do p = 1, 2  ! Real and imaginary parts TODO:  I don't think this loop is here anymore...
-                Do mp = my_mp_min,my_mp_max
-                    m = pfi%inds_3s(mp)
-                    counter = 0
-                    i1 = m+1
-                    mstore = mp-my_mp_min+1
-                    Do f = 1, nq
 
-                        field_ind = counter/pfi%my_1p%delta+1
-                        Do r = 1, self%nr_local   
-                         
-                            rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
-                            If (self%write_mode .eq. 1) Then                            
-                                self%cache(i1:i2,mstore,f,r) = &
-                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
+            Do mp = my_mp_min,my_mp_max
+                m = pfi%inds_3s(mp)
+                counter = 0
+                i1 = m+1
+                mstore = mp-my_mp_min+1
+                Do f = 1, nq
 
-                                self%cache(i1:i2,mstore,f+nq,r) = &
-                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
-                            Else
-                                self%cache(i1:i2,mstore,r,f) = &
-                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
+                    field_ind = counter/pfi%my_1p%delta+1
+                    Do r = 1, self%nr_local   
+                     
+                        rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
+                        If (self%write_mode .eq. 1) Then                            
+                            self%cache(i1:i2,mstore,f,r) = &
+                                self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
 
-                                self%cache(i1:i2,mstore,r, f+nq) = &
-                                    self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
+                            self%cache(i1:i2,mstore,f+nq,r) = &
+                                self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
+                        Else
+                            self%cache(i1:i2,mstore,r,f) = &
+                                self%spectral_buffer%s2b(mp)%data(m:lmax,rind,1,field_ind)
 
-                            Endif
-                            counter = counter+1
-                        Enddo
+                            self%cache(i1:i2,mstore,r, f+nq) = &
+                                self%spectral_buffer%s2b(mp)%data(m:lmax,rind,2,field_ind)
+
+                        Endif
+                        counter = counter+1
                     Enddo
                 Enddo
             Enddo
@@ -1008,9 +1016,8 @@ Contains
             If (.not. self%cache_spectral) Then
                 Call self%spectral_buffer%deconstruct('s2b')
                 self%spectral_buffer%config ='p3b'
-                Call self%spectral_buffer%construct('p3b')  ! TODO:  Do we want p3b to effectively be persistent?
+                Call self%spectral_buffer%construct('p3b')  ! TODO:  Do we maybe want p3b to effectively be persistent?
             Endif
-            !~~~~~
 
         Endif
     End Subroutine Spectral_Prep
@@ -1060,7 +1067,7 @@ Contains
 
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
-        If (cache_ind .eq. self%nwrites) free_mem = .true.
+        If (cache_ind .eq. self%ncache) free_mem = .true.
         If (self%nr_local .eq. 0) free_mem=.false.
 
         If (free_mem) DeAllocate(self%cache)
@@ -1411,7 +1418,7 @@ Contains
 
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
-        If (cache_ind .eq. self%nwrites) free_mem = .true.
+        If (cache_ind .eq. self%ncache) free_mem = .true.
         
         If (self%output_rank) Then
             cend = 1
@@ -1529,7 +1536,7 @@ Contains
             If (self%write_mode .eq. 1) Call self%gather_data(-1)
             
             ! First Write the Data
-            Do j = 1, self%nwrites
+            Do j = 1, self%ncache
 
                 If (self%write_mode .gt. 1) Call self%gather_data(j)
 
@@ -1618,7 +1625,7 @@ Contains
             Endif
             ! Read the Data
 
-            Do j = 1, self%nwrites
+            Do j = 1, self%ncache
                 If (self%output_rank) Then
                     fdisp = self%file_disp_in(j)+hdisp
                     !Write(6,*)'j is: ',j, fdisp, self%in_buffer_size
