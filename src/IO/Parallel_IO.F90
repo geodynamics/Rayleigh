@@ -982,17 +982,14 @@ Contains
             nq = self%ncache/2
             i2 = lmax+1
 
-
             Do mp = my_mp_min,my_mp_max
                 m = pfi%inds_3s(mp)
                 counter = 0
                 i1 = m+1
                 mstore = mp-my_mp_min+1
                 Do f = 1, nq
-
                     field_ind = counter/pfi%my_1p%delta+1
-                    Do r = 1, self%nr_local   
-                     
+                    Do r = 1, self%nr_local                        
                         rind = MOD(counter, pfi%my_1p%delta)+pfi%my_1p%min
                         If (self%write_mode .eq. 1) Then                            
                             self%cache(i1:i2,mstore,f,r) = &
@@ -1026,15 +1023,18 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
-    
+
+        ! Prepare data for output    
+        ! Transform to spectral space if needed.
         If (self%write_mode .eq. 1) Then
             If (self%spectral) Call self%Spectral_Prep()
         Else
             If ( (cache_ind .eq. 1) .and. (self%spectral) ) Call self%spectral_prep()
         Endif
     
-        Call self%cascade(cache_ind)
+        Call self%cascade(cache_ind)    ! Communicate to populate receive buffers on each output_rank
         
+        ! Collate data from multiple receive buffers into a single buffer for output
         If (self%spectral) Then
             Call self%collate_spectral(cache_ind)
         Else
@@ -1047,8 +1047,8 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
-
-        !NOTE:  Assuming we are spectral for distribution
+        ! Performs the opposite of Gather data (for reading checkpoints and Generic I/O)
+        ! NOTE:  It is assumed that data is in spectral configuration at this point.
 
         Call self%decollate_spectral()
         Call self%decascade()
@@ -1064,6 +1064,8 @@ Contains
         Integer :: cend, ncache, mp, k, l, j, lval, lmax, ind, ind2
         Logical :: free_mem
         Real*8, Allocatable :: data_copy(:,:,:,:)
+
+        ! Gather spectral data from receive buffers into collate_data buffer
 
         free_mem = .false.
         If (self%write_mode .eq. 1) free_mem = .true.
@@ -1081,7 +1083,7 @@ Contains
             self%collated_data(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend) => &
                 self%buffer(1:self%io_buffer_size)
 
-            Do p = 0, pfi%nprow-1    ! TODO:   we should really convert shell_spectra to compressed format
+            Do p = 0, pfi%nprow-1    ! TODO: Eventually convert shell_spectra to compressed format (like l_spec below)
                 mp_min = pfi%all_3s(p)%min
                 mp_max = pfi%all_3s(p)%max
                 If (self%nrecv_from_column(p) .gt. 0) Then
@@ -1107,7 +1109,8 @@ Contains
             Enddo    
             If (free_mem) Call self%deallocate_receive_buffers()
 
-            If (self%l_spec ) Then
+            If (self%l_spec ) Then 
+                ! We sample and restripe to be consistent wth SPH_Mode I/O
                 Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
                 ! Restripe to m-l (i,j) from l-m
                 Do k = 1, cend
@@ -1120,11 +1123,11 @@ Contains
                 Enddo
                 Enddo
 
-                ! next, repoint collated_data
+                ! Repoint collated_data
                 self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
                     self%buffer(1:self%nlm_out*self%nr_out*cend)
                 If (self%l_spec) Then   
-                    ! Grab the desired l values
+                    ! Subsample in ell, if desired
                     Do k = 1, cend
                     Do r = 1, self%nr_out
                         ind = 1
@@ -1141,7 +1144,8 @@ Contains
                 DeAllocate(data_copy)
             Endif
             If (self%spec_comp) Then
-
+                ! Even if not subsampling, we may want to remove redundant zeros from the
+                ! l-m triangle.  Do so here (Checkpoints)
                 Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
                 data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
 
@@ -1150,7 +1154,6 @@ Contains
 
                 lmax=self%lmax
 
-                ! Grab the desired l values
                 Do k = 1, cend
                 Do r = 1, self%nr_out
                     ind = 1
@@ -1175,7 +1178,10 @@ Contains
         Class(io_buffer), Target :: self
         Integer :: m, r, i, p, mp_min, mp_max,mm, lmax, maxl
         Integer :: mp, k, l, j,  ind1, ind2, loff, lmax_in, dind
-        ! restripe i/o buffer into send/recv buffers for each rank
+        ! For reading checkpoints/generic I/O.
+        ! This performs the opposite of collate_spectra.
+        ! It restripes data from single buffer into multiple receive buffers
+
         lmax = self%lmax
         lmax_in = self%lmax_in
         maxl = lmax_in
@@ -1197,11 +1203,10 @@ Contains
                                 loff = loff+(lmax_in-mm+2) 
                             Enddo
 
-                            !ind1 = (r-1)*self%nlm_in+loff+1
                             ind1 = loff+1
                             ind2 = ind1+(maxl-m)
                             dind = ind2-ind1+1
-                            !WRite(6,*)'m value: ', m
+
                             self%recv_buffers(p)%data(m+1:maxl+1,mp,r,1) = &
                                 self%collated_data(ind1:ind2,1,r,1)
                         Enddo
@@ -1221,10 +1226,12 @@ Contains
         Integer :: inds(4)
         Integer :: i, r, t, ncache, my_nm
 
+        ! For Checkpoints/Generic I/O reading.  Performs opposite task of Cascade.
+        ! Broadcast data from output_ranks' recv buffers back into the cache arrays.
         ! Receive 1 cache ind at a time
         ! Data is presumed to be single field, real/imaginary
         ! So this routine will be called twice
-        ! We Reuse variables but flip send/receive logic from cascade here.
+        ! We reuse arrays but flip send/receive logic from cascade here.
 
         my_nm = pfi%all_3s(self%row_rank)%delta
         if (self%nr_local .gt. 0) Allocate(self%cache(1:self%lmax+1, 1:my_nm, &
@@ -1262,7 +1269,6 @@ Contains
 
                 n = self%nsend_to_column(p)
                 If (n .gt. 0) Then
-
                     Call IReceive(self%cache, sirqs(nn),n_elements = n, source = p, tag = self%tag, & 
                         grp = pfi%rcomm, indstart = inds)
                     nn = nn+1
@@ -1271,9 +1277,7 @@ Contains
             Else
                 If (self%output_rank) Then
                     rend = rstart+self%nr_out-1
-
                     self%cache(:,:,rstart:rend,1) = self%recv_buffers(p)%data(:,:,:,1)
-
                 Endif
             Endif
             rstart = rstart+self%nr_out_at_column(p)
@@ -1297,12 +1301,15 @@ Contains
         Integer, Intent(In) :: cache_ind
         Integer :: p, mp, f,m, my_mp_min, my_mp_max, myrmin
         Integer :: r, lmax, i1, i2, my_nm, mstore
-        ! This routine takes the cache and stripes it back into
-        ! the s2b format.  Cache_ind is assumed to be 1 or 2 (real/imag)
+        ! This routine performs the partial inverse of Spectral_Prep.
+        ! It takes the cache and stripes it back into s2b.
+        ! It does not transform to physical space since on input, we presently expect spectral coefficients.
+
         lmax = self%lmax
         my_mp_min = pfi%all_3s(self%row_rank)%min
         my_mp_max = pfi%all_3s(self%row_rank)%max
         my_nm     = my_mp_max-my_mp_min+1
+
         If (self%nr_local .gt. 0) Then
 
             i2 = lmax+1
@@ -1329,6 +1336,8 @@ Contains
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
         Integer :: i, r, t, ncache
+
+        ! Here, each process communicates the contents of their cache to output_ranks' recv buffers.
 
         If ( (self%write_mode .eq. 1) .or. (cache_ind .eq. 1) ) Call self%Allocate_Receive_Buffers()
 
@@ -1413,6 +1422,10 @@ Contains
         Real*8, Allocatable :: data_copy(:,:,:,:), tmp1(:), tmp2(:)
         Integer :: cend
         Logical :: free_mem
+
+        ! Each output rank takes the data in its receive buffers and
+        ! maps it into a single buffer, collated_data, for I/O.
+
         ncache =1
         If (self%write_mode .eq. 1) ncache = self%ncache
 
@@ -1434,7 +1447,6 @@ Contains
                     If (self%write_mode .eq. 1) Then
                         Do i = 1, self%ncache
                             Do r =1, self%nr_out
-                                !WRite(6,*)'test2: ', shape(self%collated_data), shape(self%recv_buffers(p)%data)
                                 self%collated_data(:,tstart:tend,r,i) = self%recv_buffers(p)%data(:,:,i,r)
                             Enddo
                         Enddo
@@ -1449,6 +1461,7 @@ Contains
             If (free_mem) Call self%deallocate_receive_buffers()
         Endif
 
+        ! Some additional steps need to be taken for averaged output.
         If (self%output_rank .and. self%sum_theta_phi) Then
 
             Allocate(data_copy(self%nphi,self%ntheta,self%nr_out,self%ncache))
@@ -1472,7 +1485,7 @@ Contains
                 self%collated_data(1,1,1,:) = tmp2(:)
                 DeAllocate(tmp1,tmp2)
             Endif
-            !Write(6,*)'in here'
+
             DeAllocate(data_copy)
 
         Else If (self%output_rank .and. self%sum_theta) Then
@@ -1507,8 +1520,10 @@ Contains
         Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp, fdisp, bdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 
+        ! A baseline displacement within the file can be passed to this routine.
+        ! Can be due to header and/or multiple prior records.
         hdisp = 0
-        If (present(disp)) hdisp = disp
+        If (present(disp)) hdisp = disp  
       
         ! The file can be opened previously or opened by this routine
         error = .false.
@@ -1533,35 +1548,33 @@ Contains
 
             If (self%output_rank) Allocate(self%buffer(1:self%io_buffer_size))
 
-            If (self%write_mode .eq. 1) Call self%gather_data(-1)
+            If (self%write_mode .eq. 1) Call self%gather_data(-1)  ! Communicate (if all cache item at once)
             
-            ! First Write the Data
+            ! Write the data, one cache item at a time.
             Do j = 1, self%ncache
 
-                If (self%write_mode .gt. 1) Call self%gather_data(j)
+                If (self%write_mode .gt. 1) Call self%gather_data(j)  ! Communicate single cache item at a time
 
                 If (self%output_rank) Then
 
-                    !If (self%orank .eq. 0) Write(6,*)'fdisp: ', j, self%file_disp(j), self%buffsize
                     If (self%buffsize .ne. 0) Then
                         fdisp = self%file_disp(j)+hdisp
                         bdisp = self%buffer_disp(j)
-                        !Write(6,*)'bsize: ', hdisp, fdisp, self%buffsize
                         Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                         Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
                             self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
                     Endif
+
                 Endif
             Enddo
-            !if (self%output_rank ) WRite(6,*)'hdisp: ', hdisp
+
 
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
-                !Write(6,*)'hmm...', self%orank
-                Do j = 1, self%nrec
 
-                    tdisp = j*self%qdisp*(self%nvals)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
-                    !WRite(6,*)'tdisp: ', tdisp
+                Do j = 1, self%nrec
+                    tdisp = j*self%qdisp*(self%nvals)+hdisp +(j-1)*self%rec_skip 
+
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
@@ -1593,6 +1606,9 @@ Contains
         Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp, fdisp, bdisp
 		Integer :: mstatus(MPI_STATUS_SIZE)
 
+        ! Read data (Checkpoints/Generic I/O)
+
+        ! Again, we may have header information we want to skip.
         hdisp = 0
         If (present(disp)) hdisp = disp
       
@@ -1621,15 +1637,12 @@ Contains
             If (self%output_rank) Then
                 Allocate(self%buffer(1:self%in_buffer_size))
                 self%buffer(:) = 0.0d0
-                !Write(6,*)'inbuffer: ', self%in_buffer_size, self%nlm_in, self%nr_out
             Endif
-            ! Read the Data
 
+            ! Read data, one cache item at a time
             Do j = 1, self%ncache
                 If (self%output_rank) Then
                     fdisp = self%file_disp_in(j)+hdisp
-                    !Write(6,*)'j is: ',j, fdisp, self%in_buffer_size
-                    !bdisp = self%buffer_indisp(j)
                     Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                     Call MPI_FILE_READ(funit, self%buffer(1), & 
                         self%in_buffer_size, MPI_DOUBLE_PRECISION, mstatus, ierr)
