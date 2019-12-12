@@ -546,7 +546,6 @@ Contains
             If (Outputs(Shell_Avgs)%grab_this_q)  Then  ! Shellavg moments
 
                 Call Outputs(Shell_Avgs)%Store_Values(qty,no_advance=.true.) ! Store the mean
-                Outputs(Shell_Avgs)%ind = Outputs(Shell_Avgs)%ind-1
                 
                 Do m = 2, 4             ! Now, the moments - rms, skewness, kurtosis
                     Do t = my_theta_min, my_theta_max
