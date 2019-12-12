@@ -258,8 +258,6 @@ Module Spherical_IO
         temp_io_theta_nrm, temp_io_phi_nrm
     Integer :: integer_zero = 0
     Real*8, Private, Allocatable :: qty(:,:,:)
-    Real*8, Private, Allocatable :: shellav_outputs(:,:,:), globav_outputs(:)
-
     Character*8, Public :: i_ofmt = '(i8.8)'
 
     Integer :: io_node = 0
@@ -373,19 +371,6 @@ Contains
         ! Map the various quantity lists etc. into their associated diagnostic structures
         ! Numbers here are the mpi_tags used in communication for each output
         ! In theory they can be the same, but it's probably a good idea to keep them unique.
-
-        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! First, initialize outputs that do not rely on the I/O Buffer data structure
-        ! for caching etc.
-        !fdir = 'G_Avgs/'
-        !Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
-        !                  globalavg_version, globalavg_nrec, globalavg_frequency, &
-        !                  values = globalavg_values, avg_level = 3, nobuffer=.true.) 
-       
-        !fdir = 'Shell_Avgs/'
-        !Call Shell_Averages%Init(averaging_level,compute_q,myid, 57, fdir, &
-        !                  shellavg_version, shellavg_nrec, shellavg_frequency, &
-        !                  values = shellavg_values, avg_level = 2, nobuffer=.true.) 
        
         fdir = 'Spherical_3D/'  ! Note: Full 3D only uses frequency, not nrec
         Call Full_3D%Init(averaging_level,compute_q,myid, 54, fdir, &
@@ -1627,9 +1612,6 @@ Contains
 
         integer_zero = 0
         If (Allocated(qty)) DeAllocate(qty)
-
-        If (Allocated(shellav_outputs)) DeAllocate(shellav_outputs)
-        If (Allocated(globav_outputs)) DeAllocate(globav_outputs)
     
         i_ofmt = '(i8.8)'  ! These should never change during a run, but just in case...
 
