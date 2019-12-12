@@ -383,10 +383,10 @@ Contains
         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! First, initialize outputs that do not rely on the I/O Buffer data structure
         ! for caching etc.
-        fdir = 'G_Avgs/'
-        Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
-                          globalavg_version, globalavg_nrec, globalavg_frequency, &
-                          values = globalavg_values, avg_level = 3, nobuffer=.true.) 
+        !fdir = 'G_Avgs/'
+        !Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
+        !                  globalavg_version, globalavg_nrec, globalavg_frequency, &
+        !                  values = globalavg_values, avg_level = 3, nobuffer=.true.) 
        
         !fdir = 'Shell_Avgs/'
         !Call Shell_Averages%Init(averaging_level,compute_q,myid, 57, fdir, &
@@ -407,6 +407,12 @@ Contains
 
         wmode = 1
         if (mem_friendly) wmode = 2
+
+        fdir = 'G_Avgs/'
+        Call Global_Averages%Init(averaging_level,compute_q,myid, 55, fdir, &
+                          globalavg_version, globalavg_nrec, globalavg_frequency, &
+                          values = globalavg_values, average_in_phi = .true. , &
+                          average_in_theta = .true., average_in_radius = .true.)
 
         fdir = 'Temp_IO/'
         Call Temp_IO%Init(averaging_level,compute_q,myid, 156, fdir, &
@@ -554,6 +560,12 @@ Contains
 
         !////////////////////////////////////////////////////
         ! Global Averages
+        dims(1) = Global_Averages%nq
+        Call Global_Averages%Add_IHeader(dims,1)
+        Call Global_Averages%Add_IHeader(Global_Averages%oqvals, Global_Averages%nq)
+
+        !////////////////////////////////////////////////////
+        ! DEVEL:  Temp_IO (just a copy of global averages)
         dims(1) = Temp_IO%nq
         Call Temp_IO%Add_IHeader(dims,1)
         Call Temp_IO%Add_IHeader(Temp_IO%oqvals, Temp_IO%nq)
@@ -736,8 +748,8 @@ Contains
                 Call Shell_Averages%AdvanceInd()
             Endif
 
-            If (Temp_IO%grab_this_q) Call Temp_IO%Store_Values(qty)
-
+            If (Temp_IO%grab_this_q)           Call Temp_IO%Store_Values(qty)
+            If (Global_Averages%grab_this_q)   Call Global_Averages%Store_Values(qty)
             If (AZ_Averages%grab_this_q)       Call AZ_Averages%Store_Values(qty)  
 
             If (Equatorial_Slices%grab_this_q) Call Equatorial_Slices%Store_Values(qty) 
@@ -748,7 +760,7 @@ Contains
 		    If (Shell_Slices%grab_this_q)      Call Shell_Slices%Store_Values(qty)
 		    If (Shell_Spectra%grab_this_q)     Call Shell_Spectra%Store_Values(qty)
 
-            Call Get_Averages(qty)  ! -> Global Averages, Shell Averages, Azimuthal Averages
+            !Call Get_Averages(qty)  ! -> Global Averages, Shell Averages, Azimuthal Averages
 
 		    If (full_3d%grab_this_q) Call write_full_3d(qty)
         Endif
@@ -770,9 +782,10 @@ Contains
         Call Shell_Spectra%write_io(iter,sim_time)
         Call Temp_IO%write_io(iter,sim_time)
         Call SPH_Mode_Samples%write_io(iter, sim_time)
+        Call Global_Averages%write_io(iter, sim_time)
 
 	    !If ((Shell_Averages%nq > 0) .and. (Mod(iter,Shell_Averages%frequency) .eq. 0 )) Call Write_Shell_Average(iter,sim_time)
-	    If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%frequency) .eq. 0 )) Call Write_Global_Average(iter,sim_time)
+	    !If ((Global_Averages%nq > 0) .and. (Mod(iter,Global_Averages%frequency) .eq. 0 )) Call Write_Global_Average(iter,sim_time)
 
         DeAllocate(f_of_r_theta)
         DeAllocate(f_of_r)
