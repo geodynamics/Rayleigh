@@ -57,17 +57,30 @@ Module Spherical_IO
     ! Version numbers are not assumed to be in sync.  Instead, they reflect how many times
     ! a particular output has been modified substantially.
 
-    Integer, Parameter :: shellslice_version = 3
-    Integer, Parameter :: azavg_version = 3
-    Integer, Parameter :: shellavg_version = 4
-    Integer, Parameter :: globalavg_version = 3
-    Integer, Parameter :: shellspectra_version = 3
-    Integer, Parameter :: equslice_version = 1  
-    Integer, Parameter :: meridslice_version = 1
-    Integer, Parameter :: sphmode_version =4
-    INTEGER, PARAMETER :: probe_version = 1
-    Integer, Parameter :: full3d_version = 3    !currently unused
-    Integer, Parameter :: tempio_version = 4    ! set to version # from above testing against, or to 1 for new input testing
+    !Integer, Parameter :: shellslice_version = 3
+    !Integer, Parameter :: azavg_version = 3
+    !Integer, Parameter :: shellavg_version = 4
+    !Integer, Parameter :: globalavg_version = 3
+    !Integer, Parameter :: shellspectra_version = 3
+    !Integer, Parameter :: equslice_version = 1  
+    !Integer, Parameter :: meridslice_version = 1
+    !Integer, Parameter :: sphmode_version =4
+    !INTEGER, PARAMETER :: probe_version = 1
+    !Integer, Parameter :: full3d_version = 3    !currently unused
+    !Integer, Parameter :: tempio_version = 4    ! set to version # from above testing against, or to 1 for new input testing
+
+    Integer, Parameter :: shellslice_version = 5
+    Integer, Parameter :: azavg_version = 5
+    Integer, Parameter :: shellavg_version = 5
+    Integer, Parameter :: globalavg_version = 5
+    Integer, Parameter :: shellspectra_version = 5
+    Integer, Parameter :: equslice_version = 5
+    Integer, Parameter :: meridslice_version = 5
+    Integer, Parameter :: sphmode_version =5
+    INTEGER, PARAMETER :: probe_version = 5
+    Integer, Parameter :: full3d_version = 5    !currently unused
+    Integer, Parameter :: tempio_version = 5    ! set to version # from above testing against, or to 1 for new input testing
+
     Type, Public :: DiagnosticInfo
         ! Need to see if we can make these allocatable, but for now..
         ! Each instance of this class has two static arrays used for reading in namelist input
@@ -217,7 +230,7 @@ Module Spherical_IO
     REAL*8 ::     point_probe_r_nrm(1:nprobemax)  = -3.0d0
     REAL*8 :: point_probe_theta_nrm(1:nprobemax)  = -3.0d0
     REAL*8 ::   point_probe_phi_nrm(1:nprobemax)  = -3.0d0
-    Integer :: point_probe_cache_size = 1
+    Integer :: point_probe_cache_size = 1, globalavg_cache_size =1, shellavg_cache_size=1
 
     !/////////////////////////////////////////////////////////////////////
     ! DEVELOPER:  For creating a new output type, we have provided
@@ -252,6 +265,7 @@ Module Spherical_IO
         shellslice_levels_nrm, shellspectra_levels_nrm, meridional_indices_nrm, &
         point_probe_r_nrm    ,     point_probe_phi_nrm,  point_probe_theta_nrm, &
         sph_mode_levels_nrm,        point_probe_cache_size, &
+        globalavg_cache_size, shellavg_cache_size, &
 
         ! DEVELOPER:  Finally, the temp_io variables
         temp_io_values, temp_io_frequency, temp_io_nrec, temp_io_cache_size, &
@@ -352,13 +366,15 @@ Contains
         Call Outputs(G_Avgs)%Init(compute_q,myid, 55, fdir, &
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, average_in_phi = .true. , &
-                          average_in_theta = .true., average_in_radius = .true.)
+                          average_in_theta = .true., average_in_radius = .true., &
+                          cache_size = globalavg_cache_size)
 
         fdir = 'Shell_Avgs/'
         Call Outputs(Shell_Avgs)%Init(compute_q,myid, 156, fdir, &
                           shellavg_version, shellavg_nrec, shellavg_frequency, &
                           values = shellavg_values, average_in_phi = .true. , &
-                          average_in_theta = .true., moments=4)
+                          average_in_theta = .true., moments=4, &
+                          cache_size = shellavg_cache_size)
 
         fdir = 'Point_Probes/'
         Call Outputs(Point_Probes)%Init(compute_q,myid, 63, fdir, &
