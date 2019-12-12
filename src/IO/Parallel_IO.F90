@@ -1639,7 +1639,7 @@ Contains
                 self%buffer(:) = 0.0d0
             Endif
 
-            ! Read data, one cache item at a time
+            ! Read & distribute data, one cache item at a time
             Do j = 1, self%ncache
                 If (self%output_rank) Then
                     fdisp = self%file_disp_in(j)+hdisp

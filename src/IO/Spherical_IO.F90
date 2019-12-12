@@ -856,7 +856,6 @@ Contains
             avg_weights(:,:) = -1.0d0
             avg_weights(:,2) = theta_integration_weights(my_theta_min:my_theta_max)
             indices(2,5) = my_ntheta
-            Write(6,*)'Test1: ', MAXVAL( avg_weights(:,2))
         Else
             Allocate(avg_weights(1,1:3))
             avg_weights(:,:) = -1.0d0
@@ -1067,8 +1066,6 @@ Contains
 
         spectral_io = .false.
         If (present(is_spectral)) spectral_io = is_spectral
-
-        If (myid .eq. 0) WRite(6,*)dir, indices(1:3,5)
 
         Call self%buffer%init( indices, &
                               mode = self%write_mode, mpi_tag = self%mpi_tag, &
