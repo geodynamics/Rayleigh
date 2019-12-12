@@ -227,7 +227,7 @@ Contains
         ! Finally, how many distinct "things" do we need to cache?
         self%ncache = self%nrec*self%nvals
         If (self%spectral) self%ncache=self%ncache*2  ! real/imaginary are treated as two different quantities
-
+        If (self%spectral) self%nvals = self%nvals*2
 
         self%ncache_per_rec = self%ncache/self%nrec
         self%nwrites = self%ncache ! self%nrec*self%ncache
@@ -338,7 +338,7 @@ Contains
             Endif
         Endif
 
-        If (self%rank .eq. 0) Write(6,*)'check: ', self%nr, self%ntheta, self%nphi
+        !If (self%rank .eq. 0) Write(6,*)'check: ', self%nr, self%ntheta, self%nphi
 
         If (self%spectral)  Then
             
@@ -1539,7 +1539,7 @@ Contains
                     If (self%buffsize .ne. 0) Then
                         fdisp = self%file_disp(j)+hdisp
                         bdisp = self%buffer_disp(j)
-                        Write(6,*)'bsize: ', hdisp, fdisp, self%buffsize
+                        !Write(6,*)'bsize: ', hdisp, fdisp, self%buffsize
                         Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                         Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
                             self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
@@ -1550,7 +1550,7 @@ Contains
 
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
-                Write(6,*)'hmm...', self%orank
+                !Write(6,*)'hmm...', self%orank
                 Do j = 1, self%nrec
 
                     tdisp = j*self%qdisp*(self%nvals)+hdisp +(j-1)*self%rec_skip ! May need to account for real/imaginary here.
