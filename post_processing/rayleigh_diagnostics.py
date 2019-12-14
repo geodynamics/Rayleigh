@@ -1154,38 +1154,23 @@ class SPH_Modes:
         self.time  = np.zeros(nrec,dtype='float64')
         self.version = version
         for i in range(nrec):
-            if (self.version <= 3):
-                for qv in range(nq):
-                    for p in range(2):
-                        for rr in range(nr):
-                            for lv in range(nell):
-                                lval = self.lvals[lv]
-                                nm = lval+1
-                                tmp = np.reshape(swapread(fd,dtype='float64',count=nm,swap=bs),(nm), order = 'F')
-
-                                if (p == 0):
-                                    self.vals[0:nm,lv,rr,qv,i].real = tmp
-                                else:
-                                    self.vals[0:nm,lv,rr,qv,i].imag = tmp
-            else:
-                # p/q ordering is swapped in later versions
+            for qv in range(nq):
                 for p in range(2):
-                    for qv in range(nq):
-                        for rr in range(nr):
-                            for lv in range(nell):
-                                lval = self.lvals[lv]
-                                nm = lval+1
-                                tmp = np.reshape(swapread(fd,dtype='float64',count=nm,swap=bs),(nm), order = 'F')
+                    for rr in range(nr):
+                        for lv in range(nell):
+                            lval = self.lvals[lv]
+                            nm = lval+1
+                            tmp = np.reshape(swapread(fd,dtype='float64',count=nm,swap=bs),(nm), order = 'F')
 
-                                if (p == 0):
-                                    self.vals[0:nm,lv,rr,qv,i].real = tmp
-                                else:
-                                    self.vals[0:nm,lv,rr,qv,i].imag = tmp
+                            if (p == 0):
+                                self.vals[0:nm,lv,rr,qv,i].real = tmp
+                            else:
+                                self.vals[0:nm,lv,rr,qv,i].imag = tmp
 
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        if (self.version < 5):
+        if (self.version < 4):
             # The m>0 --power-- is too high by a factor of 2
             # We divide the --complex amplitude-- by sqrt(2)
             self.vals[1:,:,:,:,:] /= np.sqrt(2.0)
