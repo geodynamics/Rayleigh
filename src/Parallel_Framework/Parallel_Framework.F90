@@ -160,7 +160,7 @@ Contains
             Write(istr,'(i6)')self%npcol
             call stdout%print(" ---- NPCOL : "//trim(istr))
         Endif
-        If (self%nprow .le. 0) Then
+        If (self%nprow .le. 1) Then
             If (self%gcomm%rank .eq. 0) Then
                 Call stdout%print('........................................................')
                 Call stdout%print(' --- Error:  nprow must be at least 1.  Exiting...')
@@ -168,7 +168,7 @@ Contains
             Call self%exit()
         Endif
 
-        If (self%npcol .le. 0) Then
+        If (self%npcol .le. 1) Then
             If (self%gcomm%rank .eq. 0) Then
                 Call stdout%print('........................................................')
                 Call stdout%print(' --- Error:  npcol must be at least 1.  Exiting...')

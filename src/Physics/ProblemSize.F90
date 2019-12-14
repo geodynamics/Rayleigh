@@ -189,11 +189,11 @@ Contains
         nprow_max = n_l/2 + Mod(n_l,2)
 
         Allocate(factors_of_ncpu(2,imax))
-
         Allocate(ratio_measure(1:4,1:3), have_pair(1:4,1:3))  
         Allocate(factor_type(1:imax*2))
         Allocate(factor_balanced(1:imax*2))
         Allocate(suitable_factors(1:2,1:4,1:3)) ! 1=> (f1,f2) -> (nprow, npcol), 2=> (f1,f2) -> (npcol,nprow)
+
         fewer_npcol = .true.   ! favor configurations with npcol < nprow when nprow == npcol is not possible
 
         factor_balanced(:) = .false.
@@ -211,7 +211,6 @@ Contains
                 If (Min(f1,f2) .ge. 2) Then  ! nprow and npcol must be at least 2
                     fcount = fcount+1
                     factors_of_ncpu(1:2,fcount) = (/ f1, f2 /)
-                    !If (global_rank .eq. 0) Write(6,*)'f1,f2: ',f1,f2 , ncpu
                 Endif
             Endif
         Enddo
@@ -262,13 +261,11 @@ Contains
                     
                     rval = ABS(1.0d0-MAX(DBLE(f1)/DBLE(f2),DBLE(f2)/DBLE(f1)))
     
-                    !If (global_rank .eq. 0) Write(6,*)'nprow / npcol: ',f1,f2, rval, i3,i4
                     If (rval .lt. ratio_measure(i3,i4) ) Then
                         ! This is a better combination for these parameters than we've encountered yet
                         suitable_factors(1:2,i3,i4) = (/ f1, f2 /)
                         ratio_measure(i3,i4) = rval
                         have_pair(i3,i4) = .true.
-                        !If (global_rank .eq. 0) Write(6,*)'            ^-------------- Storing that one'
                     Endif                
                 Endif
             Enddo
@@ -278,7 +275,6 @@ Contains
         ! Next, identify the smallest possible ratio
         min_ratio = MINVAL(ratio_measure)
         rtol = 2.0d0
-        !If (global_rank .eq. 0) Write(6,*)'min ratio: ', min_ratio
         need_pair = .true.
 
         ! Now, parse the array of suitable pairs in such an order
@@ -433,7 +429,6 @@ Contains
 
     End Subroutine Establish_Grid_Parameters
 
-
     Subroutine Initialize_Horizontal_Grid()
         Implicit None
         Integer :: tmp, l
@@ -465,8 +460,8 @@ Contains
         csctheta = 1/sintheta
         cottheta = costheta/sintheta
         ! Calculate spacing of equally distributed phi points, then the phi grid
-	! The range of 0 to just below 2*pi (increasing) agrees with the Meridional
-	! and Equatorial Slices
+        ! The range of 0 to just below 2*pi (increasing) agrees with the Meridional
+        ! and Equatorial Slices
         delta_phi = two_pi/n_phi
         Do k = 1, n_phi
             phivals(k) = (k-1)*delta_phi
@@ -599,6 +594,7 @@ Contains
             Endif
             tmp = tmp+1
         Enddo
+        If ( (npcol .eq. 1) .or. (nprow .eq. 1) ) Call Add_Ecode(10)
     End Subroutine Consistency_Check
 
     Subroutine Halt_On_Error()
@@ -668,7 +664,12 @@ Contains
                                 &trim(adjustl(istr))// &
                                 & ")          :  "//trim(adjustl(istr2)))
                         Enddo
-
+                    Case(10)
+                        Call stdout%print('  ERROR:  Neither nprow nor npcol may equal 1.')
+                        Write(istr,'(i6)')npcol
+                        Call stdout%print('          current NPCOL :'//trim(istr))
+                        Write(istr,'(i6)')n_r
+                        Call stdout%print('          current N_R   :'//trim(istr))
                     End Select
                     If (perr(i) .gt. 0) Call stdout%print(' ')
                 Enddo
