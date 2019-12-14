@@ -59,6 +59,7 @@ Parallel_IO.o : Parallel_IO.F90 General_MPI.o Spherical_Buffer.o Legendre_Transf
 ProblemSize.o : ProblemSize.F90 Timers.o BufferedOutput.o Math_Constants.o Chebyshev_Polynomials.o Controls.o Spectral_Derivatives.o Legendre_Polynomials.o Parallel_Framework.o 
 Ra_MPI_Base.o : Ra_MPI_Base.F90 
 Run_Param_Header.dbg.o : Run_Param_Header.dbg.F 
+Run_Param_Header.opt.o : Run_Param_Header.opt.F 
 Run_Parameters.o : Run_Parameters.F90 PDE_Coefficients.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o ProblemSize.o Parallel_Framework.o Controls.o 
 SendReceive.o : SendReceive.F90 Ra_MPI_Base.o 
 Spectral_Derivatives.o : Spectral_Derivatives.F90 Structures.o 
