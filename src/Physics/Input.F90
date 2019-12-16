@@ -93,7 +93,7 @@ Contains
         !///////////////////
         
         If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast!'
-        If (my_sim_rank .eq. 1) Write(6,*)input_as_string
+        If (my_sim_rank .eq. 0) Write(6,*)input_as_string
         Read(input_as_string, nml=problemsize_namelist)
         Read(input_as_string, nml=numerical_controls_namelist)
         Read(input_as_string, nml=physical_controls_namelist)
