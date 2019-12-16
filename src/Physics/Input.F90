@@ -93,9 +93,11 @@ Contains
         !///////////////////
         
         If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast!'
-        If (my_sim_rank .eq. 0) Write(6,*)input_as_string
+        !If (my_sim_rank .eq. 0) Write(6,*)input_as_string
         Read(input_as_string, nml=problemsize_namelist)
+        Write(6,*)'problemsize read'
         Read(input_as_string, nml=numerical_controls_namelist)
+        WRite(6,*)'numerical controls read'
         Read(input_as_string, nml=physical_controls_namelist)
         Read(input_as_string, nml=temporal_controls_namelist)
         Read(input_as_string, nml=io_controls_namelist)
@@ -120,7 +122,7 @@ Contains
         Integer :: iunit,istat
         Character(len=1) :: c
 
-        Open(NewUnit=iunit,File=filename,Status='OLD',&
+        Open(NewUnit=iunit,File=filename,Status='OLD' ,&
                 Form='UNFORMATTED',Access='STREAM',IOStat=istat)
 
         If (istat==0) Then
