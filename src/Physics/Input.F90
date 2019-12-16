@@ -24,7 +24,7 @@ Module Input
     Use Controls,     Only : temporal_controls_namelist, numerical_controls_namelist, &
                             & physical_controls_namelist, max_iterations, pad_alltoall, &
                             & multi_run_mode, nruns, rundirs, my_path, run_cpus, &
-                            & io_controls_namelist, new_iteration, jobinfo_file
+                            & io_controls_namelist, new_iteration, jobinfo_file, my_sim_id
     Use Spherical_IO, Only : output_namelist
     Use BoundaryConditions, Only : boundary_conditions_namelist
     Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, magnetic_init_type
@@ -45,6 +45,7 @@ Contains
     Subroutine Main_Input()
         Implicit None
         Character*120 :: input_file
+        Character(len=:), Allocatable :: input_as_string
         input_file = Trim(my_path)//'main_input'
 
         ! First read the main input file
@@ -66,6 +67,89 @@ Contains
         Call CheckArgs()
 
     End Subroutine Main_Input
+
+    Subroutine Main_Input_Broadcast()
+        Use RA_MPI_Base
+        Use MPI_Layer
+        Implicit None
+        Integer :: numchar, my_sim_rank, ierr
+        Character*120 :: input_file
+        Character(len=:), Allocatable :: input_as_string
+        Type(Communicator) :: sim_comm
+        input_file = Trim(my_path)//'main_input'
+
+        ! For multi-run mode, we need a unique communicator for each run before the read/broadcast.
+        Call MPI_COMM_SPLIT(MPI_COMM_WORLD, my_sim_id, global_rank, sim_comm%comm, ierr)
+        Call mpi_comm_rank(sim_comm%comm, sim_comm%rank, ierr)
+        my_sim_rank = sim_comm%rank
+        !Only rank 0 opens the file
+    
+
+        If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,numchar)
+        Call MPI_Bcast(numchar, 1, MPI_INTEGER, 0, sim_comm%comm,ierr)
+        If (my_sim_rank .gt. 0)  Allocate( Character(Len=numchar) :: input_as_string )
+        Call MPI_Bcast(input_as_string, numchar, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
+
+        !///////////////////
+        
+        If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast!'
+        If (my_sim_rank .eq. 1) Write(6,*)input_as_string
+        Read(input_as_string, nml=problemsize_namelist)
+        Read(input_as_string, nml=numerical_controls_namelist)
+        Read(input_as_string, nml=physical_controls_namelist)
+        Read(input_as_string, nml=temporal_controls_namelist)
+        Read(input_as_string, nml=io_controls_namelist)
+        Read(input_as_string, nml=output_namelist)
+        Read(input_as_string, nml=boundary_conditions_namelist)
+        Read(input_as_string, nml=initial_conditions_namelist)
+        Read(input_as_string, nml=test_namelist)
+        Read(input_as_string, nml=reference_namelist)
+        Read(input_as_string, nml=Transport_Namelist)
+        !Close(20)
+
+        ! Check the command line to see if any arguments were passed explicitly
+        Call CheckArgs()
+
+    End Subroutine Main_Input_Broadcast
+
+    Subroutine File_to_String(filename, str, filesize)
+        Implicit None
+        Character(len=*),Intent(in) :: filename
+        Character(len=:),Allocatable,Intent(out) :: str
+        Integer, Intent(Out) :: filesize
+        Integer :: iunit,istat
+        Character(len=1) :: c
+
+        Open(NewUnit=iunit,File=filename,Status='OLD',&
+                Form='UNFORMATTED',Access='STREAM',IOStat=istat)
+
+        If (istat==0) Then
+            !how many characters are in the file:
+            Inquire(file=filename, size=filesize)
+            If (filesize>0) Then
+                !read the file all at once:
+                Allocate( Character(Len=filesize) :: str )
+                Read(iunit,pos=1,IOStat=istat) str
+            
+                If (istat==0) Then
+                    !make sure it was all read by trying to read more:
+                    Read(iunit,pos=filesize+1,IOStat=istat) c
+                    If (.not. IS_IOSTAT_END(istat)) &
+                        Write(*,*) 'Error: file was not completely read.'
+                Else
+                    Write(*,*) 'Error reading file.'
+                Endif
+            
+                Close(iunit, IOStat=istat)
+            Else
+                Write(*,*) 'Error getting file size.'
+            EndIf
+        Else
+            Write(*,*) 'Error opening file.'
+        Endif
+
+    End Subroutine File_to_String
+
 
     Subroutine Check_Run_Mode()
         ! Checks the command line for multiple run flag
@@ -167,6 +251,7 @@ Contains
                     If ( (global_rank .le. mx_rank) .and. (global_rank .ge. mn_rank) ) Then
                         my_path = rundirs(i)
                         my_path = Trim(my_path)//'/'
+                        my_sim_id = i
                     Endif
                     mn_rank = mx_rank+1
                 Enddo

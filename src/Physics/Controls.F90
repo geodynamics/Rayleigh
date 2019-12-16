@@ -30,6 +30,7 @@ Module Controls
     Integer :: nruns = 0 ! only set to non-zero value if multi_run_mode is True
     Integer, Allocatable :: run_cpus(:)
     Character*120 :: my_path = ''
+    Integer :: my_sim_id = 1  ! Simulation ID (needed for main_input broadcast)
 
     !////////////////////////////////////////////////////////////////////////////////
     ! Numerical Controls
