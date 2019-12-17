@@ -89,10 +89,10 @@ Contains
         Call MPI_Bcast(numchar, 1, MPI_INTEGER, 0, sim_comm%comm,ierr)
         If (my_sim_rank .gt. 0)  Allocate( Character(Len=numchar) :: input_as_string )
         Call MPI_Bcast(input_as_string, numchar, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
-
+        
         !///////////////////
         
-        If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast!'
+        If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast! numchar is: ', numchar
         If (my_sim_rank .eq. 0) Write(6,*)input_as_string
         Read(input_as_string, nml=problemsize_namelist)
         !Write(6,*)'problemsize read'
