@@ -76,43 +76,48 @@ Contains
         Character*120 :: input_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
+        Logical :: read_complete
         input_file = Trim(my_path)//'main_input'
 
         ! For multi-run mode, we need a unique communicator for each run before the read/broadcast.
+        ! Simulation-specific communicators have yet to be set up at this point in the program flow.
+        ! We create some temporary communicators here so that run parameters can be broadcast.
         Call MPI_COMM_SPLIT(MPI_COMM_WORLD, my_sim_id, global_rank, sim_comm%comm, ierr)
         Call mpi_comm_rank(sim_comm%comm, sim_comm%rank, ierr)
         my_sim_rank = sim_comm%rank
-        !Only rank 0 opens the file
-    
 
+    
+        ! Rank zero read the file and broadcasts the file size to all other ranks.
         If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,nlines,line_len)
         pars(1:2) = (/ nlines, line_len /)
         Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
+
         nlines = pars(1)
         line_len = pars(2)
         If (my_sim_rank .gt. 0)  Allocate(  character(len=line_len) :: input_as_string(nlines) )
+
+        ! Rank 0 broadcasts the file contents
         Call MPI_Bcast(input_as_string, nlines*line_len, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
         
-        !///////////////////
-        
-        If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast!'
-        If (my_sim_rank .eq. 0) Write(6,*)input_as_string
-        Read(input_as_string, nml=problemsize_namelist)
-        Write(6,*)'read: ', nprow, npcol
-        !Write(6,*)'problemsize read'
-        Read(input_as_string, nml=numerical_controls_namelist)
-        !WRite(6,*)'numerical controls read'
-        Read(input_as_string, nml=physical_controls_namelist)
-        Read(input_as_string, nml=temporal_controls_namelist)
-        Read(input_as_string, nml=io_controls_namelist)
-        Read(input_as_string, nml=output_namelist)
-        Read(input_as_string, nml=boundary_conditions_namelist)
-        Read(input_as_string, nml=initial_conditions_namelist)
-        Read(input_as_string, nml=test_namelist)
-        Read(input_as_string, nml=reference_namelist)
-        Read(input_as_string, nml=Transport_Namelist)
-        !Close(20)
+        ! Each rank then reads the namelists from the character array
+        read_complete = .false.
+        Read(input_as_string, nml=problemsize_namelist, err=314)
+        Read(input_as_string, nml=numerical_controls_namelist, err=314)
+        Read(input_as_string, nml=physical_controls_namelist, err=314)
+        Read(input_as_string, nml=temporal_controls_namelist, err=314)
+        Read(input_as_string, nml=io_controls_namelist, err=314)
+        Read(input_as_string, nml=output_namelist, err=314)
+        Read(input_as_string, nml=boundary_conditions_namelist, err=314)
+        Read(input_as_string, nml=initial_conditions_namelist, err=314)
+        Read(input_as_string, nml=test_namelist, err=314)
+        Read(input_as_string, nml=reference_namelist, err=314)
+        Read(input_as_string, nml=Transport_Namelist, err=314)
 
+        read_complete = .true.
+
+314     If (.not. read_complete) Then
+            If (my_sim_rank .eq. 0) Write(6,*)'error on read!'
+        Endif
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
 
@@ -163,7 +168,7 @@ Contains
             Do i = 1, nlines
                 Read(iunit,'(a)',iostat=istat) line
 
-                com_check = index(line,'!')
+                com_check = index(line,';')
                 If (com_check .gt. 1) Then
                     lines(i)(1:com_check-1) = line(1:com_check-1)
                     lines(i)(com_check:max_len)=''
@@ -172,7 +177,7 @@ Contains
                 Else
                     lines(i) = line
                 Endif
-                Write(6,*)lines(i)
+
             Enddo
             Close(iunit)
 
