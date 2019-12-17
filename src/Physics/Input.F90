@@ -80,7 +80,11 @@ Contains
                 Write(6,*)'  '
             Endif
         Else
-            If (my_sim_rank .eq. 0) Write(6,*)'...  Multi-process read of main_input succeeded.'
+            If (my_sim_rank .eq. 0) Then
+                Write(6,*)' '
+                Write(6,*)'...  Multi-process read of main_input succeeded.'
+                Write(6,*)' '
+            Endif
         Endif       
 
     End Subroutine Main_Input_All_Read
