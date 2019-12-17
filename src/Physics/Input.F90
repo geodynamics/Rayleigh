@@ -168,10 +168,10 @@ Contains
             Do i = 1, nlines
                 Read(iunit,'(a)',iostat=istat) line
 
-                com_check = index(line,';')
+                com_check = index(line,'!')
                 If (com_check .gt. 1) Then
                     lines(i)(1:com_check-1) = line(1:com_check-1)
-                    lines(i)(com_check:max_len)=''
+                    !lines(i)(com_check:max_len)=''
                 Else If (com_check .eq. 1) Then
                     lines(i) = ''
                 Else
