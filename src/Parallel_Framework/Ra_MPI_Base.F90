@@ -34,6 +34,4 @@ Module Ra_MPI_Base
     Private ::  mpi_null_delete_fn, mpi_dup_fn, mpi_null_copy_fn
     Public :: mpi_wtime,mpi_wtick
 
-Contains
-
 End Module Ra_MPI_Base
