@@ -72,9 +72,9 @@ Contains
         Use RA_MPI_Base
         Use MPI_Layer
         Implicit None
-        Integer :: numchar, my_sim_rank, ierr
+        Integer :: nlines, line_len, my_sim_rank, ierr, pars(2)
         Character*120 :: input_file
-        Character, Allocatable :: input_as_string(:)
+        Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
         input_file = Trim(my_path)//'main_input'
 
@@ -85,16 +85,20 @@ Contains
         !Only rank 0 opens the file
     
 
-        If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,numchar)
-        Call MPI_Bcast(numchar, 1, MPI_INTEGER, 0, sim_comm%comm,ierr)
-        If (my_sim_rank .gt. 0)  Allocate(  input_as_string(numchar) )
-        Call MPI_Bcast(input_as_string, numchar, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
+        If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,nlines,line_len)
+        pars(1:2) = (/ nlines, line_len /)
+        Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
+        nlines = pars(1)
+        line_len = pars(2)
+        If (my_sim_rank .gt. 0)  Allocate(  character(len=line_len) :: input_as_string(nlines) )
+        Call MPI_Bcast(input_as_string, nlines*line_len, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
         
         !///////////////////
         
-        If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast! numchar is: ', numchar
+        If (my_sim_rank .eq. 0) Write(6,*)'Inside main_input_broadcast!'
         If (my_sim_rank .eq. 0) Write(6,*)input_as_string
         Read(input_as_string, nml=problemsize_namelist)
+        Write(6,*)'read: ', nprow, npcol
         !Write(6,*)'problemsize read'
         Read(input_as_string, nml=numerical_controls_namelist)
         !WRite(6,*)'numerical controls read'
@@ -114,44 +118,67 @@ Contains
 
     End Subroutine Main_Input_Broadcast
 
-    Subroutine File_to_String(filename, str, filesize)
+    Subroutine File_to_String(filename, lines, nlines,max_len)
         Implicit None
         Character(len=*),Intent(in) :: filename
-        Character,Allocatable,Intent(out) :: str(:)
-        Integer, Intent(Out) :: filesize
+        Character(len=:), Allocatable :: str
+        Integer, Intent(Out) :: nlines, max_len
         Integer :: iunit,istat
         Character(len=1) :: c
+        Character(512):: line, line2
+        Integer :: com_check, line_len, i
+        Character(len=:), Allocatable, Intent(out) :: lines(:)
 
-        Open(NewUnit=iunit,File=filename,Status='OLD' ,&
-                Form='UNFORMATTED',Access='STREAM',IOStat=istat)
+        ! This routine reads filename into the output character array 'lines.'
+        ! For each line, it filters out any comments( !-marks and ensuing text).
 
-        If (istat==0) Then
-            !how many characters are in the file:
-            Inquire(file=filename, size=filesize)
-            If (filesize>0) Then
-                !read the file all at once:
-                Allocate( str(filesize) )
-                Read(iunit,pos=1,IOStat=istat) str
-            
-                If (istat==0) Then
-                    !make sure it was all read by trying to read more:
-                    Read(iunit,pos=filesize+1,IOStat=istat) c
-                    If (.not. IS_IOSTAT_END(istat)) &
-                        Write(*,*) 'Error: file was not completely read.'
+        ! First pass: Count lines and record longest line length.
+        max_len = 0
+        Open(NewUnit=iunit,File=filename,Status='OLD' ,IOStat=istat)
+        If (istat .eq. 0) Then
+            nlines = 0 
+            Do
+                Read(iunit,'(a)',IOStat=istat) line
+                If (istat .ne. 0) Exit
+
+                com_check = index(line,'!') ! Locate comments
+                If (com_check .ne. 0) Then
+                    line_len = com_check-1
                 Else
-                    Write(*,*) 'Error reading file.'
+                    line_len = LEN(TRIM(line))
                 Endif
-            
-                Close(iunit, IOStat=istat)
-            Else
-                Write(*,*) 'Error getting file size.'
-            EndIf
-        Else
-            Write(*,*) 'Error opening file.'
+                max_len = MAX(max_len,line_len)
+                nlines = nlines + 1
+            Enddo
+            Close (iunit)
+
+            print*, nlines, max_len
         Endif
 
-    End Subroutine File_to_String
+        Allocate(character(len=max_len) :: lines(nlines))
 
+        ! Second pass: Read the lines + filter out comments
+        Open(NewUnit=iunit,File=filename,Status='OLD' , IOStat=istat)
+        If (istat .eq. 0) Then
+            Do i = 1, nlines
+                Read(iunit,'(a)',iostat=istat) line
+
+                com_check = index(line,'!')
+                If (com_check .gt. 1) Then
+                    lines(i)(1:com_check-1) = line(1:com_check-1)
+                    lines(i)(com_check:max_len)=''
+                Else If (com_check .eq. 1) Then
+                    lines(i) = ''
+                Else
+                    lines(i) = line
+                Endif
+                Write(6,*)lines(i)
+            Enddo
+            Close(iunit)
+
+        Endif        
+
+    End Subroutine File_to_String
 
     Subroutine Check_Run_Mode()
         ! Checks the command line for multiple run flag
