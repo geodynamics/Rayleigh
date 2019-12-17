@@ -141,7 +141,7 @@ Contains
                 Write(6,*)' '
                 Write(6,*)' Error:  Multi-process read of main_input also failed.'
                 Write(6,*)' Check the contents of your main_input file. '
-                Write(6,*)' Error message:  '
+                Write(6,*)' Compiler error message:  '
                 Write(6,*)'   ', TRIM(emsg)
                 Write(6,*)'  '
             Endif
