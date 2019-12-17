@@ -74,7 +74,7 @@ Contains
         Implicit None
         Integer :: numchar, my_sim_rank, ierr
         Character*120 :: input_file
-        Character(len=:), Allocatable :: input_as_string
+        Character(len=256), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
         input_file = Trim(my_path)//'main_input'
 
@@ -87,7 +87,7 @@ Contains
 
         If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,numchar)
         Call MPI_Bcast(numchar, 1, MPI_INTEGER, 0, sim_comm%comm,ierr)
-        If (my_sim_rank .gt. 0)  Allocate( Character(Len=numchar) :: input_as_string )
+        If (my_sim_rank .gt. 0)  Allocate( Character(Len=256) :: input_as_string(numchar) )
         Call MPI_Bcast(input_as_string, numchar, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
         
         !///////////////////
@@ -117,7 +117,7 @@ Contains
     Subroutine File_to_String(filename, str, filesize)
         Implicit None
         Character(len=*),Intent(in) :: filename
-        Character(len=:),Allocatable,Intent(out) :: str
+        Character(len=256),Allocatable,Intent(out) :: str(:)
         Integer, Intent(Out) :: filesize
         Integer :: iunit,istat
         Character(len=1) :: c
@@ -130,7 +130,7 @@ Contains
             Inquire(file=filename, size=filesize)
             If (filesize>0) Then
                 !read the file all at once:
-                Allocate( Character(Len=filesize) :: str )
+                Allocate( Character(Len=256) :: str(filesize) )
                 Read(iunit,pos=1,IOStat=istat) str
             
                 If (istat==0) Then
