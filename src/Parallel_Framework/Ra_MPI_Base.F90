@@ -33,4 +33,14 @@ Module Ra_MPI_Base
 
     Private ::  mpi_null_delete_fn, mpi_dup_fn, mpi_null_copy_fn
     Public :: mpi_wtime,mpi_wtick
+
+Contains
+    Subroutine Exit_MPI(ecode)
+        Integer, Intent(In), Optional :: ecode
+        Integer :: error,exit_status
+        exit_status=0
+        If (present(ecode)) exit_status = ecode
+        Call MPI_Finalize(error)
+        Call Exit(exit_status)
+    End Subroutine Exit_MPI
 End Module Ra_MPI_Base
