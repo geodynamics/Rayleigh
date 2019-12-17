@@ -111,7 +111,8 @@ Contains
     Subroutine Main_Input_All_Read()
         Use RA_MPI_Base
         Implicit None
-        Character*120 :: input_file, emsg
+        Character*120 :: input_file
+        Character*256 :: emsg
         Logical :: read_complete
         Integer :: ierr
 
@@ -141,7 +142,7 @@ Contains
                 Write(6,*)' Error:  Multi-process read of main_input also failed.'
                 Write(6,*)' Check the contents of your main_input file. '
                 Write(6,*)' Error message:  '
-                Write(6,*)'   ', emsg
+                Write(6,*)'   ', TRIM(emsg)
                 Write(6,*)'  '
             Endif
 
