@@ -40,17 +40,23 @@ Module Input
         Module Procedure Read_CMD_String
     End Interface
 
+    Integer, Private :: my_sim_rank
+
 Contains
 
-    Subroutine Main_Input()
+
+
+    Subroutine Main_Input_All_Read()
         Implicit None
-        Character*120 :: input_file
+        Character*120 :: input_file, emsg
         Character(len=:), Allocatable :: input_as_string
+        Logical :: read_complete
         input_file = Trim(my_path)//'main_input'
 
         ! First read the main input file
+        read_complete = .false.
         Open(unit=20, file=input_file, status="old", position="rewind")
-        Read(unit=20, nml=problemsize_namelist)
+        Read(unit=20, nml=problemsize_namelist, err=315, iomsg=emsg)
         Read(unit=20, nml=numerical_controls_namelist)
         Read(unit=20, nml=physical_controls_namelist)
         Read(unit=20, nml=temporal_controls_namelist)
@@ -62,17 +68,28 @@ Contains
         Read(unit=20, nml=reference_namelist)
         Read(unit=20, nml=Transport_Namelist)
         Close(20)
+        read_complete = .true.
 
-        ! Check the command line to see if any arguments were passed explicitly
-        Call CheckArgs()
+315     If (.not. read_complete) Then
+            If (my_sim_rank .eq. 0) Then
+                Write(6,*)' '
+                Write(6,*)' Error:  Multi-process read of main_input also failed.'
+                Write(6,*)' Check the contents of your main_input file. '
+                Write(6,*)' Error message:  '
+                Write(6,*)'   ', emsg
+                Write(6,*)'  '
+            Endif
+        Else
+            If (my_sim_rank .eq. 0) Write(6,*)'...  Multi-process read of main_input succeeded.'
+        Endif       
 
-    End Subroutine Main_Input
+    End Subroutine Main_Input_All_Read
 
-    Subroutine Main_Input_Broadcast()
+    Subroutine Main_Input()
         Use RA_MPI_Base
         Use MPI_Layer
         Implicit None
-        Integer :: nlines, line_len, my_sim_rank, ierr, pars(2)
+        Integer :: nlines, line_len,  ierr, pars(2)
         Character*120 :: input_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
@@ -116,12 +133,18 @@ Contains
         read_complete = .true.
 
 314     If (.not. read_complete) Then
-            If (my_sim_rank .eq. 0) Write(6,*)'error on read!'
+            If (my_sim_rank .eq. 0) Then
+                Write(6,*)' '
+                Write(6,*)' Error reading main_input file as broadcast by rank 0.'
+                Write(6,*)' Each rank will now attempt to read main_input independently.'
+                Write(6,*)' '
+            Endif
+            Call Main_Input_All_Read()
         Endif
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
 
-    End Subroutine Main_Input_Broadcast
+    End Subroutine Main_Input
 
     Subroutine File_to_String(filename, lines, nlines,max_len)
         Implicit None

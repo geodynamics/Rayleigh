@@ -52,7 +52,7 @@ Program Main!
     Call Check_Run_Mode()   !This needs to be done before ever reading main input (handles multiple runs)
 
 
-    Call Main_Input_Broadcast()
+    Call Main_Input()
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
 
     If (test_mode) Then
