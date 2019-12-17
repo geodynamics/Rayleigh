@@ -88,7 +88,7 @@ Contains
         If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,numchar)
         Call MPI_Bcast(numchar, 1, MPI_INTEGER, 0, sim_comm%comm,ierr)
         If (my_sim_rank .gt. 0)  Allocate( Character(Len=256) :: input_as_string(numchar) )
-        Call MPI_Bcast(input_as_string, numchar, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
+        Call MPI_Bcast(input_as_string, numchar*256, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
         
         !///////////////////
         
