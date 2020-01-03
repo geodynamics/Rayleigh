@@ -38,4 +38,8 @@ Module Structures
         Real*8, Allocatable :: data(:,:,:,:)
     End Type rmcontainer4d
 
+    Type, Public :: imcontainer1d
+        Integer, Allocatable :: data(:)
+    End Type imcontainer1d
+
 End Module Structures

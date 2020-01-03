@@ -91,14 +91,12 @@ Module Controls
     Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
     Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
     Real*8  :: min_time_step = 1.0d-13
-    Integer :: chk_type = 1                    ! Set to 2 for memory friendly IO (WRITE).  In development
-    Integer :: read_chk_type = 1               ! Same, but (READ)
     Integer :: diagnostic_reboot_interval = 10000000
     Integer :: new_iteration = 0
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
-                & cflmax, cflmin, max_time_step,chk_type, diagnostic_reboot_interval, min_time_step, &
+                & cflmax, cflmin, max_time_step, diagnostic_reboot_interval, min_time_step, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
-                & max_time_minutes, save_last_timestep, new_iteration,read_chk_type, save_on_sigterm, &
+                & max_time_minutes, save_last_timestep, new_iteration, save_on_sigterm, &
                 & max_simulated_time
 
 
@@ -109,6 +107,7 @@ Module Controls
     Integer :: stdout_flush_interval = 50  ! Lines stored before stdout buffer is flushed to stdout_unit
     Integer :: terminate_check_interval = 50  ! check for presence of terminate_file every n-th time step
     Integer :: statusline_interval = 1  ! output status information only every n-th time step
+    Integer :: outputs_per_row = 1    ! Number of MPI ranks, per process row, that participate in parallel writes.
     Character*120 :: stdout_file = 'nofile'
     Character*120 :: jobinfo_file = 'jobinfo.txt'
     Character*120 :: terminate_file = 'terminate'
@@ -117,7 +116,9 @@ Module Controls
     Integer :: decimal_places = 3         ! Number of digits after decimal for scientific notation output
 
     Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
-       stdout_file,jobinfo_file,terminate_file, integer_output_digits, integer_input_digits, decimal_places
+       stdout_file,jobinfo_file,terminate_file, integer_output_digits, integer_input_digits, &
+       decimal_places, outputs_per_row
+
 
     !//////////////////////////////////////////////////////////////////////////////////
     !Variables that are controlled by those which appear in a namelist
@@ -196,8 +197,6 @@ Contains
         Write(dig_str2,'(i2)')decimal_places
         sci_note_fmt = '(ES'//trim(dig_str)//'.'//trim(dig_str2)//')'
 
-
-
     End Subroutine Initialize_IO_Format_Codes
 
     Subroutine Restore_Physics_Defaults()
@@ -241,7 +240,6 @@ Contains
         cflmin = 0.6d0
         max_time_step = 1.0d0
         min_time_step = 1.0d-13
-        chk_type = 1
         diagnostic_reboot_interval = -1
     End Subroutine Restore_Temporal_Defaults
 

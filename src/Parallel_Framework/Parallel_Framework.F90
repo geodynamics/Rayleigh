@@ -59,6 +59,12 @@ Module Parallel_Framework
         !##################################################
         Type(Load_Config), Allocatable, Public :: lb_1p(:), lb_1s(:)
 
+        !################################################################
+        ! This variable intended for use in tandem with other classes that
+        ! use the parallel interface object.
+        ! When parallel I/O takes place, npcol*n_output_column ranks
+        ! participate in the write operation.
+        Integer :: output_columns = 1          
 
         Contains
         Procedure :: Init_World_Comm
@@ -136,6 +142,18 @@ Contains
         Else
             ! get the process grid info from the environment
         Endif
+
+        !/////////////////////////////////////////////////////////
+        ! Ensure that  we're not attempting to parallel-write using
+        ! nonexistent MPI ranks.
+        If (pars(11) .gt. self%nprow) Then
+            self%output_columns = self%nprow
+        Else
+            self%output_columns = pars(11)
+        Endif
+        If (self%output_columns .lt. 1) self%output_columns = 1
+        
+
         If (size(ncpus) .gt. 1) Then
             !Multiple run Mode
             self%gcomm = Init_SubGroup(self%wcomm,ncpus,error)
@@ -146,8 +164,8 @@ Contains
             self%gcomm%comm = self%wcomm%comm
 
         Endif
+      
         If (self%gcomm%rank .eq. 0) Then
-
             Call stdout%print(" //////////////////////////////////////")
             Call stdout%print(" Initializating Rayleigh...")
             Write(istr,'(i6)')self%npe
@@ -309,5 +327,11 @@ Contains
         Call Exit_Comm_Lib(error)
         Call Exit(exit_status)
     End Subroutine Finalize_Framework
+
+
+
+
+
+
 
 End Module Parallel_Framework

@@ -138,6 +138,7 @@ Contains
         iteration = first_iteration
 
 
+
         !//////////////   BEGIN MAIN LOOP
         Do while (iteration .le. last_iteration)
             !Check here to see if this is an output iteration.
@@ -254,13 +255,7 @@ Contains
             Call IsItTimeForACheckpoint(iteration)
             If (ItIsTimeForACheckpoint) Then
                 Call StopWatch(cwrite_time)%StartClock()
-                If (chk_type .ne. 2) Then
-                    Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
-
-                Else
-                    Call Write_Checkpoint_Alt(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
-
-                Endif
+                Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
                 Call StopWatch(cwrite_time)%Increment()
             Endif
 
