@@ -35,15 +35,18 @@ Module Spherical_IO
     Use Parallel_IO
     Implicit None
     ! This module contains routines for outputing spherical data as:
-    ! 1. Slices of sphere
-    ! 2. Phi-Averages over sphere (f(r,theta))
-    ! 3. Phi/theta Averages over sphere ((f(r))
-    ! 4. Volume averages over sphere
-    ! 5. 3-D Output on Spherical grid
-    ! 6. Spectra on slices of the sphere
-    ! 7. Sampled via individual spherical harmonic modes
-    ! 8. Meridional Slices
-    ! 9. Equatorial Slices
+    ! 1. Spherical_3D
+    ! 2. Shell_Avgs
+    ! 3. G_Avgs
+    ! 4. AZ_Avgs
+    ! 5. Equatorial_Slices
+    ! 6. Meridional_Slices
+    ! 7. Shell_Slices
+    ! 8. Point_Probes
+    ! 9. Shell_Spectra
+    !10. SPH_Modes
+    !11. Temp_IO (for development purposes)
+
 
     !////////////////////////////////////////////
     Integer, Parameter :: nqmax=4000, nshellmax=2048, nmeridmax=8192, nmodemax=2048
@@ -56,18 +59,6 @@ Module Spherical_IO
     ! significant changes are made to the output structure (and reflected in the version number)
     ! Version numbers are not assumed to be in sync.  Instead, they reflect how many times
     ! a particular output has been modified substantially.
-
-    !Integer, Parameter :: shellslice_version = 3
-    !Integer, Parameter :: azavg_version = 3
-    !Integer, Parameter :: shellavg_version = 4
-    !Integer, Parameter :: globalavg_version = 3
-    !Integer, Parameter :: shellspectra_version = 3
-    !Integer, Parameter :: equslice_version = 1  
-    !Integer, Parameter :: meridslice_version = 1
-    !Integer, Parameter :: sphmode_version =4
-    !INTEGER, PARAMETER :: probe_version = 1
-    !Integer, Parameter :: full3d_version = 3    !currently unused
-    !Integer, Parameter :: tempio_version = 4    ! set to version # from above testing against, or to 1 for new input testing
 
     Integer, Parameter :: shellslice_version = 5
     Integer, Parameter :: azavg_version = 5
