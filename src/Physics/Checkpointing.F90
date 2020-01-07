@@ -150,7 +150,7 @@ Contains
 
             cfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//'grid_etc'
 
-            open(unit=15,file=cfile,form='unformatted', status='replace')
+            open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
             Write(15)n_r
             Write(15)grid_type
             Write(15)l_max
@@ -209,7 +209,7 @@ Contains
         checkpoint_iter = iteration
         
         under_slash='/'      ! '_' underscore for legacy mode checkpoints
-        access_type='sequential' ! 'sequential' for legacy mode <--- set to stream
+        access_type='stream' ! 'sequential' for legacy mode <--- set to stream
         legacy_mode=.false.
 
         read_var(:) = 0
@@ -264,11 +264,12 @@ Contains
                 under_slash='_'
                 grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
                 Inquire(File=grid_file, Exist=fexist)            
+                access_type='sequential'
             Endif
             If (fexist) Then
-                Write(6,*)'Grid file used is: ', grid_file
+                Write(6,*)'Grid file used is: ', grid_file, access_type
                 Open(unit=15,file=grid_file,form='unformatted', status='old',&
-                     access=access_type, iostat=ierr)
+                     access='stream', iostat=ierr)
                 If (ierr .ne. 0) Then
                     ierr = 2 ! grid file could not be opened
                 Endif
@@ -293,9 +294,9 @@ Contains
                     old_pars(4) = Checkpoint_iter
                 Endif
                 Close(15)
-            Endif
-                old_pars(1) = -ierr
             Else
+                old_pars(1) = -ierr
+            Endif
             Write(dstring,sci_note_fmt)checkpoint_time
             Call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
             old_pars(1) = n_r_old
