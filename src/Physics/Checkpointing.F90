@@ -24,12 +24,11 @@ Module Checkpointing
     Use Parallel_Framework
     Use Spherical_Buffer
     Use Linear_Solve, Only : get_all_rhs
-    Use SendReceive
-    Use ISendReceive
     Use Controls
     Use RA_MPI_BASE
     Use Chebyshev_Polynomials_Alt
     Use Parallel_IO
+    Use MakeDir
 
     Use BufferedOutput
     ! Simple Checkpointing Module
@@ -97,7 +96,7 @@ Contains
                 (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'WAB', 'PAB', 'TAB', 'ZAB' /)
         Endif
         nfs(:) = numfields*2
-        Call chktmp%init(field_count = nfs, config = 'p1a')            ! This structure hangs around through the entire run
+        Call chktmp%init(field_count = nfs, config = 'p1a') ! Persistent throughout run
 
         Allocate(gpars(1:5,1:5))
         gpars(:,:) = -1
@@ -110,7 +109,7 @@ Contains
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
-        Integer :: mp, m, i
+        Integer :: mp, m, i, ecode
         Character*120 :: autostring, iterstring, cfile, checkfile
  
         Call chktmp%construct('p1a')
@@ -132,9 +131,11 @@ Contains
             checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
         Endif
 
+        If (my_rank .eq. 0) Call Make_Directory(Trim(my_path)//checkpoint_prefix,ecode)
+
         ! Cache and write data, index by index.
         Do i = 1, numfields*2
-            checkfile = Trim(my_path)//trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
+            checkfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//trim(checkpoint_suffix(i))
             Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
             Call checkpoint_buffer%write_data(filename=checkfile)
 
@@ -145,8 +146,9 @@ Contains
         If (my_rank .eq. 0) Then
             ! rank 0 writes out a file with the grid, etc.
             ! This file should contain everything that needs to be known
+            
 
-            cfile = Trim(my_path)//trim(checkpoint_prefix)//'_'//'grid_etc'
+            cfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//'grid_etc'
 
             open(unit=15,file=cfile,form='unformatted', status='replace')
             Write(15)n_r
@@ -196,12 +198,19 @@ Contains
         Real*8 :: dt_pars(3),dt,new_dt
         Real*8, Allocatable :: old_radius(:), radius_old(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
-        Character*120 :: autostring, cfile, checkfile, dstring, iterstring
+        Character*120 :: autostring, cfile,  dstring, iterstring, access_type
+        Character*256 :: grid_file, checkfile
         Integer, Allocatable :: gpars(:,:)
+        Character*1 :: under_slash 
+        Logical :: legacy_mode, fexist
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
         checkpoint_iter = iteration
+        
+        under_slash='/'      ! '_' underscore for legacy mode checkpoints
+        access_type='sequential' ! 'sequential' for legacy mode <--- set to stream
+        legacy_mode=.false.
 
         read_var(:) = 0
         If (magnetism) Then
@@ -246,27 +255,49 @@ Contains
             Endif
 
             !process zero reads all the old info and broadcasts to all other ranks
-            cfile = Trim(checkpoint_prefix)//'_'//'grid_etc'
-            open(unit=15,file=cfile,form='unformatted', status='old')
-            Read(15)n_r_old
-            Read(15)grid_type_old
-            Read(15)l_max_old
-            Read(15)dt
-            Read(15)new_dt
-            Allocate(old_radius(1:N_r_old))
-            Read(15)(old_radius(i),i=1,N_R_old)
-            Read(15)Checkpoint_time
-            If (checkpoint_iter .lt. 0) Then
-                ! We're loading a quicksave file
-                ! Need to retrieve iteration from the grid_etc file because
-                ! iteration specified in main_input was a low, negative number
-                Read(15)Checkpoint_iter
-                old_pars(4) = Checkpoint_iter
+           
+            grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
+            Inquire(File=grid_file, Exist=fexist)
+            If (.not. fexist) Then
+                ! The user may be running from legacy-format checkpoints.
+                ! Prior to 1.0, checkpoints did not have a dedicated directory
+                under_slash='_'
+                grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
+                Inquire(File=grid_file, Exist=fexist)            
             Endif
-            Close(15)
+            If (fexist) Then
+                Write(6,*)'Grid file used is: ', grid_file
+                Open(unit=15,file=grid_file,form='unformatted', status='old',&
+                     access=access_type, iostat=ierr)
+                If (ierr .ne. 0) Then
+                    ierr = 2 ! grid file could not be opened
+                Endif
+            Else
+                ierr = 1 ! grid_file did not exist
+            Endif
 
-            write(dstring,sci_note_fmt)checkpoint_time
-            call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
+            If (ierr .eq. 0) Then
+                Read(15)n_r_old
+                Read(15)grid_type_old
+                Read(15)l_max_old
+                Read(15)dt
+                Read(15)new_dt
+                Allocate(old_radius(1:N_r_old))
+                Read(15)(old_radius(i),i=1,N_R_old)
+                Read(15)Checkpoint_time
+                If (checkpoint_iter .lt. 0) Then
+                    ! We're loading a quicksave file
+                    ! Need to retrieve iteration from the grid_etc file because
+                    ! iteration specified in main_input was a low, negative number
+                    Read(15)Checkpoint_iter
+                    old_pars(4) = Checkpoint_iter
+                Endif
+                Close(15)
+            Endif
+                old_pars(1) = -ierr
+            Else
+            Write(dstring,sci_note_fmt)checkpoint_time
+            Call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
             old_pars(1) = n_r_old
             old_pars(2) = grid_type_old
             old_pars(3) = l_max_old
@@ -312,6 +343,8 @@ Contains
         l_max_old     = old_pars(3)
         checkpoint_iter = old_pars(4)
         last_auto = old_pars(5)
+
+        ! NOTE:  Use n_r_old = negative as indicating an error
 
         If (last_auto .ne. -1) Then
             !The prefix should be formed using quicksave
@@ -373,7 +406,7 @@ Contains
         Endif
         Do i = 1, numfields*2
             If (read_var(i) .eq. 1) Then
-                checkfile = trim(checkpoint_prefix)//'_'//trim(checkpoint_suffix(i))
+                checkfile = trim(checkpoint_prefix)//under_slash//trim(checkpoint_suffix(i))
                 Call checkpoint_inbuffer%read_data(filename=checkfile)
                 Call checkpoint_inbuffer%grab_data_spectral(chktmp%s2b,i)
             Endif
