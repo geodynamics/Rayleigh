@@ -396,7 +396,7 @@ Contains
             Enddo
             Allocate(gpars(1:size(rinds),1:5))
             gpars(:,:) = -1
-            gpars(1,:) = rinds(:)
+            gpars(:,1) = rinds(:)
             gpars(1,5) = size(rinds) 
             Call checkpoint_inbuffer%Init(gpars, mpi_tag=checkpoint_tag,spectral=.true., & 
                            cache_spectral = .true., spec_comp = .true., &
