@@ -29,6 +29,7 @@ Module Sphere_Driver
     Use Controls
     Use Timers
     Use Fields
+    Use Run_Parameters, Only : write_run_parameters
 
     !sigterm...
 #ifdef INTEL_COMPILER 
@@ -75,12 +76,9 @@ Contains
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*120 :: dtstr
-        Character*120 :: wtmstr
-        Character*120 :: istr
-        !Character(len=*), parameter :: dtfmt ='(ES11.4)', wtmfmt='(ES9.3E1)', &
+        Character*120 :: dtstr, wtmstr, istr
         Character(len=*), parameter ::   fmtstr = '(F14.4)'
-        
+        Character*256 :: checkpoint_input_file
 
         ! Register handle_sig as the signal-handling 
         ! function for SIGTERM (15) signals.
@@ -255,7 +253,8 @@ Contains
             Call IsItTimeForACheckpoint(iteration)
             If (ItIsTimeForACheckpoint) Then
                 Call StopWatch(cwrite_time)%StartClock()
-                Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
+                Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time, checkpoint_input_file)
+                Call Write_Run_Parameters(checkpoint_input_file)
                 Call StopWatch(cwrite_time)%Increment()
             Endif
 

@@ -29,8 +29,9 @@ Module Checkpointing
     Use Chebyshev_Polynomials_Alt
     Use Parallel_IO
     Use MakeDir
-
+    Use PDE_Coefficients, Only : Write_Equation_Coefficients_File
     Use BufferedOutput
+
     ! Simple Checkpointing Module
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
     Implicit None
@@ -106,13 +107,15 @@ Contains
         DeAllocate(gpars)
     End Subroutine Initialize_Checkpointing
 
-    Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time)
+    Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time, input_file)
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
         Integer :: mp, m, i, ecode,endian_tag
         Character*120 :: autostring, iterstring, cfile, checkfile
- 
+        Character*256, Intent(Out) :: input_file 
+        Character*120 :: coeff_file
+
         endian_tag=314
         Call chktmp%construct('p1a')
         chktmp%config = 'p1a'
@@ -129,8 +132,10 @@ Contains
             write(iterstring,int_out_fmt) iteration
             checkpoint_prefix = 'Checkpoints/'//trim(iterstring)
         Endif
-
+        input_file = TRIM(my_path)//trim(checkpoint_prefix)//'/main_input'
+        coeff_file = TRIM(checkpoint_prefix)//'/equation_coefficients'
         If (my_rank .eq. 0) Call Make_Directory(Trim(my_path)//checkpoint_prefix,ecode)
+
 
         ! Cache and write data, index by index.
         Do i = 1, numfields*2
@@ -145,7 +150,7 @@ Contains
         If (my_rank .eq. 0) Then
             ! rank 0 writes out a file with the grid, etc.
             ! This file should contain everything that needs to be known
-            
+            Call Write_Equation_Coefficients_File(coeff_file)
 
             cfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//'grid_etc'
 
