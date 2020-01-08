@@ -53,7 +53,7 @@ Contains
         Use RA_MPI_Base
         Use MPI_Layer
         Implicit None
-        Integer :: nlines, line_len,  ierr, pars(2), full_restart_iter
+        Integer :: nlines, line_len,  ierr, pars(2), full_restart_iter, isave
         Character*120 :: input_file, iter_string, input_prefix, res_eq_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
@@ -76,6 +76,7 @@ Contains
                 ! We may be restarting from a checkpoint written with 
                 ! more/less than the default 8 digits.
                 Call Read_CMD_Line('-input_digits',integer_input_digits)
+                isave = integer_input_digits
                 Call Initialize_IO_Format_Codes()
                 Write(iter_string,int_in_fmt) full_restart_iter
                 input_prefix= Trim(my_path)//'Checkpoints/'//TRIM(iter_string)
@@ -140,6 +141,7 @@ Contains
             magnetic_init_type=-1
             restart_iter = full_restart_iter
             custom_reference_file = res_eq_file
+            integer_input_digits = isave
             Write(6,*)'custom ref file is: ', custom_reference_file
         Endif
 
