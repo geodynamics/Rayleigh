@@ -24,7 +24,7 @@ Module Input
     Use Controls,     Only : temporal_controls_namelist, numerical_controls_namelist, &
                             & physical_controls_namelist, max_iterations, pad_alltoall, &
                             & multi_run_mode, nruns, rundirs, my_path, run_cpus, &
-                            & io_controls_namelist, new_iteration, jobinfo_file
+                            & io_controls_namelist, new_iteration, jobinfo_file, my_sim_id
     Use Spherical_IO, Only : output_namelist
     Use BoundaryConditions, Only : boundary_conditions_namelist
     Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, magnetic_init_type
@@ -40,32 +40,185 @@ Module Input
         Module Procedure Read_CMD_String
     End Interface
 
+    Integer, Private :: my_sim_rank
+    Integer, Private :: input_error_code=13
+
 Contains
 
     Subroutine Main_Input()
+        Use RA_MPI_Base
+        Use MPI_Layer
         Implicit None
+        Integer :: nlines, line_len,  ierr, pars(2)
         Character*120 :: input_file
+        Character(len=:), Allocatable :: input_as_string(:)
+        Type(Communicator) :: sim_comm
+        Logical :: read_complete
         input_file = Trim(my_path)//'main_input'
 
-        ! First read the main input file
-        Open(unit=20, file=input_file, status="old", position="rewind")
-        Read(unit=20, nml=problemsize_namelist)
-        Read(unit=20, nml=numerical_controls_namelist)
-        Read(unit=20, nml=physical_controls_namelist)
-        Read(unit=20, nml=temporal_controls_namelist)
-        Read(unit=20, nml=io_controls_namelist)
-        Read(unit=20, nml=output_namelist)
-        Read(unit=20, nml=boundary_conditions_namelist)
-        Read(unit=20, nml=initial_conditions_namelist)
-        Read(unit=20, nml=test_namelist)
-        Read(unit=20, nml=reference_namelist)
-        Read(unit=20, nml=Transport_Namelist)
-        Close(20)
+        ! For multi-run mode, we need a unique communicator for each run before the read/broadcast.
+        ! Simulation-specific communicators have yet to be set up at this point in the program flow.
+        ! We create some temporary communicators here so that run parameters can be broadcast.
+        Call MPI_Comm_Split(MPI_COMM_WORLD, my_sim_id, global_rank, sim_comm%comm, ierr)
+        Call MPI_Comm_Rank(sim_comm%comm, sim_comm%rank, ierr)
+        my_sim_rank = sim_comm%rank
+
+        ! Rank zero read the file and broadcasts the file size to all other ranks.
+        If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,nlines,line_len)
+        pars(1:2) = (/ nlines, line_len /)
+        Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
+
+        nlines = pars(1)
+        line_len = pars(2)
+        If (my_sim_rank .gt. 0)  Allocate(  character(len=line_len) :: input_as_string(nlines) )
+
+        ! Rank 0 broadcasts the file contents
+        Call MPI_Bcast(input_as_string, nlines*line_len, MPI_CHARACTER, 0, sim_comm%comm,ierr)       
+        
+        ! Each rank then reads the namelists from the character array
+        read_complete = .false.
+        Read(input_as_string, nml=problemsize_namelist        , err=314)
+        Read(input_as_string, nml=numerical_controls_namelist , err=314)
+        Read(input_as_string, nml=physical_controls_namelist  , err=314)
+        Read(input_as_string, nml=temporal_controls_namelist  , err=314)
+        Read(input_as_string, nml=io_controls_namelist        , err=314)
+        Read(input_as_string, nml=output_namelist             , err=314)
+        Read(input_as_string, nml=boundary_conditions_namelist, err=314)
+        Read(input_as_string, nml=initial_conditions_namelist , err=314)
+        Read(input_as_string, nml=test_namelist               , err=314)
+        Read(input_as_string, nml=reference_namelist          , err=314)
+        Read(input_as_string, nml=transport_namelist          , err=314)
+
+        read_complete = .true.
+
+314     If (.not. read_complete) Then
+            If (my_sim_rank .eq. 0) Then
+                Write(6,*)' '
+                Write(6,*)' Error reading main_input file as broadcast by rank 0.'
+                Write(6,*)' Each rank will now attempt to read main_input independently.'
+                Write(6,*)' '
+            Endif
+            Call Main_Input_All_Read()
+        Endif
 
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
 
+        DeAllocate(input_as_string)
+
     End Subroutine Main_Input
+
+    Subroutine Main_Input_All_Read()
+        Use RA_MPI_Base
+        Implicit None
+        Character*120 :: input_file
+        Character*256 :: emsg
+        Logical :: read_complete
+        Integer :: ierr
+
+        input_file = Trim(my_path)//'main_input'
+
+        ! If we get here, the broadcast failed.
+        ! All processes now attempt to read main_input.
+        read_complete = .false.
+        Open(unit=20, file=input_file, status="old", position="rewind")
+        Read(unit=20, nml=problemsize_namelist        , err=315, iomsg=emsg)
+        Read(unit=20, nml=numerical_controls_namelist , err=315, iomsg=emsg)
+        Read(unit=20, nml=physical_controls_namelist  , err=315, iomsg=emsg)
+        Read(unit=20, nml=temporal_controls_namelist  , err=315, iomsg=emsg)
+        Read(unit=20, nml=io_controls_namelist        , err=315, iomsg=emsg)
+        Read(unit=20, nml=output_namelist             , err=315, iomsg=emsg)
+        Read(unit=20, nml=boundary_conditions_namelist, err=315, iomsg=emsg)
+        Read(unit=20, nml=initial_conditions_namelist , err=315, iomsg=emsg)
+        Read(unit=20, nml=test_namelist               , err=315, iomsg=emsg)
+        Read(unit=20, nml=reference_namelist          , err=315, iomsg=emsg)
+        Read(unit=20, nml=Transport_Namelist          , err=315, iomsg=emsg)
+        Close(20)
+        read_complete = .true.
+
+315     If (.not. read_complete) Then
+            If (my_sim_rank .eq. 0) Then
+                Write(6,*)' '
+                Write(6,*)' Error:  Multi-process read of main_input also failed.'
+                Write(6,*)' Check the contents of your main_input file. '
+                Write(6,*)' Compiler error message:  '
+                Write(6,*)'   ', TRIM(emsg)
+                Write(6,*)'  '
+            Endif
+
+            Call MPI_Finalize(ierr)
+            Call Exit(input_error_code)
+        Else
+            If (my_sim_rank .eq. 0) Then
+                Write(6,*)' '
+                Write(6,*)'...  Multi-process read of main_input succeeded.'
+                Write(6,*)' '
+            Endif
+        Endif       
+
+    End Subroutine Main_Input_All_Read
+
+
+    Subroutine File_to_String(filename, lines, nlines,max_len)
+        Implicit None
+        Character(len=*),Intent(in) :: filename
+        Character(len=:), Allocatable, Intent(out) :: lines(:)
+        Integer, Intent(Out) :: nlines, max_len
+        Integer :: iunit,istat
+        Character(512):: line, line2
+        Integer :: com_check, line_len, i
+
+        ! This routine reads filename into the output character array 'lines.'
+        ! For each line, it filters out any comments( !-marks and ensuing text).
+
+        ! First pass: Count lines and record longest line length.
+        max_len = 0
+        Open(NewUnit=iunit,File=filename,Status='OLD' ,IOStat=istat)
+        If (istat .eq. 0) Then
+
+            nlines = 0 
+            Do
+                Read(iunit,'(a)',IOStat=istat) line
+                If (istat .ne. 0) Exit
+
+                com_check = index(line,'!') ! Line length ends at comment symbol
+                If (com_check .ne. 0) Then
+                    line_len = com_check-1
+                Else
+                    line_len = LEN(TRIM(line))
+                Endif
+                max_len = MAX(max_len,line_len)
+                nlines = nlines + 1
+            Enddo
+            Close (iunit)
+
+        Endif
+
+        Allocate(character(len=max_len) :: lines(nlines))
+
+        ! Second pass: Read the lines + filter out comments
+        Open(NewUnit=iunit,File=filename,Status='OLD' , IOStat=istat)
+        If (istat .eq. 0) Then
+
+            Do i = 1, nlines
+
+                Read(iunit,'(a)',iostat=istat) line
+                com_check = index(line,'!')
+                If (com_check .gt. 1) Then
+                    lines(i)(1:com_check-1) = line(1:com_check-1)
+                    lines(i)(com_check:max_len)=''  ! Failure to initialize remainder of string can corrupt input.
+                Else If (com_check .eq. 1) Then
+                    lines(i) = ''
+                Else
+                    lines(i) = line
+                Endif
+
+            Enddo
+            Close(iunit)
+
+        Endif        
+
+    End Subroutine File_to_String
 
     Subroutine Check_Run_Mode()
         ! Checks the command line for multiple run flag
@@ -75,8 +228,6 @@ Contains
         Logical :: eof_err
         Character*120 :: aline, ifile
         Integer :: errcheck,  rcount, cpu_count, cmin, mx_rank, mn_rank
-
-
 
         ncpu_global = pfi%wcomm%np
         global_rank = pfi%wcomm%rank
@@ -167,6 +318,7 @@ Contains
                     If ( (global_rank .le. mx_rank) .and. (global_rank .ge. mn_rank) ) Then
                         my_path = rundirs(i)
                         my_path = Trim(my_path)//'/'
+                        my_sim_id = i
                     Endif
                     mn_rank = mx_rank+1
                 Enddo
