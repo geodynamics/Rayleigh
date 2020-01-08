@@ -27,11 +27,14 @@ Module Input
                             & io_controls_namelist, new_iteration, jobinfo_file, my_sim_id
     Use Spherical_IO, Only : output_namelist
     Use BoundaryConditions, Only : boundary_conditions_namelist
-    Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, magnetic_init_type
+    Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, &
+                                   magnetic_init_type, restart_iter
     Use TestSuite, Only : test_namelist
     Use PDE_Coefficients, Only : reference_namelist, Prandtl_Number, Rayleigh_Number, &
-                               Magnetic_Prandtl_Number, Ekman_Number, Transport_Namelist
+                               Magnetic_Prandtl_Number, Ekman_Number, Transport_Namelist, &
+                               custom_reference_file
     Use Parallel_Framework, Only : pfi
+    Use Checkpointing, Only : auto_fmt
 
     Implicit None
 
@@ -49,12 +52,30 @@ Contains
         Use RA_MPI_Base
         Use MPI_Layer
         Implicit None
-        Integer :: nlines, line_len,  ierr, pars(2)
-        Character*120 :: input_file
+        Integer :: nlines, line_len,  ierr, pars(2), full_restart_iter
+        Character*120 :: input_file, auto_string, input_prefix, res_eq_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
-        Logical :: read_complete
+        Logical :: read_complete, full_restart
         input_file = Trim(my_path)//'main_input'
+
+        ! Check command line to see if this is a full restart,
+        ! in which case all input comes from checkpoint directory.    
+        restart_iter = 0
+        full_restart=.false.
+        Call Read_CMD_Line('-full_restart' , full_restart_iter)
+        Write(6,*)'full restart: ', full_restart_iter
+        If (full_restart_iter .ne. 0) Then
+            full_restart = .true.
+            If (full_restart_iter .lt. 0) Then
+                Write(auto_string,auto_fmt) -full_restart_iter
+                input_prefix= Trim(my_path)//'Checkpoints/quicksave_'//TRIM(auto_string)
+
+            Endif
+            res_eq_file = TRIM(input_prefix)//'/equation_coefficients'
+            input_file = TRIM(input_prefix)//'/main_input'
+            Write(6,*)'Input file is: ', input_file
+        Endif
 
         ! For multi-run mode, we need a unique communicator for each run before the read/broadcast.
         ! Simulation-specific communicators have yet to be set up at this point in the program flow.
@@ -103,6 +124,16 @@ Contains
 
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
+
+        ! Finally, if this is a full restart, make sure we actually restart 
+        ! using only data from the desired checkpoint directory.
+        If (full_restart) Then
+            init_type=-1
+            magnetic_init_type=-1
+            restart_iter = full_restart_iter
+            custom_reference_file = res_eq_file
+            Write(6,*)'custom ref file is: ', custom_reference_file
+        Endif
 
         DeAllocate(input_as_string)
 
