@@ -42,7 +42,7 @@ General_MPI.o : General_MPI.F90 Ra_MPI_Base.o
 Generic_Input.o : Generic_Input.F90 ProblemSize.o SendReceive.o Load_Balance.o Spherical_Buffer.o Parallel_Framework.o Ra_MPI_Base.o 
 ISendReceive.o : ISendReceive.F90 Ra_MPI_Base.o 
 Initial_Conditions.o : Initial_Conditions.F90 Load_Balance.o BufferedOutput.o Math_Utility.o Linear_Solve.o ClockInfo.o BoundaryConditions.o PDE_Coefficients.o General_MPI.o Timers.o Controls.o Generic_Input.o Checkpointing.o Math_Constants.o SendReceive.o Legendre_Transforms.o Fourier_Transform.o Parallel_Framework.o Fields.o ProblemSize.o 
-Input.o : Input.F90 Parallel_Framework.o PDE_Coefficients.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o Controls.o ProblemSize.o 
+Input.o : Input.F90 MPI_LAYER.o Ra_MPI_Base.o Parallel_Framework.o PDE_Coefficients.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o Controls.o ProblemSize.o 
 Legendre_Polynomials.o : Legendre_Polynomials.F90 
 Legendre_Transforms.o : Legendre_Transforms.F90 Structures.o Legendre_Polynomials.o 
 Linear_Solve.o : Linear_Solve.F90 Chebyshev_Polynomials.o Finite_Difference.o 
