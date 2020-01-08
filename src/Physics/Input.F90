@@ -27,7 +27,8 @@ Module Input
                              io_controls_namelist, new_iteration, jobinfo_file, my_sim_id, &
                              integer_input_digits, int_in_fmt, initialize_io_format_codes
     Use Spherical_IO, Only : output_namelist
-    Use BoundaryConditions, Only : boundary_conditions_namelist
+    Use BoundaryConditions, Only : boundary_conditions_namelist, T_top_file, T_bottom_file, &
+                                   dTdr_top_file, dTdr_bottom_file, C_Top_File, C_Bottom_File
     Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, &
                                    magnetic_init_type, restart_iter
     Use TestSuite, Only : test_namelist
@@ -136,6 +137,7 @@ Contains
 
         ! Finally, if this is a full restart, make sure we actually restart 
         ! using only data from the desired checkpoint directory.
+        ! This entails repointing a few file names and input_flags.
         If (full_restart) Then
             init_type=-1
             magnetic_init_type=-1
@@ -143,6 +145,25 @@ Contains
             custom_reference_file = res_eq_file
             integer_input_digits = isave
             Write(6,*)'custom ref file is: ', custom_reference_file
+
+            If (trim(T_top_file) .ne. '__nothing__') &
+                T_top_file=TRIM(input_prefix)//'/T_top_BC'
+
+            If (trim(T_bottom_file) .ne. '__nothing__') &
+                T_top_file=TRIM(input_prefix)//'/T_bottom_BC'
+
+            If (trim(dTdr_top_file) .ne. '__nothing__') &
+                T_top_file=TRIM(input_prefix)//'/dTdr_top_BC'
+
+            If (trim(dTdr_bottom_file) .ne. '__nothing__') &
+                T_top_file=TRIM(input_prefix)//'/dTdr_bottom_BC'
+
+            If (trim(C_top_file) .ne. '__nothing__') &
+                T_top_file=TRIM(input_prefix)//'/C_top_BC'
+
+            If (trim(C_bottom_file) .ne. '__nothing__') &
+                T_top_file=TRIM(input_prefix)//'/C_bottom_BC'
+
         Endif
 
         DeAllocate(input_as_string)
