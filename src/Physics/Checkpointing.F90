@@ -36,6 +36,7 @@ Module Checkpointing
     Implicit None
     Type(SphericalBuffer) :: chktmp, chktmp2
     Integer, private :: numfields = 4 ! 6 for MHD
+    Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
     Integer,private,Allocatable :: mode_count(:)
     Integer,private :: checkpoint_tag = 425, read_var(1:12)
     Integer, Allocatable, Private :: lmstart(:)
@@ -269,19 +270,24 @@ Contains
                 grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
                 Inquire(File=grid_file, Exist=fexist)       
                 If (fexist) Then
+                    Call stdout%print(' ')
                     Call stdout%print(' ------ Legacy checkpoint format detected. ')
+                    Call stdout%print(' ')
                 Endif     
             Endif
             If (fexist) Then
                 Open(newunit=funit,file=grid_file,form='unformatted', status='old',&
                      access=access_type, iostat=ierr)
                 If (ierr .ne. 0) Then
+                    Call stdout%print(' ')
                     Call stdout%print(' ------ Error: Failed to open '//TRIM(grid_file)//'.')
                     Call stdout%print(' ')
                     ierr = 2 ! grid file could not be opened
                 Endif
             Else
-                Call stdout%print(' ------ Error: '//TRIM(grid_file)//' does not exist.')
+                Call stdout%print(' ')
+                Call stdout%print(' ------ Error: Could not find '//Trim(checkpoint_prefix)//'/grid_etc')
+                Call stdout%print(' ------        or '//TRIM(grid_file)//'.')
                 Call stdout%print(' ')
                 ierr = 1 ! grid_file did not exist
             Endif
@@ -307,6 +313,7 @@ Contains
                     Endif
                     Close(funit)
                 Else
+                    Call stdout%print(' ')
                     Call stdout%print(' ------ Error: Endian-check failed when reading '//TRIM(grid_file)//'.')
                     Call stdout%print(' ')
                     ierr = 3
@@ -369,7 +376,7 @@ Contains
                 Call stdout%print(' ------ Exiting...')
                 Call stdout%print(' ')
             Endif
-            Call pfi%exit(old_pars(7))
+            Call pfi%exit(check_err_off+old_pars(7))
         Endif
 
 
