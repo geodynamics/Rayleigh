@@ -109,9 +109,10 @@ Contains
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
-        Integer :: mp, m, i, ecode
+        Integer :: mp, m, i, ecode,endian_tag
         Character*120 :: autostring, iterstring, cfile, checkfile
  
+        endian_tag=314
         Call chktmp%construct('p1a')
         chktmp%config = 'p1a'
         !Copy the RHS into chtkmp
@@ -119,9 +120,6 @@ Contains
         chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
         !Now we want to move from p1a to s2a (rlm space)
         Call chktmp%reform()
-
-        ! This is where we cache, index by index...
-        ! Don't forget to initialize the buffer:  Call Full_3D_Buffer%Init(mpi_tag=54) 
 
         If (ItIsTimeForAQuickSave) Then
             write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
@@ -150,7 +148,8 @@ Contains
 
             cfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//'grid_etc'
 
-            open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
+            Open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
+            Write(15)endian_tag
             Write(15)n_r
             Write(15)grid_type
             Write(15)l_max
@@ -161,7 +160,7 @@ Contains
             Write(15)iteration
             Close(15)
 
-            open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
+            Open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='replace')
             If (ItIsTimeForAQuickSave) Then
                 Write(15,int_minus_out_fmt)-iteration
                 Write(15,'(i2.2)')(quicksave_num+1)
@@ -170,7 +169,7 @@ Contains
             Endif
             Close(15)
 
-            open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
+            Open(unit=15,file=Trim(my_path)//'Checkpoints/checkpoint_log',form='formatted', status='unknown', &
                 position='Append')
             If (ItIsTimeForAQuickSave) Then
                 Write(iterstring,int_out_fmt)iteration
@@ -191,26 +190,28 @@ Contains
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old, nr_read
         Integer :: i, ierr, m, p, np, mp, lb,ub, f,  r, ind
-        Integer :: old_pars(5), fcount(3,2)
-        Integer :: last_iter, last_auto
+        Integer :: old_pars(7), fcount(3,2)
+        Integer :: last_iter, last_auto, endian_tag, funit
+        Integer*8 :: found_bytes, expected_bytes
         Integer :: read_magnetism = 0, read_hydro = 0
-        Integer, Allocatable :: rinds(:)
+        Integer, Allocatable :: rinds(:), gpars(:,:)
         Real*8 :: dt_pars(3),dt,new_dt
         Real*8, Allocatable :: old_radius(:), radius_old(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
         Character*120 :: autostring, cfile,  dstring, iterstring, access_type
         Character*256 :: grid_file, checkfile
-        Integer, Allocatable :: gpars(:,:)
         Character*1 :: under_slash 
-        Logical :: legacy_mode, fexist
+        Character*13 :: szstr
+        Logical :: legacy_format, fexist
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
         checkpoint_iter = iteration
         
-        under_slash='/'      ! '_' underscore for legacy mode checkpoints
-        access_type='stream' ! 'sequential' for legacy mode <--- set to stream
-        legacy_mode=.false.
+        under_slash='/'      ! '_' underscore for legacy-format checkpoints
+        access_type='stream' ! 'sequential' for legacy-format 
+        old_pars(6) = 1      ! 2 for legacy-format 
+        legacy_format=.false.
 
         read_var(:) = 0
         If (magnetism) Then
@@ -227,10 +228,10 @@ Contains
             old_pars(4) = checkpoint_iter
             old_pars(5) = -1
             If (checkpoint_iter .eq. 0) Then
-                open(unit=15,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='old')
-                read(15,int_minus_in_fmt)last_iter
+                Open(newunit=funit,file=Trim(my_path)//'Checkpoints/last_checkpoint',form='formatted', status='old')
+                Read(funit,int_minus_in_fmt)last_iter
                 If (last_iter .lt. 0) Then  !Indicates a quicksave
-                    Read(15,'(i2.2)')last_auto
+                    Read(funit,'(i2.2)')last_auto
                     old_pars(4) = -last_iter
                     old_pars(5) = last_auto
                     Write(autostring,auto_fmt)last_auto
@@ -242,7 +243,7 @@ Contains
                     checkpoint_prefix = Trim(my_path)//'Checkpoints/'//Trim(iterstring)
                 Endif
 
-                Close(15)
+                Close(funit)
             ElseIf (checkpoint_iter .lt. 0) Then
                 !User has specified a particular quicksave file
                     last_auto = -checkpoint_iter
@@ -261,83 +262,95 @@ Contains
             If (.not. fexist) Then
                 ! The user may be running from legacy-format checkpoints.
                 ! Prior to 1.0, checkpoints did not have a dedicated directory
+                legacy_format =.true.
                 under_slash='_'
-                grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
-                Inquire(File=grid_file, Exist=fexist)            
                 access_type='sequential'
+                old_pars(6)=2
+                grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
+                Inquire(File=grid_file, Exist=fexist)       
+                If (fexist) Then
+                    Call stdout%print(' ------ Legacy checkpoint format detected. ')
+                Endif     
             Endif
             If (fexist) Then
-                Write(6,*)'Grid file used is: ', grid_file, access_type
-                Open(unit=15,file=grid_file,form='unformatted', status='old',&
-                     access='stream', iostat=ierr)
+                Open(newunit=funit,file=grid_file,form='unformatted', status='old',&
+                     access=access_type, iostat=ierr)
                 If (ierr .ne. 0) Then
+                    Call stdout%print(' ------ Error: Failed to open '//TRIM(grid_file)//'.')
+                    Call stdout%print(' ')
                     ierr = 2 ! grid file could not be opened
                 Endif
             Else
+                Call stdout%print(' ------ Error: '//TRIM(grid_file)//' does not exist.')
+                Call stdout%print(' ')
                 ierr = 1 ! grid_file did not exist
             Endif
 
             If (ierr .eq. 0) Then
-                Read(15)n_r_old
-                Read(15)grid_type_old
-                Read(15)l_max_old
-                Read(15)dt
-                Read(15)new_dt
-                Allocate(old_radius(1:N_r_old))
-                Read(15)(old_radius(i),i=1,N_R_old)
-                Read(15)Checkpoint_time
-                If (checkpoint_iter .lt. 0) Then
-                    ! We're loading a quicksave file
-                    ! Need to retrieve iteration from the grid_etc file because
-                    ! iteration specified in main_input was a low, negative number
-                    Read(15)Checkpoint_iter
-                    old_pars(4) = Checkpoint_iter
+                endian_tag=0
+                If (.not. legacy_format) Read(funit)endian_tag
+                If (legacy_format .or. (endian_tag .eq. 314)) Then
+                    Read(funit)n_r_old
+                    Read(funit)grid_type_old
+                    Read(funit)l_max_old
+                    Read(funit)dt
+                    Read(funit)new_dt
+                    Allocate(old_radius(1:N_r_old))
+                    Read(funit)(old_radius(i),i=1,N_R_old)
+                    Read(funit)Checkpoint_time
+                    If (checkpoint_iter .lt. 0) Then
+                        ! We're loading a quicksave file
+                        ! Need to retrieve iteration from the grid_etc file because
+                        ! iteration specified in main_input was a low, negative number
+                        Read(funit)Checkpoint_iter
+                        old_pars(4) = Checkpoint_iter
+                    Endif
+                    Close(funit)
+                Else
+                    Call stdout%print(' ------ Error: Endian-check failed when reading '//TRIM(grid_file)//'.')
+                    Call stdout%print(' ')
+                    ierr = 3
                 Endif
-                Close(15)
-            Else
-                old_pars(1) = -ierr
             Endif
-            Write(dstring,sci_note_fmt)checkpoint_time
-            Call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
+
+            If (ierr .eq. 0) Then
+                ! Verify that all checkpoint files exist and  have the correct size.
+                expected_bytes = n_r_old*((l_max_old+1)**2 + l_max_old+1)*8 !TODO: Make this work for general precision
+                Do i = 1, numfields*2
+                    If (read_var(i) .eq. 1) Then
+                        checkfile = trim(checkpoint_prefix)//under_slash//trim(checkpoint_suffix(i))
+                        Inquire(File=checkfile, Exist=fexist,Size=found_bytes)
+                        If (.not. fexist ) Then
+                            Call stdout%print(' ------ Error: '//TRIM(checkfile)//' does not exist.')
+                            Call stdout%print(' ')
+                            ierr = 4
+                        Else If (found_bytes .ne. expected_bytes) Then
+                            Call stdout%print(' ------ Error: '//TRIM(checkfile)//' is the wrong size and may be corrupted.')
+                            Write(szstr,'(i13)')expected_bytes
+                            Call stdout%print('               Expected size (bytes): '//TRIM(szstr))
+                            Write(szstr,'(i13)')found_bytes
+                            Call stdout%print('               Actual size   (bytes): '//TRIM(szstr))
+                            Call stdout%print(' ')
+                            ierr = 5
+                        Endif
+                    Endif
+                Enddo
+            Endif
+
             old_pars(1) = n_r_old
             old_pars(2) = grid_type_old
             old_pars(3) = l_max_old
+            old_pars(7) = ierr
             dt_pars(1) = dt
             dt_pars(2) = new_dt
             dt_pars(3) = checkpoint_time
 
-            If (l_max_old .lt. l_max) Then
-                    Write(6,*)' '
-                    Write(6,*)'#####################################################################'
-                    Write(6,*)'# '
-                    Write(6,*)'#  Checkpoint horizontal resolution is lower than current resolution.'
-                    Write(6,*)'#  The old solution will be interpolated onto horizontal grid with '
-                    Write(6,*)'#  higher resolution corresponding to the new l_max.'
-                    Write(6,*)'#  Old l_max: ', l_max_old
-                    Write(6,*)'#  New l_max: ', l_max
-                    Write(6,*)'# '
-                    Write(6,*)'#####################################################################'
-                    Write(6,*)' '
-            Endif
-            If (l_max_old .gt. l_max) Then
-                    Write(6,*)' '
-                    Write(6,*)'#####################################################################'
-                    Write(6,*)'# '
-                    Write(6,*)'#  Checkpoint horizontal resolution is higher than current resolution.'
-                    Write(6,*)'#  The old SPH expansion will be truncated at the new l_max.'
-                    Write(6,*)'#  This might not be a good idea.'
-                    Write(6,*)'#  Old l_max: ', l_max_old
-                    Write(6,*)'#  New l_max: ', l_max
-                    Write(6,*)'# '
-                    Write(6,*)'#####################################################################'
-                    Write(6,*)' '
-            Endif
         Endif
 
         If (my_row_rank .eq. 0) Then    !2-D broadcast pattern
-            Call MPI_Bcast(old_pars,5, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
+            Call MPI_Bcast(old_pars,7, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
         Endif
-        Call MPI_Bcast(old_pars,5, MPI_INTEGER, 0, pfi%rcomm%comm, ierr)
+        Call MPI_Bcast(old_pars,7, MPI_INTEGER, 0, pfi%rcomm%comm, ierr)
 
         n_r_old       = old_pars(1)
         grid_type_old = old_pars(2)
@@ -345,7 +358,52 @@ Contains
         checkpoint_iter = old_pars(4)
         last_auto = old_pars(5)
 
-        ! NOTE:  Use n_r_old = negative as indicating an error
+        If (old_pars(6) .eq. 2) Then
+            under_slash='_'
+            legacy_format=.true.
+        Endif
+
+        If (old_pars(7) .ne. 0) Then
+            ! Something is wrong with this checkpoint.
+            If (my_rank .eq. 0) Then
+                Call stdout%print(' ------ Exiting...')
+                Call stdout%print(' ')
+            Endif
+            Call pfi%exit(old_pars(7))
+        Endif
+
+
+        !////////////////////////////////////////////////////////////////
+        ! The grid file was read successfully and all primary checkpoint 
+        ! files have the correct size.
+        If (my_rank .eq. 0) Then
+            Write(dstring,sci_note_fmt)checkpoint_time
+            Call stdout%print(' ------ Checkpoint time is: '//trim(dstring))
+            If (l_max_old .lt. l_max) Then
+                    Call stdout%print(' ')
+                    Call stdout%print('------  Checkpoint horizontal resolution is lower than current resolution.')
+                    Call stdout%print('------  The old solution will be interpolated onto horizontal grid with ')
+                    Call stdout%print('------  higher resolution corresponding to the new l_max.')
+                    Write(szstr,'(i13)')l_max_old
+                    Call stdout%print('------  Old l_max: '//TRIM(szstr))
+                    Write(szstr,'(i13)')l_max
+                    Call stdout%print('------  New l_max: '//TRIM(szstr))
+                    Call stdout%print(' ')
+            Endif
+            If (l_max_old .gt. l_max) Then
+                    Call stdout%print(' ')
+                    Call stdout%print('------  Checkpoint horizontal resolution is higher than current resolution.')
+                    Call stdout%print('------  The old SPH expansion will be truncated at the new l_max.')
+                    Call stdout%print('------  This might not be a good idea.')
+                    Write(szstr,'(i13)')l_max_old
+                    Call stdout%print('------  Old l_max: '//TRIM(szstr))
+                    Write(szstr,'(i13)')l_max
+                    Call stdout%print('------  New l_max: '//TRIM(szstr))
+
+                    Call stdout%print(' ')
+            Endif
+
+        Endif
 
         If (last_auto .ne. -1) Then
             !The prefix should be formed using quicksave
@@ -423,11 +481,18 @@ Contains
             ! We will assume the user kept the same radial domain bounds.
             ! If they  have not, this will end badly.
             If (my_rank .eq. 0) Then
-                Write(6,*)'Grid has changed.  Interpolating onto new grid.'
-                Write(6,*)'Old grid_type:     ', grid_type_old
-                Write(6,*)'Current grid_type: ', grid_type
-                Write(6,*)'Old N_R:           ', n_r_old
-                Write(6,*)'Current N_R:           ', n_r
+                Call stdout%print(' ')
+                Call stdout%print('------ Radial grid has changed.')
+                Call stdout%print('------ Interpolating onto new grid.')
+                Write(szstr,'(i13)')grid_type_old
+                Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
+                Write(szstr,'(i13)')grid_type
+                Call stdout%print('------ Current grid_type: '//TRIM(szstr))
+                Write(szstr,'(i13)')n_r_old
+                Call stdout%print('------ Old N_R:           '//TRIM(szstr))
+                Write(szstr,'(i13)')n_r
+                Call stdout%print('------ Current N_R:       '//TRIM(szstr))
+                Call stdout%print(' ')
             Endif
 
             If (n_r_old .lt. n_r) Then
