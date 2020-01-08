@@ -52,7 +52,7 @@ Contains
 
         Character(len=16 ) :: date, time, zone_in
         Integer :: values(8)
-        Integer :: io, ierr, i
+        Integer :: io, ierr, i, nprow_save, npcol_save
         Logical :: file_exist, write_header
         Integer :: ntrim = 4
         Character*256, Intent(In), Optional :: checkpoint_input_file
@@ -79,6 +79,12 @@ Contains
                 Open(unit=io, file=checkpoint_input_file, form='formatted', &
                    action='write', access='sequential', status='unknown', iostat=ierr)
                 write_header = .false.
+                ! Set nprow and npcol to -1 for checkpoints' main_input files.
+                ! (allows easy restarts from any process count)
+                nprow_save = nprow
+                npcol_save = npcol
+                nprow = -1
+                npcol = -1
             Endif
 
             If ( ierr .eq. 0 ) Then
@@ -208,7 +214,8 @@ Contains
             Endif
 
             Close(unit=io)
-
+            nprow = nprow_save
+            npcol = npcol_save
         Endif
 
     End Subroutine Write_Run_Parameters
