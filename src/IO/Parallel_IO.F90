@@ -1556,8 +1556,9 @@ Contains
                 If (self%write_mode .gt. 1) Call self%gather_data(j)  ! Communicate single cache item at a time
 
                 If (self%output_rank) Then
-
+     
                     If (self%buffsize .ne. 0) Then
+                        If (self%orank .eq. 0) Write(6,*)'checking j = ', j
                         fdisp = self%file_disp(j)+hdisp
                         bdisp = self%buffer_disp(j)
                         Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
