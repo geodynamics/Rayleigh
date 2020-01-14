@@ -1561,7 +1561,7 @@ Contains
                         
                         fdisp = self%file_disp(j)+hdisp
                         bdisp = self%buffer_disp(j)
-                        If (self%orank .eq. 0) Write(6,*)'checking j = ', j,bdisp, self%buffsize, size(self%buffer)
+                        If (self%orank .eq. 0) Write(6,*)'checking j = ', j,bdisp, self%buffsize, size(self%buffer), fdisp
                         Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                         Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
                             self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
