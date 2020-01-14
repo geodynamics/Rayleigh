@@ -99,6 +99,7 @@ Module Parallel_IO
         Integer :: time_index = 1
 
         Integer :: write_mode = 1  ! 1 for full cache, single cache index otherwise
+        Logical :: standard_io = .true. ! If false, all cache items written at once
 
         ! Time stamps:
         Integer, Allocatable :: iter(:)
@@ -159,19 +160,22 @@ Contains
                                     averaging_weights, nrec, skip,  &
                                     write_timestamp, averaging_axes, & 
                                     spectral, mode, l_values, cache_spectral, &
-                                    spec_comp, lmax_in)
+                                    spec_comp, lmax_in, full_cache)
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: grid_pars(1:,1:)
         Integer, Intent(In), Optional :: l_values(1:)
         Integer, Intent(In), Optional :: nvals, mpi_tag, nrec, skip
         Real*8 , Intent(In), Optional :: averaging_weights(1:,1:)
-        Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral, spec_comp
+        Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral
+        Logical, Intent(In), Optional :: full_cache, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
         Integer, Intent(In), Optional :: lmax_in
         Integer ::  adim(2), in_lmax
         Real*8, Allocatable :: avg_weights(:,:)
+
+        If (present(full_cache)) self%standard_io = (.not. full_cache)
 
         !//////////////////////////////////////////////
         ! Establish my identity
@@ -1550,26 +1554,41 @@ Contains
 
             If (self%write_mode .eq. 1) Call self%gather_data(-1)  ! Communicate (if all cache item at once)
             
-            ! Write the data, one cache item at a time.
-            Do j = 1, self%ncache
+            If (self%standard_io) Then
+                ! Write the data, one cache item at a time.
+                Do j = 1, self%ncache
 
-                If (self%write_mode .gt. 1) Call self%gather_data(j)  ! Communicate single cache item at a time
+                    If (self%write_mode .gt. 1) Call self%gather_data(j)  ! Communicate single cache item at a time
 
-                If (self%output_rank) Then
-     
-                    If (self%buffsize .ne. 0) Then
-                        
-                        fdisp = self%file_disp(j)+hdisp
-                        bdisp = self%buffer_disp(j)
-                        If (self%orank .eq. 0) Write(6,*)'checking j = ', j,bdisp, self%buffsize, size(self%buffer), fdisp
-                        Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
-                        Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                            self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                    If (self%output_rank) Then
+         
+                        If (self%buffsize .ne. 0) Then
+                            
+                            fdisp = self%file_disp(j)+hdisp
+                            bdisp = self%buffer_disp(j)
+                            Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
+                            Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
+                                self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                        Endif
+
                     Endif
-
+                Enddo
+            Else
+                ! Everyone writes their entire record's worth of data
+                ! This requires re-organization on read-in
+                ! Currently used only for shell-averages.
+                If (self%output_rank) Then
+                    If (self%buffsize .ne. 0) Then
+                        Do j = 1, self%nrec
+                            fdisp = hdisp+(j-1)*(self%rec_skip+self%qdisp*self%nvals )+ self%base_disp*self%nvals
+                            bdisp = 1+self%buffsize*self%nvals*(j-1)
+                            Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
+                            Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
+                                self%buffsize*self%nvals, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                        Enddo
+                    Endif
                 Endif
-            Enddo
-
+            Endif
 
             ! Next, write timestamps as needed
             If (self%write_timestamp) Then  ! (output_rank 0)
@@ -1586,6 +1605,7 @@ Contains
                            MPI_INTEGER, mstatus, ierr)
                 Enddo
             Endif    
+
 
             If (self%output_rank) Then
                 DeAllocate(self%buffer)
