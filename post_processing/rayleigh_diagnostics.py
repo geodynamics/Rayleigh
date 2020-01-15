@@ -602,7 +602,7 @@ class Shell_Avgs:
 
         if (version >= 6):
             npcol = swapread(fd,dtype='int32',count=1,swap=bs)
-            print('new version npcol is: ', npcol)
+
         self.version = version
         self.niter = nrec
         self.nq = nq
