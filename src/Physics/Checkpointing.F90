@@ -31,6 +31,7 @@ Module Checkpointing
     Use MakeDir
     Use PDE_Coefficients, Only : Write_Equation_Coefficients_File
     Use BufferedOutput
+    Use Load_Balance, Only : my_num_lm
 
     ! Simple Checkpointing Module
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
@@ -48,6 +49,8 @@ Module Checkpointing
     Integer :: checkpoint_iter = 0
     Real*8  :: checkpoint_dt, checkpoint_newdt
     Real*8  :: checkpoint_time
+    Real*8, Allocatable :: boundary_mask(:,:,:,:) ! Copy of the boundary values array
+    
 
     !///////////////////////////////////////////////////////////
     ! These variables are used for determining if it's time for a checkpoint
@@ -100,6 +103,10 @@ Contains
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a') ! Persistent throughout run
 
+        Allocate(boundary_mask(2, 2, my_num_lm, numfields))
+        boundary_mask(:,:,:,:) = 0.0d0
+
+
         Allocate(gpars(1:5,1:5))
         gpars(:,:) = -1
         Call checkpoint_buffer%Init(gpars, mpi_tag=checkpoint_tag, &
@@ -146,6 +153,13 @@ Contains
         Enddo
 
         Call chktmp%deconstruct('s2a')
+        
+        ! Now write out the boundary values the boundary values
+        Call chktmp%construct('p1a')
+        chktmp%config = 'p1a'
+        Do i = 1, numfields
+            ckhtmp%p1a(i)
+        Enddo
 
         If (my_rank .eq. 0) Then
             ! rank 0 writes out a file with the grid, etc.
@@ -485,6 +499,12 @@ Contains
 
         Call chktmp%reform()    ! move to p1b
 
+        ! Load the boundary values array
+        Do i = 1, numfields
+            
+        Enddo
+
+
         ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
         ! fields.  Otherwise, we need to interpolate onto the current grid
         ! When we change the checkpointing format, should also store AB terms in cheby-space
@@ -607,12 +627,13 @@ Contains
     Subroutine Store_BC_Mask(bvals)
         Implicit None
         Real*8, Intent(In) :: bvals(:,:,:,:)
+        boundary_mask(:,:,:,:) = bvals(:,:,:,:)
     End Subroutine Store_BC_Mask
 
     Subroutine Load_BC_Mask(bvals)
         Implicit None
         Real*8, Intent(Out) :: bvals(:,:,:,:)
-
+        bvals(:,:,:,:) = boundary_mask(:,:,:,:)
     End Subroutine Load_BC_Mask
 
 End Module Checkpointing
