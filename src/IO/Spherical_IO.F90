@@ -62,7 +62,7 @@ Module Spherical_IO
 
     Integer, Parameter :: shellslice_version = 5
     Integer, Parameter :: azavg_version = 5
-    Integer, Parameter :: shellavg_version = 5
+    Integer, Parameter :: shellavg_version = 6
     Integer, Parameter :: globalavg_version = 5
     Integer, Parameter :: shellspectra_version = 5
     Integer, Parameter :: equslice_version = 5
@@ -181,7 +181,7 @@ Module Spherical_IO
     Integer, Parameter :: Point_Probes=8, Shell_Spectra=9, SPH_Modes=10
     Integer, Parameter :: Temp_IO = 11                  ! This one should always be last
     Type(DiagnosticInfo), Allocatable :: Outputs(:)
-    Logical :: Test_IO = .true. !DEVEL:  Set this to .true. if you want to try a new output using Temp_IO
+    Logical :: Test_IO = .false. !DEVEL:  Set this to .true. if you want to try a new output using Temp_IO
     Integer :: n_outputs
 
     Type(io_buffer) :: full_3d_buffer
@@ -233,8 +233,6 @@ Module Spherical_IO
     Integer :: temp_io_r(1:nprobemax) = -1, temp_io_theta(1:nprobemax) = -1, temp_io_phi(1:nprobemax) = -1
     Real*8 ::  temp_io_r_nrm(1:nprobemax)  = -3.0d0, temp_io_theta_nrm(1:nprobemax)  = -3.0d0
     Real*8 ::  temp_io_phi_nrm(1:nprobemax)  = -3.0d0
-    Logical :: use_temp_io = .false.      ! Set this to true when developing new output types.
-
 
     Namelist /output_namelist/ mem_friendly, &
         ! All output types require that a minimal set of information is specified 
@@ -358,14 +356,14 @@ Contains
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, average_in_phi = .true. , &
                           average_in_theta = .true., average_in_radius = .true., &
-                          cache_size = globalavg_cache_size)
+                          cache_size = globalavg_cache_size, full_cache=.true.)
 
         fdir = 'Shell_Avgs/'
         Call Outputs(Shell_Avgs)%Init(compute_q,myid, 156, fdir, &
                           shellavg_version, shellavg_nrec, shellavg_frequency, &
                           values = shellavg_values, average_in_phi = .true. , &
                           average_in_theta = .true., moments=4, &
-                          cache_size = shellavg_cache_size)
+                          cache_size = shellavg_cache_size, full_cache=.true.)
 
         fdir = 'Point_Probes/'
         Call Outputs(Point_Probes)%Init(compute_q,myid, 63, fdir, &
@@ -419,6 +417,7 @@ Contains
                               globalavg_version, globalavg_nrec, globalavg_frequency, &
                               values = globalavg_values, average_in_phi = .true. , &
                               average_in_theta = .true., average_in_radius = .true.)
+
         Endif
 
         Call Initialize_Headers()
@@ -500,8 +499,8 @@ Contains
 
         !////////////////////////////////////////////////////
         ! Shell_Averages
-        dims(1:2) = (/ nr, Outputs(Shell_Avgs)%nq /)
-        Call Outputs(Shell_Avgs)%Add_IHeader(dims,2)
+        dims(1:3) = (/ nr, Outputs(Shell_Avgs)%nq, pfi%npcol /)
+        Call Outputs(Shell_Avgs)%Add_IHeader(dims,3)
         Call Outputs(Shell_Avgs)%Add_IHeader(Outputs(Shell_Avgs)%oqvals, Outputs(Shell_Avgs)%nq)
         Call Outputs(Shell_Avgs)%Add_DHeader(radius,nr)
 
@@ -808,7 +807,8 @@ Contains
                  dir, version, nrec, frequency, values, &
                  levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
                  tweights, is_spectral, lvals, nobuffer, &
-                 average_in_phi, average_in_radius, average_in_theta, moments)
+                 average_in_phi, average_in_radius, average_in_theta, moments, &
+                 full_cache)
         Implicit None
         Integer :: i,ind, nmom
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
@@ -823,15 +823,18 @@ Contains
 
         !Averaging variables
         Real*8, Intent(In), Optional :: tweights(1:)
-        Logical, Intent(In), Optional :: is_spectral
+        Logical, Intent(In), Optional :: is_spectral, full_cache
         Logical, Intent(In), Optional :: nobuffer, average_in_phi, average_in_theta, average_in_radius
         !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, lcount, modcheck, nmax
-        Logical ::  spectral_io, spectral_buffer
+        Logical ::  spectral_io, spectral_buffer, nonstandard
         Integer :: avg_axes(1:3), ecode
         Integer, Allocatable :: indices(:,:)
         Real*8, Allocatable :: avg_weights(:,:)
         Class(DiagnosticInfo) :: self 
+
+        nonstandard=.false.
+        if (present(full_cache)) nonstandard=full_cache
 
         nmom = 1
         If (present(moments)) nmom = moments
@@ -1079,7 +1082,8 @@ Contains
                               nvals  = self%nq*nmom, &
                               nrec = self%cache_size, skip = 12, &
                               write_timestamp = .true., averaging_axes = avg_axes, &
-                              averaging_weights = avg_weights, spectral=spectral_io)
+                              averaging_weights = avg_weights, spectral=spectral_io, &
+                              full_cache = nonstandard)
 
         DeAllocate(indices)
         DeAllocate(avg_weights)

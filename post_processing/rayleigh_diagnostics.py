@@ -600,6 +600,9 @@ class Shell_Avgs:
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
+        if (version >= 6):
+            npcol = swapread(fd,dtype='int32',count=1,swap=bs)
+
         self.version = version
         self.niter = nrec
         self.nq = nq
@@ -617,9 +620,20 @@ class Shell_Avgs:
             if (self.version == 1):
                 tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr,swap=bs),(nr,nq), order = 'F')
                 self.vals[:,:,i] = tmp
-            if (self.version > 1):
+            elif (self.version < 6):
                 tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*4,swap=bs),(nr,4,nq), order = 'F')
                 self.vals[:,:,:,i] = tmp
+            else:
+                rind=0
+                nr_base = nr//npcol
+                nr_mod = nr % npcol
+                for j in range(npcol):
+                    nrout= nr_base
+                    if (j < nr_mod) :
+                        nrout=nrout+1
+                    tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nrout*4,swap=bs),(nrout,4,nq), order = 'F')
+                    self.vals[rind:rind+nrout,:,:,i] = tmp[:,:,:]
+                    rind=rind+nrout
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
