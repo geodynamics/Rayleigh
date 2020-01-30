@@ -6,8 +6,8 @@ MOBJ  = Math_Constants.o Timing.o Finite_Difference.o Chebyshev_Polynomials.o \
         Math_Utility.o Fourier_Transform.o Spectral_Derivatives.o
 IOOBJ = Spherical_IO.o  
 POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o PDE_Coefficients.o Fields.o \
-        Generic_Input.o BoundaryConditions.o \
-        Checkpointing.o Initial_Conditions.o \
+        Generic_Input.o Checkpointing.o \
+        BoundaryConditions.o Initial_Conditions.o \
         Diagnostics_Base.o \
         Diagnostics_Second_Derivatives.o \
         Diagnostics_Velocity_Diffusion.o \

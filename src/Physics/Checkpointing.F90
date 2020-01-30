@@ -604,4 +604,15 @@ Contains
         Endif
     End Subroutine
 
+    Subroutine Store_BC_Mask(bvals)
+        Implicit None
+        Real*8, Intent(In) :: bvals(:,:,:,:)
+    End Subroutine Store_BC_Mask
+
+    Subroutine Load_BC_Mask(bvals)
+        Implicit None
+        Real*8, Intent(Out) :: bvals(:,:,:,:)
+
+    End Subroutine Load_BC_Mask
+
 End Module Checkpointing
