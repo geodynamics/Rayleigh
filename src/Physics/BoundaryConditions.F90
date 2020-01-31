@@ -136,6 +136,16 @@ Contains
 
     End Subroutine Initialize_Boundary_Conditions
 
+    Subroutine Finalize_Boundary_Conditions()
+        Implicit None
+        If (full_restart) Then
+            ! Grab the boundary conditions from the checkpoint directory
+            ! This will typically be used in full_restart mode.
+            Call Load_BC_Mask(bc_values)  ! from checkpointing
+            If (my_rank .eq. 0) Write(6,*)'LOADING IN BCS!'
+        Endif
+    End Subroutine Finalize_Boundary_Conditions
+
     Subroutine Generate_Boundary_Mask()
         Implicit None
         Real*8 :: bc_val
@@ -154,12 +164,8 @@ Contains
         !BC's are specified in physical space, but enforced in spectral space.
         !Need to multiply by sqrt(4pi) for ell=0 BCs as a result.
 
-        If (full_restart) Then
-            ! Grab the boundary conditions from the checkpoint directory
-            ! This will typically be used in full_restart mode.
-            Call Load_BC_Mask(bc_values)  ! from checkpointing
-            If (my_rank .eq. 0) Write(6,*)'LOADING IN BCS!'
-        Else
+        If (.not. full_restart) Then
+            Write(6,*)'Setting BC manually!'
             If (fix_tvar_top) Then
                 if (trim(T_top_file) .eq. '__nothing__') then
                   bc_val= T_Top*sqrt(four_pi)

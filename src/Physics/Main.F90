@@ -96,6 +96,9 @@ Contains
         Call Linear_Init()
 
         Call Initialize_Fields()
+       
+        Call Finalize_Boundary_Conditions()
+
         Call StopWatch(init_time)%increment() ! started in Init_Problemsize just after MPI is started up
 
         If (my_rank .eq. 0) Then
