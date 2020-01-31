@@ -25,7 +25,8 @@ Module Input
                              physical_controls_namelist, max_iterations, pad_alltoall, &
                              multi_run_mode, nruns, rundirs, my_path, run_cpus, &
                              io_controls_namelist, new_iteration, jobinfo_file, my_sim_id, &
-                             integer_input_digits, int_in_fmt, initialize_io_format_codes
+                             integer_input_digits, int_in_fmt, initialize_io_format_codes, &
+                             full_restart
     Use Spherical_IO, Only : output_namelist
     Use BoundaryConditions, Only : boundary_conditions_namelist, T_top_file, T_bottom_file, &
                                    dTdr_top_file, dTdr_bottom_file, C_Top_File, C_Bottom_File
@@ -58,7 +59,7 @@ Contains
         Character*120 :: input_file, iter_string, input_prefix, res_eq_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
-        Logical :: read_complete, full_restart
+        Logical :: read_complete
         input_file = Trim(my_path)//'main_input'
 
         ! Check command line to see if this is a full restart,

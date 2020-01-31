@@ -29,6 +29,7 @@ Module BoundaryConditions
     Use Generic_Input
     Use PDE_Coefficients
     Use Checkpointing, Only : Store_BC_Mask, Load_BC_Mask
+    Use Controls, Only : full_restart
 
     Implicit None
 
@@ -153,10 +154,11 @@ Contains
         !BC's are specified in physical space, but enforced in spectral space.
         !Need to multiply by sqrt(4pi) for ell=0 BCs as a result.
 
-        If (use_checkpoint_bc_file) Then
+        If (full_restart) Then
             ! Grab the boundary conditions from the checkpoint directory
             ! This will typically be used in full_restart mode.
             Call Load_BC_Mask(bc_values)  ! from checkpointing
+            If (my_rank .eq. 0) Write(6,*)'LOADING IN BCS!'
         Else
             If (fix_tvar_top) Then
                 if (trim(T_top_file) .eq. '__nothing__') then

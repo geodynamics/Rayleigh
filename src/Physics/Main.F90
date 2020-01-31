@@ -83,7 +83,7 @@ Contains
         Call Initialize_Reference()
 
         Call Initialize_Field_Structure()
-
+        Call Initialize_Checkpointing()
         Call Initialize_Boundary_Conditions()
         Call Initialize_Transport_Coefficients()
 
@@ -94,7 +94,7 @@ Contains
         Call Full_Barrier()
 
         Call Linear_Init()
-        Call Initialize_Checkpointing()
+
         Call Initialize_Fields()
         Call StopWatch(init_time)%increment() ! started in Init_Problemsize just after MPI is started up
 

@@ -36,9 +36,10 @@ Module Checkpointing
     ! Simple Checkpointing Module
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
     Implicit None
-    Type(SphericalBuffer) :: chktmp, chktmp2
+    Type(SphericalBuffer) :: chktmp, chktmp2, bctmp
     Integer, private :: numfields = 4 ! 6 for MHD
     Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
+    Integer, private :: checkpoint_version = 2
     Integer,private,Allocatable :: mode_count(:)
     Integer,private :: checkpoint_tag = 425, read_var(1:12)
     Integer, Allocatable, Private :: lmstart(:)
@@ -106,6 +107,8 @@ Contains
         Allocate(boundary_mask(2, 2, my_num_lm, numfields))
         boundary_mask(:,:,:,:) = 0.0d0
 
+        nfs(:) = 1
+        Call bctmp%init(field_count = nfs, config = 'p1a') ! For the boundary mask
 
         Allocate(gpars(1:5,1:5))
         gpars(:,:) = -1
@@ -154,12 +157,24 @@ Contains
 
         Call chktmp%deconstruct('s2a')
         
+        !/////////////////////////////////////////////////////////////////////
         ! Now write out the boundary values the boundary values
-        Call chktmp%construct('p1a')
-        chktmp%config = 'p1a'
+        Call bctmp%construct('p1a')
+        bctmp%config = 'p1a'
+
         Do i = 1, numfields
-            ckhtmp%p1a(i)
+            bctmp%p1a(  2*(i-1)+1,:,:,1) = boundary_mask(1,:,:,i)
+            bctmp%p1a(  2*(i-1)+2,:,:,1) = boundary_mask(2,:,:,i)
         Enddo
+
+        Call bctmp%reform() ! move to s2a
+
+        checkfile = TRIM(my_path)//TRIM(checkpoint_prefix)//'/boundary_conditions'
+        Call checkpoint_buffer%cache_data_spectral(bctmp%s2a,1)
+        Call checkpoint_buffer%write_data(filename=checkfile)
+
+        Call bctmp%deconstruct('s2a')
+        !/////////////////////////////////////////////////////////////////////
 
         If (my_rank .eq. 0) Then
             ! rank 0 writes out a file with the grid, etc.
@@ -499,11 +514,31 @@ Contains
 
         Call chktmp%reform()    ! move to p1b
 
-        ! Load the boundary values array
-        Do i = 1, numfields
-            
-        Enddo
+        If (.not. legacy_format) Then
+            ! Load the boundary values array
+            If (my_rank .eq. 0) Write(6,*)'Reading Boundary Conditions File!'
 
+            Call bctmp%construct('s2b')
+            bctmp%config = 's2b'
+
+            Do mp = my_mp%min, my_mp%max
+                bctmp%s2b(mp)%data(:,:,:,:) = 0.0d0
+            Enddo
+
+            checkfile = trim(checkpoint_prefix)//'/boundary_conditions'
+            Call checkpoint_inbuffer%read_data(filename=checkfile)
+            Call checkpoint_inbuffer%grab_data_spectral(bctmp%s2b,1)
+
+            Call bctmp%reform() ! move to p1b
+
+            Do i = 1, numfields
+                boundary_mask(1,:,:,i) = bctmp%p1b(  2*(i-1)+1,:,:,1)
+                boundary_mask(2,:,:,i) = bctmp%p1b(  2*(i-1)+2,:,:,1)
+            Enddo
+
+            Call bctmp%deconstruct('p1b')
+
+        Endif
 
         ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
         ! fields.  Otherwise, we need to interpolate onto the current grid
