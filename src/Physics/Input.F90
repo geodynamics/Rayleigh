@@ -55,11 +55,12 @@ Contains
         Use RA_MPI_Base
         Use MPI_Layer
         Implicit None
-        Integer :: nlines, line_len,  ierr, pars(2), full_restart_iter, isave
+        Integer :: nlines, line_len,  ierr, pars(2), isave
         Character*120 :: input_file, iter_string, input_prefix, res_eq_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
         Logical :: read_complete
+        Integer :: full_restart_iter=0
         input_file = Trim(my_path)//'main_input'
 
         ! Check command line to see if this is a full restart,
