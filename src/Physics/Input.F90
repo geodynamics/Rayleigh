@@ -87,6 +87,7 @@ Contains
             res_eq_file = TRIM(input_prefix)//'/equation_coefficients'
             input_file = TRIM(input_prefix)//'/main_input'
             Write(6,*)'Input file is: ', input_file
+
         Endif
 
         ! For multi-run mode, we need a unique communicator for each run before the read/broadcast.
@@ -147,24 +148,6 @@ Contains
             custom_reference_file = res_eq_file
             integer_input_digits = isave
             Write(6,*)'custom ref file is: ', custom_reference_file
-
-            If (trim(T_top_file) .ne. '__nothing__') &
-                T_top_file=TRIM(input_prefix)//'/T_top_BC'
-
-            If (trim(T_bottom_file) .ne. '__nothing__') &
-                T_top_file=TRIM(input_prefix)//'/T_bottom_BC'
-
-            If (trim(dTdr_top_file) .ne. '__nothing__') &
-                T_top_file=TRIM(input_prefix)//'/dTdr_top_BC'
-
-            If (trim(dTdr_bottom_file) .ne. '__nothing__') &
-                T_top_file=TRIM(input_prefix)//'/dTdr_bottom_BC'
-
-            If (trim(C_top_file) .ne. '__nothing__') &
-                T_top_file=TRIM(input_prefix)//'/C_top_BC'
-
-            If (trim(C_bottom_file) .ne. '__nothing__') &
-                T_top_file=TRIM(input_prefix)//'/C_bottom_BC'
 
         Endif
 
