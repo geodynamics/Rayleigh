@@ -185,6 +185,7 @@ Contains
 
             Open(unit=15,file=cfile,form='unformatted', status='replace', access='stream')
             Write(15)endian_tag
+            Write(15)checkpoint_version
             Write(15)n_r
             Write(15)grid_type
             Write(15)l_max
@@ -225,7 +226,7 @@ Contains
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old, nr_read
         Integer :: i, ierr, m, p, np, mp, lb,ub, f,  r, ind
-        Integer :: old_pars(7), fcount(3,2)
+        Integer :: old_pars(7), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes
         Integer :: read_magnetism = 0, read_hydro = 0
@@ -330,6 +331,7 @@ Contains
                 endian_tag=0
                 If (.not. legacy_format) Read(funit)endian_tag
                 If (legacy_format .or. (endian_tag .eq. 314)) Then
+                    If (.not. legacy_format) Read(funit)version
                     Read(funit)n_r_old
                     Read(funit)grid_type_old
                     Read(funit)l_max_old
@@ -516,7 +518,6 @@ Contains
 
         If (.not. legacy_format) Then
             ! Load the boundary values array
-            If (my_rank .eq. 0) Write(6,*)'Reading Boundary Conditions File!'
 
             Call bctmp%construct('s2b')
             bctmp%config = 's2b'
