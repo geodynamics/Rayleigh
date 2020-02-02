@@ -69,7 +69,7 @@ Contains
 
         full_restart=.false.
         Call Read_CMD_Line('-full_restart' , full_restart_iter)
-        If (my_rank .eq. 0) Write(6,*)'full restart: ', full_restart_iter
+
         If (full_restart_iter .ne. 0) Then
             full_restart = .true.
             If (full_restart_iter .lt. 0) Then
@@ -86,7 +86,7 @@ Contains
             Endif
             res_eq_file = TRIM(input_prefix)//'/equation_coefficients'
             input_file = TRIM(input_prefix)//'/main_input'
-            If (my_rank .eq. 0) Write(6,*)'Input file is: ', input_file
+            If (global_rank .eq. 0) Write(6,*)'Input file is: ', input_file
 
         Endif
 
