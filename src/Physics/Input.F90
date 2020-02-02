@@ -147,9 +147,10 @@ Contains
             restart_iter = full_restart_iter
             custom_reference_file = res_eq_file
             integer_input_digits = isave
-            Write(6,*)'Full_restart is true.  Custom reference file is: ', &
+            If (global_rank .eq. 0) Then
+                Write(6,*)'Full_restart is true.  Custom reference file is: ', &
                        custom_reference_file
-
+            Endif
         Endif
 
         DeAllocate(input_as_string)
