@@ -86,7 +86,7 @@ Contains
             Endif
             res_eq_file = TRIM(input_prefix)//'/equation_coefficients'
             input_file = TRIM(input_prefix)//'/main_input'
-            If (global_rank .eq. 0) Write(6,*)'Input file is: ', input_file
+            
 
         Endif
 
@@ -148,8 +148,9 @@ Contains
             custom_reference_file = res_eq_file
             integer_input_digits = isave
             If (global_rank .eq. 0) Then
-                Write(6,*)'Full_restart is true.  Custom reference file is: ', &
-                       custom_reference_file
+                Write(6,*)'Initializing in full-restart mode.'
+                Write(6,*)'Input file: ', input_file
+                Write(6,*)'Equation coefficients file: ' , custom_reference_file
             Endif
         Endif
 

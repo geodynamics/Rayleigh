@@ -331,8 +331,12 @@ Contains
                 endian_tag=0
                 If (.not. legacy_format) Read(funit)endian_tag
                 If (legacy_format .or. (endian_tag .eq. 314)) Then
-                    If (.not. legacy_format) Read(funit)version
-                    Read(funit)n_r_old
+                    If (.not. legacy_format) Then
+                        Read(funit)version
+                        Read(funit)n_r_old
+                    Else
+                        Read(funit)n_r_old
+                    Endif
                     Read(funit)grid_type_old
                     Read(funit)l_max_old
                     Read(funit)dt
@@ -359,6 +363,7 @@ Contains
             If (ierr .eq. 0) Then
                 ! Verify that all checkpoint files exist and  have the correct size.
                 expected_bytes = n_r_old*((l_max_old+1)**2 + l_max_old+1)*8 !TODO: Make this work for general precision
+                write(6,*)'check: ', endian_tag, version, n_r_old
                 Do i = 1, numfields*2
                     If (read_var(i) .eq. 1) Then
                         checkfile = trim(checkpoint_prefix)//under_slash//trim(checkpoint_suffix(i))
