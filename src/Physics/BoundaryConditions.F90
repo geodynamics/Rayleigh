@@ -28,6 +28,8 @@ Module BoundaryConditions
 
     Use Generic_Input
     Use PDE_Coefficients
+    Use Checkpointing, Only : Store_BC_Mask, Load_BC_Mask
+    Use Controls, Only : full_restart
 
     Implicit None
 
@@ -68,6 +70,7 @@ Module BoundaryConditions
     Logical :: no_slip_boundaries = .false. ! Set to true to use no-slip boundaries.  Stree-free boundaries are the default.
     Logical :: stress_free_top = .true., stress_free_bottom = .true.
     Logical :: no_slip_top = .false., no_slip_bottom = .false.
+    Logical :: use_checkpoint_bc_file = .false.
 
     Real*8, allocatable, dimension(:,:,:,:) :: bc_values  ! a 4-D array: (top/bottom, real/imag, my_num_lm, n_equations)
 
@@ -133,11 +136,22 @@ Contains
 
     End Subroutine Initialize_Boundary_Conditions
 
+    Subroutine Finalize_Boundary_Conditions()
+        Implicit None
+        If (full_restart) Then
+            ! Grab the boundary conditions from the checkpoint directory
+            ! This will typically be used in full_restart mode.
+            Call Load_BC_Mask(bc_values)  ! from checkpointing
+
+        Endif
+    End Subroutine Finalize_Boundary_Conditions
+
     Subroutine Generate_Boundary_Mask()
         Implicit None
         Real*8 :: bc_val
         Integer :: uind, lind
         Integer :: real_ind, imag_ind
+
 
         allocate(bc_values(2, 2, my_num_lm, n_equations))
         bc_values = zero
@@ -150,63 +164,66 @@ Contains
         !BC's are specified in physical space, but enforced in spectral space.
         !Need to multiply by sqrt(4pi) for ell=0 BCs as a result.
 
-        If (fix_tvar_top) Then
-            if (trim(T_top_file) .eq. '__nothing__') then
-              bc_val= T_Top*sqrt(four_pi)
-              Call Set_BC(bc_val,0,0, teq,real_ind, uind)
-            else
-              Call Set_BC_from_file(T_top_file, teq, uind)
-            end if
+        If (.not. full_restart) Then
+
+            If (fix_tvar_top) Then
+                if (trim(T_top_file) .eq. '__nothing__') then
+                  bc_val= T_Top*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, teq,real_ind, uind)
+                else  
+                  Call Set_BC_from_file(T_top_file, teq, uind)
+                end if
+            Endif
+
+            If (fix_tvar_bottom) Then
+                if (trim(T_bottom_file) .eq. '__nothing__') then
+                  bc_val= T_bottom*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, teq,real_ind, lind)
+                else
+                  Call Set_BC_from_file(T_bottom_file, teq, lind)
+                end if
+            Endif
+
+            If (fix_dtdr_top) Then
+                if (trim(dTdr_top_file) .eq. '__nothing__') then
+                  bc_val= dtdr_top*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, teq,real_ind, uind)
+                else
+                  Call Set_BC_from_file(dTdr_top_file, teq, uind)
+                end if
+            Endif
+
+            If (fix_dtdr_bottom) Then
+                if (trim(dTdr_bottom_file) .eq. '__nothing__') then
+                  bc_val= dtdr_bottom*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, teq,real_ind, lind)
+                else
+                  Call Set_BC_from_file(dTdr_bottom_file, teq, lind)
+                end if
+            Endif
+
+            If (fix_poloidalfield_top) Then
+                if (trim(C_top_file) .eq. '__nothing__') then
+                  Call Set_BC(C10_top ,1,0,ceq,real_ind,uind)
+                  Call Set_BC(C11_top ,1,1,ceq,real_ind,uind)
+                  Call Set_BC(C1m1_top,1,1,ceq,imag_ind,uind)
+                else
+                  Call Set_BC_from_file(C_top_file, ceq, uind)
+                end if
+            Endif        
+
+            If (fix_poloidalfield_bottom) Then
+                if (trim(C_bottom_file) .eq. '__nothing__') then
+                  Call Set_BC(C10_bottom ,1,0,ceq,real_ind,lind)
+                  Call Set_BC(C11_bottom ,1,1,ceq,real_ind,lind)
+                  Call Set_BC(C1m1_bottom,1,1,ceq,imag_ind,lind)
+                else
+                  Call Set_BC_from_file(C_bottom_file, ceq, lind)
+                end if
+            Endif   
+
         Endif
-
-        If (fix_tvar_bottom) Then
-            if (trim(T_bottom_file) .eq. '__nothing__') then
-              bc_val= T_bottom*sqrt(four_pi)
-              Call Set_BC(bc_val,0,0, teq,real_ind, lind)
-            else
-              Call Set_BC_from_file(T_bottom_file, teq, lind)
-            end if
-        Endif
-
-        If (fix_dtdr_top) Then
-            if (trim(dTdr_top_file) .eq. '__nothing__') then
-              bc_val= dtdr_top*sqrt(four_pi)
-              Call Set_BC(bc_val,0,0, teq,real_ind, uind)
-            else
-              Call Set_BC_from_file(dTdr_top_file, teq, uind)
-            end if
-        Endif
-
-        If (fix_dtdr_bottom) Then
-            if (trim(dTdr_bottom_file) .eq. '__nothing__') then
-              bc_val= dtdr_bottom*sqrt(four_pi)
-              Call Set_BC(bc_val,0,0, teq,real_ind, lind)
-            else
-              Call Set_BC_from_file(dTdr_bottom_file, teq, lind)
-            end if
-        Endif
-
-        If (fix_poloidalfield_top) Then
-            if (trim(C_top_file) .eq. '__nothing__') then
-              Call Set_BC(C10_top ,1,0,ceq,real_ind,uind)
-              Call Set_BC(C11_top ,1,1,ceq,real_ind,uind)
-              Call Set_BC(C1m1_top,1,1,ceq,imag_ind,uind)
-            else
-              Call Set_BC_from_file(C_top_file, ceq, uind)
-            end if
-        Endif        
-
-        If (fix_poloidalfield_bottom) Then
-            if (trim(C_bottom_file) .eq. '__nothing__') then
-              Call Set_BC(C10_bottom ,1,0,ceq,real_ind,lind)
-              Call Set_BC(C11_bottom ,1,1,ceq,real_ind,lind)
-              Call Set_BC(C1m1_bottom,1,1,ceq,imag_ind,lind)
-            else
-              Call Set_BC_from_file(C_bottom_file, ceq, lind)
-            end if
-        Endif   
-
-
+        Call Store_BC_Mask(bc_values)  ! to checkpointing
     End Subroutine Generate_Boundary_Mask
 
     Subroutine Set_BC(inval,ellval,emval,eqval,imi,bound_ind)

@@ -20,18 +20,24 @@
 
 Module Input
     Use ProblemSize,  Only : problemsize_namelist, nprow, npcol, n_r,n_theta, npout, global_rank, &
-                             & ncpu_global, aspect_ratio, l_max
+                             ncpu_global, aspect_ratio, l_max
     Use Controls,     Only : temporal_controls_namelist, numerical_controls_namelist, &
-                            & physical_controls_namelist, max_iterations, pad_alltoall, &
-                            & multi_run_mode, nruns, rundirs, my_path, run_cpus, &
-                            & io_controls_namelist, new_iteration, jobinfo_file, my_sim_id
+                             physical_controls_namelist, max_iterations, pad_alltoall, &
+                             multi_run_mode, nruns, rundirs, my_path, run_cpus, &
+                             io_controls_namelist, new_iteration, jobinfo_file, my_sim_id, &
+                             integer_input_digits, int_in_fmt, initialize_io_format_codes, &
+                             full_restart
     Use Spherical_IO, Only : output_namelist
-    Use BoundaryConditions, Only : boundary_conditions_namelist
-    Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, magnetic_init_type
+    Use BoundaryConditions, Only : boundary_conditions_namelist, T_top_file, T_bottom_file, &
+                                   dTdr_top_file, dTdr_bottom_file, C_Top_File, C_Bottom_File
+    Use Initial_Conditions, Only : initial_conditions_namelist, alt_check, init_type, &
+                                   magnetic_init_type, restart_iter
     Use TestSuite, Only : test_namelist
     Use PDE_Coefficients, Only : reference_namelist, Prandtl_Number, Rayleigh_Number, &
-                               Magnetic_Prandtl_Number, Ekman_Number, Transport_Namelist
+                               Magnetic_Prandtl_Number, Ekman_Number, Transport_Namelist, &
+                               custom_reference_file
     Use Parallel_Framework, Only : pfi
+    Use Checkpointing, Only : auto_fmt
 
     Implicit None
 
@@ -49,12 +55,40 @@ Contains
         Use RA_MPI_Base
         Use MPI_Layer
         Implicit None
-        Integer :: nlines, line_len,  ierr, pars(2)
-        Character*120 :: input_file
+        Integer :: nlines, line_len,  ierr, pars(2), isave
+        Character*120 :: input_file, iter_string, input_prefix, res_eq_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
         Logical :: read_complete
+        Integer :: full_restart_iter=0
         input_file = Trim(my_path)//'main_input'
+
+        ! Check command line to see if this is a full restart,
+        ! in which case all input comes from checkpoint directory.    
+        restart_iter = 0
+
+        full_restart=.false.
+        Call Read_CMD_Line('-full_restart' , full_restart_iter)
+
+        If (full_restart_iter .ne. 0) Then
+            full_restart = .true.
+            If (full_restart_iter .lt. 0) Then
+                Write(iter_string,auto_fmt) -full_restart_iter
+                input_prefix= Trim(my_path)//'Checkpoints/quicksave_'//TRIM(iter_string)
+            Else
+                ! We may be restarting from a checkpoint written with 
+                ! more/less than the default 8 digits.
+                Call Read_CMD_Line('-input_digits',integer_input_digits)
+                isave = integer_input_digits
+                Call Initialize_IO_Format_Codes()
+                Write(iter_string,int_in_fmt) full_restart_iter
+                input_prefix= Trim(my_path)//'Checkpoints/'//TRIM(iter_string)
+            Endif
+            res_eq_file = TRIM(input_prefix)//'/equation_coefficients'
+            input_file = TRIM(input_prefix)//'/main_input'
+            
+
+        Endif
 
         ! For multi-run mode, we need a unique communicator for each run before the read/broadcast.
         ! Simulation-specific communicators have yet to be set up at this point in the program flow.
@@ -103,6 +137,22 @@ Contains
 
         ! Check the command line to see if any arguments were passed explicitly
         Call CheckArgs()
+
+        ! Finally, if this is a full restart, make sure we actually restart 
+        ! using only data from the desired checkpoint directory.
+        ! This entails repointing a few file names and input_flags.
+        If (full_restart) Then
+            init_type=-1
+            magnetic_init_type=-1
+            restart_iter = full_restart_iter
+            custom_reference_file = res_eq_file
+            integer_input_digits = isave
+            If (global_rank .eq. 0) Then
+                Write(6,*)'Initializing in full-restart mode.'
+                Write(6,*)'Input file: ', input_file
+                Write(6,*)'Equation coefficients file: ' , custom_reference_file
+            Endif
+        Endif
 
         DeAllocate(input_as_string)
 

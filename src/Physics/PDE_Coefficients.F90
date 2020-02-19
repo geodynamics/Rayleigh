@@ -901,7 +901,7 @@ Contains
                        ref_arr_old(1:n_r,1:n_ra_functions)
 
                 If (my_rank .eq. 0) Then
-                    call stdout%print("WARNING:  nr = nr_old.  Assuming grids are the same.")
+                    call stdout%print(" WARNING:  nr = nr_old.  Assuming grids are the same.")
                 Endif
             Endif
             DeAllocate(ref_arr_old,old_radius)

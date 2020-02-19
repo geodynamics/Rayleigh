@@ -29,7 +29,7 @@ Module Run_Parameters
 
 Contains
 
-    Subroutine Write_Run_Parameters()
+    Subroutine Write_Run_Parameters(checkpoint_input_file)
 
         Use Controls, Only : my_path, magnetism, jobinfo_file
         Use Controls, Only : numerical_controls_namelist, physical_controls_namelist, &
@@ -52,9 +52,12 @@ Contains
 
         Character(len=16 ) :: date, time, zone_in
         Integer :: values(8)
-        Integer :: io, ierr, i
-        Logical :: file_exist
+        Integer :: io, ierr, i, nprow_save, npcol_save
+        Logical :: file_exist, write_header
         Integer :: ntrim = 4
+        Character*256, Intent(In), Optional :: checkpoint_input_file
+
+        write_header = .true.
 
         Call Date_and_Time(date, time, zone_in, values) ! get current date/time
 
@@ -67,119 +70,135 @@ Contains
         1005 Format (a,ES11.4)
 
         If (my_rank .eq. 0) Then
-            Inquire(file=Trim(my_path)//Trim(jobinfo_file), exist=file_exist)
-            Open(unit=io, file=Trim(my_path)//Trim(jobinfo_file), form='formatted', &
-               action='write', access='sequential', status='unknown', iostat=ierr)
-            If (ierr .eq. 0) Then
-                Write(io,*)
-                Write(io,999)
-                Write(io,*) "Job Information"
-                Write(io,999)
-                Write(io,1003) "Date = ", values(1), values(2), values(3)
-                Write(io,1004) "Time = ", values(5), values(6), values(7)
-                Write(io,1001) "Path = ", Trim(my_path)
-                Write(io,*)
-                Write(io,999)
-                Write(io,*) "Compiler Information"
-                Write(io,999)
 
-                ! the string slicing is to remove the beginning "---short_name---"
-                ! as well as the trailing "---Char(0)"
-                Write(io,1001) "Compiler Location = ", &
-                             Trim(FC_location(18:Len_Trim(FC_location)-ntrim))
-                Write(io,1001) "Compiler Version  = ", &
-                             Trim(FC_version(17:Len_Trim(FC_version)-ntrim))
-                Write(io,*)
-                Write(io,1001) "Compiler Flags    = ", &
-                             Trim(build_fflags(19:Len_Trim(build_fflags)-ntrim))
-                Write(io,1001) "Compiler Library  = ", &
-                             Trim(build_lib(16:Len_Trim(build_lib)-ntrim))
-                Write(io,*)
-                Write(io,999)
-                Write(io,*) "Build Information"
-                Write(io,999)
-                Write(io,1001) "Build Date       = ", &
-                             Trim(build_date(17:Len_trim(build_date)-ntrim))
-                Write(io,1001) "Build Machine    = ", &
-                             Trim(build_machine(20:Len_trim(build_machine)-ntrim))
-                Write(io,1001) "Build Directory  = ", &
-                             Trim(build_dir(16:Len_trim(build_dir)-ntrim))
-                Write(io,1001) "Custom Directory = ", &
-                             Trim(build_custom_dir(17:Len_trim(build_custom_dir)-ntrim))
-                Write(io,*)
-                Write(io,1001) "Build Version = ", &
-                             Trim(build_version(20:Len_trim(build_version)-ntrim))
-                Write(io,1001) "Git Hash = ", &
-                             Trim(build_git_commit(15:Len_trim(build_git_commit)-ntrim))
-                Write(io,1001) "Git URL = ", &
-                             Trim(build_git_url(14:Len_trim(build_git_url)-ntrim))
-                Write(io,1001) "Git Branch = ", &
-                             Trim(build_git_branch(17:Len_trim(build_git_branch)-ntrim))
-                Write(io,*)
+            If (.not. present(checkpoint_input_file)) Then
+                Inquire(file=Trim(my_path)//Trim(jobinfo_file), exist=file_exist)
+                Open(unit=io, file=Trim(my_path)//Trim(jobinfo_file), form='formatted', &
+                   action='write', access='sequential', status='unknown', iostat=ierr)
+            Else
+                Open(unit=io, file=checkpoint_input_file, form='formatted', &
+                   action='write', access='sequential', status='unknown', iostat=ierr)
+                write_header = .false.
+                ! Set nprow and npcol to -1 for checkpoints' main_input files.
+                ! (allows easy restarts from any process count)
+                nprow_save = nprow
+                npcol_save = npcol
+                nprow = -1
+                npcol = -1
+            Endif
 
-                Write(io,999)
-                Write(io,*) "Preamble Information"
-                Write(io,999)
-                Write(io,*) "MPI"
-                Write(io,1002) "    NCPU  : ", pfi%wcomm%np
-                Write(io,1002) "    NPROW : ", nprow
-                Write(io,1002) "    NPCOL : ", npcol
-                Write(io,*)
-                Write(io,*) "Grid"
-                Write(io,1002) "    N_R                : ", n_r
-                Write(io,1002) "    N_THETA            : ", n_theta
-                Write(io,1002) "    Ell_MAX            : ", l_max
-                Write(io,1005) "    R_MIN              : ", rmin
-                Write(io,1005) "    R_MAX              : ", rmax
-                Write(io,1002) "    Chebyshev Domains  : ", ndomains
-                Write(io,*)
-                Do i=1,ndomains
-                    Write(io,1002) "      Domain ", i
-                    Write(io,1002) "        Grid points           : ", ncheby(i)
-                    If (dealias_by(i) .eq. -1) Then
-                        Write(io,1002) "        Dealiased Polynomials : ", (ncheby(i)*2)/3
-                    Else
-                        Write(io,1002) "        Dealiased Polynomials : ", ncheby(i)-dealias_by(i)
+            If ( ierr .eq. 0 ) Then
+                If (write_header) Then
+                    Write(io,*)
+                    Write(io,999)
+                    Write(io,*) "Job Information"
+                    Write(io,999)
+                    Write(io,1003) "Date = ", values(1), values(2), values(3)
+                    Write(io,1004) "Time = ", values(5), values(6), values(7)
+                    Write(io,1001) "Path = ", Trim(my_path)
+                    Write(io,*)
+                    Write(io,999)
+                    Write(io,*) "Compiler Information"
+                    Write(io,999)
+
+                    ! the string slicing is to remove the beginning "---short_name---"
+                    ! as well as the trailing "---Char(0)"
+                    Write(io,1001) "Compiler Location = ", &
+                                 Trim(FC_location(18:Len_Trim(FC_location)-ntrim))
+                    Write(io,1001) "Compiler Version  = ", &
+                                 Trim(FC_version(17:Len_Trim(FC_version)-ntrim))
+                    Write(io,*)
+                    Write(io,1001) "Compiler Flags    = ", &
+                                 Trim(build_fflags(19:Len_Trim(build_fflags)-ntrim))
+                    Write(io,1001) "Compiler Library  = ", &
+                                 Trim(build_lib(16:Len_Trim(build_lib)-ntrim))
+                    Write(io,*)
+                    Write(io,999)
+                    Write(io,*) "Build Information"
+                    Write(io,999)
+                    Write(io,1001) "Build Date       = ", &
+                                 Trim(build_date(17:Len_trim(build_date)-ntrim))
+                    Write(io,1001) "Build Machine    = ", &
+                                 Trim(build_machine(20:Len_trim(build_machine)-ntrim))
+                    Write(io,1001) "Build Directory  = ", &
+                                 Trim(build_dir(16:Len_trim(build_dir)-ntrim))
+                    Write(io,1001) "Custom Directory = ", &
+                                 Trim(build_custom_dir(17:Len_trim(build_custom_dir)-ntrim))
+                    Write(io,*)
+                    Write(io,1001) "Build Version = ", &
+                                 Trim(build_version(20:Len_trim(build_version)-ntrim))
+                    Write(io,1001) "Git Hash = ", &
+                                 Trim(build_git_commit(15:Len_trim(build_git_commit)-ntrim))
+                    Write(io,1001) "Git URL = ", &
+                                 Trim(build_git_url(14:Len_trim(build_git_url)-ntrim))
+                    Write(io,1001) "Git Branch = ", &
+                                 Trim(build_git_branch(17:Len_trim(build_git_branch)-ntrim))
+                    Write(io,*)
+
+                    Write(io,999)
+                    Write(io,*) "Preamble Information"
+                    Write(io,999)
+                    Write(io,*) "MPI"
+                    Write(io,1002) "    NCPU  : ", pfi%wcomm%np
+                    Write(io,1002) "    NPROW : ", nprow
+                    Write(io,1002) "    NPCOL : ", npcol
+                    Write(io,*)
+                    Write(io,*) "Grid"
+                    Write(io,1002) "    N_R                : ", n_r
+                    Write(io,1002) "    N_THETA            : ", n_theta
+                    Write(io,1002) "    Ell_MAX            : ", l_max
+                    Write(io,1005) "    R_MIN              : ", rmin
+                    Write(io,1005) "    R_MAX              : ", rmax
+                    Write(io,1002) "    Chebyshev Domains  : ", ndomains
+                    Write(io,*)
+                    Do i=1,ndomains
+                        Write(io,1002) "      Domain ", i
+                        Write(io,1002) "        Grid points           : ", ncheby(i)
+                        If (dealias_by(i) .eq. -1) Then
+                            Write(io,1002) "        Dealiased Polynomials : ", (ncheby(i)*2)/3
+                        Else
+                            Write(io,1002) "        Dealiased Polynomials : ", ncheby(i)-dealias_by(i)
+                        Endif
+                        Write(io,1005) "        Domain Lower Bound    : ", domain_bounds(i)
+                        Write(io,1005) "        Domain Upper Bound    : ", domain_bounds(i+1)
+                    Enddo
+                    Write(io,*)
+                    Write(io,*) "Reference State"
+                    If (reference_type .eq. 1) Then
+                        Write(io,1001) "    Reference type          : ", "Boussinesq (Non-dimensional)"
+                        Write(io,1005) "    Rayleigh Number         : ", Rayleigh_Number
+                        Write(io,1005) "    Ekman Number            : ", Ekman_Number
+                        Write(io,1005) "    Prandtl Number          : ", Prandtl_Number
+                        If (magnetism) Then
+                            Write(io,1005) "    Magnetic Prandtl Number : ", Magnetic_Prandtl_Number
+                        Endif
+                    Else If (reference_type .eq. 2) Then
+                        Write(io,1001) "    Reference type           : ", "Polytrope (Non-dimensional)"
+                        Write(io,1005) "    Modified Rayleigh Number : ", Rayleigh_Number
+                        Write(io,1005) "    Ekman Number             : ", Ekman_Number
+                        Write(io,1005) "    Prandtl Number           : ", Prandtl_Number
+                        If (magnetism) Then
+                            Write(io,1005) "    Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
+                        Endif
+                        Write(io,1005) "    Polytropic Index         : ", poly_n
+                        Write(io,1005) "    Density Scaleheights     : ", poly_nrho
+                    Else If (reference_type .eq. 3) Then
+                        Write(io,1001) "    Reference type                : ", "Polytrope (Dimensional)"
+                        Write(io,1005) "    Angular Velocity (rad/s)      : ", Angular_Velocity
+                        Write(io,1005) "    Inner-Radius Density (g/cm^3) : ", poly_rho_i
+                        Write(io,1005) "    Interior Mass (g)             : ", poly_mass
+                        Write(io,1005) "    Polytropic Index              : ", poly_n
+                        Write(io,1005) "    Density Scaleheights          : ", poly_nrho
+                        Write(io,1005) "    CP (erg g^-1 cm^-3 K^-1)      : ", pressure_specific_heat
+                    Else If (reference_type .eq. 4) Then
+                        Write(io,1001) "    Reference type                : ", "Custom"
                     Endif
-                    Write(io,1005) "        Domain Lower Bound    : ", domain_bounds(i)
-                    Write(io,1005) "        Domain Upper Bound    : ", domain_bounds(i+1)
-                Enddo
-                Write(io,*)
-                Write(io,*) "Reference State"
-                If (reference_type .eq. 1) Then
-                    Write(io,1001) "    Reference type          : ", "Boussinesq (Non-dimensional)"
-                    Write(io,1005) "    Rayleigh Number         : ", Rayleigh_Number
-                    Write(io,1005) "    Ekman Number            : ", Ekman_Number
-                    Write(io,1005) "    Prandtl Number          : ", Prandtl_Number
-                    If (magnetism) Then
-                        Write(io,1005) "    Magnetic Prandtl Number : ", Magnetic_Prandtl_Number
-                    Endif
-                Else If (reference_type .eq. 2) Then
-                    Write(io,1001) "    Reference type           : ", "Polytrope (Non-dimensional)"
-                    Write(io,1005) "    Modified Rayleigh Number : ", Rayleigh_Number
-                    Write(io,1005) "    Ekman Number             : ", Ekman_Number
-                    Write(io,1005) "    Prandtl Number           : ", Prandtl_Number
-                    If (magnetism) Then
-                        Write(io,1005) "    Magnetic Prandtl Number  : ", Magnetic_Prandtl_Number
-                    Endif
-                    Write(io,1005) "    Polytropic Index         : ", poly_n
-                    Write(io,1005) "    Density Scaleheights     : ", poly_nrho
-                Else If (reference_type .eq. 3) Then
-                    Write(io,1001) "    Reference type                : ", "Polytrope (Dimensional)"
-                    Write(io,1005) "    Angular Velocity (rad/s)      : ", Angular_Velocity
-                    Write(io,1005) "    Inner-Radius Density (g/cm^3) : ", poly_rho_i
-                    Write(io,1005) "    Interior Mass (g)             : ", poly_mass
-                    Write(io,1005) "    Polytropic Index              : ", poly_n
-                    Write(io,1005) "    Density Scaleheights          : ", poly_nrho
-                    Write(io,1005) "    CP (erg g^-1 cm^-3 K^-1)      : ", pressure_specific_heat
-                Else If (reference_type .eq. 4) Then
-                    Write(io,1001) "    Reference type                : ", "Custom"
+                    Write(io,*)
+
+                    Write(io,999)
+                    Write(io,*) "Namelist Information"
+                    Write(io,999)
                 Endif
-                Write(io,*)
-
-                Write(io,999)
-                Write(io,*) "Namelist Information"
-                Write(io,999)
                 Write(io,nml=problemsize_namelist)
                 Write(io,nml=numerical_controls_namelist)
                 Write(io,nml=physical_controls_namelist)
@@ -195,7 +214,8 @@ Contains
             Endif
 
             Close(unit=io)
-
+            nprow = nprow_save
+            npcol = npcol_save
         Endif
 
     End Subroutine Write_Run_Parameters
