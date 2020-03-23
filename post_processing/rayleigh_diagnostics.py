@@ -1530,7 +1530,7 @@ def Compile_GlobalAverages(file_list,ofile):
     nfiles = len(file_list)
     #   We read the first file, assume that nrec doesn't change
     #   and use the nrecs + nq in the file to create our combined array
-    a = GlobalAverage(file_list[0], path = '')
+    a = G_Avgs(file_list[0], path = '')
     nfiles = len(file_list)
     niter_estimate = a.niter*nfiles
     nq = a.nq
@@ -1557,7 +1557,7 @@ def Compile_GlobalAverages(file_list,ofile):
     icount[0] = 0
     for i in range(nfiles):
         the_file = file_list[i]
-        a = GlobalAverage(the_file,path='')
+        a = G_Avgs(the_file,path='')
         nrec = a.niter
         for j in range(nrec):
             tmp[:] = a.vals[j,:]
