@@ -1575,7 +1575,7 @@ def TimeAvg_AZAverages(file_list,ofile):
     nfiles = len(file_list)
     #   We read the first file, assume that nrec doesn't change
     #   and use the nrecs + nq in the file to create our combined array
-    a = AzAverage(file_list[0], path = '')
+    a = AZ_Avgs(file_list[0], path = '')
     nfiles = len(file_list)
 
     nr = a.nr
@@ -1592,8 +1592,7 @@ def TimeAvg_AZAverages(file_list,ofile):
     t0 = a.time[0]
     for i in range(0,nfiles):
         the_file = file_list[i]
-        print('Adding '+the_file+' to the average...')
-        b = AzAverage(the_file,path='')
+        b = AZ_Avgs(the_file,path='')
         nrec = b.niter
         for j in range(nrec):
             tmp[0:ntheta,0:nr,0:nq] += b.vals[0:ntheta,0:nr,0:nq,j].astype('float64')
