@@ -1575,7 +1575,7 @@ def TimeAvg_AZAverages(file_list,ofile):
     nfiles = len(file_list)
     #   We read the first file, assume that nrec doesn't change
     #   and use the nrecs + nq in the file to create our combined array
-    a = AzAverage(file_list[0], path = '')
+    a = AZ_Avgs(file_list[0], path = '')
     nfiles = len(file_list)
 
     nr = a.nr
@@ -1592,8 +1592,7 @@ def TimeAvg_AZAverages(file_list,ofile):
     t0 = a.time[0]
     for i in range(0,nfiles):
         the_file = file_list[i]
-        print('Adding '+the_file+' to the average...')
-        b = AzAverage(the_file,path='')
+        b = AZ_Avgs(the_file,path='')
         nrec = b.niter
         for j in range(nrec):
             tmp[0:ntheta,0:nr,0:nq] += b.vals[0:ntheta,0:nr,0:nq,j].astype('float64')
@@ -1632,12 +1631,15 @@ def TimeAvg_ShellAverages(file_list,ofile):
     #   We read the first file, assume that nrec doesn't change
     #   and use the nrecs + nq in the file to create our combined array
     #print file_list
-    a = ShellAverage(file_list[0], path = '')
+    a = Shell_Avgs(file_list[0], path = '')
     nfiles = len(file_list)
 
     nr = a.nr
     nq = a.nq
-    tmp = np.zeros((nr,nq),dtype='float64')
+    if (a.version == 1):
+        tmp = np.zeros((nr,nq),dtype='float64')
+    else:
+        tmp = np.zeros((nr,4,nq),dtype='float64')        
     simtime   = np.zeros(1,dtype='float64')
     iteration = np.zeros(1,dtype='int32')
     icount = np.zeros(1,dtype='int32')
@@ -1648,10 +1650,13 @@ def TimeAvg_ShellAverages(file_list,ofile):
     t0 = a.time[0]
     for i in range(0,nfiles):
         the_file = file_list[i]
-        b = ShellAverage(the_file,path='')
+        b = Shell_Avgs(the_file,path='')
         nrec = b.niter
         for j in range(nrec):
-            tmp[0:nr,0:nq] += b.vals[0:nr,0:nq,j].astype('float64')
+            if (a.version == 1):
+                tmp[0:nr,0:nq] += b.vals[0:nr,0:nq,j].astype('float64')
+            else:
+                tmp[0:nr,0:4,0:nq] += b.vals[0:nr,0:4,0:nq,j].astype('float64')
 
             tfinal[0] = b.time[j]
             ifinal[0] = b.iters[j]
@@ -1660,13 +1665,18 @@ def TimeAvg_ShellAverages(file_list,ofile):
     tmp = tmp/div
 
     # We open the file that we want to store the compiled time traces into and write a header
+    ndim=6
+    if (a.version < 6):
+        ndim = 5
     fd = open(ofile,'wb') #w = write, b = binary
-    dims = np.zeros(5,dtype='int32')
+    dims = np.zeros(ndim,dtype='int32')
     dims[0] = 314
     dims[1] = a.version
     dims[2] = 1
     dims[3] = a.nr
     dims[4] = a.nq
+    if (a.version >= 6):
+        dims[5] = 1
     dims.tofile(fd)
     a.qv.tofile(fd)
     a.radius.tofile(fd)
