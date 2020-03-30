@@ -1,27 +1,31 @@
 Module Interpolation
-  !Use IFPORT !If Intel
+    !Use IFPORT !If Intel
 
-  Implicit None
-  Logical :: cartesian = .False.
-  Integer, Parameter :: TrueDouble = Selected_real_kind(14,99)
-  Integer, Public :: iteration, iteration_step, initial_iteration, final_iteration 
-  Integer, Public :: nr, nth, nphi, onr, nthrd, ncube, nfloat
-  Real*8 :: dpi = 3.1415926535897932384626433832795028841972d0
-  Real*8 :: rmin, rmax
-  Real*8, Allocatable, Dimension(:) :: newx, newy, newz !Old grid
-  Real*8, Allocatable, Dimension(:) :: oldtheta, oldr !Old grid
-  Real*8, Allocatable, Dimension(:) :: phi, theta, radius !New grid
-  Real*8, Allocatable, Dimension(:,:,:) :: olddata, data
-  Character(1024) :: perm_dir, input_file, output_file, grid_file
-  Character(24) :: quantity
-  Logical :: double_precision_output = .false. ! output
-  Logical :: single_precision_input = .false.
+    Implicit None
+    Logical :: to_cartesian = .True.
+    Logical :: to_spherical =.False.
+    Integer, Parameter :: TrueDouble = Selected_real_kind(14,99)
+    Integer, Public :: iteration, iteration_step, initial_iteration, final_iteration 
+    Integer, Public :: nr, nth, nphi, onr, nthrd
+    Integer :: nfloat  ! DEAL WITH THIS!
+    Integer :: nthrd=1
+    Integer, Public :: ncube=0
+    Real*8 :: dpi = 3.1415926535897932384626433832795028841972d0
+    Real*8 :: rmin, rmax
+    Real*8, Allocatable, Dimension(:) :: newx, newy, newz !Old grid
+    Real*8, Allocatable, Dimension(:) :: oldtheta, oldr !Old grid
+    Real*8, Allocatable, Dimension(:) :: phi, theta, radius !New grid
+    Real*8, Allocatable, Dimension(:,:,:) :: olddata, data
+    Character(1024) :: input_file = 'None', output_file = 'None', grid_file = 'None'
+    Character(24) :: quantity
+    Logical :: double_precision_output = .false. ! output
+    Logical :: single_precision_input  = .false.
 
 Contains
   
   Subroutine Finalize_Interp()
     Deallocate(olddata, data, oldtheta, oldr, phi, theta, radius)
-    If (cartesian) Then
+    If (to_cartesian) Then
        Deallocate(newx, newy, newz)
     EndIf
   End Subroutine Finalize_Interp
@@ -69,7 +73,7 @@ Contains
        radius(ir+1) = rmax - dr*Dble(ir)
     EndDo
 
-    If (cartesian) Then
+    If (to_cartesian) Then
        Allocate(olddata(nphi,nth,onr),data(ncube,ncube,ncube),newx(ncube),newy(ncube),newz(ncube))
        dr = 2d0*rmax/Dble(ncube-1)
        Do it=0,ncube-1
@@ -79,18 +83,24 @@ Contains
        newz = newx
     Else
        Allocate(olddata(nphi,nth,onr),data(nphi,nth,nr))
+       olddata=0.0d0
+        data=0.0d0
     EndIf
 
   End Subroutine Read_Grid
 
-  Subroutine Read_Grid_Legacy()
+    Subroutine Read_Grid_Legacy()
     Implicit None
     Integer :: grid_unit, ntot,  ir, it, etag
     Real(TrueDouble) ::  dth, dr, dphi
     Real(TrueDouble), Allocatable, Dimension(:) ::  oldctheta
     grid_unit = 11
-             
+
     ! Get the grid
+    If (grid_file .eq. 'None') Then
+        Write(6,*)'Error:  Legacy format detected.'
+        Write(6,*)'        A grid file must be specified using the -g flag via: -g grid_filename'
+    Endif
     Print*, 'Reading grid from ', Trim(grid_file)
     Open(grid_unit, file=Trim(grid_file), form='unformatted', access='stream',status='old')
     Read(grid_unit) etag
@@ -111,39 +121,42 @@ Contains
     DeAllocate(oldctheta)
 
     Close(grid_unit)
-    
+
     rmin = Minval(oldr)
     rmax = Maxval(oldr)
 
     Write(6,*)'rmin/rmax: ', rmin, rmax
-    Write(6,*)'oldtheta: ', oldr
 
     dphi = 2d0*dpi/Dble(nphi)
     dth = dpi/Dble(nth)
     dr = (rmax-rmin)/Dble(nr-1)
     Do it=0,nphi-1
-       phi(it+1) = dphi*Dble(it) - dpi
-    EndDo
-    Do it=0,nth-1
-       theta(it+1) = oldtheta(it+1) ! dth*Dble(it)+0.5d0*dth
-    EndDo
-    Do ir=0,nr-1
-       radius(ir+1) = rmax - dr*Dble(ir)
+        phi(it+1) = dphi*Dble(it) - dpi
     EndDo
 
-    If (cartesian) Then
-       Allocate(olddata(nphi,nth,onr),data(ncube,ncube,ncube),newx(ncube),newy(ncube),newz(ncube))
-       dr = 2d0*rmax/Dble(ncube-1)
-       Do it=0,ncube-1
-          newx(it+1) = dr*Dble(it)-rmax
-       EndDo
-       newy = newx
-       newz = newx
+    Do it=0,nth-1
+        theta(it+1) = oldtheta(it+1) ! dth*Dble(it)+0.5d0*dth
+    EndDo
+
+    Do ir=0,nr-1
+        radius(ir+1) = rmax - dr*Dble(ir)
+    EndDo
+
+    If (to_cartesian) Then
+        Allocate(olddata(nphi,nth,onr),data(ncube,ncube,ncube),newx(ncube),newy(ncube),newz(ncube))
+        dr = 2d0*rmax/Dble(ncube-1)
+        Do it=0,ncube-1
+        newx(it+1) = dr*Dble(it)-rmax
+        EndDo
+        newy = newx
+        newz = newx
     Else
-       Allocate(olddata(nphi,nth,onr),data(nphi,nth,nr))
+        Allocate(olddata(nphi,nth,onr),data(nphi,nth,nr))
+        olddata=0.0d0
+        data=0.0d0
     EndIf
 
-  End Subroutine Read_Grid_Legacy
+    End Subroutine Read_Grid_Legacy
 
 
     Subroutine Interpolate()
@@ -153,8 +166,7 @@ Contains
         Real*8, Allocatable, Dimension(:,:) :: otmp, ntmp
         Real*4, Allocatable, Dimension(:,:,:) :: buff
         interp_unit=12
-        olddata = 0d0
-        data = 0d0
+
 
         Print*, 'Reading ', Trim(input_file)
         reclen = nfloat*onr*nth*nphi
@@ -178,11 +190,20 @@ Contains
         Else
             Write(6,*)'Opening: ', input_file
             Open(interp_unit, file=Trim(input_file), form='unformatted', access='stream', status='unknown')
+            Read(interp_unit) etag
+            If (etag .eq. 314) Then
+                Call Read_Grid(interp_unit)
+            Else
+                ! a little silly, but fseek works differently between Intel and GNU
+                Close(interp_unit)
+                Call Read_Grid_Legacy()
+                Open(interp_unit, file=Trim(input_file), form='unformatted', access='stream', status='unknown')
+            Endif
             Read(interp_unit) olddata
             Close(interp_unit)
         EndIf
 
-    If (cartesian) Then
+    If (to_cartesian) Then
         Print*, 'Min(data)=', Minval(data), 'Max(data)=', Maxval(data)
         Print*, 'Min(olddata)=', Minval(olddata), 'Max(olddata)=', Maxval(olddata)
 
@@ -194,15 +215,18 @@ Contains
 
         If (double_precision_output) Then
             Inquire(iolength=reclen) data
-            Open(interp_unit, file=Trim(output_file), form='unformatted', access='direct', status='unknown',recl=reclen)
-            Write(interp_unit,rec=1) data
+            !Open(interp_unit, file=Trim(output_file), form='unformatted', access='direct', status='unknown',recl=reclen)
+            Open(interp_unit, file=Trim(output_file), form='unformatted', access='stream', status='unknown')
+            Write(interp_unit) data
             Close(interp_unit)
         Else
             Allocate(buff(ncube,ncube,ncube))
             buff = Real(data)
             Inquire(iolength=reclen) buff
-            Open(interp_unit, file=Trim(output_file), form='unformatted', access='direct', status='unknown',recl=reclen)
-            Write(interp_unit,rec=1) buff
+            !Open(interp_unit, file=Trim(output_file), form='unformatted', access='direct', status='unknown',recl=reclen)
+            Open(interp_unit, file=Trim(output_file), form='unformatted', access='stream', status='unknown')
+            !Write(interp_unit,rec=1) buff
+            Write(interp_unit) buff
             Close(interp_unit)
             Deallocate(buff)
         EndIf
