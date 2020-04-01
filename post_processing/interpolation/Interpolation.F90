@@ -222,6 +222,11 @@ Contains
 
     !If desired, zero out data outside of [rmin,rmax]
     If (rmax_zero .ge. 0.0d0) Then
+        If (verbose) Then
+            Write(6,*)''
+            Write(6,*)'Settin data to 0 for r greater than: ', rmax_zero
+            Write(6,*)''
+        Endif
         Do i = 1, onr
             If (oldr(i) .gt. rmax_zero) Then
                 olddata(:,:,i) = 0.0d0
@@ -230,6 +235,11 @@ Contains
     Endif
 
     If (rmin_zero .ge. 0.0d0) Then
+        If (verbose) Then
+            Write(6,*)''
+            Write(6,*)'Setting data to 0 for r less than: ', rmin_zero
+            Write(6,*)''
+        Endif
         Do i = 1, onr
             If (oldr(i) .lt. rmin_zero) Then
                 olddata(:,:,i) = 0.0d0
