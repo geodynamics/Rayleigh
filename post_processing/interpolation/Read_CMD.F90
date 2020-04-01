@@ -71,7 +71,7 @@ Contains
         Integer :: i, n
         Character*1024 :: argname, argval, argshift
         n = command_argument_count()
-        Do i = 1, n,2
+        Do i = 1, n-1
             Call get_command_argument(i,argname)
             Call get_command_argument(i+1,argval)
             If (istring .eq. argname) Then

@@ -15,7 +15,7 @@ OPTSF90_ERR = -cpp -fopenmp -ffree-form -ffree-line-length-none -O0 -fbacktrace 
 ifeq (${MAKECMDGOALS},clean)
      DOPTS = 3
 else
-     DOPTS = 1
+     DOPTS = 0
 endif
 
 OBJSMPI = Main.F90 Interpolation.o Read_CMD.o

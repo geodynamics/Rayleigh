@@ -1,14 +1,14 @@
 Module Interpolation
     !Use IFPORT !If Intel
-
+    Use OMP_LIB
     Implicit None
     Logical :: to_cartesian = .True.
     Logical :: to_spherical =.False.
     Integer, Parameter :: TrueDouble = Selected_real_kind(14,99)
     Integer, Public :: iteration, iteration_step, initial_iteration, final_iteration 
-    Integer, Public :: nr, nth, nphi, onr, nthrd
+    Integer, Public :: nr, nth, nphi, onr
     Integer :: nfloat  ! DEAL WITH THIS!
-    Integer :: nthrd=1
+    Integer :: nthrd=0
     Integer, Public :: ncube=0
     Real*8 :: dpi = 3.1415926535897932384626433832795028841972d0
     Real*8 :: rmin, rmax
@@ -20,6 +20,9 @@ Module Interpolation
     Character(24) :: quantity
     Logical :: double_precision_output = .false. ! output
     Logical :: single_precision_input  = .false.
+    Logical :: sphere_mean = .false., phi_mean = .false.
+    Logical :: verbose = .false.
+    Real*8  :: rmax_zero = -1.0d0, rmin_zero = -1.0d0
 
 Contains
   
@@ -161,10 +164,13 @@ Contains
 
     Subroutine Interpolate()
         Implicit None
-        Integer :: interp_unit, ir, ip, chunk
+        Integer :: interp_unit, ir, ip, chunk, i,j
         Integer*4 :: reclen, etag
-        Real*8, Allocatable, Dimension(:,:) :: otmp, ntmp
+        Real*8, Allocatable, Dimension(:,:) :: otmp, ntmp, phi_avg
+        Real*8, Allocatable, Dimension(:) :: tiweights(:)
         Real*4, Allocatable, Dimension(:,:,:) :: buff
+        Real*8 :: ovnphi, sphere_avg
+
         interp_unit=12
 
 
@@ -203,6 +209,60 @@ Contains
             Close(interp_unit)
         EndIf
 
+    !If desired, zero out data outside of [rmin,rmax]
+    If (rmax_zero .ge. 0.0d0) Then
+        Do i = 1, onr
+            If (oldr(i) .gt. rmax_zero) Then
+                olddata(:,:,i) = 0.0d0
+            Endif
+        Enddo
+    Endif
+
+    If (rmin_zero .ge. 0.0d0) Then
+        Do i = 1, onr
+            If (oldr(i) .lt. rmin_zero) Then
+                olddata(:,:,i) = 0.0d0
+            Endif
+        Enddo
+    Endif
+
+    !If desired, remove means
+    If (sphere_mean .or. phi_mean)  Then
+        Allocate(phi_avg(nth,onr))
+        ovnphi=1.0d0/DBLE(nphi)
+        Do j = 1, onr
+            Do i = 1, nth
+                phi_avg(i,j) = Sum(olddata(:,i,j))*ovnphi
+            Enddo
+        Enddo
+
+        If (phi_mean .and. (.not. sphere_mean)) Then
+            If (verbose) Write(6,*)'Removing phi mean.'
+            Do j = 1, onr
+                Do i = 1, nth
+                    olddata(:,i,j) = olddata(:,i,j)-phi_avg(i,j)
+                Enddo
+            Enddo
+        Endif
+
+        If (sphere_mean) Then
+            If (verbose) Write(6,*)'Removing spherical mean.'
+            Allocate(tiweights(1:nth))
+            ! multiply by 0.25 rather than summing weights to normalize
+            tiweights(1) = sin(oldtheta(1))*(oldtheta(1)-oldtheta(2))*0.25d0
+            tiweights(nth) = sin(oldtheta(nth))*(oldtheta(nth-1)-oldtheta(nth))*0.25d0
+            Do j = 2, nth-1
+                tiweights(j) = sin(oldtheta(j))*(oldtheta(j-1)-oldtheta(j+1))*0.25d0
+            Enddo
+            Do i = 1, onr
+                sphere_avg = SUM(phi_avg(:,i)*tiweights(:))
+                olddata(:,:,i) = olddata(:,:,i)-sphere_avg
+            Enddo
+            DeAllocate(tiweights)
+        Endif
+        DeAllocate(phi_avg)
+    Endif
+
     If (to_cartesian) Then
         Print*, 'Min(data)=', Minval(data), 'Max(data)=', Maxval(data)
         Print*, 'Min(olddata)=', Minval(olddata), 'Max(olddata)=', Maxval(olddata)
@@ -211,19 +271,14 @@ Contains
 
         Print*, 'Min(data)=', Minval(data), 'Max(data)=', Maxval(data)
         Print*, 'Writing ', Trim(output_file)
-        reclen = nfloat*ncube**3
 
         If (double_precision_output) Then
-            Inquire(iolength=reclen) data
-            !Open(interp_unit, file=Trim(output_file), form='unformatted', access='direct', status='unknown',recl=reclen)
             Open(interp_unit, file=Trim(output_file), form='unformatted', access='stream', status='unknown')
             Write(interp_unit) data
             Close(interp_unit)
         Else
             Allocate(buff(ncube,ncube,ncube))
             buff = Real(data)
-            Inquire(iolength=reclen) buff
-            !Open(interp_unit, file=Trim(output_file), form='unformatted', access='direct', status='unknown',recl=reclen)
             Open(interp_unit, file=Trim(output_file), form='unformatted', access='stream', status='unknown')
             !Write(interp_unit,rec=1) buff
             Write(interp_unit) buff
@@ -361,7 +416,8 @@ Contains
     Real*8 :: a0, a1, a2, a3 !Interpolant coefficients
     Real*8 :: ry(4,4), rz(4) !Array temporary after x interpolation
     Integer :: i1, i2, i3, ii, ij, ik, chunk, nelem !loop variables
-  
+    Integer :: ttest
+
     nnx = Size(nx)
     nny = Size(ny)
     nnz = Size(nz)
@@ -372,7 +428,7 @@ Contains
     chunk = 2
     nelem = 0
     !$OMP PARALLEL DO SHARED(olddata,data,nnx,nny,nnz,onx,ony,onz,nx,ny,nz,ox,oy,oz,chunk,rmax,rmin) &
-    !$OMP PRIVATE(i1,i2,i3,ii,ij,ik,zc,yc,xc,pc,tc,rc,ix,iy,iz,mu,mu2,mu3,akm1,ak,akp1,akp2,a0,a1,a2,a3,ry,rz) &
+    !$OMP PRIVATE(i1,i2,i3,ii,ij,ik,zc,yc,xc,pc,tc,rc,ix,iy,iz,mu,mu2,mu3,akm1,ak,akp1,akp2,a0,a1,a2,a3,ry,rz,ttest) &
     !$OMP SCHEDULE(DYNAMIC,chunk)
     Do i3=1,nnz
        zc = nz(i3)
