@@ -46,7 +46,7 @@ Contains
         Write(6,*)"            -rmax X        :  Set input data to zero where r > X."
         Write(6,*)"            -rpm           :  Remove the phi (longitudinal) mean from input data."
         Write(6,*)"            -rsm           :  Remove the full spherical mean from input data."
-        Write(6,*)"            -v             :  Produce status output."
+        Write(6,*)"            -v             :  Verbose mode (produce status output)."
         Write(6,*)" "
         Stop
     End Subroutine Print_Help_Message
