@@ -103,32 +103,27 @@ Contains
     If (grid_file .eq. 'None') Then
         Write(6,*)'Error:  Legacy format detected.'
         Write(6,*)'        A grid file must be specified using the -g flag via: -g grid_filename'
+        Write(6,*)''
     Endif
-    Print*, 'Reading grid from ', Trim(grid_file)
+    If (verbose) Then
+        Write(6,*)'Reading grid file: ', Trim(grid_file)
+        Write(6,*)""
+    Endif
     Open(grid_unit, file=Trim(grid_file), form='unformatted', access='stream',status='old')
     Read(grid_unit) etag
     Read(grid_unit) onr
     Read(grid_unit) nth
     Read(grid_unit) nphi
 
-
-
-    Print*, 'Have read old_nr=', onr, ', nth=', nth, ', nphi=', nphi, ', etag=',etag
-
-
     ntot = onr + nth + 5
-    Allocate(oldr(onr), oldtheta(nth), oldctheta(nth), phi(nphi), theta(nth), radius(nr))
+    Allocate(oldr(onr), oldtheta(nth), phi(nphi), theta(nth), radius(nr))
     Read(grid_unit) oldr
     Read(grid_unit) oldtheta
-    !oldtheta=acos(oldctheta)
-    DeAllocate(oldctheta)
 
     Close(grid_unit)
 
     rmin = Minval(oldr)
     rmax = Maxval(oldr)
-
-    Write(6,*)'rmin/rmax: ', rmin, rmax
 
     dphi = 2d0*dpi/Dble(nphi)
     dth = dpi/Dble(nth)
@@ -173,8 +168,11 @@ Contains
 
         interp_unit=12
 
-
-        Print*, 'Reading ', Trim(input_file)
+        If (verbose) Then
+            Write(6,*)""
+            Write(6,*)'Reading input file: ', Trim(input_file)
+            Write(6,*)""
+        Endif
         reclen = nfloat*onr*nth*nphi
 
         If (single_precision_input) Then
@@ -194,7 +192,6 @@ Contains
             olddata = Dble(buff)
             Deallocate(buff)
         Else
-            Write(6,*)'Opening: ', input_file
             Open(interp_unit, file=Trim(input_file), form='unformatted', access='stream', status='unknown')
             Read(interp_unit) etag
             If (etag .eq. 314) Then
@@ -208,6 +205,20 @@ Contains
             Read(interp_unit) olddata
             Close(interp_unit)
         EndIf
+
+        If (verbose) Then
+            Write(6,*) 'Data read successfully.'
+            Write(6,*)''
+            Write(6,*) 'Input dimensions:' 
+            Write(6,*) '     nr = ', onr
+            Write(6,*) ' ntheta = ', nth
+            Write(6,*) '   nphi = ', nphi
+            Write(6,*) '   rmin = ', rmin
+            Write(6,*) '   rmax = ', rmax
+            Write(6,*) ''
+            Write(6,*) 'Input data min: ', minval(olddata)
+            Write(6,*) 'Input data max: ', maxval(olddata)
+        Endif
 
     !If desired, zero out data outside of [rmin,rmax]
     If (rmax_zero .ge. 0.0d0) Then
@@ -237,7 +248,11 @@ Contains
         Enddo
 
         If (phi_mean .and. (.not. sphere_mean)) Then
-            If (verbose) Write(6,*)'Removing phi mean.'
+            If (verbose) Then
+                Write(6,*)''
+                Write(6,*)'Removing phi mean.'
+                Write(6,*)''
+            Endif
             Do j = 1, onr
                 Do i = 1, nth
                     olddata(:,i,j) = olddata(:,i,j)-phi_avg(i,j)
@@ -246,7 +261,11 @@ Contains
         Endif
 
         If (sphere_mean) Then
-            If (verbose) Write(6,*)'Removing spherical mean.'
+            If (verbose) Then
+                Write(6,*)''
+                Write(6,*)'Removing spherical mean.'
+                Write(6,*)''
+            Endif
             Allocate(tiweights(1:nth))
             ! multiply by 0.25 rather than summing weights to normalize
             tiweights(1) = sin(oldtheta(1))*(oldtheta(1)-oldtheta(2))*0.25d0
@@ -264,14 +283,20 @@ Contains
     Endif
 
     If (to_cartesian) Then
-        Print*, 'Min(data)=', Minval(data), 'Max(data)=', Maxval(data)
-        Print*, 'Min(olddata)=', Minval(olddata), 'Max(olddata)=', Maxval(olddata)
 
+        If (verbose) Then
+            Write(6,*)'Interpolating on N^3 Cartesian grid with N=',ncube
+            Write(6,*)''
+        Endif
         Call Interp3d(phi,oldtheta,oldr,newx,newy,newz)
-
-        Print*, 'Min(data)=', Minval(data), 'Max(data)=', Maxval(data)
-        Print*, 'Writing ', Trim(output_file)
-
+        If (verbose) Then
+            Write(6,*)'Interpolation complete.'
+            Write(6,*)'Output data min: ', Minval(data)
+            Write(6,*)'Output data max: ', Maxval(data)
+            Write(6,*)''
+            Write(6,*)'Writing output to: ', Trim(output_file)
+            Write(6,*)''
+        Endif
         If (double_precision_output) Then
             Open(interp_unit, file=Trim(output_file), form='unformatted', access='stream', status='unknown')
             Write(interp_unit) data
@@ -529,7 +554,7 @@ Contains
     EndDo
     !$OMP END PARALLEL DO 
 
-    Print*, 'Percent zeros:', dble(nelem)/dble(nnx*nny*nnz), '%'
+    !Print*, 'Percent zeros:', dble(nelem)/dble(nnx*nny*nnz), '%'
   End Subroutine Interp3d
 
 End Module Interpolation

@@ -5,7 +5,9 @@ Program Driver
 
     Implicit None
     Logical :: display_help = .false.
+    Integer :: t1, t2, count_rate, count_max
 
+    Call System_Clock(t1,count_rate,count_max)
     Call Initialize()
     Call Interpolate()
     Call Finalize()
@@ -44,7 +46,7 @@ Contains
         Write(6,*)"            -rmax X        :  Set input data to zero where r > X."
         Write(6,*)"            -rpm           :  Remove the phi (longitudinal) mean from input data."
         Write(6,*)"            -rsm           :  Remove the full spherical mean from input data."
-        Write(6,*)"            -v             :  Produce additional status output."
+        Write(6,*)"            -v             :  Produce status output."
         Write(6,*)" "
         Stop
     End Subroutine Print_Help_Message
@@ -56,7 +58,11 @@ Contains
 
     Subroutine Finalize()
         Call Finalize_Interp()
-        Print*, 'Finished!'
+        If (verbose) Then
+            Call System_Clock(t2,count_rate,count_max)
+            Write(6,*)'Complete.  Elapsed time (s): ', real(t2-t1)/real(count_rate)
+            Write(6,*)''
+        Endif
         Stop
     End Subroutine Finalize
 
@@ -108,7 +114,6 @@ Contains
             Stop
         Endif
 
-        Write(6,*)'nthrd is: ', nthrd
     End Subroutine Read_Input
 
 End Program Driver
