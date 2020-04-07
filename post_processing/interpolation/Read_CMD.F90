@@ -27,11 +27,8 @@ Contains
             Call get_command_argument(i,argname)
             Call get_command_argument(i+1,argval)
             If (istring .eq. argname) Then
-                write(6,*)'argval: ', argval
                 argshift = TRIM(AdjustL(argval))
-                write(6,*)'argshift: ', argshift
                 ivar=argshift
-                write(6,*)'ivar: ', ivar
             Endif
         Enddo
     End Subroutine Read_CMD_String
