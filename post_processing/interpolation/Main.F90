@@ -23,13 +23,31 @@ Contains
         Write(6,*)' '
         Write(6,*)'    Calling syntax:'
         Write(6,*)''
-        Write(6,*)'             interp3d -i input_file -o output_file -N X'
+        Write(6,*)'      (1)   Scalar mode:'
+        Write(6,*)''
+        Write(6,*)'            interp3d -i input_file -o output_file -N X'
+        Write(6,*)''
+        Write(6,*)'      (2)   Vector mode (spherical vector input; Cartesian vector output)'
+        Write(6,*)''
+        Write(6,*)'            interp3d -ir r_file -it t_file -ip p_file -ox x_file -oy y_file -oz z_file -N X'
         Write(6,*)''
         Write(6,*)'    Required Flags: '
         Write(6,*)'    '
+        Write(6,*)"            -N {X}         :  number of gridpoints along each axis of output cube (X must be an integer)"
+        Write(6,*)""
+        Write(6,*)"      (1)  Scalar mode: "
+        Write(6,*)""
         Write(6,*)"            -i {file name} :  specifies the input file"
         Write(6,*)"            -o {file name} :  specifies output file"
-        Write(6,*)"            -N {X}         :  specifies resolution of output cube (X must be an integer)"
+        Write(6,*)""
+        Write(6,*)"      (2)  Vector mode: "
+        Write(6,*)""
+        Write(6,*)"            -ir {file name} :  specifies the radial-component input file in vector mode"
+        Write(6,*)"            -it {file name} :  specifies the theta-component input file in vector"
+        Write(6,*)"            -ip {file name} :  specifies the phi-component input file in vector mode"
+        Write(6,*)"            -ox {file name} :  specifies x-componet output file in vector mode"
+        Write(6,*)"            -oy {file name} :  specifies y-componet output file in vector mode"
+        Write(6,*)"            -oz {file name} :  specifies z-componet output file in vector mode"
         Write(6,*)" "
         Write(6,*)"    Optional Flags: "
         Write(6,*)" "
@@ -73,7 +91,13 @@ Contains
         ! Read from command line
         Call Read_CMD_Line('-N'     , ncube)   
         Call Read_CMD_Line('-i'     , input_file)
+        Call Read_CMD_Line('-ir'    , input_rfile)
+        Call Read_CMD_Line('-it'    , input_tfile)
+        Call Read_CMD_Line('-ip'    , input_pfile)
         Call Read_CMD_Line('-o'     , output_file)
+        Call Read_CMD_Line('-ox'    , output_xfile)
+        Call Read_CMD_Line('-oy'    , output_yfile)
+        Call Read_CMD_Line('-oz'    , output_zfile)
         Call Read_CMD_Line('-d'     , double_precision_output)
         Call Read_CMD_Line('-g'     , grid_file)  ! for legacy support
         Call Read_CMD_Line('-nthread', nthrd)
@@ -100,13 +124,31 @@ Contains
         Endif
 
         If (input_file .eq. 'None') Then
-            Write(6,*)' Error: A Rayleigh-format 3-D input file must be specified by using the -i flag as: -i input_filename'
-            exit_program = .true.
+            If ( (input_rfile .eq. 'None') .and. (input_tfile .eq. 'None') &
+                  .and. (input_pfile .eq. 'None') ) Then 
+
+                Write(6,*)' Error: A Rayleigh-format 3-D input file must be specified by using the -i flag as: -i filename.'
+                Write(6,*)'        Optionally, specify three input files using the -ir, -it, -ip flags for vector mode.'
+            
+                exit_program = .true.
+            Else
+                vector_mode = .true.
+            Endif
         Endif
 
         If (output_file .eq. 'None') Then
-            Write(6,*)' Error: An output file must be specified by using -o flag as: -o output_filename'
-            exit_program = .true.
+
+            If ( (output_xfile .eq. 'None') .and. (output_yfile .eq. 'None') &
+                  .and. (output_zfile .eq. 'None') ) Then 
+
+                Write(6,*)' Error: An output file must be specified using the -o flag as: -o filename.'
+                Write(6,*)'        Optionally, specify three output files using the -ox, -oy, -oz flags for vector mode.'
+            
+                exit_program = .true.
+            Else
+                vector_mode = .true.
+            Endif
+
         Endif
 
         If (exit_program) Then
