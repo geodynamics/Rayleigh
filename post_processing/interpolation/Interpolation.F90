@@ -16,16 +16,17 @@ Module Interpolation
     Real*8, Allocatable, Dimension(:) :: oldtheta, oldr !Old grid
     Real*8, Allocatable, Dimension(:) :: phi, theta, radius !New grid
     Real*8, Allocatable, Dimension(:) :: sinphi(:), cosphi(:), sintheta(:), costheta(:) ! Old grid trig
-    Real*8, Allocatable, Dimension(:,:,:) :: olddata, data, newdata
+    Real*8, Allocatable, Dimension(:,:,:) :: olddata, data, newdata, mag_data
     Real*8, Allocatable, Dimension(:,:,:) :: rdata, tdata, pdata
     Character(1024) :: input_file = 'None', output_file = 'None', grid_file = 'None'
     Character(1024) :: input_rfile = 'None', input_tfile = 'None', input_pfile = 'None'
     Character(1024) :: output_xfile = 'None', output_yfile = 'None', output_zfile = 'None'
+    Character(1024) :: mag_file='None'
     Character(24) :: quantity
     Logical :: double_precision_output = .false. ! output
     Logical :: single_precision_input  = .false.
     Logical :: sphere_mean = .false., phi_mean = .false.
-    Logical :: verbose = .false., vector_mode=.false.
+    Logical :: verbose = .false., vector_mode=.false., output_mag=.false.
     Real*8  :: rmax_zero = -1.0d0, rmin_zero = -1.0d0
 
 Contains
@@ -132,13 +133,23 @@ Contains
             Call Interp3D(olddata,newdata)
             Call Write_Data(newdata,output_xfile)     
 
+            If (output_mag) mag_data=newdata**2
+
             Call Compute_vy(olddata,rdata,tdata,pdata)
             Call Interp3D(olddata,newdata)
             Call Write_Data(newdata,output_yfile)
 
+            If (output_mag) mag_data = mag_data+newdata**2
+
             Call Compute_vz(olddata,rdata,tdata)
             Call Interp3D(olddata,newdata)
             Call Write_Data(newdata,output_zfile)
+
+            If (output_mag) Then
+                mag_data = mag_data+newdata**2
+                newdata = sqrt(mag_data)
+                Call Write_Data(newdata,mag_file)
+            Endif
             
         Else
 
@@ -170,7 +181,10 @@ Contains
             rdata = 0.0d0
             tdata = 0.0d0
             pdata = 0.0d0
-
+            if (output_mag) then
+                Allocate(mag_data(ncube,ncube,ncube))
+                mag_data = 0.0d0
+            Endif
         Endif
 
     End Subroutine Allocate_Data
@@ -216,6 +230,7 @@ Contains
         Do i = 1, nth
         Do p = 1, nphi
             odata(p,i,j) = (irdata(p,i,j)*sintheta(i) + itdata(p,i,j)*costheta(i))*cosphi(p)
+            odata(p,i,j) = odata(p,i,j)-ipdata(p,i,j)*sinphi(p)
         Enddo
         Enddo
         Enddo
@@ -230,6 +245,7 @@ Contains
         Do i = 1, nth
         Do p = 1, nphi
             odata(p,i,j) = (irdata(p,i,j)*sintheta(i) + itdata(p,i,j)*costheta(i))*sinphi(p)
+            odata(p,i,j) = odata(p,i,j)+ipdata(p,i,j)*cosphi(p)
         Enddo
         Enddo
         Enddo

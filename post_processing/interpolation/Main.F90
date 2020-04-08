@@ -51,13 +51,18 @@ Contains
         Write(6,*)" "
         Write(6,*)"    Optional Flags: "
         Write(6,*)" "
-        Write(6,*)"            -d             :  double-precision output (default is single precision)"
-        Write(6,*)"            -g {file name} :  grid file (for legacy Spherical_3D format)"
-        Write(6,*)"            -h , --help    :  display this help message"
+        Write(6,*)"            -d              :  double-precision output (default is single precision)"
+        Write(6,*)"            -g {file name}  :  grid file (for legacy Spherical_3D format)"
+        Write(6,*)"            -h , --help     :  display this help message"
         Write(6,*)""
-        Write(6,*)"            -nthread X     :  Specifies the number (X) of OpenMP threads to use."
-        Write(6,*)"                              By default, the thread count is determined via"
-        Write(6,*)"                              the OMP_NUM_THREADS environment variable."
+        Write(6,*)"            -nthread X      :  Specifies the number (X) of OpenMP threads to use."
+        Write(6,*)"                               By default, the thread count is determined via"
+        Write(6,*)"                               the OMP_NUM_THREADS environment variable."
+        Write(6,*)""
+        Write(6,*)"            -om {file name} :  (Vector mode only)  If specified, the magnitude of "
+        Write(6,*)"                               the Cartesian vector generated in vector mode is written "
+        Write(6,*)"                               to {file name}."
+        Write(6,*)""
         !Write(6,*)"            -s             :  single-precision input (default is double precision)"
         Write(6,*)""
         Write(6,*)"            -rmin X        :  Set input data to zero where r < X."
@@ -110,6 +115,9 @@ Contains
         Call Read_CMD_Line('-rmax',rmax_zero)
         Call Read_CMD_Line('-rmin',rmin_zero)
         Call Read_CMD_Line('-v',verbose)
+        Call Read_CMD_Line('-om', mag_file)
+
+        If (mag_file .ne. 'None') output_mag=.true.
 
         If (display_help) Then 
             Call Print_Help_Message()
