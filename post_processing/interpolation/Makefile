@@ -4,9 +4,9 @@ BASEOPTS_GNU = -cpp -fopenmp -ffree-form -ffree-line-length-none -O3
 OPTSF90_GNU = $(BASEOPTS_GNU) -march=native -mtune=native
 F90_GNU = gfortran
 
-BASEOPTS_INTEL = -openmp -real-size 32 -O3 -ipo -align all -align rec16byte -ftz -vec-threshold5 -auto -opt-subscript-in-range
- -ansi-alias -fno-fnalias -fno-alias -opt-prefetch -no-prec-div -unroll
-OPTSF90_INTEL = -xHost $(BASEOPTS)
+BASEOPTS_INTEL1 = -qopenmp -real-size 32 -O3 -ipo -align all -align rec16byte -ftz -vec-threshold5 -auto 
+BASEOPTS_INTEL2 = -qopt-subscript-in-range -ansi-alias -fno-fnalias -fno-alias -qopt-prefetch -no-prec-div -unroll
+OPTSF90_INTEL = -xHost $(BASEOPTS_INTEL1) $(BASEOPTS_INTEL2)
 F90_INTEL = ifort
 
 interp3d.gnu: 
