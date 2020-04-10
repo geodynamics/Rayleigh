@@ -1731,6 +1731,212 @@ def swapwrite(val,fd,swap=False,verbose=False, array = False):
             else:
                 val.tofile(fd)
 
+class rayleigh_vapor:
+    """Generates a vapor dataset from interpolated Rayleigh data"""
+    def __init__(self,name=None,varnames=None,varfiles=None, rayleigh_root=None, 
+                vapor_bin=None, nxyz=None, grid_file=None, force=False, timeout=300,
+                remove_spherical_means=[], rmins=[], rmaxes=[], vapor_version=3,
+                vector_names=[],vector_files=[], tempdir='.'):
+
+        self.numts=len(varfiles)
+        self.varnames=varnames
+        self.data_dir = name+'_data'
+        self.nvars=len(varnames)
+        self.varfiles=varfiles
+        self.timeout=timeout
+        self.tempdir=tempdir
+        
+        self.nvec=len(vector_names)
+        if (self.nvec > 0):
+            self.vector_names = vector_names
+            self.vector_files = vector_files
+        
+        if (vapor_version == 3):
+            self.ccmd='vdccreate '
+            self.pcmd='raw2vdc '
+            self.vaporfile=name+'.vdc'
+        else:
+            self.ccmd='vdfcreate '
+            self.pcmd='raw2vdf -quiet '
+            self.vaporfile=name+'.vdf'
+        
+        if (len(remove_spherical_means) != self.nvars):
+            self.remove_spherical_mean=self.nvars*False
+        else:
+            self.remove_spherical_mean=remove_spherical_means
+        
+        if (len(rmins) != self.nvars):
+            self.zero_rmin=False
+            self.rmins=[None]*self.nvars
+        else:
+            self.zero_rmin=True
+            self.rmins=rmins
+            
+        if (len(rmaxes) != self.nvars):
+            self.zero_rmax=False
+            self.rmaxes=[None]*self.nvars
+        else:
+            self.zero_rmax=True
+            self.rmaxes=rmaxes       
+        
+        varstring=' '
+        for i in range(self.nvars):
+            varstring=varstring+varnames[i]+':'
+        if (self.nvec > 0):
+            for vn in self.vector_names:
+                for n in vn:
+                    varstring=varstring+n+':'
+        varstring=varstring[0:len(varstring)-1]  # remove trailing ':'
+        print(varstring)
+        self.varstring=varstring
+        self.vapor_bin=vapor_bin
+        self.rayleigh_root=rayleigh_root
+        self.nxyz=nxyz
+        self.grid_file=grid_file
+        if (force == True):
+            print('Parameter "force" is set to true.')
+            print('Removing: '+self.vaporfile+' > /dev/null')
+            print('Removing: '+self.data_dir+' > /dev/null')
+            self.destroy_vdc()            
+    def create_dataset(self, force=False):
+        import subprocess as sp
+        res=str(self.nxyz)
+        cube_string = res+'x'+res+'x'+res
+        cmd1 = 'export PATH=$PATH:'+self.vapor_bin
+        cmd2 = ' && ' 
+        cmd3 = self.ccmd+' -dimension '+cube_string+' -numts '+str(self.numts)
+        cmd3 = cmd3+' -vars3d '+self.varstring+' '+self.vaporfile
+        creation_cmd=cmd1+cmd2+cmd3
+        s=sp.Popen(creation_cmd,shell=True)
+        s.wait(timeout=self.timeout)
+
+    def populate_dataset(self):
+        import subprocess as sp
+        for i in range(self.numts):
+            print('Converting data for timestep '+str(i)+' of '+str(self.numts-1))
+            for j in range(self.nvars):
+                infile=self.varfiles[i][j]
+                ofile=infile+'.cube'
+                ofile=self.tempdir+'/temp.cube'
+                self.rayleigh_to_cube(infile,ofile,remove_spherical_mean=self.remove_spherical_mean[j], 
+                                      rmin=self.rmins[j], rmax=self.rmaxes[j])
+                self.cube_to_vdc(ofile,i,j)
+            if (self.nvec > 0):
+                xfile = self.tempdir+'/x.cube'
+                yfile = self.tempdir+'/y.cube'
+                zfile = self.tempdir+'/z.cube'
+                mfile = self.tempdir+'/m.cube'
+                for j in range(self.nvec):
+                    vnames = self.vector_names[j]
+                    mag=(len(vnames)==4)
+                    self.rayleigh_vector_to_cube(self.vector_files[j][i],mag=mag)
+                    self.cube_to_vdc(xfile,i, vnames[0])
+                    self.cube_to_vdc(yfile,i, vnames[1])
+                    self.cube_to_vdc(zfile,i, vnames[2])
+                    if (mag):
+                        self.cube_to_vdc(mfile,i,vnames[3])
+        #Cleanup
+        print('Cleaning up temporary files')
+        cmd = 'rm -rf '+ofile+' > /dev/null'
+        s=sp.Popen(cmd,shell=True)
+        s.wait(timeout=self.timeout)
+        if (self.nvec > 0):
+            for f in [xfile,yfile,zfile,mfile]:
+                cmd = 'rm -rf '+f+' > /dev/null'
+                s=sp.Popen(cmd,shell=True)
+                s.wait(timeout=self.timeout)
+        print('Complete.')
+                
+    def rayleigh_to_cube(self,infile,ofile,remove_spherical_mean=False, rmin=None, rmax=None):
+        import subprocess as sp
+        cmd1 = 'export PATH=$PATH:'+self.rayleigh_root
+        cmd2 = ' &&  interp3d -i '+infile+' -o '+ofile+' -g '+self.grid_file+' -N '+str(self.nxyz)
+
+        if(remove_spherical_mean):
+            cmd2=cmd2+" -rsm"
+
+        if(rmin != None):
+            cmd2=cmd2+" -rmin "+str(rmin)
+
+        if(rmax != None):
+            cmd2=cmd2+" -rmax "+str(rmax)
+            
+        cmd = cmd1+cmd2
+        s=sp.Popen(cmd,shell=True)
+        s.wait(timeout=self.timeout)
+
+    def rayleigh_vector_to_cube(self,vfiles, mag=False):
+        import subprocess as sp
+        rf=vfiles[0]  # r-file
+        tf=vfiles[1]  # theta-file
+        pf=vfiles[2]  # phi-file
+        xfile = self.tempdir+'/x.cube'
+        yfile = self.tempdir+'/y.cube'
+        zfile = self.tempdir+'/z.cube'
+        mfile = self.tempdir+'/m.cube'
+        cmd1 = 'export PATH=$PATH:'+self.rayleigh_root
+        cmd2 = ' &&  interp3d -ir '+rf+' -it '+tf+' -ip '+pf
+        cmd2 = cmd2+' -ox '+xfile+' -oy '+yfile+' -oz '+zfile+' -g '+self.grid_file+' -N '+str(self.nxyz)
+
+        if(mag):
+            cmd2=cmd2+" -om "+mfile
+            
+        cmd = cmd1+cmd2
+        #print(cmd)
+        s=sp.Popen(cmd,shell=True)
+        s.wait(timeout=self.timeout)
+
+    def cube_to_vdc(self,ofile,timeind,varind):
+        import subprocess as sp
+        if (type(varind) == type(1)):
+            varname=self.varnames[varind]
+        else:
+            varname=varind  # string was passed
+        cmd1 = 'export PATH=$PATH:'+self.vapor_bin
+        cmd2 = ' && '
+        cmd3 = self.pcmd+' -ts '+str(timeind)+' -varname '+varname
+        cmd3 = cmd3+' '+self.vaporfile+' '+ofile
+        cmd = cmd1+cmd2+cmd3
+        s=sp.Popen(cmd, shell=True)
+        s.wait(timeout=self.timeout)
+
+    def destroy_vdc(self):
+        import subprocess as sp
+        cmd1 = 'rm -rf '+self.vaporfile +' > /dev/null'
+        cmd2 = 'rm -rf '+self.data_dir+' > /dev/null'
+
+        try:
+            s=sp.Popen(cmd1,shell=True)
+            s.wait(timeout=self.timeout)
+            print(cmd1)
+        except:
+            print('cmd1 error', cmd1)
+            s.communicate()
+            pass
+
+        print(cmd2)
+        try:
+            s=sp.Popen(cmd2,shell=True)
+            s.wait(timeout=self.timeout)
+            print(cmd2)
+        except:
+            print('cmd2 error', cmd2)
+            s.communicate()
+
+
+def gen_3d_filelist( qcodes, diter, istart,iend, directory='Spherical_3D', ndig=8):
+    files = []
+    for i in range(istart,iend+diter,diter):
+        fstring="{:0>"+str(ndig)+"d}"
+        istring = directory+"/"+fstring.format(i)
+        f = []
+        for q in qcodes:
+            qfnt="{:0>"+str(4)+"d}"
+            qstr= qfnt.format(q)
+            f.append(istring+'_'+qstr)
+        files.append(f)
+    return files
+
 ###########################################################################
 #  This portion file contains utilities useful for plotting the AZ-Average files
 

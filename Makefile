@@ -1,6 +1,7 @@
 -include make.inc
 SRC=src
 BUILD=$(SRC)/build
+INTERP=post_processing/interpolation
 
 # LC_COLLATE is set because sort is locale dependent otherwise.
 export LC_COLLATE=C
@@ -47,6 +48,16 @@ ifdef CUSTOMROOT
 	@echo Any files from $(CUSTOMROOT) will overwrite standard Rayleigh source files.
 	@cp $(CUSTOMROOT)/* $(BUILD)/. 2>/dev/null || :
 endif
+
+interp3d.gnu:
+	@$(MAKE) --no-print-directory --directory=$(INTERP) interp3d.gnu
+	@cp $(INTERP)/interp3d bin/.
+
+interp3d.intel:
+	@$(MAKE) --no-print-directory --directory=$(INTERP) interp3d.intel
+	@cp $(INTERP)/interp3d bin/.
+
+
 clean:
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean
@@ -83,3 +94,4 @@ distclean:
 	@rm -f make.inc
 	@rm -rf doc/build
 	@echo "#Following configure, this file contains the definition of the PREFIX variable" >> make.inc
+
