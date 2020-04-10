@@ -1,40 +1,26 @@
-# For Mac OS 10.9 "Mavericks" or linux gfortran
-.SUFFIXES: .o .F90
-
-MPIF90 = gfortran
 PROG = interp3d
 
-BASEOPTS = -cpp -fopenmp -ffree-form -ffree-line-length-none -O3
+BASEOPTS_GNU = -cpp -fopenmp -ffree-form -ffree-line-length-none -O3
+OPTSF90_GNU = $(BASEOPTS_GNU) -march=native -mtune=native
+F90_GNU = gfortran
 
-OPTSF90_MAC = $(BASEOPTS) -march=native -mtune=native -Wa,-q
+BASEOPTS_INTEL = -openmp -real-size 32 -O3 -ipo -align all -align rec16byte -ftz -vec-threshold5 -auto -opt-subscript-in-range
+ -ansi-alias -fno-fnalias -fno-alias -opt-prefetch -no-prec-div -unroll
+OPTSF90_INTEL = -xHost $(BASEOPTS)
+F90_INTEL = ifort
 
-OPTSF90_FST = $(BASEOPTS) -march=native -mtune=native
+interp3d.gnu: 
+	$(F90_GNU) $(OPTSF90_GNU) -c Interpolation.F90
+	$(F90_GNU) $(OPTSF90_GNU) -c Read_CMD.F90
+	$(F90_GNU) $(OPTSF90_GNU)  Main.F90 Interpolation.o Read_CMD.o -o $(PROG)
 
-OPTSF90_ERR = -cpp -fopenmp -ffree-form -ffree-line-length-none -O0 -fbacktrace -Wall -fcheck=all
-
-ifeq (${MAKECMDGOALS},clean)
-     DOPTS = 3
-else
-     DOPTS = 1
-endif
-
-OBJSMPI = Main.F90 Interpolation.o Read_CMD.o
-
-ifeq (${DOPTS},0)
-     OPTSF90 = $(OPTSF90_ERR)
-else ifeq (${DOPTS},1)
-     OPTSF90 = $(OPTSF90_FST)
-else ifeq (${DOPTS},2)
-     OPTSF90 = $(OPTSF90_MAC)
-endif
-
-main: $(if $(strip $(DOPTS)), $(OBJSMPI), $(error Specify the DOPTS flag to select the desired optimization level)) 
-	$(MPIF90) $(OPTSF90)  $(OBJSMPI) -o $(PROG)
+interp3d.intel: 
+	$(F90_INTEL) $(OPTSF90_INTEL) -c Interpolation.F90
+	$(F90_INTEL) $(OPTSF90_INTEL) -c Read_CMD.F90
+	$(F90_INTEL) $(OPTSF90_INTEL)  Main.F90 Interpolation.o Read_CMD.o -o $(PROG)
 
 clean:
 	touch temp.o temp.mod
 	rm *.o *.mod $(PROG)
 
-.F90.o:
-	$(MPIF90) $(OPTSF90) -c $< 
 
