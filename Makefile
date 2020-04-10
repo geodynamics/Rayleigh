@@ -49,11 +49,11 @@ ifdef CUSTOMROOT
 	@cp $(CUSTOMROOT)/* $(BUILD)/. 2>/dev/null || :
 endif
 
-interp3d.gnu: prepare_directory
+interp3d.gnu:
 	@$(MAKE) --no-print-directory --directory=$(INTERP) interp3d.gnu
 	@cp $(INTERP)/interp3d bin/.
 
-interp3d.intel: prepare_directory
+interp3d.intel:
 	@$(MAKE) --no-print-directory --directory=$(INTERP) interp3d.intel
 	@cp $(INTERP)/interp3d bin/.
 
