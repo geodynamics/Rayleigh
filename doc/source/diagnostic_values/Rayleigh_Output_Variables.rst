@@ -229,12 +229,12 @@ employed is as follows:
        \mathrm{Length} &\rightarrow L &\;\;\;\; \mathrm{(Shell\; Depth)} \\
        \mathrm{Time} &\rightarrow   \frac{L^2}{\nu_o} &\;\;\;\; \mathrm{(Viscous\; Timescale)}\\
        \mathrm{Temperature} &\rightarrow \Delta T&\;\;\;\; \mathrm{(Temperature\; Contrast\; Across\; Shell)} \\
-       \mathrm{Magnetic\; Field} &\rightarrow \sqrt{4\pi\hat{\rho}\eta_o\Omega_0} \\
+       \mathrm{Magnetic\; Field} &\rightarrow \sqrt{\hat{\rho}\mu\eta_o\Omega_0} \\
        \mathrm{Reduced\; Pressure} &\rightarrow \nu_o\Omega_0&\;\;\; (\mathrm{[Thermodynamic\; Pressure]}/\hat{\rho}),\end{aligned}
 
 where :math:`\Omega_0` is the rotation rate of the frame, :math:`\hat{\rho}`
-is the (constant) density of the fluid, :math:`\eta_o` is the magnetic diffusivity at the top of the domain (i.e., at :math:`r=r_o`), and :math:`\nu_o`
-is the kinematic viscosity at the top of the domain. After nondimensionalizing, the following
+is the (constant) density of the fluid, :math:`\eta_o` is the magnetic diffusivity at the top of the domain (i.e., at :math:`r=r_o`), :math:`\nu_o`
+is the kinematic viscosity at the top of the domain, and :math:`\mu` is the magnetic permeability. Note that in Gaussian units for vacuum, :math:`\mu=4\pi`. After nondimensionalizing, the following
 nondimensional numbers appear in our equations:
 
 .. math::
@@ -394,7 +394,7 @@ active, the following nondimensionalization is used
        \mathrm{Temperature} &\rightarrow T_o\equiv\hat{T}(r_o)&\;\;\;\; \mathrm{(Reference\; Temperature\; at\; Upper\; Boundary)} \\
        \mathrm{Density} &\rightarrow \rho_o\equiv\hat{\rho}(r_o)&\;\;\;\; \mathrm{(Reference\; Density\; at\; Upper\; Boundary)} \\
        \mathrm{Entropy} &\rightarrow \Delta{s}&\;\;\;\; \mathrm{(Entropy\; Constrast\; Across\; Shell)} \\
-       \mathrm{Magnetic~Field} &\rightarrow \sqrt{4\pi\hat{\rho}_o\eta_o\Omega_0} \\
+       \mathrm{Magnetic~Field} &\rightarrow \sqrt{\hat{\rho}_o\mu\eta_o\Omega_0} \\
        \mathrm{Pressure} &\rightarrow \rho_oL^2\Omega_0^2.\end{aligned}
 
 When run in this mode, Rayleigh employs a polytropic background state,
