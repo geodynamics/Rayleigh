@@ -101,7 +101,7 @@ Module PDE_Coefficients
     Real*8 :: poly_Nrho = 0.0d0
     Real*8 :: poly_mass = 0.0d0
     Real*8 :: poly_rho_i =0.0d0
-    Real*8 :: Angular_Velocity = 1.0d0
+    Real*8 :: Angular_Velocity = -1.0d0
 
     !/////////////////////////////////////////////////////////////////////////////////////
     ! Nondimensional Parameters
@@ -139,7 +139,7 @@ Module PDE_Coefficients
     Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
 
     Integer :: kappa_type =1, nu_type = 1, eta_type = 1
-    Real*8  :: nu_top = 1.0d0, kappa_top = 1.0d0, eta_top = 1.0d0
+    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0, eta_top = -1.0d0
     Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0
 
     Logical :: hyperdiffusion = .false.
@@ -372,8 +372,6 @@ Contains
         dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
         ref%d2lnrho = ref%d2lnrho+dtmparr
 
-        DeAllocate(dtmparr, gravity)
-
         ref%dsdr(:) = 0.0d0
         Call Initialize_Reference_Heating()
 
@@ -416,7 +414,7 @@ Contains
         If (magnetism) Then
         	ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
-
+        DeAllocate(dtmparr, gravity)
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
@@ -722,6 +720,10 @@ Contains
         ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
         
         ref%Coriolis_Coeff = ra_constants(1)
+        If (Angular_Velocity .gt. 0) Then
+            ref%Coriolis_Coeff  = 2.0d0*Angular_velocity
+            ra_constants(1) = ref%Coriolis_Coeff
+        Endif
         ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
         ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:) 
         ref%viscous_amp(:) = 2.0/ref%temperature(:)*ra_constants(8)
@@ -1144,13 +1146,15 @@ Contains
         Character(len=2) :: ind
 
         If (reference_type .eq. 4) Then
-            If (ra_constant_set(ci) .eq. 0) Then
-                If (my_rank .eq. 0) Then
-                    write(ind, '(I2)') ci
-                    Call stdout%print('Error: c_'//Trim(ind)//' not specified')
+            If (xtop .le. 0) Then
+                If (ra_constant_set(ci) .eq. 0) Then
+                    If (my_rank .eq. 0) Then
+                        write(ind, '(I2)') ci
+                        Call stdout%print('Error: c_'//Trim(ind)//' not specified')
+                    Endif
+                Else
+                    xtop = ra_constants(ci)
                 Endif
-            Else
-                xtop = ra_constants(ci)
             Endif
         Endif
 
@@ -1174,7 +1178,7 @@ Contains
                     ! Nothing to be done here for functions and constants -- completely set
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
                     ra_constants(ci) = xtop
-                    x(:) = xtop*ra_functions(:,fi)
+                    x(:) = xtop*ra_functions(:,fi)/ra_functions(1,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
                     xtop = x(1)
                 Else
