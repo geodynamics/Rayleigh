@@ -721,7 +721,7 @@ Contains
         
         ref%Coriolis_Coeff = ra_constants(1)
         If (Angular_Velocity .gt. 0) Then
-            ref%Coriolis_Coeff        = 2.0d0*Angular_velocity
+            ref%Coriolis_Coeff  = 2.0d0*Angular_velocity
             ra_constants(1) = ref%Coriolis_Coeff
         Endif
         ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
