@@ -51,11 +51,13 @@ endif
 
 interp3d.gnu:
 	@$(MAKE) --no-print-directory --directory=$(INTERP) interp3d.gnu
-	@cp $(INTERP)/interp3d bin/.
+	@mkdir -p $(PREFIX)/bin
+	@cp $(INTERP)/interp3d $(PREFIX)/bin/.
 
 interp3d.intel:
 	@$(MAKE) --no-print-directory --directory=$(INTERP) interp3d.intel
-	@cp $(INTERP)/interp3d bin/.
+	@mkdir -p $(PREFIX)/bin
+	@cp $(INTERP)/interp3d $(PREFIX)/bin/.
 
 
 clean:
