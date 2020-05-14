@@ -215,7 +215,7 @@ Contains
         Character(len=:), Allocatable, Intent(out) :: lines(:)
         Integer, Intent(Out) :: nlines, max_len
         Integer :: iunit,istat
-        Character(512):: line, line2
+        Character(2048):: line, line2
         Integer :: com_check, line_len, i
 
         ! This routine reads filename into the output character array 'lines.'
