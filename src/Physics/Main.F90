@@ -84,8 +84,9 @@ Contains
 
         Call Initialize_Field_Structure()
         Call Initialize_Checkpointing()
-        Call Initialize_Boundary_Conditions()
         Call Initialize_Transport_Coefficients()
+        Call Initialize_Boundary_Conditions()
+
 
         Call Write_Equation_Coefficients_File()
 
