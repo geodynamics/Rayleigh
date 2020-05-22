@@ -554,25 +554,25 @@ Contains
             END_DO
             Call Add_Quantity(qty)
         Endif
-        If (Compute_Quantity(rhot_vtp_sp)) Then
+        If (Compute_Quantity(rhot_vpp_sp)) Then
             DO_PSI
                 qty(PSI)=rhot(r)*fbuffer(PSI,vphi)*fbuffer(PSI,tvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
-        If (Compute_Quantity(rhot_vtp_sm)) Then
+        If (Compute_Quantity(rhot_vpp_sm)) Then
             DO_PSI
                 qty(PSI)=rhot(r)*fbuffer(PSI,vphi)*m0_values(PSI2,tvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
-        If (Compute_Quantity(rhot_vtm_sp)) Then
+        If (Compute_Quantity(rhot_vpm_sp)) Then
             DO_PSI
                 qty(PSI)=rhot(r)*m0_values(PSI2,vphi)*fbuffer(PSI,tvar)
             END_DO
             Call Add_Quantity(qty)
         Endif
-        If (Compute_Quantity(rhot_vtm_sm)) Then
+        If (Compute_Quantity(rhot_vpm_sm)) Then
             DO_PSI
                 qty(PSI)=rhot(r)*m0_values(PSI2,vphi)*m0_values(PSI2,tvar)
             END_DO
