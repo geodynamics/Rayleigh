@@ -24,7 +24,7 @@ code’s behavior in any of these three modes.
 Anelastic Mode (dimensional)
 ----------------------------
 
-**Example Input: Rayleigh/etc/input_examples/main_input_sun**
+**Example Input: Rayleigh/input_examples/main_input_sun**
 
 When run in dimensional, anelastic mode, **reference_type=2** must be
 specified in the Reference_Namelist. In that case, Rayleigh solves the
@@ -185,7 +185,7 @@ formulation.
 Boussinesq Mode (nondimensional)
 --------------------------------
 
-**Example Input: Rayleigh/etc/input_examples/c2001_case1_input**
+**Example Input: Rayleigh/input_examples/c2001_case1_input**
 
 When run in nondimensional Boussinesq mode, **reference_type=1** must be
 specified in the Reference_Namelist. In that case, Rayleigh employs the
@@ -322,7 +322,7 @@ addition, reference_type=1 must also be specified.
 Anelastic Mode (nondimensional)
 -------------------------------
 
-**Example Input: Rayleigh/etc/input_examples/main_input_jupiter**
+**Example Input: Rayleigh/input_examples/main_input_jupiter**
 
 When running in nondimensional anelastic mode, you must set
 **reference_type=3** in the Reference_Namelist. When this parameter is

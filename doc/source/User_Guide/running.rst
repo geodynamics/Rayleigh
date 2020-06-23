@@ -49,7 +49,7 @@ Next, you must create a main_input file. This file contains the
 information that describes how your simulation is run. Rayleigh always
 looks for a file named main_input in the directory that it is launched
 from. Copy one of the sample input files from the
-Rayleigh/etc/input_examples/ into your run directory, and rename it to
+Rayleigh/input_examples/ into your run directory, and rename it to
 main_input. The file named *benchmark_diagnostics_input* can be used to
 generate output for the diagnostics plotting tutorial (see
 §\ :ref:`diagnostics`).
