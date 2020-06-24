@@ -24,4 +24,4 @@ refer the user to :
    documentation.
 
 A number of stand-alone Python plotting examples may also be found in
-the Rayleigh/etc/analysis directory.
+the Rayleigh/post_processing/ directory.

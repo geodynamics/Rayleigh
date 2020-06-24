@@ -49,7 +49,7 @@ directory structure a each step as appropriate:
 #. cd path_to_my_sim
 
 #. cp
-   path_to_rayleigh/Rayleigh/etc/input_examples/c2001_case0_minimal   main_input
+   path_to_rayleigh/Rayleigh/input_examples/c2001_case0_minimal   main_input
 
 #. cp path_to_rayleigh/Rayleigh/bin/rayleigh.opt   rayleigh.opt (or use
    *ln -s* in lieu of *cp*)
@@ -86,7 +86,7 @@ this condition is satisfied, your installation is working correctly.
 Benchmark-input examples useful for verifying Rayleigh’s installation.
 Those from Christensen et al. (2001) :cite:`CHRISTENSEN200125`
 are Boussinesq. Those from Jones et al. (2011) :cite:`JONES2011120` are anelastic. Examples are found
-in the directory: Rayleigh/etc/input_examples/
+in the directory: Rayleigh/input_examples/
 
 +-----------------------+-----------------+--------------------------------+
 | Paper                 | Benchmark       | Input File                     |

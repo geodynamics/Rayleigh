@@ -32,7 +32,7 @@
 # **Additional Namelist Variables:**  
 # None
 # 
-# *Before proceeding, ensure that you have copied Rayleigh/etc/analysis/rayleigh_diagnostics.py to your simulation directory.  This Python module is required for reading Rayleigh output into Python.*
+# *Before proceeding, ensure that you have copied Rayleigh/post_processing/rayleigh_diagnostics.py to your simulation directory.  This Python module is required for reading Rayleigh output into Python.*
 # 
 # Examining the *main_input* file, we see that the following output values have been denoted for the Global Averages (see *rayleigh_output_variables.pdf* for the mathematical formulae):
 # 
