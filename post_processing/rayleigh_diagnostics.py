@@ -1817,7 +1817,7 @@ class rayleigh_vapor:
             for j in range(self.nvars):
                 infile=self.varfiles[i][j]
                 ofile=infile+'.cube'
-                ofile=self.tempdir+'/temp.cube'
+                # ofile=self.tempdir+'/temp.cube'
                 self.rayleigh_to_cube(infile,ofile,remove_spherical_mean=self.remove_spherical_mean[j], 
                                       rmin=self.rmins[j], rmax=self.rmaxes[j])
                 self.cube_to_vdc(ofile,i,j)
@@ -1835,16 +1835,17 @@ class rayleigh_vapor:
                     self.cube_to_vdc(zfile,i, vnames[2])
                     if (mag):
                         self.cube_to_vdc(mfile,i,vnames[3])
-        #Cleanup
-        print('Cleaning up temporary files')
-        cmd = 'rm -rf '+ofile+' > /dev/null'
-        s=sp.Popen(cmd,shell=True)
-        s.wait(timeout=self.timeout)
-        if (self.nvec > 0):
-            for f in [xfile,yfile,zfile,mfile]:
-                cmd = 'rm -rf '+f+' > /dev/null'
+            #Cleanup
+            print('Cleaning up temporary files')
+            if (self.nvars > 0):
+                cmd = 'rm -rf '+ofile+' > /dev/null'
                 s=sp.Popen(cmd,shell=True)
                 s.wait(timeout=self.timeout)
+            if (self.nvec > 0):
+                for f in [xfile,yfile,zfile,mfile]:
+                    cmd = 'rm -rf '+f+' > /dev/null'
+                    s=sp.Popen(cmd,shell=True)
+                    s.wait(timeout=self.timeout)
         print('Complete.')
                 
     def rayleigh_to_cube(self,infile,ofile,remove_spherical_mean=False, rmin=None, rmax=None):
