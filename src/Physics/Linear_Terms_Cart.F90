@@ -46,7 +46,7 @@ Contains
 
     Subroutine Reset_Linear_Equations()
         Implicit None
-        Real*8 :: rhs_factor, lhs_factor
+        Real(kind=8) :: rhs_factor, lhs_factor
         Call Reset_Equation_Coefficients()    ! Zero out all coefficients
         lhs_factor = -deltat*alpha_implicit    ! Crank Nicolson scheme - alpha = 0.5
         rhs_factor = deltat*(1.0d0-alpha_implicit)
@@ -148,7 +148,7 @@ Contains
     Subroutine Compute_Benchmark_Coefficients()
         Implicit None
 
-        Real*8, Allocatable :: H_Laplacian(:), amp(:)
+        Real(kind=8), Allocatable :: H_Laplacian(:), amp(:)
         Integer :: l, lp
         !rmin_norm
 
@@ -339,7 +339,7 @@ Contains
         ! Sets boundary condition of indicated l-value (index lp)
         ! only.  Does not loop over lp.
         Implicit None
-        Real*8 :: samp,one
+        Real(kind=8) :: samp,one
         Integer, Intent(In) :: mode_ind
         Integer :: l, r,lp,  dorder
         one = 1.0d0
@@ -503,7 +503,7 @@ Contains
 
     Subroutine Set_Boundary_Conditions
         Implicit None
-        Real*8 :: samp,one
+        Real(kind=8) :: samp,one
         Integer :: l, r,lp,  dorder
         one = 1.0d0
 

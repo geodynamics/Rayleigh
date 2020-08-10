@@ -39,10 +39,10 @@ Contains
 
     Subroutine Compute_Energy_Flux(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: dt_by_dp, dt_by_ds, tpert
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: dt_by_dp, dt_by_ds, tpert
         Integer :: r,k, t
-        Real*8 :: dr, qadd, fpr2dr
+        Real(kind=8) :: dr, qadd, fpr2dr
 
         !First, the radial viscous flux of energy
         If (compute_quantity(visc_flux_r)) Then

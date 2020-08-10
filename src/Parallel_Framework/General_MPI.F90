@@ -56,8 +56,8 @@ Contains
     !/////////////////////////////////////////////////////////////////////
 
     Subroutine Global_Max(sendbuf, recvbuf, grp)
-        Real*8, Intent(In)  :: sendbuf
-        Real*8, Intent(Out) :: recvbuf
+        Real(kind=8), Intent(In)  :: sendbuf
+        Real(kind=8), Intent(Out) :: recvbuf
         Type(communicator), Optional :: grp
         Integer :: icount,  comm
         Integer :: MPI_err
@@ -92,8 +92,8 @@ Contains
     !                       of the REDUCE operation
     !/////////////////////////////////////////////////////////////////////
     Subroutine Global_IMax(sendbuf, recvbuf, grp)
-        Integer*4, Intent(In)  :: sendbuf
-        Integer*4, Intent(Out) :: recvbuf
+        Integer(kind=4), Intent(In)  :: sendbuf
+        Integer(kind=4), Intent(Out) :: recvbuf
         Type(communicator), Optional :: grp
         Integer :: icount,  comm, MPI_err
 
@@ -127,8 +127,8 @@ Contains
     !                       of the REDUCE on rank ddest
     !/////////////////////////////////////////////////////////////////////
     Subroutine DSUM1D(sendbuf, recvbuf, grp, ddest)
-        Real*8, Intent(In)  :: sendbuf(:)
-        Real*8, Intent(Out) :: recvbuf(:)
+        Real(kind=8), Intent(In)  :: sendbuf(:)
+        Real(kind=8), Intent(Out) :: recvbuf(:)
         Type(communicator), Optional :: grp
         Integer, Intent(In), Optional :: ddest
         Integer :: icount,  comm, MPI_err, dest
@@ -166,8 +166,8 @@ Contains
     !                       of the ALLREDUCE
     !/////////////////////////////////////////////////////////////////////
     Subroutine DALLSUM1D(sendbuf, recvbuf, grp)
-        Real*8 :: sendbuf(1:)
-        Real*8, Intent(Out) :: recvbuf(1:)
+        Real(kind=8) :: sendbuf(1:)
+        Real(kind=8), Intent(Out) :: recvbuf(1:)
         Type(communicator), Optional :: grp
         Integer :: icount,  comm, MPI_err
 
@@ -200,8 +200,8 @@ Contains
     !                       of the REDUCE on rank ddest
     !/////////////////////////////////////////////////////////////////////
     Subroutine DSUM3D(sendbuf, recvbuf, grp, ddest)
-        Real*8, Intent(In)  :: sendbuf(:,:,:)
-        Real*8, Intent(Out) :: recvbuf(:,:,:)
+        Real(kind=8), Intent(In)  :: sendbuf(:,:,:)
+        Real(kind=8), Intent(Out) :: recvbuf(:,:,:)
         Type(communicator), Optional  :: grp
         Integer, Intent(In), Optional :: ddest
         Integer :: icount,  comm, MPI_err, dest
@@ -243,8 +243,8 @@ Contains
     !                       of the REDUCE on rank ddest
     !/////////////////////////////////////////////////////////////////////
     Subroutine DSUM2D(sendbuf, recvbuf, grp, ddest)
-        Real*8, Intent(In)  :: sendbuf(:,:)
-        Real*8, Intent(Out) :: recvbuf(:,:)
+        Real(kind=8), Intent(In)  :: sendbuf(:,:)
+        Real(kind=8), Intent(Out) :: recvbuf(:,:)
         Type(communicator), Optional  :: grp
         Integer, Intent(In), Optional :: ddest
         Integer :: icount,  comm, MPI_err, dest
@@ -284,8 +284,8 @@ Contains
     !                       of the ALLREDUCE
     !/////////////////////////////////////////////////////////////////////
     Subroutine DALLSUM2D(sendbuf, recvbuf, grp)
-        Real*8, Intent(IN)  :: sendbuf(1:,1:)
-        Real*8, Intent(Out) :: recvbuf(1:,1:)
+        Real(kind=8), Intent(IN)  :: sendbuf(1:,1:)
+        Real(kind=8), Intent(Out) :: recvbuf(1:,1:)
         Type(communicator), Optional :: grp
         Integer :: icount,  comm, MPI_err
 
@@ -317,7 +317,7 @@ Contains
     !                    the broadcast (optional; default = 0)
     !/////////////////////////////////////////////////////////////////////
     Subroutine BCAST2D(buff, grp, broot)
-        Real*8, INTENT(INOUT) :: buff(:,:)
+        Real(kind=8), INTENT(INOUT) :: buff(:,:)
         Type(communicator), INTENT(IN), Optional :: grp
         Integer, Intent(In), Optional :: broot
         Integer :: icount,  comm, MPI_err, root
@@ -354,7 +354,7 @@ Contains
     !                    the broadcast (optional; default = 0)
     !/////////////////////////////////////////////////////////////////////
     Subroutine BCAST1D(buff, grp, broot)
-        Integer*4, INTENT(INOUT) :: buff(:)
+        Integer(kind=4), INTENT(INOUT) :: buff(:)
         Type(communicator), INTENT(IN), Optional :: grp
         Integer, Intent(In), Optional :: broot
         Integer :: icount,  comm, MPI_err, root

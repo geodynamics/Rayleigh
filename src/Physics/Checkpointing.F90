@@ -43,14 +43,14 @@ Module Checkpointing
     Integer,private,Allocatable :: mode_count(:)
     Integer,private :: checkpoint_tag = 425, read_var(1:12)
     Integer, Allocatable, Private :: lmstart(:)
-    Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
-    Character*120 :: checkpoint_prefix ='nothing'
-    Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
-    Character*3 :: checkpoint_suffix(12)
+    Character(len=3) :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
+    Character(len=120) :: checkpoint_prefix ='nothing'
+    Character(len=6) :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
+    Character(len=3) :: checkpoint_suffix(12)
     Integer :: checkpoint_iter = 0
-    Real*8  :: checkpoint_dt, checkpoint_newdt
-    Real*8  :: checkpoint_time
-    Real*8, Allocatable :: boundary_mask(:,:,:,:) ! Copy of the boundary values array
+    Real(kind=8)  :: checkpoint_dt, checkpoint_newdt
+    Real(kind=8)  :: checkpoint_time
+    Real(kind=8), Allocatable :: boundary_mask(:,:,:,:) ! Copy of the boundary values array
     
 
     !///////////////////////////////////////////////////////////
@@ -58,9 +58,9 @@ Module Checkpointing
     Logical :: ItIsTimeForACheckpoint = .false.
     Logical :: ItIsTimeForAQuickSave = .false.
     Integer :: quicksave_num = -1
-    Real*8  :: checkpoint_t0 = 0.0d0
-    Real*8  :: checkpoint_elapsed = 0.0d0  ! Time elapsed since checkpoint_t0
-    Real*8  :: quicksave_seconds = -1  ! Time between quick saves
+    Real(kind=8)  :: checkpoint_t0 = 0.0d0
+    Real(kind=8)  :: checkpoint_elapsed = 0.0d0  ! Time elapsed since checkpoint_t0
+    Real(kind=8)  :: quicksave_seconds = -1  ! Time between quick saves
 
     Type(Cheby_Transform_Interface) :: cheby_info
 
@@ -119,12 +119,12 @@ Contains
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time, input_file)
         Implicit None
-        Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
+        Real(kind=8), Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
         Integer :: mp, m, i, ecode,endian_tag
-        Character*120 :: autostring, iterstring, cfile, checkfile
-        Character*256, Intent(Out) :: input_file 
-        Character*120 :: coeff_file
+        Character(len=120) :: autostring, iterstring, cfile, checkfile
+        Character(len=256), Intent(Out) :: input_file 
+        Character(len=120) :: coeff_file
 
         endian_tag=314
         Call chktmp%construct('p1a')
@@ -223,21 +223,21 @@ Contains
     Subroutine Read_Checkpoint(fields, abterms,iteration,read_pars)
         Implicit None
         Integer, Intent(In) :: iteration, read_pars(1:2)
-        Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old, nr_read
         Integer :: i, ierr, m, p, np, mp, lb,ub, f,  r, ind
         Integer :: old_pars(7), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
-        Integer*8 :: found_bytes, expected_bytes
+        Integer(kind=8) :: found_bytes, expected_bytes
         Integer :: read_magnetism = 0, read_hydro = 0
         Integer, Allocatable :: rinds(:), gpars(:,:)
-        Real*8 :: dt_pars(3),dt,new_dt
-        Real*8, Allocatable :: old_radius(:), radius_old(:)
-        Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
-        Character*120 :: autostring, cfile,  dstring, iterstring, access_type
-        Character*256 :: grid_file, checkfile
-        Character*1 :: under_slash 
-        Character*13 :: szstr
+        Real(kind=8) :: dt_pars(3),dt,new_dt
+        Real(kind=8), Allocatable :: old_radius(:), radius_old(:)
+        Real(kind=8), Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
+        Character(len=120) :: autostring, cfile,  dstring, iterstring, access_type
+        Character(len=256) :: grid_file, checkfile
+        Character(len=1) :: under_slash 
+        Character(len=13) :: szstr
         Logical :: legacy_format, fexist
 
         read_hydro = read_pars(1)
@@ -667,13 +667,13 @@ Contains
 
     Subroutine Store_BC_Mask(bvals)
         Implicit None
-        Real*8, Intent(In) :: bvals(:,:,:,:)
+        Real(kind=8), Intent(In) :: bvals(:,:,:,:)
         boundary_mask(:,:,:,:) = bvals(:,:,:,:)
     End Subroutine Store_BC_Mask
 
     Subroutine Load_BC_Mask(bvals)
         Implicit None
-        Real*8, Intent(Out) :: bvals(:,:,:,:)
+        Real(kind=8), Intent(Out) :: bvals(:,:,:,:)
         bvals(:,:,:,:) = boundary_mask(:,:,:,:)
     End Subroutine Load_BC_Mask
 

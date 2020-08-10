@@ -27,17 +27,17 @@ Module Spherical_Buffer
     Implicit None
     Private
 
-    Character*6 :: ifmt = '(i4.4)' ! Integer format for indicating processor tag numbers in output
+    Character(len=6) :: ifmt = '(i4.4)' ! Integer format for indicating processor tag numbers in output
     Type, Public :: SphericalBuffer
         ! The buffer object for buffer moving between spaces
         ! The buffer can advance configurations
 
         Type(rmcontainer4D), Allocatable :: s2b(:),s2a(:)
 
-        Real*8, Allocatable :: p2b(:,:,:),p2a(:,:,:)        ! for dgemm
-        Real*8, Allocatable :: p3a(:,:,:,:)  ! m/r/delta_theta/field
-        Real*8, Allocatable :: p3b(:,:,:,:)  ! something
-        Real*8, Allocatable :: p1b(:,:,:,:),p1a(:,:,:,:)  ! something
+        Real(kind=8), Allocatable :: p2b(:,:,:),p2a(:,:,:)        ! for dgemm
+        Real(kind=8), Allocatable :: p3a(:,:,:,:)  ! m/r/delta_theta/field
+        Real(kind=8), Allocatable :: p3b(:,:,:,:)  ! something
+        Real(kind=8), Allocatable :: p1b(:,:,:,:),p1a(:,:,:,:)  ! something
 
         Integer :: nf1a = 1
         Integer :: nf2a = 1
@@ -63,7 +63,7 @@ Module Spherical_Buffer
         Integer :: send_size23, recv_size23, send_size32, recv_size32
 
 
-        Character*3 :: config
+        Character(len=3) :: config
         ! When memory is not a consideration, it may be advantageous
         ! to keep the send/receive and/or the configuration buffers
         ! static in memory.  The default is to allocate/deallocate them
@@ -72,7 +72,7 @@ Module Spherical_Buffer
         Logical :: dynamic_config_buffers = .true.
         Logical :: pad_buffer = .false.
 
-        Real*8, Allocatable :: recv_buff(:), send_buff(:)
+        Real(kind=8), Allocatable :: recv_buff(:), send_buff(:)
         Integer :: max_recv, max_send
 
         !Additional information can be loaded into the transpose buffers.
@@ -80,7 +80,7 @@ Module Spherical_Buffer
         !Following the cargo transposes 3b2b and 2b1b, each element of the cargo
         ! is replaced by the row-max (3b2b) or column-max (2b1b) value of that element
         Logical :: have_cargo = .false.
-        Real*8, Allocatable :: cargo(:), tmp_cargo(:)
+        Real(kind=8), Allocatable :: cargo(:), tmp_cargo(:)
         Integer, Allocatable :: istop(:)
         Integer :: ncargo
 
@@ -109,14 +109,14 @@ Contains
 
     Subroutine load_cargo(self,vals)
         Implicit None
-        Real*8, Intent(In) :: vals(1:)
+        Real(kind=8), Intent(In) :: vals(1:)
         Class(SphericalBuffer) :: self
         self%cargo(1:self%ncargo) = vals(1:self%ncargo)
     End Subroutine load_cargo
 
     Subroutine unload_cargo(self,vals)
         Implicit None
-        Real*8, Intent(InOut) :: vals(1:)
+        Real(kind=8), Intent(InOut) :: vals(1:)
         Class(SphericalBuffer) :: self
         vals(1:self%ncargo) = self%cargo(1:self%ncargo)
     End Subroutine unload_cargo
@@ -190,7 +190,7 @@ Contains
 
     Subroutine Transpose_2a3a(self,extra_recv)
         Class(SphericalBuffer) :: self
-        !Real*8, Allocatable :: send_buff(:), recv_buff(:)
+        !Real(kind=8), Allocatable :: send_buff(:), recv_buff(:)
         Integer :: np
         Integer :: imin, imax, jmin, jmax, kmin,kmax,ii,nf
         Integer :: i,f,j,p,k,k_ind,delf,delj
@@ -446,7 +446,7 @@ Contains
         Integer :: r,l, mp, lp, indx, r_min, r_max, dr,  cnt,i, imi, rind
         Integer :: n1, n, nfields, offset, delta_r, rmin, rmax, np,p
 
-        Real*8, Allocatable :: send_buff(:),recv_buff(:)
+        Real(kind=8), Allocatable :: send_buff(:),recv_buff(:)
         Integer :: tnr, send_offset
 
         ! cargo information
@@ -578,7 +578,7 @@ Contains
         Integer :: recv_offset, tnr
         Integer :: imi, numalloc
         Integer, Intent(In), Optional :: extra_recv
-        Real*8, Allocatable :: send_buff(:),recv_buff(:)
+        Real(kind=8), Allocatable :: send_buff(:),recv_buff(:)
         Integer :: inext, pcurrent
 
         Class(SphericalBuffer) :: self
@@ -703,8 +703,8 @@ Contains
     Subroutine Write_Space(self,extra_tag)
         Class(SphericalBuffer) :: self
         character*120, Optional, Intent(In) :: extra_tag
-        Character*120 :: report_file,report_tag
-        Character*10 :: gtag, rtag, ctag
+        Character(len=120) :: report_file,report_tag
+        Character(len=10) :: gtag, rtag, ctag
         Integer :: report_unit = 500
         Integer :: i,j,k,f
         Integer :: imin,imax,jmin,jmax,kmin,kmax,nf
@@ -776,12 +776,12 @@ Contains
         Integer :: np, p
         Logical, Intent(In), Optional :: report, dynamic_transpose,dynamic_config, hold_cargo, padding
         Integer, Intent(In), Optional :: field_count(3,2), num_cargo
-        Character*120 :: report_tag
-        Character*10 :: gtag, rtag, ctag
-        Character*3, Intent(In), Optional :: config
+        Character(len=120) :: report_tag
+        Character(len=10) :: gtag, rtag, ctag
+        Character(len=3), Intent(In), Optional :: config
         Integer :: stemp1, rtemp1
 
-        Integer*4 :: gmax, my_max
+        Integer(kind=4) :: gmax, my_max
         Class(SphericalBuffer) :: self
         If (present(report)) Then
             Write(gtag,ifmt)pfi%gcomm%rank
@@ -975,7 +975,7 @@ Contains
         Class(SphericalBuffer) :: self
         Logical, Optional, Intent(In) :: override
         Logical :: free_config_memory
-        Character*3, Intent(In) :: config
+        Character(len=3), Intent(In) :: config
         Integer :: mn1
         Integer :: mx1,i
 
@@ -1061,7 +1061,7 @@ Contains
 
     Subroutine Allocate_Spherical_Buffer(self,config,numfields)
         Class(SphericalBuffer) :: self
-        Character*3, Intent(In) :: config
+        Character(len=3), Intent(In) :: config
         Integer, Intent(In), Optional :: numfields
         Integer :: mn1, mn2, mn3, mn4
         Integer :: mx1,mx2,mx3,mx4

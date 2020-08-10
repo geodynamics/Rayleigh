@@ -24,9 +24,9 @@ Contains
 
     Subroutine Indefinite_Integral(f,intf,xgrid)
         Implicit None
-        Real*8, Intent(In) :: f(1:)
-        Real*8, Intent(InOut) :: intf(1:), xgrid(1:)
-        Real*8 :: trap_area
+        Real(kind=8), Intent(In) :: f(1:)
+        Real(kind=8), Intent(InOut) :: intf(1:), xgrid(1:)
+        Real(kind=8) :: trap_area
         Integer :: xsize(1), i, nx
         !Computes the indefinite integral of f using trapezoidal rule
         !Integrates from bottom of grid (nx up to 1 --i.e., assumes reverse grid)
@@ -40,10 +40,10 @@ Contains
     End Subroutine Indefinite_Integral
 
     Subroutine tanh_profile(x,y,flip)
-        Real*8, Intent(In) :: x(1:)
-        Real*8, Intent(InOut) :: y(1:)
+        Real(kind=8), Intent(In) :: x(1:)
+        Real(kind=8), Intent(InOut) :: y(1:)
         Logical, Intent(In), Optional :: flip
-        Real*8 :: flip_factor = 1.0d0
+        Real(kind=8) :: flip_factor = 1.0d0
         Integer :: xsize(1), nx, i
         xsize = size(x)
         nx = xsize(1)
@@ -59,11 +59,11 @@ Contains
 
     Subroutine Spline_Interpolate(profile_in, grid_in, profile_out, grid_out)
         Implicit None
-        Real*8, Intent(In) :: profile_in(1:), grid_in(1:), grid_out(1:)
-        Real*8, Intent(InOut) :: profile_out(1:)
+        Real(kind=8), Intent(In) :: profile_in(1:), grid_in(1:), grid_out(1:)
+        Real(kind=8), Intent(InOut) :: profile_out(1:)
         Integer :: ngrid_in, ngrid_out, r
-        Real*8, Allocatable :: spy2(:)
-        Real*8 :: splx, sply, max_grid_in, min_grid_in, plower, pupper
+        Real(kind=8), Allocatable :: spy2(:)
+        Real(kind=8) :: splx, sply, max_grid_in, min_grid_in, plower, pupper
 
 
 

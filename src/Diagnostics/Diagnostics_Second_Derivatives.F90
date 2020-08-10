@@ -316,7 +316,7 @@ Contains
         Implicit None
         INTEGER :: i,j, imi, mp, m
         INTEGER :: r,k, t
-        Real*8, Intent(InOut) :: inbuffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: inbuffer(1:,my_r%min:,my_theta%min:,1:)
         Type(rmcontainer3D), Allocatable :: ddtemp(:)
 
 

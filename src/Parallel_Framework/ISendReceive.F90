@@ -207,7 +207,7 @@ Contains
     End Subroutine D_ISend_1D
 
     Subroutine D_ISend_4D(x, irq,n_elements, dest, tag, grp, indstart)
-        Real*8, Intent(in)  :: x(1:,1:,1:,1:)
+        Real(kind=8), Intent(in)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), optional :: grp
         Integer, Intent(Out) :: irq
@@ -252,7 +252,7 @@ Contains
     End Subroutine D_ISend_4D
 
     Subroutine D_IReceive_4D(x, irq,n_elements, source, tag, grp,indstart)
-        Real*8, Intent(Out)  :: x(1:,1:,1:,1:)
+        Real(kind=8), Intent(Out)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), Optional :: grp
         Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE)
@@ -300,7 +300,7 @@ Contains
     End Subroutine D_IReceive_4D
 
     Subroutine D_ISend_5D(x, irq,n_elements, dest, tag, grp, indstart)
-        Real*8, Intent(In)  :: x(1:,1:,1:,1:,1:)
+        Real(kind=8), Intent(In)  :: x(1:,1:,1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:5)
         Type(communicator), optional :: grp
         Integer, Intent(Out) :: irq
@@ -348,7 +348,7 @@ Contains
     End Subroutine D_ISend_5D
 
     Subroutine D_IReceive_5D(x, irq,n_elements, source, tag, grp,indstart)
-        Real*8, Intent(Out)  :: x(1:,1:,1:,1:,1:)
+        Real(kind=8), Intent(Out)  :: x(1:,1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:5)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -398,7 +398,7 @@ Contains
     End Subroutine D_IReceive_5D
 
     Subroutine Z_ISend_1D(x, irq,n_elements, istart,dest, tag, grp)
-        Complex*16, Intent(In)  :: x(:)
+        Complex(kind=16), Intent(In)  :: x(:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,istart
         Type(communicator),Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -482,7 +482,7 @@ Contains
     End Subroutine D_ISend_2D
 
     Subroutine D_ISend_3D(x, irq,n_elements, dest, tag, grp, indstart)
-        Real*8, Intent(in)  :: x(1:,1:,1:)
+        Real(kind=8), Intent(in)  :: x(1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -526,7 +526,7 @@ Contains
     End Subroutine D_ISend_3D
 
     Subroutine Z_ISend_2D(x, irq,n_elements, dest, tag, grp)
-        Complex*16, Intent(In)  :: x(:,:)
+        Complex(kind=16), Intent(In)  :: x(:,:)
         Integer, Intent(In), Optional :: dest, n_elements, tag
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -561,7 +561,7 @@ Contains
     End Subroutine Z_ISend_2D
 
     Subroutine Z_ISend_3D(x, irq,n_elements, dest, tag, grp, indstart)
-        Complex*16, Intent(In)  :: x(:,:,:)
+        Complex(kind=16), Intent(In)  :: x(:,:,:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -646,7 +646,7 @@ Contains
     End Subroutine D_IReceive_1D
 
     Subroutine Z_IReceive_1D(x, irq, n_elements, istart, source, tag, grp)
-        Complex*16, Intent(Out)  :: x(:)
+        Complex(kind=16), Intent(Out)  :: x(:)
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -732,7 +732,7 @@ Contains
     End Subroutine D_IReceive_2D
 
     Subroutine D_IReceive_3D(x, irq,n_elements, source, tag, grp,indstart)
-        Real*8, Intent(Out)  :: x(1:,1:,1:)
+        Real(kind=8), Intent(Out)  :: x(1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -780,7 +780,7 @@ Contains
 
 
     Subroutine Z_IReceive_2D(x, irq, n_elements, source, tag, grp, indstart)
-        Complex*16, Intent(Out)  :: x(:,:)
+        Complex(kind=16), Intent(Out)  :: x(:,:)
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
@@ -823,7 +823,7 @@ Contains
     End Subroutine Z_IReceive_2D
 
     Subroutine Z_IReceive_3D(x, irq,n_elements, source, tag, grp,indstart)
-        Complex*16, Intent(Out)  :: x(:,:,:)
+        Complex(kind=16), Intent(Out)  :: x(:,:,:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq

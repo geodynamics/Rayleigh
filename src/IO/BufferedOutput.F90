@@ -25,8 +25,8 @@ Module BufferedOutput
         Integer :: nlines = 1
         Integer :: file_unit
         Logical :: file_created = .false.
-        Character*120 :: file_name
-        Character*120, Allocatable :: lines(:)
+        Character(len=120) :: file_name
+        Character(len=120), Allocatable :: lines(:)
         Contains
         Procedure :: init => Initialize_OutputBuffer
         Procedure :: print => Write_to_Buffer
@@ -41,7 +41,7 @@ Contains
         Class(OutputBuffer) :: self
         Integer, Intent(In) :: file_unit
         Integer, Intent(In), Optional :: line_count
-        Character*120, Intent(In), Optional :: filename
+        Character(len=120), Intent(In), Optional :: filename
         self%nlines = 1
         If (present(line_count)) Then
             If (line_count .gt. 0) Then

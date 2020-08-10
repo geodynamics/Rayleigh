@@ -25,11 +25,11 @@ Module Controls
 
     !////////////////////////////////////////////////////////////////////////////////
     ! Multiple run controls,  These are not set in a namelist, but are used through command line options.
-    Character*120, Allocatable :: rundirs(:)
+    Character(len=120), Allocatable :: rundirs(:)
     Logical :: multi_run_mode = .false.
     Integer :: nruns = 0 ! only set to non-zero value if multi_run_mode is True
     Integer, Allocatable :: run_cpus(:)
-    Character*120 :: my_path = ''
+    Character(len=120) :: my_path = ''
     Integer :: my_sim_id = 1  ! Simulation ID (needed for main_input broadcast)
 
     !////////////////////////////////////////////////////////////////////////////////
@@ -76,10 +76,10 @@ Module Controls
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
     !   Flags that control details of the time-stepping (some relate to the numerics, but we keep the time-related things together).
-    Real*8  :: alpha_implicit = 0.5d0       ! Crank Nicolson Implict/Explicit weighting factor (1.0 is fully implicit)
+    Real(kind=8)  :: alpha_implicit = 0.5d0       ! Crank Nicolson Implict/Explicit weighting factor (1.0 is fully implicit)
     Integer :: max_iterations = 1000000     ! The maximum number of iterations to be run in a given session
-    Real*8  :: max_time_minutes = 1d8       ! Maximum walltime to run the code (this should be ample...)
-    Real*8  :: max_simulated_time = 1d20   ! Maximum simulation time to evolve the model for
+    Real(kind=8)  :: max_time_minutes = 1d8       ! Maximum walltime to run the code (this should be ample...)
+    Real(kind=8)  :: max_simulated_time = 1d20   ! Maximum simulation time to evolve the model for
 
     Logical :: save_last_timestep = .true.
     Logical :: save_on_sigterm = .false.       ! Rayleigh will attempt to checkpoint and exit upon termination request
@@ -87,11 +87,11 @@ Module Controls
     Integer :: checkpoint_interval = 1000000   ! Same as check_frequency (check_frequency will be deprecated soon)
     Integer :: quicksave_interval =  -1        ! Number of iterations between quicksave dumps
     Integer :: num_quicksaves = 3              ! Number of quick-save checkpoints to write before rolling back to #1
-    Real*8  :: quicksave_minutes = -1.0d0      ! Time in minutes between quick saves (overrides quicksave interval)
+    Real(kind=8)  :: quicksave_minutes = -1.0d0      ! Time in minutes between quick saves (overrides quicksave interval)
 
-    Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
-    Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
-    Real*8  :: min_time_step = 1.0d-13
+    Real(kind=8)  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
+    Real(kind=8)  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
+    Real(kind=8)  :: min_time_step = 1.0d-13
     Integer :: diagnostic_reboot_interval = 10000000
     Integer :: new_iteration = 0
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
@@ -109,9 +109,9 @@ Module Controls
     Integer :: terminate_check_interval = 50  ! check for presence of terminate_file every n-th time step
     Integer :: statusline_interval = 1  ! output status information only every n-th time step
     Integer :: outputs_per_row = 1    ! Number of MPI ranks, per process row, that participate in parallel writes.
-    Character*120 :: stdout_file = 'nofile'
-    Character*120 :: jobinfo_file = 'jobinfo.txt'
-    Character*120 :: terminate_file = 'terminate'
+    Character(len=120) :: stdout_file = 'nofile'
+    Character(len=120) :: jobinfo_file = 'jobinfo.txt'
+    Character(len=120) :: terminate_file = 'terminate'
     Integer :: integer_output_digits = 8  ! Number of digits for integer-filename output (default 8; e.g., 00010000)
     Integer :: integer_input_digits  = 8  ! Number of digits for integer-filename input
     Integer :: decimal_places = 3         ! Number of digits after decimal for scientific notation output
@@ -125,17 +125,17 @@ Module Controls
     !Variables that are controlled by those which appear in a namelist
 
     !~~These format codes controlled by n_[input/output]_digits
-    Character*8 :: int_in_fmt = '(i8.8)'        ! Format code for positive integer input
-    Character*8 :: int_out_fmt='(i8.8)'         ! Format code for positive integer output
-    Character*8 :: int_minus_in_fmt = '(i9.8)'  ! Format code for negative integer input
-    Character*8 :: int_minus_out_fmt='(i9.8)'   ! Format code for negative integer output
-    Character*9 :: sci_note_fmt ='(ES10.3)'     ! Format code for scientific-notation output
+    Character(len=8) :: int_in_fmt = '(i8.8)'        ! Format code for positive integer input
+    Character(len=8) :: int_out_fmt='(i8.8)'         ! Format code for positive integer output
+    Character(len=8) :: int_minus_in_fmt = '(i9.8)'  ! Format code for negative integer input
+    Character(len=8) :: int_minus_out_fmt='(i9.8)'   ! Format code for negative integer output
+    Character(len=9) :: sci_note_fmt ='(ES10.3)'     ! Format code for scientific-notation output
 
     !///////////////////////////////////////////////////////////////////////////////////
     ! This array may be used for various purposes related to passing messages to the
     ! full pool of processes
-    Real*8, Allocatable :: global_msgs(:)
-    Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
+    Real(kind=8), Allocatable :: global_msgs(:)
+    Real(kind=8) :: kill_signal = 0.0d0  ! Signal will be passed in Real(kind=8) buffer, but should be integer-like
     Integer :: nglobal_msgs = 5  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found
 
     Logical :: full_restart = .false.  ! Set to true if a full-restart is initiated from the command line
@@ -175,7 +175,7 @@ Contains
 
     Subroutine Initialize_IO_Format_Codes
         Implicit None
-        Character*2 :: dig_str, dig_str2
+        Character(len=2) :: dig_str, dig_str2
 
         !//////////////////////////////////////////////////////
         ! Set format code for integer output file names

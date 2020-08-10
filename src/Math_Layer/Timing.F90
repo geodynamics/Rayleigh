@@ -21,8 +21,8 @@
 Module Timing
 USE RA_MPI_BASE, Only : MPI_WTIME, MPI_WTICK
 Type, Public :: Timer
-    Real*8 :: delta, elapsed
-    Real*8 :: t1
+    Real(kind=8) :: delta, elapsed
+    Real(kind=8) :: t1
 
     Contains
     Procedure :: Init  => Initialize_Timer
@@ -36,7 +36,7 @@ Contains
 
 Subroutine get_ticklength(tl)
     Implicit None
-    Real*8, Intent(InOUt) :: tl
+    Real(kind=8), Intent(InOUt) :: tl
     tl = mpi_wtick()
 End Subroutine get_ticklength
 
@@ -57,7 +57,7 @@ End Subroutine Startclock
 
 Subroutine Stopclock(self)
     Implicit None
-    Real*8 :: t2
+    Real(kind=8) :: t2
     Class(Timer) :: self
     t2 = MPI_WTIME()
     self%delta = t2-self%t1

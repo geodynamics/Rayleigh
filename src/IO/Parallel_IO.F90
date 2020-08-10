@@ -107,9 +107,9 @@ Module Parallel_IO
         Logical :: weighted_sum = .false. 
         Logical :: sum_theta_phi =.false.   ! Averaging in phi and in theta
         Logical :: sum_all = .false.        ! Average over all three directions
-        Real*8, Allocatable :: theta_weights(:)  ! For summing over theta points
-        Real*8, Allocatable :: radial_weights(:)
-        Real*8 :: phi_weight = 0.0d0
+        Real(kind=8), Allocatable :: theta_weights(:)  ! For summing over theta points
+        Real(kind=8), Allocatable :: radial_weights(:)
+        Real(kind=8) :: phi_weight = 0.0d0
 
         ! Caching variables
         Integer :: ncache_per_rec = 1
@@ -122,11 +122,11 @@ Module Parallel_IO
 
         ! Time stamps:
         Integer, Allocatable :: iter(:)
-        Real*8, Allocatable :: time(:)
+        Real(kind=8), Allocatable :: time(:)
         Logical :: write_timestamp = .false.
 
         ! Buffer-specific variables
-        Real*8, Allocatable :: cache(:,:,:,:)   ! storage space
+        Real(kind=8), Allocatable :: cache(:,:,:,:)   ! storage space
         Logical :: output_rank = .false.        ! True if this rank performs I/O
         Type(communicator) :: ocomm             ! communicator for parallel output
         Integer :: nout_cols = 0                ! Number of columns that participate in I/O for this subsample
@@ -137,8 +137,8 @@ Module Parallel_IO
         Integer :: buffsize   ! size to write out
         Integer :: in_buffsize ! size to read in
         Integer :: nbytes = 8
-        Real*8, Pointer :: collated_data(:,:,:,:)
-        Real*8, Allocatable :: buffer(:)
+        Real(kind=8), Pointer :: collated_data(:,:,:,:)
+        Real(kind=8), Allocatable :: buffer(:)
         Integer, Allocatable :: buffer_disp(:), buffer_indisp(:)
         Integer :: io_buffer_size, in_buffer_size
         Logical, Allocatable :: communicate(:)
@@ -185,14 +185,14 @@ Contains
         Integer, Intent(In) :: grid_pars(1:,1:)
         Integer, Intent(In), Optional :: l_values(1:)
         Integer, Intent(In), Optional :: nvals, mpi_tag, nrec, skip
-        Real*8 , Intent(In), Optional :: averaging_weights(1:,1:)
+        Real(kind=8) , Intent(In), Optional :: averaging_weights(1:,1:)
         Logical, Intent(In), Optional :: write_timestamp, spectral, cache_spectral
         Logical, Intent(In), Optional :: full_cache, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
         Integer, Intent(In), Optional :: lmax_in
         Integer ::  adim(2), in_lmax
-        Real*8, Allocatable :: avg_weights(:,:)
+        Real(kind=8), Allocatable :: avg_weights(:,:)
 
         If (present(full_cache)) self%standard_io = (.not. full_cache)
 
@@ -297,7 +297,7 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: grid_pars(1:,1:), lmax_in
-        Real*8 , Intent(In) :: averaging_weights(1:,1:)
+        Real(kind=8) , Intent(In) :: averaging_weights(1:,1:)
         Integer :: n
 
         ! This routine decides how the grid is subsampled,
@@ -750,7 +750,7 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: ival
-        Real*8, Intent(In) :: tval
+        Real(kind=8), Intent(In) :: tval
         ! Save timestamp information for appending to end of each record.
         If (self%write_timestamp) Then
             self%iter(self%time_index) = ival
@@ -802,9 +802,9 @@ Contains
     Subroutine Cache_Data(self,vals, spec_vals, in_cache)
         Implicit None
         Class(io_buffer) :: self
-        Real*8, Intent(In) :: vals(1:,1:,1:)
+        Real(kind=8), Intent(In) :: vals(1:,1:,1:)
         Type(rmcontainer4D), Intent(In), Optional :: spec_vals(1:)
-        Real*8 :: wgt
+        Real(kind=8) :: wgt
         Integer, Intent(In), Optional :: in_cache
         Integer :: r, t, p,tind
         Integer :: counter, field_ind, rind
@@ -1086,7 +1086,7 @@ Contains
         Integer :: m, r, i, p, mp_min, mp_max
         Integer :: cend, ncache, mp, k, l, j, lval, lmax, ind, ind2
         Logical :: free_mem
-        Real*8, Allocatable :: data_copy(:,:,:,:)
+        Real(kind=8), Allocatable :: data_copy(:,:,:,:)
 
         ! Gather spectral data from receive buffers into collate_data buffer
 
@@ -1442,7 +1442,7 @@ Contains
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
         Integer :: i, tstart,tend, r, t, ncache
-        Real*8, Allocatable :: data_copy(:,:,:,:), tmp1(:), tmp2(:)
+        Real(kind=8), Allocatable :: data_copy(:,:,:,:), tmp1(:), tmp2(:)
         Integer :: cend
         Logical :: free_mem
 
@@ -1536,7 +1536,7 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In), Optional :: file_unit
-        Character*120, Intent(In), Optional :: filename
+        Character(len=120), Intent(In), Optional :: filename
         Integer :: funit, ierr, j
         Logical :: error
 		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
@@ -1640,7 +1640,7 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In), Optional :: file_unit
-        Character*120, Intent(In), Optional :: filename
+        Character(len=120), Intent(In), Optional :: filename
         Integer :: funit, ierr, j
         Logical :: error
 		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp

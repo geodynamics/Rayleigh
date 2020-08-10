@@ -30,12 +30,12 @@ Module Sphere_Linear_Terms
     Use PDE_Coefficients
     Use Math_Constants
     Implicit None
-    Real*8, Allocatable :: Lconservation_weights(:)
+    Real(kind=8), Allocatable :: Lconservation_weights(:)
 
 Contains
     Subroutine Linear_Init()
         Implicit None
-        Real*8 :: amp, T,arg
+        Real(kind=8) :: amp, T,arg
         Integer :: n, r, m, nm
         !Depending on process layout, some ranks may not participate in the solve
         If (my_num_lm .gt. 0) Then 
@@ -63,7 +63,7 @@ Contains
 
     Subroutine Reset_Linear_Equations()
         Implicit None
-        Real*8 :: rhs_factor, lhs_factor
+        Real(kind=8) :: rhs_factor, lhs_factor
         Call Reset_Equation_Coefficients()    ! Zero out all coefficients
         lhs_factor = -deltat*alpha_implicit    ! Crank Nicolson scheme - alpha = 0.5
         rhs_factor = deltat*(1.0d0-alpha_implicit)
@@ -165,9 +165,9 @@ Contains
     Subroutine Load_Linear_Coefficients()
         Implicit None
 
-        Real*8, Allocatable :: H_Laplacian(:), amp(:)
+        Real(kind=8), Allocatable :: H_Laplacian(:), amp(:)
         Integer :: l, lp
-        Real*8 :: diff_factor,ell_term
+        Real(kind=8) :: diff_factor,ell_term
         !rmin_norm
         diff_factor = 1.0d0 ! hyperdiffusion factor (if desired, 1.0d0 is equivalent to no hyperdiffusion)
         Allocate(amp(1:N_R))
@@ -403,7 +403,7 @@ Contains
         ! Sets boundary condition of indicated l-value (index lp)
         ! only.  Does not loop over lp.
         Implicit None
-        Real*8 :: samp,one
+        Real(kind=8) :: samp,one
         Integer, Intent(In) :: mode_ind
         Integer :: l, r,lp
         one = 1.0d0
@@ -663,7 +663,7 @@ Contains
 
     Subroutine Enforce_Boundary_Conditions
         Implicit None
-        Real*8 :: bc_val
+        Real(kind=8) :: bc_val
         Integer :: uind, lind
         Integer :: real_ind, imag_ind
 

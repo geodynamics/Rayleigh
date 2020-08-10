@@ -29,16 +29,16 @@ Module Finite_Difference
     Use Math_Constants, Only : zero, one
     Implicit None
     Integer, Private :: n_x_fd
-    Real*8, Private, Allocatable :: x_fd(:)
+    Real(kind=8), Private, Allocatable :: x_fd(:)
     Integer, Private, save :: N_s = 5  ! number of stencil points
     Integer, Private, save :: kd ! location of the diagonal in the stencil
-    !Real*8 :: one=1.0d0
-    !Real*8 :: zero = 0.0d0
+    !Real(kind=8) :: one=1.0d0
+    !Real(kind=8) :: zero = 0.0d0
 
     !***********************************************************************************
     !            Variables used for the new radial derivative coefficient generation scheme
     !                (there may be good reasons for these to be private... but public for now...)
-    real*8, Public, Allocatable, Target :: d_coefs(:,:), dd_coefs(:,:), ddd_coefs(:,:)! Derivative coefficients
+    Real(kind=8), Public, Allocatable, Target :: d_coefs(:,:), dd_coefs(:,:), ddd_coefs(:,:)! Derivative coefficients
     Integer, Public :: n_stencil_1 = 5        ! stencil size for first order radial derivative - 4th order accurate by default
     Integer, Public :: n_stencil_2 = 5        ! stencil size for 2nd order radial derivative - 4th order accurate by default
     Integer, Public :: n_stencil_3 = 5        ! stencil size for 3rd order radial derivative - 2th order accurate by default
@@ -67,10 +67,10 @@ Contains
 
 
     Subroutine Initialize_Derivatives(xin, integration_weights) ! also includes other geometrical quantities
-        Real*8, Intent(In) :: xin(1:)
-        Real*8, Intent(InOut) :: integration_weights(1:)
+        Real(kind=8), Intent(In) :: xin(1:)
+        Real(kind=8), Intent(InOut) :: integration_weights(1:)
         Integer :: i
-        Real*8 :: delr, int_sum
+        Real(kind=8) :: delr, int_sum
         n_x_fd = size(xin)
         Allocate(x_fd(1:n_x_fd))
         x_fd(1:n_x_fd) = xin(1:n_x_fd)
@@ -95,7 +95,7 @@ Contains
 
     Subroutine Rescale_Grid_FD(length_scale)
         Implicit None
-        Real*8, Intent(In) :: length_scale
+        Real(kind=8), Intent(In) :: length_scale
         ! Following initialization, we can rescale the FD arrays if we choose
         ! This is useful when nondimensionalizing after the reference state has been set up
         ! (which typically requires a radial grid to have been established)
@@ -115,10 +115,10 @@ Contains
     !************************************************************************
     Subroutine d_by_dx1d(field, d_field, dorder)
         !  Derivative of 1-D Real Array (x in-processor)
-        real*8 :: field(:)
-        real*8 :: d_field(:)
-        real*8, Allocatable :: temp_field(:)
-        real*8, Pointer :: coefs(:,:)
+        Real(kind=8) :: field(:)
+        Real(kind=8) :: d_field(:)
+        Real(kind=8), Allocatable :: temp_field(:)
+        Real(kind=8), Pointer :: coefs(:,:)
         Integer :: dorder,r,stencil_radius, stencil_size, nbpts,istart,iend, stencil_center, offset
         Integer :: i
 
@@ -188,9 +188,9 @@ Contains
     Subroutine d_by_dx3d(field, dfield)
 !************************************************************************
         Implicit None
-        real*8, Intent(In) :: field(:,:,:)
-        real*8, Intent(Out) :: dfield(:,:,:,:)
-        real*8, Pointer :: coefs(:,:)
+        Real(kind=8), Intent(In) :: field(:,:,:)
+        Real(kind=8), Intent(Out) :: dfield(:,:,:,:)
+        Real(kind=8), Pointer :: coefs(:,:)
         Integer :: dorder,r,stencil_radius, stencil_size, nbpts,istart,iend, stencil_center, offset
         Integer :: i, ii, jj, iimin, iimax, jjmin, jjmax, dmax,dmin,d
 
@@ -282,9 +282,9 @@ Contains
     Subroutine d_by_dx3d2(dfield,dmax)
 !************************************************************************
         Implicit None
-        Real*8, Intent(InOut) :: dfield(:,:,:,0:)
+        Real(kind=8), Intent(InOut) :: dfield(:,:,:,0:)
         Integer, Intent(In) :: dmax
-        Real*8, Pointer :: coefs(:,:)
+        Real(kind=8), Pointer :: coefs(:,:)
         Integer :: dorder,r,stencil_radius, stencil_size, nbpts,istart,iend, stencil_center, offset
         Integer :: i, ii, jj, iimin, iimax, jjmin, jjmax, dmin,d
 
@@ -374,8 +374,8 @@ Contains
     Subroutine d_by_dx3d3(ind,dind, buffer, dorder)
 !************************************************************************
         Implicit None
-        real*8, Intent(InOut) :: buffer(:,:,:,:)
-        real*8, Pointer :: coefs(:,:)
+        Real(kind=8), Intent(InOut) :: buffer(:,:,:,:)
+        Real(kind=8), Pointer :: coefs(:,:)
         Integer, Intent(In) :: ind, dind
         Integer :: dorder,r,stencil_radius, stencil_size, nbpts,istart,iend, stencil_center, offset
         Integer :: i, ii, jj, iimin, iimax, jjmin, jjmax
@@ -463,7 +463,7 @@ Contains
 
     Subroutine Initialize_dcoefs()
         Integer :: offset
-        real*8, Allocatable :: temp_coefs(:,:)
+        Real(kind=8), Allocatable :: temp_coefs(:,:)
         n_stencil_2_nl = 2*n_stencil_1-1
         boundary_accuracy_2_nl = n_stencil_2_nl-2
         stencil_sizes(1) = n_stencil_1
@@ -524,9 +524,9 @@ Contains
 
     Subroutine Generate_Coefs(grid,n_stencil,coefs,deriv_order, boundary_accuracy)
         Implicit None
-        real*8 :: grid(:), coefs(:,:)
-        real*8 :: dmean, jfactorial, rescaling, dsum
-        real*8, Allocatable :: temp(:,:), dees(:), work(:)
+        Real(kind=8) :: grid(:), coefs(:,:)
+        Real(kind=8) :: dmean, jfactorial, rescaling, dsum
+        Real(kind=8), Allocatable :: temp(:,:), dees(:), work(:)
         Integer :: i,j,k, istart, iend, jstart, jend, itemp(2), nxy, ngrid
         Integer :: n_stencil, deriv_order, stencil_center, stencil_radius
         Integer :: boundary_accuracy, transition_type
@@ -694,8 +694,8 @@ Contains
     ! Implicit.F row-loading routines  -- this should maybe be moved out later, but OK for now
     Subroutine Load_Interior_Rows(row,col,amp,dorder,mpointer)
         Integer, Intent(In) :: row, col, dorder ! ,rr,rp,n,np
-        real*8, Intent(In) :: amp(:)
-        real*8, Pointer, Dimension(:,:), Intent(In) :: mpointer
+        Real(kind=8), Intent(In) :: amp(:)
+        Real(kind=8), Pointer, Dimension(:,:), Intent(In) :: mpointer
 
                 Call Load_Interior_RowsFD(row,col,amp,dorder,mpointer)
 
@@ -704,9 +704,9 @@ Contains
     End Subroutine Load_Interior_Rows
     Subroutine Load_Single_Row(r,row,col,amp,dorder,mpointer, clear_row, amp_arr, boundary)
         Integer, Intent(In) :: r,row, col, dorder ! ,rr,rp,n,np
-        real*8, Intent(In) :: amp
-        real*8, Intent(In), Optional :: amp_arr(:)    ! lets us load every column of the row
-        real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+        Real(kind=8), Intent(In) :: amp
+        Real(kind=8), Intent(In), Optional :: amp_arr(:)    ! lets us load every column of the row
+        Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
         Logical, Intent(In), Optional :: clear_row, boundary
 
 
@@ -719,9 +719,9 @@ Contains
         Integer, Intent(In) :: row, col, dorder ! ,rr,rp,n,np
         Integer :: itemp(1:2), k, kk, kstart, kend, nbpts
         Integer :: r, stencil_size
-        real*8, Intent(In) :: amp(:)
-        real*8, Pointer, Dimension(:,:), Intent(In) :: mpointer
-        real*8, Pointer :: coefs(:,:)
+        Real(kind=8), Intent(In) :: amp(:)
+        Real(kind=8), Pointer, Dimension(:,:), Intent(In) :: mpointer
+        Real(kind=8), Pointer :: coefs(:,:)
         Logical :: fd_ash = .true.
 
         If (fd_ash) Then
@@ -784,10 +784,10 @@ Contains
         Integer, Intent(In) :: r,row, col, dorder ! ,rr,rp,n,np
         Integer :: itemp(1:2), k,  nbpts, kstart,kend,kk
         Integer :: stencil_size
-        real*8, Intent(In) :: amp
-        real*8, Intent(In), Optional :: amp_arr(:)    ! lets us load every column of the row
-        real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
-        real*8, Pointer :: coefs(:,:)
+        Real(kind=8), Intent(In) :: amp
+        Real(kind=8), Intent(In), Optional :: amp_arr(:)    ! lets us load every column of the row
+        Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+        Real(kind=8), Pointer :: coefs(:,:)
         Logical, Intent(In), Optional :: clear_row, boundary
         Logical :: fd_ash = .true.
         If (present(clear_row)) Then

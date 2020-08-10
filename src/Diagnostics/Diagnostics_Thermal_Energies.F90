@@ -33,8 +33,8 @@ Contains
 
     Subroutine Compute_Thermal_Energy(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: dt_by_ds, dt_by_dp
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: dt_by_ds, dt_by_dp
         Integer :: r,k, t
 
         If (compute_quantity(thermal_energy_full) .or. compute_quantity(thermal_energy_sq)) Then

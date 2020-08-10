@@ -43,11 +43,11 @@ Contains
 
         Integer :: colrank, rowrank, nmodes, this_mode, mcount, offset
         Integer :: p, np, testing_tag = 90
-        Real*8  :: mxdiff
-        Real*8, Allocatable :: buff(:),reldiff(:), reldiffs(:)
+        Real(kind=8)  :: mxdiff
+        Real(kind=8), Allocatable :: buff(:),reldiff(:), reldiffs(:)
         Integer, Allocatable :: all_l_values(:), all_m_values(:)
         Logical :: report
-        Character*4 :: lstring
+        Character(len=4) :: lstring
         type(SphericalBuffer) :: test
         fcount(:,:) = 1
 
@@ -183,11 +183,11 @@ Contains
         Integer :: nf = 3
         Integer :: colrank, rowrank, nmodes, this_mode, mcount, offset
         Integer :: p, np, testing_tag = 90, testing_tag2 = 91
-        Real*8  :: mxdiff, ans
-        Real*8, Allocatable :: buff(:),reldiff_real(:), reldiff_imag(:), reldiffs_real(:), reldiffs_imag(:)
+        Real(kind=8)  :: mxdiff, ans
+        Real(kind=8), Allocatable :: buff(:),reldiff_real(:), reldiff_imag(:), reldiffs_real(:), reldiffs_imag(:)
         Integer, Allocatable :: all_l_values(:), all_m_values(:)
         Logical :: report
-        Character*4 :: lstring
+        Character(len=4) :: lstring
         type(SphericalBuffer) :: test
         fcount(:,:) = nf
 

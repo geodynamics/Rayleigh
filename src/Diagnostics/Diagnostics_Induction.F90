@@ -49,10 +49,10 @@ Contains
 
     Subroutine Compute_Induction_Terms(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Allocatable :: ind_r(:,:,:), ind_theta(:,:,:), ind_phi(:,:,:)
-        Real*8, Allocatable :: ind_work(:,:,:)
-        Real*8, Allocatable :: cbuffer(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Allocatable :: ind_r(:,:,:), ind_theta(:,:,:), ind_phi(:,:,:)
+        Real(kind=8), Allocatable :: ind_work(:,:,:)
+        Real(kind=8), Allocatable :: cbuffer(:,:,:,:)
         Integer :: r,k, t
         Allocate(cbuffer(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
         Call Reset_Induction_Flags()
@@ -897,10 +897,10 @@ Contains
 
     Subroutine Compute_Magnetic_Diffusion(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8 :: del2b
-        Real*8, Allocatable :: ovstheta(:), ovs2theta(:)
+        Real(kind=8) :: del2b
+        Real(kind=8), Allocatable :: ovstheta(:), ovs2theta(:)
 
         Allocate(ovstheta(1:N_theta), ovs2theta(1:N_theta)) ! 1/sin; 1/sin^2
         ovstheta = 1.0d0/sintheta

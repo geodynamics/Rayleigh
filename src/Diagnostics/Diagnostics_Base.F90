@@ -92,17 +92,17 @@ Module Diagnostics_Base
 
 
     !///////////////////////////////////
-    Real*8, Allocatable :: qty(:,:,:)   ! This variable holds each quantity that we output
-    Real*8, Allocatable :: tmp1(:,:,:), tmp4(:,:,:)  ! Work arrays  -- so sorry about the 4
-    Real*8, Allocatable :: rweights(:), tweights(:), tmp1d(:)
+    Real(kind=8), Allocatable :: qty(:,:,:)   ! This variable holds each quantity that we output
+    Real(kind=8), Allocatable :: tmp1(:,:,:), tmp4(:,:,:)  ! Work arrays  -- so sorry about the 4
+    Real(kind=8), Allocatable :: rweights(:), tweights(:), tmp1d(:)
 
     !//////////////////////////////////
     ! The ell0 and m0 _ values arrays contain, yes, the ell = 0 and m = 0 values of
     ! everything in buffer at output time.
-    Real*8, Allocatable :: ell0_values(:,:), m0_values(:,:,:)
+    Real(kind=8), Allocatable :: ell0_values(:,:), m0_values(:,:,:)
 
     ! This array will hold fluctuating quantities from the buffer { q - <q>}
-    Real*8, Allocatable :: fbuffer(:,:,:,:)
+    Real(kind=8), Allocatable :: fbuffer(:,:,:,:)
 
     Logical :: azimuthal_mean = .true. ! when false, the m0_values are overwritten with the ell0_values
 
@@ -110,10 +110,10 @@ Module Diagnostics_Base
     ! A special buffer used for holding second derivatives at output time
     Type(SphericalBuffer) :: d2buffer
     ! ell0 and m0 values of those variables stored in d2buffer
-    Real*8, Allocatable :: d2_ell0(:,:), d2_m0(:,:,:)
+    Real(kind=8), Allocatable :: d2_ell0(:,:), d2_m0(:,:,:)
 
     ! This array will hold fluctuating quantities from the d2buffer { q - <q>}
-    Real*8, Allocatable :: d2_fbuffer(:,:,:,:)
+    Real(kind=8), Allocatable :: d2_fbuffer(:,:,:,:)
 
 
     ! Indices within the d2buffer
@@ -135,8 +135,8 @@ Module Diagnostics_Base
     ! Variables related to mean-correction
     ! (we only correct radial terms, but retain logic for horizontal terms)
     Integer :: ncorrect = 0  ! Number of fields whose ell=0 mean we need to substract
-    Real*8, Allocatable :: mean_3dbuffer(:,:,:,:)
-    Real*8, Allocatable :: mean_ell0buffer(:,:)
+    Real(kind=8), Allocatable :: mean_3dbuffer(:,:,:,:)
+    Real(kind=8), Allocatable :: mean_ell0buffer(:,:)
     Integer :: cforce_r, cforce_theta, cforce_phi
     Integer :: aforce_r, aforce_theta, aforce_phi
     Integer :: aforcepp_r, aforcepp_theta, aforcepp_phi
@@ -170,7 +170,7 @@ Contains
     Subroutine Compute_Fluctuations(buffer)
         Implicit None
         Integer :: r,k, t, j,jmax
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         jmax = size(buffer,4)
         Allocate(fbuffer(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
 

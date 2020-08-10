@@ -210,8 +210,8 @@ Contains
     Subroutine Compute_Viscous_Heating()
         Implicit None
         Integer :: t,r,k
-        Real*8 :: tmp, tmp2
-        Real*8, Allocatable :: htemp(:,:,:)
+        Real(kind=8) :: tmp, tmp2
+        Real(kind=8), Allocatable :: htemp(:,:,:)
 
         Allocate(htemp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
 
@@ -621,7 +621,7 @@ Contains
 
     Subroutine Find_MyMinDT()
         Implicit None
-        Real*8 :: ovt2, ovht2, ovrt2
+        Real(kind=8) :: ovt2, ovht2, ovrt2
         Integer :: r
         Call StopWatch(ts_time)%startclock()
 

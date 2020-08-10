@@ -39,7 +39,7 @@ Contains
     Subroutine Post_Solve()
         Implicit None
         Integer :: m, i
-        Character*12 :: tstring, otstring
+        Character(len=12) :: tstring, otstring
 
         ! wsp%p1b is assumed to be allocated
         Call StopWatch(psolve_time)%startclock()

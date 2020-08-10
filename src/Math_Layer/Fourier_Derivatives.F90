@@ -34,8 +34,8 @@ Contains
     Subroutine d_by_dphi3D(arrin,arrout)
         Implicit None
         Integer :: i, j, k, m, ashape(1:3),ni,nj,nk
-        Real*8, Intent(InOut) :: arrin(:,1:,1:)
-        Real*8, Intent(InOut) :: arrout(:,1:,1:)
+        Real(kind=8), Intent(InOut) :: arrin(:,1:,1:)
+        Real(kind=8), Intent(InOut) :: arrout(:,1:,1:)
         ashape = shape(arrin)
         ni = ashape(2)
         nj = ashape(3)

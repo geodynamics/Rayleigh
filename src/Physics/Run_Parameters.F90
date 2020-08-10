@@ -55,7 +55,7 @@ Contains
         Integer :: io, ierr, i, nprow_save, npcol_save
         Logical :: file_exist, write_header
         Integer :: ntrim = 4
-        Character*256, Intent(In), Optional :: checkpoint_input_file
+        Character(len=256), Intent(In), Optional :: checkpoint_input_file
 
         write_header = .true.
 

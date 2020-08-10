@@ -35,7 +35,7 @@ Subroutine Initialize_Theta_Derivatives(mvals,maxl,nrl)
     Integer, Intent(in) :: mvals(1:)
     Integer, Intent(in) :: maxl,nrl
     Integer :: i, m, l
-    Real*8 :: num, denom
+    Real(kind=8) :: num, denom
     nm_local = size(mvals)
     Allocate(mlocal(1:nm_local))
     mlocal(:) = mvals(:)

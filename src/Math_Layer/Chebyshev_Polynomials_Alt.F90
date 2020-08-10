@@ -25,15 +25,15 @@ Module Chebyshev_Polynomials_Alt
     Type, Public :: Cheby_Transform_Interface
         Integer :: N_max, N_even, N_odd, n_x
 
-        Real*8, Allocatable :: x(:)  ! The colocation points
-        Real*8, Allocatable :: cheby(:,:)        ! cheby(r,k) is chebyshev polynomial of degree k-1 at radius r
-        Real*8, Allocatable :: cheby_even(:,:), cheby_odd(:,:) ! even and odd chebyshev arrays
-        Real*8, Allocatable :: dcheby(:,:,:)    ! The Chebyshev Derivative Arrays
-        Real*8, Allocatable :: integration_weights(:)
-        Real*8  :: pi_over_N
+        Real(kind=8), Allocatable :: x(:)  ! The colocation points
+        Real(kind=8), Allocatable :: cheby(:,:)        ! cheby(r,k) is chebyshev polynomial of degree k-1 at radius r
+        Real(kind=8), Allocatable :: cheby_even(:,:), cheby_odd(:,:) ! even and odd chebyshev arrays
+        Real(kind=8), Allocatable :: dcheby(:,:,:)    ! The Chebyshev Derivative Arrays
+        Real(kind=8), Allocatable :: integration_weights(:)
+        Real(kind=8)  :: pi_over_N
         Logical :: Parity = .true.
         Logical :: initialized = .false.
-        Real*8  :: scaling ! x runs from -0.5 to 0.5 by default
+        Real(kind=8)  :: scaling ! x runs from -0.5 to 0.5 by default
 
         Contains
 
@@ -44,7 +44,7 @@ Module Chebyshev_Polynomials_Alt
         Procedure :: Destroy
         Procedure :: tospec4d => To_Spectral_4D
     End Type Cheby_Transform_Interface
-    Real*8, Private ::    Pi  = 3.1415926535897932384626433832795028841972d+0
+    Real(kind=8), Private ::    Pi  = 3.1415926535897932384626433832795028841972d+0
 
 
     !Interface Cheby_To_Spectral
@@ -75,9 +75,9 @@ Contains
     Subroutine Init_Cheby_Interface(self,grid, xmin,xmax, integral, derivatives)
         Implicit None
         Class(Cheby_Transform_Interface) :: self
-        Real*8, Intent(InOut) :: grid(:)
-        Real*8, Intent(In), Optional :: xmin, xmax
-        Real*8 ::delta, gmin, tmp, xx
+        Real(kind=8), Intent(InOut) :: grid(:)
+        Real(kind=8), Intent(In), Optional :: xmin, xmax
+        Real(kind=8) ::delta, gmin, tmp, xx
         Integer :: r, n_max
         Logical, Intent(In), Optional :: integral, derivatives
         n_max = size(grid)
@@ -130,7 +130,7 @@ Contains
     Subroutine Rescale_Grid_CP(self,length_scale)
         Implicit None
         Class(Cheby_Transform_Interface) :: self
-        Real*8, Intent(In) :: length_scale
+        Real(kind=8), Intent(In) :: length_scale
         ! Following initialization, we can rescale the chebyshev arrays if we choose
         ! This is useful when nondimensionalizing after the reference state has been set up
         ! (which typically requires a radial grid to have been established)
@@ -144,7 +144,7 @@ Contains
     Subroutine Gen_Colocation_Points(self)
         Implicit None
         Integer :: i
-        Real*8 :: arg
+        Real(kind=8) :: arg
         Class(Cheby_Transform_Interface) :: self
         Allocate(self%x(1:self%N_max))
         self%pi_over_N = pi/(self%N_max*1.0d0)
@@ -159,7 +159,7 @@ Contains
         Implicit None
         Class(Cheby_Transform_Interface) :: self
         Integer :: i, k, r, n_max, n_odd, n_even, n_x
-        Real*8 :: acx, arg
+        Real(kind=8) :: acx, arg
         n_max = self%n_max
         Allocate(self%cheby(1:N_max,1:N_max))
         Do r = 1, N_max
@@ -202,7 +202,7 @@ Contains
         Class(Cheby_Transform_Interface) :: self
         Integer, Intent(In) :: dmax
         Integer :: i, k,n,d, n_max
-        Real*8, Allocatable :: alpha(:,:)
+        Real(kind=8), Allocatable :: alpha(:,:)
 
         ! sum_n (alpha_kn  c_n) = c'_k
         n_max = self%n_max
@@ -235,10 +235,10 @@ Contains
     Subroutine To_Spectral_1D(self,f_in,c_out)
         Implicit None
         Class(Cheby_Transform_Interface) :: self
-        Real*8, Intent(In) :: f_in(:)
-        Real*8, Intent(InOut) :: c_out(:)
-        Real*8 :: alpha, beta
-        Real*8, Allocatable :: f_even(:), f_odd(:), c_temp(:)
+        Real(kind=8), Intent(In) :: f_in(:)
+        Real(kind=8), Intent(InOut) :: c_out(:)
+        Real(kind=8) :: alpha, beta
+        Real(kind=8), Allocatable :: f_even(:), f_odd(:), c_temp(:)
         Integer :: i, N_x, n_even, n_odd, n_max
         alpha = 2.0d0/n_max
         beta = 0.0d0
@@ -277,10 +277,10 @@ Contains
 
     Subroutine To_Spectral_2D(self, f_in,c_out)
         Implicit None
-        Real*8, Intent(In) :: f_in(:,:)
-        Real*8, Intent(InOut) :: c_out(:,:)
-        Real*8 :: alpha, beta
-        Real*8, Allocatable :: f_even(:,:), f_odd(:,:), c_temp(:,:)
+        Real(kind=8), Intent(In) :: f_in(:,:)
+        Real(kind=8), Intent(InOut) :: c_out(:,:)
+        Real(kind=8) :: alpha, beta
+        Real(kind=8), Allocatable :: f_even(:,:), f_odd(:,:), c_temp(:,:)
         Integer :: i, j, n2, dims(2), n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
         n_x = self%n_x
@@ -329,10 +329,10 @@ Contains
     Subroutine To_Spectral_3D(self, f_in,c_out)
         Implicit None
         ! Play a sneaky trick on dgemm and see if it sticks without complaining
-        Real*8, Intent(In) :: f_in(:,:,:)
-        Real*8, Intent(InOut) :: c_out(:,:,:)
-        Real*8 :: alpha, beta
-        Real*8, Allocatable :: f_even(:,:,:), f_odd(:,:,:), c_temp(:,:,:)
+        Real(kind=8), Intent(In) :: f_in(:,:,:)
+        Real(kind=8), Intent(InOut) :: c_out(:,:,:)
+        Real(kind=8) :: alpha, beta
+        Real(kind=8), Allocatable :: f_even(:,:,:), f_odd(:,:,:), c_temp(:,:,:)
         Integer :: i, j, k, n2, n3, dims(3)
         Integer :: n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
@@ -388,10 +388,10 @@ Contains
     Subroutine To_Spectral_4D(self,f_in,c_out)
         Implicit None
         ! Play a sneaky trick on dgemm and see if it sticks without complaining
-        Real*8, Intent(In) :: f_in(:,:,:,:)
-        Real*8, Intent(InOut) :: c_out(:,:,:,:)
-        Real*8 :: alpha, beta
-        Real*8, Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
+        Real(kind=8), Intent(In) :: f_in(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: c_out(:,:,:,:)
+        Real(kind=8) :: alpha, beta
+        Real(kind=8), Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
         Integer :: i, j, k, kk, n2, n3, n4, dims(4)
         Integer :: n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
@@ -453,10 +453,10 @@ Contains
 
     Subroutine From_Spectral_1D(self, c_in,f_out)
         Implicit None
-        Real*8, Intent(In) :: c_in(:)
-        Real*8, Intent(InOut) :: f_out(:)
-        Real*8, Allocatable :: c_temp(:), f_temp(:)
-        Real*8 :: alpha, beta
+        Real(kind=8), Intent(In) :: c_in(:)
+        Real(kind=8), Intent(InOut) :: f_out(:)
+        Real(kind=8), Allocatable :: c_temp(:), f_temp(:)
+        Real(kind=8) :: alpha, beta
         Integer :: i
         Integer :: n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
@@ -507,10 +507,10 @@ Contains
 
     Subroutine From_Spectral_2D(self, c_in,f_out)
         Implicit None
-        Real*8, Intent(In) :: c_in(:,:)
-        Real*8, Intent(InOut) :: f_out(:,:)
-        Real*8, Allocatable :: c_temp(:,:), f_temp(:,:)
-        Real*8 :: alpha, beta
+        Real(kind=8), Intent(In) :: c_in(:,:)
+        Real(kind=8), Intent(InOut) :: f_out(:,:)
+        Real(kind=8), Allocatable :: c_temp(:,:), f_temp(:,:)
+        Real(kind=8) :: alpha, beta
         Integer :: i, j, n2, dims(2)
         Integer :: n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
@@ -576,10 +576,10 @@ Contains
 
     Subroutine From_Spectral_3D(self, c_in,f_out)
         Implicit None
-        Real*8, Intent(In) :: c_in(:,:,:)
-        Real*8, Intent(InOut) :: f_out(:,:,:)
-        Real*8, Allocatable :: c_temp(:,:,:), f_temp(:,:,:)
-        Real*8 :: alpha, beta
+        Real(kind=8), Intent(In) :: c_in(:,:,:)
+        Real(kind=8), Intent(InOut) :: f_out(:,:,:)
+        Real(kind=8), Allocatable :: c_temp(:,:,:), f_temp(:,:,:)
+        Real(kind=8) :: alpha, beta
         Integer :: i, j, k, n2, n3, dims(3)
         Integer :: n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
@@ -658,10 +658,10 @@ Contains
 
     Subroutine From_Spectral_4D(self,c_in,f_out)
         Implicit None
-        Real*8, Intent(In) :: c_in(:,:,:,:)
-        Real*8, Intent(InOut) :: f_out(:,:,:,:)
-        Real*8, Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
-        Real*8 :: alpha, beta
+        Real(kind=8), Intent(In) :: c_in(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: f_out(:,:,:,:)
+        Real(kind=8), Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
+        Real(kind=8) :: alpha, beta
         Integer :: i, j, k, kk, n2, n3, n4, dims(4)
         Integer :: n_x, n_even, n_odd, n_max
         Class(Cheby_Transform_Interface) :: self
@@ -756,11 +756,11 @@ Contains
         ! This is exactly the same procedure as in the normal chebyshev polynomials module
         ! I just changed the name for now to avoid any conflicts
         Implicit None
-        Real*8,  Intent(InOut) :: buffer(0:,1:,1:,1:)    ! Makes it easier to reconcile with my IDL code
+        Real(kind=8),  Intent(InOut) :: buffer(0:,1:,1:,1:)    ! Makes it easier to reconcile with my IDL code
         Integer, Intent(In)    :: ind, dind, dorder
-        Real*8, Allocatable :: dbuffer(:,:)
+        Real(kind=8), Allocatable :: dbuffer(:,:)
         Integer :: dims(4), n,n2,n3, i,j,k, order
-        Real*8 :: scaling
+        Real(kind=8) :: scaling
         Class(Cheby_Transform_Interface) :: self
         scaling = self%scaling
         dims = shape(buffer)

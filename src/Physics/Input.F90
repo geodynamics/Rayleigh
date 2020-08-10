@@ -56,7 +56,7 @@ Contains
         Use MPI_Layer
         Implicit None
         Integer :: nlines, line_len,  ierr, pars(2), isave
-        Character*120 :: input_file, iter_string, input_prefix, res_eq_file
+        Character(len=120) :: input_file, iter_string, input_prefix, res_eq_file
         Character(len=:), Allocatable :: input_as_string(:)
         Type(Communicator) :: sim_comm
         Logical :: read_complete
@@ -161,8 +161,8 @@ Contains
     Subroutine Main_Input_All_Read()
         Use RA_MPI_Base
         Implicit None
-        Character*120 :: input_file
-        Character*256 :: emsg
+        Character(len=120) :: input_file
+        Character(len=256) :: emsg
         Logical :: read_complete
         Integer :: ierr
 
@@ -273,10 +273,10 @@ Contains
     Subroutine Check_Run_Mode()
         ! Checks the command line for multiple run flag
         Implicit None
-        Character*10 :: arg, arg2
+        Character(len=10) :: arg, arg2
         Integer :: i, itemp
         Logical :: eof_err
-        Character*120 :: aline, ifile
+        Character(len=120) :: aline, ifile
         Integer :: errcheck,  rcount, cpu_count, cmin, mx_rank, mn_rank
 
         ncpu_global = pfi%wcomm%np
@@ -383,7 +383,7 @@ Contains
             ! Checks the command line for acceptable arguments.
             ! Specified values overwrite namelist inputs.
             Implicit None
-            Character*120 :: arg, arg2
+            Character(len=120) :: arg, arg2
             Integer :: i, itemp
 
             Call Read_CMD_Line('-new_iter' , new_iteration)
@@ -425,7 +425,7 @@ Contains
         Character(*),Intent(In) :: istring
         Character(*), Intent(InOut) :: ivar
         Integer :: i, n
-        Character*1024 :: argname, argval, argshift
+        Character(len=1024) :: argname, argval, argshift
         n = command_argument_count()
         Do i = 1, n,2
             Call get_command_argument(i,argname)
@@ -442,7 +442,7 @@ Contains
         Character(*),Intent(In) :: istring
         Logical, Intent(InOut) :: ivar
         Integer :: i, n, itemp
-        Character*1024 :: argname, argval, argshift
+        Character(len=1024) :: argname, argval, argshift
         n = command_argument_count()
         Do i = 1, n,2
             Call get_command_argument(i,argname)
@@ -464,7 +464,7 @@ Contains
         Character(*),Intent(In) :: istring
         Integer, Intent(InOut) :: ivar
         Integer :: i, n
-        Character*1024 :: argname, argval, argshift
+        Character(len=1024) :: argname, argval, argshift
         n = command_argument_count()
         Do i = 1, n,2
             Call get_command_argument(i,argname)
@@ -479,9 +479,9 @@ Contains
     Subroutine Read_CMD_Double(istring, ivar)
         Implicit None
         Character(*),Intent(In) :: istring
-        Real*8, Intent(InOut) :: ivar
+        Real(kind=8), Intent(InOut) :: ivar
         Integer :: i, n
-        Character*1024 :: argname, argval, argshift
+        Character(len=1024) :: argname, argval, argshift
         n = command_argument_count()
         Do i = 1, n,2
             Call get_command_argument(i,argname)

@@ -23,8 +23,8 @@ Module Chebyshev_Polynomials
     ! Module for computing Chebyshev Polynomial Arrays and the associated Derivative Arrays
     Implicit None
     Integer :: cp_nthreads
-    Real*8, private ::    Pi  = 3.1415926535897932384626433832795028841972d+0
-    Real*8, private :: pi_over_N
+    Real(kind=8), private ::    Pi  = 3.1415926535897932384626433832795028841972d+0
+    Real(kind=8), private :: pi_over_N
     Logical :: DeAlias = .true.
     Logical :: Parity = .true.
     Logical :: initialized = .false.
@@ -38,10 +38,10 @@ Module Chebyshev_Polynomials
         Integer, Allocatable :: npoly(:)  ! Number of polynomials within each subdomain
         Integer, Allocatable :: n_x(:)    ! Number of colocation points within each subdomain
         Integer, Allocatable :: rda(:)    ! Deliasing index for each subdomain
-        Real*8, Allocatable  :: domain_bounds(:) ! The bounds that divide each subdomain
-        Real*8, Allocatable  :: n_even(:), n_odd(:) ! # of even and odd polynomials within each domain
-        Real*8, Allocatable  :: x(:,:), theta(:,:) ! colocation points and angle for each subdomain
-        Real*8, Allocatable  :: deriv_scaling(:)
+        Real(kind=8), Allocatable  :: domain_bounds(:) ! The bounds that divide each subdomain
+        Real(kind=8), Allocatable  :: n_even(:), n_odd(:) ! # of even and odd polynomials within each domain
+        Real(kind=8), Allocatable  :: x(:,:), theta(:,:) ! colocation points and angle for each subdomain
+        Real(kind=8), Allocatable  :: deriv_scaling(:)
 
         Type(rmcontainer)  , Allocatable :: cheby_even(:), cheby_odd(:)
         Type(rmcontainer3d), Allocatable :: dcheby(:)
@@ -66,15 +66,15 @@ Contains
                 & bounds,dmax,nthread,dealias_by, verbose)
         Implicit None
         Class(Cheby_Grid) :: self
-        Real*8, Intent(InOut) :: grid(1:), integration_weights(1:)
-        Real*8, Intent(In) :: bounds(1:)
+        Real(kind=8), Intent(InOut) :: grid(1:), integration_weights(1:)
+        Real(kind=8), Intent(In) :: bounds(1:)
         Integer, Intent(In) :: ndomains, npoly(1:)
         Integer, Intent(In), Optional :: nthread, dmax
         Integer, Intent(In), Optional :: dealias_by(1:)
         Logical, Intent(In), Optional :: verbose
 
-        Real*8 :: domain_delta, scaling, upperb, lowerb, xmin,xmax
-        Real*8 :: gmax, gmin, xx,int_scale
+        Real(kind=8) :: domain_delta, scaling, upperb, lowerb, xmin,xmax
+        Real(kind=8) :: gmax, gmin, xx,int_scale
         Integer :: r, i,n, domain_count
         Integer :: ind, ind2, n_max, dmx, gindex, db,scheck
         Logical :: custom_dealiasing = .false.
@@ -211,7 +211,7 @@ Contains
         Implicit None
         Class(Cheby_Grid) :: self
         Integer           :: i,n,n_max
-        Real*8            :: arg, dtheta, theta0
+        Real(kind=8)            :: arg, dtheta, theta0
         ! Calculate the colocation points X { -1 , 1}
         ! Also calculate the theta grid theta { 0 , pi }
 
@@ -252,8 +252,8 @@ Contains
         Implicit None
         Class (Cheby_Grid)  :: self
         Integer             :: i, k,n,n_even, n_max, n_odd, n_x, r
-        Real*8              :: arg
-        Real*8, Allocatable :: cheby(:,:) ! workspace
+        Real(kind=8)              :: arg
+        Real(kind=8), Allocatable :: cheby(:,:) ! workspace
         Allocate(cheby(1:self%max_npoly,1:self%max_npoly))
         Do n = 1,self%domain_count
             n_max = self%npoly(n)
@@ -301,8 +301,8 @@ Contains
         Class (Cheby_Grid)  :: self
         Integer, Intent(In) :: dmax
         Integer :: d,i, k, m, n, n_max ,r
-        Real*8 :: arg
-        Real*8, Allocatable :: alpha(:,:)
+        Real(kind=8) :: arg
+        Real(kind=8), Allocatable :: alpha(:,:)
 
         ! sum_n (alpha_kn  c_n) = c'_k
         Allocate(alpha(1:self%max_npoly,self%max_npoly))
@@ -353,7 +353,7 @@ Contains
     Subroutine dealias_buffer4d(self, buffer)
         Implicit None
         Class(Cheby_Grid) :: self
-        Real*8, Intent(InOut) :: buffer(1:,1:,1:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,1:,1:,1:)
         Integer :: bsize(4), i,j,k,n,offset, ind1,ind2
 
         bsize = shape(buffer)
@@ -377,10 +377,10 @@ Contains
     Subroutine To_Spectral4D(self,f_in,c_out)
         Implicit None
         Class(Cheby_Grid) :: self
-        Real*8, Intent(In) :: f_in(:,:,:,:)
-        Real*8, Intent(InOut) :: c_out(:,:,:,:)
-        Real*8 :: alpha, beta
-        Real*8, Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
+        Real(kind=8), Intent(In) :: f_in(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: c_out(:,:,:,:)
+        Real(kind=8) :: alpha, beta
+        Real(kind=8), Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
         Integer :: i, j, k, kk, n2, n3, n4, dims(4),nsub,nglobal, hoff, hh
         Integer :: istart, iend, n_even, n_odd, n_max, n_x
 
@@ -454,10 +454,10 @@ Contains
         ! Parity is assumed to be true for NOW
         ! This may be inefficient, but I just want it to work first.  Will optimize later
         Class(Cheby_Grid) :: self
-        Real*8, Intent(In) :: c_in(:,:,:,:)
-        Real*8, Intent(InOut) :: f_out(:,:,:,:)
-        Real*8, Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
-        Real*8 :: alpha, beta
+        Real(kind=8), Intent(In) :: c_in(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: f_out(:,:,:,:)
+        Real(kind=8), Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
+        Real(kind=8) :: alpha, beta
         Integer :: i, j, k, kk, n2, n3, n4, dims(4),nsub,nglobal, hoff, hh
         Integer :: istart, iend, n_even, n_odd, n_max, n_x
         alpha = 1.0d0
@@ -565,9 +565,9 @@ Contains
 #endif
         Implicit None
         Class (Cheby_Grid) :: self
-        Real*8,  Intent(InOut) :: buffer(0:,1:,1:,1:)    ! Makes it easier to reconcile with my IDL code
+        Real(kind=8),  Intent(InOut) :: buffer(0:,1:,1:,1:)    ! Makes it easier to reconcile with my IDL code
         Integer, Intent(In)    :: ind, dind, dorder
-        Real*8, Allocatable :: dbuffer(:,:,:)
+        Real(kind=8), Allocatable :: dbuffer(:,:,:)
         Integer :: dims(4), n,n2,n3, i,j,k, order
         Integer :: kstart, kend, nthr,trank
         Integer :: nglobal, nsub, hoff, hh

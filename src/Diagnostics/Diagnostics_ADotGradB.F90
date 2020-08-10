@@ -49,9 +49,9 @@ Contains
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
         Integer :: r,k, t   !indices for iteration
@@ -180,9 +180,9 @@ Contains
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: abuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
         Integer :: r,k, t   !indices for iteration
@@ -312,9 +312,9 @@ Contains
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: bbuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
         Integer :: r,k, t   !indices for iteration
@@ -444,9 +444,9 @@ Contains
         !Outputs
         !   cbuff -- buffer containing r,theta,phi components of C on an r,theta,phi grid
 
-        Real*8, Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)
-        Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: abuff(my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: bbuff(my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
         Integer :: r,k, t   !indices for iteration

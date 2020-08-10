@@ -27,8 +27,8 @@ Contains
 
     Subroutine Compute_Kinetic_Energy(buffer)
         Implicit None
-        Real*8, Allocatable :: dfact(:)
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Allocatable :: dfact(:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
         Allocate(dfact(1:N_R))
         !We do a few less multiplies this way, but more importantly,
@@ -243,8 +243,8 @@ Contains
 
     Subroutine Compute_Magnetic_Energy(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: mfact
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: mfact
         Integer :: r,k, t
 
         !This changes depending on the non-dimensionalization (dimensionalization) employed

@@ -199,15 +199,15 @@ Contains
 
     Subroutine Mean_Correction(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Allocatable :: cbuffer(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Allocatable :: cbuffer(:,:,:,:)
         Integer :: r,k, t
         Logical :: compute_full_full = .false.
         Logical :: compute_fluct_fluct = .false.
         Logical :: compute_mean_mean = .false.
         logical :: compute_mean_correct =.false.
-        Real*8 :: amp,del2u, estress
-        Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
+        Real(kind=8) :: amp,del2u, estress
+        Real(kind=8), Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
         compute_mean_correct = .false.
         !///////////////////////////////////////////////////
@@ -447,8 +447,8 @@ Contains
 
     Subroutine Compute_Coriolis_Force_r(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: coriolis_term
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: coriolis_term
         Integer :: r,k, t
         coriolis_term = ref%Coriolis_Coeff
         DO_PSI
@@ -458,8 +458,8 @@ Contains
 
     Subroutine Compute_Coriolis_Force_theta(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: coriolis_term
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: coriolis_term
         Integer :: r,k, t
         coriolis_term = ref%Coriolis_Coeff
         DO_PSI
@@ -469,8 +469,8 @@ Contains
 
     Subroutine Compute_Coriolis_Force_Phi(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: coriolis_term
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: coriolis_term
         Integer :: r,k, t
         coriolis_term = ref%Coriolis_Coeff
         DO_PSI

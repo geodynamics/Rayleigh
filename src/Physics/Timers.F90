@@ -33,7 +33,7 @@ Module Timers
 
     Integer, Parameter :: ntimers = 21
     Type(Timer), Allocatable :: StopWatch(:)
-    Real*8 :: timer_ticklength !Length of 1 tick in seconds
+    Real(kind=8) :: timer_ticklength !Length of 1 tick in seconds
 Contains
     Subroutine Initialize_Timers()
         Integer :: i
@@ -46,14 +46,14 @@ Contains
 
     Subroutine Finalize_Timing(nr_in,lmax_in,niter)
         Implicit None
-        Real*8, Allocatable :: mytimes(:), rowtimes(:,:), alltimes(:,:), buff(:), buff2(:,:)
+        Real(kind=8), Allocatable :: mytimes(:), rowtimes(:,:), alltimes(:,:), buff(:), buff2(:,:)
         Integer :: row_rank, column_rank,colnp,rownp, i,j,np,p,offset
         Integer, Allocatable :: row_ranks(:), column_ranks(:)
         Integer :: timing_tag = 432
         Integer, Intent(In) :: nr_in, lmax_in,niter
-        Character*120 :: timing_file
-        Character*4   :: nr_string, lmax_string
-        Character*4   :: row_string,col_string
+        Character(len=120) :: timing_file
+        Character(len=4)   :: nr_string, lmax_string
+        Character(len=4)   :: row_string,col_string
         ! Gather times into a single array
         Allocate(mytimes(1:ntimers))
 

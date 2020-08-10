@@ -43,26 +43,26 @@ Module PDE_Coefficients
     ! I.  Variables describing the background reference state
 
     Type ReferenceInfo
-        Real*8, Allocatable :: Density(:)
-        Real*8, Allocatable :: dlnrho(:)
-        Real*8, Allocatable :: d2lnrho(:)
+        Real(kind=8), Allocatable :: Density(:)
+        Real(kind=8), Allocatable :: dlnrho(:)
+        Real(kind=8), Allocatable :: d2lnrho(:)
 
-        Real*8, Allocatable :: Temperature(:)
-        Real*8, Allocatable :: dlnT(:)
+        Real(kind=8), Allocatable :: Temperature(:)
+        Real(kind=8), Allocatable :: dlnT(:)
 
-        Real*8, Allocatable :: dsdr(:)
+        Real(kind=8), Allocatable :: dsdr(:)
 
-        Real*8, Allocatable :: heating(:)
+        Real(kind=8), Allocatable :: heating(:)
 
-        Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
-        Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
-        Real*8, Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
-        Real*8, Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
-        Real*8, Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
+        Real(kind=8) :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
+        Real(kind=8) :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
+        Real(kind=8), Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
+        Real(kind=8), Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
+        Real(kind=8), Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
 
         ! The following two terms are used to compute the ohmic and viscous heating
-        Real*8, Allocatable :: ohmic_amp(:) !multiplied by {eta(r),H(r)}J^2 in dSdt eq.
-        Real*8, Allocatable :: viscous_amp(:) !multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
+        Real(kind=8), Allocatable :: ohmic_amp(:) !multiplied by {eta(r),H(r)}J^2 in dSdt eq.
+        Real(kind=8), Allocatable :: viscous_amp(:) !multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
 
     End Type ReferenceInfo
 
@@ -80,38 +80,38 @@ Module PDE_Coefficients
     Logical             :: use_custom_function(1:n_ra_functions) = .false.
     Integer             :: with_custom_constants(1:n_ra_constants) = 0
     Integer             :: with_custom_functions(1:n_ra_functions) = 0
-    Real*8              :: ra_constants(1:n_ra_constants) = 0.0d0
-    Real*8, Allocatable :: ra_functions(:,:)
+    Real(kind=8)              :: ra_constants(1:n_ra_constants) = 0.0d0
+    Real(kind=8), Allocatable :: ra_functions(:,:)
     Logical             :: custom_reference_read = .false.
-    Character*120 :: custom_reference_file ='nothing'    
+    Character(len=120) :: custom_reference_file ='nothing'    
 
-    Real*8, Allocatable :: s_conductive(:)
+    Real(kind=8), Allocatable :: s_conductive(:)
 
     Integer :: reference_type =1
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
-    Real*8  :: Luminosity = 0.0d0 ! specifies the integral of the heating function
-    Real*8  :: Heating_Integral = 0.0d0  !same as luminosity (for non-star watchers)
-    Real*8  :: Heating_EPS = 1.0D-12  !Small number to test whether luminosity specified
+    Real(kind=8)  :: Luminosity = 0.0d0 ! specifies the integral of the heating function
+    Real(kind=8)  :: Heating_Integral = 0.0d0  !same as luminosity (for non-star watchers)
+    Real(kind=8)  :: Heating_EPS = 1.0D-12  !Small number to test whether luminosity specified
     Logical :: adjust_reference_heating = .false.  ! Flag used to decide if luminosity determined via boundary conditions
 
     Type(ReferenceInfo) :: ref
 
-    Real*8 :: pressure_specific_heat  = 1.0d0 ! CP (not CV)
-    Real*8 :: poly_n = 0.0d0    !polytropic index
-    Real*8 :: poly_Nrho = 0.0d0
-    Real*8 :: poly_mass = 0.0d0
-    Real*8 :: poly_rho_i =0.0d0
-    Real*8 :: Angular_Velocity = -1.0d0
+    Real(kind=8) :: pressure_specific_heat  = 1.0d0 ! CP (not CV)
+    Real(kind=8) :: poly_n = 0.0d0    !polytropic index
+    Real(kind=8) :: poly_Nrho = 0.0d0
+    Real(kind=8) :: poly_mass = 0.0d0
+    Real(kind=8) :: poly_rho_i =0.0d0
+    Real(kind=8) :: Angular_Velocity = -1.0d0
 
     !/////////////////////////////////////////////////////////////////////////////////////
     ! Nondimensional Parameters
-    Real*8 :: Rayleigh_Number         = 1.0d0
-    Real*8 :: Ekman_Number            = 1.0d0
-    Real*8 :: Prandtl_Number          = 1.0d0
-    Real*8 :: Magnetic_Prandtl_Number = 1.0d0
-    Real*8 :: gravity_power           = 0.0d0
-    Real*8 :: Dissipation_Number      = 0.0d0
-    Real*8 :: Modified_Rayleigh_Number = 0.0d0
+    Real(kind=8) :: Rayleigh_Number         = 1.0d0
+    Real(kind=8) :: Ekman_Number            = 1.0d0
+    Real(kind=8) :: Prandtl_Number          = 1.0d0
+    Real(kind=8) :: Magnetic_Prandtl_Number = 1.0d0
+    Real(kind=8) :: gravity_power           = 0.0d0
+    Real(kind=8) :: Dissipation_Number      = 0.0d0
+    Real(kind=8) :: Modified_Rayleigh_Number = 0.0d0
 
 
 
@@ -127,24 +127,24 @@ Module PDE_Coefficients
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
 
-    Real*8, Allocatable :: nu(:), kappa(:), eta(:)
-    Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlneta(:)
+    Real(kind=8), Allocatable :: nu(:), kappa(:), eta(:)
+    Real(kind=8), Allocatable :: dlnu(:), dlnkappa(:), dlneta(:)
 
-    Real*8, Allocatable :: ohmic_heating_coeff(:)
-    Real*8, Allocatable :: viscous_heating_coeff(:)
+    Real(kind=8), Allocatable :: ohmic_heating_coeff(:)
+    Real(kind=8), Allocatable :: viscous_heating_coeff(:)
 
-    Real*8, Allocatable :: W_Diffusion_Coefs_0(:), W_Diffusion_Coefs_1(:)
-    Real*8, Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
-    Real*8, Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
-    Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
+    Real(kind=8), Allocatable :: W_Diffusion_Coefs_0(:), W_Diffusion_Coefs_1(:)
+    Real(kind=8), Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
+    Real(kind=8), Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
+    Real(kind=8), Allocatable :: A_Diffusion_Coefs_1(:)
 
     Integer :: kappa_type =1, nu_type = 1, eta_type = 1
-    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0, eta_top = -1.0d0
-    Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0
+    Real(kind=8)  :: nu_top = -1.0d0, kappa_top = -1.0d0, eta_top = -1.0d0
+    Real(kind=8)  :: nu_power = 0, eta_power = 0, kappa_power = 0
 
     Logical :: hyperdiffusion = .false.
-    Real*8  :: hyperdiffusion_beta = 0.0d0
-    Real*8  :: hyperdiffusion_alpha = 1.0d0
+    Real(kind=8)  :: hyperdiffusion_beta = 0.0d0
+    Real(kind=8)  :: hyperdiffusion_alpha = 1.0d0
 
     Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, nu_power, kappa_power, eta_power, &
             & nu_top, kappa_top, eta_top, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
@@ -229,9 +229,9 @@ Contains
     Subroutine Constant_Reference()
         Implicit None
         Integer :: i
-        Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
+        Real(kind=8) :: r_outer, r_inner, prefactor, amp, pscaling
+        Character(len=12) :: dstring
+        Character(len=8) :: dofmt = '(ES12.5)'
 
 
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
@@ -322,10 +322,10 @@ Contains
 
     Subroutine Polytropic_ReferenceND()
         Implicit None
-        Real*8 :: dtmp, otmp
-        Real*8, Allocatable :: dtmparr(:), gravity(:)
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
+        Real(kind=8) :: dtmp, otmp
+        Real(kind=8), Allocatable :: dtmparr(:), gravity(:)
+        Character(len=12) :: dstring
+        Character(len=8) :: dofmt = '(ES12.5)'
 
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Non-dimensional)"))
@@ -418,16 +418,16 @@ Contains
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
-        Real*8 :: zeta_0,  c0, c1, d
-        Real*8 :: rho_c, P_c, T_c,denom
-        Real*8 :: thermo_gamma, volume_specific_heat
-        Real*8 :: beta
-        Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
-        Real*8, Allocatable :: zeta(:), gravity(:)
-        Real*8 :: One
-        Real*8 :: InnerRadius, OuterRadius
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
+        Real(kind=8) :: zeta_0,  c0, c1, d
+        Real(kind=8) :: rho_c, P_c, T_c,denom
+        Real(kind=8) :: thermo_gamma, volume_specific_heat
+        Real(kind=8) :: beta
+        Real(kind=8) :: Gravitational_Constant = 6.67d-8 ! cgs units
+        Real(kind=8), Allocatable :: zeta(:), gravity(:)
+        Real(kind=8) :: One
+        Real(kind=8) :: InnerRadius, OuterRadius
+        Character(len=12) :: dstring
+        Character(len=8) :: dofmt = '(ES12.5)'
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type                : "//trim(" Polytrope (Dimensional)"))
             Write(dstring,dofmt)Angular_Velocity
@@ -592,7 +592,7 @@ Contains
 
     Subroutine Augment_Reference()
         Implicit None
-        Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
+        Real(kind=8), Allocatable :: temp_functions(:,:), temp_constants(:)
 
         If (my_rank .eq. 0) Then
             Call stdout%print('Reference state will be augmented.')
@@ -652,8 +652,8 @@ Contains
 
     Subroutine Constant_Entropy_Heating()
         Implicit None
-        Real*8 :: integral, alpha
-        Real*8, Allocatable :: temp(:)
+        Real(kind=8) :: integral, alpha
+        Real(kind=8), Allocatable :: temp(:)
 
         ! dSdt = alpha : Entropy deposition per unit volume is constant
         ! rho T dSdt = rho T alpha : Energy deposition per unit volume is ~ Pressure
@@ -676,10 +676,10 @@ Contains
 
     Subroutine Integrate_in_radius(func,int_func)
         Implicit None
-        Real*8, Intent(In) :: func(1:)
-        Real*8, Intent(Out) :: int_func
+        Real(kind=8), Intent(In) :: func(1:)
+        Real(kind=8), Intent(Out) :: int_func
         Integer :: i
-        Real*8 :: rcube
+        Real(kind=8) :: rcube
         !compute integrate_r=rmin_r=rmax func*r^2 dr
         rcube = (rmax**3-rmin**3)*One_Third
         int_func = 0.0d0
@@ -735,8 +735,8 @@ Contains
     End Subroutine Get_Custom_Reference
 
     Subroutine Write_Equation_Coefficients_File(filename)
-        Character*120, Intent(In), Optional :: filename
-        Character*120 :: ref_file
+        Character(len=120), Intent(In), Optional :: filename
+        Character(len=120) :: ref_file
         Integer :: i, k, pi_integer
         pi_integer = 314
 
@@ -768,14 +768,14 @@ Contains
     End Subroutine Write_Equation_Coefficients_File
 
     Subroutine Read_Custom_Reference_File(filename)
-        Character*120, Intent(In), Optional :: filename
-        Character*120 :: ref_file
+        Character(len=120), Intent(In), Optional :: filename
+        Character(len=120) :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
         Integer :: i, k, j
         Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
-        Real*8  :: input_constants(1:n_ra_constants)
-        Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
-        Real*8, Allocatable :: old_radius(:)
+        Real(kind=8)  :: input_constants(1:n_ra_constants)
+        Real(kind=8), Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
+        Real(kind=8), Allocatable :: old_radius(:)
 
         cset(:) = 0
         input_constants(:) = 0.0d0
@@ -977,9 +977,9 @@ Contains
 
     Subroutine Log_Deriv(arr1,arr2, no_log)
         Implicit None
-        Real*8, Intent(In)    :: arr1(:)
-        Real*8, Intent(InOut) :: arr2(:)
-        Real*8, Allocatable   :: dtemp(:,:,:,:),dtemp2(:,:,:,:)
+        Real(kind=8), Intent(In)    :: arr1(:)
+        Real(kind=8), Intent(InOut) :: arr2(:)
+        Real(kind=8), Allocatable   :: dtemp(:,:,:,:),dtemp2(:,:,:,:)
         Logical, Optional     :: no_log
 
         ! Computes logarithmic derivative of arr1 with respect to radius.
@@ -1057,7 +1057,7 @@ Contains
 
     Subroutine Initialize_Transport_Coefficients()
         Implicit None
-        Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
+        Real(kind=8), Allocatable :: temp_functions(:,:), temp_constants(:)
         Logical :: restore
 
         restore = .false.
@@ -1139,10 +1139,10 @@ Contains
 
     Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
         Implicit None
-        Real*8, Intent(InOut) :: x(:), dlnx(:)
-        Real*8, Intent(InOut) :: xtop
+        Real(kind=8), Intent(InOut) :: x(:), dlnx(:)
+        Real(kind=8), Intent(InOut) :: xtop
         Integer, Intent(In) :: ci, fi, dlnfi, xtype
-        Real*8, Intent(In) :: xpower
+        Real(kind=8), Intent(In) :: xpower
         Character(len=2) :: ind
 
         If (reference_type .eq. 4) Then
@@ -1194,8 +1194,8 @@ Contains
 
     Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
         Implicit None
-        Real*8, Intent(InOut) :: coeff(:), dln(:)
-        Real*8, Intent(In) :: coeff_top, coeff_power
+        Real(kind=8), Intent(InOut) :: coeff(:), dln(:)
+        Real(kind=8), Intent(In) :: coeff_top, coeff_power
 
         ! Computes a transport coefficient and its logarithmic derivative
         ! using a density-dependent form for the coefficient:

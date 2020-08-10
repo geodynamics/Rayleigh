@@ -34,11 +34,11 @@ Contains
 
     Subroutine Compute_Vorticity_Field(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8, Allocatable :: ens(:,:,:), ens_pm(:,:,:), ens_mm(:,:,:), ens_pp(:,:,:)
-        Real*8, Allocatable :: kin_hel(:,:,:), kin_hel_pm(:,:,:), kin_hel_mm(:,:,:)
-        Real*8, Allocatable :: kin_hel_pp(:,:,:), kin_hel_mp(:,:,:)
+        Real(kind=8), Allocatable :: ens(:,:,:), ens_pm(:,:,:), ens_mm(:,:,:), ens_pp(:,:,:)
+        Real(kind=8), Allocatable :: kin_hel(:,:,:), kin_hel_pm(:,:,:), kin_hel_mm(:,:,:)
+        Real(kind=8), Allocatable :: kin_hel_pp(:,:,:), kin_hel_mp(:,:,:)
         Logical :: compute_efluct = .false., compute_emean = .false.
 
 

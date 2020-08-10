@@ -44,22 +44,22 @@ Module Benchmarking
     Integer, Private :: max_numt, numt_ind, global_count, num_int
     Integer, Private :: report_interval = 90000000
     Integer, Private :: integration_interval =90000000
-    Real*8 :: mag_factor
-    Real*8, Allocatable :: time_series(:,:), time_saves(:), iter_saves(:), obs_series(:,:)
+    Real(kind=8) :: mag_factor
+    Real(kind=8), Allocatable :: time_series(:,:), time_saves(:), iter_saves(:), obs_series(:,:)
     Integer :: drift_sign, num_rep
     Integer :: r_one, r_two, theta_one, theta_two
     Integer :: strip_owners(1:4), btags(1:4), tvals(1:4), rvals(1:4)
     Integer :: num_strips = 4  !The number of strips we intend to average over
     Logical :: have_strip(1:4) , have_reference_strips = .false.
-    Real*8, Allocatable :: strips(:,:) ! equatorial-mid-shell strips used for tracking pattern drift rate
-    Real*8, Allocatable :: xnow(:), xlast(:), xref(:), drifts(:,:), report_sdev(:)
-    Real*8, Allocatable :: observations(:), report_vals(:), suggested_vals(:)
-    Real*8 :: volume_norm = 1.0d0
-    Real*8 :: drift
-    Real*8 :: drift_reference_time, previous_time
+    Real(kind=8), Allocatable :: strips(:,:) ! equatorial-mid-shell strips used for tracking pattern drift rate
+    Real(kind=8), Allocatable :: xnow(:), xlast(:), xref(:), drifts(:,:), report_sdev(:)
+    Real(kind=8), Allocatable :: observations(:), report_vals(:), suggested_vals(:)
+    Real(kind=8) :: volume_norm = 1.0d0
+    Real(kind=8) :: drift
+    Real(kind=8) :: drift_reference_time, previous_time
 
-    Character*80, Allocatable :: report_names(:)
-    Character*120 :: benchmark_name
+    Character(len=80), Allocatable :: report_names(:)
+    Character(len=120) :: benchmark_name
 Contains
 
     Subroutine Benchmark_Input_Reset()
@@ -67,7 +67,7 @@ Contains
         Integer :: mode_remember, integration_remember, report_remember
         Integer :: init_remember, restart_remember, minit_remember
         Integer :: ref_remember
-        Character*120 :: file_remember
+        Character(len=120) :: file_remember
         ! This routine re-initializes input values to their benchmark values
 
         If (benchmark_mode .gt. 0) Then
@@ -592,19 +592,19 @@ Contains
     Subroutine Benchmark_Checkup(buffer,iteration, current_time)
         Implicit None
         Integer, Intent(In) :: iteration
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,:)
-        Real*8, Intent(In) :: current_time
-        Real*8 :: tmp, tmp2, tmp3, time_passed, over_n_phi
-        Real*8 :: rel_diff, mean_value, sdev_value
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,:)
+        Real(kind=8), Intent(In) :: current_time
+        Real(kind=8) :: tmp, tmp2, tmp3, time_passed, over_n_phi
+        Real(kind=8) :: rel_diff, mean_value, sdev_value
 
         Integer :: i,p,t,r, funit, iter_start, iter_end
-        Real*8, Allocatable :: ell0_values(:,:), volume_integrals(:), volume_sdev(:)
-        Real*8, Allocatable :: qty(:,:,:,:), obs_sdev(:)
-        Character*120 :: report_file
+        Real(kind=8), Allocatable :: ell0_values(:,:), volume_integrals(:), volume_sdev(:)
+        Real(kind=8), Allocatable :: qty(:,:,:,:), obs_sdev(:)
+        Character(len=120) :: report_file
 
-        Character*14 :: val_str, sdev_str, rel_str, sug_str, dt_str
-        Character*8 :: fmtstr = '(F14.6)'
-        Character*8 :: iter_string
+        Character(len=14) :: val_str, sdev_str, rel_str, sug_str, dt_str
+        Character(len=8) :: fmtstr = '(F14.6)'
+        Character(len=8) :: iter_string
 
         If (benchmark_mode .gt. 0) Then
         If (mod(iteration,integration_interval) .eq. 0) Then
@@ -910,8 +910,8 @@ Contains
     End Subroutine Benchmark_Checkup
 
     Subroutine Assemble_Strips(inbuff)
-        Real*8, Intent(In) :: inbuff(1:,my_r%min:,my_theta%min:,:)
-        Real*8, Allocatable :: all_strips(:,:,:)
+        Real(kind=8), Intent(In) :: inbuff(1:,my_r%min:,my_theta%min:,:)
+        Real(kind=8), Allocatable :: all_strips(:,:,:)
         Integer :: i,j, indst(3), ndata
         Integer :: rirqs(1:4), sirqs(1:4)
 
@@ -994,12 +994,12 @@ Contains
         ! There is a lot of (somewhat) confusing logic here related to
         ! dealing with the drift of vr=0 points needed to
         ! calculate the drift velocity properly
-        Real*8, Intent(In) :: time_in
+        Real(kind=8), Intent(In) :: time_in
         Integer :: i, j, xind, im1
-        Real*8 :: vrlast, vrnext, dvr, test,x, y2, y1, slope
-        Real*8 :: domegadt2, domegadt
-        Real*8 :: delta_time, delta_time_pair, xadd, thisx
-        Real*8, Allocatable :: vsave(:,:)
+        Real(kind=8) :: vrlast, vrnext, dvr, test,x, y2, y1, slope
+        Real(kind=8) :: domegadt2, domegadt
+        Real(kind=8) :: delta_time, delta_time_pair, xadd, thisx
+        Real(kind=8), Allocatable :: vsave(:,:)
         Logical :: adjustx
         Allocate(vsave(1:msymm,1:nobs))
         xind = 1
@@ -1085,9 +1085,9 @@ Contains
 
     Subroutine Write_Array(arr,filename)
         Implicit None
-        Character*120, Optional, Intent(In) :: filename
+        Character(len=120), Optional, Intent(In) :: filename
         Integer :: i,j,sig = 314, nx,ny
-        Real*8, Intent(In) :: arr(1:,1:)
+        Real(kind=8), Intent(In) :: arr(1:,1:)
         nx = size(arr,1)
         ny = size(arr,2)
 
@@ -1102,8 +1102,8 @@ Contains
     End Subroutine Write_Array
     Subroutine Get_Moments(arr,arr_mean,arr_sdev)
         Implicit None
-        Real*8, Intent(In) :: arr(1:)
-        Real*8, Intent(InOut) :: arr_mean, arr_sdev
+        Real(kind=8), Intent(In) :: arr(1:)
+        Real(kind=8), Intent(InOut) :: arr_mean, arr_sdev
         Integer :: i, n
         ! Computes the mean and standard deviation of arr
         arr_mean = 0.0d0

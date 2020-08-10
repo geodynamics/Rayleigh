@@ -51,7 +51,7 @@ Subroutine Initialize_Angular_Derivatives(mvals,maxl,nrl0)
     Integer, Intent(in) :: mvals(1:)
     Integer, Intent(in) :: maxl,nrl0
     Integer :: i, m, l
-    Real*8 :: num, denom
+    Real(kind=8) :: num, denom
     nm_local = size(mvals)
     Allocate(mlocal(1:nm_local))
     mlocal(:) = mvals(:)
@@ -410,8 +410,8 @@ End Subroutine d_sdtheta_4dbuff2arr
     Subroutine d_by_dphi3D(arrin,arrout)
         Implicit None
         Integer :: i, j, k, m, ashape(1:3),ni,nj,nk
-        Real*8, Intent(InOut) :: arrin(:,1:,1:)
-        Real*8, Intent(InOut) :: arrout(:,1:,1:)
+        Real(kind=8), Intent(InOut) :: arrin(:,1:,1:)
+        Real(kind=8), Intent(InOut) :: arrout(:,1:,1:)
         ashape = shape(arrin)
         ni = ashape(2)
         nj = ashape(3)
@@ -432,9 +432,9 @@ End Subroutine d_sdtheta_4dbuff2arr
     Subroutine d_by_dphi3Dbuff(arrin,from_ind,to_ind)
         Implicit None
         Integer :: i, j, k, m, ashape(1:4),ni,nj,nk
-        Real*8, Intent(InOut) :: arrin(:,1:,1:,1:)
+        Real(kind=8), Intent(InOut) :: arrin(:,1:,1:,1:)
         Integer, Intent(In) :: from_ind, to_ind
-        Real*8 :: tmp
+        Real(kind=8) :: tmp
         ashape = shape(arrin)
         ni = ashape(2)
         nj = ashape(3)
@@ -534,7 +534,7 @@ End Subroutine d_sdtheta_4dbuff2arr
         Type(rmcontainer), Intent(InOut) :: buff(1:)
         Integer, Intent(In) :: from_ind, to_ind
         Integer :: rrstart, rmid, irend, rrstart2, rmid2, irend2, i, m
-        Real*8, Allocatable :: temp(:,:)
+        Real(kind=8), Allocatable :: temp(:,:)
 
         rrstart = (from_ind-1)*tnrl+1
         rmid = rrstart+nrl
@@ -575,7 +575,7 @@ End Subroutine d_sdtheta_4dbuff2arr
         Type(rmcontainer4d), Intent(InOut) :: buff(1:)
         Integer, Intent(In) :: from_ind, to_ind
         Integer ::  i, m
-        Real*8, Allocatable :: temp(:,:)
+        Real(kind=8), Allocatable :: temp(:,:)
 
 
         If (from_ind .ne. to_ind) Then

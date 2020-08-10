@@ -26,8 +26,8 @@ Module General_IO
     Implicit None
 Contains
     Subroutine Read_Rayleigh_Array(filename,array_data, dims)
-        Character*120, Intent(In) :: filename
-        Real*8, Intent(InOut) :: array_data(1:,1:)
+        Character(len=120), Intent(In) :: filename
+        Real(kind=8), Intent(InOut) :: array_data(1:,1:)
         Integer :: pi_integer,nrows, ncolumns
         Integer, Optional, Intent(InOut) :: dims(2)
         Integer :: rcheck, ccheck, arrdims(2)
@@ -101,10 +101,10 @@ Contains
     End Subroutine Read_Rayleigh_Array
     Subroutine Write_Rayleigh_Array(arr,filename)
         Implicit None
-        Character*120, Optional, Intent(In) :: filename
-        Character*120 :: ref_file
+        Character(len=120), Optional, Intent(In) :: filename
+        Character(len=120) :: ref_file
         Integer :: i,j,nq,sig = 314, nx
-        Real*8, Intent(In) :: arr(1:,1:)
+        Real(kind=8), Intent(In) :: arr(1:,1:)
         nx = size(arr,1)
         nq = size(arr,2)
         If (pfi%gcomm%rank .eq. 0) Then

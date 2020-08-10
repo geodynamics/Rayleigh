@@ -46,25 +46,25 @@ Module BoundaryConditions
     Logical :: Impose_Dipole_Field = .False.
     Logical :: Dipole_Field_Bottom = .False.
 
-    Real*8  :: T_Bottom     = 1.0d0
-    Real*8  :: T_Top        = 0.0d0
-    Real*8  :: dTdr_Top     = 0.0d0
-    Real*8  :: dTdr_Bottom  = 0.0d0
-    Real*8  :: C10_bottom = 0.0d0
-    Real*8  :: C10_top = 0.0d0
-    Real*8  :: C11_bottom = 0.0d0
-    Real*8  :: C11_top = 0.0d0
-    Real*8  :: C1m1_bottom = 0.0d0
-    Real*8  :: C1m1_top = 0.0d0
-    Real*8  :: Br_bottom = 0.0d0
-    Real*8  :: Dipole_Tilt_Degrees = 0.0d0
+    Real(kind=8)  :: T_Bottom     = 1.0d0
+    Real(kind=8)  :: T_Top        = 0.0d0
+    Real(kind=8)  :: dTdr_Top     = 0.0d0
+    Real(kind=8)  :: dTdr_Bottom  = 0.0d0
+    Real(kind=8)  :: C10_bottom = 0.0d0
+    Real(kind=8)  :: C10_top = 0.0d0
+    Real(kind=8)  :: C11_bottom = 0.0d0
+    Real(kind=8)  :: C11_top = 0.0d0
+    Real(kind=8)  :: C1m1_bottom = 0.0d0
+    Real(kind=8)  :: C1m1_top = 0.0d0
+    Real(kind=8)  :: Br_bottom = 0.0d0
+    Real(kind=8)  :: Dipole_Tilt_Degrees = 0.0d0
 
-    Character*120 :: T_top_file       = '__nothing__'
-    Character*120 :: T_bottom_file    = '__nothing__'
-    Character*120 :: dTdr_top_file    = '__nothing__'
-    Character*120 :: dTdr_bottom_file = '__nothing__'
-    Character*120 :: C_top_file       = '__nothing__'
-    Character*120 :: C_bottom_file    = '__nothing__'
+    Character(len=120) :: T_top_file       = '__nothing__'
+    Character(len=120) :: T_bottom_file    = '__nothing__'
+    Character(len=120) :: dTdr_top_file    = '__nothing__'
+    Character(len=120) :: dTdr_bottom_file = '__nothing__'
+    Character(len=120) :: C_top_file       = '__nothing__'
+    Character(len=120) :: C_bottom_file    = '__nothing__'
 
     Logical :: Strict_L_Conservation = .false.         ! (In-Progress) Turn on to enforce angular momentum conservation abous x,y, and z-axes
     Logical :: no_slip_boundaries = .false. ! Set to true to use no-slip boundaries.  Stree-free boundaries are the default.
@@ -72,7 +72,7 @@ Module BoundaryConditions
     Logical :: no_slip_top = .false., no_slip_bottom = .false.
     Logical :: use_checkpoint_bc_file = .false.
 
-    Real*8, allocatable, dimension(:,:,:,:) :: bc_values  ! a 4-D array: (top/bottom, real/imag, my_num_lm, n_equations)
+    Real(kind=8), allocatable, dimension(:,:,:,:) :: bc_values  ! a 4-D array: (top/bottom, real/imag, my_num_lm, n_equations)
 
     Namelist /Boundary_Conditions_Namelist/ Fix_Tvar_Top, Fix_Tvar_Bottom, T_Bottom, T_Top, dTdr_top, dTdr_bottom, &
         fix_dtdr_bottom, fix_dtdr_top, fix_divrt_top, fix_divt_top, fix_divrfc_top, fix_divfc_top, &
@@ -86,8 +86,8 @@ Contains
 
     Subroutine Initialize_Boundary_Conditions()
         Implicit None
-        Real*8 :: tilt_angle_radians,a,b
-        Real*8 :: fsun
+        Real(kind=8) :: tilt_angle_radians,a,b
+        Real(kind=8) :: fsun
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
@@ -148,7 +148,7 @@ Contains
 
     Subroutine Generate_Boundary_Mask()
         Implicit None
-        Real*8 :: bc_val
+        Real(kind=8) :: bc_val
         Integer :: uind, lind
         Integer :: real_ind, imag_ind
 
@@ -228,7 +228,7 @@ Contains
 
     Subroutine Set_BC(inval,ellval,emval,eqval,imi,bound_ind)
         Implicit None
-        Real*8 , Intent(In) :: inval
+        Real(kind=8) , Intent(In) :: inval
         Integer, Intent(In) :: ellval, emval, eqval,bound_ind, imi
         Integer :: this_l, this_m, lp, lpi
         ! Probably more efficient to have a support array / reverse lookup table
@@ -249,7 +249,7 @@ Contains
 
     Subroutine Set_BC_from_file(filename,eqval,bound_ind)
         Implicit None
-        Character*120, Intent(in) :: filename
+        Character(len=120), Intent(in) :: filename
         Integer, Intent(In) :: eqval,bound_ind
         integer :: fcount(3,2), r_ind
         type(SphericalBuffer) :: tempfield
@@ -276,7 +276,7 @@ Contains
 
     Subroutine Transport_Dependencies()
         Implicit None
-        Real*8 :: fsun, lum_top, lum_bottom
+        Real(kind=8) :: fsun, lum_top, lum_bottom
 
         ! Odd reference state quantities that somehow depend on 
         ! boundary conditions can be set here.

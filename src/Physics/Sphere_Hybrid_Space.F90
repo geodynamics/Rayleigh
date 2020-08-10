@@ -35,7 +35,7 @@ Module Sphere_Hybrid_Space
     Use PDE_Coefficients
 
     Implicit None
-    Real*8, Allocatable :: over_rhor(:), over_rhorsq(:), drho_term(:)
+    Real(kind=8), Allocatable :: over_rhor(:), over_rhorsq(:), drho_term(:)
 
     Type(rmcontainer3D), Allocatable :: ftemp1(:), ftemp2(:),ftemp3(:), ftemp4(:)
 Contains
@@ -582,9 +582,9 @@ Contains
 
     Subroutine Adjust_TimeStep()
         Implicit None
-        Real*8 :: maxt2, maxt
-        Character*8 :: dtfmt ='(ES10.4)'
-        Character*14 :: tmstr, tmstr2
+        Real(kind=8) :: maxt2, maxt
+        Character(len=8) :: dtfmt ='(ES10.4)'
+        Character(len=14) :: tmstr, tmstr2
 
         Call wsp%unload_cargo(global_msgs)
 

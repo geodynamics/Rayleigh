@@ -114,7 +114,7 @@ Contains
         ! to ind (a field reference integer)
         Class(Field_Indexer)    :: self
         Integer, intent(InOut)  :: ind
-        Character*3, Intent(In) :: cfg
+        Character(len=3), Intent(In) :: cfg
 
         self%global_counter = self%global_counter+1
         ind = self%global_counter
@@ -148,7 +148,7 @@ Contains
 
     Subroutine Initialize_Field_Structure()
         Implicit None
-        Character*3 :: config
+        Character(len=3) :: config
 
         ! Starting out we record the number of variables and equations we are expecting.
         If (magnetism) Then
@@ -295,7 +295,7 @@ Contains
     End Subroutine Initialize_Field_Structure
     Subroutine Initialize_Diagnostic_Indices()
         Implicit None
-        Character*3 :: config
+        Character(len=3) :: config
         vindex(1)  = vr
         vindex(2)  = vtheta
         vindex(3)  = vphi

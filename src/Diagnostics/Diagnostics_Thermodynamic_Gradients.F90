@@ -27,7 +27,7 @@ Contains
 
     Subroutine Compute_Thermodynamic_Gradients(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
         ! Here we compute the gradient of pressure and entropy/temperature
 

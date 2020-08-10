@@ -33,30 +33,30 @@ Module Linear_Solve
 
     Integer, Save, Private :: ndim1, ndim2, n_links, maximum_deriv_order        ! Variable used to keep track of linked equations (i.e. WPS)
 
-    real*8, Save, Private :: LHS_time_factor, RHS_time_factor    ! Forward and Backward time-weighting of the implicit scheme.
-    real*8, Allocatable :: dfield(:,:,:,:)
+    Real(kind=8), Save, Private :: LHS_time_factor, RHS_time_factor    ! Forward and Backward time-weighting of the implicit scheme.
+    Real(kind=8), Allocatable :: dfield(:,:,:,:)
     Logical :: band_solve = .false.
     Logical :: sparse_solve = .false.
     Logical, Private :: chebyshev = .false.
-    Real*8, Allocatable, Private :: temp_rhs(:,:,:)
+    Real(kind=8), Allocatable, Private :: temp_rhs(:,:,:)
     Type(Cheby_Grid), Pointer, Private :: cpgrid
     Type Data_arrays        ! support structure for the equation structure
-        real*8, Allocatable :: data(:,:,:)    ! dimensioned (r, mode, derivative_order)
+        Real(kind=8), Allocatable :: data(:,:,:)    ! dimensioned (r, mode, derivative_order)
     End Type Data_arrays
     Type Coefficient_array        ! support structure for the equation structure
-        real*8, Allocatable :: data(:,:)    ! dimensioned (r, mode, derivative_order)
+        Real(kind=8), Allocatable :: data(:,:)    ! dimensioned (r, mode, derivative_order)
     End Type Coefficient_Array
     !===============================================================
     !   Equation Structure
     Type Equation
         Type(Coefficient_Array), Allocatable :: coefs(:)
-        real*8, Allocatable :: lhs(:,:)        ! The matrix to be inverted for this equation
+        Real(kind=8), Allocatable :: lhs(:,:)        ! The matrix to be inverted for this equation
                                                                     ! If an equation set is linked, this is only allocated for the primary
                                                                     ! equation in the link.
-        real*8, Pointer, dimension(:,:) :: mpointer    ! Points to LHS of the primary equation in a linked set (or LHS if not linked)
+        Real(kind=8), Pointer, dimension(:,:) :: mpointer    ! Points to LHS of the primary equation in a linked set (or LHS if not linked)
 
-        real*8, Allocatable:: rhs(:,:,:)    ! RHS array for all modes of a given equation.  Only allocated for mode 1
-        real*8, Pointer, dimension(:,:,:) :: rhs_pointer    ! Points to the appropriate portion of the joint RHS array
+        Real(kind=8), Allocatable:: rhs(:,:,:)    ! RHS array for all modes of a given equation.  Only allocated for mode 1
+        Real(kind=8), Pointer, dimension(:,:,:) :: rhs_pointer    ! Points to the appropriate portion of the joint RHS array
                                                                                         ! for this equation dimensioned r,real/imag, sub-mode
         Integer, Allocatable :: pivot(:)        ! Pivot array corresponding to the LHS matrix
 
@@ -74,12 +74,12 @@ Module Linear_Solve
         !//////////////////////////////////////////////////////////////////\
         !Additional attributes used if sparse solve is active
         Integer, Allocatable :: sparse_ia(:), sparse_ja(:)
-        Real*8, Allocatable :: sparse_mat(:)
-        Integer*8 :: pt(64)
+        Real(kind=8), Allocatable :: sparse_mat(:)
+        Integer(kind=8) :: pt(64)
         Integer :: mxfct, mnum, mtype, phase, n, nrhs, error, msglvl
         Integer :: solver, idum, nrows
         Integer :: iparm(64)
-        Real*8  :: dparm(64), ddum
+        Real(kind=8)  :: dparm(64), ddum
         logical :: sparse_initialized = .false.
 
         Contains
@@ -94,11 +94,11 @@ Module Linear_Solve
     !========================================================
     !    Variable Structure
     Type cdarrays
-        Complex*16, allocatable :: data(:,:)        ! Dimensioned 1:ndim1, 1:n_modes_total
+        Complex(kind=16), allocatable :: data(:,:)        ! Dimensioned 1:ndim1, 1:n_modes_total
     End Type cdarrays
 
     Type ddarrays
-        real*8, Allocatable :: data(:,:,:)        ! Dimensioned 1:ndim1, 1:2 (real/complex), 1:n_modes_total
+        Real(kind=8), Allocatable :: data(:,:,:)        ! Dimensioned 1:ndim1, 1:2 (real/complex), 1:n_modes_total
     End Type ddarrays
 
 
@@ -106,7 +106,7 @@ Module Linear_Solve
         Integer :: var_start        ! The first dimension starting index of this variable in the RHS array of equation_set(1,equ_ind)
         Integer :: var_end        ! The first dimension ending index
         Integer :: equ_ind        ! The equation responsible for the RHS array this variable is stored in following the solve.
-        real*8, pointer, dimension(:,:,:) :: data    ! The portion of the RHS array of equation_set(1,equ_ind) that holds this variable
+        Real(kind=8), pointer, dimension(:,:,:) :: data    ! The portion of the RHS array of equation_set(1,equ_ind) that holds this variable
         Logical, Allocatable :: in_equation(:,:,:)
         Integer :: max_dorder ! The maximum derivative order calculated for this variable (for linear or nonlinear terms)
         Integer :: dmax    ! The maximum derivative order that needs to be saved for this variable
@@ -171,7 +171,7 @@ Module Linear_Solve
 
     Subroutine Set_Time_Factors(lhs_factor,rhs_factor)
         Implicit None
-        real*8, Intent(In) :: lhs_factor, rhs_factor
+        Real(kind=8), Intent(In) :: lhs_factor, rhs_factor
         lhs_time_factor = lhs_factor
         rhs_time_factor = rhs_factor
     End Subroutine Set_Time_Factors
@@ -401,7 +401,7 @@ Module Linear_Solve
     Subroutine Apply_Boundary_Mask(bcmask)
         Implicit None
         Integer :: j, k, eqind
-        Real*8, Intent(In) :: bcmask(:,:,:,:)
+        Real(kind=8), Intent(In) :: bcmask(:,:,:,:)
 
 
         Do k = 1, n_equations
@@ -499,11 +499,11 @@ Module Linear_Solve
         ! and with the same amplitude.
         Implicit None
         Integer, Intent(In) :: eqind, varind, dorder, mode
-        real*8, Intent(InOut) :: amp(:)
-        real*8 :: time_amp
+        Real(kind=8), Intent(InOut) :: amp(:)
+        Real(kind=8) :: time_amp
         Integer :: rowblock, colblock
         Logical, Intent(In), optional :: static
-        real*8, Pointer, Dimension(:,:) :: mpointer
+        Real(kind=8), Pointer, Dimension(:,:) :: mpointer
         rowblock = equation_set(mode,eqind)%rowblock
         colblock = equation_set(mode,eqind)%colblock(varind)
         mpointer => equation_set(mode,eqind)%mpointer
@@ -541,7 +541,7 @@ Module Linear_Solve
     Subroutine Compute_Implicit_RHS()
         Implicit None
         Integer :: i,j,k,d,nsub, indx, djmax, ii, jj
-        real*8, Pointer, Dimension(:) :: coefs
+        Real(kind=8), Pointer, Dimension(:) :: coefs
 
         nullify(coefs)
         Call point_variables()    ! Point the variable data pointers to the appropriate part of the RHS arrays
@@ -621,7 +621,7 @@ Module Linear_Solve
     Subroutine Set_RHS(eqid,set_to)
         ! Set the RHS of equation eqid to the value of set_to
         Implicit None
-        Real*8, Intent(InOut) :: set_to(:,:,:)
+        Real(kind=8), Intent(InOut) :: set_to(:,:,:)
         Integer, Intent(In) :: eqid
         Integer :: istart,iend, ind
 
@@ -668,7 +668,7 @@ Module Linear_Solve
     Subroutine Get_All_RHS(buffer)
         Implicit None
         ! Copy equation structure RHSs to the buffer (dlink RHSs)
-        Real*8, Intent(InOut) :: buffer(:,:,:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(:,:,:,1:)
         Integer :: i, ind,istart,iend
         If (n_modes .gt. 0) Then
             Do i = 1, n_equations
@@ -690,7 +690,7 @@ Module Linear_Solve
         ! Copy RHS's from the buffer into the equation structure
         ! Buffer RHS's are assumed to be unlinked.
         Implicit None
-        Real*8, Intent(InOut) :: buffer(:,:,:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(:,:,:,1:)
         Integer :: i, ind,istart,iend
 
             Do i = 1, n_equations
@@ -712,8 +712,8 @@ Module Linear_Solve
         ! buffer is assumed to be in unlinked format
         ! Right now this is just an easy way of adding an AB term
         Implicit None
-        Real*8, Intent(InOut) :: buffer(:,:,:,1:)
-        Real*8, Intent(In) :: mfactor
+        Real(kind=8), Intent(InOut) :: buffer(:,:,:,1:)
+        Real(kind=8), Intent(In) :: mfactor
         Integer :: i, ind,istart,iend
 
             Do i = 1, n_equations
@@ -737,10 +737,10 @@ Module Linear_Solve
         ! equation eqid to the array addto.  dfield is assumed to be the derivative of
         ! variable varid
         Implicit None
-        Real*8, Intent(InOut) :: addto(:,:,:,:), dfield(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: addto(:,:,:,:), dfield(:,:,:,:)
         Integer, Intent(In) :: eqid, varid, dorder,dind
         Integer :: i,nsub, indx, ii, jj
-        real*8, Pointer, Dimension(:) :: coefs
+        Real(kind=8), Pointer, Dimension(:) :: coefs
         Integer :: itmp
         nullify(coefs)
         indx = 1
@@ -809,8 +809,8 @@ Module Linear_Solve
         Integer, Intent(In) :: mode, eqind
         Integer :: i, j, nlinks
         Integer :: sig = 314
-        real*8, Pointer, Dimension(:,:) :: mpointer
-        Character*120 :: filename
+        Real(kind=8), Pointer, Dimension(:,:) :: mpointer
+        Character(len=120) :: filename
         filename = 'matrix_dump'
         mpointer => equation_set(mode,eqind)%mpointer
         nlinks = equation_set(mode,eqind)%nlinks
@@ -826,7 +826,7 @@ Module Linear_Solve
     Subroutine print_row(mode,row,eqind)
         Integer, Intent(In) :: mode, row, eqind
         Integer :: rowblock,i
-        real*8, Pointer, Dimension(:,:) :: mpointer
+        Real(kind=8), Pointer, Dimension(:,:) :: mpointer
         mpointer => equation_set(mode,eqind)%mpointer
         rowblock = equation_set(mode,eqind)%rowblock
         Do i = 1, ndim1*3
@@ -837,7 +837,7 @@ Module Linear_Solve
     Subroutine print_column(mode,col,eqind)
         Integer, Intent(In) :: mode, col, eqind
         Integer :: rowblock,i
-        real*8, Pointer, Dimension(:,:) :: mpointer
+        Real(kind=8), Pointer, Dimension(:,:) :: mpointer
         mpointer => equation_set(mode,eqind)%mpointer
         Do i = 1, ndim1*3
             Write(6,*)i, mpointer(i,col)
@@ -849,9 +849,9 @@ Module Linear_Solve
         Implicit None
         Integer, Intent(In) :: mode, row, eqind,varind,dorder
         Integer :: colblock, rowblock
-        real*8, Intent(In) :: amp
-        real*8, Intent(In), Optional :: integral(:)
-        real*8, Pointer, Dimension(:,:) :: mpointer
+        Real(kind=8), Intent(In) :: amp
+        Real(kind=8), Intent(In), Optional :: integral(:)
+        Real(kind=8), Pointer, Dimension(:,:) :: mpointer
         mpointer => equation_set(mode,eqind)%mpointer
         colblock = equation_set(mode,eqind)%colblock(varind)
         rowblock = equation_set(mode,eqind)%rowblock
@@ -873,7 +873,7 @@ Module Linear_Solve
         Implicit None
         Integer, Intent(In) :: eqind, varind, mode, row, dorder
         Integer :: colblock, rowblock
-        real*8, Pointer, Dimension(:,:) :: mpointer
+        Real(kind=8), Pointer, Dimension(:,:) :: mpointer
         mpointer => equation_set(mode,eqind)%mpointer
         colblock = equation_set(mode,eqind)%colblock(varind)
         rowblock = equation_set(mode,eqind)%rowblock
@@ -898,7 +898,7 @@ Module Linear_Solve
 
         Integer :: error, mtype, phase, mxfct, mnum, nrows
         Integer :: msglvl, nrhs
-        Real*8, Allocatable :: faux_rhs(:,:), faux_x(:,:)
+        Real(kind=8), Allocatable :: faux_rhs(:,:), faux_x(:,:)
         self%mtype = 11
         phase  = 33      ! only solve
         msglvl = 0
@@ -1000,7 +1000,7 @@ Module Linear_Solve
 
     ! These last two routines are just wrappers for lapack routines  - possibly unnecessary
     Subroutine LU_Decompose_full(mat, pvt)
-        Real*8, Intent(InOut) :: mat(:,:)
+        Real(kind=8), Intent(InOut) :: mat(:,:)
         Integer, Intent(Inout) :: pvt(:)
         Integer :: n,info
 
@@ -1013,7 +1013,7 @@ Module Linear_Solve
 
 
     Subroutine LU_Decompose_band(mat, pvt)
-      Real*8, Intent(InOut) :: mat(:,:)
+      Real(kind=8), Intent(InOut) :: mat(:,:)
       Integer, Intent(out) :: pvt(:)
       Integer :: n, info,ku,kl,lda
 
@@ -1028,8 +1028,8 @@ Module Linear_Solve
 
     End Subroutine LU_Decompose_band
     Subroutine LU_Solve_Band(mat, rhs, pvt, na, nb)
-          Real*8,intent(in) :: mat(:,:)
-          Real*8,Intent(inout) :: rhs(:,:,:)
+          Real(kind=8),intent(in) :: mat(:,:)
+          Real(kind=8),Intent(inout) :: rhs(:,:,:)
           Integer, Intent(in) :: pvt(:)
           Integer, Optional :: na, nb
           Integer :: ma, mb, lda, ku, kl,info
@@ -1060,8 +1060,8 @@ Module Linear_Solve
     End Subroutine LU_Solve_Band
 
     Subroutine LU_Solve_full(mat, rhs, pvt, na, nb)
-        Real*8,intent(in) :: mat(:,:)
-        Real*8,Intent(inout) :: rhs(:,:,:)
+        Real(kind=8),intent(in) :: mat(:,:)
+        Real(kind=8),Intent(inout) :: rhs(:,:,:)
         Integer, Intent(in) :: pvt(:)
         Integer, Optional :: na, nb
         Integer :: ma, mb, info
@@ -1176,7 +1176,7 @@ Module Linear_Solve
         Integer :: c_offset, s_offset, rindex !column and sparse matrix offset & row index
         Integer :: nlinks, nsub, element_count, n_rows, v_offset
 
-        Real*8, Allocatable :: sparse_mat(:)
+        Real(kind=8), Allocatable :: sparse_mat(:)
         Integer, Allocatable :: ia(:), ja(:)
 
         If (equation_set(mind,eind)%solvefor) Then
@@ -1340,7 +1340,7 @@ Module Linear_Solve
 
     Subroutine Band_Load_Single(j,k,n_upper)
           !Equation_set(j,k)%LHS  j is equation, k is mode
-          Real*8, Allocatable :: band_matrix(:,:), temp_rows(:,:)
+          Real(kind=8), Allocatable :: band_matrix(:,:), temp_rows(:,:)
           Integer :: r, i, row_diag, rput, N_Rows,j,k
           Integer :: istart, iend, n_upper, n_lower,nlinks,rind
           nlinks = equation_set(j,k)%nlinks
@@ -1398,7 +1398,7 @@ Module Linear_Solve
         Integer, Intent(In) :: rind,row, col, dorder
         Integer :: n, offleft, offright, r
         Integer :: hh, ind, nsub
-        real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+        Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
 
         nsub = cpgrid%domain_count
 
@@ -1443,8 +1443,8 @@ Module Linear_Solve
         Implicit None
         Integer, Intent(In) :: row, col, dorder
         Integer :: r, n, off1,npoly, hh, i, nsub
-        real*8, Intent(In) :: amp(:)
-        real*8, Pointer, Dimension(:,:), Intent(In) :: mpointer
+        Real(kind=8), Intent(In) :: amp(:)
+        Real(kind=8), Pointer, Dimension(:,:), Intent(In) :: mpointer
 
         r    = 1
         off1 = 0
@@ -1468,8 +1468,8 @@ Module Linear_Solve
         Implicit None
         Integer, Intent(In) :: r,row, col, dorder
         Integer :: n, off1, local_index, domain, nsub,hh,rupper
-        real*8, Intent(In) :: amp
-        real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+        Real(kind=8), Intent(In) :: amp
+        Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
         Logical, Intent(In), Optional :: clear_row, boundary
         Logical :: bjunk
         If (present(clear_row)) Then

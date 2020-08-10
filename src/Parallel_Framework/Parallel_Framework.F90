@@ -39,7 +39,7 @@ Module Parallel_Framework
     Integer, Parameter, Public :: Cartesian = 1, Cylindrical = 2, Spherical = 3
     Integer, Parameter, Public :: p1 =1 ,s1 = 2, p2 = 3,s2a =4, p3a=5,p3b=6
     Public :: Load_Config, Full_Barrier, Main_MPI_Init
-    Character*6 :: ifmt = '(i4.4)' ! Integer format for indicating processor tag numbers in output
+    Character(len=6) :: ifmt = '(i4.4)' ! Integer format for indicating processor tag numbers in output
     Type, Public :: Parallel_Interface
         Type(Load_Config) :: my_1p, my_2p, my_3p    !  like my_r, my_theta in ASH
         Type(Load_Config) :: my_1s, my_2s, my_3s    !     like my_mp, my_n etc.
@@ -77,13 +77,13 @@ Module Parallel_Framework
     End Type Parallel_Interface
 
     Type, Public :: mcontainer
-        Complex*16, Allocatable :: data(:,:,:)
+        Complex(kind=16), Allocatable :: data(:,:,:)
     End Type mcontainer
     !Type, Public :: rmcontainer
-    !    Real*8, Allocatable :: data(:,:)
+    !    Real(kind=8), Allocatable :: data(:,:)
     !End Type rmcontainer
     Type, Public :: eqcontainer
-        Real*8, Allocatable :: data(:,:,:)
+        Real(kind=8), Allocatable :: data(:,:,:)
     End Type eqcontainer
 
 
@@ -122,7 +122,7 @@ Contains
         Integer, Intent(In) :: ncpus(1:)
         Integer :: pcheck, error
         Integer :: ierr
-        Character*6 :: istr
+        Character(len=6) :: istr
         Logical, Intent(In) :: init_only
         Class(Parallel_Interface) :: self
         self%geometry = pars(1)

@@ -32,7 +32,7 @@ Contains
 
     Subroutine Compute_Angular_Momentum_Balance(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
 
         Call Compute_Angular_Momentum(buffer)
         Call Compute_Angular_Momentum_Sources(buffer)
@@ -42,7 +42,7 @@ Contains
 
     Subroutine Compute_Angular_Momentum(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
 
         If (compute_quantity(amom_z)) Then
@@ -144,7 +144,7 @@ Contains
 
     Subroutine Compute_Angular_Momentum_Sources(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
 
     End Subroutine Compute_Angular_Momentum_Sources
@@ -153,7 +153,7 @@ Contains
 
     Subroutine Compute_Angular_Momentum_Fluxes(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
 
 

@@ -29,9 +29,9 @@ Contains
 
     Subroutine Compute_Misc_Diagnostics(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8 :: mypi, amp
+        Real(kind=8) :: mypi, amp
         !////////////////////////////////////////////////////////
         ! Diagnostics for verifying output is working
         If (compute_quantity(diagnostic1)) Then

@@ -2,17 +2,17 @@ Module Chebyshev_Polynomials
 	! Module for computing Chebyshev Polynomial Arrays and the associated Derivative Arrays
 	Implicit None
 	Integer, Private :: N_max, N_even, N_odd, n_x, cp_nthreads
-	Real*8, Allocatable, Private :: x(:)  ! The colocation points
-	Real*8, Allocatable :: cheby(:,:)		! cheby(r,k) is chebyshev polynomial of degree k-1 at radius r
-	Real*8, Allocatable :: cheby_even(:,:), cheby_odd(:,:) ! even and odd chebyshev arrays
+	Real(kind=8), Allocatable, Private :: x(:)  ! The colocation points
+	Real(kind=8), Allocatable :: cheby(:,:)		! cheby(r,k) is chebyshev polynomial of degree k-1 at radius r
+	Real(kind=8), Allocatable :: cheby_even(:,:), cheby_odd(:,:) ! even and odd chebyshev arrays
 
-	Real*8, Allocatable :: dcheby(:,:,:)	! The Chebyshev Derivative Arrays
-	Real*8, private ::	Pi  = 3.1415926535897932384626433832795028841972d+0
-	Real*8, private :: pi_over_N
+	Real(kind=8), Allocatable :: dcheby(:,:,:)	! The Chebyshev Derivative Arrays
+	Real(kind=8), private ::	Pi  = 3.1415926535897932384626433832795028841972d+0
+	Real(kind=8), private :: pi_over_N
 	Logical :: DeAlias = .true.
 	Logical :: Parity = .true.
 	Logical :: initialized = .false.
-	Real*8, Private :: scaling ! x runs from -0.5 to 0.5 by default
+	Real(kind=8), Private :: scaling ! x runs from -0.5 to 0.5 by default
 	Interface Cheby_To_Spectral
 		Module Procedure To_Spectral_1D, To_Spectral_2D, To_Spectral_3D, To_Spectral_4D !2
 	End Interface
@@ -42,14 +42,14 @@ Contains
     Subroutine To_Spectral_4D2(c_in,f_out)
         Implicit None
         Include 'fftw3.f'
-		Real*8, Intent(In) :: c_in(:,:,:,:)
-		Real*8, Intent(InOut) :: f_out(:,:,:,:)
-		Integer*8 :: fresh_plan
+		Real(kind=8), Intent(In) :: c_in(:,:,:,:)
+		Real(kind=8), Intent(InOut) :: f_out(:,:,:,:)
+		Integer(kind=8) :: fresh_plan
 		Integer :: n, howmany
 		Integer :: inembed, istride, idist
 		Integer :: onembed, ostride, odist
 		Integer :: xshape(4)
-        Real*8 :: over_2n
+        Real(kind=8) :: over_2n
 
 
 		! X will typically be deallocated and reallocated (unfortunately)
@@ -83,9 +83,9 @@ Contains
     Subroutine From_Spectral_4D2(c_in,f_out)
         Implicit None
         Include 'fftw3.f'
-		Real*8, Intent(In) :: c_in(:,:,:,:)
-		Real*8, Intent(InOut) :: f_out(:,:,:,:)
-		Integer*8 :: fresh_plan
+		Real(kind=8), Intent(In) :: c_in(:,:,:,:)
+		Real(kind=8), Intent(InOut) :: f_out(:,:,:,:)
+		Integer(kind=8) :: fresh_plan
 		Integer :: n, howmany
 		Integer :: inembed, istride, idist
 		Integer :: onembed, ostride, odist
@@ -120,10 +120,10 @@ Contains
 
 	Subroutine Initialize_Chebyshev(grid, xmin,xmax, integration_weights,nthread)
 		Implicit None
-		Real*8, Intent(InOut) :: grid(:)
-		Real*8, Intent(In), Optional :: xmin, xmax
-		Real*8 ::delta, gmin, tmp, xx
-        Real*8, Intent(InOut) :: integration_weights(1:)
+		Real(kind=8), Intent(InOut) :: grid(:)
+		Real(kind=8), Intent(In), Optional :: xmin, xmax
+		Real(kind=8) ::delta, gmin, tmp, xx
+        Real(kind=8), Intent(InOut) :: integration_weights(1:)
         Integer :: r
 		Integer, Intent(In) :: nthread
 		If (.not. initialized) Then
@@ -164,7 +164,7 @@ Contains
 
 	Subroutine Rescale_Grid_CP(length_scale)
 		Implicit None
-		Real*8, Intent(In) :: length_scale
+		Real(kind=8), Intent(In) :: length_scale
 		! Following initialization, we can rescale the chebyshev arrays if we choose
 		! This is useful when nondimensionalizing after the reference state has been set up
 		! (which typically requires a radial grid to have been established)
@@ -178,7 +178,7 @@ Contains
 	Subroutine Gen_Colocation_Points()
 		Implicit None
 		Integer :: i
-		Real*8 :: arg
+		Real(kind=8) :: arg
 		Allocate(x(1:N_max))
 		pi_over_N = pi/(N_max*1.0d0)
 		arg = (0.5d0)*pi_over_N
@@ -191,7 +191,7 @@ Contains
 	Subroutine Gen_Tn()
 		Implicit None
 		Integer :: i, k, r
-		Real*8 :: acx, arg
+		Real(kind=8) :: acx, arg
 		Allocate(cheby(1:N_max,1:N_max))
 		Do r = 1, N_max
 			acx = pi_over_n*(r-1+0.5d0)
@@ -229,7 +229,7 @@ Contains
 		Implicit None
 		Integer, Intent(In) :: dmax
 		Integer :: i, k,n,d 
-		Real*8, Allocatable :: alpha(:,:)
+		Real(kind=8), Allocatable :: alpha(:,:)
 
 		! sum_n (alpha_kn  c_n) = c'_k
 		Allocate(alpha(1:N_max,1:N_max))
@@ -260,10 +260,10 @@ Contains
 
 	Subroutine To_Spectral_1D(f_in,c_out)
 		Implicit None
-		Real*8, Intent(In) :: f_in(:)
-		Real*8, Intent(InOut) :: c_out(:)
-		Real*8 :: alpha, beta
-		Real*8, Allocatable :: f_even(:), f_odd(:), c_temp(:)
+		Real(kind=8), Intent(In) :: f_in(:)
+		Real(kind=8), Intent(InOut) :: c_out(:)
+		Real(kind=8) :: alpha, beta
+		Real(kind=8), Allocatable :: f_even(:), f_odd(:), c_temp(:)
 		Integer :: i
 		alpha = 2.0d0/n_max
 		beta = 0.0d0
@@ -297,10 +297,10 @@ Contains
 
 	Subroutine To_Spectral_2D(f_in,c_out)
 		Implicit None
-		Real*8, Intent(In) :: f_in(:,:)
-		Real*8, Intent(InOut) :: c_out(:,:)
-		Real*8 :: alpha, beta
-		Real*8, Allocatable :: f_even(:,:), f_odd(:,:), c_temp(:,:)
+		Real(kind=8), Intent(In) :: f_in(:,:)
+		Real(kind=8), Intent(InOut) :: c_out(:,:)
+		Real(kind=8) :: alpha, beta
+		Real(kind=8), Allocatable :: f_even(:,:), f_odd(:,:), c_temp(:,:)
 		Integer :: i, j, n2, dims(2)
 		alpha = 2.0d0/n_max
 		beta = 0.0d0
@@ -342,10 +342,10 @@ Contains
 	Subroutine To_Spectral_3D(f_in,c_out)
 		Implicit None
 		! Play a sneaky trick on dgemm and see if it sticks without complaining
-		Real*8, Intent(In) :: f_in(:,:,:)
-		Real*8, Intent(InOut) :: c_out(:,:,:)
-		Real*8 :: alpha, beta
-		Real*8, Allocatable :: f_even(:,:,:), f_odd(:,:,:), c_temp(:,:,:)
+		Real(kind=8), Intent(In) :: f_in(:,:,:)
+		Real(kind=8), Intent(InOut) :: c_out(:,:,:)
+		Real(kind=8) :: alpha, beta
+		Real(kind=8), Allocatable :: f_even(:,:,:), f_odd(:,:,:), c_temp(:,:,:)
 		Integer :: i, j, k, n2, n3, dims(3)
 		alpha = 2.0d0/n_max
 		beta = 0.0d0
@@ -394,10 +394,10 @@ Contains
 	Subroutine To_Spectral_4D(f_in,c_out)
 		Implicit None
 		! Play a sneaky trick on dgemm and see if it sticks without complaining
-		Real*8, Intent(In) :: f_in(:,:,:,:)
-		Real*8, Intent(InOut) :: c_out(:,:,:,:)
-		Real*8 :: alpha, beta
-		Real*8, Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
+		Real(kind=8), Intent(In) :: f_in(:,:,:,:)
+		Real(kind=8), Intent(InOut) :: c_out(:,:,:,:)
+		Real(kind=8) :: alpha, beta
+		Real(kind=8), Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
 		Integer :: i, j, k, kk, n2, n3, n4, dims(4)
 		alpha = 2.0d0/n_max
 		beta = 0.0d0
@@ -452,10 +452,10 @@ Contains
 
 	Subroutine From_Spectral_1D(c_in,f_out)
 		Implicit None
-		Real*8, Intent(In) :: c_in(:)
-		Real*8, Intent(InOut) :: f_out(:)
-		Real*8, Allocatable :: c_temp(:), f_temp(:)
-		Real*8 :: alpha, beta
+		Real(kind=8), Intent(In) :: c_in(:)
+		Real(kind=8), Intent(InOut) :: f_out(:)
+		Real(kind=8), Allocatable :: c_temp(:), f_temp(:)
+		Real(kind=8) :: alpha, beta
 		Integer :: i
 		alpha = 1.0d0
 		beta = 0.0d0
@@ -499,10 +499,10 @@ Contains
 
 	Subroutine From_Spectral_2D(c_in,f_out)
 		Implicit None
-		Real*8, Intent(In) :: c_in(:,:)
-		Real*8, Intent(InOut) :: f_out(:,:)
-		Real*8, Allocatable :: c_temp(:,:), f_temp(:,:)
-		Real*8 :: alpha, beta
+		Real(kind=8), Intent(In) :: c_in(:,:)
+		Real(kind=8), Intent(InOut) :: f_out(:,:)
+		Real(kind=8), Allocatable :: c_temp(:,:), f_temp(:,:)
+		Real(kind=8) :: alpha, beta
 		Integer :: i, j, n2, dims(2)
 		alpha = 1.0d0
 		beta = 0.0d0
@@ -561,10 +561,10 @@ Contains
 
 	Subroutine From_Spectral_3D(c_in,f_out)
 		Implicit None
-		Real*8, Intent(In) :: c_in(:,:,:)
-		Real*8, Intent(InOut) :: f_out(:,:,:)
-		Real*8, Allocatable :: c_temp(:,:,:), f_temp(:,:,:)
-		Real*8 :: alpha, beta
+		Real(kind=8), Intent(In) :: c_in(:,:,:)
+		Real(kind=8), Intent(InOut) :: f_out(:,:,:)
+		Real(kind=8), Allocatable :: c_temp(:,:,:), f_temp(:,:,:)
+		Real(kind=8) :: alpha, beta
 		Integer :: i, j, k, n2, n3, dims(3)
 		alpha = 1.0d0
 		beta = 0.0d0
@@ -638,10 +638,10 @@ Contains
 
 	Subroutine From_Spectral_4D(c_in,f_out)
 		Implicit None
-		Real*8, Intent(In) :: c_in(:,:,:,:)
-		Real*8, Intent(InOut) :: f_out(:,:,:,:)
-		Real*8, Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
-		Real*8 :: alpha, beta
+		Real(kind=8), Intent(In) :: c_in(:,:,:,:)
+		Real(kind=8), Intent(InOut) :: f_out(:,:,:,:)
+		Real(kind=8), Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
+		Real(kind=8) :: alpha, beta
 		Integer :: i, j, k, kk, n2, n3, n4, dims(4)
 		alpha = 1.0d0
 		beta = 0.0d0
@@ -730,9 +730,9 @@ Contains
         Use Omp_lib
 #endif
 		Implicit None
-		Real*8,  Intent(InOut) :: buffer(0:,1:,1:,1:)	! Makes it easier to reconcile with my IDL code
+		Real(kind=8),  Intent(InOut) :: buffer(0:,1:,1:,1:)	! Makes it easier to reconcile with my IDL code
 		Integer, Intent(In)    :: ind, dind, dorder
-		Real*8, Allocatable :: dbuffer(:,:,:)
+		Real(kind=8), Allocatable :: dbuffer(:,:,:)
 		Integer :: dims(4), n,n2,n3, i,j,k, order
 		Integer :: kstart, kend, nthr,trank
 		dims = shape(buffer)
@@ -804,8 +804,8 @@ Contains
 	! Implicit.F row-loading routines  -- this should maybe be moved out later, but OK for now
 	!Subroutine Load_Interior_Rows(row,col,amp,dorder,mpointer)
 	!	Integer, Intent(In) :: row, col, dorder ! ,rr,rp,n,np
-	!	real*8, Intent(In) :: amp(:)
-	!	real*8, Pointer, Dimension(:,:), Intent(In) :: mpointer
+	!	Real(kind=8), Intent(In) :: amp(:)
+	!	Real(kind=8), Pointer, Dimension(:,:), Intent(In) :: mpointer
 	!	
 	!			Call Load_Interior_RowsFD(row,col,amp,dorder,mpointer)
 	!
@@ -814,9 +814,9 @@ Contains
 	!End Subroutine Load_Interior_Rows
 	!Subroutine Load_Single_Row(r,row,col,amp,dorder,mpointer, clear_row, amp_arr, boundary)
 	!	Integer, Intent(In) :: r,row, col, dorder ! ,rr,rp,n,np
-	!	real*8, Intent(In) :: amp
-	!	real*8, Intent(In), Optional :: amp_arr(:)	! lets us load every column of the row
-	!	real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+	!	Real(kind=8), Intent(In) :: amp
+	!	Real(kind=8), Intent(In), Optional :: amp_arr(:)	! lets us load every column of the row
+	!	Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
 	!	Logical, Intent(In), Optional :: clear_row, boundary
 
 	
@@ -828,8 +828,8 @@ Contains
 	Subroutine Load_Interior_Rows_Cheby(row,col,amp,dorder,mpointer)
 		Integer, Intent(In) :: row, col, dorder 
 		Integer :: r, n
-		real*8, Intent(In) :: amp(:)
-		real*8, Pointer, Dimension(:,:), Intent(In) :: mpointer
+		Real(kind=8), Intent(In) :: amp(:)
+		Real(kind=8), Pointer, Dimension(:,:), Intent(In) :: mpointer
 		Do r = 1, N_max
 			Do n = 1, N_max
 				mpointer(row+r,col+n) = mpointer(row+r,col+n)+amp(r)*dcheby(r,n,dorder)
@@ -841,8 +841,8 @@ Contains
 	Subroutine Load_Single_Row_Cheby(r,row,col,amp,dorder,mpointer, clear_row, boundary)
 		Integer, Intent(In) :: r,row, col, dorder
 		Integer :: n
-		real*8, Intent(In) :: amp
-		real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+		Real(kind=8), Intent(In) :: amp
+		Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
 		Logical, Intent(In), Optional :: clear_row, boundary
 		Logical :: bjunk
 		If (present(clear_row)) Then
@@ -865,8 +865,8 @@ Contains
 	Subroutine Load_Interior_Rows_FECheby(nglobal,row,col,amp,dorder,mpointer)
 		Integer, Intent(In) :: row, col, dorder, nglobal
 		Integer :: r, n, off1,rmod
-		real*8, Intent(In) :: amp(:)
-		real*8, Pointer, Dimension(:,:), Intent(In) :: mpointer
+		Real(kind=8), Intent(In) :: amp(:)
+		Real(kind=8), Pointer, Dimension(:,:), Intent(In) :: mpointer
 		Do r = 1, Nglobal       ! Nglobal is like n_r
             off1 = N_max*((r-1)/N_max)
             rmod = MOD(r-1,N_max)+1
@@ -879,8 +879,8 @@ Contains
 	Subroutine Load_Single_Row_FECheby(r,row,col,amp,dorder,mpointer, clear_row, boundary)
 		Integer, Intent(In) :: r,row, col, dorder
 		Integer :: n, off1, rmod
-		real*8, Intent(In) :: amp
-		real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+		Real(kind=8), Intent(In) :: amp
+		Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
 		Logical, Intent(In), Optional :: clear_row, boundary
 		Logical :: bjunk
 		If (present(clear_row)) Then
@@ -902,7 +902,7 @@ Contains
 	Subroutine Cheby_Continuity(nglobal,rind,row,col,dorder,mpointer) !, clear_row, boundary)
 		Integer, Intent(In) :: rind,row, col, dorder, nglobal
 		Integer :: n, off1, off2, r, rstart,rmod, extra
-		real*8, Pointer, Dimension(:,:), Intent(InOut) :: mpointer
+		Real(kind=8), Pointer, Dimension(:,:), Intent(InOut) :: mpointer
 
 
 
@@ -934,10 +934,10 @@ Contains
 		Implicit None
         ! Parity is assumed to be true for NOW
         ! This may be inefficient, but I just want it to work first.  Will optimize later
-		Real*8, Intent(In) :: c_in(:,:,:,:)
-		Real*8, Intent(InOut) :: f_out(:,:,:,:)
-		Real*8, Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
-		Real*8 :: alpha, beta
+		Real(kind=8), Intent(In) :: c_in(:,:,:,:)
+		Real(kind=8), Intent(InOut) :: f_out(:,:,:,:)
+		Real(kind=8), Allocatable :: c_temp(:,:,:,:), f_temp(:,:,:,:)
+		Real(kind=8) :: alpha, beta
 		Integer :: i, j, k, kk, n2, n3, n4, dims(4),nsub,nglobal, hoff, hh
         Integer :: istart, iend
 		alpha = 1.0d0
@@ -1038,10 +1038,10 @@ Contains
 	Subroutine To_SpectralFE_4D(f_in,c_out)
 		Implicit None
 
-		Real*8, Intent(In) :: f_in(:,:,:,:)
-		Real*8, Intent(InOut) :: c_out(:,:,:,:)
-		Real*8 :: alpha, beta
-		Real*8, Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
+		Real(kind=8), Intent(In) :: f_in(:,:,:,:)
+		Real(kind=8), Intent(InOut) :: c_out(:,:,:,:)
+		Real(kind=8) :: alpha, beta
+		Real(kind=8), Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
 		Integer :: i, j, k, kk, n2, n3, n4, dims(4),nsub,nglobal, hoff, hh
         Integer :: istart, iend
 
@@ -1105,9 +1105,9 @@ Contains
         Use Omp_lib
 #endif
 		Implicit None
-		Real*8,  Intent(InOut) :: buffer(0:,1:,1:,1:)	! Makes it easier to reconcile with my IDL code
+		Real(kind=8),  Intent(InOut) :: buffer(0:,1:,1:,1:)	! Makes it easier to reconcile with my IDL code
 		Integer, Intent(In)    :: ind, dind, dorder
-		Real*8, Allocatable :: dbuffer(:,:,:)
+		Real(kind=8), Allocatable :: dbuffer(:,:,:)
 		Integer :: dims(4), n,n2,n3, i,j,k, order
 		Integer :: kstart, kend, nthr,trank
         Integer :: nglobal, nsub, hoff, hh

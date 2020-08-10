@@ -14,11 +14,11 @@ Contains
 
     Subroutine Compute_Axial_Field(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8  :: vort_r, vort_theta
-        Real*8  :: tantheta(1:n_theta)
-        Real*8, Allocatable  :: tmp2(:,:,:), tmp3(:,:,:)
+        Real(kind=8)  :: vort_r, vort_theta
+        Real(kind=8)  :: tantheta(1:n_theta)
+        Real(kind=8), Allocatable  :: tmp2(:,:,:), tmp3(:,:,:)
         tantheta(:) = 1.0d0/cottheta(:)
         Allocate(tmp2(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
         Allocate(tmp3(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))

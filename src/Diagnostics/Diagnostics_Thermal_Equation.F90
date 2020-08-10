@@ -27,7 +27,7 @@ Module Diagnostics_Thermal_Equation
 Contains
     Subroutine Compute_Thermal_Equation_Terms(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
         Call Compute_Thermal_Advective_Terms(buffer)
         Call Compute_Thermal_Diffusion_Terms(buffer)
@@ -47,8 +47,8 @@ Contains
 
     Subroutine Compute_Thermal_Diffusion_Terms(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Allocatable :: rhot(:), rhotk(:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Allocatable :: rhot(:), rhotk(:)
         Integer :: r,k, t
 
         Allocate(rhot(1:N_R), rhotk(1:N_R))
@@ -311,9 +311,9 @@ Contains
 
     Subroutine Compute_Thermal_Advective_Terms(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Allocatable :: rhot(:)
-        Real*8 :: dt_by_ds, dt_by_dp
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Allocatable :: rhot(:)
+        Real(kind=8) :: dt_by_ds, dt_by_dp
         Integer :: r,k, t
 
         Allocate(rhot(1:N_R))
@@ -767,8 +767,8 @@ Contains
 
     Subroutine Compute_Ohmic_Heating_Diag(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: dt_by_ds, dt_by_dp
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8) :: dt_by_ds, dt_by_dp
         Integer :: r,k, t
         ! The "Diag" in the name refers to "diagnostics," and not "diagonal"
 
@@ -830,9 +830,9 @@ Contains
 
     Subroutine Viscous_Heating_Diagnostics(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: t,r,k
-        Real*8 :: tmp, tmp2
+        Real(kind=8) :: tmp, tmp2
         ! Computes the viscous heating term that appears in the
         ! thermal energy equation
 
@@ -898,10 +898,10 @@ Contains
 
     Subroutine Compute_Thermal_HeatSource(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Allocatable :: rhot(:)
-        Real*8 :: mean_rho, mean_t, mean_r2, mean_q, mean_dr
-        Real*8 :: qadd, fpr2dr
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Allocatable :: rhot(:)
+        Real(kind=8) :: mean_rho, mean_t, mean_r2, mean_q, mean_dr
+        Real(kind=8) :: qadd, fpr2dr
         Integer :: r,k, t
         ! Volume Heating
         If (compute_quantity(vol_heating)) Then

@@ -25,27 +25,27 @@ Module Legendre_Polynomials
     ! their colocation points, and their associated integration weights.
     ! The polynomials computed are actually the renormalized associated legendre polynomials -
     !  - meaning that they carry the spherical harmonic normalization.
-    Real*16, Allocatable :: coloc(:), gl_weights(:)
+    Real(kind=16), Allocatable :: coloc(:), gl_weights(:)
     Integer :: n_theta
     Integer :: l_max, n_m
     Integer :: m_mod = 1    ! Only calculate p_lms for every m_mod'th m
     Integer, Allocatable :: m_values(:),n_l(:),n_l_even(:),n_l_odd(:)
     Logical :: parity = .true.
-    Real*16 ::    PiQuad  = 3.1415926535897932384626433832795028841972q+0
+    Real(kind=16) ::    PiQuad  = 3.1415926535897932384626433832795028841972q+0
     Type, Public :: even_odd_sep
-        Real*8, Allocatable :: even(:)
-        Real*8, Allocatable :: odd(:)
+        Real(kind=8), Allocatable :: even(:)
+        Real(kind=8), Allocatable :: odd(:)
     End Type even_odd_sep
     Type, Public :: even_odd_sepi
         Integer, Allocatable :: even(:)
         Integer, Allocatable :: odd(:)
     End Type even_odd_sepi
     Type, Public :: p_lm_array
-        Real*8, Allocatable :: data(:,:)
+        Real(kind=8), Allocatable :: data(:,:)
     End Type p_lm_array
 
     Type, Public :: p_lm_array_quad
-        Real*16, Allocatable :: data(:,:)
+        Real(kind=16), Allocatable :: data(:,:)
     End Type p_lm_array_quad
 
     Type(p_lm_array_quad), Allocatable :: p_lmq(:)
@@ -123,7 +123,7 @@ End Subroutine DeAllocate_Parity_Plms
 
 Subroutine Initialize_Legendre(nt,lmax,mval,parity_in)
     Implicit None
-    Real*16 :: coloc_min,coloc_max
+    Real(kind=16) :: coloc_min,coloc_max
     Logical, Intent(In) :: parity_in
     Integer, Intent(in) :: nt,lmax, mval(:)
 
@@ -149,7 +149,7 @@ Subroutine Compute_Plms()
     ! We feed this a list of m_values (presumably distributed across processors)
     ! And also l_max.  This is sufficient to initialize the legendre polynomials
     Implicit None
-    Real*16 ::  x,tmp,factorial_ratio,amp, renorm
+    Real(kind=16) ::  x,tmp,factorial_ratio,amp, renorm
     Integer :: i, m, l, mv, ntmax
 
     n_m = size(m_values)
@@ -262,8 +262,8 @@ Subroutine Parity_Resort(m)
     Implicit None
     Integer, Intent(In) :: m
     Integer :: l, indeven, indodd,partest, i
-    Real*16 :: renorm, tmp
-    Real*16 :: PTS_normalization, STP_normalization
+    Real(kind=16) :: renorm, tmp
+    Real(kind=16) :: PTS_normalization, STP_normalization
     ! Resort the p_lms into even and odd arrays
 
         ! We wrap a normalization factor, related to the FFT
@@ -338,14 +338,14 @@ Subroutine Find_Colocation(x1,x2,abscissas, weights, order_n)
     ! Variables have been renamed for clarity
     ! Legendre polynomial calculation is accomplished in a separate subroutine
     !    to help with readability.
-    Real*16, Intent(Out) :: abscissas(1:), weights(1:)
-    Real*16, Intent(In) :: x1,x2
+    Real(kind=16), Intent(Out) :: abscissas(1:), weights(1:)
+    Real(kind=16), Intent(In) :: x1,x2
     Integer, Intent(In) :: order_n
-    Real*16 :: pn, ith_root,deriv_pn, new_guess
-    Real*16 :: midpoint, scaling
+    Real(kind=16) :: pn, ith_root,deriv_pn, new_guess
+    Real(kind=16) :: midpoint, scaling
     Integer :: i, n_roots
     Logical :: converged
-    Real*16  :: eps, del
+    Real(kind=16)  :: eps, del
     midpoint = 0.5q0*(x1+x2)
     scaling  = 0.5q0*(x2-x1)
     n_roots  = (order_n+1)/2    ! Roots are symmetric - exploit symmetry
@@ -377,11 +377,11 @@ Subroutine nth_legendre(x,n,pn,deriv_pn)
     ! Calculates the value of the nth legendre polynomial at location x
     ! Returns x, p_n(x) and d_by_dx (p_n(x))
     Implicit None
-    Real*16, Intent(Out) :: pn, deriv_pn
-    Real*16, Intent(In) :: x
+    Real(kind=16), Intent(Out) :: pn, deriv_pn
+    Real(kind=16), Intent(In) :: x
     Integer, Intent(In) :: n
     Integer :: j
-    Real*16 :: pn_minus1, pn_minus2
+    Real(kind=16) :: pn_minus1, pn_minus2
     pn = 1.0q0    !p0
     pn_minus1 = 0.0q0
     ! Use recursion relation to build p_order_n(x)
@@ -407,7 +407,7 @@ End Subroutine factorial
 Subroutine compute_factorial_ratio(m,ratio)
         ! build sqrt( (2m-1)!!(2m-1)!!/(2m)!! ) stably
         Integer, Intent(In) :: m
-        Real*16, Intent(Out) :: ratio
+        Real(kind=16), Intent(Out) :: ratio
         Integer :: i
         ratio = 1.0q0
         Do    i = 1, m

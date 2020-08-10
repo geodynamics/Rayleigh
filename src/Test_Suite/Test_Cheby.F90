@@ -22,7 +22,7 @@ Module Test_Cheby
     Use ProblemSize
 
     Implicit None
-    Real*8, Allocatable :: colocx(:)
+    Real(kind=8), Allocatable :: colocx(:)
 Contains
 
     Subroutine Test_Chebyshev_Transforms()
@@ -42,8 +42,8 @@ Contains
     End Subroutine Test_Chebyshev_Transforms
 
     Subroutine Test_Transform_1d
-        Real*8 :: rdiff
-        Real*8, Allocatable :: f(:), c(:),fcheck(:)
+        Real(kind=8) :: rdiff
+        Real(kind=8), Allocatable :: f(:), c(:),fcheck(:)
 
 
         Allocate(f(1:N_R))
@@ -81,9 +81,9 @@ Contains
 
     Subroutine Reldiff1d(f_good,f_check,rdiff)
         Implicit None
-        Real*8, Intent(In) :: f_good(:), f_check(:)
-        Real*8, Intent(InOut) :: rdiff
-        Real*8 :: test, eps
+        Real(kind=8), Intent(In) :: f_good(:), f_check(:)
+        Real(kind=8), Intent(InOut) :: rdiff
+        Real(kind=8) :: test, eps
         Integer :: i, n
         rdiff = 0.0d0
         n = size(f_good)
@@ -98,9 +98,9 @@ Contains
 
     Subroutine Reldiff2d(f_good,f_check,rdiff)
         Implicit None
-        Real*8, Intent(In) :: f_good(:,:), f_check(:,:)
-        Real*8, Intent(InOut) :: rdiff
-        Real*8 :: test, eps
+        Real(kind=8), Intent(In) :: f_good(:,:), f_check(:,:)
+        Real(kind=8), Intent(InOut) :: rdiff
+        Real(kind=8) :: test, eps
         Integer :: i, j, n, nn, dims(2)
         rdiff = 0.0d0
         dims = shape(f_good)
@@ -119,8 +119,8 @@ Contains
 
     Subroutine Test_Transform_2d
         Integer :: i,  n2
-        Real*8 :: rdiff
-        Real*8, Allocatable :: f(:,:), c(:,:),fcheck(:,:)
+        Real(kind=8) :: rdiff
+        Real(kind=8), Allocatable :: f(:,:), c(:,:),fcheck(:,:)
 
 
         n2 = 3
@@ -161,8 +161,8 @@ Contains
 
     Subroutine Test_Transform_3d
         Integer :: i, j, n2, n3
-        Real*8 :: rdiff
-        Real*8, Allocatable :: f(:,:,:), c(:,:,:),fcheck(:,:,:)
+        Real(kind=8) :: rdiff
+        Real(kind=8), Allocatable :: f(:,:,:), c(:,:,:),fcheck(:,:,:)
 
         n2 = 3
         n3 = 3
@@ -202,9 +202,9 @@ Contains
 
     Subroutine Reldiff3d(f_good,f_check,rdiff)
         Implicit None
-        Real*8, Intent(In) :: f_good(:,:,:), f_check(:,:,:)
-        Real*8, Intent(InOut) :: rdiff
-        Real*8 :: test, eps
+        Real(kind=8), Intent(In) :: f_good(:,:,:), f_check(:,:,:)
+        Real(kind=8), Intent(InOut) :: rdiff
+        Real(kind=8) :: test, eps
         Integer :: i, j, k, n, nn, nnn, dims(3)
         rdiff = 0.0d0
         dims = shape(f_good)
@@ -225,8 +225,8 @@ Contains
 
     Subroutine Test_Transform_4d
         Integer :: i, j, n2, n3,n4
-        Real*8 :: rdiff
-        Real*8, Allocatable :: f(:,:,:,:), c(:,:,:,:),fcheck(:,:,:,:)
+        Real(kind=8) :: rdiff
+        Real(kind=8), Allocatable :: f(:,:,:,:), c(:,:,:,:),fcheck(:,:,:,:)
 
         n2 = 3
         n3 = 3
@@ -271,9 +271,9 @@ Contains
 
     Subroutine Reldiff4d(f_good,f_check,rdiff)
         Implicit None
-        Real*8, Intent(In) :: f_good(:,:,:,:), f_check(:,:,:,:)
-        Real*8, Intent(InOut) :: rdiff
-        Real*8 :: test, eps
+        Real(kind=8), Intent(In) :: f_good(:,:,:,:), f_check(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: rdiff
+        Real(kind=8) :: test, eps
         Integer :: i, j, k, kk, n, nn, nnn, nnnn, dims(4)
         rdiff = 0.0d0
         dims = shape(f_good)
@@ -300,9 +300,9 @@ Contains
         ! We test that functionality here
         Implicit None
         Integer :: i, j, k, kk, n2, n3,n4,nn, dorder,ind,d
-        Real*8 :: rdiff
-        Real*8, Allocatable :: f(:,:,:,:), c(:,:,:,:),ans(:,:,:,:)
-        Real*8 :: worst, worsta
+        Real(kind=8) :: rdiff
+        Real(kind=8), Allocatable :: f(:,:,:,:), c(:,:,:,:),ans(:,:,:,:)
+        Real(kind=8) :: worst, worsta
         n2 = 2
         n3 = 2
         n4 = 4
@@ -387,12 +387,12 @@ Contains
     End Subroutine Test_Derivatives
     Subroutine Reldiff3d2(f_good,f_check,rdiff,ii,worst, worsta)
         Implicit None
-        Real*8, Intent(In) :: f_good(:,:,:), f_check(:,:,:)
-        Real*8, Intent(InOut) :: rdiff
-        Real*8 :: test, eps
+        Real(kind=8), Intent(In) :: f_good(:,:,:), f_check(:,:,:)
+        Real(kind=8), Intent(InOut) :: rdiff
+        Real(kind=8) :: test, eps
         Integer :: i, j, k, n, nn, nnn, dims(3)
         Integer, Intent(Out) :: ii
-        Real*8, Intent(Out) :: worst, worsta
+        Real(kind=8), Intent(Out) :: worst, worsta
         rdiff = 0.0d0
         dims = shape(f_good)
         n = dims(1)

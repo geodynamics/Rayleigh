@@ -26,7 +26,7 @@ Module Diagnostics_Linear_Forces
 Contains
 
     Subroutine Compute_Linear_Forces(buffer)
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Call Compute_Buoyancy_Force(buffer)
         Call Compute_Coriolis_Force(buffer)
         Call Compute_Viscous_Force(buffer)
@@ -35,7 +35,7 @@ Contains
 
     Subroutine Compute_Buoyancy_Force(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
         ! Buoyancy forces as they contribute to the ell .ne. 0 components of the momentum equation
 
@@ -101,9 +101,9 @@ Contains
 
     Subroutine Compute_Coriolis_Force(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8 :: coriolis_term
+        Real(kind=8) :: coriolis_term
         coriolis_term = ref%Coriolis_Coeff
 
         If(compute_quantity(Coriolis_Force_r)) Then
@@ -186,10 +186,10 @@ Contains
 
     Subroutine Compute_Viscous_Force(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8 :: mypi, amp,del2u, estress
-        Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
+        Real(kind=8) :: mypi, amp,del2u, estress
+        Real(kind=8), Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
         Allocate(ovstheta(1:N_theta), ovs2theta(1:N_theta)) ! 1/sin; 1/sin^2
         ovstheta = 1.0d0/sintheta
@@ -554,8 +554,8 @@ Contains
 
 Subroutine Compute_Pressure_Force(buffer)
     Implicit None
-    Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-    Real*8  :: pfactor(my_r%min:my_r%max)
+    Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+    Real(kind=8)  :: pfactor(my_r%min:my_r%max)
     Integer :: r,k, t
     ! This routine essentially just compute the pressure gradient, but
     ! scaled by the reference pressure term.  This is typically either 1

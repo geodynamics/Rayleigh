@@ -45,10 +45,10 @@ Module ProblemSize
     Integer              :: m_max, n_m
     Logical              :: dealias = .True.
     Integer, Allocatable :: m_values(:)
-    Real*8, Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
-    Real*8, Allocatable  :: costheta(:), sintheta(:), cos2theta(:), sin2theta(:), cottheta(:), csctheta(:)
-    Real*8, Allocatable  :: phivals(:), cosphi(:), sinphi(:)
-    Real*8               :: delta_phi
+    Real(kind=8), Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
+    Real(kind=8), Allocatable  :: costheta(:), sintheta(:), cos2theta(:), sin2theta(:), cottheta(:), csctheta(:)
+    Real(kind=8), Allocatable  :: phivals(:), cosphi(:), sinphi(:)
+    Real(kind=8)               :: delta_phi
     Integer              :: k
     Type(Load_Config)    :: my_mp,  my_theta
 
@@ -56,13 +56,13 @@ Module ProblemSize
     !  Radial Grid Variables
     Integer             :: n_r, tnr
     Integer             :: grid_type = 1
-    Real*8              :: rmin = -1.0d0, rmax = -1.0d0, r_inner, r_outer
-    Real*8              :: aspect_ratio = -1.0d0
-    Real*8              :: shell_depth = -1.0d0
-    Real*8              :: shell_volume
-    Real*8, Allocatable :: Radius(:), R_squared(:), One_Over_R(:)
-    Real*8, Allocatable :: Two_Over_R(:), OneOverRSquared(:), Delta_R(:)
-    Real*8, Allocatable :: radial_integral_weights(:)
+    Real(kind=8)              :: rmin = -1.0d0, rmax = -1.0d0, r_inner, r_outer
+    Real(kind=8)              :: aspect_ratio = -1.0d0
+    Real(kind=8)              :: shell_depth = -1.0d0
+    Real(kind=8)              :: shell_volume
+    Real(kind=8), Allocatable :: Radius(:), R_squared(:), One_Over_R(:)
+    Real(kind=8), Allocatable :: Two_Over_R(:), OneOverRSquared(:), Delta_R(:)
+    Real(kind=8), Allocatable :: radial_integral_weights(:)
     Integer :: precise_bounds = -1
     Type(Load_Config)   :: my_r
 
@@ -74,7 +74,7 @@ Module ProblemSize
     Integer :: dealias_by(1:nsubmax) = -1
     Integer :: ndomains = 1
     Integer :: n_uniform_domains =1
-    Real*8  :: domain_bounds(1:nsubmax+1)=-1.0d0
+    Real(kind=8)  :: domain_bounds(1:nsubmax+1)=-1.0d0
     Logical :: uniform_bounds = .false.
     Type(Cheby_Grid), Target :: gridcp
 
@@ -120,7 +120,7 @@ Contains
     Subroutine Write_Grid()
         Implicit None
         Integer :: r
-        Character*120 :: grid_file
+        Character(len=120) :: grid_file
         If (my_rank .eq. 0) Then
             grid_file = Trim(my_path)//'grid'
             Open(101, file = grid_file, status='replace', form = 'unformatted')
@@ -180,8 +180,8 @@ Contains
         Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu, factor_diff
         Integer, Allocatable :: factor_type(:), suitable_factors(:,:,:)
         Logical, Allocatable :: factor_balanced(:), have_pair(:,:)
-        Real*8 :: ncpu_sqrt,r, rval, min_ratio, rdiff, rtol
-        Real*8, Allocatable :: ratio_measure(:,:)
+        Real(kind=8) :: ncpu_sqrt,r, rval, min_ratio, rdiff, rtol
+        Real(kind=8), Allocatable :: ratio_measure(:,:)
         Logical :: fewer_npcol, hbal, rbal, need_pair
         ncpu_sqrt = sqrt(dble(ncpu))
         npairs = n_l/2   ! Number of high-m, low-m pairs
@@ -316,7 +316,7 @@ Contains
     Subroutine Establish_Grid_Parameters()
         Implicit None
         Integer :: cheby_count, bounds_count, i,r
-        Real*8 :: rdelta
+        Real(kind=8) :: rdelta
         !Initialize everything related to grid resolution and domain bounds.
 
         If ((aspect_ratio .gt. 0.0d0) .and. (shell_depth .gt. 0.0d0) ) Then
@@ -434,7 +434,7 @@ Contains
         Implicit None
         Integer :: tmp, l
         Integer, Allocatable :: m_vals(:)
-        Real*8 :: ell
+        Real(kind=8) :: ell
         !//////////////////////////////////////////////////
         ! Intialize Legendre Transforms & Horizontal Grid
         Allocate(m_values(1:n_m))
@@ -521,9 +521,9 @@ Contains
     Subroutine Report_Grid_Parameters()
         Implicit None
         Integer :: i
-        Character*6 :: istr
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
+        Character(len=6) :: istr
+        Character(len=12) :: dstring
+        Character(len=8) :: dofmt = '(ES12.5)'
 
         Call Halt_On_Error()  ! Halt the program if errors were found in the consistency check
         If (my_rank .eq. 0) Then
@@ -601,9 +601,9 @@ Contains
     Subroutine Halt_On_Error()
 
         Integer :: esize, i,j,tmp, ecode
-        Character*6 :: istr, istr2
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
+        Character(len=6) :: istr, istr2
+        Character(len=12) :: dstring
+        Character(len=8) :: dofmt = '(ES12.5)'
         If (maxval(perr) .gt. 0) Then
             ecode = maxval(perr)
             If (my_rank .eq. 0) Then

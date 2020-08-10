@@ -27,9 +27,9 @@ Module Diagnostics_Inertial_Forces
 Contains
     Subroutine Compute_Inertial_Terms(buffer)
         Implicit None
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8, Allocatable :: cbuffer(:,:,:,:)
+        Real(kind=8), Allocatable :: cbuffer(:,:,:,:)
 
 
 

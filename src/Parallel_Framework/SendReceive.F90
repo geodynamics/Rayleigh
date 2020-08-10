@@ -38,7 +38,7 @@ Module SendReceive
 Contains
 
     Subroutine D_Send_5D(x, n_elements, dest, tag, grp, indstart)
-    Real*8, Intent(in)  :: x(1:,1:,1:,1:,1:)
+    Real(kind=8), Intent(in)  :: x(1:,1:,1:,1:,1:)
 
     Integer, Optional :: dest, n_elements, tag,indstart(1:5)
      Integer :: istart, kstart, jstart,lstart, mstart
@@ -89,7 +89,7 @@ Contains
 
 
     Subroutine D_Send_4D(x, n_elements, dest, tag, grp, indstart)
-    Real*8, Intent(in)  :: x(:,:,:,:)
+    Real(kind=8), Intent(in)  :: x(:,:,:,:)
 
     Integer, Optional :: dest, n_elements, tag,indstart(1:4)
      Integer :: istart, kstart, jstart,lstart
@@ -136,7 +136,7 @@ Contains
     End Subroutine D_Send_4D
 
     Subroutine D_Send_3D(x, n_elements, dest, tag, grp, indstart)
-    Real*8, Intent(in)  :: x(1:,1:,1:)
+    Real(kind=8), Intent(in)  :: x(1:,1:,1:)
 
     Integer, Optional :: dest, n_elements, tag,indstart(1:3)
      Integer ::  istart, kstart, jstart
@@ -181,7 +181,7 @@ Contains
     End Subroutine D_Send_3D
 
     Subroutine D_Send_2D(x, n_elements, dest, tag, grp, indstart)
-    Real*8, Intent(in)  :: x(:,:)
+    Real(kind=8), Intent(in)  :: x(:,:)
 
     Integer, Optional :: dest, n_elements, tag,indstart(1:2)
      Integer :: istart, jstart
@@ -224,7 +224,7 @@ Contains
     End Subroutine D_Send_2D
 
     Subroutine D_Send_1D(x, n_elements, dest, tag, grp, indstart)
-    Real*8, Intent(in)  :: x(:)
+    Real(kind=8), Intent(in)  :: x(:)
 
     Integer, Optional :: dest, n_elements, tag,indstart(1)
      Integer :: istart
@@ -351,7 +351,7 @@ Contains
 
 
     Subroutine D_Receive_5D(x, n_elements, source, tag, grp,indstart)
-        Real*8, Intent(out)  :: x(1:,1:,1:,1:,1:)
+        Real(kind=8), Intent(out)  :: x(1:,1:,1:,1:,1:)
 
     Integer, Optional :: source, n_elements, tag,indstart(1:5)
      Integer :: istart,jstart,kstart,lstart, mstart
@@ -405,7 +405,7 @@ Contains
 
 
     Subroutine D_Receive_4D(x, n_elements, source, tag, grp,indstart)
-        Real*8, Intent(out)  :: x(:,:,:,:)
+        Real(kind=8), Intent(out)  :: x(:,:,:,:)
 
     Integer, Optional :: source, n_elements, tag,indstart(1:4)
      Integer :: istart,jstart,kstart,lstart
@@ -455,7 +455,7 @@ Contains
     End Subroutine D_Receive_4D
 
     Subroutine D_Receive_3D(x, n_elements, source, tag, grp,indstart)
-        Real*8, Intent(out)  :: x(1:,1:,1:)
+        Real(kind=8), Intent(out)  :: x(1:,1:,1:)
 
     Integer, Optional :: source, n_elements, tag,indstart(1:3)
      Integer :: istart,jstart,kstart
@@ -503,7 +503,7 @@ Contains
     End Subroutine D_Receive_3D
 
     Subroutine D_Receive_2D(x, n_elements, source, tag, grp,indstart)
-        Real*8, Intent(out)  :: x(:,:)
+        Real(kind=8), Intent(out)  :: x(:,:)
 
     Integer, Optional :: source, n_elements, tag,indstart(1:2)
      Integer :: istart,jstart
@@ -549,7 +549,7 @@ Contains
     End Subroutine D_Receive_2D
 
     Subroutine D_Receive_1D(x, n_elements, source, tag, grp,indstart)
-        Real*8, Intent(out)  :: x(:)
+        Real(kind=8), Intent(out)  :: x(:)
 
     Integer, Optional :: source, n_elements, tag,indstart(1)
      Integer :: istart

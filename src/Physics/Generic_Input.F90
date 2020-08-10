@@ -54,7 +54,7 @@ contains
     integer, allocatable, dimension(:) :: ls, ms, ns
     integer, allocatable, dimension(:) :: proc_lmn_count, col_lmn_count, col_lmn_ind1, col_coeffs_ind1, sendarri
     integer, allocatable, dimension(:,:) :: my_lmn_inds, lmn_inds, sendarri2
-    real*8, allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
+    Real(kind=8), allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
 
     ! set up some sizes of mpi types
     call MPI_TYPE_GET_EXTENT(MPI_DOUBLE_PRECISION, lb, real_size, ierr)

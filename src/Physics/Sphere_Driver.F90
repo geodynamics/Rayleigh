@@ -36,14 +36,14 @@ Module Sphere_Driver
     USE IFPORT
 #endif
     Implicit None
-    Real*8 :: killsig
+    Real(kind=8) :: killsig
     
 Contains
 
     Subroutine Initialize_TimeStepping(iter)
         Implicit None
         Integer, Intent(In) :: iter
-        Real*8 :: dr, tdiff
+        Real(kind=8) :: dr, tdiff
 
         dr = radius(1)-radius(2)  ! assume uniform grid for now
         tdiff = dr*dr                  ! Viscous diffusion time across one grid point
@@ -73,12 +73,12 @@ Contains
         Implicit None
         Integer ::  last_iteration, first_iteration,i,iret, sigflag
         Integer :: io=15, ierr
-        Real*8  :: captured_time, max_time_seconds
+        Real(kind=8)  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
-        Character*14 :: tmstr
-        Character*120 :: dtstr, wtmstr, istr
+        Character(len=14) :: tmstr
+        Character(len=120) :: dtstr, wtmstr, istr
         Character(len=*), parameter ::   fmtstr = '(F14.4)'
-        Character*256 :: checkpoint_input_file
+        Character(len=256) :: checkpoint_input_file
 
         ! Register handle_sig as the signal-handling 
         ! function for SIGTERM (15) signals.

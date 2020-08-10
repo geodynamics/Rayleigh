@@ -77,8 +77,8 @@ Contains
     !                        the alltoallv operation
     !////////////////////////////////////////////////////////////////////////////////////
     Subroutine Z_Transpose_v_1D(send_buf, recv_buf, send_count, send_displ, recv_count, recv_displ, grp)
-        Complex*16, Intent(In)  :: send_buf(:)
-        Complex*16, Intent(Out) :: recv_buf(:)
+        Complex(kind=16), Intent(In)  :: send_buf(:)
+        Complex(kind=16), Intent(Out) :: recv_buf(:)
 
         Integer, Intent(in) :: send_count(:), send_displ(:)
         Integer, Intent(in) :: recv_count(:), recv_displ(:)
@@ -111,8 +111,8 @@ Contains
     !////////////////////////////////////////////////////////////////////////////////////
 
     Subroutine D_Transpose_v_1D(send_buf, recv_buf, send_count, send_displ, recv_count, recv_displ, grp)
-        Real*8, Intent(In)  :: send_buf(:)
-        Real*8, Intent(Out) :: recv_buf(:)
+        Real(kind=8), Intent(In)  :: send_buf(:)
+        Real(kind=8), Intent(Out) :: recv_buf(:)
 
         Integer, Intent(in) :: send_count(:), send_displ(:)
         Integer, Intent(in) :: recv_count(:), recv_displ(:)
@@ -146,8 +146,8 @@ Contains
     !                        the alltoallv operation
     !////////////////////////////////////////////////////////////////////////////////////
     Subroutine D_Transpose_choose_1D(send_buf, recv_buf, send_count, send_displ, recv_count, recv_displ, grp, normal)
-        Real*8, Intent(In)  :: send_buf(:)
-        Real*8, Intent(Out) :: recv_buf(:)
+        Real(kind=8), Intent(In)  :: send_buf(:)
+        Real(kind=8), Intent(Out) :: recv_buf(:)
         Integer, Intent(in) :: send_count(:), send_displ(:)
         Integer, Intent(in) :: recv_count(:), recv_displ(:)
         Type(communicator), Intent(in) :: grp

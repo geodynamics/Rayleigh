@@ -60,9 +60,9 @@ Contains
         ! ip4D: In-place transform of 4D array
         ! fftw: FFTW
         ! rsc:  carries out rescaling (for use when dropping into spectral space)
-        Real*8, Intent(InOut) :: x(:,:,:,:)
-        Integer*8, Intent(In), Optional :: plan
-        Integer*8 :: fresh_plan
+        Real(kind=8), Intent(InOut) :: x(:,:,:,:)
+        Integer(kind=8), Intent(In), Optional :: plan
+        Integer(kind=8) :: fresh_plan
         Integer :: n, howmany
         Integer :: inembed, istride, idist
         Integer :: onembed, ostride, odist
@@ -103,9 +103,9 @@ Contains
         ! r2c: Real to Complex (forward transform)
         ! ip4D: In-place transform of 4D array
         ! fftw : FFTW
-        Real*8, Intent(InOut) :: x(:,:,:,:)
-        Integer*8, Intent(In), Optional :: plan
-        Integer*8 :: fresh_plan
+        Real(kind=8), Intent(InOut) :: x(:,:,:,:)
+        Integer(kind=8), Intent(In), Optional :: plan
+        Integer(kind=8) :: fresh_plan
         Integer :: n, howmany
         Integer :: inembed, istride, idist
         Integer :: onembed, ostride, odist
@@ -145,10 +145,10 @@ Contains
         ! r2c: Complex to Real (inverse transform)
         ! ip4D: In-place transform of 4D array
         ! fftw : FFTW
-        Real*8, Intent(InOut) :: x(:,:,:,:)
+        Real(kind=8), Intent(InOut) :: x(:,:,:,:)
         Logical, Intent(In), optional :: rsc
-        Integer*8, Intent(In), Optional :: plan
-        Integer*8 :: fresh_plan
+        Integer(kind=8), Intent(In), Optional :: plan
+        Integer(kind=8) :: fresh_plan
         Integer :: n, howmany
         Integer :: inembed, istride, idist
         Integer :: onembed, ostride, odist

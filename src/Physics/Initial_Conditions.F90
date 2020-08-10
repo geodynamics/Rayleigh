@@ -47,24 +47,24 @@ Module Initial_Conditions
     Integer :: magnetic_init_type = 1
     Integer :: init_tag = 8989
     Integer :: restart_iter = 0
-    Real*8 :: temp_amp = 1.0d0, temp_w = 0.3d0, mag_amp = 1.0d0
+    Real(kind=8) :: temp_amp = 1.0d0, temp_w = 0.3d0, mag_amp = 1.0d0
     Logical :: conductive_profile = .false.
     Logical :: rescale_velocity = .false.
     Logical :: rescale_bfield = .false.
     Logical :: rescale_pressure = .false.
     Logical :: rescale_tvar = .false.
     Logical :: rescale_entropy = .false.
-    Real*8  :: velocity_scale = 1.0d0
-    Real*8  :: bfield_scale = 1.0d0
-    Real*8  :: tvar_scale = 1.0d0
-    Real*8  :: pressure_scale = 1.0d0
-    Real*8  :: mdelta = 0.0d0  ! mantle convection benchmark delta
-    Character*120 :: t_init_file = '__nothing__'
-    Character*120 :: w_init_file = '__nothing__'
-    Character*120 :: p_init_file = '__nothing__'
-    Character*120 :: z_init_file = '__nothing__'
-    Character*120 :: c_init_file = '__nothing__'
-    Character*120 :: a_init_file = '__nothing__'
+    Real(kind=8)  :: velocity_scale = 1.0d0
+    Real(kind=8)  :: bfield_scale = 1.0d0
+    Real(kind=8)  :: tvar_scale = 1.0d0
+    Real(kind=8)  :: pressure_scale = 1.0d0
+    Real(kind=8)  :: mdelta = 0.0d0  ! mantle convection benchmark delta
+    Character(len=120) :: t_init_file = '__nothing__'
+    Character(len=120) :: w_init_file = '__nothing__'
+    Character(len=120) :: p_init_file = '__nothing__'
+    Character(len=120) :: z_init_file = '__nothing__'
+    Character(len=120) :: c_init_file = '__nothing__'
+    Character(len=120) :: a_init_file = '__nothing__'
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
             & magnetic_init_type,alt_check, mag_amp, conductive_profile, rescale_velocity, &
@@ -213,8 +213,8 @@ Contains
         type(SphericalBuffer) :: tempfield
         Integer :: fcount(3,2), rpars(1:2),prod
         Integer :: this_ell, lm
-        Character*14 :: scstr
-        Character*8 ::  scfmt ='(ES10.4)'
+        Character(len=14) :: scstr
+        Character(len=8) ::  scfmt ='(ES10.4)'
         !rpars(1) = 1 if hydro variables are to be read (0 otherwise)
         !rpars(2) = 1 if magnetic variables are to be read (0 otherwise)
         rpars(1:2) = 0
@@ -323,10 +323,10 @@ Contains
         Integer :: ncombinations, i, m, r, seed(1), mp,n, l, ind1, ind2
         Integer :: mode_count, my_mode_start, my_mode_end, fcount(3,2)
         Integer, Intent(In) :: field_ind
-        Real*8, Intent(In) :: rand_amp
-        Real*8, Intent(In), Optional :: rprofile(my_r%min:), ell0_profile(1:)
-        Real*8, Allocatable :: rand(:,:), rfunc(:), lpow(:)
-        Real*8 :: amp, phase, lmid, alpha,x
+        Real(kind=8), Intent(In) :: rand_amp
+        Real(kind=8), Intent(In), Optional :: rprofile(my_r%min:), ell0_profile(1:)
+        Real(kind=8), Allocatable :: rand(:,:), rfunc(:), lpow(:)
+        Real(kind=8) :: amp, phase, lmid, alpha,x
 
         type(SphericalBuffer), Intent(InOut) :: infield
         type(SphericalBuffer) :: tempfield
@@ -458,8 +458,8 @@ Contains
 
     Subroutine Random_Init_Mag()
         Implicit None
-        Real*8 :: ampa, ampc, dr_fiducial
-        Real*8, Allocatable :: zero_profile(:)
+        Real(kind=8) :: ampa, ampc, dr_fiducial
+        Real(kind=8), Allocatable :: zero_profile(:)
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: a_and_c
         fcount(:,:) = 2
@@ -488,8 +488,8 @@ Contains
     Subroutine Random_Thermal_Init()
         ! Generates random initial thermal perturbations
         Implicit None
-        Real*8 :: amp
-        Real*8, Allocatable :: profile0(:)
+        Real(kind=8) :: amp
+        Real(kind=8), Allocatable :: profile0(:)
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: sbuffer
         fcount(:,:) = 1
@@ -595,8 +595,8 @@ Contains
     !  Initializes the Toroidal Stream Function (Z)
     Subroutine Diffusion_Init_Hydro()
         Implicit None
-        Real*8, Allocatable :: rfunc(:)
-        Real*8 :: x
+        Real(kind=8), Allocatable :: rfunc(:)
+        Real(kind=8) :: x
         Integer :: r, l, m, mp
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
@@ -649,8 +649,8 @@ Contains
     !  Benchmark Initialization Routines
     Subroutine Benchmark_Init_Hydro()
         Implicit None
-        Real*8, Allocatable :: rfunc1(:), rfunc2(:)
-        Real*8 :: x
+        Real(kind=8), Allocatable :: rfunc1(:), rfunc2(:)
+        Real(kind=8) :: x
         Integer :: r, l, m, mp
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
@@ -708,12 +708,12 @@ Contains
 
     Subroutine ABenchmark_Init_Hydro()
         Implicit None
-        Real*8, Allocatable :: rfunc1(:), rfunc2(:)
-        Real*8 :: norm
+        Real(kind=8), Allocatable :: rfunc1(:), rfunc2(:)
+        Real(kind=8) :: norm
         Integer :: r, l, m, mp
         Integer :: fcount(3,2)
-        Real*8 :: d, beta, denom, zeta_0, c0, c1, n_rho, bm_n,ee, delta_s
-        Real*8, Allocatable :: zeta(:)
+        Real(kind=8) :: d, beta, denom, zeta_0, c0, c1, n_rho, bm_n,ee, delta_s
+        Real(kind=8), Allocatable :: zeta(:)
         type(SphericalBuffer) :: tempfield
         fcount(:,:) = 1
 
@@ -806,8 +806,8 @@ Contains
     ! Geosci. Model Dev., 7 2065-2076
     Subroutine Mantle_Benchmark_Init()
         Implicit None
-        Real*8, Allocatable :: rfunc1(:), rfunc2(:)
-        Real*8 :: x
+        Real(kind=8), Allocatable :: rfunc1(:), rfunc2(:)
+        Real(kind=8) :: x
         Integer :: r, l, m, mp
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
@@ -931,8 +931,8 @@ Contains
     !  Magnetic Initialization
     Subroutine Benchmark_Insulating_Init()
         Implicit None
-        Real*8, Allocatable :: rfunc1(:), rfunc2(:)
-        Real*8 :: nrm1, nrm2
+        Real(kind=8), Allocatable :: rfunc1(:), rfunc2(:)
+        Real(kind=8) :: nrm1, nrm2
         Integer :: r, l, m, mp, roff
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
@@ -997,11 +997,11 @@ Contains
 
     Subroutine Load_Radial_Profile(profile_file,profile_out)
         Implicit None
-        Character*120, Intent(In) :: profile_file
-        Real*8, Intent(InOut) :: profile_out(1:)
-        Real*8, Allocatable :: radius_in(:), profile_in(:), spy2(:)
-        Real*8 :: min_r_in, max_r_in, min_p_in, max_p_in
-        Real*8 :: splx, sply
+        Character(len=120), Intent(In) :: profile_file
+        Real(kind=8), Intent(InOut) :: profile_out(1:)
+        Real(kind=8), Allocatable :: radius_in(:), profile_in(:), spy2(:)
+        Real(kind=8) :: min_r_in, max_r_in, min_p_in, max_p_in
+        Real(kind=8) :: splx, sply
         Integer :: nr_in, r
         ! Reads in a 1-D radial profile of some quantity,
         ! interpolates it (using cubic splines) to the current grid,
@@ -1052,9 +1052,9 @@ Contains
     Subroutine Calculate_Conductive_Profile
         Implicit None
         Integer :: i, r, old_code
-        Real*8 :: amp, grav_r_ref, dr, vhint, qadd2, ftest
-        Real*8 :: lum_top, lum_bottom, sfactor, diff, r2dr, qadd, dsdr_mean
-        Real*8, Allocatable :: tmp1d(:), tmp1d2(:), tmp1d3(:)
+        Real(kind=8) :: amp, grav_r_ref, dr, vhint, qadd2, ftest
+        Real(kind=8) :: lum_top, lum_bottom, sfactor, diff, r2dr, qadd, dsdr_mean
+        Real(kind=8), Allocatable :: tmp1d(:), tmp1d2(:), tmp1d3(:)
         Allocate(tmp1d(1:N_R),tmp1d2(1:N_R))
         tmp1d(:) =0.0d0
         tmp1d2(:) = 0.0d0

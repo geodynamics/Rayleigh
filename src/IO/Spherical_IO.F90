@@ -85,7 +85,7 @@ Module Spherical_IO
         Integer :: my_nlevels  ! Number of nonzero elements of levels that are in process
 
         Integer :: file_unit = 15
-        Character*120 :: file_prefix = 'None'
+        Character(len=120) :: file_prefix = 'None'
 
         Integer, Allocatable :: oqvals(:)   ! Array of size nq used by I/O process to record output ordering of diagnostics
 
@@ -123,18 +123,18 @@ Module Spherical_IO
         INTEGER :: cache_size = 1
         INTEGER :: cc = 0  ! cache counter
         INTEGER, ALLOCATABLE :: iter_save(:)
-        REAL*8 , ALLOCATABLE :: time_save(:)
+        Real(kind=8) , ALLOCATABLE :: time_save(:)
 
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Legacy variables
         Integer :: nphi_global, nr_global, ntheta_global
         Integer, Allocatable :: phi_global(:), theta_global(:), r_global(:)
-        Real*8, Allocatable :: r_values(:), theta_values(:), phi_values(:)
+        Real(kind=8), Allocatable :: r_values(:), theta_values(:), phi_values(:)
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ! Variables for subsampling the IO buffer
         Integer, Allocatable :: r_inds(:), theta_inds(:), phi_inds(:)
         Integer :: nr, ntheta, nphi, nell
-        Real*8, Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
+        Real(kind=8), Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
 
         !Communicatory Info for parallel writing (if used)
         Integer :: ocomm, orank, onp
@@ -210,17 +210,17 @@ Module Spherical_IO
     Integer :: point_probe_frequency = reallybig
     Integer :: full3d_frequency= reallybig
 
-    Character*120 :: local_file_path=''
+    Character(len=120) :: local_file_path=''
     Logical :: mem_friendly = .false.
 
-    REAL*8 ::   shellslice_levels_nrm(1:nshellmax) = -3.0d0
-    REAL*8 :: shellspectra_levels_nrm(1:nshellmax) = -3.0d0
-    REAL*8 ::     sph_mode_levels_nrm(1:nshellmax) = -3.0d0
-    REAL*8 ::  meridional_indices_nrm(1:nmeridmax) = -3.0d0
+    Real(kind=8) ::   shellslice_levels_nrm(1:nshellmax) = -3.0d0
+    Real(kind=8) :: shellspectra_levels_nrm(1:nshellmax) = -3.0d0
+    Real(kind=8) ::     sph_mode_levels_nrm(1:nshellmax) = -3.0d0
+    Real(kind=8) ::  meridional_indices_nrm(1:nmeridmax) = -3.0d0
 
-    REAL*8 ::     point_probe_r_nrm(1:nprobemax)  = -3.0d0
-    REAL*8 :: point_probe_theta_nrm(1:nprobemax)  = -3.0d0
-    REAL*8 ::   point_probe_phi_nrm(1:nprobemax)  = -3.0d0
+    Real(kind=8) ::     point_probe_r_nrm(1:nprobemax)  = -3.0d0
+    Real(kind=8) :: point_probe_theta_nrm(1:nprobemax)  = -3.0d0
+    Real(kind=8) ::   point_probe_phi_nrm(1:nprobemax)  = -3.0d0
     Integer :: point_probe_cache_size = 1, globalavg_cache_size =1, shellavg_cache_size=1
 
     !/////////////////////////////////////////////////////////////////////
@@ -231,8 +231,8 @@ Module Spherical_IO
     Integer :: temp_io_frequency = reallybig, temp_io_nrec = -1 , temp_io_cache_size=1
     Integer :: temp_io_values(1:nqmax)=-1, temp_io_ell(1:nmodemax)=-1
     Integer :: temp_io_r(1:nprobemax) = -1, temp_io_theta(1:nprobemax) = -1, temp_io_phi(1:nprobemax) = -1
-    Real*8 ::  temp_io_r_nrm(1:nprobemax)  = -3.0d0, temp_io_theta_nrm(1:nprobemax)  = -3.0d0
-    Real*8 ::  temp_io_phi_nrm(1:nprobemax)  = -3.0d0
+    Real(kind=8) ::  temp_io_r_nrm(1:nprobemax)  = -3.0d0, temp_io_theta_nrm(1:nprobemax)  = -3.0d0
+    Real(kind=8) ::  temp_io_phi_nrm(1:nprobemax)  = -3.0d0
 
     Namelist /output_namelist/ mem_friendly, &
         ! All output types require that a minimal set of information is specified 
@@ -261,36 +261,36 @@ Module Spherical_IO
         temp_io_ell, temp_io_r, temp_io_theta, temp_io_phi, temp_io_r_nrm, &
         temp_io_theta_nrm, temp_io_phi_nrm
     Integer :: integer_zero = 0
-    Real*8, Private, Allocatable :: qty(:,:,:)
-    Character*8, Public :: i_ofmt = '(i8.8)'
+    Real(kind=8), Private, Allocatable :: qty(:,:,:)
+    Character(len=8), Public :: i_ofmt = '(i8.8)'
 
     Integer, Private :: current_iteration
     !///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ! We store some redundant information just to keep the IO level as independent of the Physics level as possible
     ! These variables are all private.
-    Real*8, Allocatable,Private :: theta_integration_weights(:), r_integration_weights(:)
+    Real(kind=8), Allocatable,Private :: theta_integration_weights(:), r_integration_weights(:)
     Integer, Private :: my_theta_min, my_theta_max, my_rmin, my_rmax, my_mp_max, my_mp_min
     Integer, Private :: nr, nphi, ntheta, my_ntheta
     Integer, Private :: myid,  my_row_rank, my_column_rank, my_nr
-    Real*8, Allocatable, Private :: radius(:),sintheta(:),costheta(:) 
-    Real*8 :: over_nphi_double
+    Real(kind=8), Allocatable, Private :: radius(:),sintheta(:),costheta(:) 
+    Real(kind=8) :: over_nphi_double
 
     !////////////////////////////////////////////////////////////
     ! And here are some variables used for storing averages so that moments may be taken
     ! These two arrays contain the ell0 and m0 representation of all quantities
     !   computed in shell- and (eventually) azimuthal- averaging.
     ! These two averages are used to compute moments
-    Real*8, Private, Allocatable :: IOell0_values(:,:), IOm0_values(:,:,:), tmp_qty(:,:,:)
+    Real(kind=8), Private, Allocatable :: IOell0_values(:,:), IOm0_values(:,:,:), tmp_qty(:,:,:)
     Integer, Private :: num_avg_store ! number of averages to store in the two IO arrays above
     Integer, Private :: IOavg_flag = -1
 Contains
 
     Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
         Implicit None
-        Real*8,        Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
-        Character*120, Intent(In) :: file_path
-        Character*8,   Intent(In) :: digfmt
-        Character*120 :: fdir
+        Real(kind=8),        Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
+        Character(len=120), Intent(In) :: file_path
+        Character(len=8),   Intent(In) :: digfmt
+        Character(len=120) :: fdir
         Integer       :: wmode, gpars(1:5,1:5)
 
         ! Set File Info
@@ -540,7 +540,7 @@ Contains
 
     Subroutine Add_Quantity(qty)
         Implicit None
-        Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:) 
+        Real(kind=8), Intent(In) :: qty(1:,my_rmin:,my_theta_min:) 
         Integer :: i, m ,t ,r , p
         If (IOavg_flag .eq. 1) Then
             !On first pass, store the azimuthal average of shell_avg qtys
@@ -636,7 +636,7 @@ Contains
     Subroutine Complete_Output(iter, sim_time)
         Implicit None
         Integer, Intent(In) :: iter
-        Real*8, Intent(In) :: sim_time
+        Real(kind=8), Intent(In) :: sim_time
         Integer :: i 
 
         ! All data is stored.  Now, output (spherical_3D already written)
@@ -652,10 +652,10 @@ Contains
 
     Subroutine Write_Full_3D(qty)
         Implicit None        
-        Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
+        Real(kind=8), Intent(In) :: qty(:,my_rmin:,my_theta_min:)
         Integer :: i, funit
-        Character*4 :: qstring
-        Character*120 :: iterstring, data_file, grid_file
+        Character(len=4) :: qstring
+        Character(len=120) :: iterstring, data_file, grid_file
 
         ! Write the data file (Parallel I/O)
         Write(iterstring,i_ofmt) current_iteration
@@ -711,7 +711,7 @@ Contains
     Subroutine Store_Values(self,qty,no_advance)
         Implicit None
         Class(DiagnosticInfo) :: self
-        REAL*8, INTENT(IN) :: qty(:,my_rmin:,my_theta_min:)
+        Real(kind=8), INTENT(IN) :: qty(:,my_rmin:,my_theta_min:)
         Logical, Intent(In), Optional  :: no_advance 
 
         Call self%buffer%cache_data(qty)
@@ -723,7 +723,7 @@ Contains
     Subroutine Write_to_Disk(self,this_iter,simtime)
         USE RA_MPI_BASE
         Implicit None
-        Real*8, Intent(in) :: simtime
+        Real(kind=8), Intent(in) :: simtime
         Integer, Intent(in) :: this_iter
         Class(DiagnosticInfo) :: self
         INTEGER(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_pdisp, new_disp, qdisp, full_disp, tdisp
@@ -792,7 +792,7 @@ Contains
 
     Subroutine Add_DHeader(self,invals,n)
         Class(DiagnosticInfo) :: self
-        Real*8, Intent(In) :: invals(1:)
+        Real(kind=8), Intent(In) :: invals(1:)
         Integer, Intent(In) :: n
         self%nrbuffer = self%nrbuffer+1
         self%nheader = self%nheader+1
@@ -813,7 +813,7 @@ Contains
         Integer :: i,ind, nmom
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
         Integer, Intent(In), Optional :: cache_size, write_mode
-        Character*120, Intent(In) :: dir
+        Character(len=120), Intent(In) :: dir
         Integer, Optional, Intent(In) :: moments
         Integer, Optional, Intent(In) :: values(1:)
         Integer, Optional, Intent(In) :: levels(1:)
@@ -822,15 +822,15 @@ Contains
         Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:), lvals(1:)
 
         !Averaging variables
-        Real*8, Intent(In), Optional :: tweights(1:)
+        Real(kind=8), Intent(In), Optional :: tweights(1:)
         Logical, Intent(In), Optional :: is_spectral, full_cache
         Logical, Intent(In), Optional :: nobuffer, average_in_phi, average_in_theta, average_in_radius
-        !Real*8, Allocatable th_weights(:)
+        !Real(kind=8), Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, lcount, modcheck, nmax
         Logical ::  spectral_io, spectral_buffer, nonstandard
         Integer :: avg_axes(1:3), ecode
         Integer, Allocatable :: indices(:,:)
-        Real*8, Allocatable :: avg_weights(:,:)
+        Real(kind=8), Allocatable :: avg_weights(:,:)
         Class(DiagnosticInfo) :: self 
 
         nonstandard=.false.
@@ -1130,8 +1130,8 @@ Contains
         Class(DiagnosticInfo) :: self
         Integer, Intent(In) :: iter
         Integer, Intent(InOut) :: ierr
-        Character*120 :: iterstring
-        Character*120 :: filename
+        Character(len=120) :: iterstring
+        Character(len=120) :: filename
         Integer :: modcheck, imod, file_iter, next_iter, ibelong, icomp
         Integer :: buffsize, funit
         Integer :: mstatus(MPI_STATUS_SIZE)
@@ -1297,9 +1297,9 @@ Contains
     !/////////////////////////////////////////
     ! (Presently) Random Utility routines
     Subroutine ComputeEll0(inbuff,outbuff)
-        Real*8, Intent(In) :: inbuff(1:,my_rmin:,my_theta_min:,1:)
-        Real*8, Intent(InOut) :: outbuff(my_rmin:,1:)
-        Real*8, Allocatable :: tmp_buffer(:,:)
+        Real(kind=8), Intent(In) :: inbuff(1:,my_rmin:,my_theta_min:,1:)
+        Real(kind=8), Intent(InOut) :: outbuff(my_rmin:,1:)
+        Real(kind=8), Allocatable :: tmp_buffer(:,:)
         Integer :: bdims(1:4)
         Integer :: q,nq,r,t,p
         !Averages over theta and phi to get the spherically symmetric mean of all
@@ -1341,9 +1341,9 @@ Contains
 
     Subroutine IOComputeEll0(inbuff,outbuff)
         !Works exactly like computeEll0, but inbuff has already been averaged in phi
-        Real*8, Intent(In) :: inbuff(my_rmin:,my_theta_min:,1:)
-        Real*8, Intent(InOut) :: outbuff(my_rmin:,1:)
-        Real*8, Allocatable :: tmp_buffer(:,:)
+        Real(kind=8), Intent(In) :: inbuff(my_rmin:,my_theta_min:,1:)
+        Real(kind=8), Intent(InOut) :: outbuff(my_rmin:,1:)
+        Real(kind=8), Allocatable :: tmp_buffer(:,:)
         Integer :: bdims(1:3)
         Integer :: q,nq,r,t,p
         !Averages over theta and phi to get the spherically symmetric mean of all
@@ -1383,9 +1383,9 @@ Contains
     End Subroutine IOComputeEll0
 
     Subroutine Compute_Radial_Average(inbuff,outbuff)
-        Real*8, Intent(In) :: inbuff(my_rmin:,1:)
-        Real*8, Intent(InOut) :: outbuff(1:)
-        Real*8, Allocatable :: tmp_buffer(:)
+        Real(kind=8), Intent(In) :: inbuff(my_rmin:,1:)
+        Real(kind=8), Intent(InOut) :: outbuff(1:)
+        Real(kind=8), Allocatable :: tmp_buffer(:)
         Integer :: bdims(1:2)
         Integer :: q,nq,r,t,p
         !Averages over radius for all fields contained in inbuff
@@ -1419,7 +1419,7 @@ Contains
     End Subroutine Compute_Radial_Average
 
     Subroutine IOComputeM0(qty)
-        Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:)
+        Real(kind=8), Intent(In) :: qty(1:,my_rmin:,my_theta_min:)
         Integer :: q,nq,r,t,p, ind
         !Averages over phi to get the azimuthally symmetric mean of all
         ! fields in inbuff at each radii and theta value.
@@ -1444,8 +1444,8 @@ Contains
     End Subroutine IOComputeM0
 
     Subroutine ComputeM0(inbuff,outbuff)
-        Real*8, Intent(In) :: inbuff(1:,my_rmin:,my_theta_min:,1:)
-        Real*8, Intent(InOut) :: outbuff(my_rmin:,my_theta_min:,1:)
+        Real(kind=8), Intent(In) :: inbuff(1:,my_rmin:,my_theta_min:,1:)
+        Real(kind=8), Intent(InOut) :: outbuff(my_rmin:,my_theta_min:,1:)
 
         Integer :: bdims(1:4)
         Integer :: q,nq,r,t,p
@@ -1567,15 +1567,15 @@ Contains
         ! If necessary, the indices can be reversed using rev_inds.  
         ! This is mostly here to deal with the "reversed" radius array.
         IMPLICIT NONE
-        REAL*8, Intent(In)  :: nrm_coords(:)
-        REAL*8, Intent(In)  :: coord_arr(:)
+        Real(kind=8), Intent(In)  :: nrm_coords(:)
+        Real(kind=8), Intent(In)  :: coord_arr(:)
         INTEGER, Intent(Out) :: indices(:)
         INTEGER, ALLOCATABLE :: ind_copy(:)
         LOGICAL, INTENT(In), Optional :: rev_inds
         INTEGER :: nnorm_coord, nbase_coord, numi
         INTEGER :: i,j,k, ind, last_index
-        REAL*8 :: cdel, del1,del2, ccheck
-        REAL*8 :: nrmc, cmin, tolchk = 2.0d0
+        Real(kind=8) :: cdel, del1,del2, ccheck
+        Real(kind=8) :: nrmc, cmin, tolchk = 2.0d0
 
         ! User-specified normalized coordinates are assumed to
         ! be in ascending order, but rayleigh's grids are striped in
@@ -1689,7 +1689,7 @@ Contains
     SUBROUTINE PROCESS_COORDINATES()
         IMPLICIT NONE
         INTEGER :: i
-        Real*8, Allocatable :: tmp_theta(:), tmp_phi(:)
+        Real(kind=8), Allocatable :: tmp_theta(:), tmp_phi(:)
         ALLOCATE(tmp_theta(1:ntheta), tmp_phi(1:nphi))
 
 
@@ -1730,7 +1730,7 @@ Contains
     SUBROUTINE Interpret_Indices(indices_nrm, coord_grid, indices, revg)
         IMPLICIT NONE
         INTEGER, INTENT(InOut) :: indices(:)
-        REAL*8, INTENT(InOut) :: coord_grid(:), indices_nrm(:)
+        Real(kind=8), INTENT(InOut) :: coord_grid(:), indices_nrm(:)
         LOGICAL, INTENT(In), Optional :: revg
         LOGICAL :: reverse_grid 
         IF (present(revg)) THEN

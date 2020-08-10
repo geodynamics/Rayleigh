@@ -21,13 +21,13 @@
 Module Math_Constants
     Use Ra_Precision
     Implicit None
-    Real*8 :: One_Third = 1.0d0/3.0d0
-    Real*8 :: Pi  = 3.1415926535897932384626433832795028841972d0
-    Real*8 :: four_pi, over_eight_pi, two_pi
-    Real*8 :: Half = 0.5d0
-    Real*8 :: Zero = 0.0d0
-    Real*8 :: one=1.0d0
-    Real*8 :: two=2.0d0
+    Real(kind=8) :: One_Third = 1.0d0/3.0d0
+    Real(kind=8) :: Pi  = 3.1415926535897932384626433832795028841972d0
+    Real(kind=8) :: four_pi, over_eight_pi, two_pi
+    Real(kind=8) :: Half = 0.5d0
+    Real(kind=8) :: Zero = 0.0d0
+    Real(kind=8) :: one=1.0d0
+    Real(kind=8) :: two=2.0d0
 Contains
     Subroutine Set_Math_Constants()
         Implicit None

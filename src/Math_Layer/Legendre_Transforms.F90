@@ -31,7 +31,7 @@ Module Legendre_Transforms
     Use Legendre_Polynomials
     Use Structures
     !Type, Public :: rmcontainer
-    !    Real*8, Allocatable :: data(:,:)
+    !    Real(kind=8), Allocatable :: data(:,:)
     !End Type rmcontainer
     Implicit None
     Interface Legendre_Transform
@@ -42,12 +42,12 @@ Contains
 
 Subroutine Test_Legendre
     Implicit None
-    Real*8, Allocatable :: theta(:),tmp(:)
-    Real*8, Allocatable :: ylm(:,:)
+    Real(kind=8), Allocatable :: theta(:),tmp(:)
+    Real(kind=8), Allocatable :: ylm(:,:)
     Integer :: i,l,m, nrhs
     Integer, Allocatable :: l_test(:), m_test(:)
     Type(p_lm_array), Allocatable :: ans(:), ans2(:)
-    Real*8 :: st, ct, chk
+    Real(kind=8) :: st, ct, chk
     ! Test the physical to spectral legendre transform
     !  using tabulated associated legendre transforms
     nrhs = 6
@@ -164,9 +164,9 @@ Subroutine Test_Legendre
 End Subroutine Test_Legendre
 
 Subroutine Test_Simple_Dgemm
-    Real*8, Allocatable :: a(:,:), b(:,:), c(:,:)
+    Real(kind=8), Allocatable :: a(:,:), b(:,:), c(:,:)
     Integer :: m, n, k, i, ntimes
-    Real*8 :: alpha,beta
+    Real(kind=8) :: alpha,beta
 
     ! Just to make sure I've done dgemm correctly
     ! a = | 1 2 |  b = |5|  a#b = c = | 17 |
@@ -226,9 +226,9 @@ End Subroutine Test_simple_dgemm
 
 
 Subroutine Test_Simple_Dgemm2
-    Real*8, Allocatable :: a(:,:), b(:,:), c(:,:)
+    Real(kind=8), Allocatable :: a(:,:), b(:,:), c(:,:)
     Integer :: m, n, k, i, ntimes
-    Real*8 :: alpha, beta
+    Real(kind=8) :: alpha, beta
 
     !//////////////////////////////////////////////
     ! Just to make sure I've done dgemm correctly
@@ -341,9 +341,9 @@ Subroutine PtS_2d_dg(data_in, data_out, nrhs)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(p_lm_array), Intent(InOut) :: data_out(:)
-    Real*8, Intent(In) :: data_in(:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:)
     Integer, Intent(In) :: nrhs
-    Real*8 :: alpha, beta
+    Real(kind=8) :: alpha, beta
     Integer :: m,nl
 
     alpha = 1.0d0
@@ -362,7 +362,7 @@ Subroutine PtS_2d_dr(data_in, data_out, nrhs)
     ! Data_in is a simple 2-d array (theta is first index)
     Implicit None
     Type(p_lm_array), Intent(InOut) :: data_out(:)
-    Real*8, Intent(In) :: data_in(:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:)
     Integer, Intent(In) :: nrhs
     Integer :: m,i,l
     ! Need to try a version 2 of this where the sum function is not invoked
@@ -382,9 +382,9 @@ Subroutine PtS_2d_drp(data_in, data_out, nrhs)
     ! Data_in is a simple 2-d array (theta is first index)
     Implicit None
     Type(p_lm_array), Intent(InOut) :: data_out(:)
-    Real*8, Intent(In) :: data_in(:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:)
     Integer, Intent(In) :: nrhs
-    Real*8, Allocatable :: feven(:,:), fodd(:,:)
+    Real(kind=8), Allocatable :: feven(:,:), fodd(:,:)
     Integer :: m,i,j,l,nt1
 
     !To exploit parity, we first need
@@ -446,10 +446,10 @@ Subroutine PtS_2d_dgp(data_in, data_out, nrhs)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(p_lm_array), Intent(InOut) :: data_out(:)
-    Real*8, Intent(In) :: data_in(:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:)
     Integer, Intent(In) :: nrhs
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),fodd(:,:), feven(:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:),fodd(:,:), feven(:,:)
     Integer :: m,nt1,i,j,l, nt2
 
 
@@ -516,10 +516,10 @@ Subroutine PtS_2d_dgpv2(data_in, data_out)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(rmcontainer), Intent(InOut) :: data_out(1:)
-    Real*8, Intent(In) :: data_in(:,:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:,:)
     Integer  :: nrhs
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),fodd(:,:,:), feven(:,:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:),fodd(:,:,:), feven(:,:,:)
     Integer :: m,nl,nt1,i,j,l, nt2,ddims(3),k
 
     ddims = shape(data_in)
@@ -597,9 +597,9 @@ Subroutine StP_2d_dgp(data_in, data_out)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(rmcontainer), Intent(In) :: data_in(:)
-    Real*8, Intent(InOut) :: data_out(:,:,:)
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),temp2(:,:)
+    Real(kind=8), Intent(InOut) :: data_out(:,:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:),temp2(:,:)
     Integer :: m,nl,nt1,i,j,l, nt2, ddims(3), nrhs
     ddims = shape(data_out)
     n_m = ddims(3)
@@ -678,7 +678,7 @@ Subroutine PtS_2d_dr2(data_in, data_out, nrhs)
     ! Data_in is a simple 2-d array (theta is first index)
     Implicit None
     Type(p_lm_array), Intent(InOut) :: data_out(:)
-    Real*8, Intent(In) :: data_in(:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:)
     Integer, Intent(In) :: nrhs
     Integer :: m,i,l,th
     ! Does not use the sum function
@@ -701,7 +701,7 @@ Subroutine PtS_2d_dr3(data_in, data_out, nrhs)
     ! Data_in is a simple 2-d array (theta is first index)
     Implicit None
     Type(p_lm_array), Intent(InOut) :: data_out(:)
-    Real*8, Intent(In) :: data_in(:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:)
     Integer, Intent(In) :: nrhs
     Integer :: m,i,l,th
     ! Does not use the sum function
@@ -733,10 +733,10 @@ Subroutine PtS_4d_dgpv2(data_in, data_out)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(rmcontainer4D), Intent(InOut) :: data_out(1:)
-    Real*8, Intent(In) :: data_in(:,:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:,:)
     Integer  :: nrhs
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),fodd(:,:,:), feven(:,:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:),fodd(:,:,:), feven(:,:,:)
     Integer :: m,nl,nt1,i,j,l, nt2,ddims(3),k
     Integer :: oddims(4), nfield
     Integer :: rmn, rmx, nr, f, imi, istart, iend
@@ -849,9 +849,9 @@ Subroutine StP_4d_dgp(data_in, data_out)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(rmcontainer4d), Intent(In) :: data_in(:)
-    Real*8, Intent(InOut) :: data_out(:,:,:)
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),temp2(:,:)
+    Real(kind=8), Intent(InOut) :: data_out(:,:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:),temp2(:,:)
     Integer :: m,nl,nt1,i,j,l, nt2, ddims(3), nrhs
     Integer :: nfield, rmn, rmx, nr, oddims(4),imi,f,iend,istart
 
@@ -975,9 +975,9 @@ Subroutine StP_4d_dgp2(data_in, data_out)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(rmcontainer4d), Intent(In) :: data_in(:)
-    Real*8, Intent(InOut) :: data_out(:,:,:)
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),temp2(:,:), temp3(:,:,:,:)
+    Real(kind=8), Intent(InOut) :: data_out(:,:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:),temp2(:,:), temp3(:,:,:,:)
     Integer :: m,nl,nt1,i,j,l, nt2, ddims(3), nrhs, jstart, jend,r,lstart
     Integer :: nfield, rmn, rmx, oddims(4),imi,f,iend,istart
 
@@ -1081,10 +1081,10 @@ End Subroutine StP_4d_dgp2
 Subroutine PtS_4d_dgpv3(data_in, data_out)
     Implicit None
     Type(rmcontainer4D), Intent(InOut) :: data_out(1:)
-    Real*8, Intent(In) :: data_in(:,:,:)
+    Real(kind=8), Intent(In) :: data_in(:,:,:)
     Integer  :: nrhs
-    Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:,:,:),fodd(:,:,:), feven(:,:,:)
+    Real(kind=8) :: alpha, beta
+    Real(kind=8), Allocatable :: temp(:,:,:,:),fodd(:,:,:), feven(:,:,:)
     Integer :: m,nl,nt1,i,j,l, nt2,ddims(3),k
     Integer :: oddims(4), nfield
     Integer :: rmn, rmx, f, imi, istart, iend, jend,r

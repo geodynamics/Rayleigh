@@ -27,7 +27,7 @@ Module Diagnostics_Lorentz_Forces
 Contains
 
     Subroutine Compute_Lorentz_Forces(buffer)
-        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real(kind=8), Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
 
         ! Full JxB terms
