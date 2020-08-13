@@ -1837,9 +1837,10 @@ class rayleigh_vapor:
                         self.cube_to_vdc(mfile,i,vnames[3])
         #Cleanup
         print('Cleaning up temporary files')
-        cmd = 'rm -rf '+ofile+' > /dev/null'
-        s=sp.Popen(cmd,shell=True)
-        s.wait(timeout=self.timeout)
+        if self.nvars > 0:
+            cmd = 'rm -rf '+ofile+' > /dev/null'
+            s=sp.Popen(cmd,shell=True)
+            s.wait(timeout=self.timeout)
         if (self.nvec > 0):
             for f in [xfile,yfile,zfile,mfile]:
                 cmd = 'rm -rf '+f+' > /dev/null'

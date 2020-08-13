@@ -116,7 +116,7 @@ hydrodynamic variables may be initialized separately. This allows you to
 add magnetism to an already equilibrated hydrodynamic case, for
 instance. The example below will initialize the system with a random
 magnetic field, but it will read the hydrodynamic information (W,Z,S,P)
-from a checkpoint created at time step 50,000:
+from a checkpoint created at time step 5,000:
 
 ::
 
@@ -128,7 +128,7 @@ from a checkpoint created at time step 50,000:
 
 In addition to specifying the checkpoint time step manually, you can
 tell Rayleigh to simply restart using the last checkpoint written by
-assigning a value of zero to init_type:
+assigning a value of zero to restart_iter:
 
 ::
 
