@@ -693,6 +693,7 @@ Contains
     Subroutine Get_Custom_Reference()
         Implicit None
         Integer :: i
+        Character(len=2) :: ind
 
         If (my_rank .eq. 0) Then
             Write(6,*)'Custom reference state specified.'
@@ -704,7 +705,8 @@ Contains
         Do i=1,7
             If (ra_function_set(i) .eq. 0) Then
                 If (my_rank .eq. 0) Then
-                    Write(6,*) "ERROR: function f_i must be set in the custom reference file",i
+                    Write(ind, '(I2)') i
+                    Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
                 Endif
             Endif
         Enddo
@@ -1157,8 +1159,8 @@ Contains
             If (xtop .le. 0) Then
                 If (ra_constant_set(ci) .eq. 0) Then
                     If (my_rank .eq. 0) Then
-                        write(ind, '(I2)') ci
-                        Call stdout%print('Error: c_'//Trim(ind)//' not specified')
+                        Write(ind, '(I2)') ci
+                        Call stdout%print('ERROR: constant c_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
                     Endif
                 Else
                     xtop = ra_constants(ci)
@@ -1191,8 +1193,8 @@ Contains
                     xtop = x(1)
                 Else
                     If (my_rank .eq. 0) Then
-                        write(ind, '(I2)') fi
-                        Call stdout%print('Error: Need to specify f_'//Trim(ind))
+                        Write(ind, '(I2)') fi
+                        Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
                     EndIf
                 EndIf
 
