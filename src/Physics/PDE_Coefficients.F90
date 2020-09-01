@@ -717,6 +717,14 @@ Contains
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
 
+        If (abs(Luminosity) .gt. heating_eps) Then
+            ra_constants(10) = Luminosity
+        Endif
+
+        If (abs(Heating_Integral) .gt. heating_eps) Then
+            ra_constants(10) = Heating_Integral
+        Endif
+
         ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
         
         ref%Coriolis_Coeff = ra_constants(1)
