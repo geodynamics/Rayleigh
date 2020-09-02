@@ -692,8 +692,9 @@ Contains
 
     Subroutine Get_Custom_Reference()
         Implicit None
-        Integer :: i
+        Integer :: i, fi
         Character(len=2) :: ind
+        Integer :: fi_to_check(5) = (/1, 2, 4, 6, 14/)
 
         If (my_rank .eq. 0) Then
             Write(6,*)'Custom reference state specified.'
@@ -702,10 +703,11 @@ Contains
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
-        Do i=1,7
-            If (ra_function_set(i) .eq. 0) Then
+        Do i=1,5
+            fi = fi_to_check(i)
+            If (ra_function_set(fi) .eq. 0) Then
                 If (my_rank .eq. 0) Then
-                    Write(ind, '(I2)') i
+                    Write(ind, '(I2)') fi
                     Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
                 Endif
             Endif
