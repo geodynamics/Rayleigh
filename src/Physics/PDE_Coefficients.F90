@@ -708,7 +708,7 @@ Contains
             If (ra_function_set(fi) .eq. 0) Then
                 If (my_rank .eq. 0) Then
                     Write(ind, '(I2)') fi
-                    Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
+                    Call stdout%print('ERROR: function f_'//Adjustl(ind)//' must be set in the custom reference file')
                 Endif
             Endif
         Enddo
@@ -788,6 +788,9 @@ Contains
         Real*8  :: input_constants(1:n_ra_constants)
         Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
         Real*8, Allocatable :: old_radius(:)
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
+        Character(len=2) :: ind
 
         cset(:) = 0
         input_constants(:) = 0.0d0
@@ -848,7 +851,10 @@ Contains
             ! Print the values of the constants
             Do k = 1, n_ra_constants
                 If (my_rank .eq. 0) Then
-                    Write(6,*)'c: ', k, ra_constants(k)
+                    Write(ind, '(I2)') k
+                    Write(dstring,dofmt) ra_constants(k)
+                    Call stdout%print('c_'//Adjustl(ind)//' = '//Trim(dstring))
+                    !Write(6,*)'c: ', k, ra_constants(k)
                 Endif
             Enddo
 
@@ -1196,7 +1202,7 @@ Contains
                 Else
                     If (my_rank .eq. 0) Then
                         Write(ind, '(I2)') fi
-                        Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
+                        Call stdout%print('ERROR: function f_'//Adjustl(ind)//' must be set in the custom reference file')
                     EndIf
                 EndIf
 
