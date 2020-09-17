@@ -692,7 +692,9 @@ Contains
 
     Subroutine Get_Custom_Reference()
         Implicit None
-        Integer :: i
+        Integer :: i, fi
+        Character(len=2) :: ind
+        Integer :: fi_to_check(4) = (/1, 2, 4, 6/)
 
         If (my_rank .eq. 0) Then
             Write(6,*)'Custom reference state specified.'
@@ -701,10 +703,12 @@ Contains
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
-        Do i=1,7
-            If (ra_function_set(i) .eq. 0) Then
+        Do i=1,4
+            fi = fi_to_check(i)
+            If (ra_function_set(fi) .eq. 0) Then
                 If (my_rank .eq. 0) Then
-                    Write(6,*) "ERROR: function f_i must be set in the custom reference file",i
+                    Write(ind, '(I2)') fi
+                    Call stdout%print('ERROR: function f_'//Adjustl(ind)//' must be set in the custom reference file')
                 Endif
             Endif
         Enddo
@@ -784,6 +788,9 @@ Contains
         Real*8  :: input_constants(1:n_ra_constants)
         Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
         Real*8, Allocatable :: old_radius(:)
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
+        Character(len=2) :: ind
 
         cset(:) = 0
         input_constants(:) = 0.0d0
@@ -844,7 +851,10 @@ Contains
             ! Print the values of the constants
             Do k = 1, n_ra_constants
                 If (my_rank .eq. 0) Then
-                    Write(6,*)'c: ', k, ra_constants(k)
+                    Write(ind, '(I2)') k
+                    Write(dstring,dofmt) ra_constants(k)
+                    Call stdout%print('c_'//Adjustl(ind)//' = '//Trim(dstring))
+                    !Write(6,*)'c: ', k, ra_constants(k)
                 Endif
             Enddo
 
@@ -1157,8 +1167,8 @@ Contains
             If (xtop .le. 0) Then
                 If (ra_constant_set(ci) .eq. 0) Then
                     If (my_rank .eq. 0) Then
-                        write(ind, '(I2)') ci
-                        Call stdout%print('Error: c_'//Trim(ind)//' not specified')
+                        Write(ind, '(I2)') ci
+                        Call stdout%print('ERROR: constant c_'//Trim(Adjustl(ind))//' must be set in the custom reference file')
                     Endif
                 Else
                     xtop = ra_constants(ci)
@@ -1191,8 +1201,8 @@ Contains
                     xtop = x(1)
                 Else
                     If (my_rank .eq. 0) Then
-                        write(ind, '(I2)') fi
-                        Call stdout%print('Error: Need to specify f_'//Trim(ind))
+                        Write(ind, '(I2)') fi
+                        Call stdout%print('ERROR: function f_'//Adjustl(ind)//' must be set in the custom reference file')
                     EndIf
                 EndIf
 
