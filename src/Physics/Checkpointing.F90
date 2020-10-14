@@ -228,7 +228,7 @@ Contains
         Integer :: i, ierr, m, p, np, mp, lb,ub, f,  r, ind
         Integer :: old_pars(7), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
-        Integer*8 :: found_bytes, expected_bytes
+        Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
         Integer :: read_magnetism = 0, read_hydro = 0
         Integer, Allocatable :: rinds(:), gpars(:,:)
         Real*8 :: dt_pars(3),dt,new_dt
@@ -362,7 +362,9 @@ Contains
 
             If (ierr .eq. 0) Then
                 ! Verify that all checkpoint files exist and  have the correct size.
-                expected_bytes = n_r_old*((l_max_old+1)**2 + l_max_old+1)*8 !TODO: Make this work for general precision
+                n_r_old_big = n_r_old
+                l_max_old_big = l_max_old
+                expected_bytes = n_r_old_big*((l_max_old_big+1)**2 + l_max_old_big+1)*8 !TODO: Make this work for general precision
                 write(6,*)'check: ', endian_tag, version, n_r_old
                 Do i = 1, numfields*2
                     If (read_var(i) .eq. 1) Then
