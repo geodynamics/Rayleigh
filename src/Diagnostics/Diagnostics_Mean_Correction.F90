@@ -386,7 +386,7 @@ Contains
 
 
                 ! Finally, add the piece due to the gradient of mu
-                estress = buffer(PSI,dvrdr)-One_Third*buffer(PSI,vr)*ref%dlnrho(r)
+                estress = buffer(PSI,dvrdr)+One_Third*buffer(PSI,vr)*ref%dlnrho(r)
 
                 mean_3dbuffer(PSI,vforce_r) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
 
