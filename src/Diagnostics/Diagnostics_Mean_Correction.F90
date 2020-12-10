@@ -319,6 +319,7 @@ Contains
 
         If (compute_mean_mean .or. compute_quantity(advec_work_mmm)) Then
 
+            Call ADotGradB(m0_values,m0_values,cbuffer,aindices=vindex,bindices=vindex)
 
             If (compute_quantity(vm_grad_vm_r) .or. compute_quantity(advec_work_mmm)) Then
                 DO_PSI
