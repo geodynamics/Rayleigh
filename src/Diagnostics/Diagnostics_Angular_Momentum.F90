@@ -204,7 +204,7 @@ Contains
 
             DO_PSI
                 qty(PSI) = ref%density(r)*((radius(r)*sintheta(t))**2) &
-                    & *(m0_values(PSI2,vr)*Angular_Velocity)
+                    & *(m0_values(PSI2,vr)*ref%Coriolis_Coeff/2.0d0)
             END_DO
 
             Call Add_Quantity(qty)
@@ -214,7 +214,7 @@ Contains
 
             DO_PSI
                 qty(PSI) = ref%density(r)*((radius(r)*sintheta(t))**2) &
-                    & *(m0_values(PSI2,vtheta)*Angular_Velocity)
+                    & *(m0_values(PSI2,vtheta)*ref%Coriolis_Coeff/2.0d0)
             END_DO
 
             Call Add_Quantity(qty)
