@@ -173,7 +173,7 @@ Contains
         Endif
 
         If (compute_quantity(jp_cross_bp_phi) .or. compute_quantity(samom_lorentz_pp) &
-            .or. compute_quantity(mag_work_ppp) .or. compute_quantity(mag_work_mmm)) Then
+            .or. compute_quantity(mag_work_ppp) .or. compute_quantity(mag_work_mpp)) Then
             DO_PSI
                 qty(PSI) = ( fbuffer(PSI,curlbr)*fbuffer(PSI,btheta)- &
                            & fbuffer(PSI,br)*fbuffer(PSI,curlbtheta) )*ref%Lorentz_Coeff
