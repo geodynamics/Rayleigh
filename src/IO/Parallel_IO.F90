@@ -157,6 +157,7 @@ Module Parallel_IO
         Procedure :: DeAllocate_Receive_Buffers
         Procedure :: write_data
         Procedure :: Spectral_Prep
+        Procedure :: Reset_Cache_Index
 
         Procedure :: gather_data
         Procedure :: cascade
@@ -965,6 +966,12 @@ Contains
             self%cache_index = MOD(self%cache_index, self%ncache)+1
         Endif
     End Subroutine Cache_Data
+
+    Subroutine Reset_Cache_Index(self)
+        Implicit None
+        Class(io_buffer) :: self
+        self%cache_index = 1
+    End Subroutine Reset_Cache_Index
 
     Subroutine Spectral_Prep(self)
         Implicit None
