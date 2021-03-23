@@ -1289,7 +1289,7 @@ class Shell_Spectra:
             self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        if (self.version < 4):
+        if (self.version != 4):
             # The m>0 --power-- is too high by a factor of 2
             # We divide the --complex amplitude-- by sqrt(2)
             self.vals[:,1:,:,:,:] /= np.sqrt(2.0)
