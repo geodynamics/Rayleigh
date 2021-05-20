@@ -24,7 +24,7 @@ Package Setup:  Linux
     conda install -c conda-forge matplotlib \
         jupyter scipy sphinx sphinxcontrib-bibtex \
         nbsphinx pandoc recommonmark sphinx \
-        gcc_linux-64 gfortran_linux-64 mkl fftw mpich
+        gcc_linux-64 gfortran_linux-64 mkl fftw mpich-mpicc
 
 Package Setup:  Mac
 -----------------------------
@@ -35,7 +35,7 @@ Package Setup:  Mac
     conda install -c conda-forge matplotlib \
         jupyter scipy sphinx sphinxcontrib-bibtex \
         nbsphinx pandoc recommonmark sphinx \
-        clang_osx-64 gfortran_osx-64 mkl fftw mpich
+        clang_osx-64 gfortran_osx-64 mkl fftw mpich-mpicc
 
 
 MKL Setup: Linux and Mac
