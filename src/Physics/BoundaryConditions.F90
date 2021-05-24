@@ -246,16 +246,16 @@ Contains
                   bc_val= dsvardr_top*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, seq,real_ind, uind)
                 else
-                  Call Set_BC_from_file(dsdr_top_file, seq, uind)
+                  Call Set_BC_from_file(dsvardr_top_file, seq, uind)
                 end if
             Endif
 
             If (Fix_dSvardr_Bottom) Then
-                if (trim(dsdr_bottom_file) .eq. '__nothing__') then
+                if (trim(dsvardr_bottom_file) .eq. '__nothing__') then
                   bc_val= dsvardr_bottom*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, seq,real_ind, lind)
                 else
-                  Call Set_BC_from_file(dsdr_bottom_file, seq, lind)
+                  Call Set_BC_from_file(dsvardr_bottom_file, seq, lind)
                 end if
             Endif
 
