@@ -1,0 +1,19 @@
+name: linux
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    #linux build with unity/precomiled headers disabled
+    name: test-build
+    runs-on: [ubuntu-18.04]
+    container: geodynamics/rayleigh-buildenv-bionic
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: setup
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        echo "I am alive"
+        ls .
+        pwd
