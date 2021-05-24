@@ -9,10 +9,7 @@ jobs:
     container: gassmoeller/rayleigh-buildenv-focal
 
     steps:
-  # We would like to use v2, but v2 requires a higher git version
-  # than available in the container to clone a repo. In the current
-  # container v2 strips the .git folder.
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Setup container
       run: |
         cd "$GITHUB_WORKSPACE"
@@ -45,4 +42,6 @@ jobs:
         cd ..
         git diff > changes.diff
         git diff --exit-code --name-only
+
+        cd "$GITHUB_WORKSPACE"
         ./tests/generic_input/run_test.sh
