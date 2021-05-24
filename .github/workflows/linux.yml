@@ -6,14 +6,12 @@ jobs:
   test:
     name: test-build
     runs-on: [ubuntu-latest]
-    container: geodynamics/rayleigh-buildenv-bionic
+    container: gassmoeller/rayleigh-buildenv-bionic
 
     steps:
-      # Install git for the checkout action
-    - name: Install git
-      run: |
-        apt update
-        apt install -y git
+  # We would like to use v2, but v2 requires a higher git version
+  # than available in the container to clone a repo. In the current
+  # container v2 strips the .git folder.
     - uses: actions/checkout@v1
     - name: Setup container
       run: |
