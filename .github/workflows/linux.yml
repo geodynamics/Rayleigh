@@ -4,12 +4,14 @@ on: [push, pull_request]
 
 jobs:
   test:
-    #linux build with unity/precomiled headers disabled
     name: test-build
     runs-on: [ubuntu-18.04]
     container: geodynamics/rayleigh-buildenv-bionic
 
     steps:
+      # Install git for the checkout action
+    - name: install git
+      run: apt install git
     - uses: actions/checkout@v2
     - name: setup
       run: |
