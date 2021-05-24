@@ -17,3 +17,9 @@ jobs:
         echo "I am alive"
         ls .
         pwd
+    - name: build documentation
+      # First make sure notebooks do not contain output, then build doc
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        make clear_ipynb && git diff --exit-code --name-only
+        make doc
