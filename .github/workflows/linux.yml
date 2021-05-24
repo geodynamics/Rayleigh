@@ -25,3 +25,22 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         make clear_ipynb && git diff --exit-code --name-only
         make doc
+    - name: Build Rayleigh
+      # First make sure notebooks do not contain output, then build doc
+      run: |
+        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr'
+        make fdeps && git diff --exit-code
+        make -j
+        make install
+    - name: Test
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        cd tests/c2001_case0
+        # This export avoids a warning about
+        # a discovered, but unconnected infiniband network.
+        mpirun -np 4 --oversubscribe ../../bin/rayleigh.dbg
+
+        cd ..
+        git diff > changes.diff
+        git diff --exit-code --name-only
+        ./tests/generic_input/run_test.sh
