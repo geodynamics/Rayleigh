@@ -29,6 +29,14 @@ author = 'Nick Featherstone'
 # ones.
 extensions = ['sphinx.ext.mathjax', 'sphinxcontrib.bibtex','recommonmark','nbsphinx'
 ]
+bibtex_bibfiles = ['./doc/source/User_Guide/references.bib',
+'./doc/source/publications/software.bib',
+'./doc/source/publications/publications2019.bib',
+'./doc/source/publications/all.bib',
+'./doc/source/publications/publications2018.bib',
+'./doc/source/publications/publications2016.bib'
+]
+
 
 
 master_doc = 'index'
