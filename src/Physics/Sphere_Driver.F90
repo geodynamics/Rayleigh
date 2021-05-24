@@ -29,6 +29,7 @@ Module Sphere_Driver
     Use Controls
     Use Timers
     Use Fields
+    Use Run_Parameters, Only : write_run_parameters
 
     !sigterm...
 #ifdef INTEL_COMPILER 
@@ -73,10 +74,11 @@ Contains
         Integer ::  last_iteration, first_iteration,i,iret, sigflag
         Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
+        Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*8 :: istr, dtfmt ='(ES10.4)'
-        Character*7 :: fmtstr = '(F14.4)', ifmtstr = '(i8.8)'
-        
+        Character*120 :: dtstr, wtmstr, istr
+        Character(len=*), parameter ::   fmtstr = '(F14.4)'
+        Character*256 :: checkpoint_input_file
 
         ! Register handle_sig as the signal-handling 
         ! function for SIGTERM (15) signals.
@@ -88,6 +90,7 @@ Contains
         iret = SIGNAL(15, handle_sig) 
 #endif        
         killsig = 0.0d0  ! This will become 2.5 is SIGTERM is caught
+        terminate_file_exists = .false.
     
         ! We enter the main loop assuming that the solve has just been performed
         ! and that the equation set structure's RHS contains our primary fields with
@@ -109,10 +112,10 @@ Contains
                 Call stdout%print(' ')
                 Call stdout%print('///////////////////////////////////////////////////////////////')
                 Call stdout%print(' WARNING:  Time-step counter has been manually reset.')
-                Write(istr,ifmtstr)checkpoint_iter
-                Call stdout%print('           Checkpoint time-step ID: '//istr//'.')
-                Write(istr,ifmtstr)first_iteration
-                Call stdout%print('                  New time-step ID: '//istr//'.')
+                Write(istr,int_out_fmt)checkpoint_iter
+                Call stdout%print('           Checkpoint time-step ID: '//Trim(istr)//'.')
+                Write(istr,int_out_fmt)first_iteration
+                Call stdout%print('                  New time-step ID: '//Trim(istr)//'.')
                 Call stdout%print('           Revise main_input before the next restart!')
                 Call stdout%print('///////////////////////////////////////////////////////////////')
                 Call stdout%print(' ')
@@ -133,6 +136,7 @@ Contains
         iteration = first_iteration
 
 
+
         !//////////////   BEGIN MAIN LOOP
         Do while (iteration .le. last_iteration)
             !Check here to see if this is an output iteration.
@@ -140,20 +144,33 @@ Contains
             !The transpose buffers
             output_iteration = time_to_output(iteration)
 
+            If (my_rank .eq. 0) Then
+               If (terminate_check_interval .ne. -1 .and. mod(iteration,terminate_check_interval) .eq. 0) Then
+                  Inquire(file=Trim(my_path)//Trim(terminate_file), exist=terminate_file_exists)
+               Endif
+            Endif
+
             ! Information relevant to ending the simulation is added here.
             ! All processes contain the same (cpu-pool max) value
             ! for global_msgs following the completion of AdvanceTime
             global_msgs(2) = stopwatch(walltime)%elapsed 
             global_msgs(3) = killsig
             global_msgs(4) = simulation_time
+            If (terminate_file_exists) global_msgs(5) = 1.0d0
 
             Call Post_Solve() ! Linear Solve Configuration
 
 
-            If (my_rank .eq. 0) Then
-                Write(istr,ifmtstr)iteration
-                Write(tmstr,dtfmt)deltat
-                Call stdout%print(' On iteration : '//istr//'    DeltaT :   '//tmstr)
+            If (my_rank .eq. 0 .and. mod(iteration,statusline_interval) .eq. 0) Then
+                Write(istr,int_out_fmt)iteration
+                Write(dtstr,sci_note_fmt)deltat
+                If (stopwatch(walltime)%delta .ne. 0.0d0) Then
+                   Write(wtmstr,sci_note_fmt) 1.0d0 / stopwatch(walltime)%delta
+                Else
+                   Write(wtmstr,sci_note_fmt) 0.0d0
+                Endif
+                Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
+                   //Trim(wtmstr))
             Endif
             Call rlm_spacea()
 
@@ -183,6 +200,13 @@ Contains
             If (global_msgs(2) .gt. max_time_seconds) Then
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' User-specified maximum walltime exceeded.  Cleaning up.')
+                Endif
+                last_iteration = iteration !force loop to end
+            Endif
+
+            If (global_msgs(5) .ge. 0.5d0) Then
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(' Termination file was found. Cleaning up.')
                 Endif
                 last_iteration = iteration !force loop to end
             Endif
@@ -229,13 +253,8 @@ Contains
             Call IsItTimeForACheckpoint(iteration)
             If (ItIsTimeForACheckpoint) Then
                 Call StopWatch(cwrite_time)%StartClock()
-                If (chk_type .ne. 2) Then
-                    Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
-
-                Else
-                    Call Write_Checkpoint_Alt(wsp%p1b,iteration, deltat,new_deltat,simulation_time)
-
-                Endif
+                Call Write_Checkpoint(wsp%p1b,iteration, deltat,new_deltat,simulation_time, checkpoint_input_file)
+                Call Write_Run_Parameters(checkpoint_input_file)
                 Call StopWatch(cwrite_time)%Increment()
             Endif
 

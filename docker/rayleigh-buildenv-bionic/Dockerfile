@@ -30,7 +30,7 @@ RUN apt update && \
     python-scipy \
     python-funcsigs
 
-RUN pip3 install sphinxcontrib-bibtex nbstripout nbsphinx jupyter-client ipykernel
+RUN pip3 install sphinxcontrib-bibtex nbstripout nbsphinx jupyter-client ipykernel recommonmark
 RUN pip2 install vtk
 
 # Export compilers

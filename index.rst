@@ -9,11 +9,13 @@ Welcome to Rayleigh's documentation!
 .. toctree::
    :maxdepth: 2
 
-   User_Guide/index.rst
-   diagnostic_values/index
-   diagnostic_codes/qcodes
-   publications/publications
-   vids
+   doc/source/User_Guide/index.rst
+   CONTRIBUTING.md
+   doc/source/diagnostic_values/index
+   doc/source/diagnostic_codes/qcodes
+   doc/source/publications/publications
+   doc/source/vids
+
 
 Indices and tables
 ------------------

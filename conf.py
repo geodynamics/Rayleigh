@@ -27,7 +27,7 @@ author = 'Nick Featherstone'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.mathjax', 'sphinxcontrib.bibtex', 'nbsphinx'
+extensions = ['sphinx.ext.mathjax', 'sphinxcontrib.bibtex','recommonmark','nbsphinx'
 ]
 
 
@@ -54,8 +54,8 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
-html_logo = 'rayleigh_manual_image_logo.jpeg'
-latex_logo = 'rayleigh_manual_image_300dpi.jpeg'
+html_logo = 'doc/source/rayleigh_manual_image_logo.jpeg'
+latex_logo = 'doc/source/rayleigh_manual_image_300dpi.jpeg'
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').

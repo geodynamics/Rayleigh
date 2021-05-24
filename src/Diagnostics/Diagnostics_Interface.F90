@@ -25,8 +25,8 @@ Module Diagnostics_Interface
     Use Spherical_IO
     Use Fields
     Use Legendre_Polynomials, Only : gl_weights
-    Use ReferenceState
-    Use TransportCoefficients
+    Use PDE_Coefficients
+
     Use Math_Constants
     Use Diagnostics_Base
 
@@ -322,7 +322,7 @@ Contains
             Close(15)
         Endif
 
-        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path)
+        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path,int_out_fmt)
 
         Call Initialize_Diagnostic_Indices()
         !DeAllocate(tweights)  !<---- Used to deallocate these.  We now use these for the computing the ell0 components

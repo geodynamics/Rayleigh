@@ -59,6 +59,12 @@ Module Parallel_Framework
         !##################################################
         Type(Load_Config), Allocatable, Public :: lb_1p(:), lb_1s(:)
 
+        !################################################################
+        ! This variable intended for use in tandem with other classes that
+        ! use the parallel interface object.
+        ! When parallel I/O takes place, npcol*n_output_column ranks
+        ! participate in the write operation.
+        Integer :: output_columns = 1          
 
         Contains
         Procedure :: Init_World_Comm
@@ -136,6 +142,18 @@ Contains
         Else
             ! get the process grid info from the environment
         Endif
+
+        !/////////////////////////////////////////////////////////
+        ! Ensure that  we're not attempting to parallel-write using
+        ! nonexistent MPI ranks.
+        If (pars(11) .gt. self%nprow) Then
+            self%output_columns = self%nprow
+        Else
+            self%output_columns = pars(11)
+        Endif
+        If (self%output_columns .lt. 1) self%output_columns = 1
+        
+
         If (size(ncpus) .gt. 1) Then
             !Multiple run Mode
             self%gcomm = Init_SubGroup(self%wcomm,ncpus,error)
@@ -146,8 +164,8 @@ Contains
             self%gcomm%comm = self%wcomm%comm
 
         Endif
+      
         If (self%gcomm%rank .eq. 0) Then
-
             Call stdout%print(" //////////////////////////////////////")
             Call stdout%print(" Initializating Rayleigh...")
             Write(istr,'(i6)')self%npe
@@ -160,7 +178,7 @@ Contains
             Write(istr,'(i6)')self%npcol
             call stdout%print(" ---- NPCOL : "//trim(istr))
         Endif
-        If (self%nprow .le. 0) Then
+        If (self%nprow .le. 1) Then
             If (self%gcomm%rank .eq. 0) Then
                 Call stdout%print('........................................................')
                 Call stdout%print(' --- Error:  nprow must be at least 1.  Exiting...')
@@ -168,7 +186,7 @@ Contains
             Call self%exit()
         Endif
 
-        If (self%npcol .le. 0) Then
+        If (self%npcol .le. 1) Then
             If (self%gcomm%rank .eq. 0) Then
                 Call stdout%print('........................................................')
                 Call stdout%print(' --- Error:  npcol must be at least 1.  Exiting...')
@@ -298,13 +316,22 @@ Contains
 
 
 
-    Subroutine Finalize_Framework(self)
+    Subroutine Finalize_Framework(self,ecode)
         Class(Parallel_Interface) :: self
-        Integer :: error
+        Integer, Intent(In), Optional :: ecode
+        Integer :: error,exit_status
+        exit_status=0
+        If (present(ecode)) exit_status = ecode
         self%n1p = 0    ! This line is here purely so that the intel compiler does not
         ! throw an unused variable warning when warn-all is used.
         Call Exit_Comm_Lib(error)
-        !STOP
+        Call Exit(exit_status)
     End Subroutine Finalize_Framework
+
+
+
+
+
+
 
 End Module Parallel_Framework

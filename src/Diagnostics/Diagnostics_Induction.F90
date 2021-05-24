@@ -955,7 +955,7 @@ Contains
                         2.0d0*costheta(t)*buffer(PSI,dbpdp) ) )
 
                 ! Add the contribution from a gradient in eta
-                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbphi)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbphi)*dlneta(r))
 
             END_DO
 
@@ -986,7 +986,7 @@ Contains
                         ovs2theta(t)*(   buffer(PSI,bphi) - &
                         2.0d0*costheta(t)*buffer(PSI,dbtdp) ) )
 
-                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbtheta)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbtheta)*dlneta(r))
 
             END_DO
 
@@ -1033,7 +1033,7 @@ Contains
             Endif
             If (compute_quantity(idiff_work_pp)) Then
                 DO_PSI
-                    tmp1(PSI) = qty(PSI)*buffer(PSI,br)
+                    tmp1(PSI) = qty(PSI)*fbuffer(PSI,br)
                 END_DO
             Endif
         Endif
@@ -1053,7 +1053,7 @@ Contains
                         2.0d0*costheta(t)*fbuffer(PSI,dbpdp) ) )
 
 
-                qty(PSI) = eta(r)*(del2b-fbuffer(PSI,curlbphi)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b+fbuffer(PSI,curlbphi)*dlneta(r))
 
             END_DO
 
@@ -1062,7 +1062,7 @@ Contains
             Endif
             If (compute_quantity(idiff_work_pp)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*buffer(PSI,btheta)
+                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*fbuffer(PSI,btheta)
                 END_DO
             Endif
         Endif
@@ -1081,7 +1081,7 @@ Contains
                         ovs2theta(t)*(   fbuffer(PSI,bphi) - &
                         2.0d0*costheta(t)*fbuffer(PSI,dbtdp) ) )
 
-                qty(PSI) = eta(r)*(del2b+fbuffer(PSI,curlbtheta)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b-fbuffer(PSI,curlbtheta)*dlneta(r))
             END_DO
 
 
@@ -1090,7 +1090,7 @@ Contains
             Endif
             If (compute_quantity(idiff_work_pp)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*buffer(PSI,bphi)
+                    tmp1(PSI) = tmp1(PSI)+qty(PSI)*fbuffer(PSI,bphi)
                 END_DO
                 Call Add_Quantity(tmp1)
             Endif
@@ -1142,7 +1142,7 @@ Contains
                         ovs2theta(t)*(   m0_values(PSI2,btheta) + &
                         2.0d0*costheta(t)*m0_values(PSI2,dbpdp) ) )
 
-                qty(PSI) = eta(r)*(del2b-m0_values(PSI2,curlbphi)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b+m0_values(PSI2,curlbphi)*dlneta(r))
             END_DO
 
 
@@ -1169,7 +1169,7 @@ Contains
                 del2b = del2b +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dbrdp)*ovstheta(t) - &
                         ovs2theta(t)*(   m0_values(PSI2,bphi) - &
                         2.0d0*costheta(t)*m0_values(PSI2,dbtdp) ) )
-                qty(PSI) = eta(r)*(del2b+m0_values(PSI2,curlbtheta)*dlneta(r))
+                qty(PSI) = eta(r)*(del2b-m0_values(PSI2,curlbtheta)*dlneta(r))
 
 
 

@@ -26,17 +26,16 @@ Module Initial_Conditions
     Use Legendre_Transforms, Only : Legendre_Transform
     Use SendReceive
     Use Math_Constants
-    Use Checkpointing, Only : read_checkpoint, read_checkpoint_alt
+    Use Checkpointing, Only : read_checkpoint
     Use Generic_Input, Only : read_input
     Use Controls
     Use Timers
     Use General_MPI, Only : BCAST2D
-    Use ReferenceState, Only : s_conductive, heating_type,ref
+    Use PDE_Coefficients, Only : s_conductive, heating_type,ref, kappa, dlnkappa
     Use BoundaryConditions, Only : T_top, T_bottom, fix_tvar_Top, fix_tvar_bottom,&
          & fix_dtdr_top, fix_dtdr_bottom, dtdr_top, dtdr_bottom, &
          & C10_bottom, C11_bottom, C1m1_bottom
     Use ClockInfo, Only : Euler_Step
-    Use TransportCoefficients, Only : kappa, dlnkappa
     Use Linear_Solve
     Use Math_Utility
     Use BufferedOutput
@@ -251,11 +250,9 @@ Contains
         tempfield%p1a(:,:,:,:) = 0.0d0
 
         Call StopWatch(cread_time)%StartClock()
-        If (read_chk_type .eq. 2) Then
-            Call Read_Checkpoint_Alt(tempfield%p1a,wsp%p1b,iteration,rpars)
-        Else
-            Call Read_Checkpoint(tempfield%p1a,wsp%p1b,iteration,rpars)
-        Endif
+
+        Call Read_Checkpoint(tempfield%p1a,wsp%p1b,iteration,rpars)
+
         Call StopWatch(cread_time)%Increment()
 
         If (rescale_velocity) Then
@@ -900,14 +897,14 @@ Contains
             tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
             If (m .eq. 0) Then
                 Do r = my_r%min, my_r%max
-                    tempfield%s2b(mp)%data(1,r,1,1) = C10_bottom/radius(r)
+                    tempfield%s2b(mp)%data(1,r,1,1) = C10_bottom*rmin/radius(r)
                 Enddo
             Endif
 
             If (m .eq. 1) Then
                 Do r = my_r%min, my_r%max
-                    tempfield%s2b(mp)%data(1,r,1,1) = C11_bottom/radius(r)
-                    tempfield%s2b(mp)%data(1,r,2,1) = C1m1_bottom/radius(r)
+                    tempfield%s2b(mp)%data(1,r,1,1) = C11_bottom*rmin/radius(r)
+                    tempfield%s2b(mp)%data(1,r,2,1) = C1m1_bottom*rmin/radius(r)
                 Enddo
             Endif
 
@@ -1135,6 +1132,13 @@ Contains
         temp_w   = 0.3d0
         mag_amp  = 1.0d0
         conductive_profile = .false.
+
+        t_init_file = '__nothing__'
+        w_init_file = '__nothing__'
+        p_init_file = '__nothing__'
+        z_init_file = '__nothing__'
+        c_init_file = '__nothing__'
+        a_init_file = '__nothing__'
 
     End Subroutine Restore_InitialCondition_Defaults
 End Module Initial_Conditions

@@ -39,7 +39,7 @@ Contains
 
         If (compute_quantity(thermal_energy_full) .or. compute_quantity(thermal_energy_sq)) Then
             DO_PSI
-                qty(PSI) = fbuffer(PSI,tvar)*ref%density(r)*ref%temperature(r)
+                qty(PSI) = buffer(PSI,tvar)*ref%density(r)*ref%temperature(r)
             END_DO
             If (compute_quantity(thermal_energy_full)) Call Add_Quantity(qty)
             If (compute_quantity(thermal_energy_sq)) Then

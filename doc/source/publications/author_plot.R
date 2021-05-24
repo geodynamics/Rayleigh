@@ -21,7 +21,7 @@ library(grid)
 # This is now set to use the file all.bib.
 # Files should be downloaded from the rayleigh repository /doc/source/publications
 # CONCATENATE all the publicationYYYY.bib files
-#       cat *.bib >>all.bib
+#       cat publications*.bib >>all.bib
 # Note the files have headers but it seems read.bib just ignores these
 #
 # Adjustments maybe needed for inconsistent author naming

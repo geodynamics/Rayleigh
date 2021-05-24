@@ -33,12 +33,11 @@ Module Benchmarking
     Use Spherical_IO
     Use Fields
     Use Legendre_Polynomials, Only : gl_weights
-    Use ReferenceState
-    Use TransportCoefficients
+    Use PDE_Coefficients
     Use Math_Constants
     Use BoundaryConditions
     Use Initial_Conditions
-    Use TransportCoefficients
+
     Implicit None
 
     Integer, Private :: nobs, msymm
@@ -132,8 +131,6 @@ Contains
             Prandtl_Number = 1.0d0
             heating_type = 0
             gravity_power = 1.0d0
-            !dimensional_reference = .false.
-
 
         Endif
 
@@ -183,9 +180,6 @@ Contains
             reference_type = 1
             heating_type = 0
             gravity_power = 1.0d0
-            !dimensional_reference = .false.
-
-
 
         Endif
 
@@ -779,7 +773,7 @@ Contains
                     iter_end   = MAXVAL(iter_saves(1:global_count))
 
 
-                    Write(iter_string,'(i8.8)')iteration
+                    Write(iter_string,int_out_fmt)iteration
                     funit = 88
                     report_file = Trim(my_path)//'Benchmark_Reports/'//TRIM(iter_string)
                     Open(unit = funit, file = report_file,action="write", status="REPLACE", FORM = 'FORMATTED')

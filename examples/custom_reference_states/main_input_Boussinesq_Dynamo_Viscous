@@ -1,0 +1,100 @@
+
+! This main_input file should be used with the custom reference state that is output
+! from the jupyter notebook 'Boussinesq_Dynamo_Viscous.ipynb'
+
+&problemsize_namelist
+
+ n_r = 38 
+ l_max = 42 
+ nprow = 6
+ npcol = 4 
+ aspect_ratio = 0.4d0 
+ shell_depth = 1.0d0
+
+/
+
+&numerical_controls_namelist
+
+ chebyshev = .true.
+
+/
+
+&physical_controls_namelist
+
+ rotation  = .True.
+ magnetism = .True.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+
+/
+
+&temporal_controls_namelist
+
+ max_time_step = 1.0d-4
+ max_iterations = 100000
+ alpha_implicit = 0.50001d0
+ checkpoint_interval = 500000
+ quicksave_interval = 2000
+ num_quicksaves = 2
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+
+/
+
+&io_controls_namelist
+
+/
+
+&output_namelist
+
+! Kinetic energy, magnetic energy
+globalavg_values = 401,405,409,1101,1105,1109
+globalavg_frequency = 10
+globalavg_nrec = 10
+
+
+/
+
+
+
+&Boundary_Conditions_Namelist
+
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+
+/
+
+&Initial_Conditions_Namelist
+
+init_type = 7
+magnetic_init_type = 7 
+temp_amp = 1.0d-5
+restart_iter = 0
+
+/
+
+&Test_Namelist
+
+/
+
+&Reference_Namelist
+
+reference_type = 4
+custom_reference_file='custom_ref_viscous.dat'
+
+Ekman_Number = 2.0d-3
+Rayleigh_Number = 1.12d5
+Prandtl_Number = 1.0
+Magnetic_Prandtl_Number = 5.0d0
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+
+/
+
+&Transport_Namelist
+
+/

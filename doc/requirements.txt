@@ -1,4 +1,5 @@
 sphinxcontrib-bibtex
+recommonmark
 ipykernel
 nbsphinx
 pandoc

@@ -157,6 +157,19 @@ function displayhelp {
     echo "      variable is undefined, call configure with the --with-mkl flag."
     echo ""
 
+    echo "  -conda-mkl:     " 
+    echo "      Use this flag in place of -mkl and, if desired, alonside -with-mkl to account"
+    echo "      for the conda-provided MKL directory structure."
+    echo "      Usage Example 1:  ./configure -conda-mkl             "
+    echo "      Usage Example 2:  ./configure --with-mkl='/my/mkl/root' -conda-mkl "
+    echo ""
+
+    echo "  -mac-mkl:     " 
+    echo "      Link to MKL's FFTW, LAPack, and BLAS routines using syntax appropriate for Mac."
+    echo "      This flag may be used in conjunction with -conda-mkl."
+    echo "      (NOTE:  This feature is currently only supported when -conda-mkl is also used.)"
+    echo ""    
+
     echo "  --nodirs ; -nodirs: "
     echo "      Causes Make to compile Rayleigh without directory creation support."
     echo "      This is intended ONLY for machines where the make process fails when "
@@ -265,6 +278,7 @@ RAYLEIGHROOT=$PWD
 PREFIX=$RAYLEIGHROOT
 NEED_HELP=no
 USE_MKL="FALSE"
+CONDAMKL="FALSE"
 CUSTOMROOT="none"
 
 
@@ -327,6 +341,36 @@ do
       DEVELMODE="TRUE";
       ;;
 
+    -conda-mkl)
+      if [ ! -z "$MKLROOT" ]
+      then
+        CONDAMKL="TRUE"
+        USE_MKL="TRUE"
+        RAMKLROOT=$MKLROOT
+      else
+        echo "Error Code 5: "
+        echo "MKLROOT is not defined"
+        echo "MKLROOT must be defined in your environment to use the -mkl flag."
+        echo "exiting..."
+        exit 5
+      fi 
+      ;;
+
+    -mac-mkl)
+      if [ ! -z "$MKLROOT" ]
+      then
+        MACMKL="TRUE"
+        USE_MKL="TRUE"
+        RAMKLROOT=$MKLROOT
+      else
+        echo "Error Code 5: "
+        echo "MKLROOT is not defined"
+        echo "MKLROOT must be defined in your environment to use the -mkl flag."
+        echo "exiting..."
+        exit 5
+      fi 
+      ;;
+
     -mkl)
       if [ ! -z "$MKLROOT" ]
       then
@@ -384,6 +428,11 @@ do
 
     --blank)
       BLANKMACHINE="TRUE";
+      ;;
+
+    *)
+      echo "unknown option: $option"
+      exit 1
       ;;
 
     esac
@@ -624,6 +673,57 @@ then
 
 fi
 
+if [[ $FVERSION == "GNU" ]] &&  [[ $DEVELMODE != "TRUE" ]]
+then
+
+  echo "***********************************************************************"
+  echo " GNU compiler detected.  Please indicate desired SIMD instruction set."
+  echo ""
+  echo " Suggested instruction sets are: "
+  echo " -- auto-detect (make sure compiling CPU is same as compute) : native"
+  echo " -- Westmere cores (SSE4.2)                                  : westmere"
+  echo " -- Sandy Bridge / Ivy Bridge cores (AVX)                    : sandybridge/ivybridge"
+  echo " -- Haswell / Broadwell (AVX2)                               : haswell/broadwell"
+  echo " -- SkyLake (AVX2 only)                                      : skylake"
+  echo " -- SkyLake / Knights Landing (AVX512)                       : skylake-avx512/knl"
+  echo " -- separate executables for each architecture               : ALL"
+  echo " -- no vectorization                                         : NONE"
+  echo ""
+    CPUTYPES="native westmere sandybridge ivybridge haswell broadwell skylake skylake-avx512 knl"
+    OPTIONS="${CPUTYPES} ALL NONE"
+    select opt in $OPTIONS; do
+       if [ -z "$opt" ]; then
+         echo "Invalid option.  Choosing no vectorization"
+         break
+       elif [ "$opt" = "NONE" ]; then
+         FFLAGS[0]=$OPT_FLAGS
+         break
+       elif [ "$opt" = "ALL" ]; then
+         DEFAULT='avx2'
+         nvers=5
+         MULTIVEC=TRUE
+         FFLAGS[0]=$OPT_FLAGS" -march=haswell"
+         FFLAGS[2]=$OPT_FLAGS" -march=sandybridge"
+         FFLAGS[3]=$OPT_FLAGS" -march=westmere"
+         FFLAGS[4]=$OPT_FLAGS" -march=knl"
+         RVALUES[0]=$DEFAULT
+         RVALUES[2]=avx
+         RVALUES[3]=sse
+         RVALUES[4]=avx512
+         RVTAGS[2]="AVX"
+         RVTAGS[3]="SSE"
+         RVTAGS[4]="AVX512"
+         break
+       fi
+       FFLAGS[0]="${OPT_FLAGS} -march=${opt}"
+       if [ "$opt" = "native" ]; then
+               echo "CPU autodetect result: $(gfortran -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
+       fi
+       break
+    done
+  echo "***********************************************************************"
+
+fi
 
 ###############################################################################################
 # Set the include flags
@@ -631,7 +731,12 @@ fi
 MKLFFTW=$USE_MKL
 if [[ $MKLFFTW == "TRUE" ]]
 then
-    RAYLEIGH_INC="-I$RAMKLROOT/include -I$RAMKLROOT/include/fftw"
+    if [[ $CONDAMKL == "TRUE" ]]
+    then
+        RAYLEIGH_INC="-I$RAMKLROOT/include"
+    else
+        RAYLEIGH_INC="-I$RAMKLROOT/include -I$RAMKLROOT/include/fftw"
+    fi
 else
     RAYLEIGH_INC=-I$FFTWROOT/include
 fi
@@ -651,9 +756,23 @@ then
     fi
     if [[ $FVERSION == "GNU" ]]
     then
-        MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-        LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-        FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lsdc++"
+        if [[ $CONDAMKL == "TRUE" ]]
+        then
+            if [[ $MACMKL == "TRUE" ]]
+            then
+                MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+                LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+            else
+                MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+                LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+            fi
+        else
+            MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+            LIB_FLAGS="\$(MKL_LIB) -lstdc++"
+            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+        fi
     fi
 else
 
@@ -662,6 +781,7 @@ else
     #BLAS
     if [[ $USEOPENBLAS == "TRUE" ]]
     then
+    # OPENBLAS already comes with LAPACK
         if [[ $STATICBLAS == "TRUE" ]]
         then
           BLASLINK="-L$BLASROOT/lib/libopenblas.a"
@@ -675,17 +795,16 @@ else
         else
           BLASLINK="-L$BLASROOT/lib -lblas"
         fi
+        #LAPACK
+        if [[ $STATICLAPACK == "TRUE" ]]
+        then
+            LAPACKLINK="-L$LPROOT/lib/liblapack.a"
+        else
+            LAPACKLINK="-L$LPROOT/lib -llapack"
+        fi
     fi
     
-    #LAPACK
-    if [[ $STATICLAPACK == "TRUE" ]]
-    then
-        LAPACKLINK="-L$LPROOT/lib/liblapack.a"
-    else
-        LAPACKLINK="-L$LPROOT/lib -llapack"
-    fi
-
-    #LAPACK
+    #FFTW
     if [[ $STATICFFTW == "TRUE" ]]
     then
         FFTWLINK="-L$FFTWROOT/lib/libfftw3.a"

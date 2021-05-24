@@ -30,6 +30,7 @@ Module Controls
     Integer :: nruns = 0 ! only set to non-zero value if multi_run_mode is True
     Integer, Allocatable :: run_cpus(:)
     Character*120 :: my_path = ''
+    Integer :: my_sim_id = 1  ! Simulation ID (needed for main_input broadcast)
 
     !////////////////////////////////////////////////////////////////////////////////
     ! Numerical Controls
@@ -60,7 +61,6 @@ Module Controls
     Logical :: ohmic_heating = .true.
     Logical :: advect_reference_state = .false.  ! Set to true to advect the reference state
                                                 ! Generally only do this if reference state is nonadiabatic
-    Logical :: devel_physics = .false.
 
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
@@ -68,11 +68,10 @@ Module Controls
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
-    Logical, Public, Save :: Stable_flag =.false.
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
-                & benchmark_integration_interval, benchmark_report_interval, stable_flag, &
-                & momentum_advection, devel_physics, inertia
+                & benchmark_integration_interval, benchmark_report_interval, &
+                & momentum_advection, inertia
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -93,14 +92,12 @@ Module Controls
     Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
     Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
     Real*8  :: min_time_step = 1.0d-13
-    Integer :: chk_type = 1                    ! Set to 2 for memory friendly IO (WRITE).  In development
-    Integer :: read_chk_type = 1               ! Same, but (READ)
     Integer :: diagnostic_reboot_interval = 10000000
     Integer :: new_iteration = 0
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
-                & cflmax, cflmin, max_time_step,chk_type, diagnostic_reboot_interval, min_time_step, &
+                & cflmax, cflmin, max_time_step, diagnostic_reboot_interval, min_time_step, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
-                & max_time_minutes, save_last_timestep, new_iteration,read_chk_type, save_on_sigterm, &
+                & max_time_minutes, save_last_timestep, new_iteration, save_on_sigterm, &
                 & max_simulated_time
 
 
@@ -109,20 +106,39 @@ Module Controls
     ! I/O Controls
     ! What is normally sent to standard out can, if desired, be sent to a file instead
     Integer :: stdout_flush_interval = 50  ! Lines stored before stdout buffer is flushed to stdout_unit
+    Integer :: terminate_check_interval = 50  ! check for presence of terminate_file every n-th time step
+    Integer :: statusline_interval = 1  ! output status information only every n-th time step
+    Integer :: outputs_per_row = 1    ! Number of MPI ranks, per process row, that participate in parallel writes.
     Character*120 :: stdout_file = 'nofile'
     Character*120 :: jobinfo_file = 'jobinfo.txt'
+    Character*120 :: terminate_file = 'terminate'
+    Integer :: integer_output_digits = 8  ! Number of digits for integer-filename output (default 8; e.g., 00010000)
+    Integer :: integer_input_digits  = 8  ! Number of digits for integer-filename input
+    Integer :: decimal_places = 3         ! Number of digits after decimal for scientific notation output
 
-    Namelist /IO_Controls_Namelist/ stdout_flush_interval,stdout_file,jobinfo_file
+    Namelist /IO_Controls_Namelist/ stdout_flush_interval,terminate_check_interval,statusline_interval, &
+       stdout_file,jobinfo_file,terminate_file, integer_output_digits, integer_input_digits, &
+       decimal_places, outputs_per_row
 
-    !///////////////////////////////////////////////////////////////////////////
+
+    !//////////////////////////////////////////////////////////////////////////////////
+    !Variables that are controlled by those which appear in a namelist
+
+    !~~These format codes controlled by n_[input/output]_digits
+    Character*8 :: int_in_fmt = '(i8.8)'        ! Format code for positive integer input
+    Character*8 :: int_out_fmt='(i8.8)'         ! Format code for positive integer output
+    Character*8 :: int_minus_in_fmt = '(i9.8)'  ! Format code for negative integer input
+    Character*8 :: int_minus_out_fmt='(i9.8)'   ! Format code for negative integer output
+    Character*9 :: sci_note_fmt ='(ES10.3)'     ! Format code for scientific-notation output
+
+    !///////////////////////////////////////////////////////////////////////////////////
     ! This array may be used for various purposes related to passing messages to the
     ! full pool of processes
     Real*8, Allocatable :: global_msgs(:)
     Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
-    Integer :: nglobal_msgs = 4  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time
+    Integer :: nglobal_msgs = 5  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found
 
-
-    Integer :: nicknum = 5   ! DO NOT LEAVE THIS HERE -- TEMPORARY LOCATION (AND NAME)
+    Logical :: full_restart = .false.  ! Set to true if a full-restart is initiated from the command line
 
 Contains
     Subroutine Initialize_Controls()
@@ -152,8 +168,39 @@ Contains
             Write(6,*)"Setting momentum_advection to False"
             momentum_advection = .false.
         Endif
+
+        Call Initialize_IO_Format_Codes()
+
     End Subroutine Initialize_Controls
 
+    Subroutine Initialize_IO_Format_Codes
+        Implicit None
+        Character*2 :: dig_str, dig_str2
+
+        !//////////////////////////////////////////////////////
+        ! Set format code for integer output file names
+        Write(dig_str,'(i2)')integer_output_digits
+        int_out_fmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
+        ! (Same, but for negative numbers)
+        Write(dig_str2,'(i2)')integer_output_digits+1
+        int_minus_out_fmt = '(i'//trim(dig_str2)//'.'//trim(dig_str)//')'
+
+        !///////////////////////////////////////////////
+        ! Next, set the input file format codes
+        Write(dig_str,'(i2)')integer_input_digits
+        int_in_fmt = '(i'//trim(dig_str)//'.'//trim(dig_str)//')'
+
+        Write(dig_str2,'(i2)')integer_input_digits+1
+        int_minus_in_fmt = '(i'//trim(dig_str2)//'.'//trim(dig_str)//')'
+
+        !///////////////////////////////////////////////
+        ! Set the format code for scientific notation
+        Write(dig_str ,'(i2)')decimal_places+7 
+        Write(dig_str2,'(i2)')decimal_places
+        sci_note_fmt = '(ES'//trim(dig_str)//'.'//trim(dig_str2)//')'
+
+    End Subroutine Initialize_IO_Format_Codes
 
     Subroutine Restore_Physics_Defaults()
         Implicit None
@@ -196,7 +243,6 @@ Contains
         cflmin = 0.6d0
         max_time_step = 1.0d0
         min_time_step = 1.0d-13
-        chk_type = 1
         diagnostic_reboot_interval = -1
     End Subroutine Restore_Temporal_Defaults
 
@@ -205,5 +251,8 @@ Contains
         Implicit None
         stdout_flush_interval = 50
         stdout_file = 'nofile'
+        terminate_check_interval = 50
+        terminate_file = 'terminate'
+        statusline_interval = 1
     End Subroutine Restore_IO_Defaults
 End Module Controls

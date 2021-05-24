@@ -22,7 +22,7 @@ Module ProblemSize
     Use Parallel_Framework, Only : pfi, Load_Config, Spherical
     Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
     Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
-    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path
+    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row
     Use Chebyshev_Polynomials, Only : Cheby_Grid
     Use Math_Constants
     Use BufferedOutput
@@ -32,7 +32,7 @@ Module ProblemSize
 
     !//////////////////////////////////////////////////////////////
     ! Processor Configuration
-    Integer :: ncpu = 1, nprow = 1, npcol =1 , npout = 1
+    Integer :: ncpu = 1, nprow = -1, npcol =-1 , npout = 1
     Integer :: my_rank      ! This is the rank within a run communicator
     Integer :: global_rank  ! This differs from my_rank only when multi-run mode is active
     Integer :: ncpu_global  ! Same as ncpu unless multi-run mode is active
@@ -41,8 +41,8 @@ Module ProblemSize
     !//////////////////////////////////////////////////////////////
     ! Horizontal Grid Variables
     Integer              :: n_theta = -1, n_phi
-    Integer              :: l_max = -1
-    Integer              :: m_max, n_l, n_m
+    Integer              :: l_max = -1, n_l=-1
+    Integer              :: m_max, n_m
     Logical              :: dealias = .True.
     Integer, Allocatable :: m_values(:)
     Real*8, Allocatable  :: l_l_plus1(:), over_l_l_plus1(:)
@@ -87,7 +87,7 @@ Module ProblemSize
 
 
     Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, &
-            &  precise_bounds,grid_type, l_max, &
+            &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
             &  n_uniform_domains, uniform_bounds
 Contains
@@ -135,7 +135,7 @@ Contains
     Subroutine Init_Comm()
         Implicit None
         Integer :: cpu_tmp(1)
-        Integer :: ppars(1:10)
+        Integer :: ppars(1:11)
         !/////////////////////////////////////////////////////////
         ! Initialize MPI and load balancing (if no errors detected)
         ncpu = nprow*npcol
@@ -149,6 +149,7 @@ Contains
         ppars(8) = ncpu
         ppars(9) = nprow
         ppars(10) = npcol
+        ppars(11) = outputs_per_row
         If (multi_run_mode) Then
             Call pfi%init(ppars,run_cpus, grid_error)
         Else
@@ -170,6 +171,147 @@ Contains
         Call StopWatch(init_time)%startclock()
         Call StopWatch(walltime)%startclock()
     End Subroutine Init_Comm
+
+    Subroutine Auto_Assign_Domain_Decomp()
+        Implicit None
+        Integer :: f1, f2, imax, i, j, npairs, sind, i3, i4, ii, jj
+        Integer :: fcount, nfact_ok
+        Integer :: nprow_max, npcol_max, jinds(1:3), iinds(1:4)
+        Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu, factor_diff
+        Integer, Allocatable :: factor_type(:), suitable_factors(:,:,:)
+        Logical, Allocatable :: factor_balanced(:), have_pair(:,:)
+        Real*8 :: ncpu_sqrt,r, rval, min_ratio, rdiff, rtol
+        Real*8, Allocatable :: ratio_measure(:,:)
+        Logical :: fewer_npcol, hbal, rbal, need_pair
+        ncpu_sqrt = sqrt(dble(ncpu))
+        npairs = n_l/2   ! Number of high-m, low-m pairs
+        imax = int(ncpu_sqrt)+1
+        npcol_max = n_r
+        nprow_max = n_l/2 + Mod(n_l,2)
+
+        Allocate(factors_of_ncpu(2,imax))
+        Allocate(ratio_measure(1:4,1:3), have_pair(1:4,1:3))  
+        Allocate(factor_type(1:imax*2))
+        Allocate(factor_balanced(1:imax*2))
+        Allocate(suitable_factors(1:2,1:4,1:3)) ! 1=> (f1,f2) -> (nprow, npcol), 2=> (f1,f2) -> (npcol,nprow)
+
+        fewer_npcol = .true.   ! favor configurations with npcol < nprow when nprow == npcol is not possible
+
+        factor_balanced(:) = .false.
+        factor_type(:) = 0
+
+        ratio_measure(:,:) = 2*ncpu  ! unachievably large, undesired ratio
+        have_pair(:,:) = .false.
+        suitable_factors(:,:,:) = 0
+
+        ! Identify all factors of ncpu
+        fcount = 0
+        Do f1 = 1, imax
+            If (Mod(ncpu,f1) .eq. 0) Then
+                f2 = ncpu/f1
+                If (Min(f1,f2) .ge. 2) Then  ! nprow and npcol must be at least 2
+                    fcount = fcount+1
+                    factors_of_ncpu(1:2,fcount) = (/ f1, f2 /)
+                Endif
+            Endif
+        Enddo
+
+        ! Test whether each (f1,f2) pair is suitable,
+        ! but not necessarily optimal, as a choice for
+        ! (nprow, npcol), (npcol, nprow), or both.
+        ! The ideal combination is load balanced in radius and in the horizontal,
+        ! with f1 = f2.  That combination may not be achieved, and so we store
+        ! each combo in suitable_pairs(1:2, i, j)
+
+        ! i = 1 => load balanced in both directions
+        ! i = 2 => load balanced in the horizontal only
+        ! i = 3 => load balanced in radius only
+        ! i = 4 => not load balanced at all
+
+        ! j = 1 => nprow == npcol
+        ! j = 2 nprow > npcol
+        ! j = 3 npcol < nprow 
+
+        ! For each i,j combination, we store the pair with the smallest ratio
+        ! of nprow/npcol or npcol/nprow (smaller of the two is used via MIN function)
+        Do i = 1, fcount
+            Do j = 1, 2
+                ! Check both possible combinations (f1 = nprow, f2 = npcol) and (f2 = nprow, f1 = npcol)
+                If (j .eq. 1) Then
+                    f1 = factors_of_ncpu(1,i)
+                    f2 = factors_of_ncpu(2,i)
+                Else
+                    f2 = factors_of_ncpu(1,i)
+                    f1 = factors_of_ncpu(2,i)
+                Endif
+                If ((f1 .le. nprow_max) .and. (f2 .le. npcol_max) ) Then
+                    ! Determine whether row > col or col > row or row == col
+                    i4 = 1              ! assume equal
+                    If (f1 > f2) i4 =2  ! row > col
+                    If (f2 > f1) i4 = 3 ! col > row
+
+                    ! Determine how these factors load balance
+                    rbal = .false.
+                    hbal = .false.
+                    If ( Mod(N_R,f2) .eq. 0) rbal = .true.
+                    If ( Mod(npairs,f1) .eq. 0) hbal = .true.
+                    i3 = 4                              ! Not balanced in either direction.
+                    If (rbal .and. (.not. hbal)) i3 = 3 ! Balanced in radial direction.
+                    If (hbal .and. (.not. rbal)) i3 = 2 ! Balanced in theta direction.
+                    If (rbal .and. hbal)         i3 = 1 ! Balanced in both directions.
+                    
+                    rval = ABS(1.0d0-MAX(DBLE(f1)/DBLE(f2),DBLE(f2)/DBLE(f1)))
+    
+                    If (rval .lt. ratio_measure(i3,i4) ) Then
+                        ! This is a better combination for these parameters than we've encountered yet
+                        suitable_factors(1:2,i3,i4) = (/ f1, f2 /)
+                        ratio_measure(i3,i4) = rval
+                        have_pair(i3,i4) = .true.
+                    Endif                
+                Endif
+            Enddo
+        Enddo
+
+
+        ! Next, identify the smallest possible ratio
+        min_ratio = MINVAL(ratio_measure)
+        rtol = 2.0d0
+        need_pair = .true.
+
+        ! Now, parse the array of suitable pairs in such an order
+        ! that our preferences in terms of nprow >,<,== npcol, and
+        ! in terms of load balancing are respected
+        iinds(1:4) = (/ 1, 2, 3, 4 /)  ! This really is probably the best order
+        jinds(1:3) = (/ 1, 2, 3 /)
+        If (.not. fewer_npcol) jinds = (/ 1, 3, 2 /)
+        jj = 1
+        Do While( need_pair .and. (jj .le. 3) )
+            j = jinds(jj)
+            ii = 1
+            Do While (need_pair .and. (ii .le. 4) )
+                i = iinds(ii)
+                If (have_pair(i,j)) Then
+                    rdiff = ratio_measure(i,j) - min_ratio
+                    If (rdiff .le. rtol) Then
+                        need_pair = .false.
+                        nprow = suitable_factors(1,i,j)
+                        npcol = suitable_factors(2,i,j)
+                    Endif
+                Endif
+
+                ii = ii + 1
+            Enddo
+            jj = jj+1
+        Enddo
+        If (need_pair .and. (global_rank .eq. 0) ) Then
+             Call stdout%print(' ')
+             Call stdout%print('  /////////////////////////////////////////////////////////////////////////////// ')
+             Call stdout%print('  ERROR:  Could not suitably factor specified process count for this problem size.')
+             Call stdout%print('          Setting nprow and npcol to -1.')
+             Call stdout%print('          Make sure not to run with a prime number of MPI ranks.')
+             Call stdout%print(' ')
+        Endif
+    End Subroutine Auto_Assign_Domain_Decomp
 
     Subroutine Establish_Grid_Parameters()
         Implicit None
@@ -252,8 +394,8 @@ Contains
         rmax = domain_bounds(bounds_count)
 
         shell_volume = four_pi*one_third*(rmax**3-rmin**3)
-        If (l_max .le. 0) Then
 
+        If ( (l_max .le. 0) .and. (n_l .le. 0) ) Then
 
             If (dealias) Then
                 l_max = (2*n_theta-1)/3
@@ -261,7 +403,8 @@ Contains
                 l_max = n_theta-1
             Endif
 
-        Else
+        Else 
+            If (l_max .le. 0) l_max = n_l-1
             !base n_theta on l_max
             If (dealias) Then
                 n_theta = (3*(l_max+1))/2
@@ -270,15 +413,22 @@ Contains
             Endif
         Endif
 
-
         n_phi = 2*n_theta
         m_max = l_max
         n_l = l_max+1
         n_m = m_max+1
+        If (.not. multi_run_mode) Then
+            ! For single runs, Rayleigh will attempt to identify a
+            ! sensible value of nprow and npcol if they were not
+            ! specified by the user.
+            If ((nprow .lt. 0) .and. (npcol .lt. 0) ) Then
+                ncpu = ncpu_global
+                Call Auto_Assign_Domain_Decomp()
+            Endif
+        Endif
         Call Consistency_Check()  ! Identify issues related to the grid setup
 
     End Subroutine Establish_Grid_Parameters
-
 
     Subroutine Initialize_Horizontal_Grid()
         Implicit None
@@ -311,8 +461,8 @@ Contains
         csctheta = 1/sintheta
         cottheta = costheta/sintheta
         ! Calculate spacing of equally distributed phi points, then the phi grid
-	! The range of 0 to just below 2*pi (increasing) agrees with the Meridional
-	! and Equatorial Slices
+        ! The range of 0 to just below 2*pi (increasing) agrees with the Meridional
+        ! and Equatorial Slices
         delta_phi = two_pi/n_phi
         Do k = 1, n_phi
             phivals(k) = (k-1)*delta_phi
@@ -445,15 +595,17 @@ Contains
             Endif
             tmp = tmp+1
         Enddo
+        If ( (npcol .eq. 1) .or. (nprow .eq. 1) ) Call Add_Ecode(10)
     End Subroutine Consistency_Check
 
     Subroutine Halt_On_Error()
 
-        Integer :: esize, i,j,tmp
+        Integer :: esize, i,j,tmp, ecode
         Character*6 :: istr, istr2
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         If (maxval(perr) .gt. 0) Then
+            ecode = maxval(perr)
             If (my_rank .eq. 0) Then
                 Call stdout%print(' /////////////////////////////////////////////////////////////////')
                 Call stdout%print(' The following errors(s) were detected during grid initialization: ')
@@ -513,7 +665,12 @@ Contains
                                 &trim(adjustl(istr))// &
                                 & ")          :  "//trim(adjustl(istr2)))
                         Enddo
-
+                    Case(10)
+                        Call stdout%print('  ERROR:  Neither nprow nor npcol may equal 1.')
+                        Write(istr,'(i6)')npcol
+                        Call stdout%print('          current NPCOL :'//trim(istr))
+                        Write(istr,'(i6)')n_r
+                        Call stdout%print('          current N_R   :'//trim(istr))
                     End Select
                     If (perr(i) .gt. 0) Call stdout%print(' ')
                 Enddo
@@ -522,7 +679,7 @@ Contains
 
                 Call stdout%finalize()
             Endif
-            Call pfi%exit()
+            Call pfi%exit(ecode)
         Endif
     End Subroutine Halt_On_Error
 End Module ProblemSize

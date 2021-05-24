@@ -27,8 +27,7 @@ Module Sphere_Linear_Terms
     Use BoundaryConditions
     Use Timers
     Use ClockInfo
-    Use ReferenceState
-    Use TransportCoefficients
+    Use PDE_Coefficients
     Use Math_Constants
     Implicit None
     Real*8, Allocatable :: Lconservation_weights(:)
@@ -37,30 +36,29 @@ Contains
     Subroutine Linear_Init()
         Implicit None
         Real*8 :: amp, T,arg
-        Integer :: n, r
+        Integer :: n, r, m, nm
         !Depending on process layout, some ranks may not participate in the solve
-        If (my_num_lm .gt. 0) Then
-
+        If (my_num_lm .gt. 0) Then 
+ 
             Call Initialize_Linear_System()
 
             If (strict_L_conservation) Then
 
                 Allocate(Lconservation_weights(1:N_R))
                 Lconservation_weights(1:N_R) = 0.0d0
-
-                Do n = 1, N_R
-                    Do r = 1, N_R
-                        T = gridcp%dcheby(1)%data(r,n,0)
-                        Lconservation_weights(n) = Lconservation_weights(n) + radial_integral_weights(r) * T
+                nm = 0
+                Do m = 1, gridcp%domain_count
+                    Do n = 1, gridcp%npoly(m)
+                        Do r = 1, gridcp%npoly(m)
+                            T = gridcp%dcheby(m)%data(r,n,0)
+                            Lconservation_weights(n+nm) = Lconservation_weights(n+nm) + radial_integral_weights(r+nm) * T
+                        Enddo
                     Enddo
+                    Lconservation_weights( nm+(2*gridcp%npoly(m))/3+1:nm+gridcp%npoly(m) ) = 0.0d0  ! De-Alias
+                    nm = nm + gridcp%npoly(m)
                 Enddo
-
-                Lconservation_weights( (2*N_R)/3+1: ) = 0.0d0  ! De-Alias
-
             Endif
-
         Endif
-
     End Subroutine Linear_Init
 
     Subroutine Reset_Linear_Equations()
@@ -77,21 +75,14 @@ Contains
 
     Subroutine Initialize_Linear_System
         Implicit None
-        Integer :: neq, nvar,lp, l, nlinks
+        Integer :: lp, l, nlinks
         Integer, Allocatable :: eq_links(:), var_links(:)
         Type(Cheby_Grid), Pointer :: gridpointer
-        If (magnetism) Then
-            neq  = 6 +1 ! PASSIVE
-            nvar = 6 +1
-        Else
-            neq  = 4 +1
-            nvar = 4 +1
-        Endif
         nullify(gridpointer)
         gridpointer => gridcp
         If (chebyshev) Call Use_Chebyshev(gridpointer)    ! Turns chebyshev mode to "on" for the linear solve
 
-        Call Initialize_Equation_Set(neq,nvar,N_R,my_nl_lm, my_nm_lm,2)
+        Call Initialize_Equation_Set(n_equations,n_variables,N_R,my_nl_lm, my_nm_lm,2)
 
         Do lp = 1, my_nl_lm
             l = my_lm_lval(lp)
@@ -125,11 +116,8 @@ Contains
                 ! W equation
                 Call Initialize_Equation_Coefficients(weq,wvar,2,lp)
                 Call Initialize_Equation_Coefficients(weq,pvar,1,lp)
-                If (devel_physics) Then
-                    Call Initialize_Equation_Coefficients(weq,tvar,1,lp)
-                Else
-                    Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
-                Endif
+                Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
+
 
                 ! P equation
                 Call Initialize_Equation_Coefficients(peq,wvar, 3,lp)
@@ -251,26 +239,13 @@ Contains
                 !==================================================
                 !                Radial Momentum Equation
 
-                If (devel_physics) Then
-                    ! T term
-                !    amp = 1.0d0
-                    ! grad T term
-                !    amp = 1.0d0
-                    ! Temperature
 
-                    amp = -paf_gv2/H_Laplacian
-                    Call add_implicit_term(weq, tvar, 0, amp,lp)
 
-                    amp = -paf_v2/H_Laplacian
-                    Call add_implicit_term(weq, tvar, 1, amp,lp)
-                Else
+                ! Temperature
+                amp = -ref%Buoyancy_Coeff/H_Laplacian
+                Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
-                    ! Temperature
 
-                    amp = -ref%Buoyancy_Coeff/H_Laplacian
-                    Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
-
-                Endif
                 ! Pressure
                 !amp = 1.0d0/(Ek*H_Laplacian)*ref%density        ! dPdr
                 amp = ref%dpdr_W_term/H_Laplacian
@@ -507,11 +482,6 @@ Contains
             Endif
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
-            Endif
-            If (fix_tdt_bottom) Then
-                Call Load_BC(lp,r,teq,tvar,one,1)
-                Call Clear_Row(teq,lp,N_R-1)
-                Call Load_BC(lp,N_R-1,teq,tvar,one,0)
             Endif
 
             ! PASSIVE
@@ -762,42 +732,6 @@ Contains
                     Call Load_BC(lp,r,aeq,avar,one,0)
                 Endif
 
-                !=============== STABLE =============================
-
-                If (STABLE_flag) Then
-
-
-                   ! Radial field at the top
-
-                   r = 1
-
-                   Call Clear_Row(aeq,lp,1)
-
-                   Call Clear_Row(ceq,lp,1)
-
-                   Call Load_BC(lp,r,aeq,avar,one,0)
-
-                   Call Load_BC(lp,r,ceq,cvar,one,1)
-
-
-                   ! Horizontal field at the bottom
-
-                   r = N_R
-
-                   Call Clear_Row(aeq,lp,N_R)
-
-                   Call Clear_Row(ceq,lp,N_R)
-
-                   Call Load_BC(lp,r,aeq,avar,one,1)
-
-                   Call Load_BC(lp,r,ceq,cvar,one,0)
-
-
-                EndIf
-
-                !=============== STABLE =============================
-
-
             Endif    ! Magnetism
 
 
@@ -806,17 +740,24 @@ Contains
 
     End Subroutine Set_Boundary_Conditions
 
+    Subroutine Enforce_Boundary_Conditions
+        Implicit None
+        Real*8 :: bc_val
+        Integer :: uind, lind
+        Integer :: real_ind, imag_ind
 
+        Call Apply_Boundary_Mask(bc_values)
+        Call Domain_Continuity()
 
-    Subroutine Enforce_Boundary_Conditions()
+    End Subroutine Enforce_Boundary_Conditions
+
+    Subroutine Domain_Continuity()
         Implicit None
         Integer :: l, indx, ii,lp, j, k,n
         ! start applying the boundary and continuity conditions by setting
         ! the appropriate right hand sides.
 
-        ! This is ugly, and I have no idea how to make this pretty.
-        ! Might zero these by default and then call a routine for exceptions
-        ! such as fixed entropy top.
+        ! Will wrap this more into Linear_Solve.F90 soon
         ii = 2*N_R
 
 
@@ -825,145 +766,6 @@ Contains
         Do lp = 1, my_nl_lm
             n_m = my_nm_lm(lp)-1    ! really n_m, but the indexing below is from the old implicit solv
             l = my_lm_lval(lp)
-
-            If (l /= 0) Then
-
-                equation_set(1,weq)%RHS(1+2*N_R  ,:,indx:indx+n_m)    = zero
-                equation_set(1,weq)%RHS(N_R+2*N_R,:,indx:indx+n_m)    = zero
-
-                equation_set(1,weq)%RHS(1    ,:,indx:indx+n_m) = Zero
-                equation_set(1,weq)%RHS(N_R  ,:,indx:indx+n_m) = Zero
-
-
-                equation_set(1,weq)%RHS(1+N_R,:,indx:indx+n_m) = Zero
-                equation_set(1,weq)%RHS(2*N_R,:,indx:indx+n_m) = Zero
-
-                equation_set(1,zeq)%RHS(1  ,:,indx:indx+n_m)    = Zero
-                equation_set(1,zeq)%RHS(N_R,:,indx:indx+n_m)    = Zero
-
-                equation_set(1,seq)%RHS(1  ,:,indx:indx+n_m)    = Zero  ! PASSIVE
-                equation_set(1,seq)%RHS(N_R,:,indx:indx+n_m)    = Zero
-
-                If (Magnetism) Then
-                    equation_set(1,ceq)%RHS(1,:,indx:indx+n_m) = Zero
-                    equation_set(1,ceq)%RHS(N_R,:,indx:indx+n_m) = Zero
-
-                    equation_set(1,aeq)%RHS(1,:,indx:indx+n_m) = Zero
-                    equation_set(1,aeq)%RHS(N_R,:,indx:indx+n_m) = Zero
-
-                    If (fix_poloidalfield_top) Then
-                        If (l .eq. 1) Then
-                            Do k = indx, indx+n_m
-                                If (m_lm_values(k) .eq. 0) Then
-                                    equation_set(1,ceq)%RHS(1,1,k) = C10_top
-                                    equation_set(1,ceq)%RHS(1,2,k) = 0.0d0
-                                Endif
-                                If (m_lm_values(k) .eq. 1) Then
-                                    equation_set(1,ceq)%RHS(1,1,k) = C11_top
-                                    equation_set(1,ceq)%RHS(1,2,k) = C1m1_top
-                                Endif
-                            Enddo
-                        Endif
-                    Endif
-
-                    If (fix_poloidalfield_bottom) Then
-                        If (l .eq. 1 ) Then
-                            Do k = indx, indx+n_m
-                                If (m_lm_values(k) .eq. 0) Then
-                                    equation_set(1,ceq)%RHS(N_R,1,k) = C10_bottom
-                                    equation_set(1,ceq)%RHS(N_R,2,k) = 0.0d0
-                                Endif
-                                If (m_lm_values(k) .eq. 1) Then
-                                    equation_set(1,ceq)%RHS(N_R,1,k) = C11_bottom
-                                    equation_set(1,ceq)%RHS(N_R,2,k) = C1m1_bottom
-                                Endif
-                            Enddo
-                        Endif
-                    Endif
-
-                    !================= STABLE ============================
-
-                    If (STABLE_flag) Then
-
-                       equation_set(1,ceq)%RHS(1,:,indx:indx+n_m) = Zero
-
-                       equation_set(1,ceq)%RHS(N_R,:,indx:indx+n_m) = Zero
-
-                       equation_set(1,aeq)%RHS(1,:,indx:indx+n_m) = Zero
-
-                       equation_set(1,aeq)%RHS(N_R,:,indx:indx+n_m) = Zero
-
-                    EndIf
-
-                    !================= STABLE ============================
-
-
-                Endif
-
-            Else
-
-                equation_set(1,weq)%RHS(:,2,indx)   = Zero ! no imaginary part for any ell=0 equations
-                equation_set(1,zeq)%RHS(:,:,indx)   = Zero    ! no ell = 0 z_equation
-                If (magnetism) Then
-                    equation_set(1,aeq)%RHS(:,:,indx)   = Zero
-                    equation_set(1,ceq)%RHS(:,:,indx)   = Zero
-                Endif
-                equation_set(1,weq)%rhs(1:N_R,:,indx) = zero                ! ell =0 W is zero
-                equation_set(1,weq)%rhs(N_R+1,1,indx) = zero    ! Pressure node
-
-                ! PASSIVE
-                If (fix_svar_top) Then
-                    !Top temperature (in spectral space, but BC's specified in physical space
-                    !    so multiply by sqrt4pi)
-                    equation_set(1,seq)%RHS(1,1,indx)   = Svar_Top*sqrt(4.0D0*Pi)
-                Endif
-                If (fix_dsvardr_top) Then
-                    !Top temperature (in spectral space, but BC's specified in physical space
-                    !    so multiply by sqrt4pi)
-                    equation_set(1,seq)%RHS(1,1,indx)   = dsvardr_Top*sqrt(4.0D0*Pi)
-                Endif
-
-                If (fix_svar_bottom) Then
-                    !Bottom Temperature
-                    equation_set(1,seq)%RHS(N_R,1,indx) = svar_Bottom*sqrt(4.0D0*Pi)
-                Endif
-
-                If (fix_dsvardr_bottom) Then
-                    !Top temperature (in spectral space, but BC's specified in physical space
-                    !    so multiply by sqrt4pi)
-                    equation_set(1,seq)%RHS(N_R,1,indx)   = dsvardr_bottom*sqrt(4.0D0*Pi)
-                Endif
-
-                ! PASSIVE
-
-
-                If (fix_tvar_top) Then
-                    !Top temperature (in spectral space, but BC's specified in physical space
-                    !    so multiply by sqrt4pi)
-                    equation_set(1,weq)%RHS(1+ii,1,indx)   = T_Top*sqrt(4.0D0*Pi)
-                Endif
-                If (fix_dtdr_top) Then
-                    !Top temperature (in spectral space, but BC's specified in physical space
-                    !    so multiply by sqrt4pi)
-                    equation_set(1,weq)%RHS(1+ii,1,indx)   = dTdr_Top*sqrt(4.0D0*Pi)
-                Endif
-
-                If (fix_tvar_bottom) Then
-                    !Bottom Temperature
-                    equation_set(1,weq)%RHS(N_R+ii,1,indx) = T_Bottom*sqrt(4.0D0*Pi)
-                Endif
-
-                If (fix_tdt_bottom) Then
-                    equation_set(1,weq)%RHS(N_R+ii,1,indx) = dTdr_Bottom*sqrt(4.0D0*Pi)
-                    equation_set(1,weq)%RHS(N_R-1+ii,1,indx) = T_Bottom*sqrt(4.0D0*Pi)
-                Endif
-
-                If (fix_dtdr_bottom) Then
-                    !Bottom Temperature
-                    equation_set(1,weq)%RHS(N_R+ii,1,indx) = dTdr_Bottom*sqrt(4.0D0*Pi)
-                Endif
-
-            Endif
 
             If (chebyshev) Then
                 ! Apply continuity conditions across the subdomains
@@ -1012,6 +814,6 @@ Contains
 
             indx = indx + n_m + 1
         Enddo
-    End Subroutine Enforce_Boundary_Conditions
+    End Subroutine Domain_Continuity
 
 End Module Sphere_Linear_Terms

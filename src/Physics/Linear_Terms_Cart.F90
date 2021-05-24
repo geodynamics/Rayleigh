@@ -62,11 +62,11 @@ Contains
         Integer :: neq, nvar,lp, l, nlinks
         Integer, Allocatable :: eq_links(:), var_links(:)
         If (magnetism) Then
-            neq  = 6
-            nvar = 6
+            neq  = 6 +1
+            nvar = 6 +1
         Else
-            neq  = 4
-            nvar = 4
+            neq  = 4 +1
+            nvar = 4 +1
         Endif
         If (chebyshev) Call Use_Chebyshev()    ! Turns chebyshev mode to "on" for the linear solve
         Call Initialize_Equation_Set(neq,nvar,N_R,my_nl_lm, my_nm_lm,2)

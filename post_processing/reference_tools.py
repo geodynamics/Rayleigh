@@ -4,32 +4,55 @@ import numpy
 class equation_coefficients:
     """ equation coeff class  """
     nconst = 10
-    nfunc = 16
-    nr = 0
-    functions = numpy.zeros((nfunc,1)  , dtype='float64' )
-    radius    = numpy.zeros(1          , dtype='float64' )
-    constants = numpy.zeros(nconst     , dtype='float64' )
-    cset      = numpy.zeros(nconst     , dtype='int32'   )
-    fset      = numpy.zeros(nfunc      , dtype='int32'   )
+    nfunc = 14
+    version=1
     c_dict    = {'two_omega':1, 'buoy_fact':2, 'p_fact':3, 'lorentz_fact':4, 'visc_fact':5,
                  'diff_fact':6, 'resist_fact':7, 'nu_heat_fact':8, 'ohm_heat_fact':9,
                  'luminosity':10}
     f_dict    = {'density':1, 'buoy':2, 'nu':3, 'temperature':4, 'kappa':5, 'heating':6,
                  'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
                  'd_ln_eta':13, 'ds_dr':14}
-    def __init__(self,radius):
-        nr = len(radius)
-        self.nr = nr
-        self.radius = numpy.zeros(nr,dtype='float64')
-        self.radius[:] = radius[:]
-        self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
+
+    def __init__(self,radius=[], file=None):
+        if (len(radius) != 0):
+            nr = len(radius)
+            self.nr = nr
+            self.radius = numpy.zeros(nr,dtype='float64')
+            self.radius[:] = radius[:]
+            self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
+            
+            self.constants = numpy.zeros(self.nconst     , dtype='float64' )
+            self.cset      = numpy.zeros(self.nconst     , dtype='int32'   )
+            self.fset      = numpy.zeros(self.nfunc      , dtype='int32'   )
+        elif (file != None):
+            self.read(filename=file)
+
+    def __getattr__(self, name):
+        if name in self.f_dict:
+            return self.functions[self.f_dict[name] - 1]
+        elif name in self.c_dict:
+            return self.constants[self.c_dict[name] - 1]
+        else:
+            raise AttributeError("'{}' has no attribute '{}'".format(self.__class__, name))
+
+    def __setattr__(self, name, value):
+        if name in self.f_dict:
+            self.set_function(value, name)
+        elif name in self.c_dict:
+            self.set_constant[name]
+        else:
+            super().__setattr__(name, value)
+
     def set_function(self,y,f_name):
+
         if (isinstance(f_name,str)):
             fi = self.f_dict[f_name]
         else:
             fi = f_name
-        self.functions[fi-1,:] = y[:]
+
+        self.functions[fi-1,:] = y
         self.fset[fi-1] = 1
+        
     def set_constant(self,c,c_name):
         if (isinstance(c_name,str)):
             ci = self.c_dict[c_name]
@@ -41,8 +64,10 @@ class equation_coefficients:
     def write(self, filename='ecoefs.dat'):
         pi = numpy.array([314],dtype='int32')
         nr = numpy.array([self.nr],dtype='int32')
+        version = numpy.array([self.version],dtype='int32')
         fd = open(filename,'wb')
         pi.tofile(fd)
+        version.tofile(fd)
         self.cset.tofile(fd)
         self.fset.tofile(fd)
         self.constants.tofile(fd)
@@ -50,8 +75,21 @@ class equation_coefficients:
         self.radius.tofile(fd)
         self.functions.tofile(fd)
         fd.close() 
+        
+    def read(self, filename='equation_coefficients'):
 
-
+        fd = open(filename,'rb')
+        picheck = numpy.fromfile(fd,dtype='int32',count=1)[0]
+       
+        self.version = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        self.cset = numpy.fromfile(fd,dtype='int32',count=self.nconst)
+        self.fset = numpy.fromfile(fd,dtype='int32',count=self.nfunc)
+        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)
+        self.nr = numpy.fromfile(fd,dtype='int32',count=1)[0]
+        self.radius = numpy.fromfile(fd,dtype='float64',count=self.nr)
+        functions=numpy.fromfile(fd,dtype='float64',count=self.nr*self.nfunc)
+        self.functions = numpy.reshape(functions, (self.nfunc,self.nr))
+        fd.close()
 
 class background_state:
     nr = None
@@ -88,7 +126,6 @@ class background_state:
             # to the corresponding class attribute.
             for (k,v) in kvp:
                 self.set_variable(k,v)
-
                             
     def set_variable(self,k,v):
         if (k != 'self'  and k != 'radius'):
@@ -202,8 +239,7 @@ def gen_poly(radius,n,nrho,mass,rhoi,gconst,cp,rb):
     z = temperature/ti
     b = btwiddle/ti
     dzdr = -b/radius/radius
-    
-    
+
     zi = btwiddle*(1.0/rb+f/rb)/ti
 
     rho_0 = rhoi/(zi**n)
@@ -224,3 +260,4 @@ def gen_poly(radius,n,nrho,mass,rhoi,gconst,cp,rb):
                                 entropy = entropy, entropy_gradient=dsdr, 
                                 pressure_gradient= dpdr, density=density)
     return new_poly
+

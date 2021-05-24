@@ -177,9 +177,9 @@ Contains
         Call Add_Derivative(weq,wvar,1,wsp%p1b,wsp%p1a,dwdr)
         Call Add_Derivative(weq,wvar,2,wsp%p1b,wsp%p1a,d2wdr2)
 
-
-
-
+        If (advect_reference_state) Then
+            Call Add_Derivative(teq,wvar,0,wsp%p1b,wsp%p1a,wvar)
+        Endif
         !//////////////////////////////
         !  P Terms
 

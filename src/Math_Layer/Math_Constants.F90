@@ -19,6 +19,7 @@
 !
 
 Module Math_Constants
+    Use Ra_Precision
     Implicit None
     Real*8 :: One_Third = 1.0d0/3.0d0
     Real*8 :: Pi  = 3.1415926535897932384626433832795028841972d0

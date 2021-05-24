@@ -43,7 +43,6 @@ Program Main!
     Use Timers
     Use Fourier_Transform, Only : Initialize_FFTs
     Use Benchmarking, Only : Initialize_Benchmarking, Benchmark_Input_Reset
-    Use Stable_Plugin
     Use Run_Parameters, Only : write_run_parameters
 
     Implicit None
@@ -55,13 +54,13 @@ Program Main!
 
     Call Main_Input()
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
-    Call Write_Run_Parameters()  ! write input parameters and other build information
 
     If (test_mode) Then
         Call Init_ProblemSize()
         Call Test_Lib()
     Else
         Call Main_Initialization()
+        Call Write_Run_Parameters()  ! write input parameters and other build information
         Call Main_Loop_Sphere()
     Endif
     Call Finalization()
@@ -83,26 +82,24 @@ Contains
         Call Initialize_FFts()
         Call Initialize_Reference()
 
-        Call Initialize_Boundary_Conditions()
-        Call Initialize_Transport_Coefficients()
-
-        !====================== STABLE
-        If (stable_flag) Then
-            Call Initialize_MeanFLows()
-            Call STABLE_eta()
-            Call Init_Poloidal_Source()
-            Call Compute_SU()
-        Endif
-        !=================== STABLE
-
         Call Initialize_Field_Structure()
+        Call Initialize_Checkpointing()
+        Call Initialize_Transport_Coefficients()
+        Call Initialize_Boundary_Conditions()
+
+
+        Call Write_Equation_Coefficients_File()
+
         Call Initialize_Diagnostics()
 
         Call Full_Barrier()
 
         Call Linear_Init()
-        Call Initialize_Checkpointing()
+
         Call Initialize_Fields()
+       
+        Call Finalize_Boundary_Conditions()
+
         Call StopWatch(init_time)%increment() ! started in Init_Problemsize just after MPI is started up
 
         If (my_rank .eq. 0) Then
@@ -115,20 +112,18 @@ Contains
     Subroutine Initialize_Directory_Structure()
         Implicit None
         Integer :: ecode
+        Logical :: file_exists
         If (my_rank .eq. 0) Then
-            Call Make_Directory(Trim(my_path)//'G_Avgs',ecode)
-            Call Make_Directory(Trim(my_path)//'Shell_Avgs',ecode)
-            Call Make_Directory(Trim(my_path)//'AZ_Avgs',ecode)
-            Call Make_Directory(Trim(my_path)//'Shell_Slices',ecode)
             Call Make_Directory(Trim(my_path)//'Checkpoints',ecode)
             Call Make_Directory(Trim(my_path)//'Timings',ecode)
-            Call Make_Directory(Trim(my_path)//'Spherical_3D',ecode)
-            Call Make_Directory(Trim(my_path)//'Shell_Spectra',ecode)
             Call Make_Directory(Trim(my_path)//'Benchmark_Reports',ecode)
-            Call Make_Directory(Trim(my_path)//'Equatorial_Slices',ecode)
-            Call Make_Directory(Trim(my_path)//'Meridional_Slices',ecode)
-            Call Make_Directory(Trim(my_path)//'SPH_Modes',ecode)
-            Call Make_Directory(Trim(my_path)//'Point_Probes',ecode)
+
+            !Delete possibly existing terminate file from last run
+            Inquire(file=Trim(my_path)//Trim(terminate_file),exist=file_exists)
+            If (file_exists) Then
+               Open(unit=25,file=Trim(my_path)//Trim(terminate_file))
+               close(unit=25,status='delete')
+            Endif
         Endif
     End Subroutine Initialize_Directory_Structure
 

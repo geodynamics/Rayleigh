@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:physics:
+.. _physics:
 
 Physics Controls
 ================
@@ -24,7 +24,7 @@ code’s behavior in any of these three modes.
 Anelastic Mode (dimensional)
 ----------------------------
 
-**Example Input: Rayleigh/etc/input_examples/main_input_sun**
+**Example Input: Rayleigh/input_examples/main_input_sun**
 
 When run in dimensional, anelastic mode, **reference_type=2** must be
 specified in the Reference_Namelist. In that case, Rayleigh solves the
@@ -180,12 +180,12 @@ formulation.
 
    \clearpage
 
-.. _sec:physics_boussinesq_nondimensional:
+.. _physics_boussinesq_nondimensional:
 
 Boussinesq Mode (nondimensional)
 --------------------------------
 
-**Example Input: Rayleigh/etc/input_examples/c2001_case1_input**
+**Example Input: Rayleigh/input_examples/c2001_case1_input**
 
 When run in nondimensional Boussinesq mode, **reference_type=1** must be
 specified in the Reference_Namelist. In that case, Rayleigh employs the
@@ -284,7 +284,7 @@ temperature gradient at that boundary is 1. For example:
    /
 
 Boundary conditions and internal heating are discussed in
-§\ `1.4 <#sec:boundary_conditions>`__. Finally, in Boussinesq mode, the
+§\ :ref:`boundary_conditions`. Finally, in Boussinesq mode, the
 namelist variables **nu_type**, **kappa_type**, and **eta_type** should
 be set to 1. Their values will be determined by Pr and Pm, instead of
 nu_top, kappa_top, or eta_top.
@@ -322,7 +322,7 @@ addition, reference_type=1 must also be specified.
 Anelastic Mode (nondimensional)
 -------------------------------
 
-**Example Input: Rayleigh/etc/input_examples/main_input_jupiter**
+**Example Input: Rayleigh/input_examples/main_input_jupiter**
 
 When running in nondimensional anelastic mode, you must set
 **reference_type=3** in the Reference_Namelist. When this parameter is
@@ -425,7 +425,7 @@ addition, reference_type=3 must also be specified.
    |                                   | spanning the domain               |
    +-----------------------------------+-----------------------------------+
 
-.. _sec:boundary_conditions:
+.. _boundary_conditions:
 
 Boundary Conditions & Internal Heating
 --------------------------------------
@@ -438,8 +438,8 @@ boundaries, set **no_slip_boundaries = .true.**. If you wish to set
 no-slip conditions at only one boundary, set **no_slip_top=.true.** or
 **no_slip_bottom=.true.** in the Boundary_Conditions_Namelist.
 
-Magnetic boundary conditions are set to match to a potential field at
-each boundary. There are no supported alternatives at this time.
+By default, magnetic boundary conditions are set to match to a potential field at
+each boundary.
 
 By default, the thermal anomoly :math:`\Theta` is set to a fixed value
 at each boundary. The upper and lower boundary-values are specified by
@@ -452,6 +452,45 @@ Alternatively, you may specify a constant value of
 by setting the variables **fix_dTdr_top** and **fix_dTdr_bottom**.
 Values of the gradient may be enforced by setting the namelist variables
 **dTdr_top** and **dTdr_bottom**. Both default to a value of zero.
+
+Generic Boundary Conditions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Boundary conditions for temperature, :math:`T`, and the magnetic poloidal potential, :math:`C`,
+may also be set using generic spectral input.  As with initial conditions (see :ref:`sec:generic_ic`)
+this is done by generating a generic input file using the **rayleigh_spectral_input.py** script.
+The file output from this script can then be applied using:
+
+-  **fix_Tvar_top** and **T_top_file** (overrides **T_top** for a constant boundary condition)
+   to set a fixed upper :math:`T` boundary condition
+-  **fix_dTdr_top** and **dTdr_top_file** (overrides **dTdr_top**) to set a fixed upper :math:`T` gradient boundary condition
+-  **fix_Tvar_bottom** and **T_bottom_file** (overrides **T_bottom**) to set a fixed lower :math:`T` boundary condition
+-  **fix_dTdr_bottom** and **dTdr_bottom_file** (overrides **dTdr_bottom**) to set a fixed lower :math:`T` gradient boundary
+   condition
+-  **fix_poloidal_top** and **C_top_file** (overrides **impose_dipole_field**) to set a fixed upper :math:`C` boundary condition
+-  **fix_poloidal_bottom** and **C_bottom_file** (overrides **impose_dipole_field**) to set a fixed lower :math:`C` boundary condition
+
+For example, to set a :math:`C` boundary condition on both boundaries with modes (l,m) = (1,0) and (1,1) set to pre-calculated
+values run:
+
+::
+   
+   rayleigh_spectral_input.py -m 1 0 2.973662220170157 -m 1 1 0.5243368809294343+0.j -o ctop_init_bc
+   rayleigh_spectral_input.py -m 1 0 8.496177771914736 -m 1 1 1.4981053740840984+0.j -o cbottom_init_bc
+
+which will generate generic spectral input files `ctop_init_bc` and `cbottom_init_bc`.  Set these to be used as the boundary
+conditions in `main_input` using:
+
+::
+
+   &Boundary_Conditions_Namelist
+   fix_poloidalfield_top = .true.
+   fix_poloidalfield_bottom = .true.
+   C_top_file = 'ctop_init_bc'
+   C_bottom_file = 'cbottom_init_bc'
+   /
+
+This can be seen being applied in `tests/generic_input`.
 
 Internal Heating
 ~~~~~~~~~~~~~~~~
@@ -531,7 +570,7 @@ Initializing a Model
 
 A Rayleigh simulation may be initialized with a random thermal and/or
 magnetic field, or it may be restarted from an existing checkpoint file
-(see §\ `[sec:checkpointing] <#sec:checkpointing>`__ for a detailed
+(see §\ :ref:`checkpointing` for a detailed
 discussion of checkpointing). This behavior is controlled through the
 **initial_conditions_namelist** and the **init_type** and
 **magnetic_init_type** variables. The init_type variable controls the
@@ -634,9 +673,10 @@ contain something similar to:
    /
 
 
+.. _sec:generic_ic:
 
 Generic Initial Conditions
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The user can input any initial conditions from data files generated by
 a python routine "rayleigh_spectral_input.py", which can be called as
@@ -645,10 +685,10 @@ a script or imported as a python class.
 The available generic initial conditions options are
 
 ::
-   
+
    &initial_conditions_namelist
    init_type=8
-   T_init_file = '<filename>'  !! Temperature 
+   T_init_file = '<filename>'  !! Temperature
    W_init_file = '<filename>'  !! Poloidal velocity potential
    Z_init_file = '<filename>'  !! Toroidal velocity potential
    P_init_file = '<filename>'  !! `Pressure` potential
@@ -668,29 +708,29 @@ only initialized from file if `magnetic_init_type=8`.
 To generate a generic initial condition input file, for example, if a user wanted to specify a single mode in that input file then they could just run the script:
 
 ::
-   
+
    rayleigh_spectral_input.py -m 0 0 0 1.+0.j -o example
 
-   
+
 to specify (n,l,m) = (0,0,0) to have a coefficient 1.+0.j and output it to the file example.
 
 This could also be done using the python as a module. In a python
 shell this would look like:
 
 ::
-   
+
    from rayleigh_spectral_input import *
    si = SpectralInput()
    si.add_mode(1., n=0, l=0, m=0)
    si.write('example')
-   
+
 
 For a more complicated example, e.g. the hydrodynamic benchmark from
 Christensen et al. 2001, the user can specify functions of theta, phi
 and radius that the python will convert to spectral:
 
 ::
-   
+
    rayleigh_spectral_input.py -ar 0.35 -sd 1.0 -nt 96 -nr 64 -o example \
     -e 'import numpy as np; x = 2*radius - rmin - rmax;
     rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) -
@@ -701,7 +741,7 @@ in "script" mode.
 Alternatively, in "module" mode in a python shell:
 
 ::
-   
+
    from rayleigh_spectral_input import *
    si = SpectralInput(n_theta=96, n_r=64)
    rmin, rmax = radial_extents(aspect_ratio=0.35, shell_depth=1.0)

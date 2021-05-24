@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:running:
+.. _running:
 
 Running the Code
 ================
@@ -49,10 +49,10 @@ Next, you must create a main_input file. This file contains the
 information that describes how your simulation is run. Rayleigh always
 looks for a file named main_input in the directory that it is launched
 from. Copy one of the sample input files from the
-Rayleigh/etc/input_examples/ into your run directory, and rename it to
+Rayleigh/input_examples/ into your run directory, and rename it to
 main_input. The file named *benchmark_diagnostics_input* can be used to
 generate output for the diagnostics plotting tutorial (see
-§\ `[sec:diagnostics] <#sec:diagnostics>`__).
+§\ :ref:`diagnostics`).
 
 Finally, Rayleigh has some OpenMP-related logic that is still in
 development. We do not support Rayleigh’s OpenMP mode at this time, but
@@ -160,15 +160,24 @@ line (overriding the values in main_input) via:
 
    mpiexec -np 8 ./rayleigh.opt -nr 48 -ntheta 96
 
-If desired, the maximal spherical harmonic degree
-:math:`\ell_\mathrm{max}\equiv N_\ell-1` can be specified in lieu of
-:math:`N_\theta`. The example above may equivalently be written:
+If desired, the number of spherical harmonic degrees :math:`N_\ell` or the maximal spherical harmonic degree
+:math:`\ell_\mathrm{max}\equiv N_\ell-1` may be specified in lieu of
+:math:`N_\theta`.  The example above may equivalently be written as
 
 ::
 
    &problemsize_namelist
     n_r = 48
     l_max = 63
+   /
+
+or
+
+::
+
+   &problemsize_namelist
+    n_r = 48
+    n_l = 64
    /
 
 The radial domain bounds are determined by the namelist variables
@@ -195,7 +204,7 @@ and aspect ratio (:math:`rmin/rmax`) in lieu of :math:`rmin` and
 
 Note that the interpretation of :math:`rmin` and :math:`rmax` depends on
 whether your simulation is dimensional or nondimensional. We discuss
-these alternative formulations in §\ `[sec:physics] <#sec:physics>`__
+these alternative formulations in §\ :ref:`physics`
 
 Controlling Run Length & Time Stepping
 --------------------------------------
@@ -208,6 +217,18 @@ will run for is determined by the value of the namelist
 **max_iterations**. The simulation will complete when it has run for
 *max_time_minutes minutes* or when it has run for *max_iterations time
 steps* – whichever occurs first.
+
+An orderly shutdown of Rayleigh can be manually triggered by creating a file
+with the name set in **terminate_file** (i.e., running the command *touch
+terminate* in the default setting). If the file is found, Rayleigh will stop
+after the next time step and write a checkpoint file. The existence of
+**terminate_file** is checked every **terminate_check_interval** iterations.
+The check can be switched off completely by setting
+**terminate_check_interval** to -1. Both of these options are set in the
+**io_controls_namelist**. With the appropriate job script this feature can be
+used to easily restart the code with new settings without losing the current
+allocation in the queuing system. A **terminate_file** left over from
+a previous run is automatically deleted when the code starts.
 
 Time-step size in Rayleigh is controlled by the Courant-Friedrichs-Lewy
 condition (CFL; as determined by the fluid velocity and Alfvén speed). A

@@ -32,11 +32,9 @@ Module Sphere_Physical_Space
     Use General_MPI, Only : global_max
     Use Timers
     Use ClockInfo
-    Use ReferenceState
-    Use TransportCoefficients
+    Use PDE_Coefficients
     Use Math_Constants
     Use Benchmarking, Only : benchmark_checkup
-    Use Stable_Plugin
     Implicit None
 
 Contains
@@ -212,40 +210,6 @@ Contains
         Enddo
         !$OMP END PARALLEL DO
 
-        !================================ STABLE =================
-        If (stable_flag) Then
-            ! Add -v dot grad SU
-            !$OMP PARALLEL DO PRIVATE(t,r,k)
-            Do t = my_theta%min, my_theta%max
-                Do r = my_r%min, my_r%max
-                    Do k =1, n_phi
-                    wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar) &
-                                        -wsp%p3a(k,r,t,vr)*grad_su%p3a(k,r,t,1)     &
-                                         - one_over_r(r)*wsp%p3a(k,r,t,vtheta)*grad_su%p3a(k,r,t,2)
-
-                    Enddo
-                Enddo
-            Enddo
-            !$OMP END PARALLEL DO
-
-            !Add - U_mean dot grad s
-            !$OMP PARALLEL DO PRIVATE(t,r,k)
-            Do t = my_theta%min, my_theta%max
-                Do r = my_r%min, my_r%max
-                    Do k =1, n_phi
-                    wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar) &
-                                         -Vmean_r(r,t)*wsp%p3a(k,r,t,dtdr)    &
-                                         -one_over_r(r)* &
-                                         ( Vmean_theta(r,t) *wsp%p3a(k,r,t,dtdt) &
-                                          +Vmean_phi(r,t)*csctheta(t)*wsp%p3a(k,r,t,dtdp) )
-
-                    Enddo
-                Enddo
-            Enddo
-            !$OMP END PARALLEL DO
-
-        Endif
-        !=============================== STABLE ==================
     End Subroutine Temperature_Advection
 
     Subroutine Volumetric_Heating()
@@ -436,26 +400,6 @@ Contains
             !$OMP END PARALLEL DO
         Endif
 
-        !==================== STABLE ==========================
-        If (stable_flag)  Then
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-
-        DO_IDX
-        ! Add terms due to mean flow to the momentum equation
-        RHSP(IDX,wvar) = RHSP(IDX,wvar) - &
-            (Vmean_r(IDXM)*FIELDSP(IDX,dvrdr) + FIELDSP(IDX,vr)*dVmean_rdr(IDXM))*r_squared(r) &
-            - ( Vmean_theta(IDXM)*FIELDSP(IDX,dvrdt) + FIELDSP(IDX,vtheta)*dVmean_rdt(IDXM)    &
-                +  Vmean_phi(IDXM)*FIELDSP(IDX,dvrdp)*csctheta(t) &
-                -  2.d0*(Vmean_theta(IDXM)*FIELDSP(IDX,vtheta) + Vmean_phi(IDXM)*FIELDSP(IDX,vphi)) &
-                ) * radius(r)
-        !print*, &
-        !    (Vmean_r(IDXM)*FIELDSP(IDX,dvrdr) + FIELDSP(IDX,vr)*dVmean_rdr(IDXM))*r_squared(r)
-        END_DO
-
-        !$OMP END PARALLEL DO
-        Endif
-        !=======================================================
-
         ! Add Coriolis Terms if so desired
         If (rotation) Then
         !    ! [- 2 z_hat cross u ]_r = 2 sintheta u_phi
@@ -526,61 +470,6 @@ Contains
 
         !$OMP END PARALLEL DO
 
-                !==================== STABLE ==========================
-                ! Add terms to the MHD Induction equation
-
-        If (STABLE_flag) Then
-
-           !$OMP PARALLEL DO PRIVATE(t,r,k)
-
-            DO_IDX
-            RHSP(IDX,emfr) = RHSP(IDX,emfr) + &
-                                  Vmean_theta(IDXM) *  FIELDSP(IDX,bphi)  &
-                - Vmean_phi(IDXM)   *  FIELDSP(IDX,btheta)
-           END_DO
-
-           !$OMP END PARALLEL DO
-
-           !$OMP PARALLEL DO PRIVATE(t,r,k)
-
-           DO_IDX
-                        RHSP(IDX,emftheta) = RHSP(IDX,emftheta) + &
-                                  Vmean_phi(IDXM) *  FIELDSP(IDX,br)  &
-                - Vmean_r(IDXM)   *  FIELDSP(IDX,bphi)
-           END_DO
-
-           !$OMP END PARALLEL DO
-
-           !$OMP PARALLEL DO PRIVATE(t,r,k)
-
-           DO_IDX
-                        RHSP(IDX,emfphi) = RHSP(IDX,emfphi) + &
-                                  Vmean_r(IDXM) *  FIELDSP(IDX,btheta)  &
-                - Vmean_theta(IDXM)  *  FIELDSP(IDX,br)
-           END_DO
-
-           !$OMP END PARALLEL DO
-
-            ! This is only for the axisymmetric benchmark
-            If (Poloidal_Source == 1) Then
-                Call Alpha_Bmean()
-                ! after computing Bmean, add it to the emf
-
-                !$OMP PARALLEL DO PRIVATE(t,r,k)
-                DO_IDX
-                    RHSP(IDX,emfphi) = RHSP(IDX,emfphi) + &
-                    kindy_alpha(r)*kindy_gtheta(t)*Bmean(t) &
-                    / (1.0d0 + (Bmean(t)/5.0d4)**2)
-                END_DO
-                !$OMP END PARALLEL DO
-
-            EndIf
-
-        EndIf
-
-                !==================== STABLE ==========================
-
-
         ! We need to divide by r/sintheta before taking the derivatives in the next space
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
@@ -593,71 +482,6 @@ Contains
         !$OMP END PARALLEL DO
 
     End Subroutine Compute_EMF
-
-    !============================= STABLE ====================================
-    Subroutine Alpha_Bmean()
-       ! This is only called for Poloidal_Source = 1
-       ! It's an axisymmetric, non-local alpha effect designed to test the
-       ! code with the axisymmetric flux-transport dynamo benchmark of
-       ! Jouve et al (2008)
-       ! This routine computes Bmean(my_theta%min:my_theta%max)
-
-       Real*8, allocatable :: buff(:)
-       Real*8 :: rc, rr, onp, beta
-       Integer :: r1, r2, r, k, t
-
-       ! hardwired in for the benchmark
-       rc = 0.7d0 * Radius(1)
-
-       onp = 1.d0 / N_Phi
-
-       ! first find the two radial values that bracket rc
-       r1 = N_R
-       rr = Radius(r1)
-       do while (rr <= rc)
-          r1 = r1 - 1
-          rr = Radius(r1)
-       enddo
-       r2 = r1 + 1
-
-       ! Interpolate in radius but really treat this as a
-       ! sum with appropriate weights
-       Allocate(buff(my_theta%min:my_theta%max))
-       buff(:) = 0.d0
-
-       beta = (rc - Radius(r2))/(Radius(r1)-Radius(r2))
-
-       do t=my_theta%min,my_theta%max
-          do r=my_r%min,my_r%max
-             If (r == r1) Then
-                do k = 1,N_phi
-                   buff(t) = buff(t) + onp*beta*FIELDSP(IDX,bphi)
-                enddo
-             ElseIf (r == r2) Then
-                do k = 1,N_phi
-                   buff(t) = buff(t) + onp*(1.d0-beta)*FIELDSP(IDX,bphi)
-                enddo
-             EndIf
-          enddo
-       enddo
-
-       ! sum over all columns (radii)
-       Call dallsum1d(buff,Bmean,pfi%ccomm)
-
-       ! I believe all the radial nodes (columns) know the result
-       ! check here; Yes, it do
-       !do t=my_theta%min,my_theta%max
-       !   If (t == 50) Then
-       !      print*,'Bmean check: ',my_column_rank,Bmean(t)
-       !   EndIf
-       !enddo
-
-       Deallocate(buff)
-
-    End Subroutine Alpha_Bmean
-
-    !============================= STABLE ====================================
-
 
     Subroutine Momentum_Advection_Theta()
         Implicit None
@@ -692,21 +516,6 @@ Contains
             END_DO
             !$OMP END PARALLEL DO
         Endif
-        !==================== STABLE ==========================
-        If (STABLE_flag) Then
-        ! Add terms due to mean flow to the momentum equation
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-              RHSP(IDX,pvar) = RHSP(IDX,pvar) + &
-               Vmean_r(IDXM)*wsp%p3a(IDX,dvtdr)+wsp%p3a(IDX,vr)*dVmean_tdr(IDXM) + &
-               ( Vmean_theta(IDXM)*wsp%p3a(IDX,dvtdt) + wsp%p3a(IDX,vtheta)*dVmean_tdt(IDXM) + &
-                 Vmean_phi(IDXM)*wsp%p3a(IDX,dvtdp)*csctheta(t) + &
-                 Vmean_theta(IDXM)*wsp%p3a(IDX,vr) + wsp%p3a(IDX,vtheta)*Vmean_r(IDXM) -  &
-                 2.d0*cottheta(t)*Vmean_phi(IDXM)*wsp%p3a(IDX,vphi) )*one_over_r(r)
-        END_DO
-        !$OMP END PARALLEL DO
-        EndIF
-        !======================================================
 
         If (rotation) Then
             ! Add - the coriolis term (part of -RHS of theta)
@@ -774,23 +583,6 @@ Contains
             END_DO
             !$OMP END PARALLEL DO
         Endif
-
-        !==================== STABLE ==========================
-        If (STABLE_flag) Then
-        ! Add terms due to mean flow to the momentum equation
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-              RHSP(IDX,zvar) = RHSP(IDX,zvar) + &
-               Vmean_r(IDXM)*wsp%p3a(IDX,dvpdr)+wsp%p3a(IDX,vr)*dVmean_pdr(IDXM) + &
-               ( Vmean_theta(IDXM)*wsp%p3a(IDX,dvpdt) + wsp%p3a(IDX,vtheta)*dVmean_pdt(IDXM) + &
-                 Vmean_phi(IDXM)*wsp%p3a(IDX,dvpdp)*csctheta(t) + &
-                 Vmean_phi(IDXM)*wsp%p3a(IDX,vr) + wsp%p3a(IDX,vphi)*Vmean_r(IDXM) +  &
-                 cottheta(t)*(Vmean_phi(IDXM)*wsp%p3a(IDX,vtheta)+Vmean_theta(IDXM)*wsp%p3a(IDX,vphi)) &
-               ) * one_over_r(r)
-        END_DO
-        !$OMP END PARALLEL DO
-        EndIf
-        !======================================================
 
         If (rotation) Then
             ! Add - Coriolis term (we are building -RHS of vphi)

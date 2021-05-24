@@ -2,7 +2,7 @@
 
    \clearpage
 
-.. _sec:checkpointing:
+.. _checkpointing:
 
 Checkpointing
 =============
@@ -116,7 +116,7 @@ hydrodynamic variables may be initialized separately. This allows you to
 add magnetism to an already equilibrated hydrodynamic case, for
 instance. The example below will initialize the system with a random
 magnetic field, but it will read the hydrodynamic information (W,Z,S,P)
-from a checkpoint created at time step 50,000:
+from a checkpoint created at time step 5,000:
 
 ::
 
@@ -128,7 +128,7 @@ from a checkpoint created at time step 50,000:
 
 In addition to specifying the checkpoint time step manually, you can
 tell Rayleigh to simply restart using the last checkpoint written by
-assigning a value of zero to init_type:
+assigning a value of zero to restart_iter:
 
 ::
 
@@ -141,7 +141,7 @@ assigning a value of zero to init_type:
 In this case, Rayleigh reads the **last_checkpoint** file (found within
 the Checkpoints directory) to determine which checkpoint it reads.
 
-.. _sec:quicksaves:
+.. _quicksaves:
 
 Quicksaves
 ----------
@@ -189,7 +189,7 @@ files beginning with prefix quicksave_02 will be generated. Following
 that, at time step 30,000, another checkpoint will be generated, *but it
 will overwrite the existing quicksave_01 files*. At time step 40,000,
 the quicksave_02 files will be overwritten, and so forth. Because the
-**num_quicsaves** was set to 2, filenames with prefix quicksave_03 will
+**num_quicksaves** was set to 2, filenames with prefix quicksave_03 will
 never be generated.
 
 Note that checkpoints beginning with an 8-digit prefix (e.g., 00035000)
