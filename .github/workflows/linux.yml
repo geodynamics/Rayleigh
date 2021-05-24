@@ -34,6 +34,8 @@ jobs:
         make install
     - name: Test
       run: |
+        export OMPI_ALLOW_RUN_AS_ROOT=1
+        export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
         cd "$GITHUB_WORKSPACE"
         cd tests/c2001_case0
         # This export avoids a warning about
