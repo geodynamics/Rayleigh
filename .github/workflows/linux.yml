@@ -23,8 +23,8 @@ jobs:
       # First make sure notebooks do not contain output, then build doc
       run: |
         cd "$GITHUB_WORKSPACE"
-        make clear_ipynb && git diff --exit-code --name-only
-        make doc
+#        make clear_ipynb && git diff --exit-code --name-only
+#        make doc
     - name: Build Rayleigh
       # First make sure notebooks do not contain output, then build doc
       run: |
