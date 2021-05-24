@@ -6,7 +6,7 @@ jobs:
   test:
     name: test-build
     runs-on: [ubuntu-latest]
-    container: gassmoeller/rayleigh-buildenv-bionic
+    container: gassmoeller/rayleigh-buildenv-focal
 
     steps:
   # We would like to use v2, but v2 requires a higher git version
