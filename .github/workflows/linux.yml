@@ -5,21 +5,23 @@ on: [push, pull_request]
 jobs:
   test:
     name: test-build
-    runs-on: [ubuntu-18.04]
+    runs-on: [ubuntu-latest]
     container: geodynamics/rayleigh-buildenv-bionic
 
     steps:
       # Install git for the checkout action
-    - name: install git
-      run: apt install git
-    - uses: actions/checkout@v2
-    - name: setup
+    - name: Install git
+      run: |
+        apt update
+        apt install -y git
+    - uses: actions/checkout@v1
+    - name: Setup container
       run: |
         cd "$GITHUB_WORKSPACE"
         echo "I am alive"
         ls .
         pwd
-    - name: build documentation
+    - name: Build documentation
       # First make sure notebooks do not contain output, then build doc
       run: |
         cd "$GITHUB_WORKSPACE"
