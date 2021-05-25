@@ -1,10 +1,10 @@
-name: linux
+name: continuous-integration
 
 on: [push, pull_request]
 
 jobs:
   test:
-    name: test-build
+    name: linux-bionic-container-build
     runs-on: [ubuntu-latest]
     container: gassmoeller/rayleigh-buildenv-bionic
 
@@ -38,3 +38,31 @@ jobs:
         cd ..
         git diff > changes.diff
         git diff --exit-code --name-only
+
+  conda:
+    name: conda-build
+    runs-on: [ubuntu-latest]
+    # Needs to be here to properly detect changes to conda
+    # see https://github.com/conda-incubator/setup-miniconda#IMPORTANT
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: radev
+        environment-file: environment.yml
+    - name: Build documentation
+      continue-on-error: true
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        make doc
+    - name: Build Rayleigh
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        export MKLROOT=$CONDA_PREFIX
+        ./configure -conda-mkl --FC=mpifort
+        make -j
+        make install
