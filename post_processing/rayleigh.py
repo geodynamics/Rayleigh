@@ -26,6 +26,8 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
+import lut
+
 if sys.maxsize < 2**63 - 1:
     # We don't want mmap on 32-bit systems where virtual memory is limited.
     use_mmap = False
@@ -134,6 +136,12 @@ class Spherical_3D_Snapshot(object):
         return Spherical_3D_value(f, len(self.rs), len(self.thetas),
                                   len(self.phis), endian=self.endian)
 
+    def __getattr__(self, q):
+        qcode = lut.parse_quantity(q)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity ({})".format(q))
+        return self.q(qcode)
+
 class Spherical_3D(object):
     def __init__(self, directory='Spherical_3D'):
         super().__init__()
@@ -164,4 +172,10 @@ class Spherical_3D(object):
 
     def __getitem__(self, ind):
         return Spherical_3D_Snapshot(self.directory, ind)
+
+    def __getattr__(self, q):
+        qcode = lut.parse_quantity(q)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity ({})".format(q))
+        return self.q(qcode)
 
