@@ -228,16 +228,16 @@ Contains
                   bc_val= Svar_Top*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, seq,real_ind, uind)
                 else  
-                  Call Set_BC_from_file(Svar_top_file, teq, uind)
+                  Call Set_BC_from_file(Svar_top_file, seq, uind)
                 end if
             Endif
 
             If (fix_svar_bottom) Then
                 if (trim(Svar_bottom_file) .eq. '__nothing__') then
                   bc_val= Svar_bottom*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, teq,real_ind, lind)
+                  Call Set_BC(bc_val,0,0, seq,real_ind, lind)
                 else
-                  Call Set_BC_from_file(Svar_bottom_file, teq, lind)
+                  Call Set_BC_from_file(Svar_bottom_file, seq, lind)
                 end if
             Endif
 

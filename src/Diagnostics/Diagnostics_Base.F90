@@ -89,6 +89,7 @@ Module Diagnostics_Base
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
+    include "scalars_field_codes.F"
 
 
     !///////////////////////////////////

@@ -23,6 +23,7 @@ POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o PDE_Coefficients.o Fields.
         Diagnostics_Miscellaneous.o Diagnostics_Custom.o \
         Diagnostics_Mean_Correction.o \
         Diagnostics_Interface.o \
+        Diagnostics_Scalars.o \
         Benchmarking.o Sphere_Linear_Terms.o \
         Sphere_Spectral_Space.o Sphere_Hybrid_Space.o Sphere_Physical_Space.o Sphere_Driver.o
 TOBJ  = Test_SHT.o Test_Cheby.o TestSuite.o
