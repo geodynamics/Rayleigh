@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 RUN apt update && \
   DEBIAN_FRONTEND='noninteractive' \
@@ -10,15 +10,13 @@ RUN apt update && \
     libblas-dev \
     libfftw3-dev \
     liblapack-dev \
-    libmpich-dev \
+    libopenmpi-dev \
     make \
     nano \
     wget \
-    python-pip \
     python3-pip \
     sphinx-common \
     texlive-base \
-    texlive-generic-extra \
     texlive-latex-base \
     texlive-latex-recommended \
     texlive-latex-extra \
@@ -26,12 +24,11 @@ RUN apt update && \
     makedepf90 \
     latexmk \
     pandoc \
-    python-numpy \
-    python-scipy \
-    python-funcsigs
+    python3-numpy \
+    python3-scipy \
+    python3-funcsigs
 
-RUN pip3 install sphinxcontrib-bibtex==1.0.0 nbstripout nbsphinx jupyter-client ipykernel recommonmark
-RUN pip2 install vtk
+RUN pip3 install sphinxcontrib-bibtex==1.0.0 nbstripout nbsphinx jupyter-client ipykernel recommonmark vtk
 
 # Export compilers
 ENV CC mpicc
