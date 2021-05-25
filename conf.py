@@ -154,7 +154,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \hfill{\Huge \fontfamily{\sfdefault}\selectfont User Manual \\
 \raggedleft \huge \fontfamily{\sfdefault}\selectfont Version
 % keep the following line as is so that we can replace this using a script:
-0.9.1 %VERSION-INFO%
+1.0.0 %VERSION-INFO%
 \\\large(generated \today)\\
 {\Large Nicholas Featherstone\\}
 }

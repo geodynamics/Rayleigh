@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################################
-#   Rayleigh v0.9.1 Configuration Script.
+#   Rayleigh v1.0.0 Configuration Script.
 #   This script is built around functions as much as possible.
 #   The "actual" script is contained with the function "main,"
 #   defined at the bottom of this file.
@@ -55,7 +55,7 @@ function dbg_flags {
 
 function displayhelp {
     echo ""
-    echo "            Rayleigh v0.9.1 Configuration Help"
+    echo "            Rayleigh v1.0.0 Configuration Help"
     echo "            ================================"
     echo " "
     echo "  usage: ./configure [options]"

@@ -1,0 +1,29 @@
+{
+    "cited": {
+        "doc/source/User_Guide/benchmarking": [
+            "CHRISTENSEN200125",
+            "JONES2011120"
+        ],
+        "doc/source/User_Guide/cookbooks": [
+            "CHRISTENSEN200125"
+        ],
+        "doc/source/User_Guide/overview": [
+            "GLATZMAIER1984461",
+            "Glatzmaier1999"
+        ],
+        "doc/source/User_Guide/physics": [
+            "Heimpel_etal2016"
+        ],
+        "doc/source/publications/publications": [
+            "nicholas_featherstone_2018_1236565",
+            "nicholas_featherstone_2018_1158290",
+            "Buffett+Matsui2019",
+            "Karak_etal2018",
+            "Miquel_etal2018",
+            "Orvedahl_etal2018",
+            "Featherstone_Hindmam_2016",
+            "Matsui_etal_2016",
+            "OMara_etal2016"
+        ]
+    }
+}

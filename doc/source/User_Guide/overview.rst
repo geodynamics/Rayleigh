@@ -40,14 +40,14 @@ part using Rayleigh.  To cite other versions of the code, please see: https://ge
 
 Please cite the code as:
 
-  Featherstone, N. (2018), Rayleigh Version 0.9.1, Computational Infrastructure for Geodynamics,
+  Featherstone, N. (2018), Rayleigh Version 1.0.0, Computational Infrastructure for Geodynamics,
   DOI: 10.5281/zenodo.1236565
 
 .. code-block::
 
   @Software{nicholas_featherstone_2018_1236565,
 	author = "Featherstone, N.",
-	title="Rayleigh 0.9.1",
+	title="Rayleigh 1.0.0",
 	year="2018",
 	organization="",
 	optkeywords="Rayleigh",

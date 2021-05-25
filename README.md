@@ -1,5 +1,5 @@
 
-# Rayleigh Version 0.9.1 #
+# Rayleigh Version 1.0.0 #
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1236565.svg)](https://doi.org/10.5281/zenodo.1236565)
 
 
@@ -38,4 +38,4 @@ Rayleigh was written by Nicholas Featherstone with NSF support through CIG.  Ple
 
 License
 -------
-Raleigh v0.9.1 is released under the [GPL v3 license.](https://www.gnu.org/licenses/gpl-3.0.en.html)
+Raleigh v1.0.0 is released under the [GPL v3 license.](https://www.gnu.org/licenses/gpl-3.0.en.html)

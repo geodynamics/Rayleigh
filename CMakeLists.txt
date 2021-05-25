@@ -8,7 +8,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
 PROJECT(RAYLEIGH Fortran C)
 
 # Set the Rayleigh version
-SET(VERSION 0.9)
+SET(VERSION 1.0.0)
 
 # Add our local modules to the module path
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")

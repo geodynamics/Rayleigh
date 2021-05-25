@@ -5,7 +5,7 @@ effort was supported by NSF grants NSF-0949446 and NSF-1550901.
 
 
 A paper describing the parallelization of Rayleigh and the accuracy of its algorithms is now in preparation. For this version
-of the code ONLY (version 0.9.x), please cite BOTH of the following references:
+of the code ONLY (version 1.0.x), please cite BOTH of the following references:
 
 (i) 
 Featherstone, N.A. & Hindman, B.W., 2016, “The spectral amplitude of stellar convec-
