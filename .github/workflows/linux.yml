@@ -1,0 +1,40 @@
+name: linux
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: test-build
+    runs-on: [ubuntu-latest]
+    container: gassmoeller/rayleigh-buildenv-bionic
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build documentation
+      # First make sure notebooks do not contain output, then build doc
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        make clear_ipynb && git diff --exit-code --name-only
+        make doc
+    - name: Build Rayleigh
+      # First make sure notebooks do not contain output, then build doc
+      run: |
+        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr'
+        make fdeps && git diff --exit-code
+        make -j
+        make install
+    - name: Test
+      run: |
+        # Set some environment variables necessary for OpenMPI
+        # to run as root
+        export OMPI_ALLOW_RUN_AS_ROOT=1
+        export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+        cd "$GITHUB_WORKSPACE"
+        cd tests/c2001_case0
+
+        mpirun -np 4 --oversubscribe --allow-run-as-root ../../bin/rayleigh.dbg
+
+        cd ..
+        git diff > changes.diff
+        git diff --exit-code --name-only

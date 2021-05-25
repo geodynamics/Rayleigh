@@ -24,7 +24,7 @@ Package Setup:  Linux
     conda install -c conda-forge matplotlib \
         jupyter scipy sphinx sphinxcontrib-bibtex \
         nbsphinx pandoc recommonmark sphinx \
-        gcc_linux-64 gfortran_linux-64 mkl fftw mpich
+        gcc_linux-64 gfortran_linux-64 mkl fftw mpich-mpicc
 
 Package Setup:  Mac
 -----------------------------
@@ -35,23 +35,16 @@ Package Setup:  Mac
     conda install -c conda-forge matplotlib \
         jupyter scipy sphinx sphinxcontrib-bibtex \
         nbsphinx pandoc recommonmark sphinx \
-        clang_osx-64 gfortran_osx-64 mkl fftw mpich
+        clang_osx-64 gfortran_osx-64 mkl fftw mpich-mpicc
 
 
 MKL Setup: Linux and Mac
 --------------------------
-Once your packages are installed, you will most likely want to have the MKLROOT environment variable set whenever you activate your Conda environment.  To do this first, identify where Conda is located by running "which," and examining the output.
+Once your packages are installed, you will most likely want to have the ``MKLROOT`` environment variable set whenever you activate your Conda environment.  To do this we set ``MKLROOT`` to the location of the currently activated conda environment from the enviroment variable ``CONDA_PREFIX``.
 
 .. code-block:: bash
 
-    which conda
-    /custom/software/miniconda3/bin/conda   <<<  This is my output
-
-The directory that we want to use for MKLROOT is located one level back, under the envs directory. In my case, I would set MKLROOT as
-
-.. code-block:: bash
-
-    export MKLROOT=/custom/software/miniconda3/envs/radev
+    export MKLROOT="$CONDA_PREFIX"
 
 Note that this is Bash syntax (use setenv if running c-shell).  Note that there should be no spaces on either side of the "=" sign.
 If you stop here, you will have to do this every time you activate your development environment.   To have this happen automatically,
@@ -64,15 +57,15 @@ activate_mkl.sh with the following three lines:
 .. code-block:: bash
 
     #!/bin/bash
-    export MKLSAVE=$MKLROOT
-    export MKLROOT=/custom/software/miniconda3/envs/radev  [modify your path appropriately]
+    export MKLSAVE="$MKLROOT"
+    export MKLROOT="$CONDA_PREFIX"
 
 In the deactivate.d directory, create a file named deactivate_mkl.sh with the following two lines:
 
 .. code-block:: bash
 
     #!/bin/bash
-    export MKLROOT=$MKLSAVE
+    export MKLROOT="$MKLSAVE"
 
 Now, try it out.
 
