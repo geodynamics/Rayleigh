@@ -34,8 +34,7 @@ jobs:
         export OMPI_ALLOW_RUN_AS_ROOT=1
         export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 
-        cd "$GITHUB_WORKSPACE"
-        cd tests/c2001_case0
+        cd "$GITHUB_WORKSPACE"/tests/c2001_case0
 
         mpirun -np 4 --oversubscribe --allow-run-as-root ../../bin/rayleigh.dbg
 
