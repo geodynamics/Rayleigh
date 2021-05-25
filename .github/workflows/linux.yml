@@ -6,7 +6,7 @@ jobs:
   test:
     name: test-build
     runs-on: [ubuntu-latest]
-    container: geodynamics/rayleigh-buildenv-bionic
+    container: gassmoeller/rayleigh-buildenv-bionic
 
     steps:
     - uses: actions/checkout@v1
@@ -33,7 +33,7 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         cd tests/c2001_case0
 
-        mpirun -np 4 --oversubscribe ../../bin/rayleigh.dbg
+        mpirun -np 4 --oversubscribe --allow-run-as-root ../../bin/rayleigh.dbg
 
         cd ..
         git diff > changes.diff
