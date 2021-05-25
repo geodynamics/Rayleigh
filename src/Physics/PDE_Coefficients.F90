@@ -1166,6 +1166,8 @@ Contains
         Allocate(dlnu(1:N_r))
         Allocate(kappa(1:N_r))
         Allocate(dlnkappa(1:N_r))
+        Allocate(kappa_s(1:N_r))
+        Allocate(dlnkappa_s(1:N_r))
         Allocate(eta(1:N_R))
         Allocate(dlneta(1:N_R))
 
@@ -1242,12 +1244,14 @@ Contains
     Subroutine Restore_Transport_Defaults
         Implicit None
 
-        If (Allocated(nu))       DeAllocate(nu)
-        If (Allocated(kappa))    DeAllocate(kappa)
-        If (Allocated(eta))      DeAllocate(eta)
-        If (Allocated(dlnu))     DeAllocate(dlnu)
-        If (Allocated(dlnkappa)) DeAllocate(dlnkappa)
-        If (Allocated(dlneta))   DeAllocate(dlneta)
+        If (Allocated(nu))         DeAllocate(nu)
+        If (Allocated(kappa))      DeAllocate(kappa)
+        If (Allocated(kappa_s))    DeAllocate(kappa_s)
+        If (Allocated(eta))        DeAllocate(eta)
+        If (Allocated(dlnu))       DeAllocate(dlnu)
+        If (Allocated(dlnkappa))   DeAllocate(dlnkappa)
+        If (Allocated(dlnkappa_s)) DeAllocate(dlnkappa_s)
+        If (Allocated(dlneta))     DeAllocate(dlneta)
 
         If (allocated(W_Diffusion_Coefs_0) ) DeAllocate( W_Diffusion_Coefs_0)
         If (allocated(W_Diffusion_Coefs_1) ) DeAllocate( W_Diffusion_Coefs_1)

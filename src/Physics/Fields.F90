@@ -83,7 +83,7 @@ Module Fields
     !                FOR LINEAR Solve
     !==============================================================================
     Integer, parameter :: weq = 1,  peq = 2,  teq = 3
-    Integer, parameter :: zeq = 4,  seq = 5             !  PASSIVE:   make spae for seq
+    Integer, parameter :: zeq = 4,  seq = 5             !  PASSIVE:   make space for seq
     Integer, Parameter :: ceq = 6,  aeq = 7
 
 
@@ -158,11 +158,11 @@ Contains
 
         ! Starting out we record the number of variables and equations we are expecting.
         If (magnetism) Then
-            n_equations  = 6
-            n_variables = 6
+            n_equations  = 6 +1
+            n_variables = 6 +1
         Else
-            n_equations  = 4
-            n_variables = 4
+            n_equations  = 4 +1
+            n_variables = 4 +1
         Endif
 
         !The remainder of this routine serves two purposes:
