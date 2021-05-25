@@ -142,6 +142,7 @@ class Spherical_3D_Snapshot(object):
             raise AttributeError("unknown quantity ({})".format(q))
         return self.q(qcode)
 
+
 class Spherical_3D(object):
     def __init__(self, directory='Spherical_3D'):
         super().__init__()
@@ -178,4 +179,3 @@ class Spherical_3D(object):
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
         return self.q(qcode)
-
