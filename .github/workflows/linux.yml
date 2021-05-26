@@ -37,9 +37,9 @@ jobs:
 
         mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../bin/rayleigh.dbg
 
-        // Generic input test
+        # Generic input test
         cd "$GITHUB_WORKSPACE"
-        source tests/generic_input/run_test.sh
+        sh ./tests/generic_input/run_test.sh
 
         git diff > changes.diff
         git diff --exit-code --name-only
