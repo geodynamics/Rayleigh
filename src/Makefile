@@ -43,8 +43,7 @@ default:
 
 all: 
 	@for i in $(VERSIONS) ; do \
-		$(MAKE) $$i VERSION=$$i PREFIX=$(PREFIX); \
-		echo ' ' ; \
+		$(MAKE) $$i VERSION=$$i PREFIX=$(PREFIX) && echo ' ' ; \
 	done
 
 rayleigh_exec: $(OBJ)
