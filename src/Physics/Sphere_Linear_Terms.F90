@@ -108,7 +108,7 @@ Contains
                 Call Initialize_Equation_Coefficients(peq, pvar, 1,lp)
                 Call Initialize_Equation_Coefficients(peq, tvar, 0,lp)
                 Call Initialize_Equation_Coefficients(teq, tvar, 2,lp)
-                Call Initialize_Equation_Coefficients(Chieq, Chivar, 2,lp)     ! PASSIVE:  highest derivaitve of Chi is 2nd order in Chieq
+                Call Initialize_Equation_Coefficients(chieq, chivar, 2,lp)     ! PASSIVE:  highest derivaitve of chi is 2nd order in chieq
 
                 DeAllocate(eq_links)
                 DeAllocate(var_links)
@@ -126,8 +126,8 @@ Contains
                 ! T equation
                 Call Initialize_Equation_Coefficients(teq,tvar, 2,lp)
 
-                ! Chivar equation - same as above -- PASSIVE
-                Call Initialize_Equation_Coefficients(Chieq,Chivar, 2,lp)
+                ! chivar equation - same as above -- PASSIVE
+                Call Initialize_Equation_Coefficients(chieq,chivar, 2,lp)
 
                 If (advect_reference_state) Then
                     Call Initialize_Equation_Coefficients(teq,wvar, 0,lp)
@@ -221,18 +221,18 @@ Contains
 
                 !  If band solve, do redefinition here
 
-                ! Chivar  -- ell = 0 (almost same as other ells) -- PASSIVE
+                ! chivar  -- ell = 0 (almost same as other ells) -- PASSIVE
                 amp = 1.0d0
-                Call add_implicit_term(Chieq,Chivar, 0, amp,lp, static = .true.)    ! Time independent part
+                Call add_implicit_term(chieq,chivar, 0, amp,lp, static = .true.)    ! Time independent part
 
-                amp = 2.0d0/radius*kappa_Chi
-                Call add_implicit_term(Chieq,Chivar, 1, amp,lp)
+                amp = 2.0d0/radius*kappa_chi
+                Call add_implicit_term(chieq,chivar, 1, amp,lp)
 
-                amp = 1.0d0*kappa_Chi
-                Call add_implicit_term(Chieq,Chivar, 2, amp,lp)
+                amp = 1.0d0*kappa_chi
+                Call add_implicit_term(chieq,chivar, 2, amp,lp)
 
-                amp = Chi_Diffusion_Coefs_1  ! grad kappa_s term
-                Call add_implicit_term(Chieq,Chivar, 1, amp,lp)
+                amp = chi_Diffusion_Coefs_1  ! grad kappa_s term
+                Call add_implicit_term(chieq,chivar, 1, amp,lp)
 
             Else
 
@@ -339,19 +339,19 @@ Contains
 
                 !CHIVAR equation ---- PASSIVE  (no ell =0)
                 amp = 1.0d0
-                Call add_implicit_term(Chieq,Chivar, 0, amp,lp, static = .true.)    ! Time independent part
+                Call add_implicit_term(chieq,chivar, 0, amp,lp, static = .true.)    ! Time independent part
 
-                amp = 2.0d0/radius*kappa_Chi*diff_Factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
-                Call add_implicit_term(Chieq,Chivar, 1, amp,lp)
+                amp = 2.0d0/radius*kappa_chi*diff_Factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
+                Call add_implicit_term(chieq,chivar, 1, amp,lp)
 
-                amp = 1.0d0*kappa_Chi*diff_factor
-                Call add_implicit_term(Chieq,Chivar, 2, amp,lp)
+                amp = 1.0d0*kappa_chi*diff_factor
+                Call add_implicit_term(chieq,chivar, 2, amp,lp)
 
-                amp = Chi_Diffusion_Coefs_1*diff_Factor  ! grad kappa_s term
-                Call add_implicit_term(Chieq,Chivar,1,amp,lp)
+                amp = chi_Diffusion_Coefs_1*diff_Factor  ! grad kappa_s term
+                Call add_implicit_term(chieq,chivar,1,amp,lp)
 
-                amp = H_Laplacian*kappa_Chi*diff_factor
-                Call add_implicit_term(Chieq,Chivar, 0, amp,lp)
+                amp = H_Laplacian*kappa_chi*diff_factor
+                Call add_implicit_term(chieq,chivar, 0, amp,lp)
 
                 !=====================================================
                 !    Z Equation
@@ -412,7 +412,7 @@ Contains
                 !Write(6,*)'matrix: ', zeq,lp,my_rank, l
                 Call Sparse_Load(zeq,lp)
 
-                Call Sparse_Load(Chieq,lp)  ! PASSIVE
+                Call Sparse_Load(chieq,lp)  ! PASSIVE
 
                 If (magnetism) Then
                     Call Sparse_Load(aeq,lp)
@@ -424,7 +424,7 @@ Contains
             If (bandsolve) Then
                 Call Band_Arrange(weq,lp)
                 Call Band_Arrange(zeq,lp)
-                Call Band_Arrange(Chieq, lp)   ! PASSIVe
+                Call Band_Arrange(chieq, lp)   ! PASSIVe
                 If (magnetism) Then
                     Call Band_Arrange(aeq,lp)
                     Call Band_Arrange(ceq,lp)
@@ -455,8 +455,8 @@ Contains
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
 
-            Call Clear_Row(Chieq,lp,1)            ! Need to clear matrix rows before adding boundary condition PASSIVE
-            Call Clear_Row(Chieq,lp,N_R)
+            Call Clear_Row(chieq,lp,1)            ! Need to clear matrix rows before adding boundary condition PASSIVE
+            Call Clear_Row(chieq,lp,N_R)
 
             ! "1" denotes linking at index 1, starting in domain 2
             ! "2" denotes linking at index npoly, starting in domain 1
@@ -486,19 +486,19 @@ Contains
 
             ! PASSIVE
             r = 1
-            If (fix_Chivar_top) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,0)    !upper boundary
+            If (fix_chivar_top) Then
+                Call Load_BC(lp,r,chieq,chivar,one,0)    !upper boundary
             Endif
-            If (fix_dChidr_top) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,1)
+            If (fix_dchidr_top) Then
+                Call Load_BC(lp,r,chieq,chivar,one,1)
             Endif
 
             r = N_R
-            If (fix_Chivar_bottom) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,0)    !lower boundary
+            If (fix_chivar_bottom) Then
+                Call Load_BC(lp,r,chieq,chivar,one,0)    !lower boundary
             Endif
-            If (fix_dChidr_bottom) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,1)
+            If (fix_dchidr_bottom) Then
+                Call Load_BC(lp,r,chieq,chivar,one,1)
             Endif
 
 
@@ -519,8 +519,8 @@ Contains
             Call Clear_Row(peq,lp,N_R)
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
-            Call Clear_Row(Chieq,lp,1)   ! PASSIVE
-            Call Clear_Row(Chieq,lp,N_R)
+            Call Clear_Row(chieq,lp,1)   ! PASSIVE
+            Call Clear_Row(chieq,lp,N_R)
             Call Clear_Row(zeq,lp,1)
             Call Clear_Row(zeq,lp,N_R)
 
@@ -562,22 +562,22 @@ Contains
                 Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
 
-            ! Chivar BC   PASSIVE
+            ! chivar BC   PASSIVE
             ! PASSIVE
             r = 1
-            If (fix_Chivar_top) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,0)    !upper boundary
+            If (fix_chivar_top) Then
+                Call Load_BC(lp,r,chieq,chivar,one,0)    !upper boundary
             Endif
-            If (fix_dChidr_top) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,1)
+            If (fix_dchidr_top) Then
+                Call Load_BC(lp,r,chieq,chivar,one,1)
             Endif
 
             r = N_R
-            If (fix_Chivar_bottom) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,0)    !lower boundary
+            If (fix_chivar_bottom) Then
+                Call Load_BC(lp,r,chieq,chivar,one,0)    !lower boundary
             Endif
-            If (fix_dChidr_bottom) Then
-                Call Load_BC(lp,r,Chieq,Chivar,one,1)
+            If (fix_dchidr_bottom) Then
+                Call Load_BC(lp,r,chieq,chivar,one,1)
             Endif
 
             !///////////////////////////////////////////////////////////////////

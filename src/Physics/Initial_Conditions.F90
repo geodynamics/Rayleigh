@@ -63,7 +63,7 @@ Module Initial_Conditions
     Character*120 :: w_init_file   = '__nothing__'
     Character*120 :: p_init_file   = '__nothing__'
     Character*120 :: z_init_file   = '__nothing__'
-    Character*120 :: Chi_init_file = '__nothing__'
+    Character*120 :: chi_init_file = '__nothing__'
     Character*120 :: c_init_file   = '__nothing__'
     Character*120 :: a_init_file   = '__nothing__'
 
@@ -72,7 +72,7 @@ Module Initial_Conditions
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
             & rescale_pressure, tvar_scale, pressure_scale, mdelta, &
             & t_init_file, w_init_file, p_init_file, z_init_file, &
-            & Chi_init_file, c_init_file, a_init_file
+            & chi_init_file, c_init_file, a_init_file
 Contains
 
     Subroutine Initialize_Fields()
@@ -563,9 +563,9 @@ Contains
             call set_rhs(zeq, tempfield%p1b(:,:,:,1))
         end if
 
-        if (trim(Chi_init_file) .ne. '__nothing__') then
-            call read_input(Chi_init_file, 1, tempfield)
-            call set_rhs(Chieq, tempfield%p1b(:,:,:,1))
+        if (trim(chi_init_file) .ne. '__nothing__') then
+            call read_input(chi_init_file, 1, tempfield)
+            call set_rhs(chieq, tempfield%p1b(:,:,:,1))
         end if
 
         call tempfield%deconstruct('p1b')

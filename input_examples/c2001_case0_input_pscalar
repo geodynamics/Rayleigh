@@ -44,8 +44,8 @@ T_Top    = 0.0d0
 T_Bottom = 1.0d0
 fix_tvar_top = .true.
 fix_tvar_bottom = .true.
-Chi_Top    = 0.0d0
-Chi_Bottom = 1.0d0
+chi_Top    = 0.0d0
+chi_Bottom = 1.0d0
 fix_chivar_top = .true.
 fix_chivar_bottom = .true.
 /
@@ -55,7 +55,7 @@ temp_amp = 1.0d1
 temp_w = 0.01d4
 restart_iter = -1
 t_init_file = 't_init'
-chi_init_file = 'Chi_init'
+chi_init_file = 'chi_init'
 /
 &Test_Namelist
 /

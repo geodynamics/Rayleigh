@@ -75,7 +75,7 @@ Contains
         Call Velocity_Components()
         Call Velocity_Derivatives()
         Call d_by_dtheta(wsp%s2a,tvar,dtdt)
-        Call d_by_dtheta(wsp%s2a,Chivar,dChidt)  ! PASSIVE -- need dChidtheta
+        Call d_by_dtheta(wsp%s2a,chivar,dchidt)  ! PASSIVE -- need dchidtheta
 
 
         If (magnetism) Call compute_BandCurlB()

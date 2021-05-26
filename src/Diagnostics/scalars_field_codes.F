@@ -24,4 +24,4 @@
 
     !------------ Fields ---------------------!
     ! Full
-    Integer, Parameter :: scalar     = chi_off+1  !  :tex:  $\Chi$
+    Integer, Parameter :: scalar     = chi_off+1  !  :tex:  $\chi$

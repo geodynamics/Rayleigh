@@ -37,7 +37,7 @@ Contains
         !  Scalar: field
         If (compute_quantity(scalar)) Then
             DO_PSI
-                qty(PSI) = buffer(PSI,Chivar)
+                qty(PSI) = buffer(PSI,chivar)
             END_DO
             Call Add_Quantity(qty)
         Endif
