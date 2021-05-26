@@ -670,7 +670,7 @@ class Legendre:
         Args
         ----
         data_in : ndarray
-            Input data array, must be dimension 4 or less
+            Input data array in physical space, must be dimension 4 or less
         axis : int,optional
             The axis over which the derivative will take place
         physical : bool,optional
@@ -701,7 +701,7 @@ class Legendre:
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        if (physical): # transform to spectral space first, if necessary
+        if (physical): # go to spectral space if necessary
             data_in = self.ToSpectral(data_in, axis=transform_axis)
 
         # compute the derivative: sin(th)*dF/dth with m=0
@@ -717,22 +717,23 @@ class Legendre:
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
         data_out = np.zeros((shape))
 
-        data_out[0,...] = 0.0 # the l=0 component
-
+        # the l=0 component is zero
         for l in range(self.lmax): # interior l values
-            data_out[l,...] = l*Dl0[l+1]*data_in[l+1,...] - (l+1)*Dl0[l]*data_in[l-1,...]
+            data_out[l,...] = -(l+2)*Dl0[l+1]*data_in[l+1,...] + (l-1)*Dl0[l]*data_in[l-1,...]
 
         # l=lmax component
-        data_out[self.lmax,...] = -(self.lmax+1)*Dl0[self.lmax]*data_in[self.lmax-1,...]
+        data_out[self.lmax,...] = (self.lmax-1)*Dl0[self.lmax]*data_in[self.lmax-1,...]
 
         # convert back to physical space
-        if (physical):
-            data_out = self.ToPhysical(data_out, axis=transform_axis)
+        data_out = self.ToPhysical(data_out, axis=transform_axis)
 
-        # undo the sin(th) part
+        # undo the sin(th) part in physical space
         nshp = [1]*len(data_out.shape); nshp[axis] = -1; nshp = tuple(nshp)
         sinth = np.reshape(self.sinth, nshp)
         data_out /= sinth
+
+        if (not physical): # go back to spectral space if necessary
+            data_out = self.ToSpectral(data_out, axis=transform_axis)
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
