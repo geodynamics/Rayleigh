@@ -1,10 +1,14 @@
-name: linux
+name: continuous-integration
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    name: test-build
+    name: linux-bionic-container-build
     runs-on: [ubuntu-latest]
     container: gassmoeller/rayleigh-buildenv-bionic
 
@@ -30,11 +34,38 @@ jobs:
         export OMPI_ALLOW_RUN_AS_ROOT=1
         export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 
-        cd "$GITHUB_WORKSPACE"
-        cd tests/c2001_case0
+        cd "$GITHUB_WORKSPACE"/tests/c2001_case0
 
         mpirun -np 4 --oversubscribe --allow-run-as-root ../../bin/rayleigh.dbg
 
         cd ..
         git diff > changes.diff
         git diff --exit-code --name-only
+
+  conda:
+    name: conda-build
+    runs-on: [ubuntu-latest]
+    # Needs to be here to properly detect changes to conda
+    # see https://github.com/conda-incubator/setup-miniconda#IMPORTANT
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: radev
+        environment-file: environment.yml
+    - name: Build documentation
+      continue-on-error: true
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        make doc
+    - name: Build Rayleigh
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        export MKLROOT=$CONDA_PREFIX
+        ./configure -conda-mkl --FC=mpifort
+        make -j
+        make install
