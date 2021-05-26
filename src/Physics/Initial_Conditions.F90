@@ -239,9 +239,9 @@ Contains
 
         ! This routine also reads in the relevant magnetic quantities
         ! They are overwritten later by whatever the magnetic initialization does
-        fcount(:,:) = 4
+        fcount(:,:) = 5
         If (magnetism) Then
-            fcount(:,:) = 6
+            fcount(:,:) = 7
         Endif
 
         Call tempfield%init(field_count = fcount, config = 'p1a')
