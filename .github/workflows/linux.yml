@@ -39,7 +39,7 @@ jobs:
 
         // Generic input test
         cd "$GITHUB_WORKSPACE"
-        sh './tests/generic_input/run_test.sh'
+        source tests/generic_input/run_test.sh
 
         git diff > changes.diff
         git diff --exit-code --name-only
