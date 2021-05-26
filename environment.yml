@@ -16,5 +16,4 @@ dependencies:
   - gcc_linux-64
   - gfortran_linux-64
   - mkl
-  - fftw
   - mpich
