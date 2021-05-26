@@ -30,7 +30,7 @@ The following documents form the Rayleigh documentation.
 |----------|-------------|
 | [INSTALL](INSTALL) | in-depth installation instructions |
 | https://rayleigh-documentation.readthedocs.io/en/latest/ | A combined online documentation |
-| https://rayleigh-documentation.readthedocs.io/en/latest/diagnostic_codes/qcodes.html | Online tables of Rayleigh output menu codes |
+| https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/diagnostic_codes/qcodes.html | Online tables of Rayleigh output menu codes |
 
 Authors
 --------

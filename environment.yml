@@ -1,0 +1,20 @@
+name: radev
+channels:
+  - conda-forge
+dependencies:
+  - make
+  - git
+  - matplotlib
+  - jupyter
+  - scipy
+  - sphinx
+  - sphinxcontrib-bibtex
+  - nbsphinx
+  - pandoc
+  - recommonmark
+  - sphinx
+  - gcc_linux-64
+  - gfortran_linux-64
+  - mkl
+  - fftw
+  - mpich
