@@ -27,6 +27,14 @@
 &output_namelist
 full3d_values = 501 2901
 full3d_frequency = 1
+
+globalavg_values = 501 2901
+globalavg_frequency = 10
+globalavg_nrec = 10
+
+shellavg_values = 501 2901
+shellavg_frequency = 10
+shellavg_nrec = 10
 /
 &Boundary_Conditions_Namelist
 no_slip_boundaries = .true.
