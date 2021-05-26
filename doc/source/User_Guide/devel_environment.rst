@@ -158,8 +158,15 @@ Building the container
 ^^^^^^^^^^^^^^^^^^^^^^
 .. note:: This step purely optional. You only need to do this if you cannot pull the container from Docker Hub or you want to modify the Dockerfile.
 
+To build the container you have to run this command from your host system (i.e., not from inside the container).
+
 .. code-block:: bash
 
    cd docker
    docker build -t geodynamics/rayleigh-buildenv-bionic:latest rayleigh-buildenv-bionic
 
+You can check the newly built container is there using this command.
+
+.. code-block:: bash
+
+    docker images
