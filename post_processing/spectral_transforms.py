@@ -127,7 +127,7 @@ def more_dimensions(C, Ndim, prepend=False, axis=None):
     (128,64,8)
     >>> axis = 1  # first axis of x has 64 elements
     >>>
-    >>> X, new, Axis = promote_to_Ndim(x, 5, axis=axis, prepend=True)
+    >>> X, new, Axis = more_dimensions(x, 5, axis=axis, prepend=True)
     >>> X.shape
     (1,1,128,64,8)
     >>> Axis      # Axis references same data as before with 64 elements
@@ -136,31 +136,32 @@ def more_dimensions(C, Ndim, prepend=False, axis=None):
     (0,1)
     """
     C = np.asarray(C)
-    shp = np.shape(C); dim = len(shape)
+    shp = np.shape(C); dim = len(shp)
 
     if (axis is not None):
-        pos_axis = PosAxis(axis, dim)
+        paxis = pos_axis(axis, dim)
 
     if (Ndim == dim): # don't need to do anything
+        added = ()
         if (axis is not None):
-            return C, pos_axis
+            return C, added, paxis
         else:
-            return C
+            return C, added
 
     if (Ndim < dim):
         raise ValueError("Cannot decrease dimensionality, dim={}, Ndim={}".format(dim,Ndim))
 
-    Ndiff = Ndim - dimm
+    Ndiff = Ndim - dim
 
     new = (1,)*Ndiff
     if (prepend):
         shape = new + shp
         added = tuple(np.arange(Ndiff))
-        new_axis = pos_axis + Ndiff
+        new_axis = paxis + Ndiff
     else:
         shape = shp + new
         added = tuple(np.arange(len(shape))[-Ndiff:])
-        new_axis = pos_axis
+        new_axis = paxis
 
     C = np.reshape(C, shape)
 
@@ -202,24 +203,39 @@ class Fourier:
 
     def __init__(self, N):
         """
-        initialize the Fourier grid and FFT
+        initialize the Fourier grid and FFT (assumes real data)
 
         Args
         ----
         N : int
             Number of physical space grid points
         """
-        self.N = Nphi
-        self.x = self.grid(self.N)
-        self.dx = np.mean(x[1:]-x[:-1])
+        self.N = N
+        self.x = self.grid()
+        self.dx = np.mean(self.x[1:]-self.x[:-1])
 
         # alias
         self.phi = self.x
 
-        # compute some special frequencies of the grid
-        self.low_freq = 1./(self.dx*self.N)
-        self.high_freq = 0.5/self.dx
+        # compute frequencies
+        self.freq = self.frequencies()
+        self.low_freq = self.freq.min()
+        self.high_freq = self.freq.max()
 
+        self.angular_freq = 2*np.pi*self.freq
+
+    def frequencies(self):
+        """
+        calculate frequencies on the Fourier grid
+
+        Returns
+        -------
+        freq : 1D array
+            Array of positive frequencies
+        """
+        freq = np.fft.fftfreq(self.N, d=self.dx) # all frequencies: positive & negative
+        freq = np.abs(freq[0:int(self.N/2)+1]) # only keep positive frequencies
+        return freq
 
     def grid(self):
         """
@@ -230,55 +246,28 @@ class Fourier:
         x : 1D array
             Physical space grid points
         """
-        twopi = 2.*np.pi
-        dphi = twopi/self.N
+        self.period = 2.*np.pi
+        dphi = self.period/self.N
         xgrid = dphi*np.arange(self.N)
         return xgrid
 
-    def frequencies(self, real=True):
-        """
-        Compute the frequencies assiciated with the FFT
-
-        Args
-        ----
-        real : bool, optional
-            In physical space, is the data real or complex
-
-        Returns
-        -------
-        freq : 1D array
-            Frequencies associated with the FFT. For complex FFT (real=False),
-            freq=0 will be in the middle of the array
-        """
-        if (real):
-            freq = np.fft.fftfreq(self.N, d=self.dx)
-            freq = np.abs(freq[0:int(self.N/2)+1]) # if any freq is negative, fix that
-        else:
-            freq = sp.fftfreq(self.N, d=self.dx)
-            freq = sp.fftshift(freq)  # shift the freq, so freq=0 is in the middle
-        return freq
-
-    def ToSpectral(self, data_in, axis=0, real=True, window=None):
+    def ToSpectral(self, data_in, axis=0, window=None):
         """
         FFT from physical space to spectral space
 
         Args
         ----
         data_in : ndarray
-            Real/complex array of size `self.N` along `axis`
+            Input data array of real values
         axis : int, optional
             The axis along which the FFT will be taken
-        real : bool, optional
-            In physical space, is the data real or complex. This determines whether
-            a real->complex or complex->complex FFT is used
         window : 1D array, optional
-            Apply a physical space window before the FFT
+            Apply a window in physical space before the FFT
 
         Returns
         -------
         data_out : ndarray
-            Fourier coefficients. For complex FFT (real=False), the element associated
-            with frequency=0 will be in the middle of the array
+            Complex Fourier coefficients
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -300,30 +289,21 @@ class Fourier:
         nshp = [1]*dim; nshp[axis] = -1; nshp = tuple(nshp)
         window = np.reshape(window, nshp)
 
-        if (real):
-            norm = 2./self.N # two because we neglect negative freqs
-            data_out = norm*np.fft.rfft(data_in*window, axis=axis)
-
-        else: # complex transform
-            data_out = scipy.fftpack.fft(data_in*window, axis=axis)
-            data_out = scipy.fftpack.fftshift(data_out)
+        norm = 2./self.N # two because we neglect negative freqs
+        data_out = norm*np.fft.rfft(data_in*window, axis=axis)
 
         return data_out
 
-    def ToPhysical(self, data_in, axis=0, real=True):
+    def ToPhysical(self, data_in, axis=0):
         """
         FFT from spectral space to physical space
 
         Args
         ----
         data_in : ndarray
-            Spectral space coefficients. If performing a complex FFT, the
-            frequency=0 element is assumed to be in the middle
+            Spectral space coefficients
         axis : int, optional
             The axis along which the FFT will be taken
-        real : bool, optional
-            In physical space, is the data real or complex. This determines whether
-            a complex->real or complex->complex FFT is used
 
         Returns
         -------
@@ -334,24 +314,28 @@ class Fourier:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        if (real):
-            Nm = shp[axis]
-            if (Nm % 2 == 0):
-                npts = 2*Nm - 1
-            else:
-                npts = 2*Nm - 2
-            norm = 2./npts
-            data_out = np.fft.irfft(fk/norm, axis=axis)
+        # determine size of physical space for normalization
+        Nm = shp[axis]
+        if (Nm % 2 == 0):
+            npts = 2*Nm - 1
+        else:
+            npts = 2*Nm - 2
 
-        else: # complex transform
-            fk = scipy.fftpack.ifftshift(data_in) # undo the shift
-            data_out = scipy.fftpack.ifft(fk, axis=axis)
+        if (shp[axis] != self.freq.shape[0]):
+            e = "FFT expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.freq.shape[0], axis, shp[axis]))
+
+        norm = 2./npts
+        data_out = np.fft.irfft(data_in/norm, axis=axis)
+
+        # throw out the imaginary part, since data is assumed real
+        data_out = data_out.real
 
         return data_out
 
-    def d_dphi(self, data_in, axis=0, real=True):
+    def d_dphi(self, data_in, axis=0, physical=True):
         """
-        Take a phi derivative from within spectral space
+        Take a phi derivative
 
         Args
         ----
@@ -359,10 +343,8 @@ class Fourier:
             Input data array in spectral space
         axis : int,optional
             Axis along which the derivative will be computed
-        real : int,optional
-            In physical space, is the data real or complex. This determines what
-            frequencies are used. For complex FFT (real=False), the frequency=0
-            mode is assumed to be in the middle of the array
+        physical : bool,optional
+            Specify the incoming data as being in physical space or spectral
 
         Returns
         -------
@@ -373,18 +355,26 @@ class Fourier:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        # find the frequencies
-        freq = self.frequencies(real=real)
+        if (physical):
+            if (self.N != shp[axis]):
+                e = "d_dphi shape error: expected N={}, found={}"
+                raise ValueError(e.format(np.shape(self.freq)[0], shp[axis]))
+        else:
+            if (np.shape(self.freq)[0] != shp[axis]):
+                e = "d_dphi shape error: expected N={}, found={}"
+                raise ValueError(e.format(np.shape(self.freq)[0], shp[axis]))
 
-        if (np.shape(freq)[0] != shp[axis]):
-            e = "d_dphi shape error: expected N={}, found={}"
-            raise ValueError(e.format(np.shape(freq)[0], shp[axis]))
+        if (physical): # transform to spectral space first, if necessary
+            data_in = self.ToSpectral(data_in, axis=axis)
 
         nshp = [1]*dim; nshp[axis] = -1; nshp = tuple(nshp)
-        freq = np.reshape(freq, nshp)
+        freq = np.reshape(self.freq, nshp)
 
         # multiply by 2*pi*i to compute derivative
         data_out = 2*np.pi*1j*freq*data_in
+
+        if (physical): # transform back to incoming space
+            data_out = self.ToPhysical(data_out, axis=axis)
 
         return data_out
 
@@ -507,23 +497,23 @@ class Legendre:
         parity : bool, optional
             Exploit parity properties when computing the Legendre transform
         """
-        self.Nth, self.lmax = grid_size(N, spectral, dealias)
-        self.Nell    = self.lmax + 1
+        self.nth, self.lmax = grid_size(N, spectral, dealias)
+        self.nell    = self.lmax + 1
         self.dealias = dealias
         self.parity  = parity
 
         # generate grid and weights
-        self.x, self.w = self.grid(self.Nth)
+        self.x, self.w = self.grid(self.nth)
 
         # alias
         self.sinth = np.sqrt(1.- self.x*self.x)
         self.costh = self.x
-        self.th = np.arccos(self.costh)
+        self.theta = np.arccos(self.costh)
 
         # build array of P_l(x)
-        self.Pl = compute_Pl(self.x, self.Nth, self.lmax)
+        self.Pl = compute_Pl(self.x, self.lmax)
 
-    def grid(self, Nth):
+    def grid(self, Npts):
         """
         Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1)
 
@@ -542,7 +532,7 @@ class Legendre:
         x = np.zeros((Npts)); w = np.zeros((Npts))
         midpoint = 0.0
         scaling =  1.0
-        n_roots = (Npts + 1)/2
+        n_roots = int((Npts + 1)/2)
 
         eps = 3.e-15
 
@@ -588,27 +578,31 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        if (shp[axis] != self.Nth):
+        if (shp[axis] != self.nth):
             e = "LegendreTransform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.Nth, axis, shp[axis]))
+            raise ValueError(e.format(self.nth, axis, shp[axis]))
 
         # increase dimensionality of input data, as necessary...magic 4 refers to number of for loops below
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis):
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the transform axis first
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
         # build proper weights for transform
-        iPl = 2*np.pi*np.reshape(self.w, (self.Nth,1))*self.Pl # (nth,lmax+1)
+        iPl = 2*np.pi*np.reshape(self.w, (self.nth,1))*self.Pl # (nth,lmax+1)
 
         # perform the transform with calls to scipy BLAS
         alpha = 1.0; beta = 0.0
 
+        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
         n, ny, nz, nt = np.shape(data_in)
         for j in range(nt):
             for i in range(nz):
-                data_out[:,:,i,j] = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta, trans_a=1, trans_b=0,
+                data_out[:,:,i,j] = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
+                                                            trans_a=1, trans_b=0,
                                                             a=iPl, b=data_in[:,:,i,j])
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -638,12 +632,12 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        if (shp[axis] != self.Nth):
+        if (shp[axis] != self.lmax+1):
             e = "LegendreTransform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.Nth, axis, shp[axis]))
+            raise ValueError(e.format(self.nth, axis, shp[axis]))
 
         # increase dimensionality of input data, as necessary...magic 4 refers to number of for loops below
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis):
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the transform axis first
         transform_axis = 0
@@ -652,10 +646,14 @@ class Legendre:
         # perform the transform with calls to scipy BLAS
         alpha = 1.0; beta = 0.0
 
+        shape = list(data_in.shape); shape[transform_axis] = self.nth; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
         n, ny, nz, nt = np.shape(data_in)
         for j in range(nt):
             for i in range(nz):
-                data_out[:,:,i,j] = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta, trans_a=0, trans_b=0,
+                data_out[:,:,i,j] = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
+                                                            trans_a=0, trans_b=0,
                                                             a=self.Pl, b=data_in[:,:,i,j])
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -665,9 +663,9 @@ class Legendre:
 
         return data_out
 
-    def d_dtheta(self, data_in, axis=0):
+    def d_dtheta(self, data_in, axis=0, physical=True):
         """
-        Compute derivative with respect to theta from within physical space
+        Compute derivative with respect to theta
 
         Args
         ----
@@ -675,31 +673,36 @@ class Legendre:
             Input data array, must be dimension 4 or less
         axis : int,optional
             The axis over which the derivative will take place
+        physical : bool,optional
+            Specify the incoming data as being in physical space or spectral
 
         Returns
         -------
         data_out : ndarray
-            Output data holding the derivative along the given axis
+            Output data containing d/dtheta
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        if (shp[axis] != (self.lmax+1)):
-            e = "d_dtheta expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.lmax+1, axis, shp[axis]))
+        if (physical):
+            if (shp[axis] != (self.nth)):
+                e = "d_dtheta expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(self.nth, axis, shp[axis]))
+        else:
+            if (shp[axis] != (self.lmax+1)):
+                e = "d_dtheta expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(self.lmax+1, axis, shp[axis]))
 
         # increase dimensionality of input data, as necessary
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis):
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the d/dx axis first
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # convert to spectral first
-        spectral = self.ToSpectral(data_in, axis=transform_axis)
-        data_in = None
-        data_out = np.zeros_like(spectral)
+        if (physical): # transform to spectral space first, if necessary
+            data_in = self.ToSpectral(data_in, axis=transform_axis)
 
         # compute the derivative: sin(th)*dF/dth with m=0
         #     sin(th)*dP_l^m/dth = l*D_{l+1}^m*P_{l+1}^m - (l+1)*D_l^m*P_{l-1}^m
@@ -711,18 +714,20 @@ class Legendre:
             den = 4.*l*l-1.
             Dl0[l] = np.sqrt(num/den)
 
+        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
         data_out[0,...] = 0.0 # the l=0 component
 
         for l in range(self.lmax): # interior l values
-            data_out[l,...] = l*Dl0[l+1]*spectral[l+1,...] - (l+1)*Dl0[l]*spectral[l-1,...]
+            data_out[l,...] = l*Dl0[l+1]*data_in[l+1,...] - (l+1)*Dl0[l]*data_in[l-1,...]
 
         # l=lmax component
-        data_out[self.lmax,...] = -(self.lmax+1)*Dl0[self.lmax]*spectral[self.lmax-1,...]
-
-        spectral = None
+        data_out[self.lmax,...] = -(self.lmax+1)*Dl0[self.lmax]*data_in[self.lmax-1,...]
 
         # convert back to physical space
-        data_out = self.ToPhysical(data_out, axis=transform_axis)
+        if (physical):
+            data_out = self.ToPhysical(data_out, axis=transform_axis)
 
         # undo the sin(th) part
         nshp = [1]*len(data_out.shape); nshp[axis] = -1; nshp = tuple(nshp)
