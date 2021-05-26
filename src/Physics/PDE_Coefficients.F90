@@ -108,7 +108,7 @@ Module PDE_Coefficients
     Real*8 :: Rayleigh_Number         = 1.0d0
     Real*8 :: Ekman_Number            = 1.0d0
     Real*8 :: Prandtl_Number          = 1.0d0
-    Real*8 :: S_Prandtl_Number        = 1.0d0
+    Real*8 :: Chi_Prandtl_Number      = 1.0d0
     Real*8 :: Magnetic_Prandtl_Number = 1.0d0
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
@@ -118,7 +118,7 @@ Module PDE_Coefficients
 
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
-            & Rayleigh_Number, Ekman_Number, Prandtl_Number, S_Prandtl_Number, Magnetic_Prandtl_Number, &
+            & Rayleigh_Number, Ekman_Number, Prandtl_Number, Chi_Prandtl_Number, Magnetic_Prandtl_Number, &
             & gravity_power, custom_reference_file,       &
             & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
             & override_constants, override_constant, ra_constants, with_custom_constants, &
@@ -128,8 +128,8 @@ Module PDE_Coefficients
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
 
-    Real*8, Allocatable :: nu(:), kappa(:), kappa_s(:), eta(:)
-    Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlnkappa_s(:), dlneta(:)
+    Real*8, Allocatable :: nu(:), kappa(:), kappa_Chi(:), eta(:)
+    Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlnkappa_Chi(:), dlneta(:)
 
     Real*8, Allocatable :: ohmic_heating_coeff(:)
     Real*8, Allocatable :: viscous_heating_coeff(:)
@@ -137,19 +137,19 @@ Module PDE_Coefficients
     Real*8, Allocatable :: W_Diffusion_Coefs_0(:), W_Diffusion_Coefs_1(:)
     Real*8, Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
     Real*8, Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
-    Real*8, Allocatable :: A_Diffusion_Coefs_1(:), Svar_Diffusion_Coefs_1(:)
+    Real*8, Allocatable :: A_Diffusion_Coefs_1(:), Chi_Diffusion_Coefs_1(:)
 
-    Integer :: kappa_type =1, kappa_s_type = 1, nu_type = 1, eta_type = 1
-    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0, kappa_s_top = -1.0d0, eta_top = -1.0d0
-    Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0, kappa_s_power = 0
+    Integer :: kappa_type =1, kappa_Chi_type = 1, nu_type = 1, eta_type = 1
+    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0, kappa_Chi_top = -1.0d0, eta_top = -1.0d0
+    Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0, kappa_Chi_power = 0
 
     Logical :: hyperdiffusion = .false.
     Real*8  :: hyperdiffusion_beta = 0.0d0
     Real*8  :: hyperdiffusion_alpha = 1.0d0
 
-    Namelist /Transport_Namelist/ nu_type, kappa_type, kappa_s_type, eta_type, &
-            & nu_power, kappa_power, kappa_s_power, eta_power, &
-            & nu_top, kappa_top, kappa_s_top, eta_top, &
+    Namelist /Transport_Namelist/ nu_type, kappa_type, kappa_Chi_type, eta_type, &
+            & nu_power, kappa_power, kappa_Chi_power, eta_power, &
+            & nu_top, kappa_top, kappa_Chi_top, eta_top, &
             & hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
 
 
@@ -292,7 +292,7 @@ Contains
 
         nu_top       = 1.0d0
         kappa_top       = 1.0d0/Prandtl_Number
-        kappa_s_top     = 1.0d0/S_Prandtl_Number
+        kappa_Chi_top   = 1.0d0/Chi_Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0
 
         If (magnetism) Then
@@ -384,8 +384,8 @@ Contains
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
 
         nu_top   = Ekman_Number
-        kappa_top   = Ekman_Number/Prandtl_Number
-        kappa_s_top = Ekman_Number/S_Prandtl_Number
+        kappa_top     = Ekman_Number/Prandtl_Number
+        kappa_Chi_top = Ekman_Number/Chi_Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
                                  & Dissipation_Number/Modified_Rayleigh_Number
 
@@ -931,7 +931,7 @@ Contains
             Endif
             DeAllocate(ref_arr_old,old_radius)
             
-            ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, kappa_s and eta were
+            ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, kappa_Chi and eta were
             ! not specified, then we compute them here.
             ! only calculate the log derivative if the function was set, otherwise there
             ! are divide by zero issues
@@ -954,7 +954,7 @@ Contains
                 Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
             Endif
             If ((fset(16) .eq. 0) .and. (fset(15) .eq. 1)) Then
-                Call log_deriv(ra_functions(:,15), ra_functions(:,16)) !dlnkappa_s
+                Call log_deriv(ra_functions(:,15), ra_functions(:,16)) !dlnkappa_Chi
             Endif
         Else
             Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
@@ -1060,7 +1060,7 @@ Contains
         Rayleigh_Number         = 1.0d0
         Ekman_Number            = 1.0d0
         Prandtl_Number          = 1.0d0
-        S_Prandtl_Number        = 1.0d0
+        Chi_Prandtl_Number      = 1.0d0
         Magnetic_Prandtl_Number = 1.0d0
         gravity_power           = 0.0d0
 
@@ -1103,7 +1103,7 @@ Contains
 
         Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
         Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
-        Call Initialize_Diffusivity(kappa_s,dlnkappa_s,kappa_s_top,kappa_s_type,kappa_s_power,11,15,16)
+        Call Initialize_Diffusivity(kappa_Chi,dlnkappa_Chi,kappa_Chi_top,kappa_Chi_type,kappa_Chi_power,11,15,16)
 
         If (viscous_heating) Then
             Allocate(viscous_heating_coeff(1:N_R))
@@ -1136,7 +1136,7 @@ Contains
                 temp_constants(6)    = ra_constants(6)
             Endif
 
-            If (kappa_s_type .eq. 3) Then
+            If (kappa_Chi_type .eq. 3) Then
                 temp_functions(:,15) = ra_functions(:,15)
                 temp_functions(:,16) = ra_functions(:,16)
                 temp_constants(11)   = ra_constants(11)
@@ -1166,8 +1166,8 @@ Contains
         Allocate(dlnu(1:N_r))
         Allocate(kappa(1:N_r))
         Allocate(dlnkappa(1:N_r))
-        Allocate(kappa_s(1:N_r))
-        Allocate(dlnkappa_s(1:N_r))
+        Allocate(kappa_Chi(1:N_r))
+        Allocate(dlnkappa_Chi(1:N_r))
         Allocate(eta(1:N_R))
         Allocate(dlneta(1:N_R))
 
@@ -1244,14 +1244,14 @@ Contains
     Subroutine Restore_Transport_Defaults
         Implicit None
 
-        If (Allocated(nu))         DeAllocate(nu)
-        If (Allocated(kappa))      DeAllocate(kappa)
-        If (Allocated(kappa_s))    DeAllocate(kappa_s)
-        If (Allocated(eta))        DeAllocate(eta)
-        If (Allocated(dlnu))       DeAllocate(dlnu)
-        If (Allocated(dlnkappa))   DeAllocate(dlnkappa)
-        If (Allocated(dlnkappa_s)) DeAllocate(dlnkappa_s)
-        If (Allocated(dlneta))     DeAllocate(dlneta)
+        If (Allocated(nu))           DeAllocate(nu)
+        If (Allocated(kappa))        DeAllocate(kappa)
+        If (Allocated(kappa_Chi))    DeAllocate(kappa_Chi)
+        If (Allocated(eta))          DeAllocate(eta)
+        If (Allocated(dlnu))         DeAllocate(dlnu)
+        If (Allocated(dlnkappa))     DeAllocate(dlnkappa)
+        If (Allocated(dlnkappa_Chi)) DeAllocate(dlnkappa_Chi)
+        If (Allocated(dlneta))       DeAllocate(dlneta)
 
         If (allocated(W_Diffusion_Coefs_0) ) DeAllocate( W_Diffusion_Coefs_0)
         If (allocated(W_Diffusion_Coefs_1) ) DeAllocate( W_Diffusion_Coefs_1)
@@ -1311,9 +1311,9 @@ Contains
         Allocate(S_Diffusion_Coefs_1(1:N_R))
         S_diffusion_Coefs_1 = kappa*(dlnkappa+ref%dlnrho+ref%dlnT)
         !//////////////////////////////////////// +
-        ! S Coefficients for S Equation
-        Allocate(Svar_Diffusion_Coefs_1(1:N_R))
-        Svar_diffusion_Coefs_1 = kappa_s*(dlnkappa_s)
+        ! Chi Coefficients for Chi Equation
+        Allocate(Chi_Diffusion_Coefs_1(1:N_R))
+        Chi_diffusion_Coefs_1 = kappa_Chi*(dlnkappa_Chi)
         !//////////////////////////////////////// +
         ! Z Coefficients for the Z Equation
         Allocate(Z_Diffusion_Coefs_0(1:N_R))

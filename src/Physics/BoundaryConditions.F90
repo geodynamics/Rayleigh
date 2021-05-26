@@ -38,10 +38,10 @@ Module BoundaryConditions
     Logical :: Fix_dTdr_Top    = .False.
     Logical :: Fix_dTdr_Bottom = .False.
 
-    Logical :: Fix_Svar_Top    = .True.  ! PASSIVE
-    Logical :: Fix_Svar_Bottom = .True.
-    Logical :: Fix_dSvardr_Top    = .False.
-    Logical :: Fix_dSvardr_Bottom = .False.
+    Logical :: Fix_Chivar_Top    = .True.  ! PASSIVE
+    Logical :: Fix_chivar_Bottom = .True.
+    Logical :: Fix_dChidr_Top    = .False.
+    Logical :: Fix_dChidr_Bottom = .False.
 
     Logical :: Fix_divrt_top = .False.
     Logical :: Fix_divt_top = .False.
@@ -57,10 +57,10 @@ Module BoundaryConditions
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
 
-    Real*8  :: svar_Bottom     = 1.0d0  ! PASSIVE
-    Real*8  :: svar_Top        = 0.0d0
-    Real*8  :: dsvardr_Top     = 0.0d0
-    Real*8  :: dsvardr_Bottom  = 0.0d0
+    Real*8  :: Chi_Bottom     = 1.0d0  ! PASSIVE
+    Real*8  :: Chi_Top        = 0.0d0
+    Real*8  :: dChidr_Top     = 0.0d0
+    Real*8  :: dChidr_Bottom  = 0.0d0
 
     Real*8  :: C10_bottom = 0.0d0
     Real*8  :: C10_top = 0.0d0
@@ -71,16 +71,16 @@ Module BoundaryConditions
     Real*8  :: Br_bottom = 0.0d0
     Real*8  :: Dipole_Tilt_Degrees = 0.0d0
 
-    Character*120 :: T_top_file          = '__nothing__'
-    Character*120 :: T_bottom_file       = '__nothing__'
-    Character*120 :: dTdr_top_file       = '__nothing__'
-    Character*120 :: dTdr_bottom_file    = '__nothing__'
-    Character*120 :: C_top_file          = '__nothing__'
-    Character*120 :: C_bottom_file       = '__nothing__'
-    Character*120 :: Svar_top_file       = '__nothing__'
-    Character*120 :: Svar_bottom_file    = '__nothing__'
-    Character*120 :: dSvardr_top_file    = '__nothing__'
-    Character*120 :: dSvardr_bottom_file = '__nothing__'
+    Character*120 :: T_top_file         = '__nothing__'
+    Character*120 :: T_bottom_file      = '__nothing__'
+    Character*120 :: dTdr_top_file      = '__nothing__'
+    Character*120 :: dTdr_bottom_file   = '__nothing__'
+    Character*120 :: C_top_file         = '__nothing__'
+    Character*120 :: C_bottom_file      = '__nothing__'
+    Character*120 :: Chi_top_file       = '__nothing__'
+    Character*120 :: Chi_bottom_file    = '__nothing__'
+    Character*120 :: dChidr_top_file    = '__nothing__'
+    Character*120 :: dChidr_bottom_file = '__nothing__'
 
     Logical :: Strict_L_Conservation = .false.         ! (In-Progress) Turn on to enforce angular momentum conservation abous x,y, and z-axes
     Logical :: no_slip_boundaries = .false. ! Set to true to use no-slip boundaries.  Stree-free boundaries are the default.
@@ -97,9 +97,9 @@ Module BoundaryConditions
         dipole_tilt_degrees, impose_dipole_field, no_slip_top, no_slip_bottom, &
         stress_free_top, stress_free_bottom, T_top_file, T_bottom_file, dTdr_top_file, dTdr_bottom_file, &
         C_top_file, C_bottom_file, dipole_field_bottom, &
-        Svar_top_file, Svar_bottom_file, dSvardr_top_file, dSvardr_bottom_file, &
-        fix_svar_top, fix_svar_bottom, svar_bottom, svar_top, &
-        fix_dsvardr_bottom, fix_dsvardr_top, dsvardr_top, dsvardr_bottom
+        Chi_top_file, Chi_bottom_file, dChidr_top_file, dChidr_bottom_file, &
+        fix_Chivar_top, fix_Chivar_bottom, Chi_bottom, Chi_top, &
+        fix_dChidr_bottom, fix_dChidr_top, dChidr_top, dChidr_bottom
 
 Contains
 
@@ -111,8 +111,8 @@ Contains
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
 
-        fix_svar_top = .not. fix_dsvardr_top  ! PASSIVE
-        fix_svar_bottom = .not. fix_dsvardr_bottom
+        fix_Chivar_top = .not. fix_dChidr_top  ! PASSIVE
+        fix_Chivar_bottom = .not. fix_dChidr_bottom
 
         If (no_slip_boundaries) Then
             no_slip_top = .true.
@@ -223,39 +223,39 @@ Contains
                 end if
             Endif
 
-            If (fix_svar_top) Then
-                if (trim(Svar_top_file) .eq. '__nothing__') then
-                  bc_val= Svar_Top*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, seq,real_ind, uind)
+            If (fix_Chivar_top) Then
+                if (trim(Chi_top_file) .eq. '__nothing__') then
+                  bc_val= Chi_Top*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, Chieq,real_ind, uind)
                 else  
-                  Call Set_BC_from_file(Svar_top_file, seq, uind)
+                  Call Set_BC_from_file(Chi_top_file, Chieq, uind)
                 end if
             Endif
 
-            If (fix_svar_bottom) Then
-                if (trim(Svar_bottom_file) .eq. '__nothing__') then
-                  bc_val= Svar_bottom*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, seq,real_ind, lind)
+            If (fix_Chivar_bottom) Then
+                if (trim(Chi_bottom_file) .eq. '__nothing__') then
+                  bc_val= Chi_bottom*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, Chieq,real_ind, lind)
                 else
-                  Call Set_BC_from_file(Svar_bottom_file, seq, lind)
+                  Call Set_BC_from_file(Chi_bottom_file, Chieq, lind)
                 end if
             Endif
 
-            If (Fix_dSvardr_Top) Then
-                if (trim(dsvardr_top_file) .eq. '__nothing__') then
-                  bc_val= dsvardr_top*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, seq,real_ind, uind)
+            If (Fix_dChidr_Top) Then
+                if (trim(dChidr_top_file) .eq. '__nothing__') then
+                  bc_val= dChidr_top*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, Chieq,real_ind, uind)
                 else
-                  Call Set_BC_from_file(dsvardr_top_file, seq, uind)
+                  Call Set_BC_from_file(dChidr_top_file, Chieq, uind)
                 end if
             Endif
 
-            If (Fix_dSvardr_Bottom) Then
-                if (trim(dsvardr_bottom_file) .eq. '__nothing__') then
-                  bc_val= dsvardr_bottom*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, seq,real_ind, lind)
+            If (Fix_dChidr_Bottom) Then
+                if (trim(dChidr_bottom_file) .eq. '__nothing__') then
+                  bc_val= dChidr_bottom*sqrt(four_pi)
+                  Call Set_BC(bc_val,0,0, Chieq,real_ind, lind)
                 else
-                  Call Set_BC_from_file(dsvardr_bottom_file, seq, lind)
+                  Call Set_BC_from_file(dChidr_bottom_file, Chieq, lind)
                 end if
             Endif
 

@@ -73,7 +73,7 @@ Module Fields
     ! PASSIVE
     ! Passive scalar variables.
     ! These are what we need to calculate advection
-    Integer :: svar, dsvardr, dsvardt, dsvardp, d2svardr2
+    Integer :: Chivar, dChidr, dChidt, dChidp, d2Chidr2
     !///////////////////////////////////////////////////////////////////////////
 
 
@@ -83,7 +83,7 @@ Module Fields
     !                FOR LINEAR Solve
     !==============================================================================
     Integer, parameter :: weq = 1,  peq = 2,  teq = 3
-    Integer, parameter :: zeq = 4,  seq = 5             !  PASSIVE:   make space for seq
+    Integer, parameter :: zeq = 4,  Chieq = 5             !  PASSIVE:   make space for Chieq
     Integer, Parameter :: ceq = 6,  aeq = 7
 
 
@@ -201,7 +201,7 @@ Contains
         Call wsp_indices%Add_Field(Pvar , config)
         Call wsp_indices%Add_Field(Tvar , config)
         Call wsp_indices%Add_Field(Zvar , config)
-        Call wsp_indices%Add_Field(Svar , config)   ! PASSIVE: seq must agree with svar
+        Call wsp_indices%Add_Field(Chivar , config)   ! PASSIVE: Chieq must agree with Chivar
         If (magnetism) Then
           Call wsp_indices%Add_Field(cvar , config)
           Call wsp_indices%Add_field(avar , config)
@@ -211,8 +211,8 @@ Contains
         Call wsp_indices%Add_Field(dPdr1  , config)
         Call wsp_indices%Add_field(d2Zdr2 , config)
         Call wsp_indices%Add_Field(d2Wdr2 , config)
-        Call wsp_indices%Add_Field(dsvardr, config)  ! PASSIVE:  make space for dsdr
-        Call wsp_indices%Add_Field(d2svardr2, config)  ! PASSIVE:  make space for dsdr
+        Call wsp_indices%Add_Field(dChidr, config)  ! PASSIVE:  make space for dChidr
+        Call wsp_indices%Add_Field(d2Chidr2, config)  ! PASSIVE:  make space for dChidr
 
         If (magnetism) Then
           Call wsp_indices%Add_field(dcdr   , config)
@@ -229,7 +229,7 @@ Contains
         Call wsp_indices%Add_Field(vphi   , config)
         Call wsp_indices%Add_Field(dvtdr  , config)
         Call wsp_indices%Add_Field(dvpdr  , config)
-        Call wsp_indices%Add_Field(dsvardt   , config)  !PASSIVE:  make space for dsdtheta
+        Call wsp_indices%Add_Field(dChidt   , config)  !PASSIVE:  make space for dChidtheta
         If (magnetism) Then
 
             Call wsp_indices%Add_Field(curlbr     ,config)
@@ -246,7 +246,7 @@ Contains
         Call wsp_indices%Add_Field(dvtdt,config)
         Call wsp_indices%Add_field(dvpdt,config)
         Call wsp_indices%Add_field(dtdp,config)
-        Call wsp_indices%Add_Field(dsvardp,config)  !PASSIVE:  make space for phi derivative
+        Call wsp_indices%Add_Field(dChidp,config)  !PASSIVE:  make space for phi derivative
 
         !//////////////////////////////////////////////////////////
         !   Throughout the forward loop, many variables are replaced

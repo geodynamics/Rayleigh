@@ -19,9 +19,9 @@
 !
 
     !//////////////////////////////////////////////////////////////////
-    !  Composition
-    Integer, Parameter :: s_off = axial_off+100 ! :OFFSET CODE:
+    !  Composition/Scalar
+    Integer, Parameter :: chi_off = axial_off+100 ! :OFFSET CODE:
 
     !------------ Fields ---------------------!
     ! Full
-    Integer, Parameter :: scalar     = s_off+1  !  :tex:  $S$
+    Integer, Parameter :: scalar     = chi_off+1  !  :tex:  $\Chi$

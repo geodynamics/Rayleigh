@@ -69,7 +69,7 @@ Contains
         Call sintheta_div(dvrdt)
         Call sintheta_div(dvpdp)
         Call sintheta_div(dvtdp)
-        Call sintheta_div(dsvardt)  ! PASSIVE - dsvardt initially contains sin(theta) dsdtheta -- divide by sintheta
+        Call sintheta_div(dChidt)  ! PASSIVE - dChidt initially contains sin(theta) dsdtheta -- divide by sintheta
 
 
 
@@ -117,8 +117,8 @@ Contains
         Call Temperature_Advection()
         Call Volumetric_Heating()
 
-        Call Svar_Advection()   ! PASSIVE
-        Call Svar_Source_function()
+        Call Chi_Advection()   ! PASSIVE
+        Call Chi_Source_function()
 
         If (viscous_heating) Call Compute_Viscous_Heating()
 
@@ -177,22 +177,22 @@ Contains
         !$OMP END PARALLEL DO
     End Subroutine Compute_dvphi_by_dtheta
 
-    Subroutine Svar_Advection()
+    Subroutine Chi_Advection()
         Integer :: t,r,k
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         Do t = my_theta%min, my_theta%max
             Do r = my_r%min, my_r%max
                 Do k =1, n_phi
-                wsp%p3b(k,r,t,svar) = -wsp%p3a(k,r,t,vr)*wsp%p3a(k,r,t,dsvardr)     &
+                wsp%p3b(k,r,t,Chivar) = -wsp%p3a(k,r,t,vr)*wsp%p3a(k,r,t,dChidr)     &
                                      - one_over_r(r)*(                           &
-                                       wsp%p3a(k,r,t,dsvardt)*wsp%p3a(k,r,t,vtheta) &
-                                     + wsp%p3a(k,r,t,vphi)*wsp%p3a(k,r,t,dsvardp)*csctheta(t) )
+                                       wsp%p3a(k,r,t,dChidt)*wsp%p3a(k,r,t,vtheta) &
+                                     + wsp%p3a(k,r,t,vphi)*wsp%p3a(k,r,t,dChidp)*csctheta(t) )
 
                 Enddo
             Enddo
         Enddo
         !$OMP END PARALLEL DO
-    End Subroutine Svar_Advection
+    End Subroutine Chi_Advection
 
     Subroutine Temperature_Advection()
         Integer :: t,r,k
@@ -229,7 +229,7 @@ Contains
         Endif
     End Subroutine Volumetric_Heating
 
-    Subroutine Svar_Source_Function()
+    Subroutine Chi_Source_Function()
         Implicit None
         Integer :: t,r,k
 
@@ -237,13 +237,13 @@ Contains
         Do t = my_theta%min, my_theta%max
             Do r = my_r%min, my_r%max
                 Do k =1, n_phi
-                    wsp%p3b(k,r,t,svar) = wsp%p3b(k,r,t,svar)+0.0d0  ! This is where you would put a source function
+                    wsp%p3b(k,r,t,Chivar) = wsp%p3b(k,r,t,Chivar)+0.0d0  ! This is where you would put a source function
                 Enddo
             Enddo
         Enddo
         !$OMP END PARALLEL DO
 
-    End Subroutine Svar_Source_Function
+    End Subroutine Chi_Source_Function
 
     Subroutine Compute_Viscous_Heating()
         Implicit None
@@ -632,7 +632,7 @@ Contains
         Call d_by_dphi(wsp%p3a,vtheta,dvtdp)
         Call d_by_dphi(wsp%p3a,vphi,dvpdp)
         Call d_by_dphi(wsp%p3a,tvar,dtdp)
-        Call d_by_dphi(wsp%p3a,svar,dsvardp)   ! PASSIVE
+        Call d_by_dphi(wsp%p3a,Chivar,dChidp)   ! PASSIVE
     End Subroutine Phi_Derivatives
     Subroutine sintheta_div(ind)
         ! Divide by sintheta

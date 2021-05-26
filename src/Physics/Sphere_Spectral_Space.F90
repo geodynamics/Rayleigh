@@ -93,14 +93,14 @@ Contains
             ctemp%nf1b = 5
         Endif
         Call ctemp%construct('p1a')
-        !Svar PASSIVE  (need 1st and 2nd radial derivatives)
-        ! Take first derivative of field in index svar in p1a
-        ! store result in field in index dsvardr
+        !Chivar PASSIVE  (need 1st and 2nd radial derivatives)
+        ! Take first derivative of field in index Chivar in p1a
+        ! store result in field in index dChidr
         ! Everything HERE is in n-cheby space.
         ! BUT RHS is in RADIAL space due to collocation scheme
         ! further down, we tranform and add to the RHS
-        Call gridcp%d_by_dr_cp(svar,dsvardr,wsp%p1a,1)
-        Call gridcp%d_by_dr_cp(svar,d2svardr2,wsp%p1a,2)
+        Call gridcp%d_by_dr_cp(Chivar,dChidr,wsp%p1a,1)
+        Call gridcp%d_by_dr_cp(Chivar,d2Chidr2,wsp%p1a,2)
 
         ! W..
         Call gridcp%d_by_dr_cp(wvar,d3wdr3,wsp%p1a,3)
@@ -195,15 +195,15 @@ Contains
         Call Add_Derivative(weq,tvar,0, wsp%p1b,wsp%p1a,tvar)    ! gravity
 
         !////////////////////////////////////
-        ! Svar  PASSIVE
-        ! Need to add '0th', 1st and 2nd derivatives of svar to RHS
+        ! Chivar  PASSIVE
+        ! Need to add '0th', 1st and 2nd derivatives of Chivar to RHS
         ! How to read this:
-        !   To Seq, and its svar block, add 0th derivative coefficient
-        !   from svar field index of p1a -- store in p1b
+        !   To Chieq, and its Chivar block, add 0th derivative coefficient
+        !   from Chivar field index of p1a -- store in p1b
         ! p1b contains the RHS that will be loaded into RHS solve config
-        Call Add_Derivative(seq,svar,0,wsp%p1b,wsp%p1a,svar)       
-        Call Add_Derivative(seq,svar,1,wsp%p1b,wsp%p1a,dsvardr)   
-        Call Add_Derivative(seq,svar,2,wsp%p1b,wsp%p1a,d2svardr2)   
+        Call Add_Derivative(Chieq,Chivar,0,wsp%p1b,wsp%p1a,Chivar)       
+        Call Add_Derivative(Chieq,Chivar,1,wsp%p1b,wsp%p1a,dChidr)   
+        Call Add_Derivative(Chieq,Chivar,2,wsp%p1b,wsp%p1a,d2Chidr2)   
 
         !///////////////////////////////
         !  Z Terms

@@ -96,10 +96,10 @@ Contains
         if (magnetism) Then
             numfields = 6 +1
             checkpoint_suffix(1:14) = &
-                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'S  ', 'C  ', 'A  ', 'WAB', 'PAB', 'TAB', 'ZAB', 'SAB', 'CAB', 'AAB' /)
+                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'X  ', 'C  ', 'A  ', 'WAB', 'PAB', 'TAB', 'ZAB', 'XAB', 'CAB', 'AAB' /)
         Else
             checkpoint_suffix(1:10) = &
-                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'S  ', 'WAB', 'PAB', 'TAB', 'ZAB', 'SAB' /)
+                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'X  ', 'WAB', 'PAB', 'TAB', 'ZAB', 'XAB' /)
         Endif
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a') ! Persistent throughout run

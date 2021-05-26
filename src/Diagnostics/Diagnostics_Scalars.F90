@@ -29,16 +29,15 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        ! Here we compute the gradient of pressure and entropy/temperature
 
 
         !////////////////////////////////////////
-        !       Entropy
+        !       Scalar
 
-        !  Entropy: field
+        !  Scalar: field
         If (compute_quantity(scalar)) Then
             DO_PSI
-                qty(PSI) = buffer(PSI,svar)
+                qty(PSI) = buffer(PSI,Chivar)
             END_DO
             Call Add_Quantity(qty)
         Endif
