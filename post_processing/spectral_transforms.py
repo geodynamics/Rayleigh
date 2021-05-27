@@ -81,12 +81,12 @@ def pos_axis(axis, dim):
     if (axis >= 0):
         if (axis >= dim):
             raise ValueError("axis must be < dim, axis={}, dim={}".format(axis, dim))
-        pos_axis = axis
+        paxis = axis
     else:
         if (abs(axis) > dim):
             raise ValueError("|axis| must be <= dim, axis={}, dim={}".format(axis, dim))
-        pos_axis = np.arange(dim)[axis]
-    return pos_axis
+        paxis = np.arange(dim)[axis]
+    return paxis
 
 def more_dimensions(C, Ndim, prepend=False, axis=None):
     """
@@ -149,7 +149,8 @@ def more_dimensions(C, Ndim, prepend=False, axis=None):
             return C, added
 
     if (Ndim < dim):
-        raise ValueError("Cannot decrease dimensionality, dim={}, Ndim={}".format(dim,Ndim))
+        e = "Cannot decrease dimensionality, Ndim must be >= {}, Ndim = {}"
+        raise ValueError(e.format(dim, Ndim))
 
     Ndiff = Ndim - dim
 
@@ -203,7 +204,7 @@ class Fourier:
 
     def __init__(self, N):
         """
-        initialize the Fourier grid and FFT (assumes real data)
+        Initialize the Fourier grid and FFT (assumes real data)
 
         Args
         ----
@@ -226,7 +227,7 @@ class Fourier:
 
     def frequencies(self):
         """
-        calculate frequencies on the Fourier grid
+        Calculate frequencies on the Fourier grid
 
         Returns
         -------
@@ -239,7 +240,7 @@ class Fourier:
 
     def grid(self):
         """
-        calculate Fourier grid points in [0,2pi)
+        Calculate Fourier grid points in [0,2pi)
 
         Returns
         -------
@@ -251,7 +252,7 @@ class Fourier:
         xgrid = dphi*np.arange(self.N)
         return xgrid
 
-    def ToSpectral(self, data_in, axis=0, window=None):
+    def to_spectral(self, data_in, axis=0, window=None):
         """
         FFT from physical space to spectral space
 
@@ -294,7 +295,7 @@ class Fourier:
 
         return data_out
 
-    def ToPhysical(self, data_in, axis=0):
+    def to_physical(self, data_in, axis=0):
         """
         FFT from spectral space to physical space
 
@@ -365,7 +366,7 @@ class Fourier:
                 raise ValueError(e.format(np.shape(self.freq)[0], shp[axis]))
 
         if (physical): # transform to spectral space first, if necessary
-            data_in = self.ToSpectral(data_in, axis=axis)
+            data_in = self.to_spectral(data_in, axis=axis)
 
         nshp = [1]*dim; nshp[axis] = -1; nshp = tuple(nshp)
         freq = np.reshape(self.freq, nshp)
@@ -374,7 +375,7 @@ class Fourier:
         data_out = 2*np.pi*1j*freq*data_in
 
         if (physical): # transform back to incoming space
-            data_out = self.ToPhysical(data_out, axis=axis)
+            data_out = self.to_physical(data_out, axis=axis)
 
         return data_out
 
@@ -400,20 +401,20 @@ def _evaluate_Pl(x, n):
     deriv_pn : float or (N,) ndarray
         Derivative of the Legendre function evaluated at x
     """
-    x = np.asarray(x)
+    x = np.asarray(x, dtype=np.float128)
     if (len(np.shape(x)) > 0): # x is array
         length = len(x)
     else:
         length = 1             # x is scalar
 
-    pn_minus1 = 0.0
-    pn = 1.0
+    pn_minus1 = np.asarray(0.0, dtype=np.float128)
+    pn = np.asarray(1.0, dtype=np.float128)
 
     # use recursion relation
     for j in range(n):
         pn_minus2 = pn_minus1
         pn_minus1 = pn
-        pn = ((2.*j + 1.)*x*pn_minus1 - j*pn_minus2)/float(j+1.)
+        pn = ((2.*j + 1.)*x*pn_minus1 - j*pn_minus2)/(j+1.)
 
     # get derivative
     deriv_pn = n*(x*pn-pn_minus1)/(x*x - 1.)
@@ -441,17 +442,20 @@ def compute_Pl(x, lmax):
     Pl : (Nth, lmax+1) ndarray
         The l-th Legendre polynomial evaluated at x[i]
     """
-    x = np.asarray(x)
+    x = np.asarray(x, dtype=np.float128)
     n = np.shape(x)[0]
 
-    Pl = np.zeros((n,lmax+1))
+    Pl = np.zeros((n,lmax+1), dtype=np.float64)
+
+    # compute in "quad" precision...it will actually be closer to 80 bit
+    _Pl = np.zeros((n,lmax+1), dtype=np.float128)
 
     mv = 0 # azimuthal wavenumber
 
     # start with the l=m & l=m+1 pieces
 
     # compute factorial ratio = sqrt[ (2m)! / 4**m / m! / m!] for m=0
-    ratio = 1.0
+    ratio = np.asarray(1.0, dtype=np.float128)
 
     amp = np.sqrt((mv+0.5)/(2.*np.pi))
     amp *= ratio
@@ -459,13 +463,13 @@ def compute_Pl(x, lmax):
         xi = x[i]
         tmp = 1. - xi*xi
         if (mv%2 == 1):
-            Pl[i,mv] = -amp*tmp**(mv/2+0.5) # odd m
+            _Pl[i,mv] = -amp*tmp**(mv/2+0.5) # odd m
         else:
-            Pl[i,mv] = amp*tmp**(mv/2) # even m
+            _Pl[i,mv] = amp*tmp**(mv/2) # even m
 
         # l=m+1 part
         if (mv < lmax):
-            Pl[i,mv+1] = Pl[i,mv]*xi*np.sqrt(2.*mv+3)
+            _Pl[i,mv+1] = _Pl[i,mv]*xi*np.sqrt(2.*mv+3)
 
     # l>m+1 part
     for l in range(mv+2,lmax+1):
@@ -473,8 +477,11 @@ def compute_Pl(x, lmax):
         amp2 = np.sqrt( (4.*l*l-1.) / (l*l-mv*mv) )
         for i in range(n):
             xi = x[i]
-            tmp = Pl[i,l-1]*xi - amp*Pl[i,l-2]
-            Pl[i,l] = tmp*amp2
+            tmp = _Pl[i,l-1]*xi - amp*_Pl[i,l-2]
+            _Pl[i,l] = tmp*amp2
+
+    # store in double precision
+    Pl[:,:] = _Pl[:,:]
 
     return Pl
 
@@ -482,7 +489,7 @@ class Legendre:
 
     def __init__(self, N, spectral=False, dealias=1.5, parity=True):
         """
-        initialize the Legendre grid and transform
+        Initialize the Legendre grid and transform
 
         Args
         ----
@@ -490,10 +497,10 @@ class Legendre:
             Resolution of the theta grid
         spectral : bool, optional
             Does N refer to physical space or spectral space. If spectral=True,
-            N would be the maximum polynomial degree (N_poly_max). The default
-            is that N refers to the physical space resolution (N_grid)
+            N would be the maximum polynomial degree (l_max). The default
+            is that N refers to the physical space resolution (N_theta)
         dealias : float, optional
-            Amount to dealias: N_grid = dealias*(N_poly_max + 1)
+            Amount to dealias: N_theta = dealias*(l_max + 1)
         parity : bool, optional
             Exploit parity properties when computing the Legendre transform
         """
@@ -502,16 +509,13 @@ class Legendre:
         self.dealias = dealias
         self.parity  = parity
 
-        # generate grid and weights
+        # generate grid, weights, and Pl array
         self.x, self.w = self.grid(self.nth)
 
         # alias
         self.sinth = np.sqrt(1.- self.x*self.x)
         self.costh = self.x
         self.theta = np.arccos(self.costh)
-
-        # build array of P_l(x)
-        self.Pl = compute_Pl(self.x, self.lmax)
 
     def grid(self, Npts):
         """
@@ -530,15 +534,16 @@ class Legendre:
             The Legendre integration weights
         """
         x = np.zeros((Npts)); w = np.zeros((Npts))
-        midpoint = 0.0
-        scaling =  1.0
+        _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
+        midpoint = np.asarray(0.0, dtype=np.float128)
+        scaling = np.asarray(1.0, dtype=np.float128)
         n_roots = int((Npts + 1)/2)
 
-        eps = 3.e-15
+        eps = np.asarray(3.e-15, dtype=np.float128)
 
         # this is a Newton-Rhapson find for the roots
         for i in range(n_roots):
-            ith_root = np.cos(np.pi*(i+0.75)/(Npts+0.5))
+            ith_root = np.asarray(np.cos(np.pi*(i+0.75)/(Npts+0.5)), dtype=np.float128)
             converged = False; iters = 0
             while (not converged):
                 pn, deriv_pn = _evaluate_Pl(ith_root, Npts)
@@ -549,16 +554,23 @@ class Legendre:
                 if (delta <= eps):
                     converged = True
 
-                x[i] = midpoint - scaling*ith_root
-                x[Npts-1-i] = midpoint + scaling*ith_root
+                _x[i] = midpoint - scaling*ith_root
+                _x[Npts-1-i] = midpoint + scaling*ith_root
 
-                w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
-                w[Npts-1-i] = w[i]
+                _w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
+                _w[Npts-1-i] = _w[i]
                 iters += 1
+
+        # store in double precision
+        x[:] = _x[:]
+        w[:] = _w[:]
+
+        # build array of P_l(x)
+        self.Pl = compute_Pl(_x, self.lmax)
 
         return x, w
 
-    def ToSpectral(self, data_in, axis=0):
+    def to_spectral(self, data_in, axis=0):
         """
         Transform from physical space to spectral space
 
@@ -598,6 +610,7 @@ class Legendre:
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
         data_out = np.zeros((shape))
 
+        # data assumed to be 4D, so two for loops plus a matrix multiply
         n, ny, nz, nt = np.shape(data_in)
         for j in range(nt):
             for i in range(nz):
@@ -612,7 +625,7 @@ class Legendre:
 
         return data_out
 
-    def ToPhysical(self, data_in, axis=0):
+    def to_physical(self, data_in, axis=0):
         """
         Transform from spectral space to physical space
 
@@ -649,6 +662,7 @@ class Legendre:
         shape = list(data_in.shape); shape[transform_axis] = self.nth; shape = tuple(shape)
         data_out = np.zeros((shape))
 
+        # data assumed to be 4D, so two for loops plus a matrix multiply
         n, ny, nz, nt = np.shape(data_in)
         for j in range(nt):
             for i in range(nz):
@@ -702,7 +716,7 @@ class Legendre:
         data_in = swap_axis(data_in, axis, transform_axis)
 
         if (physical): # go to spectral space if necessary
-            data_in = self.ToSpectral(data_in, axis=transform_axis)
+            data_in = self.to_spectral(data_in, axis=transform_axis)
 
         # compute the derivative: sin(th)*dF/dth with m=0
         #     sin(th)*dP_l^m/dth = l*D_{l+1}^m*P_{l+1}^m - (l+1)*D_l^m*P_{l-1}^m
@@ -717,6 +731,15 @@ class Legendre:
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
         data_out = np.zeros((shape))
 
+        # F = sum C_l*P_l
+        # sin(th)dF/dth = sum C_l*sin(th)dP_l/dth
+        #               = sum_{l=0}^lmax C_l * [ a_l*P_{l+1} + b_l*P_{l-1} ]
+        #               = sum_{l=0}^lmax C_l*a_l*P_{l+1} + sum_{l=0}^lmax C_l*b_l*P_{l-1}
+        #        redo sum indices: k=l+1 for first one and k=l-1 for second one
+        #               = sum_{k=1}^lmax C_{k-1}*a_{k-1}*P_k
+        #                  + sum_{k=0}^{lmax-1} C_{k+1}*b_{k+1}*P_k
+        #               = sum_{l=1}^{lmax-1} [C_{l-1}*a_{l-1} + C_{l+1}*b_{l+1}]*P_l
+        #                  + C_{lmax-1}*a_{lmax-1}*P_lmax
         # the l=0 component is zero
         for l in range(self.lmax): # interior l values
             data_out[l,...] = -(l+2)*Dl0[l+1]*data_in[l+1,...] + (l-1)*Dl0[l]*data_in[l-1,...]
@@ -725,7 +748,7 @@ class Legendre:
         data_out[self.lmax,...] = (self.lmax-1)*Dl0[self.lmax]*data_in[self.lmax-1,...]
 
         # convert back to physical space
-        data_out = self.ToPhysical(data_out, axis=transform_axis)
+        data_out = self.to_physical(data_out, axis=transform_axis)
 
         # undo the sin(th) part in physical space
         nshp = [1]*len(data_out.shape); nshp[axis] = -1; nshp = tuple(nshp)
@@ -733,7 +756,7 @@ class Legendre:
         data_out /= sinth
 
         if (not physical): # go back to spectral space if necessary
-            data_out = self.ToSpectral(data_out, axis=transform_axis)
+            data_out = self.to_spectral(data_out, axis=transform_axis)
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -742,4 +765,90 @@ class Legendre:
         data_out = np.squeeze(data_out, axis=added_axes)
 
         return data_out
+
+def chebyshev_zeros(Npts, reverse=False):
+    """
+    generate the Chebysheve zeros grid
+
+    Args
+    ----
+    Npts : int
+        The number of grid points
+    reverse : bool, optional
+        Reverse the grid order to be x[i] > x[i+1], i.e., x = (-1,1)
+
+    Returns
+    -------
+    grid : 1D array
+        The array of grid points
+    """
+    grid = np.zeros((Npts))
+    dcth = np.pi/Npts
+    arg = dcth*0.5
+    for i in range(Npts):
+        grid[i] = np.cos(arg)
+        arg += dcth
+    if (not reverse):
+        grid = grid[::-1] # this will produce x[i] < x[i+1]
+    return grid
+
+class Chebyshev:
+
+    def __init__(self, nr_domain,
+                 rmin=None, rmax=None, aspect_ratio=None, shell_depth=None,
+                 n_uniform_domains=1, uniform_bounds=False,
+                 boundaries=None,
+                 dealias=None):
+        """
+        Initialize the Chebyshev grid and transform
+
+        Support for three types of grids:
+            a) single Chebyshev domain
+            b) uniform set of N Chebyshev domains
+            c) N Chebyshev domains with different resolutions
+
+dealias_by = array of dealias factor for each domain [1.5]
+n_r = total number of grid points
+
+        Args
+        ----
+        N : int
+            Resolution of the radial grid
+        spectral : bool, optional
+            Does N refer to physical space or spectral space. If spectral=True,
+            N would be the maximum polynomial degree (N_poly_max). The default
+            is that N refers to the physical space resolution (N_grid)
+        """
+        if ((aspect_ratio > 0.0) and (shell_depth > 0.0)): # provided ratio & depth
+            rmax = shell_depth/(1.-aspect_ratio)
+            rmin = rmax*aspect_ratio
+        else:
+            try: # provided rmin & rmax
+                aspect_ratio = rmin/rmax
+                shell_depth = rmax - rmin
+            except:
+                e = "Must specify global bounds using rmin/rmax or aspect_ratio/shell_depth"
+                raise ValueError(e)
+
+        # figure out how many domains there are
+        if (not hasattr(nr_domain, "__len__")):
+            nr_domains = [nr_domain]
+        n_domains = len(nr_domain)
+
+        if ((n_domains == 1) and (n_uniform_domains < 2)):
+            # case (a) - single Chebyshev domain
+            boundaries = [rmin, rmax]
+
+        elif (n_uniform_domains > 1):
+            # case (b) - uniform set of N domains
+            n_domains = int(n_domains[0]/n_uniform_domains)
+
+        else:
+            # case (c) - N domains with different resolutions/sizes
+            pass
+
+    def grid(self): pass
+    def to_spectral(self, data_in, axis=0): pass
+    def to_physical(self, data_in, axis=0): pass
+    def d_dr(self, data_in, axis=0): pass
 
