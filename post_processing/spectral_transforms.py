@@ -794,10 +794,10 @@ def chebyshev_zeros(Npts, reverse=False):
 
 class Chebyshev:
 
-    def __init__(self, nr_domain,
-                 rmin=None, rmax=None, aspect_ratio=None, shell_depth=None,
-                 n_uniform_domains=1, uniform_bounds=False,
-                 boundaries=None,
+    def __init__(self, nr_domains,
+                 rmin=-1, rmax=-1, aspect_ratio=-1, shell_depth=-1,
+                 n_uniform_domains=1,
+                 boundaries=None, uniform_bounds=False,
                  dealias=None):
         """
         Initialize the Chebyshev grid and transform
@@ -807,8 +807,13 @@ class Chebyshev:
             b) uniform set of N Chebyshev domains
             c) N Chebyshev domains with different resolutions
 
-dealias_by = array of dealias factor for each domain [1.5]
 n_r = total number of grid points
+dealias_by = array of dealias factors for each domain
+    n_poly = n_r - dealias_by
+    default : n_poly = 2*n_r/3
+n_uniform_domains = split into subdomains with n_r^i = n_r/n_uniform_domains
+domain_bounds = list of boundaries, first element = ri, last element = ro
+ncheby = list of n_r for each subdomain, then total n_r is sum of elements
 
         Args
         ----
@@ -819,35 +824,199 @@ n_r = total number of grid points
             N would be the maximum polynomial degree (N_poly_max). The default
             is that N refers to the physical space resolution (N_grid)
         """
-        if ((aspect_ratio > 0.0) and (shell_depth > 0.0)): # provided ratio & depth
+        if (not hasattr(nr_domains, "__len__")): # user gave a single value
+            nr_domains = [nr_domains]
+
+        # error check that global domain bounds were chosen
+        if ((rmin < 0.0) and (rmax < 0.0) \
+            and (aspect_ratio < 0.0) and (shell_depth < 0.0)):
+            if (boundaries is None)):
+                msg = "Must specifiy global boundaries using one of the following:"
+                msg += "\n\t1) set rmin & rmax"
+                msg += "\n\t2) set aspect_ratio & shell_depth"
+                msg += "\n\t3) set the boundaries array"
+                raise ValueError(msg)
+            else:
+                # boundaries was specified, make sure it is consistent with nr_domains
+                if (not hasattr(boundaries, "__len__")):
+                    e = "The boundaries value must be 1D array-like: array/list/tuple")
+                    raise ValueError(e)
+                else:
+                    if (len(nr_domains) != (len(boundaries)-1)):
+                        e = "Number of domains must be one less than number of boundaries"
+                        e += "\n\t# domains    = len(nr_domains) = {}".format(len(nr_domains))
+                        e += "\n\t# boundaries = len(boundaries) = {}".format(len(boundaries))
+                        raise ValueError(e)
+
+        if (boundaries is not None):
+            boundaries = np.sort(boundaries) # just to be sure
+            rmin = boundaries[0]
+            rmax = boundaries[-1]
+            aspect_ratio = rmin/rmax
+            shell_depth = rmax - rmin
+        elif ((aspect_ratio > 0.0) and (shell_depth > 0.0)):
             rmax = shell_depth/(1.-aspect_ratio)
             rmin = rmax*aspect_ratio
+        elif ((rmin > 0.0) and (rmax > 0.0)):
+            aspect_ratio = rmin/rmax
+            shell_depth = rmax - rmin
         else:
-            try: # provided rmin & rmax
-                aspect_ratio = rmin/rmax
-                shell_depth = rmax - rmin
-            except:
-                e = "Must specify global bounds using rmin/rmax or aspect_ratio/shell_depth"
-                raise ValueError(e)
+            msg = "Must specifiy global boundaries using one of the following:"
+            msg += "\n\t1) set both rmin & rmax"
+            msg += "\n\t2) set both aspect_ratio & shell_depth"
+            msg += "\n\t3) set the boundaries array (rmin=first element, rmax=last element)"
+            raise ValueError(msg)
 
-        # figure out how many domains there are
-        if (not hasattr(nr_domain, "__len__")):
-            nr_domains = [nr_domain]
-        n_domains = len(nr_domain)
+        if (dealias is None): # default
+            dealias = [-1]
+        elif (not hasattr(dealias, "__len__")): # user gave a single value
+            dealias = [dealias]
 
-        if ((n_domains == 1) and (n_uniform_domains < 2)):
-            # case (a) - single Chebyshev domain
+        #######################
+        # nr_domains == ncheby
+        #######################
+        n_domains = len(nr_domains)
+
+        if (len(dealias) < n_domains): # extend unspecified entries using default
+            Ndealias = len(dealias)
+            diff = n_domains - Ndealias
+            new = [-1]*diff
+            dealias = list(dealias) + new
+
+        if ((n_domains == 1) and (n_uniform_domains < 2)): # default case (a)
             boundaries = [rmin, rmax]
+            n_r = nr_domains[0]
 
-        elif (n_uniform_domains > 1):
-            # case (b) - uniform set of N domains
-            n_domains = int(n_domains[0]/n_uniform_domains)
+        if (n_uniform_domains > 1): # case (b)
+            n_r = n_uniform_domains*nr_domains[0]
+            nr_domains = [nr_domains[0]]*n_domains
+            dealias = [dealias[0] for i in range(n_domains)] # set all to same
+            n_domains = n_uniform_domains
+            boundaries = [0]*(n_domains+1)
+            boundaries[0] = rmin
+            dr = (shell_depth)/n_domains
+            for i in range(1,n_domains+1):
+                boundaries[i] = boundaries[i-1] + dr
 
-        else:
-            # case (c) - N domains with different resolutions/sizes
-            pass
+        else: # case (c)
+            n_r = np.sum(nr_domains)
 
-    def grid(self): pass
+            if (uniform_bounds):
+                n_uniform_domains = len(n_domains)
+                boundaries = [0]*(n_domains+1)
+                boundaries[0] = rmin
+                dr = (shell_depth)/n_domains
+                for i in range(1,n_domains+1):
+                    boundaries[i] = boundaries[i-1] + dr
+
+        # store some variables
+        self.rmin = boundaries[0]
+        self.rmax = boundaries[-1]
+        self.aspect_ratio = self.rmin/self.rmax
+        self.shell_depth = self.rmax - self.rmin
+        self.n_domains = n_domains
+        self.nr_domains = nr_domains
+        self.dealias = dealias
+        self.boundaries = boundaries
+
+        self.grid() # build the grid
+
+    def grid(self):
+        """
+        Build the grid(s)
+        """
+        dmax = 2 # storage space for 1st and 2nd derivatives
+
+        self.npoly = np.zeros((self.n_domains), dtype=np.int32)
+        self.rda = np.zeros((self.n_domains), dtype=np.int32)
+
+        for i in range(self.n_domains):
+            n = self.nr_domains[i]
+            self.npoly[i] = n
+            db = int(2*n/3)+1
+            if (self.dealias[i] > 0):
+                db = self.dealias[i]
+                if ((db >= 1) and (db < n)):
+                    db = n - db + 1
+
+        self.npoly = self.npoly[::-1]
+        self.rda = self.rda[::-1]
+        self.boundaries = self.boundaries[::-1]
+
+        self.max_npoly = self.npoly.max()
+        self.ntotal = self.npoly.sum()
+
+        self.x = np.zeros((self.max_npoly, self.n_domains), dtype=np.float64)
+        self.theta = np.zeros((self.max_npoly, self.n_domains), dtype=np.float64)
+        self.deriv_scaling = np.zeros((self.ntotal), dtype=np.float64)
+
+        # use list of ndarray to mimic the rmcontainers
+        self.cheby_even = [0]*self.n_domains    # cheby_even[i] = 2D array
+        self.cheby_odd = [0]*self.n_domains     # cheby_odd[i] = 2D array
+        self.dcheby = [0]*self.n_domains        # dcheby[i] = 3D array
+        self.n_even = np.zeros((self.n_domains))
+        self.n_odd = np.zeros((self.n_domains))
+
+        self.find_colocation_pts()
+        self.find_Tn()
+        self.find_Tn_deriv_array(dmax)
+
+    def find_colocation_pts(self):
+        """
+        Compute the colocation grid points
+        """
+        for n in range(self.n_domains):
+            n_max = self.npoly[n]
+
+            # zeros-based grid
+            dth = np.pi/Npts
+            arg = dth*0.5
+            for i in range(n_max):
+                self.theta[i,n] = arg
+                self.x[i,n] = np.cos(arg)
+                arg += dth
+
+    def find_Tn(self):
+        """
+        Compute the Chebyshev polynomials evaluated at the colocation grid points
+        """
+        cheby = np.zeros((self.max_npoly, self.max_npoly), dtype=np.float64)
+
+        for n in range(self.n_domains):
+            n_max = self.npoly[n]
+            for r in range(n_max)
+                for i in range(n_max):
+                    arg = i*self.theta[r,n]
+                    cheby[r,i] = np.cos(arg)
+
+            n_odd = int(n_max/2)
+            n_even = n_odd + (n_max%2)
+            n_x = n_even
+            self.n_odd[n] = n_odd
+            self.n_even[n] = n_even
+
+            self.cheby_even[n] = np.zeros((n_x,n_even), dtype=np.float64)
+            self.cheby_odd[n] = np.zeros((n_x,n_odd), dtype=np.float64)
+
+            for i in range(n_even):
+                self.cheby_even[n][:,i] = cheby[:,2*i]
+            for i in range(n_odd):
+                self.cheby_odd[n][:,i] = cheby[:,2*i+1]
+
+            if (n_x != n_odd):
+                self.cheby_even[n][n_x-1,:] *= 0.5
+                self.cheby_odd[n][n_x-1,:] *= 0.5
+
+        cheby = None
+
+    def find_Tn_deriv_array(self, dmax):
+        """
+        Compute derivative of Chebyshev polynomials evaluated at the colocation grid points
+        """
+        alpha = np.zeros((self.max_npoly, self.max_npoly), dtype=np.float64)
+
+        alpha = None
+
     def to_spectral(self, data_in, axis=0): pass
     def to_physical(self, data_in, axis=0): pass
     def d_dr(self, data_in, axis=0): pass
