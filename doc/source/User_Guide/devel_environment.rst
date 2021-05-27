@@ -105,11 +105,11 @@ You can download our pre-built container from Docker Hub and launch it using the
 
 .. code-block:: bash
 
-   docker run -it --rm -v $HOME:/root geodynamics/rayleigh-buildenv-bionic
+   docker run -it --rm -v $HOME:/work -e HOSTUID=$UID -e HOSTGID=$GROUPS -e HOSTUSER=$USER geodynamics/rayleigh-devel-bionic:latest
 
-This will give you a shell inside the container and mount your home directory at ``/root``. You can clone, configure, build, and run the code and analyze the outputs using Python inside the container. Any changes below ``/root`` will be reflected in your home directory. Any other changes to the container will be deleted once you exit the shell.
+This will give you a shell inside the container and mount your home directory at ``/work``. You can clone, configure, build, and run the code and analyze the outputs using Python inside the container. Any changes below ``/work`` will be reflected in your home directory. Any other changes to the container will be deleted once you exit the shell.
 
-.. note:: This looks like you are running everything as the root user, but viewed from outside the container you are still running everything as the user who launched docker. Running as root inside the container has the advantage that you can easily get additional package using the ``apt`` command.
+.. note:: Your user has ``sudo`` rights within the container. This allows to install packages using the ``apt`` command or modify the system in any other way.
 
 Configuration and Compilation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,14 +119,14 @@ Building the documentation
 
 .. code-block:: bash
 
-    cd /root/path/to/Rayleigh
+    cd /work/path/to/Rayleigh
     make doc
 
 Building the code
 
 .. code-block:: bash
 
-    cd /root/path/to/Rayleigh
+    cd /work/path/to/Rayleigh
     ./configure --with-fftw=/usr
     make
 
@@ -140,7 +140,7 @@ To build the container you have to run this command from your host system (i.e.,
 .. code-block:: bash
 
    cd docker
-   docker build -t geodynamics/rayleigh-buildenv-bionic:latest rayleigh-buildenv-bionic
+   docker build -t geodynamics/rayleigh-devel-bionic:latest rayleigh-devel-bionic
 
 You can check the newly built container is there using this command.
 
