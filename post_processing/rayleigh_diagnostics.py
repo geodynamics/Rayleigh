@@ -1453,9 +1453,9 @@ class Power_Spectrum():
         if(self.magnetic):
             #Do the same thing for the magnetic field components
             # We use the lookup table to find where br, vtheta, and bphi are stored
-            br_index = a.lut[401]
-            bt_index = a.lut[402]
-            bp_index = a.lut[403]
+            br_index = a.lut[801]
+            bt_index = a.lut[802]
+            bp_index = a.lut[803]
             #the last index indicates 0:full power, 1:m0 power, 2:full-m0
             mpower = np.zeros((lmax+1,nr,nt,3),dtype='float64')
             
