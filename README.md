@@ -34,7 +34,7 @@ The following documents form the Rayleigh documentation.
 
 More information
 ----------------
-- For questions on the source code of Rayleigh, portability, installation, new or existing features, etc., use the [Rayleigh forum](https://community.geodynamics.org/c/rayliegh/5). This forum is where the Rayleigh users and developers all hang out.
+- For questions on the source code of Rayleigh, portability, installation, new or existing features, etc., use the [Rayleigh forum](https://community.geodynamics.org/c/rayleigh/5). This forum is where the Rayleigh users and developers all hang out.
 
 - Rayleigh is being developed by a large, collaborative, and inclusive community. It is currently maintained by the following people:
     - Nicholas Featherstone
