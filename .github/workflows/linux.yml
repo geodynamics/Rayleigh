@@ -29,16 +29,18 @@ jobs:
         make install
     - name: Test
       run: |
-        # Set some environment variables necessary for OpenMPI
-        # to run as root
-        export OMPI_ALLOW_RUN_AS_ROOT=1
-        export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+        # Set some environment variables necessary for OpenMPI to run as root
+        # and on more MPI ranks than available cores
+        export RAYLEIGH_TEST_MPI_PARAMS="--oversubscribe --allow-run-as-root"
 
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
 
-        mpirun -np 4 --oversubscribe --allow-run-as-root ../../bin/rayleigh.dbg
+        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../bin/rayleigh.dbg
 
-        cd ..
+        # Generic input test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/generic_input/run_test.sh
+
         git diff > changes.diff
         git diff --exit-code --name-only
 
