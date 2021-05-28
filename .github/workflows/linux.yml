@@ -50,7 +50,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        
+        include:
+          - os: ubuntu-latest
+            environment: environment.yml
+          - os: macos-latest
+            environment: environment_mac.yml
+
     runs-on: ${{ matrix.os }}
 
     # Needs to be here to properly detect changes to conda
@@ -62,15 +67,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: conda-incubator/setup-miniconda@v2
-      if: runner.os == Linux
       with:
         activate-environment: radev
-        environment-file: environment.yml
-    - uses: conda-incubator/setup-miniconda@v2
-      if: runner.os == macOS
-      with:
-        activate-environment: radev
-        environment-file: environment_mac.yml
+        environment-file: ${{ matrix.environment }}
     - name: Build documentation
       continue-on-error: true
       run: |
