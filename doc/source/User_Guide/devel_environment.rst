@@ -11,37 +11,14 @@ Conda Environment
 
 First, if you don't have Conda, you should download and install the version appropriate for your architecture `here. <https://docs.conda.io/en/latest/miniconda.html>`_
 
-Once you have Conda installed, create a Conda environment named (say) radev
+Once you have Conda installed, create a Conda environment using the environment files we provide in Rayleigh's main directory. There are two different environments for MacOSX and Linux to account for different compiler packages, for MacOSX replace `environment.yml` by  `environment_mac.yml`.
 
 .. code-block:: bash
 
-    conda create -n radev python=3
+    conda env create -f environment.yml
     conda activate radev
 
-Once your environment is created and active, you are ready to install the packages required to compile Rayleigh and its documentation.  From here, the instructions for Linux and Mac differ slightly.
-
-Package Setup:  Linux
-^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-
-    conda activate radev  [ if you haven't done this already ]
-    conda install -c conda-forge matplotlib \
-        jupyter scipy sphinx sphinxcontrib-bibtex \
-        nbsphinx pandoc recommonmark sphinx \
-        gcc_linux-64 gfortran_linux-64 mkl fftw mpich-mpicc
-
-Package Setup:  Mac
-^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-
-    conda activate radev  [ if you haven't done this already ]
-    conda install -c conda-forge matplotlib \
-        jupyter scipy sphinx sphinxcontrib-bibtex \
-        nbsphinx pandoc recommonmark sphinx \
-        clang_osx-64 gfortran_osx-64 mkl fftw mpich-mpicc
-
+This command will likely take a while (a few minutes) and will install all necessary packages to compile Rayleigh.
 
 MKL Setup: Linux and Mac
 ^^^^^^^^^^^^^^^^^^^^^^^^
