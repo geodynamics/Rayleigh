@@ -9,3 +9,8 @@ RUN apt update && \
 ADD /entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT /entrypoint.sh
+
+# Export compilers
+ENV CC mpicc
+ENV CXX mpicxx
+ENV FC mpifort
