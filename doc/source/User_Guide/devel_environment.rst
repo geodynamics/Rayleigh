@@ -132,6 +132,13 @@ Building the code
     ./configure --with-fftw=/usr
     make
 
+Updating the container
+^^^^^^^^^^^^^^^^^^^^^^
+On the first launch of the container, your local Docker engine will automatically download our pre-built container from Docker Hub. Subsequent launches will just use this container and will not check for updates. You can download a newer version of the container using the following command.
+
+.. code-block:: bash
+
+    docker pull geodynamics/rayleigh-devel-bionic:latest
 
 Building the container
 ^^^^^^^^^^^^^^^^^^^^^^
