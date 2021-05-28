@@ -1,4 +1,4 @@
-name: radev_mac
+name: radev
 channels:
   - conda-forge
 dependencies:
