@@ -71,7 +71,7 @@ Contains
 
     Subroutine Main_Loop_Sphere()
         Implicit None
-        Integer ::  last_iteration, first_iteration,i,iret, sigflag
+        Integer ::  last_iteration, first_iteration, i, iret
         Integer :: io=15, ierr
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists

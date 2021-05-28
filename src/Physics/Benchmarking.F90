@@ -70,6 +70,7 @@ Contains
         Character*120 :: file_remember
         ! This routine re-initializes input values to their benchmark values
 
+        ref_remember = 1
         If (benchmark_mode .gt. 0) Then
 
             mode_remember = benchmark_mode  ! Keep track of a few things before restoring defaults
@@ -594,7 +595,7 @@ Contains
         Integer, Intent(In) :: iteration
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,:)
         Real*8, Intent(In) :: current_time
-        Real*8 :: tmp, tmp2, tmp3, time_passed, over_n_phi
+        Real*8 :: tmp, tmp2, over_n_phi
         Real*8 :: rel_diff, mean_value, sdev_value
 
         Integer :: i,p,t,r, funit, iter_start, iter_end

@@ -34,8 +34,7 @@ Contains
         Real*8 :: htmp1, htmp2, htmp3             ! temporary variables for use if needed
         Real*8 :: one_over_rsin, ctn_over_r        ! spherical trig
         Real*8 :: Err,Ett,Epp, Ert,Erp,Etp        ! variables to store the components of the rate of strain
-        Real*8 :: Lap_r, Lap_t, Lap_p            ! variables to store Laplacians
-        Real*8 :: mu, dmudr                ! the dynamic viscosity and its radial derivativ
+        
         ! First, we compute the flux of total KE in each direction
         If (compute_quantity(ke_flux_radial) .or. compute_quantity(ke_flux_theta) &
             .or. compute_quantity(ke_flux_phi)) Then

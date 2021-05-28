@@ -87,7 +87,6 @@ Contains
     Subroutine Initialize_Boundary_Conditions()
         Implicit None
         Real*8 :: tilt_angle_radians,a,b
-        Real*8 :: fsun
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
@@ -276,7 +275,7 @@ Contains
 
     Subroutine Transport_Dependencies()
         Implicit None
-        Real*8 :: fsun, lum_top, lum_bottom
+        Real*8 :: lum_top, lum_bottom
 
         ! Odd reference state quantities that somehow depend on 
         ! boundary conditions can be set here.
