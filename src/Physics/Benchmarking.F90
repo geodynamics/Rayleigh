@@ -70,6 +70,7 @@ Contains
         Character*120 :: file_remember
         ! This routine re-initializes input values to their benchmark values
 
+        ref_remember = 1
         If (benchmark_mode .gt. 0) Then
 
             mode_remember = benchmark_mode  ! Keep track of a few things before restoring defaults
