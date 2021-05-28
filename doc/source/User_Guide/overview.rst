@@ -83,7 +83,7 @@ Please also cite the following references:
   }
 
 Rayleigh's development is supported by the
-National-Science-Foundation through the Geodynamo Working Group of the
+National Science Foundation through the Geodynamo Working Group of the
 Computational Infrastructure for Geodynamics (CIG,
 https://geodynamics.org/cig/working-groups/geodynamo/).
 
@@ -105,10 +105,9 @@ parallel design would not have been possible without earlier work by
 Gary Glatzmaier and Thomas Clune described in: :cite:`GLATZMAIER1984461`,
 :cite:`Glatzmaier1999`
 
-  Glatzmaier, G.A., 1984,Numerical simulations of stellar convective dynamos. I. the model and method,
+  Glatzmaier, G.A., 1984, Numerical simulations of stellar convective dynamos. I. the model and method,
   *J. Comp. Phys.*, 55(3), 461-484. ISSN 0021-9991, doi:10.1016/0021-9991(84)90033-0.
 
   Clune, T.C., Elliott, J.R., Miesch, M.S.,Toomre, J., and Glatzmaier, G.A., 1999,
   Computational aspects of a code to study rotating turbulent convection in
   spherical shells, Parallel Comp., 25, 361-380.
-  
