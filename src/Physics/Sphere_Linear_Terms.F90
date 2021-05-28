@@ -35,7 +35,7 @@ Module Sphere_Linear_Terms
 Contains
     Subroutine Linear_Init()
         Implicit None
-        Real*8 :: amp, T,arg
+        Real*8 :: T
         Integer :: n, r, m, nm
         !Depending on process layout, some ranks may not participate in the solve
         If (my_num_lm .gt. 0) Then 
@@ -663,9 +663,6 @@ Contains
 
     Subroutine Enforce_Boundary_Conditions
         Implicit None
-        Real*8 :: bc_val
-        Integer :: uind, lind
-        Integer :: real_ind, imag_ind
 
         Call Apply_Boundary_Mask(bc_values)
         Call Domain_Continuity()
@@ -674,7 +671,7 @@ Contains
 
     Subroutine Domain_Continuity()
         Implicit None
-        Integer :: l, indx, ii,lp, j, k,n
+        Integer :: l, indx, ii, lp, j, n
         ! start applying the boundary and continuity conditions by setting
         ! the appropriate right hand sides.
 
