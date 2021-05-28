@@ -47,7 +47,12 @@ jobs:
 
   conda:
     name: conda-build
-    runs-on: [ubuntu-latest]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        
+    runs-on: ${{ matrix.os }}
+
     # Needs to be here to properly detect changes to conda
     # see https://github.com/conda-incubator/setup-miniconda#IMPORTANT
     defaults:
@@ -57,9 +62,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: conda-incubator/setup-miniconda@v2
+      if: runner.os == Linux
       with:
         activate-environment: radev
         environment-file: environment.yml
+    - uses: conda-incubator/setup-miniconda@v2
+      if: runner.os == macOS
+      with:
+        activate-environment: radev
+        environment-file: environment_mac.yml
     - name: Build documentation
       continue-on-error: true
       run: |
