@@ -2,6 +2,7 @@ name: radev
 channels:
   - conda-forge
 dependencies:
+  - basemap
   - make
   - git
   - matplotlib
