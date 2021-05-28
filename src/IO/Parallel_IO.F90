@@ -1177,16 +1177,7 @@ Contains
                 ! Even if not subsampling, we may want to remove redundant zeros from the
                 ! l-m triangle.  Do so here (Checkpoints)
                 Allocate(data_copy(1:self%lmax+1,1:self%lmax+1,1:self%nr_out,1:cend))
-                !data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
-                Do k = 1, cend
-                Do r = 1, self%nr_out
-                Do j = 1, self%lmax+1
-                Do i = 1, self%lmax+1
-                    data_copy(i,j,r,k) = self%collated_data(i,j,r,k)
-                Enddo
-                Enddo
-                Enddo
-                Enddo
+                data_copy(:,:,:,:) = self%collated_data(:,:,:,:)
 
                 self%collated_data(1:self%nlm_out,1:1,1:self%nr_out,1:cend) => &
                     self%buffer(1:self%nlm_out*self%nr_out*cend)
