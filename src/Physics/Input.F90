@@ -98,8 +98,10 @@ Contains
         my_sim_rank = sim_comm%rank
 
         ! Rank zero read the file and broadcasts the file size to all other ranks.
-        If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,nlines,line_len)
-        pars(1:2) = (/ nlines, line_len /)
+        If (my_sim_rank .eq. 0)  Then 
+          Call File_to_String(input_file,input_as_string,nlines,line_len)
+          pars(1:2) = (/ nlines, line_len /)
+        Endif
         Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
 
         nlines = pars(1)

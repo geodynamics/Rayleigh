@@ -975,9 +975,13 @@ Contains
                 Enddo
                 indices(1,5) = rcount
                 indices(1:rcount,1) = self%r_inds(1:rcount)
+            Else
+                Allocate(self%r_vals(1:0))
+                Allocate(self%r_inds(1:0))
             Endif
 
         Else
+            rcount = 1
             Allocate(self%r_inds(1:1))
             Allocate(self%r_vals(1:1))
             self%r_inds(1) = -1
@@ -1003,9 +1007,13 @@ Contains
                 Enddo
                 indices(2,5) = tcount
                 indices(1:tcount,2) = self%theta_inds(1:tcount)
+            Else
+                Allocate(self%theta_inds(1:0))
+                Allocate(self%theta_vals(1:0))
             Endif
 
         Else
+            tcount = 1
             Allocate(self%theta_inds(1:1))
             Allocate(self%theta_vals(1:1))
             self%theta_inds(1) = -1
@@ -1030,8 +1038,12 @@ Contains
                 Enddo
                 indices(3,5) = pcount
                 indices(1:pcount,3) = self%phi_inds(1:pcount)
+            Else
+                Allocate(self%phi_inds(1:0))
+                Allocate(self%phi_vals(1:0))
             Endif
         Else
+            pcount = 1
             Allocate(self%phi_inds(1:1))
             Allocate(self%phi_vals(1:1))
             self%phi_inds(1) = -1
@@ -1055,8 +1067,11 @@ Contains
                 self%nell = lcount
                 indices(1:self%nell,4) = lvals(1:lcount)
                 indices(4,5) = self%nell
+            Else
+                Allocate(self%l_values(1:0))
             Endif
         Else
+            lcount = 1
             Allocate(self%l_values(1:1))
             self%l_values(1) = -1
         Endif
