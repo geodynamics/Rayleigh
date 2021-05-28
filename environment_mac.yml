@@ -3,7 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - basemap=1.2
   - make=4.3
   - git=2.30
   - matplotlib=3.4
