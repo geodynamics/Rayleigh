@@ -796,33 +796,53 @@ class Chebyshev:
 
     def __init__(self, nr_domains,
                  rmin=-1, rmax=-1, aspect_ratio=-1, shell_depth=-1,
-                 n_uniform_domains=1,
-                 boundaries=None, uniform_bounds=False,
+                 boundaries=None,
+                 n_uniform_domains=1, uniform_bounds=False,
                  dealias=None):
         """
         Initialize the Chebyshev grid and transform
 
         Support for three types of grids:
-            a) single Chebyshev domain
+            a) single Chebyshev domain [default]
             b) uniform set of N Chebyshev domains
             c) N Chebyshev domains with different resolutions
 
-n_r = total number of grid points
-dealias_by = array of dealias factors for each domain
-    n_poly = n_r - dealias_by
-    default : n_poly = 2*n_r/3
-n_uniform_domains = split into subdomains with n_r^i = n_r/n_uniform_domains
-domain_bounds = list of boundaries, first element = ri, last element = ro
-ncheby = list of n_r for each subdomain, then total n_r is sum of elements
-
         Args
         ----
-        N : int
-            Resolution of the radial grid
-        spectral : bool, optional
-            Does N refer to physical space or spectral space. If spectral=True,
-            N would be the maximum polynomial degree (N_poly_max). The default
-            is that N refers to the physical space resolution (N_grid)
+        nr_domains : int or 1D array_like of ints
+            Resolution of the radial grid(s). If using uniform domains, these
+            entries refer to the resolution per domain.
+        rmin : float, optional
+            The lower boundary of the global domain
+        rmax : float, optional
+            The upper boundary of the global domain
+        aspect_ratio : float, optional
+            Set the aspect ratio of the domain, defined as rmin/rmax
+        shell_depth : float, optional
+            The total domain shell thickness, defined as rmax-rmin
+        boundaries : 1D array_like, optional
+            Set the boundaries for multiple subdomains. This overrides
+            the rmin/rmax and aspect_ratio/shell_depth arguments, since the first
+            element of boundaries is assumed to be rmin and the last element is
+            assumed to be rmax. The number of elements in boundaries must be one
+            more than the number of domain resolutions found in nr_domains.
+        n_uniform_domains : int, optional
+            Choose the number of Chebyshev domains, each having the same
+            resolution and uniformly distributed boundaries. Only the first
+            element of nr_domains will be used and is treated as the resolution
+            of each subdomain. Similarly, only the first element of the dealias
+            option is used and applied to each subdomain.
+        uniform_bounds : bool, optional
+            Uniformly distribute the boundaries across the domain, allowing different
+            resolutions and dealias values for each subdomain.
+        dealias : int or 1D array_like of ints
+            Specify the number of polynomials to use in each subdomain by choosing
+            the amount of dealiasing:
+                n_polynomials = n_r - dealias
+            where n_r is the grid resolution of the subdomain and n_polynomials is
+            the number of Chebyshev polynomials that will be used in that domain.
+            The default behavior is the standard 2/3 rule:
+                n_polynomials = 2*n_r/3
         """
         if (not hasattr(nr_domains, "__len__")): # user gave a single value
             nr_domains = [nr_domains]
@@ -872,9 +892,6 @@ ncheby = list of n_r for each subdomain, then total n_r is sum of elements
         elif (not hasattr(dealias, "__len__")): # user gave a single value
             dealias = [dealias]
 
-        #######################
-        # nr_domains == ncheby
-        #######################
         n_domains = len(nr_domains)
 
         if (len(dealias) < n_domains): # extend unspecified entries using default
@@ -901,7 +918,7 @@ ncheby = list of n_r for each subdomain, then total n_r is sum of elements
         else: # case (c)
             n_r = np.sum(nr_domains)
 
-            if (uniform_bounds):
+            if (uniform_bounds): # same as (b) above, but allows different resolutions
                 n_uniform_domains = len(n_domains)
                 boundaries = [0]*(n_domains+1)
                 boundaries[0] = rmin
@@ -925,7 +942,7 @@ ncheby = list of n_r for each subdomain, then total n_r is sum of elements
         """
         Build the grid(s)
         """
-        dmax = 2 # storage space for 1st and 2nd derivatives
+        dmax = 2 # how many derivatives to compute/store
 
         self.npoly = np.zeros((self.n_domains), dtype=np.int32)
         self.rda = np.zeros((self.n_domains), dtype=np.int32)
