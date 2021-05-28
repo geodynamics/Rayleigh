@@ -98,14 +98,10 @@ Please also cite the following references:
 
 Acknowledging
 -------------
-Rayleigh is written by Nicholas Featherstone with
-National-Science-Foundation support through the Geodynamo Working Group
-of the Computational Infrastructure for Geodynamics (CIG, geodynamics.org).
-
-The CIG Geodynamo Working Group Members are:
-Jonathon Aurnou, Benjamin Brown, Bruce Buffett, Nicholas Featherstone,
-Gary Glatzmaier, Eric Heien, Moritz Heimpel, Lorraine Hwang, Louise Kellogg,
-Hiroaki Matsui, Peter Olson, Krista Soderlund, Sabine Stanley, Rakesh Yadav.
+Rayleigh is written by Nicholas Featherstone and all Rayleigh contributors with
+National-Science-Foundation support through the Geodynamo Working Group of the
+Computational Infrastructure for Geodynamics (CIG,
+https://geodynamics.org/cig/working-groups/geodynamo/).
 
 Please acknowledge CIG as follows:
 

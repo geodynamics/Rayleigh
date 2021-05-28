@@ -1,23 +1,9 @@
-For any work that uses Rayleigh, or work that uses software which incorporates Rayleigh source code, please acknowledge the authors and funding agencies as: 
-Rayleigh has been developed by Nicholas Featherstone with support by the National Science
-Foundation through the Computational Infrastructure for Geodynamics (CIG).  This
-effort was supported by NSF grants NSF-0949446 and NSF-1550901.
+For any work that uses Rayleigh, or work that uses software which incorporates
+Rayleigh source code, please acknowledge the authors and funding agencies as
+indicated in our online documentation:
 
+https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/User_Guide/overview.html#referencing
 
-A paper describing the parallelization of Rayleigh and the accuracy of its algorithms is now in preparation. For this version
-of the code ONLY (version 0.9.x), please cite BOTH of the following references:
+If you have no access to the online documentation, please refer to the following file in the Rayleigh repository:
 
-(i) 
-Featherstone, N.A. & Hindman, B.W., 2016, “The spectral amplitude of stellar convec-
-tion and its scaling in the high-Rayleigh-number regime,” Astrophys. J., 818, 32
-{presents anelastic benchmarking results for Rayleigh}
-DOI:  10.3847/0004-637X/818/1/32
-
-
-(ii) 
-Matsui, H. et al., including Featherstone, N.A., 2016, “Performance benchmarks for
-a next generation numerical dynamo model,” Geochem., Geophys., Geosys., 17,1586
-{presents initial performance data from Rayleigh as measured on Intel Sandybridge processors}
-DOI:  10.1002/2015GC006159
-
-
+doc/source/User_Guide/overview.rst

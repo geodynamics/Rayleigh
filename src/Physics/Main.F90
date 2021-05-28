@@ -106,6 +106,11 @@ Contains
             Call stdout%print(" Initialization Complete.")
             Call stdout%print(" //////////////////////////////////////")
             Call stdout%print(" ")
+            Call stdout%print(" Remember to cite Rayleigh in your publications:")
+            Call stdout%print(" Check the ACKNOWLEDGE file for more information.")
+            Call stdout%print(" ")
+            Call stdout%print(" //////////////////////////////////////")
+            Call stdout%print(" ")
         Endif
     End Subroutine Main_Initialization
 
