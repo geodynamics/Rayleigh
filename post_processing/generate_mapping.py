@@ -2,7 +2,8 @@
 Generate the look-up-table for Rayleigh diagnostic output quantities.
 
 The look-up-table maps the quantity code to the Fortran variable name associated with
-that quantity code. The mapping is built by parsing the Rayleigh source code.
+that quantity code. The mapping is built by parsing the Rayleigh source code and
+ultimately stored in the lut_mapping.py file.
 
 Usage:
     generate_mapping.py [options] <directory>
@@ -19,7 +20,7 @@ Usage:
 
 Options:
     --default-location   Treat <directory> as the top Rayleigh directory [default: False]
-    --output=<o>         Filename where mapping will be stored [default: lut_mapping.py]
+    --overwrite          Overwrite existing lut_mapping.py file [default: False]
 """
 from __future__ import print_function
 import os
@@ -349,6 +350,10 @@ class OutputQuantities:
                 del files[ind]
                 del l_files[ind] # required because we search based on l_files to delete from files
 
+        # ensure only fortran files will be parsed
+        good_ext = [".f", ".F", ".F90", ".f90", ".F03", ".f03", ".F08", ".f08"]
+        files = [f for f in files if os.path.splitext(f)[1] in good_ext]
+
         # add parent directory
         files = [os.path.join(self.diag_dir, f) for f in files]
 
@@ -431,7 +436,16 @@ if __name__ == "__main__":
 
     search_path = args['<directory>']
     default_loc = args['--default-location']
-    output = args['--output']
+    overwrite = args['--overwrite']
+
+    my_path = os.path.dirname(os.path.realpath(__file__))
+    output = os.path.join(my_path, "lut_mapping.py")
+
+    if (os.path.isfile(output) and (not overwrite)):
+        print("\nOutput file already exists: {}".format(output))
+        print("\n\tTo overwrite this file use the \"--overwrite\" argument\n")
+
+        import sys; sys.exit()
 
     # build a header with a doc string and some python executable code
     header = "\"\"\"\n" +\
@@ -471,7 +485,10 @@ if __name__ == "__main__":
     header = header.replace("@@URL@@", url)
     header = header.replace("@@BRANCH@@", branch)
 
-    print("\nWriting quantity code mapping ...")
+    if (overwrite):
+        print("\nOverwriting quantity code mapping ...")
+    else:
+        print("\nWriting quantity code mapping ...")
     with open(output, "w") as f:
         f.write(header)
         for Q in outputQ.quantities:
