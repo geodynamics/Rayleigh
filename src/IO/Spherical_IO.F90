@@ -761,7 +761,7 @@ Contains
                 !If (responsible) Write(6,*)'check disp: ', self%buffer%qdisp, self%buffer%ncache, self%buffer%spectral
 
                 Call self%buffer%write_data(disp=new_disp,file_unit=funit)
-            
+                Call self%buffer%reset_cache_index()
                 If (output_rank) Call self%closefile_par()
 
             Endif            
@@ -940,12 +940,15 @@ Contains
             self%values(:) = values(:) 
             
             Do i = 1, nqmax
-                if(self%values(i) .gt. 0) Then 
-                    self%nq = self%nq+1
+                If(self%values(i) .gt. 0) Then 
                     ind = self%values(i)
-                    self%compute(ind) = 1
-                    computes(ind) = 1
-                endif 
+                    ! Guard against duplicate inputs                    
+                    If (self%compute(ind) .ne. 1) Then
+                        self%nq = self%nq+1
+                        self%compute(ind) = 1
+                        computes(ind) = 1
+                    Endif
+                Endif 
             Enddo
         Endif
 

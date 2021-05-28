@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################################
-#   Rayleigh v0.9.1 Configuration Script.
+#   Rayleigh Configuration Script.
 #   This script is built around functions as much as possible.
 #   The "actual" script is contained with the function "main,"
 #   defined at the bottom of this file.
@@ -32,12 +32,12 @@ function opt_flags {
   #$1 --version
   if [[ $1 == "INTEL" ]]
   then
-    echo '-FR -fpp -r8 -O3 -shared-intel -DINTEL_COMPILER'
+    echo '-FR -fpp -r8 -O3 -shared-intel'
   fi
 
   if [[ $1 == "GNU" ]]
   then
-    echo '-O3 -ffixed-line-length-132 -DGNU_COMPILER'
+    echo '-O3 -ffixed-line-length-132'
   fi
 }
 
@@ -45,17 +45,17 @@ function dbg_flags {
   #$1 --version
   if [[ $1 == "INTEL" ]]
   then
-    echo '-FR -fpp -r8 -O0 -g -CB -traceback -shared-intel -DINTEL_COMPILER'
+    echo '-FR -fpp -r8 -O0 -g -CB -traceback -shared-intel'
   fi
   if [[ $1 == "GNU" ]]
   then
-    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
+    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132'
   fi
 }
 
 function displayhelp {
     echo ""
-    echo "            Rayleigh v0.9.1 Configuration Help"
+    echo "            Rayleigh Configuration Help"
     echo "            ================================"
     echo " "
     echo "  usage: ./configure [options]"
@@ -495,12 +495,6 @@ else
   OPT_FLAGS=$(opt_flags $FVERSION)
   DBG_FLAGS=$(dbg_flags $FVERSION)
 
-  if [ "$USEMPIF77" == "TRUE" ]
-  then
-          OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F77_BINDINGS"
-          DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F77_BINDINGS"
-  fi
-
   if [ "$CUSTOMOPT" == "TRUE" ]
   then
     echo "  Overriding optimization flags."
@@ -518,6 +512,25 @@ else
     echo "  Overriding all flags..,"
     OPT_FLAGS=$RAFFLAGS
     DBG_FLAGS=$RAFFLAGS
+  fi
+
+  # internally used preprocessor flags should appear after custom flags are set
+  if [ "$USEMPIF77" == "TRUE" ]
+  then
+          OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F77_BINDINGS"
+          DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F77_BINDINGS"
+  fi
+
+  if [ $FVERSION == "INTEL" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DINTEL_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DINTEL_COMPILER"
+  fi
+
+  if [ $FVERSION == "GNU" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DGNU_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DGNU_COMPILER"
   fi
 
   echo ' '
@@ -761,8 +774,8 @@ then
             if [[ $MACMKL == "TRUE" ]]
             then
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-                LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+                LIB_FLAGS="\$(MKL_LIB) -lc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lc++"
             else
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
                 LIB_FLAGS="\$(MKL_LIB) -lstdc++"
