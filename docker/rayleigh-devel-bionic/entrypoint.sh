@@ -3,7 +3,9 @@
 if [ -n "$HOSTGID" -a -n "$HOSTUSER" -a -n "HOSTUID" ]
 then
 	# only create user if all options are provided
-	groupadd -g $HOSTGID $HOSTUSER
+
+	# This only creates the group if a group with that GID does not already exist.
+	getent group $HOSTGID > /dev/null || groupadd -g $HOSTGID $HOSTUSER
 	useradd -u $HOSTUID -g $HOSTGID -d /work -s /bin/bash $HOSTUSER
 
 	echo "$HOSTUSER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/nopasswd
