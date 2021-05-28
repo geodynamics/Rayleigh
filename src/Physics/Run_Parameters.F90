@@ -71,6 +71,8 @@ Contains
 
         If (my_rank .eq. 0) Then
 
+            nprow_save = nprow
+            npcol_save = npcol
             If (.not. present(checkpoint_input_file)) Then
                 Inquire(file=Trim(my_path)//Trim(jobinfo_file), exist=file_exist)
                 Open(unit=io, file=Trim(my_path)//Trim(jobinfo_file), form='formatted', &
@@ -81,8 +83,6 @@ Contains
                 write_header = .false.
                 ! Set nprow and npcol to -1 for checkpoints' main_input files.
                 ! (allows easy restarts from any process count)
-                nprow_save = nprow
-                npcol_save = npcol
                 nprow = -1
                 npcol = -1
             Endif
