@@ -145,7 +145,6 @@ Contains
     Subroutine Compute_Angular_Momentum_Sources(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Integer :: r,k, t
 
     End Subroutine Compute_Angular_Momentum_Sources
 

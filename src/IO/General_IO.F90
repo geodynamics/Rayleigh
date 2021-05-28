@@ -102,7 +102,6 @@ Contains
     Subroutine Write_Rayleigh_Array(arr,filename)
         Implicit None
         Character*120, Optional, Intent(In) :: filename
-        Character*120 :: ref_file
         Integer :: i,j,nq,sig = 314, nx
         Real*8, Intent(In) :: arr(1:,1:)
         nx = size(arr,1)

@@ -449,7 +449,7 @@ Contains
         Real*8, Intent(InOut) :: cbuff(1:,my_r%min:,my_theta%min:,1:)
         Integer, Intent(In), Optional :: aindices(1:), bindices(1:), cindices(1:)
 
-        Integer :: r,k, t   !indices for iteration
+        Integer :: r, t   !indices for iteration
 
         Integer :: iar    , iatheta , iaphi    ! Abuff indices for a_r, a_theta, and a_phi
         Integer :: ibr    , ibtheta , ibphi    ! Bbuff indices for b_r, b_theta, and b_phi

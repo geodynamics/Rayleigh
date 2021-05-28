@@ -38,7 +38,7 @@ Contains
         Use Parallel_Framework, Only : pfi
         Implicit None
         ! Really just here for openmp init
-        integer :: iret, nthread
+        integer :: nthread
 
         nthread = pfi%nthreads
 #ifdef useomp

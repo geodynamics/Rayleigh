@@ -34,7 +34,7 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Real*8 :: mypi, amp,del2u, estress
+        Real*8 :: del2u, estress
         Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
         Allocate(ovstheta(1:N_theta), ovs2theta(1:N_theta)) ! 1/sin; 1/sin^2

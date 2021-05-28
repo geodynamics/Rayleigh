@@ -269,7 +269,7 @@ Contains
     End Subroutine AdvanceTime
     Subroutine Finalize_EMF()
         Implicit None
-        Integer m, i,j,jstart,jend
+        Integer m, i
         ! we need to take one last radial derivative and combine terms
 
         If (chebyshev) Then

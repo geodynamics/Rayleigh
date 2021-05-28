@@ -343,7 +343,7 @@ Contains
 
         ! First, initialize Spherical_3D.   It uses a separate buffer due to I/O semantics.
         fdir = 'Spherical_3D/'  ! Note: Full 3D only uses frequency, not nrec
-        Call Outputs(Spherical_3D)%Init(compute_q,myid, 54, fdir, &
+        Call Outputs(Spherical_3D)%Init(compute_q, 54, fdir, &
                           full3d_version, 1, full3d_frequency, &
                           values = full3d_values, nobuffer=.true.) 
 
@@ -352,38 +352,38 @@ Contains
 
         ! Now, initialize those outputs that use the new I/O for caching and parallel output.
         fdir = 'G_Avgs/'
-        Call Outputs(G_Avgs)%Init(compute_q,myid, 55, fdir, &
+        Call Outputs(G_Avgs)%Init(compute_q, 55, fdir, &
                           globalavg_version, globalavg_nrec, globalavg_frequency, &
                           values = globalavg_values, average_in_phi = .true. , &
                           average_in_theta = .true., average_in_radius = .true., &
                           cache_size = globalavg_cache_size, full_cache=.true.)
 
         fdir = 'Shell_Avgs/'
-        Call Outputs(Shell_Avgs)%Init(compute_q,myid, 156, fdir, &
+        Call Outputs(Shell_Avgs)%Init(compute_q, 156, fdir, &
                           shellavg_version, shellavg_nrec, shellavg_frequency, &
                           values = shellavg_values, average_in_phi = .true. , &
                           average_in_theta = .true., moments=4, &
                           cache_size = shellavg_cache_size, full_cache=.true.)
 
         fdir = 'Point_Probes/'
-        Call Outputs(Point_Probes)%Init(compute_q,myid, 63, fdir, &
+        Call Outputs(Point_Probes)%Init(compute_q, 63, fdir, &
                           probe_version, point_probe_nrec, point_probe_frequency, &
                           values = point_probe_values, cache_size = point_probe_cache_size, &
                           rinds = point_probe_r, tinds = point_probe_theta, & 
                           pinds = point_probe_phi)
 
         fdir = 'Meridional_Slices/'
-        Call Outputs(Meridional_Slices)%Init(compute_q,myid, 61, fdir, &
+        Call Outputs(Meridional_Slices)%Init(compute_q, 61, fdir, &
                           meridslice_version, meridional_nrec, meridional_frequency, &
                           values = meridional_values, pinds = meridional_indices)
 
         fdir = 'AZ_Avgs/'
-        Call Outputs(AZ_Avgs)%Init(compute_q,myid, 56, fdir, &
+        Call Outputs(AZ_Avgs)%Init(compute_q, 56, fdir, &
                           azavg_version, azavg_nrec, azavg_frequency, &
                           values = azavg_values, average_in_phi = .true. )
 
         fdir = 'Equatorial_Slices/'
-        Call Outputs(Equatorial_Slices)%Init(compute_q,myid, 60, fdir, &
+        Call Outputs(Equatorial_Slices)%Init(compute_q, 60, fdir, &
                           equslice_version, equatorial_nrec, equatorial_frequency, &
                           values = equatorial_values, tinds=(/ ntheta/2, ntheta/2+1 /), &
                           tweights = (/ 0.5d0, 0.5d0 /) ) 
@@ -394,26 +394,26 @@ Contains
         wmode = 1
         if (mem_friendly) wmode = 2
         fdir = 'Shell_Slices/'
-        Call Outputs(Shell_Slices)%Init(compute_q,myid, 58, fdir, &
+        Call Outputs(Shell_Slices)%Init(compute_q, 58, fdir, &
                           shellslice_version, shellslice_nrec, shellslice_frequency, &
                           values = shellslice_values, rinds = shellslice_levels, &
                           write_mode = wmode)
 
         fdir = 'Shell_Spectra/'
-        Call Outputs(Shell_Spectra)%Init(compute_q,myid, 59, fdir, &
+        Call Outputs(Shell_Spectra)%Init(compute_q, 59, fdir, &
                           shellspectra_version, shellspectra_nrec, shellspectra_frequency, &
                           values = shellspectra_values, rinds=shellspectra_levels, &
                           is_spectral = .true. , write_mode = wmode) 
 
         fdir = 'SPH_Modes/'
-        Call Outputs(SPH_Modes)%Init(compute_q,myid, 62, fdir, &
+        Call Outputs(SPH_Modes)%Init(compute_q, 62, fdir, &
                           sphmode_version, sph_mode_nrec, sph_mode_frequency, &
                           values = sph_mode_values, rinds=sph_mode_levels, &
                           is_spectral = .true. , write_mode = wmode, lvals=sph_mode_ell) 
 
         If (Test_IO) Then
             fdir = 'Temp_IO/'
-            Call Outputs(Temp_IO)%Init(compute_q,myid, 156, fdir, &
+            Call Outputs(Temp_IO)%Init(compute_q, 156, fdir, &
                               globalavg_version, globalavg_nrec, globalavg_frequency, &
                               values = globalavg_values, average_in_phi = .true. , &
                               average_in_theta = .true., average_in_radius = .true.)
@@ -726,9 +726,9 @@ Contains
         Real*8, Intent(in) :: simtime
         Integer, Intent(in) :: this_iter
         Class(DiagnosticInfo) :: self
-        INTEGER(kind=MPI_OFFSET_KIND) :: disp, hdisp, my_pdisp, new_disp, qdisp, full_disp, tdisp
+        INTEGER(kind=MPI_OFFSET_KIND) :: new_disp, full_disp
         Logical :: responsible, output_rank
-        Integer :: orank, funit, error, ncache, omode
+        Integer :: orank, funit, error, ncache
 
         If ((self%nq > 0) .and. (Mod(this_iter,self%frequency) .eq. 0 )) Then
 
@@ -803,21 +803,19 @@ Contains
         self%hdisp = self%hdisp+8*n
     End Subroutine Add_DHeader
 
-    Subroutine Initialize_Diagnostic_Info(self,computes,pid,mpi_tag, &
+    Subroutine Initialize_Diagnostic_Info(self,computes,mpi_tag, &
                  dir, version, nrec, frequency, values, &
-                 levels, phi_inds, cache_size, rinds, tinds, pinds, write_mode, &
+                 cache_size, rinds, tinds, pinds, write_mode, &
                  tweights, is_spectral, lvals, nobuffer, &
                  average_in_phi, average_in_radius, average_in_theta, moments, &
                  full_cache)
         Implicit None
         Integer :: i,ind, nmom
-        Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
+        Integer, Intent(In) :: mpi_tag, version, nrec, frequency
         Integer, Intent(In), Optional :: cache_size, write_mode
         Character*120, Intent(In) :: dir
         Integer, Optional, Intent(In) :: moments
         Integer, Optional, Intent(In) :: values(1:)
-        Integer, Optional, Intent(In) :: levels(1:)
-        Integer, Optional, Intent(In) :: phi_inds(1:)
         Integer, Intent(InOut) :: computes(1:)
         Integer, Intent(In), Optional :: rinds(1:), tinds(1:), pinds(1:), lvals(1:)
 
@@ -827,7 +825,7 @@ Contains
         Logical, Intent(In), Optional :: nobuffer, average_in_phi, average_in_theta, average_in_radius
         !Real*8, Allocatable th_weights(:)
         Integer :: rcount, tcount, pcount, lcount, modcheck, nmax
-        Logical ::  spectral_io, spectral_buffer, nonstandard
+        Logical ::  spectral_io, nonstandard
         Integer :: avg_axes(1:3), ecode
         Integer, Allocatable :: indices(:,:)
         Real*8, Allocatable :: avg_weights(:,:)
@@ -1150,7 +1148,7 @@ Contains
         Integer, Intent(InOut) :: ierr
         Character*120 :: iterstring
         Character*120 :: filename
-        Integer :: modcheck, imod, file_iter, next_iter, ibelong, icomp
+        Integer :: modcheck, imod, ibelong, icomp
         Integer :: buffsize, funit
         Integer :: mstatus(MPI_STATUS_SIZE)
         integer(kind=MPI_OFFSET_KIND) :: disp
@@ -1363,7 +1361,7 @@ Contains
         Real*8, Intent(InOut) :: outbuff(my_rmin:,1:)
         Real*8, Allocatable :: tmp_buffer(:,:)
         Integer :: bdims(1:3)
-        Integer :: q,nq,r,t,p
+        Integer :: q,nq,r,t
         !Averages over theta and phi to get the spherically symmetric mean of all
         ! fields in inbuff at each radii
         ! inbuff is expected to be dimensioned as (my_r%min:my_r%max,my_theta%min:my_theta%max,1:nfields)
@@ -1405,7 +1403,7 @@ Contains
         Real*8, Intent(InOut) :: outbuff(1:)
         Real*8, Allocatable :: tmp_buffer(:)
         Integer :: bdims(1:2)
-        Integer :: q,nq,r,t,p
+        Integer :: q,nq,r
         !Averages over radius for all fields contained in inbuff
         ! fields in inbuff at each radii
         ! inbuff is expected to be dimensioned as (1:nphi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:nfields)
@@ -1438,7 +1436,7 @@ Contains
 
     Subroutine IOComputeM0(qty)
         Real*8, Intent(In) :: qty(1:,my_rmin:,my_theta_min:)
-        Integer :: q,nq,r,t,p, ind
+        Integer :: r,t,p, ind
         !Averages over phi to get the azimuthally symmetric mean of all
         ! fields in inbuff at each radii and theta value.
         ! inbuff is expected to be dimensioned as (1:nphi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:nfields)
@@ -1591,7 +1589,7 @@ Contains
         INTEGER, ALLOCATABLE :: ind_copy(:)
         LOGICAL, INTENT(In), Optional :: rev_inds
         INTEGER :: nnorm_coord, nbase_coord, numi
-        INTEGER :: i,j,k, ind, last_index
+        INTEGER :: i,j, last_index
         REAL*8 :: cdel, del1,del2, ccheck
         REAL*8 :: nrmc, cmin, tolchk = 2.0d0
 

@@ -412,7 +412,7 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
         If (magnetism) Then
-        	ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
+            ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
         DeAllocate(dtmparr, gravity)
     End Subroutine Polytropic_ReferenceND

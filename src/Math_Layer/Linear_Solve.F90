@@ -31,7 +31,7 @@ Module Linear_Solve
     Integer, Save, Private :: n_modes_total
     Integer, Save, Private, Allocatable :: nsub_modes(:)
 
-    Integer, Save, Private :: ndim1, ndim2, n_links, maximum_deriv_order        ! Variable used to keep track of linked equations (i.e. WPS)
+    Integer, Save, Private :: ndim1, ndim2, maximum_deriv_order        ! Variable used to keep track of linked equations (i.e. WPS)
 
     real*8, Save, Private :: LHS_time_factor, RHS_time_factor    ! Forward and Backward time-weighting of the implicit scheme.
     real*8, Allocatable :: dfield(:,:,:,:)
@@ -836,7 +836,7 @@ Module Linear_Solve
 
     Subroutine print_column(mode,col,eqind)
         Integer, Intent(In) :: mode, col, eqind
-        Integer :: rowblock,i
+        Integer :: i
         real*8, Pointer, Dimension(:,:) :: mpointer
         mpointer => equation_set(mode,eqind)%mpointer
         Do i = 1, ndim1*3
@@ -896,8 +896,8 @@ Module Linear_Solve
         Implicit None
         Class(Equation) :: self
 
-        Integer :: error, mtype, phase, mxfct, mnum, nrows
-        Integer :: msglvl, nrhs
+        Integer :: error, phase
+        Integer :: msglvl
         Real*8, Allocatable :: faux_rhs(:,:), faux_x(:,:)
         self%mtype = 11
         phase  = 33      ! only solve
@@ -940,8 +940,8 @@ Module Linear_Solve
         Implicit None
         Class(Equation) :: self
 
-        Integer :: error, mtype, solver,phase, mxfct, mnum, nrows
-        Integer :: msglvl, nrhs
+        Integer :: error, solver, phase
+        Integer :: msglvl
         self%nrows = self%nlinks*ndim1
         self%nrhs = size(self%rhs_pointer)/self%nrows
 

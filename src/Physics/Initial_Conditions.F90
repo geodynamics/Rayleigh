@@ -320,7 +320,7 @@ Contains
     Subroutine Generate_Random_Field(rand_amp, field_ind, infield,rprofile, &
                 & ell0_profile)
         Implicit None
-        Integer :: ncombinations, i, m, r, seed(1), mp,n, l, ind1, ind2
+        Integer :: ncombinations, i, m, r, seed(1), mp, l, ind1, ind2
         Integer :: mode_count, my_mode_start, my_mode_end, fcount(3,2)
         Integer, Intent(In) :: field_ind
         Real*8, Intent(In) :: rand_amp
@@ -880,7 +880,7 @@ Contains
         Implicit None
 
 
-        Integer :: r, l, m, mp
+        Integer :: r, m, mp
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
         fcount(:,:) = 1
@@ -1051,9 +1051,7 @@ Contains
 
     Subroutine Calculate_Conductive_Profile
         Implicit None
-        Integer :: i, r, old_code
-        Real*8 :: amp, grav_r_ref, dr, vhint, qadd2, ftest
-        Real*8 :: lum_top, lum_bottom, sfactor, diff, r2dr, qadd, dsdr_mean
+        Real*8 :: amp, ftest
         Real*8, Allocatable :: tmp1d(:), tmp1d2(:), tmp1d3(:)
         Allocate(tmp1d(1:N_R),tmp1d2(1:N_R))
         tmp1d(:) =0.0d0

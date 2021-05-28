@@ -24,7 +24,6 @@ Module Chebyshev_Polynomials
     Implicit None
     Integer :: cp_nthreads
     Real*8, private ::    Pi  = 3.1415926535897932384626433832795028841972d+0
-    Real*8, private :: pi_over_N
     Logical :: DeAlias = .true.
     Logical :: Parity = .true.
     Logical :: initialized = .false.
@@ -75,7 +74,7 @@ Contains
 
         Real*8 :: domain_delta, scaling, upperb, lowerb, xmin,xmax
         Real*8 :: gmax, gmin, xx,int_scale
-        Integer :: r, i,n, domain_count
+        Integer :: i, n, domain_count
         Integer :: ind, ind2, n_max, dmx, gindex, db,scheck
         Logical :: custom_dealiasing = .false.
         Logical :: report
@@ -382,7 +381,7 @@ Contains
         Real*8 :: alpha, beta
         Real*8, Allocatable :: f_even(:,:,:,:), f_odd(:,:,:,:), c_temp(:,:,:,:)
         Integer :: i, j, k, kk, n2, n3, n4, dims(4),nsub,nglobal, hoff, hh
-        Integer :: istart, iend, n_even, n_odd, n_max, n_x
+        Integer :: n_even, n_odd, n_max, n_x
 
 
         beta = 0.0d0
@@ -569,7 +568,7 @@ Contains
         Integer, Intent(In)    :: ind, dind, dorder
         Real*8, Allocatable :: dbuffer(:,:,:)
         Integer :: dims(4), n,n2,n3, i,j,k, order
-        Integer :: kstart, kend, nthr,trank
+        Integer :: kstart, kend, trank
         Integer :: nglobal, nsub, hoff, hh
         dims = shape(buffer)
         nglobal = dims(1)

@@ -240,13 +240,14 @@ Contains
         Real*8 :: alpha, beta
         Real*8, Allocatable :: f_even(:), f_odd(:), c_temp(:)
         Integer :: i, N_x, n_even, n_odd, n_max
-        alpha = 2.0d0/n_max
-        beta = 0.0d0
 
         n_x = self%n_x
         n_even = self%n_even
         n_odd = self%n_odd
         n_max = self%n_max
+
+        alpha = 2.0d0/n_max
+        beta = 0.0d0
 
         If (self%parity) Then
             Allocate(c_temp(1:n_even ))

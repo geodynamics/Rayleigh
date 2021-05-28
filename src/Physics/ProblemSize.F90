@@ -174,13 +174,13 @@ Contains
 
     Subroutine Auto_Assign_Domain_Decomp()
         Implicit None
-        Integer :: f1, f2, imax, i, j, npairs, sind, i3, i4, ii, jj
-        Integer :: fcount, nfact_ok
+        Integer :: f1, f2, imax, i, j, npairs, i3, i4, ii, jj
+        Integer :: fcount
         Integer :: nprow_max, npcol_max, jinds(1:3), iinds(1:4)
-        Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu, factor_diff
+        Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu
         Integer, Allocatable :: factor_type(:), suitable_factors(:,:,:)
         Logical, Allocatable :: factor_balanced(:), have_pair(:,:)
-        Real*8 :: ncpu_sqrt,r, rval, min_ratio, rdiff, rtol
+        Real*8 :: ncpu_sqrt, rval, min_ratio, rdiff, rtol
         Real*8, Allocatable :: ratio_measure(:,:)
         Logical :: fewer_npcol, hbal, rbal, need_pair
         ncpu_sqrt = sqrt(dble(ncpu))
@@ -315,7 +315,7 @@ Contains
 
     Subroutine Establish_Grid_Parameters()
         Implicit None
-        Integer :: cheby_count, bounds_count, i,r
+        Integer :: cheby_count, bounds_count, i
         Real*8 :: rdelta
         !Initialize everything related to grid resolution and domain bounds.
 
@@ -600,10 +600,8 @@ Contains
 
     Subroutine Halt_On_Error()
 
-        Integer :: esize, i,j,tmp, ecode
+        Integer :: i,j,tmp, ecode
         Character*6 :: istr, istr2
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
         If (maxval(perr) .gt. 0) Then
             ecode = maxval(perr)
             If (my_rank .eq. 0) Then

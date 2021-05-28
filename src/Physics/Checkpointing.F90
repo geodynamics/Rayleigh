@@ -40,9 +40,7 @@ Module Checkpointing
     Integer, private :: numfields = 4 ! 6 for MHD
     Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
     Integer, private :: checkpoint_version = 2
-    Integer,private,Allocatable :: mode_count(:)
     Integer,private :: checkpoint_tag = 425, read_var(1:12)
-    Integer, Allocatable, Private :: lmstart(:)
     Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
     Character*120 :: checkpoint_prefix ='nothing'
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
@@ -73,7 +71,6 @@ Contains
     Subroutine Initialize_Checkpointing()
         Implicit None
         Integer :: nfs(6)
-        Integer :: p, np, nl, m, mp, rextra
         Integer, Allocatable :: gpars(:,:)
 
         checkpoint_t0 = stopwatch(walltime)%elapsed
@@ -121,7 +118,7 @@ Contains
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
-        Integer :: mp, m, i, ecode,endian_tag
+        Integer :: i, ecode, endian_tag
         Character*120 :: autostring, iterstring, cfile, checkfile
         Character*256, Intent(Out) :: input_file 
         Character*120 :: coeff_file
@@ -224,8 +221,8 @@ Contains
         Implicit None
         Integer, Intent(In) :: iteration, read_pars(1:2)
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
-        Integer :: n_r_old, l_max_old, grid_type_old, nr_read
-        Integer :: i, ierr, m, p, np, mp, lb,ub, f,  r, ind
+        Integer :: n_r_old, l_max_old, grid_type_old
+        Integer :: i, ierr, mp, lb,ub
         Integer :: old_pars(7), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
@@ -234,7 +231,7 @@ Contains
         Real*8 :: dt_pars(3),dt,new_dt
         Real*8, Allocatable :: old_radius(:), radius_old(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
-        Character*120 :: autostring, cfile,  dstring, iterstring, access_type
+        Character*120 :: autostring, dstring, iterstring, access_type
         Character*256 :: grid_file, checkfile
         Character*1 :: under_slash 
         Character*13 :: szstr
