@@ -11,7 +11,7 @@ Conda Environment
 
 First, if you don't have Conda, you should download and install the version appropriate for your architecture `here. <https://docs.conda.io/en/latest/miniconda.html>`_
 
-Once you have Conda installed, create a Conda environment using the environment files we provide in Rayleigh's main directory. There are two different environments for MacOSX and Linux to account for different compiler packages, for MacOSX replace `environment.yml` by  `environment_mac.yml`.
+Once you have Conda installed, create a Conda environment using the environment files we provide in Rayleigh's main directory.
 
 .. code-block:: bash
 
@@ -73,22 +73,13 @@ Building the documentation is the same on Linux and Mac.
 
 Once the documetation builds, you can access it by opening Rayleigh/doc/build/html/index.html in your web browser.
 
-Building the code different slightly on Linux and Mac.  For Linux, execute the following:
+Building the code is again the same on Linux and Mac. Execute the following:
 
 .. code-block:: bash
 
     conda activate radev
     cd /path/to/Rayleigh
     ./configure -conda-mkl --FC=mpifort
-    make
-
-For Mac, run:
-
-.. code-block:: bash
-
-    conda activate radev
-    cd /path/to/Rayleigh
-    ./configure -mac-mkl -conda-mkl --FC=mpifort
     make
 
 At this point, you can run "make install," and run the code using mpirun as you normally would (keep the radev environment active when doing this).
