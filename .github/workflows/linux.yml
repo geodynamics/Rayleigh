@@ -53,8 +53,10 @@ jobs:
         include:
           - os: ubuntu-latest
             environment: environment.yml
+            extra_configure_flag:
           - os: macos-latest
             environment: environment_mac.yml
+            extra_configure_flag: -mac-mkl
 
     runs-on: ${{ matrix.os }}
 
@@ -79,6 +81,6 @@ jobs:
       run: |
         cd "$GITHUB_WORKSPACE"
         export MKLROOT=$CONDA_PREFIX
-        ./configure -conda-mkl --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        ./configure ${{ matrix.extra_configure_flag }} -conda-mkl --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
         make -j
         make install
