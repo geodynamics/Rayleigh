@@ -773,7 +773,7 @@ then
     then
         if [[ $CONDAMKL == "TRUE" ]]
         then
-            if [[ $MACMKL == "TRUE" ]]
+            if [[ $MACMKL == "TRUE" ]] || [[ $OSTYPE == *"darwin"* ]]
             then
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
                 LIB_FLAGS="\$(MKL_LIB) -lc++"
