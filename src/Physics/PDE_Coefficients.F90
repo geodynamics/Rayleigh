@@ -107,7 +107,7 @@ Module PDE_Coefficients
     !/////////////////////////////////////////////////////////////////////////////////////
     ! Nondimensional Parameters
     Real*8 :: Rayleigh_Number              = 1.0d0
-    Real*8 :: chi_Rayleigh_Number          = 1.0d0
+    Real*8 :: chi_Rayleigh_Number          = 0.0d0
     Real*8 :: Ekman_Number                 = 1.0d0
     Real*8 :: Prandtl_Number               = 1.0d0
     Real*8 :: chi_Prandtl_Number           = 1.0d0
