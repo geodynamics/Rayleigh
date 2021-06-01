@@ -93,10 +93,10 @@ indicated in brackets.
 
 Variables in the Reference_Namelist that
 must be specified when running in dimensional anelastic mode. In
-addition, reference_type=2 must also be specified.
+addition, **reference_type=2** must also be specified.
 
    +-----------------------------------+-----------------------------------+
-   | Variable                          | Description                       |
+   | Variable [Default value]          | Description                       |
    +===================================+===================================+
    | poly_n [0]                        | polytropic index                  |
    |                                   | (:math:`P\propto\rho^n`)          |
@@ -123,11 +123,11 @@ addition, reference_type=2 must also be specified.
 
 Variables in the Transport_Namelist
 that must be specified when running in dimensional anelastic mode. In
-addition, reference_type=2 must also be specified in the
+addition, **reference_type=2** must also be specified in the
 Reference_Namelist.
 
    +-----------------------------------+-----------------------------------+
-   | Variable                          | Description                       |
+   | Variable [Default value]          | Description                       |
    +===================================+===================================+
    | nu_top [1.0]                      | kinematic viscosity at rmax,      |
    |                                   | :math:`\nu(rmax)`                 |
@@ -295,7 +295,7 @@ nu_top, kappa_top, or eta_top.
 
 Variables in the Reference_Namelist that
 must be specified when running in nondimensional Boussinesq mode. In
-addition, reference_type=1 must also be specified.
+addition, **reference_type=1** must also be specified.
 
    +-----------------------------------+-----------------------------------+
    | Variable                          | Description                       |
@@ -404,7 +404,7 @@ index and number of density scale heights.
 
 Variables in the Reference_Namelist that
 must be specified when running in nondimensional anelastic mode. In
-addition, reference_type=3 must also be specified.
+addition, **reference_type=3** must also be specified.
 
    +-----------------------------------+-----------------------------------+
    | Variable                          | Description                       |
@@ -548,7 +548,7 @@ that may be specified to control run behavior (defaults indicated in
 brackets)
 
    +-----------------------------------+-----------------------------------+
-   | Variable                          | Description                       |
+   | Variable [Default value]          | Description                       |
    +===================================+===================================+
    | magnetism [.false.]               | Turn magnetism on or off          |
    +-----------------------------------+-----------------------------------+
