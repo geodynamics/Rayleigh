@@ -57,6 +57,7 @@ Module PDE_Coefficients
         Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
         Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
         Real*8, Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
+        Real*8, Allocatable :: chi_buoyancy_coeff(:)    ! Multiplies Chi in momentum eq.
         Real*8, Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
         Real*8, Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
 
@@ -105,23 +106,26 @@ Module PDE_Coefficients
 
     !/////////////////////////////////////////////////////////////////////////////////////
     ! Nondimensional Parameters
-    Real*8 :: Rayleigh_Number         = 1.0d0
-    Real*8 :: Ekman_Number            = 1.0d0
-    Real*8 :: Prandtl_Number          = 1.0d0
-    Real*8 :: chi_Prandtl_Number      = 1.0d0
-    Real*8 :: Magnetic_Prandtl_Number = 1.0d0
-    Real*8 :: gravity_power           = 0.0d0
-    Real*8 :: Dissipation_Number      = 0.0d0
-    Real*8 :: Modified_Rayleigh_Number = 0.0d0
+    Real*8 :: Rayleigh_Number              = 1.0d0
+    Real*8 :: chi_Rayleigh_Number          = 1.0d0
+    Real*8 :: Ekman_Number                 = 1.0d0
+    Real*8 :: Prandtl_Number               = 1.0d0
+    Real*8 :: chi_Prandtl_Number           = 1.0d0
+    Real*8 :: Magnetic_Prandtl_Number      = 1.0d0
+    Real*8 :: gravity_power                = 0.0d0
+    Real*8 :: Dissipation_Number           = 0.0d0
+    Real*8 :: Modified_Rayleigh_Number     = 0.0d0
+    Real*8 :: chi_modified_rayleigh_number = 0.0d0
 
 
 
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
-            & Rayleigh_Number, Ekman_Number, Prandtl_Number, chi_Prandtl_Number, Magnetic_Prandtl_Number, &
+            & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
+            & chi_Rayleigh_Number, chi_Prandtl_Number, &
             & gravity_power, custom_reference_file,       &
-            & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
-            & override_constants, override_constant, ra_constants, with_custom_constants, &
+            & Dissipation_Number, Modified_Rayleigh_Number, chi_modified_rayleigh_number, &
+            & Heating_Integral, override_constants, override_constant, ra_constants, with_custom_constants, &
             & with_custom_functions, with_custom_reference
 
 
@@ -202,6 +206,7 @@ Contains
         Allocate(ref%dlnt(1:N_R))
         Allocate(ref%dsdr(1:N_R))
         Allocate(ref%Buoyancy_Coeff(1:N_R))
+        Allocate(ref%chi_buoyancy_coeff(1:N_R))
         Allocate(ref%dpdr_w_term(1:N_R))
         Allocate(ref%pressure_dwdr_term(1:N_R))
         Allocate(ref%ohmic_amp(1:N_R))
@@ -218,6 +223,7 @@ Contains
         ref%dlnt(:)               = Zero
         ref%dsdr(:)               = Zero
         ref%buoyancy_coeff(:)     = Zero
+        ref%chi_buoyancy_coeff(:) = Zero
         ref%dpdr_w_term(:)        = Zero
         ref%pressure_dwdr_term(:) = Zero
         ref%ohmic_amp(:)          = Zero
@@ -264,6 +270,12 @@ Contains
 
         Do i = 1, N_R
             ref%Buoyancy_Coeff(i) = amp*(radius(i)/radius(1))**gravity_power
+        Enddo
+
+        amp = chi_Rayleigh_Number/chi_Prandtl_Number
+
+        Do i = 1, N_R
+            ref%chi_buoyancy_coeff(i) = amp*(radius(i)/radius(1))**gravity_power
         Enddo
 
         pressure_specific_heat = 1.0d0
@@ -361,6 +373,7 @@ Contains
         ref%density(:) = ref%temperature(:)**poly_n
         gravity = (rmax**2)*OneOverRSquared(:)
         ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
+        ref%chi_buoyancy_coeff = gravity*chi_modified_rayleigh_number*ref%density
 
         !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
         dtmparr = -Dissipation_Number*gravity
@@ -508,6 +521,8 @@ Contains
         Ref%dsdr = volume_specific_heat * (Ref%dlnT - (thermo_gamma - 1.0d0) * Ref%dlnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
+
+        Ref%chi_buoyancy_coeff = gravity/pressure_specific_heat*ref%density
 
         Deallocate(zeta, gravity)
 
@@ -722,6 +737,7 @@ Contains
         ref%dlnrho(:)  = ra_functions(:,8)
         ref%d2lnrho(:) = ra_functions(:,9)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+        ref%chi_buoyancy_coeff(:) = ra_constants(12)*ra_functions(:,2)
 
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
@@ -1074,6 +1090,7 @@ Contains
         If (allocated(ref%dlnT)) DeAllocate(ref%dlnT)
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
+        If (allocated(ref%chi_buoyancy_coeff)) DeAllocate(ref%chi_buoyancy_coeff)
         If (allocated(ref%Heating)) DeAllocate(ref%Heating)
 
     End Subroutine Restore_Reference_Defaults

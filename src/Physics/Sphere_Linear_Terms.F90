@@ -88,17 +88,19 @@ Contains
             l = my_lm_lval(lp)
             If (l .eq.0) Then
 
-                nlinks = 3
-                Allocate(eq_links(1:3))
-                Allocate(var_links(1:3))
+                nlinks = 3+1
+                Allocate(eq_links(1:nlinks))
+                Allocate(var_links(1:nlinks))
 
                 eq_links(1) = weq
                 eq_links(2) = peq
                 eq_links(3) = teq
+                eq_links(4) = chieq
 
                 var_links(1) = wvar
                 var_links(2) = pvar
                 var_links(3) = tvar
+                var_links(4) = chivar
 
                 ! Not optimal (right now if variables are linked for one mode, they are linked for all).
                 Call link_equations(eq_links, var_links,nlinks,lp)
@@ -107,6 +109,7 @@ Contains
                 Call Initialize_Equation_Coefficients(weq, wvar, 0,lp)        ! identity matrix for W
                 Call Initialize_Equation_Coefficients(peq, pvar, 1,lp)
                 Call Initialize_Equation_Coefficients(peq, tvar, 0,lp)
+                Call Initialize_Equation_Coefficients(peq, chivar, 0,lp)
                 Call Initialize_Equation_Coefficients(teq, tvar, 2,lp)
                 Call Initialize_Equation_Coefficients(chieq, chivar, 2,lp)     ! PASSIVE:  highest derivaitve of chi is 2nd order in chieq
 
@@ -117,6 +120,7 @@ Contains
                 Call Initialize_Equation_Coefficients(weq,wvar,2,lp)
                 Call Initialize_Equation_Coefficients(weq,pvar,1,lp)
                 Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
+                Call Initialize_Equation_Coefficients(weq,chivar,0,lp)
 
 
                 ! P equation
@@ -141,17 +145,19 @@ Contains
                     Call Initialize_Equation_Coefficients(aeq,avar, 2,lp)
                 Endif
 
-                nlinks = 3
-                Allocate(eq_links(1:3))
-                Allocate(var_links(1:3))
+                nlinks = 3+1
+                Allocate(eq_links(1:nlinks))
+                Allocate(var_links(1:nlinks))
 
                 eq_links(1) = weq
                 eq_links(2) = peq
                 eq_links(3) = teq
+                eq_links(4) = chieq
 
                 var_links(1) = wvar
                 var_links(2) = pvar
                 var_links(3) = tvar
+                var_links(4) = chivar
                 Call link_equations(eq_links, var_links,nlinks,lp)
 
 
@@ -211,6 +217,9 @@ Contains
                 amp = -ref%Buoyancy_Coeff
                 Call add_implicit_term(peq, tvar, 0, amp,lp, static = .true.)            ! Gravity    --- Need LHS_Only Flag
 
+                amp = -ref%chi_buoyancy_coeff
+                Call add_implicit_term(peq, chivar, 0, amp,lp, static = .true.)            ! Gravity    --- Need LHS_Only Flag
+
                 amp = ref%dpdr_W_term
                 Call add_implicit_term(peq, pvar, 1, amp,lp, static = .true.)            ! dPdr     --- Here too
 
@@ -244,6 +253,10 @@ Contains
                 ! Temperature
                 amp = -ref%Buoyancy_Coeff/H_Laplacian
                 Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
+
+                ! Chi
+                amp = -ref%chi_buoyancy_coeff/H_Laplacian
+                Call add_implicit_term(weq, chivar, 0, amp,lp)          ! Gravity
 
 
                 ! Pressure
@@ -341,13 +354,13 @@ Contains
                 amp = 1.0d0
                 Call add_implicit_term(chieq,chivar, 0, amp,lp, static = .true.)    ! Time independent part
 
-                amp = 2.0d0/radius*kappa_chi*diff_Factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
+                amp = 2.0d0/radius*kappa_chi*diff_factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
                 Call add_implicit_term(chieq,chivar, 1, amp,lp)
 
                 amp = 1.0d0*kappa_chi*diff_factor
                 Call add_implicit_term(chieq,chivar, 2, amp,lp)
 
-                amp = chi_Diffusion_Coefs_1*diff_Factor  ! grad kappa_s term
+                amp = chi_Diffusion_Coefs_1*diff_factor  ! grad kappa_s term
                 Call add_implicit_term(chieq,chivar,1,amp,lp)
 
                 amp = H_Laplacian*kappa_chi*diff_factor
