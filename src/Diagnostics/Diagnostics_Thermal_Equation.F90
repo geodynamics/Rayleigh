@@ -28,7 +28,6 @@ Contains
     Subroutine Compute_Thermal_Equation_Terms(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Integer :: r,k, t
         Call Compute_Thermal_Advective_Terms(buffer)
         Call Compute_Thermal_Diffusion_Terms(buffer)
         Call Compute_Thermal_HeatSource(buffer)
@@ -768,7 +767,6 @@ Contains
     Subroutine Compute_Ohmic_Heating_Diag(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: dt_by_ds, dt_by_dp
         Integer :: r,k, t
         ! The "Diag" in the name refers to "diagnostics," and not "diagonal"
 
@@ -899,7 +897,6 @@ Contains
     Subroutine Compute_Thermal_HeatSource(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8, Allocatable :: rhot(:)
         Real*8 :: mean_rho, mean_t, mean_r2, mean_q, mean_dr
         Real*8 :: qadd, fpr2dr
         Integer :: r,k, t

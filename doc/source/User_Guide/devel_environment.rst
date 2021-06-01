@@ -4,42 +4,24 @@ Setting up a Rayleigh Development Environment
 When running Rayleigh on HPC resources, always compile the software with the recommended compiler and link against
 libraries optimized for the architecture you are running on.
 
-When developing Rayleigh or editing its documentation, however, such optimizations are rarely necessary.  Instead, it is sufficient for the code and documentation to compile.  For this purpose, we recommend setting up a conda environment.  Instructions for setting up an environment on Linux and Mac OS are provided below.   First, if you don't have Conda, you should download and install the version appropriate for your architecture `here. <https://docs.conda.io/en/latest/miniconda.html>`_
+When developing Rayleigh or editing its documentation, however, such optimizations are rarely necessary.  Instead, it is sufficient for the code and documentation to compile.  For this purpose, we recommend setting up a `conda environment`_ or using our `Docker container`_.  Instructions for setting up an environment on Linux and Mac OS are provided below.
 
-Once you have Conda installed, create a Conda environment named (say) radev
+Conda Environment
+-----------------
+
+First, if you don't have Conda, you should download and install the version appropriate for your architecture `here. <https://docs.conda.io/en/latest/miniconda.html>`_
+
+Once you have Conda installed, create a Conda environment using the environment files we provide in Rayleigh's main directory. There are two different environments for MacOSX and Linux to account for different compiler packages, for MacOSX replace `environment.yml` by  `environment_mac.yml`.
 
 .. code-block:: bash
 
-    conda create -n radev python=3
+    conda env create -f environment.yml
     conda activate radev
 
-Once your environment is created and active, you are ready to install the packages required to compile Rayleigh and its documentation.  From here, the instructions for Linux and Mac differ slightly.
-
-Package Setup:  Linux
------------------------------
-
-.. code-block:: bash
-
-    conda activate radev  [ if you haven't done this already ]
-    conda install -c conda-forge matplotlib \
-        jupyter scipy sphinx sphinxcontrib-bibtex \
-        nbsphinx pandoc recommonmark sphinx \
-        gcc_linux-64 gfortran_linux-64 mkl fftw mpich-mpicc
-
-Package Setup:  Mac
------------------------------
-
-.. code-block:: bash
-
-    conda activate radev  [ if you haven't done this already ]
-    conda install -c conda-forge matplotlib \
-        jupyter scipy sphinx sphinxcontrib-bibtex \
-        nbsphinx pandoc recommonmark sphinx \
-        clang_osx-64 gfortran_osx-64 mkl fftw mpich-mpicc
-
+This command will likely take a while (a few minutes) and will install all necessary packages to compile Rayleigh.
 
 MKL Setup: Linux and Mac
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 Once your packages are installed, you will most likely want to have the ``MKLROOT`` environment variable set whenever you activate your Conda environment.  To do this we set ``MKLROOT`` to the location of the currently activated conda environment from the enviroment variable ``CONDA_PREFIX``.
 
 .. code-block:: bash
@@ -80,7 +62,7 @@ The MKLSAVE variable is used so that a separate MKL installation on your machine
 is properly reset in your environment following deactivation.
 
 Configuration and Compilation
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Building the documentation is the same on Linux and Mac.
 
 .. code-block:: bash
@@ -113,4 +95,55 @@ At this point, you can run "make install," and run the code using mpirun as you 
 
 
 
+Docker Container
+----------------
+Docker provides a standardized way to build, distribute and run containerized environments on Linux, macOS, and Windows. To get started you should install Docker on your system following the instructions from `here <https://www.docker.com/get-started>`_. On Linux you can likely also install it from a distribution package (e.g., ``docker-io`` on Debian/Ubuntu).
 
+Launching the container
+^^^^^^^^^^^^^^^^^^^^^^^
+You can download our pre-built container from Docker Hub and launch it using the command
+
+.. code-block:: bash
+
+   docker run -it --rm -v $HOME:/root geodynamics/rayleigh-buildenv-bionic
+
+This will give you a shell inside the container and mount your home directory at ``/root``. You can clone, configure, build, and run the code and analyze the outputs using Python inside the container. Any changes below ``/root`` will be reflected in your home directory. Any other changes to the container will be deleted once you exit the shell.
+
+.. note:: This looks like you are running everything as the root user, but viewed from outside the container you are still running everything as the user who launched docker. Running as root inside the container has the advantage that you can easily get additional package using the ``apt`` command.
+
+Configuration and Compilation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note:: All these commands are run inside the Docker container and assume you have a copy of Rayleigh at ``$HOME/path/to/Rayleigh`` (which corresponds to ``/root/path/to/Rayleigh`` inside the container).
+
+Building the documentation
+
+.. code-block:: bash
+
+    cd /root/path/to/Rayleigh
+    make doc
+
+Building the code
+
+.. code-block:: bash
+
+    cd /root/path/to/Rayleigh
+    ./configure --with-fftw=/usr
+    make
+
+
+Building the container
+^^^^^^^^^^^^^^^^^^^^^^
+.. note:: This step purely optional. You only need to do this if you cannot pull the container from Docker Hub or you want to modify the Dockerfile.
+
+To build the container you have to run this command from your host system (i.e., not from inside the container).
+
+.. code-block:: bash
+
+   cd docker
+   docker build -t geodynamics/rayleigh-buildenv-bionic:latest rayleigh-buildenv-bionic
+
+You can check the newly built container is there using this command.
+
+.. code-block:: bash
+
+    docker images

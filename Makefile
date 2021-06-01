@@ -9,9 +9,12 @@ export LC_COLLATE=C
 # make the CUSTOMROOT variable available to sub-make processes
 export CUSTOMROOT
 
+# running "make target=dbg" will only compile the specified target
+target=all
+
 rayleigh: prepare_directory
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
-	@$(MAKE) --no-print-directory --directory=$(BUILD) all
+	@$(MAKE) --no-print-directory --directory=$(BUILD) $(target)
 	@echo ""
 	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	@echo "Compilation is complete."

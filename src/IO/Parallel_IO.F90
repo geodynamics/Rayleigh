@@ -410,11 +410,11 @@ Contains
     Subroutine Load_Balance_IO(self)
         Implicit None
         Class(io_buffer) :: self
-        Integer :: m, n, p,  nextra, shsize, nout_cols
+        Integer :: m, n, p, nextra, nout_cols
         Integer :: my_min, my_max
         Integer :: r, rmin, rmax
         Integer :: t, tmax, tmin
-        Integer :: nm, mp, mp_min, mp_max, m_value
+        Integer :: nm
         Integer, Allocatable :: tmp(:)
         Integer :: k, ntot, fcount(3,2), fcnt
 
@@ -578,7 +578,7 @@ Contains
     Subroutine Set_Displacements(self)
         Implicit None
         Class(io_buffer) :: self
-        Integer :: j,n, p
+        Integer :: j, n, p
         Integer(kind=MPI_OFFSET_KIND) :: shsize
         ! This routine is only called by output ranks.
         ! Determine offsets (in bytes) for each quantity written via MPI-IO.
@@ -653,8 +653,6 @@ Contains
     Subroutine Initialize_IO_MPI(self)
         Implicit None
         Class(io_buffer) :: self
-        Integer :: p
-        Integer :: nout_cols
         Integer :: color, ierr
         ! Define a unique MPI communicator for all output_ranks associated
         ! with this object.
@@ -809,7 +807,6 @@ Contains
         Integer, Intent(In), Optional :: in_cache
         Integer :: r, t, p,tind
         Integer :: counter, field_ind, rind
-        Integer :: my_mp_min, my_mp_max, mp
 
         ! Perform desired sampling/averaging on the input vals array.
 
@@ -976,7 +973,7 @@ Contains
     Subroutine Spectral_Prep(self)
         Implicit None
         Class(io_buffer) :: self
-        Integer :: p, mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
+        Integer :: mp, f, counter, field_ind, m, my_mp_min, my_mp_max, nf
         Integer :: nq, r, rind, lmax, i1, i2, my_nm, mstore
         ! This routine transforms phi-theta to ell-m space.
         ! It then puts the spectral data into the cache buffer
@@ -1206,8 +1203,8 @@ Contains
     Subroutine DeCollate_Spectral(self)
         Implicit None
         Class(io_buffer), Target :: self
-        Integer :: m, r, i, p, mp_min, mp_max,mm, lmax, maxl
-        Integer :: mp, k, l, j,  ind1, ind2, loff, lmax_in, dind
+        Integer :: m, r, p, mp_min, mp_max,mm, lmax, maxl
+        Integer :: mp, ind1, ind2, loff, lmax_in, dind
         ! For reading checkpoints/generic I/O.
         ! This performs the opposite of collate_spectra.
         ! It restripes data from single buffer into multiple receive buffers
@@ -1254,7 +1251,7 @@ Contains
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
-        Integer :: i, r, t, ncache, my_nm
+        Integer :: my_nm
 
         ! For Checkpoints/Generic I/O reading.  Performs opposite task of Cascade.
         ! Broadcast data from output_ranks' recv buffers back into the cache arrays.
@@ -1277,7 +1274,7 @@ Contains
                     If (n .gt. 0) Then
                         nrirq =nrirq+1
                         Call ISend(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
-                                &  dest= p,tag = self%tag, grp = pfi%rcomm)	            
+                                &  dest= p,tag = self%tag, grp = pfi%rcomm)
                     Endif
                 Endif
             Enddo
@@ -1329,7 +1326,7 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
-        Integer :: p, mp, f,m, my_mp_min, my_mp_max, myrmin
+        Integer :: mp, m, my_mp_min, my_mp_max, myrmin
         Integer :: r, lmax, i1, i2, my_nm, mstore
         ! This routine performs the partial inverse of Spectral_Prep.
         ! It takes the cache and stripes it back into s2b.
@@ -1365,7 +1362,7 @@ Contains
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
         Integer, Allocatable :: rirqs(:), sirqs(:)
         Integer :: inds(4)
-        Integer :: i, r, t, ncache
+        Integer :: ncache
 
         ! Here, each process communicates the contents of their cache to output_ranks' recv buffers.
 
@@ -1384,7 +1381,7 @@ Contains
                     If (n .gt. 0) Then
                         nrirq =nrirq+1
                         Call IReceive(self%recv_buffers(p)%data, rirqs(nrirq),n_elements = n, &
-                                &  source= p,tag = self%tag, grp = pfi%rcomm)	            
+                                &  source= p,tag = self%tag, grp = pfi%rcomm)
                     Endif
                 Endif
             Enddo
@@ -1445,9 +1442,7 @@ Contains
         Implicit None
         Class(io_buffer), Target :: self
         Integer, Intent(In), Optional :: cache_ind
-        Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
-        Integer, Allocatable :: rirqs(:), sirqs(:)
-        Integer :: inds(4)
+        Integer :: p
         Integer :: i, tstart,tend, r, t, ncache
         Real*8, Allocatable :: data_copy(:,:,:,:), tmp1(:), tmp2(:)
         Integer :: cend
@@ -1546,9 +1541,9 @@ Contains
         Character*120, Intent(In), Optional :: filename
         Integer :: funit, ierr, j
         Logical :: error
-		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
-        Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp, fdisp, bdisp
-		Integer :: mstatus(MPI_STATUS_SIZE)
+        Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
+        Integer(kind=MPI_OFFSET_KIND) :: hdisp, tdisp, fdisp, bdisp
+        Integer :: mstatus(MPI_STATUS_SIZE)
 
         ! A baseline displacement within the file can be passed to this routine.
         ! Can be due to header and/or multiple prior records.
@@ -1565,7 +1560,7 @@ Contains
             If (present(filename)) Then
                 ! The file is not open.  We must create it.
                 If (self%output_rank) Then
-		            Call MPI_FILE_OPEN(self%ocomm%comm, filename, & 
+                    Call MPI_FILE_OPEN(self%ocomm%comm, filename, & 
                            MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
                            MPI_INFO_NULL, funit, ierr) 
                 Endif
@@ -1636,7 +1631,7 @@ Contains
             If (self%output_rank) Then
                 DeAllocate(self%buffer)
                 If (present(filename)) Then
-			        Call MPI_FILE_CLOSE(funit, ierr) 
+                    Call MPI_FILE_CLOSE(funit, ierr) 
                 Endif
             Endif
 
@@ -1650,9 +1645,9 @@ Contains
         Character*120, Intent(In), Optional :: filename
         Integer :: funit, ierr, j
         Logical :: error
-		Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
-        Integer(kind=MPI_OFFSET_KIND) :: my_disp, hdisp, tdisp, fdisp, bdisp
-		Integer :: mstatus(MPI_STATUS_SIZE)
+        Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
+        Integer(kind=MPI_OFFSET_KIND) :: hdisp, fdisp
+        Integer :: mstatus(MPI_STATUS_SIZE)
 
         ! Read data (Checkpoints/Generic I/O)
 
@@ -1671,7 +1666,7 @@ Contains
             If (present(filename)) Then
                 ! The file is not open.  We must create it.
                 If (self%output_rank) Then
-		            Call MPI_FILE_OPEN(self%ocomm%comm, filename, & 
+                    Call MPI_FILE_OPEN(self%ocomm%comm, filename, & 
                            MPI_MODE_RDONLY, & 
                            MPI_INFO_NULL, funit, ierr) 
                 Endif
@@ -1701,7 +1696,7 @@ Contains
             If (self%output_rank) Then
                 DeAllocate(self%buffer)
                 If (present(filename)) Then
-			        Call MPI_FILE_CLOSE(funit, ierr) 
+                    Call MPI_FILE_CLOSE(funit, ierr) 
                 Endif
             Endif
 

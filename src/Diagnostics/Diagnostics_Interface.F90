@@ -152,9 +152,9 @@ Contains
         Integer, Intent(In) :: iteration
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Real*8, Intent(In) :: current_time
-        Real*8 :: over_n_phi, tmp, tmp2, tmp3
+        Real*8 :: over_n_phi
 
-        Integer :: p,t,r, nfields, bdims(1:4), pass_num, k
+        Integer :: nfields, bdims(1:4), pass_num
 
 
         If (time_to_output(iteration)) Then
@@ -271,7 +271,7 @@ Contains
 
     Subroutine Initialize_Diagnostics()
         Implicit None
-        Integer :: i, isize, n_phi, sig_pi = 314
+        Integer :: i, n_phi, sig_pi = 314
         Real*8 :: delr
         Character*120 :: grid_file
 
