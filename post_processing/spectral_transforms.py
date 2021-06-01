@@ -342,9 +342,9 @@ class Fourier:
         ----
         data_in : ndarray
             Input data array in spectral space
-        axis : int,optional
+        axis : int, optional
             Axis along which the derivative will be computed
-        physical : bool,optional
+        physical : bool, optional
             Specify the incoming data as being in physical space or spectral
 
         Returns
@@ -578,7 +578,7 @@ class Legendre:
         ----
         data_in : ndarray
             Input data to be transformed, must be dimension 4 or less
-        axis : int,optional
+        axis : int, optional
             The axis over which the transform will take place
 
         Returns
@@ -633,7 +633,7 @@ class Legendre:
         ----
         data_in : ndarray
             Input data to be transformed, must be dimension 4 or less
-        axis : int,optional
+        axis : int, optional
             The axis over which the transform will take place
 
         Returns
@@ -685,9 +685,9 @@ class Legendre:
         ----
         data_in : ndarray
             Input data array in physical space, must be dimension 4 or less
-        axis : int,optional
+        axis : int, optional
             The axis over which the derivative will take place
-        physical : bool,optional
+        physical : bool, optional
             Specify the incoming data as being in physical space or spectral
 
         Returns
@@ -798,7 +798,8 @@ class Chebyshev:
                  rmin=-1, rmax=-1, aspect_ratio=-1, shell_depth=-1,
                  boundaries=None,
                  n_uniform_domains=1, uniform_bounds=False,
-                 dealias=None):
+                 dealias=None,
+                 dmax=3):
         """
         Initialize the Chebyshev grid and transform
 
@@ -843,6 +844,8 @@ class Chebyshev:
             the number of Chebyshev polynomials that will be used in that domain.
             The default behavior is the standard 2/3 rule:
                 n_polynomials = 2*n_r/3
+        dmax : int, optional
+            Allocate array storage space for up to and including the dmax-th derivative
         """
         if (not hasattr(nr_domains, "__len__")): # user gave a single value
             nr_domains = [nr_domains]
@@ -933,17 +936,21 @@ class Chebyshev:
         self.shell_depth = self.rmax - self.rmin
         self.n_domains = n_domains
         self.nr_domains = nr_domains
+        self.n_r = self.nr_domains.sum() # total grid resolution
         self.dealias = dealias
         self.boundaries = boundaries
 
-        self.grid() # build the grid
+        self.grid(dmax=dmax) # build the grid
 
-    def grid(self):
+    def grid(self, dmax=3):
         """
         Build the grid(s)
-        """
-        dmax = 2 # how many derivatives to compute/store
 
+        Args
+        ----
+        dmax : int, optional
+            Allocate array storage space for up to and including the dmax-th derivative
+        """
         self.npoly = np.zeros((self.n_domains), dtype=np.int32)
         self.rda = np.zeros((self.n_domains), dtype=np.int32)
 
@@ -959,6 +966,9 @@ class Chebyshev:
         self.npoly = self.npoly[::-1]
         self.rda = self.rda[::-1]
         self.boundaries = self.boundaries[::-1]
+
+        gmax = self.boundaries[0]
+        gmin = self.boundaries[-1]
 
         self.max_npoly = self.npoly.max()
         self.ntotal = self.npoly.sum()
@@ -977,6 +987,40 @@ class Chebyshev:
         self.find_colocation_pts()
         self.find_Tn()
         self.find_Tn_deriv_array(dmax)
+
+        # global grid and rescale derivative arrays
+        self.deriv_scaling = np.zeros((self.n_r), dtype=np.float64)
+        self.integration_weights = np.zeros((self.n_r), dtype=np.float64)
+        self.grid = np.zeros((self.n_r), dtype=np.float64)
+        ind = 0
+        for n in range(self.n_domains):
+            n_max = self.npoly[n]
+            ind2 = ind + n_max
+
+            upperb = self.boundaries[n]
+            lowerb = self.boundaries[n+1]
+            xmin = self.x[n_max-1,n]
+            xmax = self.x[0,n]
+
+            domain_delta = upperb - lowerb
+
+            scaling = domain_delta/(xmax - xmin)
+            self.grid[ind:ind2+1] = lowerb + scaling*(self.x[:n_max, n] - xmin)
+
+            int_scale = 3*np.pi*scaling/( (gmax**3 - gmin**3)*n_max )
+
+            scaling = 1./scaling
+
+            for i in range(dmax):
+                gind = ind + i - 1 #??
+                xx = self.x[i,n]
+                self.integration_weights[gind] = \
+                                   int_scale*self.grid[gind]**2*np.sqrt(1.-xx*xx)
+                self.deriv_scaling[gind] = scaling
+            self.integration_weights[ind] *= 0.5 # boundaries x 1/2
+            self.integration_weights[ind2] *= 0.5
+
+            ind = ind2 + 1
 
     def find_colocation_pts(self):
         """
@@ -1020,7 +1064,7 @@ class Chebyshev:
             for i in range(n_odd):
                 self.cheby_odd[n][:,i] = cheby[:,2*i+1]
 
-            if (n_x != n_odd):
+            if (n_x != n_odd): # have x=0 point, don't double count power when using parity
                 self.cheby_even[n][n_x-1,:] *= 0.5
                 self.cheby_odd[n][n_x-1,:] *= 0.5
 
@@ -1032,7 +1076,35 @@ class Chebyshev:
         """
         alpha = np.zeros((self.max_npoly, self.max_npoly), dtype=np.float64)
 
+        for m in range(self.n_domains):
+            n_max = self.npoly[m]
+
+            alpha[:,:] = 0.0
+            alpha[n_max-1,:] = 0.0
+            alpha[n_max-2,n_max-1] = 2.*(n_max-2)
+
+            for k in range(n_max-3, -1, -1): # includes n_max-3 & 0
+                alpha[k,k+1] = 2.*k
+                alpha[k,:] = alpha[k,:] + alpha[k+2,:]
+
+            self.dcheby[m] = np.zeros((n_max,n_max,dmax), dtype=np.float64)
+            for r in range(n_max):
+                for i in range(n_max):
+                    arg = k*self.theta[r,m]
+                    self.dcheby[m][r,i,0] = np.cos(arg)
+
+            self.dcheby[m][:,0,0] = self.dcheby[m][:,0,0] - 0.5
+
+            if (dmax >= 1):
+                for d in range(1,dmax):
+                    for n in range(n_max):
+                        for k in range(n_max):
+                            for i in range(n_max):
+                                self.dcheby[m][k,n,d] += self.dcheby[m][k,i,d-1]*alpha[i,n]
+
         alpha = None
+
+    def dealias_buffer(self):
 
     def to_spectral(self, data_in, axis=0): pass
     def to_physical(self, data_in, axis=0): pass
