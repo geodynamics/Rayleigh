@@ -91,13 +91,13 @@ in the directory: Rayleigh/input_examples/
 +-----------------------+-----------------+--------------------------------+--------------------------------+
 | Paper                 | Benchmark       | Input File                     | Specify in the main_input file |
 +=======================+=================+================================+================================+
-| Christensen et al.    | Case 0          | c2001_case0_minimal            | benchmark_mode = 1		    |
+| Christensen et al.    | Case 0          | c2001_case0_minimal            | benchmark_mode = 1             |
 +-----------------------+-----------------+--------------------------------+--------------------------------+
-| Christensen et al.    | Case 1(MHD)     | c2001_case1_minimal            | benchmark_mode = 2		    |
+| Christensen et al.    | Case 1(MHD)     | c2001_case1_minimal            | benchmark_mode = 2             |
 +-----------------------+-----------------+--------------------------------+--------------------------------+
-| Jones et al. 2011     | Steady Hydro    | j2011_steady_hydro_minimal     | benchmark_mode = 3		    |
+| Jones et al. 2011     | Steady Hydro    | j2011_steady_hydro_minimal     | benchmark_mode = 3             |
 +-----------------------+-----------------+--------------------------------+--------------------------------+
-| Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       | benchmark_mode = 4		    |
+| Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       | benchmark_mode = 4             |
 +-----------------------+-----------------+--------------------------------+--------------------------------+
 
 
