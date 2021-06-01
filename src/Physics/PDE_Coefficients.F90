@@ -70,7 +70,7 @@ Module PDE_Coefficients
     Integer, Parameter  :: eqn_coeff_version = 1
 
     ! Custom reference state variables
-    Integer, Parameter  :: n_ra_constants = 11
+    Integer, Parameter  :: n_ra_constants = 12
     Integer, Parameter  :: n_ra_functions = 16
     Logical             :: with_custom_reference = .false.
     Logical             :: override_constants = .false.
