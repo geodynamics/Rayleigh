@@ -49,7 +49,8 @@ Module Spherical_IO
 
 
     !////////////////////////////////////////////
-    Integer, Parameter :: nqmax=6000, nshellmax=2048, nmeridmax=8192, nmodemax=2048,scalar_offset=4000
+    Integer, Parameter :: nqmax=6000, nshellmax=2048, nmeridmax=8192, nmodemax=2048
+    Integer, Parameter :: scalar_offset=4000, scalar_skip = 100
     Integer, Parameter :: nprobemax=4096
     Integer, Parameter :: endian_tag = 314      ! first 4 bits of each diagnostic file - used for assessing endianness on read-in
     Integer, Parameter :: reallybig = 90000000
@@ -951,8 +952,8 @@ Contains
                         If (ind .gt. scalar_offset) Then
                             Do j = 0, io_nscalar-1
                                 self%nq = self%nq+1
-                                self%compute(ind+scalar_offset) = 1
-                                computes(ind+scalar_offset) = 1
+                                self%compute(ind+scalar_skip*j) = 1
+                                computes(ind+scalar_skip*j) = 1
                             Enddo
                         Else
                             self%nq = self%nq+1
