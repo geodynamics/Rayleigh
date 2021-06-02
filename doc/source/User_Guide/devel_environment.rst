@@ -101,7 +101,7 @@ Docker provides a standardized way to build, distribute and run containerized en
 
 Launching the container
 ^^^^^^^^^^^^^^^^^^^^^^^
-You can download our pre-built container from Docker Hub and launch it using the command from the main Rayleigh directory.
+You can download our pre-built container from Docker Hub and launch it using the command from the main Rayleigh directory. The following command is for GNU/Linux and macOS users.
 
 .. code-block:: bash
 
@@ -112,6 +112,8 @@ You can download our pre-built container from Docker Hub and launch it using the
 This will give you a shell inside the container and mount your home directory at ``/work``. You can clone, configure, build, and run the code and analyze the outputs using Python inside the container. Any changes below ``/work`` will be reflected in your home directory. Any other changes to the container will be deleted once you exit the shell.
 
 .. note:: Your user has ``sudo`` rights within the container. This allows to install packages using the ``apt`` command or modify the system in any other way.
+
+Windows users should run the script ``docker-devel.bat`` instead.
 
 Configuration and Compilation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
