@@ -6,7 +6,7 @@ RUN apt update && \
   apt install --yes \
     sudo
 
-ADD /entrypoint.sh /entrypoint.sh
+COPY /entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT /entrypoint.sh
 
