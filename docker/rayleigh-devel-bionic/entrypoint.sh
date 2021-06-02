@@ -15,7 +15,7 @@ then
 
 	sudo -u $HOSTUSER /bin/bash --rcfile /etc/bash.bashrc -i
 else
-        if [ ${NOUIDWARN} != 1 ]
+        if [ "${NOUIDWARN}" != 1 ]
         then
                 echo
                 echo "You are running this container without providing the HOSTUSER, HOSTGID, and HOSTUID"
