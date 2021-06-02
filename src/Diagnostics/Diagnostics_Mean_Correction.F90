@@ -206,7 +206,7 @@ Contains
         Logical :: compute_fluct_fluct = .false.
         Logical :: compute_mean_mean = .false.
         logical :: compute_mean_correct =.false.
-        Real*8 :: amp,del2u, estress
+        Real*8 :: del2u, estress
         Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
         compute_mean_correct = .false.

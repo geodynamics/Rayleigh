@@ -166,12 +166,6 @@ function displayhelp {
     echo "      Usage Example 2:  ./configure --with-mkl='/my/mkl/root' -conda-mkl "
     echo ""
 
-    echo "  -mac-mkl:     " 
-    echo "      Link to MKL's FFTW, LAPack, and BLAS routines using syntax appropriate for Mac."
-    echo "      This flag may be used in conjunction with -conda-mkl."
-    echo "      (NOTE:  This feature is currently only supported when -conda-mkl is also used.)"
-    echo ""    
-
     echo "  --nodirs ; -nodirs: "
     echo "      Causes Make to compile Rayleigh without directory creation support."
     echo "      This is intended ONLY for machines where the make process fails when "
@@ -347,21 +341,6 @@ do
       if [ ! -z "$MKLROOT" ]
       then
         CONDAMKL="TRUE"
-        USE_MKL="TRUE"
-        RAMKLROOT=$MKLROOT
-      else
-        echo "Error Code 5: "
-        echo "MKLROOT is not defined"
-        echo "MKLROOT must be defined in your environment to use the -mkl flag."
-        echo "exiting..."
-        exit 5
-      fi 
-      ;;
-
-    -mac-mkl)
-      if [ ! -z "$MKLROOT" ]
-      then
-        MACMKL="TRUE"
         USE_MKL="TRUE"
         RAMKLROOT=$MKLROOT
       else
@@ -773,7 +752,7 @@ then
     then
         if [[ $CONDAMKL == "TRUE" ]]
         then
-            if [[ $MACMKL == "TRUE" ]]
+            if [[ $OSTYPE == *"darwin"* ]]
             then
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
                 LIB_FLAGS="\$(MKL_LIB) -lc++"

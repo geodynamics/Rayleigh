@@ -21,20 +21,7 @@ Rayleigh's diagnostics package is discussed in the companion document :ref:`DVal
 
 Referencing
 -----------
-Rayleigh's implementation of the pseudo-spectral algorithm and its
-parallel design would not have been possible without earlier work by
-Gary Glatzmaier and Thomas Clune described in: :cite:`GLATZMAIER1984461`,
-:cite:`Glatzmaier1999`
 
-  Glatzmaier, G.A., 1984,Numerical simulations of stellar convective dynamos. I. the model and method,
-  *J. Comp. Phys.*, 55(3), 461-484. ISSN 0021-9991, doi:10.1016/0021-9991(84)90033-0.
-
-  Clune, T.C., Elliott, J.R., Miesch, M.S.,Toomre, J., and Glatzmaier, G.A., 1999,
-  Computational aspects of a code to study rotating turbulent convection in
-  spherical shells, Parallel Comp., 25, 361-380.
-
-
-Rayleigh has been written by Nicholas Featherstone with contributions by others.
 We ask that you cite the appropriate references if you publish results that were obtained in some
 part using Rayleigh.  To cite other versions of the code, please see: https://geodynamics.org/cig/abc
 
@@ -95,22 +82,32 @@ Please also cite the following references:
   opturl="http://doi.wiley.com/10.1002/2015GC006159"
   }
 
+Rayleigh's development is supported by the
+National Science Foundation through the Geodynamo Working Group of the
+Computational Infrastructure for Geodynamics (CIG,
+https://geodynamics.org/cig/working-groups/geodynamo/).
+
+Please acknowledge CIG support in your work as follows:
+
+  .. note::
+
+    Rayleigh is hosted and receives support from the Computational
+    Infrastructure for Geodynamics (CIG) which is supported by the
+    National Science Foundation awards NSF-0949446 and NSF-1550901.
 
 Acknowledging
 -------------
-Rayleigh is written by Nicholas Featherstone with
-National-Science-Foundation support through the Geodynamo Working Group
-of the Computational Infrastructure for Geodynamics (CIG, geodynamics.org).
 
-The CIG Geodynamo Working Group Members are:
-Jonathon Aurnou, Benjamin Brown, Bruce Buffett, Nicholas Featherstone,
-Gary Glatzmaier, Eric Heien, Moritz Heimpel, Lorraine Hwang, Louise Kellogg,
-Hiroaki Matsui, Peter Olson, Krista Soderlund, Sabine Stanley, Rakesh Yadav.
+.. include:: ../../../AUTHORS
 
-Please acknowledge CIG as follows:
+Rayleigh's implementation of the pseudo-spectral algorithm and its
+parallel design would not have been possible without earlier work by
+Gary Glatzmaier and Thomas Clune described in: :cite:`GLATZMAIER1984461`,
+:cite:`Glatzmaier1999`
 
-.. note::
+  Glatzmaier, G.A., 1984, Numerical simulations of stellar convective dynamos. I. the model and method,
+  *J. Comp. Phys.*, 55(3), 461-484. ISSN 0021-9991, doi:10.1016/0021-9991(84)90033-0.
 
-  Rayleigh is hosted and receives support from the Computational
-  Infrastructure for Geodynamics (CIG) which is supported by the
-  National Science Foundation awards NSF-0949446 and NSF-1550901.
+  Clune, T.C., Elliott, J.R., Miesch, M.S.,Toomre, J., and Glatzmaier, G.A., 1999,
+  Computational aspects of a code to study rotating turbulent convection in
+  spherical shells, Parallel Comp., 25, 361-380.

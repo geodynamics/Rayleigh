@@ -255,7 +255,7 @@ Contains
         Real*8, Intent(Out)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), Optional :: grp
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE)
+        Integer :: p, n, comm2, tag2
         Integer, Intent(Out) :: irq
         Integer :: istart,jstart,kstart,lstart
 
@@ -352,7 +352,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:5)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE)
+        Integer :: p, n, comm2, tag2
         Integer :: istart,jstart,kstart,lstart,mstart
 
         If (Present(n_elements)) Then
@@ -608,7 +608,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE), ione
+        Integer :: p, n, comm2, tag2, ione
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -650,7 +650,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE), ione
+        Integer :: p, n, comm2, tag2, ione
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -692,7 +692,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator),  Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE), ione, jone
+        Integer :: p, n, comm2, tag2, ione, jone
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -736,7 +736,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE)
+        Integer :: p, n, comm2, tag2
         Integer :: istart,jstart,kstart
 
         If (Present(n_elements)) Then
@@ -784,7 +784,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE), istart, jstart
+        Integer :: p, n, comm2, tag2, istart, jstart
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -827,7 +827,7 @@ Contains
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, status(MPI_STATUS_SIZE)
+        Integer :: p, n, comm2, tag2
         Integer :: istart, jstart, kstart
 
         If (Present(n_elements)) Then

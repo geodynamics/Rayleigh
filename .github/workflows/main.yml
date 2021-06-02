@@ -23,7 +23,8 @@ jobs:
     - name: Build Rayleigh
       # First make sure notebooks do not contain output, then build doc
       run: |
-        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr'
+        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr' --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+
         make fdeps && git diff --exit-code
         make -j
         make install
@@ -46,7 +47,12 @@ jobs:
 
   conda:
     name: conda-build
-    runs-on: [ubuntu-latest]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
     # Needs to be here to properly detect changes to conda
     # see https://github.com/conda-incubator/setup-miniconda#IMPORTANT
     defaults:
@@ -68,6 +74,6 @@ jobs:
       run: |
         cd "$GITHUB_WORKSPACE"
         export MKLROOT=$CONDA_PREFIX
-        ./configure -conda-mkl --FC=mpifort
+        ./configure -conda-mkl --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
         make -j
         make install
