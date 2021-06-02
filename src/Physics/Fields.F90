@@ -55,6 +55,8 @@ Module Fields
     !////////////////////////////////////////////////////////////////////////////
     Integer, Save :: n_equations, n_variables    ! Number of variables and equations to be solved
 
+    Integer :: n_scalar_fields = 1 ! Will allow this to change later
+
     ! Variable locations in the global field meta data buffer
     Integer :: wvar, pvar, tvar, zvar
     Integer :: dpdr1  ! We reserve dpdr for the final location at output time

@@ -66,6 +66,7 @@ Module Diagnostics_Interface
     Implicit None
 
 
+
     !///////////////////////////////////
     !Real*8, Allocatable :: qty(:,:,:)   ! This variable holds each quantity that we output
     !Real*8, Allocatable :: tmp1(:,:,:)
@@ -326,7 +327,7 @@ Contains
             Close(15)
         Endif
 
-        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path,int_out_fmt)
+        Call Initialize_Spherical_IO(radius,sintheta,rweights,tweights,costheta,my_path,int_out_fmt,n_scalar_fields)
 
         Call Initialize_Diagnostic_Indices()
         !DeAllocate(tweights)  !<---- Used to deallocate these.  We now use these for the computing the ell0 components

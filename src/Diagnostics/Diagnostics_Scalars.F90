@@ -28,20 +28,24 @@ Contains
     Subroutine Compute_Scalars(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Integer :: r,k, t
+        Integer :: r,k, t, ii, scoff
 
 
         !////////////////////////////////////////
         !       Scalar
-
         !  Scalar: field
-        If (compute_quantity(scalar)) Then
-            DO_PSI
-                qty(PSI) = buffer(PSI,chivar)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
+        Do ii = 1, n_scalar_fields
+            scoff = (ii-1)*scalar_offset
+            ! compute_quantity also sets the current quantity code in the background as a side effect.
+            ! In this case, the code will be set to scalar+scoff
+            If (compute_quantity(scalar+scoff)) Then  
+                DO_PSI
+                    qty(PSI) = buffer(PSI,chivar) ! need to figure out what to do with chivar.  Maybe chivar(ii)?
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
 
+        Enddo
     End Subroutine Compute_Scalars
 
 End Module Diagnostics_Scalars

@@ -49,7 +49,7 @@ Module Spherical_IO
 
 
     !////////////////////////////////////////////
-    Integer, Parameter :: nqmax=4000, nshellmax=2048, nmeridmax=8192, nmodemax=2048
+    Integer, Parameter :: nqmax=6000, nshellmax=2048, nmeridmax=8192, nmodemax=2048,scalar_offset=4000
     Integer, Parameter :: nprobemax=4096
     Integer, Parameter :: endian_tag = 314      ! first 4 bits of each diagnostic file - used for assessing endianness on read-in
     Integer, Parameter :: reallybig = 90000000
@@ -182,7 +182,7 @@ Module Spherical_IO
     Integer, Parameter :: Temp_IO = 11                  ! This one should always be last
     Type(DiagnosticInfo), Allocatable :: Outputs(:)
     Logical :: Test_IO = .false. !DEVEL:  Set this to .true. if you want to try a new output using Temp_IO
-    Integer :: n_outputs
+    Integer :: n_outputs, io_nscalar
 
     Type(io_buffer) :: full_3d_buffer
     
@@ -285,13 +285,17 @@ Module Spherical_IO
     Integer, Private :: IOavg_flag = -1
 Contains
 
-    Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt)
+    Subroutine Initialize_Spherical_IO(rad_in,sintheta_in, rw_in, tw_in, costheta_in,file_path,digfmt, num_scalar)
         Implicit None
         Real*8,        Intent(In) :: rad_in(:), sintheta_in(:), rw_in(:), tw_in(:), costheta_in(:)
         Character*120, Intent(In) :: file_path
         Character*8,   Intent(In) :: digfmt
+        Integer, Intent(In) :: num_scalar
         Character*120 :: fdir
         Integer       :: wmode, gpars(1:5,1:5)
+
+        ! Set the number of scalar fields
+        io_nscalar = num_scalar
 
         ! Set File Info
         i_ofmt=digfmt   ! format code for integer file names
@@ -810,7 +814,7 @@ Contains
                  average_in_phi, average_in_radius, average_in_theta, moments, &
                  full_cache)
         Implicit None
-        Integer :: i,ind, nmom
+        Integer :: i,ind, nmom, j, k
         Integer, Intent(In) :: pid, mpi_tag, version, nrec, frequency
         Integer, Intent(In), Optional :: cache_size, write_mode
         Character*120, Intent(In) :: dir
@@ -944,9 +948,17 @@ Contains
                     ind = self%values(i)
                     ! Guard against duplicate inputs                    
                     If (self%compute(ind) .ne. 1) Then
-                        self%nq = self%nq+1
-                        self%compute(ind) = 1
-                        computes(ind) = 1
+                        If (ind .gt. scalar_offset) Then
+                            Do j = 0, io_nscalar-1
+                                self%nq = self%nq+1
+                                self%compute(ind+scalar_offset) = 1
+                                computes(ind+scalar_offset) = 1
+                            Enddo
+                        Else
+                            self%nq = self%nq+1
+                            self%compute(ind) = 1
+                            computes(ind) = 1
+                        Endif
                     Endif
                 Endif 
             Enddo

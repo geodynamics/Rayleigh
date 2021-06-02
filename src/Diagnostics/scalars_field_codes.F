@@ -20,7 +20,7 @@
 
     !//////////////////////////////////////////////////////////////////
     !  Composition/Scalar
-    Integer, Parameter :: chi_off = axial_off+100 ! :OFFSET CODE:
+    Integer, Parameter :: chi_off = 4000 ! :OFFSET CODE:
 
     !------------ Fields ---------------------!
     ! Full
