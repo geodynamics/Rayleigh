@@ -15,11 +15,14 @@ then
 
 	sudo -u $HOSTUSER /bin/bash --rcfile /etc/bash.bashrc -i
 else
-	echo
-	echo "You are running this container without providing the HOSTUSER, HOSTGID, and HOSTUID"
-	echo "environment variables. This means the container will use the root user and it might create files"
-	echo "owned by root in your home directory if you run this on Docker with Linux as a host system."
-	echo 'Consider running this using the "docker-devel" script from the Rayleigh main directory.'
-	echo
+        if [ ${NOUIDWARN} != 1 ]
+        then
+                echo
+                echo "You are running this container without providing the HOSTUSER, HOSTGID, and HOSTUID"
+                echo "environment variables. This means the container will use the root user and it might create files"
+                echo "owned by root in your home directory if you run this on Docker with Linux as a host system."
+                echo 'Consider running this using the "docker-devel" script from the Rayleigh main directory.'
+                echo
+        fi
 	/bin/bash --rcfile /etc/bash.bashrc -i
 fi
