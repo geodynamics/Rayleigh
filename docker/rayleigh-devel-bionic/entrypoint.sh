@@ -3,7 +3,7 @@
 export HOME=/work
 cd "$HOME"
 
-if [ -n "$HOSTGID" -a -n "$HOSTUSER" -a -n "HOSTUID" ]
+if [ -n "$HOSTGID" -a -n "$HOSTUSER" -a -n "$HOSTUID" ]
 then
 	# only create user if all options are provided
 
