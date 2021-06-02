@@ -1,5 +1,8 @@
 #!/bin/sh
 
+export HOME=/work
+cd "$HOME"
+
 if [ -n "$HOSTGID" -a -n "$HOSTUSER" -a -n "HOSTUID" ]
 then
 	# only create user if all options are provided
@@ -10,7 +13,7 @@ then
 
 	echo "$HOSTUSER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/nopasswd
 
-	su - $HOSTUSER
+	sudo -u $HOSTUSER /bin/bash --rcfile /etc/bash.bashrc -i
 else
 	echo
 	echo "You are running this container without providing the HOSTUSER, HOSTGID, and HOSTUID"
@@ -18,5 +21,5 @@ else
 	echo "owned by root in your home directory if you run this on Docker with Linux as a host system."
 	echo 'Consider running this using the "docker-devel" script from the Rayleigh main directory.'
 	echo
-	su -
+	/bin/bash --rcfile /etc/bash.bashrc -i
 fi
