@@ -60,6 +60,8 @@ Module Controls
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
     Logical :: advect_reference_state = .false.  ! Set to true to advect the reference state
+    Integer :: n_active_scalars = 0         ! number of active scalar fields
+    Integer :: n_passive_scalars = 0        ! number of passive scalar fields
                                                 ! Generally only do this if reference state is nonadiabatic
 
     ! --- This flag determines if the code is run in benchmark mode
@@ -71,7 +73,7 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia
+                & momentum_advection, inertia, n_active_scalars, n_passive_scalars
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls

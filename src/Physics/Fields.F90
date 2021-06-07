@@ -73,7 +73,7 @@ Module Fields
     ! PASSIVE
     ! Passive scalar variables.
     ! These are what we need to calculate advection
-    Integer :: chivar, dchidr, dchidt, dchidp, d2chidr2
+    Integer, Allocatable :: chivar(:), dchidr(:), dchidt(:), dchidp(:), d2chidr2(:)
     !///////////////////////////////////////////////////////////////////////////
 
 
@@ -83,8 +83,9 @@ Module Fields
     !                FOR LINEAR Solve
     !==============================================================================
     Integer, parameter :: weq = 1,  peq = 2,  teq = 3
-    Integer, parameter :: zeq = 4,  chieq = 5             !  PASSIVE:   make space for chieq
-    Integer, Parameter :: ceq = 6,  aeq = 7
+    Integer, parameter :: zeq = 4
+    Integer, Parameter :: ceq = 5,  aeq = 6
+    Integer, Allocatable :: chieq(:)
 
 
 
@@ -154,16 +155,29 @@ Contains
 
     Subroutine Initialize_Field_Structure()
         Implicit None
+        Integer :: i
         Character*3 :: config
+
+        allocate(chieq(n_active_scalars+n_passive_scalars))
 
         ! Starting out we record the number of variables and equations we are expecting.
         If (magnetism) Then
-            n_equations  = 6 +1
-            n_variables = 6 +1
+            n_equations = 6 + n_active_scalars + n_passive_scalars
+            n_variables = 6 + n_active_scalars + n_passive_scalars
+            if (n_active_scalars+n_passive_scalars>0) then
+                chieq(1) = aeq+1
+            end if
         Else
-            n_equations  = 4 +1
-            n_variables = 4 +1
+            n_equations = 4 + n_active_scalars + n_passive_scalars
+            n_variables = 4 + n_active_scalars + n_passive_scalars
+            if (n_active_scalars+n_passive_scalars>0) then
+                chieq(1) = zeq+1
+            end if
         Endif
+
+        do i = 2, n_active_scalar+n_passive_scalars
+            chieq(i) = chieq(i-1)+1
+        end do
 
         !The remainder of this routine serves two purposes:
         ! 1 - It assigns values to each of our field reference integers
@@ -201,18 +215,18 @@ Contains
         Call wsp_indices%Add_Field(Pvar , config)
         Call wsp_indices%Add_Field(Tvar , config)
         Call wsp_indices%Add_Field(Zvar , config)
-        Call wsp_indices%Add_Field(chivar , config)   ! PASSIVE: chieq must agree with chivar
         If (magnetism) Then
           Call wsp_indices%Add_Field(cvar , config)
           Call wsp_indices%Add_field(avar , config)
         Endif
+        do i = 1, n_active_scalars+n_passive_scalars
+          call wsp_indices%add_field(chivar(i) , config)
+        end do
 
         Call wsp_indices%Add_Field(d3Wdr3 , config)
         Call wsp_indices%Add_Field(dPdr1  , config)
         Call wsp_indices%Add_field(d2Zdr2 , config)
         Call wsp_indices%Add_Field(d2Wdr2 , config)
-        Call wsp_indices%Add_Field(dchidr, config)  ! PASSIVE:  make space for dchidr
-        Call wsp_indices%Add_Field(d2chidr2, config)  ! PASSIVE:  make space for dchidr
 
         If (magnetism) Then
           Call wsp_indices%Add_field(dcdr   , config)
@@ -220,6 +234,10 @@ Contains
           Call wsp_indices%Add_field(d2adr2 , config)
         Endif
 
+        do i = 1, n_active_scalars+n_passive_scalars
+          call wsp_indices%Add_Field(dchidr(i), config)
+          call wsp_indices%Add_Field(d2chidr2(i), config)
+        end do
 
         !//////////////////////////////////////////////////////////
         !  Next, we want to account for fields that we build in s2a/p2a (many are d by dtheta fields)
@@ -229,12 +247,16 @@ Contains
         Call wsp_indices%Add_Field(vphi   , config)
         Call wsp_indices%Add_Field(dvtdr  , config)
         Call wsp_indices%Add_Field(dvpdr  , config)
-        Call wsp_indices%Add_Field(dchidt   , config)  !PASSIVE:  make space for dchidtheta
         If (magnetism) Then
 
             Call wsp_indices%Add_Field(curlbr     ,config)
 
         Endif
+
+        do i = 1, n_active_scalars+n_passive_scalars
+          call wsp_indices%Add_Field(dchidt(i), config)
+        end do
+
         !///////////////////////////////////////////////////////
         !  Next we have fields of the d_by_dphi variety
         !  that we add to the p3a buffer
@@ -246,7 +268,10 @@ Contains
         Call wsp_indices%Add_Field(dvtdt,config)
         Call wsp_indices%Add_field(dvpdt,config)
         Call wsp_indices%Add_field(dtdp,config)
-        Call wsp_indices%Add_Field(dchidp,config)  !PASSIVE:  make space for phi derivative
+
+        do i = 1, n_active_scalars+n_passive_scalars
+          call wsp_indices%Add_Field(dchidp(i), config)
+        end do
 
         !//////////////////////////////////////////////////////////
         !   Throughout the forward loop, many variables are replaced
@@ -297,16 +322,17 @@ Contains
         ! These following code should pretty much never be modified by the user.
         ! PASSIVE:  we are going to increment all by 1 (though we should pretty much never do this)
         if (.not. magnetism) then
-            wsfcount(1,2) = 4 +1        ! four RHS's go back for the solve
-            wsfcount(2,2) = 4 +1
-            wsfcount(3,2) = 4 +1
+            wsfcount(1,2) = 4 + n_active_scalars + n_passive_scalars
+            wsfcount(2,2) = 4 + n_active_scalars + n_passive_scalars
+            wsfcount(3,2) = 4 + n_active_scalars + n_passive_scalars
         else
             emfr     = avar
             emftheta = cvar
             emfphi   = avar+1
-            wsfcount(1,2) = 7 +1        ! seven RHS's go back for the solve (1 field is differentiated and combined at the end)
-            wsfcount(2,2) = 7 +1        ! Actually 8 RHS's with PASSIVE
-            wsfcount(3,2) = 7 +1
+            ! seven RHS's (plus scalars) go back for the solve (1 field is differentiated and combined at the end)
+            wsfcount(1,2) = 7 + n_active_scalars + n_passive_scalars 
+            wsfcount(2,2) = 7 + n_active_scalars + n_passive_scalars 
+            wsfcount(3,2) = 7 + n_active_scalars + n_passive_scalars 
         endif
         !Write(6,*)'Fields initialized'
         !Write(6,*)'c1a_counter is: ', wsp_indices%c1a_counter

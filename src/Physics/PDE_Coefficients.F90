@@ -39,6 +39,7 @@ Module PDE_Coefficients
     Use General_MPI, Only : BCAST2D
     Implicit None
 
+    Integer :: n_scalars_max
     !///////////////////////////////////////////////////////////
     ! I.  Variables describing the background reference state
 
@@ -57,7 +58,7 @@ Module PDE_Coefficients
         Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
         Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
         Real*8, Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
-        Real*8, Allocatable :: chi_buoyancy_coeff(:)    ! Multiplies Chi in momentum eq.
+        Real*8, Allocatable :: chi_buoyancy_coeff(:,:)    ! Multiplies Chis in momentum eq.
         Real*8, Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
         Real*8, Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
 
@@ -83,6 +84,7 @@ Module PDE_Coefficients
     Integer             :: with_custom_functions(1:n_ra_functions) = 0
     Real*8              :: ra_constants(1:n_ra_constants) = 0.0d0
     Real*8, Allocatable :: ra_functions(:,:)
+    Real*8, Allocatable :: ra_chi_functions(:,:)
     Logical             :: custom_reference_read = .false.
     Character*120 :: custom_reference_file ='nothing'    
 
@@ -107,33 +109,36 @@ Module PDE_Coefficients
     !/////////////////////////////////////////////////////////////////////////////////////
     ! Nondimensional Parameters
     Real*8 :: Rayleigh_Number              = 1.0d0
-    Real*8 :: chi_Rayleigh_Number          = 0.0d0
     Real*8 :: Ekman_Number                 = 1.0d0
     Real*8 :: Prandtl_Number               = 1.0d0
-    Real*8 :: chi_Prandtl_Number           = 1.0d0
     Real*8 :: Magnetic_Prandtl_Number      = 1.0d0
     Real*8 :: gravity_power                = 0.0d0
     Real*8 :: Dissipation_Number           = 0.0d0
-    Real*8 :: Modified_Rayleigh_Number     = 0.0d0
-    Real*8 :: chi_modified_rayleigh_number = 0.0d0
+    Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
+    Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
+    Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+    Real*8 :: chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
 
 
 
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
-            & chi_Rayleigh_Number, chi_Prandtl_Number, &
             & gravity_power, custom_reference_file,       &
-            & Dissipation_Number, Modified_Rayleigh_Number, chi_modified_rayleigh_number, &
+            & Dissipation_Number, Modified_Rayleigh_Number, 
             & Heating_Integral, override_constants, override_constant, ra_constants, with_custom_constants, &
-            & with_custom_functions, with_custom_reference
+            & with_custom_functions, with_custom_reference, &
+            & chi_a_rayleigh_number, chi_a_prandtl_number, &
+            & chi_a_modified_rayleigh_number, chi_p_prandtl_number
 
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
 
-    Real*8, Allocatable :: nu(:), kappa(:), kappa_chi(:), eta(:)
-    Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlnkappa_chi(:), dlneta(:)
+    Real*8, Allocatable :: nu(:), kappa(:), eta(:)
+    Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlneta(:)
+    real*8, allocatable :: kappa_chi_a(:,:), kappa_chi_p(:,:)
+    real*8, allocatable :: dlnkappa_chi_a(:,:), dlnkappa_chi_p(:,:)
 
     Real*8, Allocatable :: ohmic_heating_coeff(:)
     Real*8, Allocatable :: viscous_heating_coeff(:)
@@ -141,20 +146,27 @@ Module PDE_Coefficients
     Real*8, Allocatable :: W_Diffusion_Coefs_0(:), W_Diffusion_Coefs_1(:)
     Real*8, Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
     Real*8, Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
-    Real*8, Allocatable :: A_Diffusion_Coefs_1(:), chi_Diffusion_Coefs_1(:)
+    Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
+    real*8, allocatable :: chi_a_diffusion_coefs_1(:,:), chi_p_diffusion_coefs_1(:,:)
 
-    Integer :: kappa_type =1, kappa_chi_type = 1, nu_type = 1, eta_type = 1
-    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0, kappa_chi_top = -1.0d0, eta_top = -1.0d0
-    Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0, kappa_chi_power = 0
+    Integer :: kappa_type =1, nu_type = 1, eta_type = 1
+    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0,  eta_top = -1.0d0
+    Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0
+    Integer :: kappa_chi_a_type(1:n_scalar_max), kappa_chi_a_top(1:n_scalar_max) = -1.0d0
+    Integer :: kappa_chi_a_power(1:n_scalar_max) = 0
+    Integer :: kappa_chi_p_type(1:n_scalar_max), kappa_chi_p_top(1:n_scalar_max) = -1.0d0
+    Integer :: kappa_chi_p_power(1:n_scalar_max) = 0
 
     Logical :: hyperdiffusion = .false.
     Real*8  :: hyperdiffusion_beta = 0.0d0
     Real*8  :: hyperdiffusion_alpha = 1.0d0
 
-    Namelist /Transport_Namelist/ nu_type, kappa_type, kappa_chi_type, eta_type, &
-            & nu_power, kappa_power, kappa_chi_power, eta_power, &
-            & nu_top, kappa_top, kappa_chi_top, eta_top, &
-            & hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
+    Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, &
+            & nu_power, kappa_power, eta_power, &
+            & nu_top, kappa_top, eta_top, &
+            & hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha, &
+            & kappa_chi_a_type, kappa_chi_a_top, kappa_chi_a_power, &
+            & kappa_chi_p_type, kappa_chi_p_top, kappa_chi_p_power
 
 
 Contains
@@ -206,12 +218,12 @@ Contains
         Allocate(ref%dlnt(1:N_R))
         Allocate(ref%dsdr(1:N_R))
         Allocate(ref%Buoyancy_Coeff(1:N_R))
-        Allocate(ref%chi_buoyancy_coeff(1:N_R))
         Allocate(ref%dpdr_w_term(1:N_R))
         Allocate(ref%pressure_dwdr_term(1:N_R))
         Allocate(ref%ohmic_amp(1:N_R))
         Allocate(ref%viscous_amp(1:N_R))
         Allocate(ref%heating(1:N_R))
+        Allocate(ref%chi_buoyancy_coeff(n_active_scalars,1:N_R))
 
         Allocate(ra_functions(1:N_R, 1:n_ra_functions))
         ra_functions(:,:) = Zero
@@ -223,12 +235,12 @@ Contains
         ref%dlnt(:)               = Zero
         ref%dsdr(:)               = Zero
         ref%buoyancy_coeff(:)     = Zero
-        ref%chi_buoyancy_coeff(:) = Zero
         ref%dpdr_w_term(:)        = Zero
         ref%pressure_dwdr_term(:) = Zero
         ref%ohmic_amp(:)          = Zero
         ref%viscous_amp(:)        = Zero
         ref%heating(:)            = Zero
+        ref%chi_buoyancy_coeff(:,:) = Zero
 
         ref%Coriolis_Coeff = Zero
         ref%Lorentz_Coeff  = Zero
@@ -237,7 +249,7 @@ Contains
 
     Subroutine Constant_Reference()
         Implicit None
-        Integer :: i
+        Integer :: i,j
         Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
@@ -272,11 +284,13 @@ Contains
             ref%Buoyancy_Coeff(i) = amp*(radius(i)/radius(1))**gravity_power
         Enddo
 
-        amp = chi_Rayleigh_Number/chi_Prandtl_Number
+        do j = 1, n_active_scalars
+          amp = chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
 
-        Do i = 1, N_R
-            ref%chi_buoyancy_coeff(i) = amp*(radius(i)/radius(1))**gravity_power
-        Enddo
+          Do i = 1, N_R
+              ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
+          Enddo
+        enddo
 
         pressure_specific_heat = 1.0d0
         Call initialize_reference_heating()
@@ -304,8 +318,13 @@ Contains
 
         nu_top       = 1.0d0
         kappa_top       = 1.0d0/Prandtl_Number
-        kappa_chi_top   = 1.0d0/chi_Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0
+        do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
+        enddo
+        do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
+        enddo
 
         If (magnetism) Then
             ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
@@ -373,7 +392,11 @@ Contains
         ref%density(:) = ref%temperature(:)**poly_n
         gravity = (rmax**2)*OneOverRSquared(:)
         ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
-        ref%chi_buoyancy_coeff = gravity*chi_modified_rayleigh_number*ref%density
+        do j = 1, n_active_scalars
+          Do i = 1, N_R
+              ref%chi_buoyancy_coeff(j,i) = gravity*chi_a_modified_rayleigh_number(i)*ref%density
+          Enddo
+        enddo
 
         !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
         dtmparr = -Dissipation_Number*gravity
@@ -398,7 +421,12 @@ Contains
 
         nu_top   = Ekman_Number
         kappa_top     = Ekman_Number/Prandtl_Number
-        kappa_chi_top = Ekman_Number/chi_Prandtl_Number
+        do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
+        enddo
+        do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
+        enddo
         ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
                                  & Dissipation_Number/Modified_Rayleigh_Number
 
@@ -522,7 +550,9 @@ Contains
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
-        Ref%chi_buoyancy_coeff = gravity/pressure_specific_heat*ref%density
+        do j = 1, n_active_scalars
+            ref%chi_buoyancy_coeff(j,:) = gravity/pressure_specific_heat*ref%density
+        end do
 
         Deallocate(zeta, gravity)
 
@@ -737,7 +767,9 @@ Contains
         ref%dlnrho(:)  = ra_functions(:,8)
         ref%d2lnrho(:) = ra_functions(:,9)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
-        ref%chi_buoyancy_coeff(:) = ra_constants(12)*ra_functions(:,2)
+        do i = 1, n_active_scalars
+            ref%chi_buoyancy_coeff(i,:) = ra_constants(12)*ra_functions(:,2)
+        end do
 
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
