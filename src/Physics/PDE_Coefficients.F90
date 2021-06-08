@@ -257,6 +257,10 @@ Contains
                 Write(dstring,dofmt)Magnetic_Prandtl_Number
                 Call stdout%print(" ---- Magnetic Prandtl Number  : "//trim(dstring))
             Endif
+            Write(dstring,dofmt)chi_Rayleigh_Number
+            Call stdout%print(" ---- Chi Rayleigh Number      : "//trim(dstring))
+            Write(dstring,dofmt)chi_Prandtl_Number
+            Call stdout%print(" ---- Chi Prandtl Number       : "//trim(dstring))
         Endif
 
         ref%density      = 1.0d0
