@@ -11,6 +11,24 @@ from __future__ import print_function
 import numpy as np
 import scipy
 
+def check_dims(array, max_dims):
+    """
+    Verify array has less dimensions than allowed maximum
+
+    Args
+    ----
+    array : ndarray
+        The input array
+    max_dims : int
+        The maximum allowed number of dimensions
+    """
+    array = np.asarray(array)
+    shp = array.shape
+    ndims = len(shp)
+    if (ndims > max_dims):
+        d = "Array must have <= {} dimensions, given array has dims = {}"
+        raise ValueError(e.format(max_dims, ndims))
+
 def swap_axis(array, axis0, axis1):
     """
     Swap axes of array, other axes remain untouched
@@ -341,7 +359,7 @@ class Fourier:
         Args
         ----
         data_in : ndarray
-            Input data array in spectral space
+            Input data array
         axis : int, optional
             Axis along which the derivative will be computed
         physical : bool, optional
@@ -487,7 +505,7 @@ def compute_Pl(x, lmax):
 
 class Legendre:
 
-    def __init__(self, N, spectral=False, dealias=1.5, parity=True):
+    def __init__(self, N, spectral=False, dealias=1.5):
         """
         Initialize the Legendre grid and transform
 
@@ -501,13 +519,11 @@ class Legendre:
             is that N refers to the physical space resolution (N_theta)
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
-        parity : bool, optional
-            Exploit parity properties when computing the Legendre transform
         """
         self.nth, self.lmax = grid_size(N, spectral, dealias)
         self.nell    = self.lmax + 1
         self.dealias = dealias
-        self.parity  = parity
+        self.parity  = False
 
         # generate grid, weights, and Pl array
         self.x, self.w = self.grid(self.nth)
@@ -572,7 +588,7 @@ class Legendre:
 
     def to_spectral(self, data_in, axis=0):
         """
-        Transform from physical space to spectral space
+        Legendre transform from physical space to spectral space
 
         Args
         ----
@@ -590,11 +606,13 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
+        check_dims(data_in, 4) # only coded for 4D or less
+
         if (shp[axis] != self.nth):
-            e = "LegendreTransform expected length={} along axis={}, found N={}"
+            e = "Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, axis, shp[axis]))
 
-        # increase dimensionality of input data, as necessary...magic 4 refers to number of for loops below
+        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
         data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the transform axis first
@@ -627,7 +645,7 @@ class Legendre:
 
     def to_physical(self, data_in, axis=0):
         """
-        Transform from spectral space to physical space
+        Legendre transform from spectral space to physical space
 
         Args
         ----
@@ -645,11 +663,13 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
+        check_dims(data_in, 4) # only coded for 4D or less
+
         if (shp[axis] != self.lmax+1):
-            e = "LegendreTransform expected length={} along axis={}, found N={}"
+            e = "Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, axis, shp[axis]))
 
-        # increase dimensionality of input data, as necessary...magic 4 refers to number of for loops below
+        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
         data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the transform axis first
@@ -684,11 +704,11 @@ class Legendre:
         Args
         ----
         data_in : ndarray
-            Input data array in physical space, must be dimension 4 or less
+            Input data array, must be dimension 4 or less
         axis : int, optional
             The axis over which the derivative will take place
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral
+            Specify the incoming data as being in physical space or spectral space
 
         Returns
         -------
@@ -698,6 +718,8 @@ class Legendre:
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
 
         if (physical):
             if (shp[axis] != (self.nth)):
@@ -723,7 +745,7 @@ class Legendre:
         #     where P_l^m includes the A_l^m normalization of the spherical harmonics
         #     and D_l^m = sqrt[ ((l-m)*(l+m)) / ((2l-1)*(2l+1)) ]
         Dl0 = np.zeros((self.lmax+1))
-        for l in range(self.lmax+1):
+        for l in range(1,self.lmax+1):
             num = l*l
             den = 4.*l*l-1.
             Dl0[l] = np.sqrt(num/den)
@@ -741,7 +763,7 @@ class Legendre:
         #               = sum_{l=1}^{lmax-1} [C_{l-1}*a_{l-1} + C_{l+1}*b_{l+1}]*P_l
         #                  + C_{lmax-1}*a_{lmax-1}*P_lmax
         # the l=0 component is zero
-        for l in range(self.lmax): # interior l values
+        for l in range(1,self.lmax): # interior l values
             data_out[l,...] = -(l+2)*Dl0[l+1]*data_in[l+1,...] + (l-1)*Dl0[l]*data_in[l-1,...]
 
         # l=lmax component
@@ -853,7 +875,7 @@ class Chebyshev:
         # error check that global domain bounds were chosen
         if ((rmin < 0.0) and (rmax < 0.0) \
             and (aspect_ratio < 0.0) and (shell_depth < 0.0)):
-            if (boundaries is None)):
+            if (boundaries is None):
                 msg = "Must specifiy global boundaries using one of the following:"
                 msg += "\n\t1) set rmin & rmax"
                 msg += "\n\t2) set aspect_ratio & shell_depth"
@@ -862,7 +884,7 @@ class Chebyshev:
             else:
                 # boundaries was specified, make sure it is consistent with nr_domains
                 if (not hasattr(boundaries, "__len__")):
-                    e = "The boundaries value must be 1D array-like: array/list/tuple")
+                    e = "The boundaries value must be 1D array-like: array/list/tuple"
                     raise ValueError(e)
                 else:
                     if (len(nr_domains) != (len(boundaries)-1)):
@@ -1045,7 +1067,7 @@ class Chebyshev:
 
         for n in range(self.n_domains):
             n_max = self.npoly[n]
-            for r in range(n_max)
+            for r in range(n_max):
                 for i in range(n_max):
                     arg = i*self.theta[r,n]
                     cheby[r,i] = np.cos(arg)
@@ -1104,9 +1126,351 @@ class Chebyshev:
 
         alpha = None
 
-    def dealias_buffer(self):
+    def dealias_buffer(self, data_in, axis=0):
+        """
+        Dealias the data array
 
-    def to_spectral(self, data_in, axis=0): pass
-    def to_physical(self, data_in, axis=0): pass
-    def d_dr(self, data_in, axis=0): pass
+        Args
+        ----
+        data_in : ndarray
+            Input data array, must be dimension 4 or less
+        axis : int, optional
+            The axis over which the dealiasing will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Dealiased data
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
+
+        # increase dimensionality of input data, as necessary
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+
+        transform_axis = 0
+        data_in = swap_axis(data_in, axis, transform_axis)
+
+        _, ni, nj, nk = data_in.shape
+        for k in range(nk):
+            for j in range(nj):
+                for i in range(ni):
+                    offset = 0
+                    for n in range(self.n_domains):
+                        ind1 = self.rda[n] + offset
+                        ind2 = self.npoly[n] + offset
+                        data_in[ind1:ind2+1,i,j,k] = 0.0
+                        offset += self.npoly[n]
+
+        data_out = swap_axis(data_in, transform_axis, axis)
+
+        # remove any dimensions that were added
+        data_out = np.squeeze(data_in, axis=added_axes)
+
+        return data_out
+
+    def to_spectral(self, data_in, axis=0):
+        """
+        Chebyshev transform from physical space to spectral space
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, must be dimension 4 or less
+        axis : int, optional
+            The axis over which the transform will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Transformed data, same shape as input, except along the transformed axis
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
+
+        nmax = 0
+        for m in range(self.n_domains):
+            nmax += self.npoly[m]
+        if (shp[axis] != self.n_r):
+            e = "Chebyshev transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.n_r, axis, shp[axis]))
+
+        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+
+        # make the transform axis first
+        transform_axis = 0
+        data_in = swap_axis(data_in, axis, transform_axis)
+
+        # perform the transform with calls to scipy BLAS
+        beta = 0.0
+
+        shape = list(data_in.shape); shape[transform_axis] = nmax; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
+        ng, n2, n3, n4 = data_in.shape
+        hoff = 0
+        for hh in range(self.n_domains):
+            n_even = self.n_even[hh]
+            n_odd = self.n_odd[hh]
+            n_max = self.npoly[hh]
+            n_x = self.n_even[hh]
+            alpha = 2./n_max
+
+            c_temp = np.zeros((n_even, n2, n3, n4))
+            f_even = np.zeros((n_x, n2, n3, n4))
+            f_odd  = np.zeros((n_x, n2, n3, n4))
+
+            # build even/odd input
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_x):
+                            f_even[i,j,k,kk] = data_in[hoff+i,j,k,kk] + \
+                                               data_in[hoff+n_max-1-i,j,k,kk]
+                            f_odd[i,j,k,kk]  = data_in[hoff+i,j,k,kk] - \
+                                               data_in[hoff+n_max-1-i,j,k,kk]
+
+            # call BLAS
+            c_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
+                                             trans_a=1, trans_b=0,
+                                             a=self.cheby_even[hh],
+                                             b=f_even[:,:,:,:])
+            # unpack the output
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_even):
+                            data_out[hoff+2*i+1,j,k,kk] = c_temp[i,j,k,kk]
+
+            if (n_even != n_odd):
+                c_temp = np.zeros((n_odd, n2, n3, n4))
+
+            # call BLAS
+            c_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
+                                             trans_a=1, trans_b=0,
+                                             a=self.cheby_odd[hh],
+                                             b=f_odd[:,:,:,:])
+            # unpack the output
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_odd):
+                            data_out[hoff+2*i+2,j,k,kk] = c_temp[i,j,k,kk]
+
+            hoff += self.npoly[hh]
+
+        # restore axis order
+        data_out = swap_axis(data_out, transform_axis, axis)
+
+        # remove any dimensions that were added
+        data_out = np.squeeze(data_out, axis=added_axes)
+
+        return data_out
+
+    def to_physical(self, data_in, axis=0):
+        """
+        Chebyshev transform from spectral space to physical space
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, must be dimension 4 or less
+        axis : int, optional
+            The axis over which the transform will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Transformed data, same shape as input, except along the transformed axis
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
+
+        nmax = 0
+        for m in range(self.n_domains):
+            nmax += self.npoly[m]
+        if (shp[axis] != nmax):
+            e = "Chebyshev transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(nmax, axis, shp[axis]))
+
+        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+
+        # make the transform axis first
+        transform_axis = 0
+        data_in = swap_axis(data_in, axis, transform_axis)
+
+        # perform the transform with calls to scipy BLAS
+        alpha = 1.0; beta = 0.0
+
+        shape = list(data_in.shape); shape[transform_axis] = self.n_r; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
+        ng, n2, n3, n4 = data_in.shape
+        hoff = 0
+        for hh in range(self.n_domains):
+            n_even = self.n_even[hh]
+            n_odd = self.n_odd[hh]
+            n_max = self.npoly[hh]
+            n_x = self.n_even[hh]
+
+            c_temp = np.zeros((n_even, n2, n3, n4))
+            f_temp = np.zeros((n_x, n2, n3, n4))
+
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_even):
+                            c_temp[i,j,k,kk] = data_in[hoff+2*i+1,j,k,kk]
+
+            # call BLAS
+            f_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
+                                             trans_a=0, trans_b=0,
+                                             a=self.cheby_even[hh],
+                                             b=c_temp[:,:,:,:])
+            # unpack the output
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_even):
+                            data_out[hoff+i,j,k,kk] = f_temp[i,j,k,kk]
+                            data_out[hoff+n_max-i-1,j,k,kk] = f_temp[i,j,k,kk]
+
+            if (n_even != n_odd):
+                data_out[hoff+n_x-1,:,:,:] *= 2.0
+                c_temp = np.zeros((n_odd, n2, n3, n4))
+
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_odd):
+                            c_temp[i,j,k,kk] = data_in[hoff+2*i+1,j,k,kk]
+
+            # call BLAS
+            f_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
+                                             trans_a=0, trans_b=0,
+                                             a=self.cheby_odd[hh],
+                                             b=c_temp[:,:,:,:])
+            # unpack the output
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        for i in range(n_odd):
+                            data_out[hoff+i,j,k,kk] += f_temp[i,j,k,kk]
+                            data_out[hoff+n_max-i-1,j,k,kk] -= f_temp[i,j,k,kk]
+
+            if (n_even != n_odd):
+                data_out[hoff+n_x-1,:,:,:] += 2.0*f_temp[hoff+n_x-1,:,:,:]
+
+            hoff += self.npoly[hh]
+
+        hoff = 0
+        for hh in range(self.n_domains):
+            n_max = self.npoly[hh]
+            istart = hoff
+            iend = istart + n_max
+            for kk in range(n4):
+                for k in range(n3):
+                    for j in range(n2):
+                        data_out[istart:iend,j,k,kk] -= 0.5*data_in[hoff,j,k,kk]
+ 
+            hoff += self.npoly[hh]
+
+        # restore axis order
+        data_out = swap_axis(data_out, transform_axis, axis)
+
+        # remove any dimensions that were added
+        data_out = np.squeeze(data_out, axis=added_axes)
+
+        return data_out
+
+    def d_dr(self, data_in, axis=0, physical=True):
+        """
+        Compute derivative with respect to radius
+
+        Args
+        ----
+        data_in : ndarray
+            Input data array, must be dimension 4 or less
+        axis : int, optional
+            The axis over which the derivative will take place
+        physical : bool, optional
+            Specify the incoming data as being in physical space or spectral space
+
+        Returns
+        -------
+        data_out : ndarray
+            Output data containing d/dr
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
+
+        if (physical):
+            if (shp[axis] != (self.n_r)):
+                e = "d_dr expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(self.n_r, axis, shp[axis]))
+        else:
+            nmax = 0
+            for m in range(self.n_domains):
+                nmax += self.npoly[m]
+
+            if (shp[axis] != nmax):
+                e = "d_dr expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(nmax, axis, shp[axis]))
+
+        # increase dimensionality of input data, as necessary
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+
+        # make the d/dx axis first
+        transform_axis = 0
+        data_in = swap_axis(data_in, axis, transform_axis)
+
+        if (physical): # go to spectral space if necessary
+            data_in = self.to_spectral(data_in, axis=transform_axis)
+
+        data_out = np.zeros_like(data_in)
+
+        n, n2, n3, n4 = data_in.shape
+        for k in range(n3):
+            for j in range(n2):
+                hoff = 0
+                for hh in range(self.n_domains):
+                    n = self.npoly[hh]
+
+                    data_out[hoff+n-1,j,k,:] = 0.0
+                    data_out[hoff+n-2,j,k,:] = 2.*(n-1)*data_in[hoff+n-1,j,k,:]
+
+                    for i in range(n-3,-1,-1):
+                        data_out[hoff+i,j,k,:] = data_out[hoff+i+2,j,k,:] + \
+                                      2.*(i+1)*data_in[hoff+i+1,j,k,:]
+
+                    hoff += self.npoly[hh]
+
+        # rescale
+        scaling = np.reshape(self.deriv_scaling, (-1,1,1,1))
+        data_out[:,:,:,:] *= scaling
+
+        if (physical): # go back to physical space if necessary
+            data_out = self.to_physical(data_out, axis=transform_axis)
+
+        # restore axis order
+        data_out = swap_axis(data_out, transform_axis, axis)
+
+        # remove any dimensions that were added
+        data_out = np.squeeze(data_out, axis=added_axes)
+
+        return data_out
 
