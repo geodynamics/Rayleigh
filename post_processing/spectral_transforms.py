@@ -817,7 +817,7 @@ def chebyshev_zeros(Npts, reverse=False):
 class Chebyshev:
 
     def __init__(self, nr_domains,
-                 rmin=-1, rmax=-1, aspect_ratio=-1, shell_depth=-1,
+                 rmin=None, rmax=None, aspect_ratio=None, shell_depth=None,
                  boundaries=None,
                  n_uniform_domains=1, uniform_bounds=False,
                  dealias=None,
@@ -873,8 +873,8 @@ class Chebyshev:
             nr_domains = [nr_domains]
 
         # error check that global domain bounds were chosen
-        if ((rmin < 0.0) and (rmax < 0.0) \
-            and (aspect_ratio < 0.0) and (shell_depth < 0.0)):
+        if ((rmin is None) and (rmax is None) \
+            and (aspect_ratio is None) and (shell_depth is None)):
             if (boundaries is None):
                 msg = "Must specifiy global boundaries using one of the following:"
                 msg += "\n\t1) set rmin & rmax"
@@ -899,10 +899,10 @@ class Chebyshev:
             rmax = boundaries[-1]
             aspect_ratio = rmin/rmax
             shell_depth = rmax - rmin
-        elif ((aspect_ratio > 0.0) and (shell_depth > 0.0)):
+        elif ((aspect_ratio is not None) and (shell_depth is not None)):
             rmax = shell_depth/(1.-aspect_ratio)
             rmin = rmax*aspect_ratio
-        elif ((rmin > 0.0) and (rmax > 0.0)):
+        elif ((rmin is not None) and (rmax is not None)):
             aspect_ratio = rmin/rmax
             shell_depth = rmax - rmin
         else:
@@ -958,13 +958,16 @@ class Chebyshev:
         self.shell_depth = self.rmax - self.rmin
         self.n_domains = n_domains
         self.nr_domains = nr_domains
-        self.n_r = self.nr_domains.sum() # total grid resolution
+        self.n_r = sum(self.nr_domains) # total grid resolution
         self.dealias = dealias
         self.boundaries = boundaries
 
-        self.grid(dmax=dmax) # build the grid
+        self.build_grid(dmax=dmax) # build the grid
 
-    def grid(self, dmax=3):
+        # alias
+        self.radius = self.grid
+
+    def build_grid(self, dmax=3):
         """
         Build the grid(s)
 
@@ -1003,8 +1006,8 @@ class Chebyshev:
         self.cheby_even = [0]*self.n_domains    # cheby_even[i] = 2D array
         self.cheby_odd = [0]*self.n_domains     # cheby_odd[i] = 2D array
         self.dcheby = [0]*self.n_domains        # dcheby[i] = 3D array
-        self.n_even = np.zeros((self.n_domains))
-        self.n_odd = np.zeros((self.n_domains))
+        self.n_even = np.zeros((self.n_domains), dtype=np.int32)
+        self.n_odd = np.zeros((self.n_domains), dtype=np.int32)
 
         self.find_colocation_pts()
         self.find_Tn()
@@ -1017,7 +1020,7 @@ class Chebyshev:
         ind = 0
         for n in range(self.n_domains):
             n_max = self.npoly[n]
-            ind2 = ind + n_max
+            ind2 = ind + n_max - 1
 
             upperb = self.boundaries[n]
             lowerb = self.boundaries[n+1]
@@ -1034,7 +1037,7 @@ class Chebyshev:
             scaling = 1./scaling
 
             for i in range(dmax):
-                gind = ind + i - 1 #??
+                gind = ind + i
                 xx = self.x[i,n]
                 self.integration_weights[gind] = \
                                    int_scale*self.grid[gind]**2*np.sqrt(1.-xx*xx)
@@ -1052,7 +1055,7 @@ class Chebyshev:
             n_max = self.npoly[n]
 
             # zeros-based grid
-            dth = np.pi/Npts
+            dth = np.pi/n_max
             arg = dth*0.5
             for i in range(n_max):
                 self.theta[i,n] = arg
@@ -1082,9 +1085,9 @@ class Chebyshev:
             self.cheby_odd[n] = np.zeros((n_x,n_odd), dtype=np.float64)
 
             for i in range(n_even):
-                self.cheby_even[n][:,i] = cheby[:,2*i]
+                self.cheby_even[n][:,i] = cheby[:n_x,2*i]
             for i in range(n_odd):
-                self.cheby_odd[n][:,i] = cheby[:,2*i+1]
+                self.cheby_odd[n][:,i] = cheby[:n_x,2*i+1]
 
             if (n_x != n_odd): # have x=0 point, don't double count power when using parity
                 self.cheby_even[n][n_x-1,:] *= 0.5
@@ -1194,9 +1197,6 @@ class Chebyshev:
 
         check_dims(data_in, 4) # only coded for 4D or less
 
-        nmax = 0
-        for m in range(self.n_domains):
-            nmax += self.npoly[m]
         if (shp[axis] != self.n_r):
             e = "Chebyshev transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.n_r, axis, shp[axis]))
@@ -1211,7 +1211,7 @@ class Chebyshev:
         # perform the transform with calls to scipy BLAS
         beta = 0.0
 
-        shape = list(data_in.shape); shape[transform_axis] = nmax; shape = tuple(shape)
+        shape = list(data_in.shape); shape[transform_axis] = self.ntotal; shape = tuple(shape)
         data_out = np.zeros((shape))
 
         ng, n2, n3, n4 = data_in.shape
@@ -1223,7 +1223,7 @@ class Chebyshev:
             n_x = self.n_even[hh]
             alpha = 2./n_max
 
-            c_temp = np.zeros((n_even, n2, n3, n4))
+            #c_temp = np.zeros((n_even, n2, n3, n4)) # done below with call to BLAS
             f_even = np.zeros((n_x, n2, n3, n4))
             f_odd  = np.zeros((n_x, n2, n3, n4))
 
@@ -1242,27 +1242,31 @@ class Chebyshev:
                                              trans_a=1, trans_b=0,
                                              a=self.cheby_even[hh],
                                              b=f_even[:,:,:,:])
+            c_temp = np.reshape(c_temp, (n_even, n2, n3, n4))
+
             # unpack the output
             for kk in range(n4):
                 for k in range(n3):
                     for j in range(n2):
                         for i in range(n_even):
-                            data_out[hoff+2*i+1,j,k,kk] = c_temp[i,j,k,kk]
+                            data_out[hoff+2*i,j,k,kk] = c_temp[i,j,k,kk]
 
-            if (n_even != n_odd):
-                c_temp = np.zeros((n_odd, n2, n3, n4))
+            #if (n_even != n_odd):
+            #    c_temp = np.zeros((n_odd, n2, n3, n4))
 
             # call BLAS
             c_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
                                              trans_a=1, trans_b=0,
                                              a=self.cheby_odd[hh],
                                              b=f_odd[:,:,:,:])
+            c_temp = np.reshape(c_temp, (n_odd, n2, n3, n4))
+
             # unpack the output
             for kk in range(n4):
                 for k in range(n3):
                     for j in range(n2):
                         for i in range(n_odd):
-                            data_out[hoff+2*i+2,j,k,kk] = c_temp[i,j,k,kk]
+                            data_out[hoff+2*i+1,j,k,kk] = c_temp[i,j,k,kk]
 
             hoff += self.npoly[hh]
 
@@ -1296,12 +1300,9 @@ class Chebyshev:
 
         check_dims(data_in, 4) # only coded for 4D or less
 
-        nmax = 0
-        for m in range(self.n_domains):
-            nmax += self.npoly[m]
-        if (shp[axis] != nmax):
+        if (shp[axis] != self.ntotal):
             e = "Chebyshev transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(nmax, axis, shp[axis]))
+            raise ValueError(e.format(self.ntotal, axis, shp[axis]))
 
         # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
         data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
@@ -1325,19 +1326,21 @@ class Chebyshev:
             n_x = self.n_even[hh]
 
             c_temp = np.zeros((n_even, n2, n3, n4))
-            f_temp = np.zeros((n_x, n2, n3, n4))
+            #f_temp = np.zeros((n_x, n2, n3, n4))
 
             for kk in range(n4):
                 for k in range(n3):
                     for j in range(n2):
                         for i in range(n_even):
-                            c_temp[i,j,k,kk] = data_in[hoff+2*i+1,j,k,kk]
+                            c_temp[i,j,k,kk] = data_in[hoff+2*i,j,k,kk]
 
             # call BLAS
             f_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
                                              trans_a=0, trans_b=0,
                                              a=self.cheby_even[hh],
                                              b=c_temp[:,:,:,:])
+            f_temp = np.reshape(f_temp, (n_x, n2, n3, n4))
+
             # unpack the output
             for kk in range(n4):
                 for k in range(n3):
@@ -1361,6 +1364,8 @@ class Chebyshev:
                                              trans_a=0, trans_b=0,
                                              a=self.cheby_odd[hh],
                                              b=c_temp[:,:,:,:])
+            f_temp = np.reshape(f_temp, (n_x, n2, n3, n4))
+
             # unpack the output
             for kk in range(n4):
                 for k in range(n3):
@@ -1423,13 +1428,9 @@ class Chebyshev:
                 e = "d_dr expected length={} along axis={}, found N={}"
                 raise ValueError(e.format(self.n_r, axis, shp[axis]))
         else:
-            nmax = 0
-            for m in range(self.n_domains):
-                nmax += self.npoly[m]
-
-            if (shp[axis] != nmax):
+            if (shp[axis] != self.ntotal):
                 e = "d_dr expected length={} along axis={}, found N={}"
-                raise ValueError(e.format(nmax, axis, shp[axis]))
+                raise ValueError(e.format(self.ntotal, axis, shp[axis]))
 
         # increase dimensionality of input data, as necessary
         data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
