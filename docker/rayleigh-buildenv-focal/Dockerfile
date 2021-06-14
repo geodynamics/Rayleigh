@@ -15,7 +15,6 @@ RUN apt update && \
     nano \
     wget \
     python3-pip \
-    sphinx-common \
     texlive-base \
     texlive-latex-base \
     texlive-latex-recommended \
