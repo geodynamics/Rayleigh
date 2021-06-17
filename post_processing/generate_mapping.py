@@ -1,26 +1,27 @@
 """
 Generate the look-up-table for Rayleigh diagnostic output quantities.
 
-The look-up-table maps the quantity code to the Fortran variable name associated with
-that quantity code. The mapping is built by parsing the Rayleigh source code and
-ultimately stored in the lut_mapping.py file.
+The look-up-table maps the quantity code to the Fortran variable name associated
+with that quantity code. The default behavior is to generate and store the mapping
+to the file called lut_mapping.py. The main user interface is located in the file
+called lut.py, which will import the lut_mapping.py data. Rayleigh does *NOT* need
+to be compiled in order to build the mapping data.
+
+If any custom diagnostic outputs will be defined using the "--with-custom=<CUSTOM ROOT>"
+option in the configure script, then these quantities can be included in the mapping
+by specifying the custom root location using the "--custom-dir" option. When a custom
+directory is provided, the generated map will be stored in a file called
+lut_mapping_custom.py and the lut.py user interface will import the custom map data.
 
 Usage:
-    generate_mapping.py [options] <directory>
+    generate_mapping.py [options] <Rayleigh_top_directory>
 
-    <directory> is where the Diagnostics_*.F90 files and their included
-        files live. The safest possible choice is to build Rayleigh and
-        then choose <rayleigh_dir>/src/build. This will capture any output
-        quantities that may be defined in files that were included using
-        the "--with-custom=<CUSTOM ROOT>" configure option.
-
-        If you do not want to include any custom files, then you can choose
-        this to be the top directory of the Rayleigh source code and be
-        sure to select the "--default-location" flag.
+    <Rayleigh_top_directory> is where Rayleigh was installed. This location should
+        contain the following files: configure, LICENCE, INSTALL, Makefile, etc.
 
 Options:
-    --default-location   Treat <directory> as the top Rayleigh directory [default: False]
-    --overwrite          Overwrite existing lut_mapping.py file [default: False]
+    --custom-dir=<c>  Specify the <CUSTOM ROOT> directory to include custom diagnostics
+    --overwrite       Overwrite existing lut mapping file [default: False]
 """
 from __future__ import print_function
 import os
@@ -197,7 +198,7 @@ class OutputQuantities:
         Quantity objects associated with this type.
     """
 
-    def __init__(self, rayleigh_dir, default_location=True):
+    def __init__(self, rayleigh_dir, default_location=True, custom_dir=None):
         """
         Args
         ----
@@ -206,13 +207,31 @@ class OutputQuantities:
         default_location : bool, optional
             If True, the search location will be rayleigh_dir/src/Diagnostics/. If False,
             the search location is just rayleigh_dir/
+        custom_dir : str, optional
+            Path to the CUSTOM ROOT directory with user defined Diagnostics files
         """
+        rayleigh_dir = os.path.expanduser(rayleigh_dir) # expand "~" into $HOME
+
         self.rayleigh_dir = os.path.abspath(rayleigh_dir)
         if (default_location):
             self.diag_dir = os.path.join(self.rayleigh_dir, "src", "Diagnostics")
         else:
             self.diag_dir = self.rayleigh_dir
-        self.diag_base = os.path.join(self.diag_dir, "Diagnostics_Base.F90")
+
+        # use "standard" location
+        basefile = "Diagnostics_Base.F90"
+        self.diag_base = os.path.join(self.diag_dir, basefile)
+
+        # if custom basefile was modified, use it
+        if (custom_dir is not None):
+            custom_dir = os.path.expanduser(custom_dir) # expand "~" into $HOME
+            self.custom_dir = os.path.abspath(custom_dir)
+
+            cfiles = os.listdir(self.custom_dir) # list of filenames, no path info
+            if (basefile in cfiles):
+                self.diag_base = os.path.join(self.custom_dir, basefile) # add full path
+        else:
+            self.custom_dir = None
 
         # main storage structures
         self.quantities = [] # list of available Quantity objects
@@ -317,8 +336,22 @@ class OutputQuantities:
                     # this is probably true...
                     raise ValueError("This include line will not compile: {}".format(Line))
 
-                # this assumes the include file is in the same directory as Diagnostic_*.F90
-                with open(os.path.join(self.diag_dir, inc_file), "r") as mf: # parse file
+                fname = None
+
+                # check "standard" location for the include file
+                if (os.path.isfile(os.path.join(self.diag_dir, inc_file))):
+                    fname = os.path.join(self.diag_dir, inc_file)
+
+                # use custom location instead, if include file is there
+                if (self.custom_dir is not None):
+                    if (os.path.isfile(os.path.join(self.custom_dir, inc_file))):
+                        fname = os.path.join(self.custom_dir, inc_file)
+
+                if (fname is None):
+                    raise ValueError("Could not find the included file: {}".format(inc_file))
+
+                # parse the include file
+                with open(fname, "r") as mf: # parse file
                     for l in mf:
                         Q = self._parse_line(l)
                         if (Q is not None): quantities.append(Q)
@@ -351,11 +384,23 @@ class OutputQuantities:
                 del l_files[ind] # required because we search based on l_files to delete from files
 
         # ensure only fortran files will be parsed
-        good_ext = [".f", ".F", ".F90", ".f90", ".F03", ".f03", ".F08", ".f08"]
+        good_ext = [".F90", ".f90", ".f", ".F", ".F03", ".f03", ".F08", ".f08"]
         files = [f for f in files if os.path.splitext(f)[1] in good_ext]
 
-        # add parent directory
-        files = [os.path.join(self.diag_dir, f) for f in files]
+        # get list of custom files
+        if (self.custom_dir is not None):
+            cfiles = os.listdir(self.custom_dir)
+        else:
+            cfiles = []
+
+        # add parent directory, either "standard" location or custom location
+        for i,f in enumerate(files):
+            if (f not in cfiles):
+                parent_dir = self.diag_dir
+            else:
+                parent_dir = self.custom_dir
+
+            files[i] = os.path.join(parent_dir, f)
 
         quantity_names = [q.name for q in self.quantities] # all available quantity names
 
@@ -434,12 +479,15 @@ if __name__ == "__main__":
     from docopt import docopt
     args = docopt(__doc__)
 
-    search_path = args['<directory>']
-    default_loc = args['--default-location']
+    search_path = args['<Rayleigh_top_directory>']
     overwrite = args['--overwrite']
+    custom_dir = args['--custom-dir']
 
     my_path = os.path.dirname(os.path.realpath(__file__))
-    output = os.path.join(my_path, "lut_mapping.py")
+    if (custom_dir is not None):
+        output = os.path.join(my_path, "lut_mapping_custom.py")
+    else:
+        output = os.path.join(my_path, "lut_mapping.py")
 
     if (os.path.isfile(output) and (not overwrite)):
         print("\nOutput file already exists: {}".format(output))
@@ -457,11 +505,7 @@ if __name__ == "__main__":
         "    name_given_code  --- key is integer quantity code, value is string name\n" +\
         "    code_given_name  --- key is string name, value is integer quantity code\n" +\
         "    tex_given_code   --- key is integer quantity code, value is string LaTeX\n" +\
-        "\nAutomatically generated on @@DATE@@\n" +\
-        "\nRayleigh information:\n\n" +\
-        "\tcommit : @@COMMIT@@\n" +\
-        "\t  url  : @@URL@@\n" +\
-        "\tbranch : @@BRANCH@@" +\
+        "@@CUSTOM@@" +\
         "\"\"\"\n" +\
         "from collections import OrderedDict\n\n" +\
         "name_given_code = OrderedDict()\n" +\
@@ -470,20 +514,36 @@ if __name__ == "__main__":
 
     footer = "\n"
 
+    # add more information to the custom header
+    cheader = "\nAutomatically generated on @@DATE@@\n" +\
+              "\nRayleigh information:\n\n" +\
+              "\tcommit : @@COMMIT@@\n" +\
+              "\t  url  : @@URL@@\n" +\
+              "\tbranch : @@BRANCH@@\n" +\
+              "\nCustom information:\n\n" +\
+              "\t  dir  : @@DIR@@\n\n"
+
     # parse for the output quantities
-    outputQ = OutputQuantities(search_path, default_location=default_loc)
+    outputQ = OutputQuantities(search_path, default_location=True, custom_dir=custom_dir)
     offsets = list(outputQ.offsets.keys())
 
     # get Rayleigh information
     commit, url, branch = find_repo_attributes(search_path)
 
     # build header
-    today = datetime.date.today()
-    date = today.strftime("%b-%d-%Y") # format as "May-8-2021"
-    header = header.replace("@@DATE@@", date)
-    header = header.replace("@@COMMIT@@", commit)
-    header = header.replace("@@URL@@", url)
-    header = header.replace("@@BRANCH@@", branch)
+    if (custom_dir is not None):
+        today = datetime.date.today()
+        date = today.strftime("%b-%d-%Y") # format as "May-8-2021"
+
+        cheader = cheader.replace("@@DATE@@", date)
+        cheader = cheader.replace("@@COMMIT@@", commit)
+        cheader = cheader.replace("@@URL@@", url)
+        cheader = cheader.replace("@@BRANCH@@", branch)
+        cheader = cheader.replace("@@DIR@@", os.path.abspath(os.path.expanduser(custom_dir)))
+
+        header = header.replace("@@CUSTOM@@", cheader)
+    else:
+        header = header.replace("@@CUSTOM@@", "\n")
 
     if (overwrite):
         print("\nOverwriting quantity code mapping ...")

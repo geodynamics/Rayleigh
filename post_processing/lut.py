@@ -2,15 +2,13 @@
 Module to help manage mapping between quantity names and quantity codes
 """
 from __future__ import print_function
+
+# if custom mapping exists, use it
 try:
-    from lut_mapping import code_given_name, name_given_code, tex_given_code
+    from lut_mapping_custom import code_given_name, name_given_code, tex_given_code
 except ImportError:
-    print("\nThe lut_mapping module was not found\n")
-    print("Build this module by using the generate_mapping.py file")
-    print("At the command line in the /path/to/Rayleigh/post_processing")
-    print("directory, execute the following to see the options:")
-    print("\n\tpython generate_mapping.py --help\n")
-    raise
+    from lut_mapping import code_given_name, name_given_code, tex_given_code
+
 from lut_shortcuts import shortcuts
 
 def lookup(quantity, __check_shortcuts=True):
