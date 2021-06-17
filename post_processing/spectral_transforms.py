@@ -1037,6 +1037,9 @@ class Chebyshev:
             scaling = 1./scaling
 
             for i in range(dmax):
+                self.dcheby[n][:,:,i] *= scaling**(i+1)
+
+            for i in range(n_max):
                 gind = ind + i
                 xx = self.x[i,n]
                 self.integration_weights[gind] = \
