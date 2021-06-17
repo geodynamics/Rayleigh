@@ -55,30 +55,33 @@ is responsible for generating the mapping between codes and names. The lut_short
 allows users to define their own mapping, allowing a conversion from a user-defined name
 to the desired quantity code.
 
-First, the mapping must be generated using the generate_mapping.py file:
+The mapping has already been generated and is stored in the lut_mapping.py file. For
+developers or anyone wanting to re-generate the mapping, use the generate_mapping.py file:
 
 .. code-block:: bash
 
-    python generate_mapping.py --default-location /path/to/Rayleigh
+    python generate_mapping.py /path/to/Rayleigh
 
 This will parse the Rayleigh directory tree and generate the standard mapping between
 quantity codes and their associated names stored in the new file lut_mapping.py. Only
-quantity codes that are defined within the Rayleigh source tree will be included. If a
-user has a custom directory where output diagnostics are defined, the above command will
-not capture the custom diagnostics codes. To include custom quantities, the safest option
-is to build Rayleigh first. This will copy all of the relevent Rayleigh files as well
-as the custom source files to the /path/to/Rayleigh/src/build directory. Then the
-mapping can be built using:
+quantity codes that are defined within the Rayleigh source tree will be included.
+Rayleigh does not need to be compiled before generating the mapping.
+
+If a user has a custom directory where output diagnostics are defined, the above command
+will not capture the custom diagnostic codes. To include custom quantities, the user
+must generate the mapping themselvese with the generate_mapping.py file:
 
 .. code-block:: bash
 
-    python generate_mapping.py /path/to/Rayleigh/src/build
+    python generate_mapping.py /path/to/Rayleigh/ --custom-dir=/path/to/custom/
 
-Note the directories are slightly different between the two calls and one includes the
---default-location flag. The newly generated lut_mapping.py file will now have all of
-the standard output quantities as well as the custom diagnostics.
+Note that the Rayleigh directories are identical between the two calls, the only addition
+is the custom-dir flag. This command will generate a new mapping stored in the file
+lut_mapping_custom.py and will include all of the standard output quantities as well as
+the custom diagnostics.
 
-Before, plotting something like the kinetic energy could appear as:
+Without using this mapping technique, plotting something like the kinetic energy could
+appear as:
 
 .. code-block:: python
 
@@ -87,7 +90,7 @@ Before, plotting something like the kinetic energy could appear as:
     files = build_file_list(0, 10000000, path='G_Avgs')
     g = G_Avgs(filename=files[0], path='')
 
-    ke_code = g.lut[401] # use quantity code in lookup table
+    ke_code = g.lut[401] # must use quantity code in lookup table
 
     ke = g.data[:, ke_code] # extract KE as a function of time
 
