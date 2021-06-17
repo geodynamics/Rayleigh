@@ -931,12 +931,12 @@ class Chebyshev:
 
         if (n_uniform_domains > 1): # case (b)
             n_r = n_uniform_domains*nr_domains[0]
+            n_domains = n_uniform_domains
             nr_domains = [nr_domains[0]]*n_domains
             dealias = [dealias[0] for i in range(n_domains)] # set all to same
-            n_domains = n_uniform_domains
             boundaries = [0]*(n_domains+1)
             boundaries[0] = rmin
-            dr = (shell_depth)/n_domains
+            dr = 1.*(shell_depth)/n_domains
             for i in range(1,n_domains+1):
                 boundaries[i] = boundaries[i-1] + dr
 
