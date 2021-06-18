@@ -893,6 +893,8 @@ class Chebyshev:
         The number of radial grid points in each domain
     npoly : ndarray (n_domains,)
         The number of polynomials used in each domain
+    npoly_dealias : ndarray (n_domains,)
+        The number of dealiased polynomials used in each domain
     boundaries : ndarray (n_domains+1,)
         The domain boundaries
     rmin : float
@@ -1069,6 +1071,8 @@ class Chebyshev:
         self.radius = self.grid
         self.nr = self.n_r
 
+        self.npoly_dealias = self.rda # number of dealiased polynomials per domain
+
     def build_grid(self, dmax=3):
         """
         Build the grid(s)
@@ -1084,16 +1088,18 @@ class Chebyshev:
         for i in range(self.n_domains):
             n = self.nr_domains[i]
             self.npoly[i] = n
-            db = int(2*n/3)+1
+            db = int(2*n/3)
             self.rda[i] = db
             if (self.dealias[i] > 0):
                 db = self.dealias[i]
                 if ((db >= 1) and (db < n)):
-                    self.rda[i] = n - db + 1
+                    self.rda[i] = n - db
 
         self.npoly = self.npoly[::-1]
         self.rda = self.rda[::-1]
         self.boundaries = self.boundaries[::-1]
+        self.dealias = self.dealias[::-1]
+        self.nr_domains = self.nr_domains[::-1]
 
         gmax = self.boundaries[0]
         gmin = self.boundaries[-1]
@@ -1271,7 +1277,7 @@ class Chebyshev:
                     for n in range(self.n_domains):
                         ind1 = self.rda[n] + offset
                         ind2 = self.npoly[n] + offset
-                        data_in[ind1:ind2+1,i,j,k] = 0.0
+                        data_in[ind1:ind2,i,j,k] = 0.0
                         offset += self.npoly[n]
 
         data_out = swap_axis(data_in, transform_axis, axis)
