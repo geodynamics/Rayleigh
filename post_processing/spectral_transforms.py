@@ -1587,3 +1587,230 @@ class Chebyshev:
 
         return data_out
 
+class SHT:
+    """
+    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m)
+
+    Attributes
+    ----------
+    theta : ndarray (nth,)
+        The co-latitude grid points
+    costh : ndarray (nth,)
+        The cosine of the co-latitude points. This can also be accessed as costheta.
+    sinth : ndarray (nth,)
+        The sine of the co-latitude points. This can also be accessed as sintheta.
+    phi : ndarray (nphi,)
+        The longitude grid points
+
+    Methods
+    -------
+    to_spectral(data, laxis=0, maxis=1)
+        Transform to spectral space along the given axes
+    to_physical(data, laxis=0, maxis=1)
+        Transform to physical space along the given axes
+    """
+
+    def __init__(self, N, spectral=False, dealias=1.5):
+        """
+        Initialize the SHT grid and transform
+
+        Args
+        ----
+        N : int
+            Resolution of the theta grid
+        spectral : bool, optional
+            Does N refer to physical space or spectral space. If spectral=True,
+            N would be the maximum polynomial degree (l_max). The default
+            is that N refers to the physical space resolution (N_theta)
+        dealias : float, optional
+            Amount to dealias: N_theta = dealias*(l_max + 1)
+        """
+        self.nth, self.lmax = grid_size(N, spectral, dealias)
+        self.nell    = self.lmax + 1
+        self.dealias = dealias
+        self.parity  = False
+
+        self.nphi = 2*self.nth
+
+        # generate grid, weights, and Pl array
+        self.x, self.w = self.grid(self.nth)
+
+        # alias
+        self.ntheta = self.nth
+        self.n_theta = self.ntheta
+        self.l_max = self.lmax
+        self.nl = self.nell
+        self.sinth = np.sqrt(1.- self.x*self.x)
+        self.costh = self.x
+        self.theta = np.arccos(self.costh)
+        self.costheta = self.costh
+        self.sintheta = self.sinth
+
+    def grid(self, Npts):
+        """
+        Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1)
+
+        Args
+        ----
+        Npts : int
+            Number of grid points
+
+        Returns
+        -------
+        x : (Npts,) ndarray
+            The Legendre grid points
+        w : (Npts,) ndarray
+            The Legendre integration weights
+        """
+        x = np.zeros((Npts)); w = np.zeros((Npts))
+        _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
+        midpoint = np.asarray(0.0, dtype=np.float128)
+        scaling = np.asarray(1.0, dtype=np.float128)
+        n_roots = int((Npts + 1)/2)
+
+        eps = np.asarray(3.e-15, dtype=np.float128)
+
+        # this is a Newton-Rhapson find for the roots
+        for i in range(n_roots):
+            ith_root = np.asarray(np.cos(np.pi*(i+0.75)/(Npts+0.5)), dtype=np.float128)
+            converged = False; iters = 0
+            while (not converged):
+                pn, deriv_pn = _evaluate_Pl(ith_root, Npts)
+
+                new_guess = ith_root - pn/deriv_pn
+                delta = np.abs(ith_root - new_guess)
+                ith_root = new_guess
+                if (delta <= eps):
+                    converged = True
+
+                _x[i] = midpoint - scaling*ith_root
+                _x[Npts-1-i] = midpoint + scaling*ith_root
+
+                _w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
+                _w[Npts-1-i] = _w[i]
+                iters += 1
+
+        # store in double precision
+        x[:] = _x[:]
+        w[:] = _w[:]
+
+        # build array of P_l(x)
+        self.Pl = compute_Pl(_x, self.lmax)
+
+        return x, w
+
+    def to_spectral(self, data_in, laxis=0, maxis=1):
+        """
+        SHT transform from physical space (theta,phi) to spectral space (l,m)
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, must be dimension 4 or less
+        laxis : int, optional
+            The axis over which the Legendre transform (theta/l) will take place
+        maxis : int, optional
+            The axis over which the Fourier transform (phi/m) will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Transformed data, same shape as input, except along the transformed axes
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
+
+        if (shp[axis] != self.nth):
+            e = "Legendre transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nth, axis, shp[axis]))
+
+        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+
+        # make the transform axis first
+        transform_axis = 0
+        data_in = swap_axis(data_in, axis, transform_axis)
+
+        # build proper weights for transform
+        iPl = 2*np.pi*np.reshape(self.w, (self.nth,1))*self.Pl # (nth,lmax+1)
+
+        # perform the transform with calls to BLAS
+        alpha = 1.0; beta = 0.0
+
+        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
+        # data assumed to be 4D, so two for loops plus a matrix multiply
+        n, ny, nz, nt = np.shape(data_in)
+        for j in range(nt):
+            for i in range(nz):
+                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
+                                          trans_a=1, trans_b=0,
+                                          a=iPl, b=data_in[:,:,i,j])
+        # restore axis order
+        data_out = swap_axis(data_out, transform_axis, axis)
+
+        # remove any dimensions that were added
+        data_out = np.squeeze(data_out, axis=added_axes)
+
+        return data_out
+
+    def to_physical(self, data_in, laxis=0, maxis=1):
+        """
+        SHT transform from spectral space (l,m) to physical space (theta,phi)
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, must be dimension 4 or less
+        laxis : int, optional
+            The axis over which the Legendre transform (theta/l) will take place
+        maxis : int, optional
+            The axis over which the Fourier transform (phi/m) will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Transformed data, same shape as input, except along the transformed axis
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        check_dims(data_in, 4) # only coded for 4D or less
+
+        if (shp[axis] != self.lmax+1):
+            e = "Legendre transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nth, axis, shp[axis]))
+
+        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
+        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+
+        # make the transform axis first
+        transform_axis = 0
+        data_in = swap_axis(data_in, axis, transform_axis)
+
+        # perform the transform with calls to BLAS
+        alpha = 1.0; beta = 0.0
+
+        shape = list(data_in.shape); shape[transform_axis] = self.nth; shape = tuple(shape)
+        data_out = np.zeros((shape))
+
+        # data assumed to be 4D, so two for loops plus a matrix multiply
+        n, ny, nz, nt = np.shape(data_in)
+        for j in range(nt):
+            for i in range(nz):
+                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
+                                          trans_a=0, trans_b=0,
+                                          a=self.Pl, b=data_in[:,:,i,j])
+        # restore axis order
+        data_out = swap_axis(data_out, transform_axis, axis)
+
+        # remove any dimensions that were added
+        data_out = np.squeeze(data_out, axis=added_axes)
+
+        return data_out
+
