@@ -1,15 +1,15 @@
 """
-Module to interface with Rayleigh MathLayer, including:
+Interface to the Rayleigh grid and spectral transforms, including:
 
-    + Fourier Transforms/Derivatives
-    + Legendre Transforms/Derivatives
-    + Chebyshev Transforms/Derivatives
+    + Fourier grid/transforms/derivatives
+    + Legendre grid/transforms/derivatives
+    + Chebyshev grid/transforms/derivatives
 
 R. Orvedahl May 24, 2021
 """
 from __future__ import print_function
 import numpy as np
-import scipy
+from scipy.linalg.blas import dgemm as DGEMM
 
 def check_dims(array, max_dims):
     """
@@ -219,6 +219,32 @@ def grid_size(N, spectral, dealias=1.0):
     return Ngrid, Npoly_max
 
 class Fourier:
+    """
+    Handle real data on a Fourier grid, i.e., longitude/phi grid
+
+    Attributes
+    ----------
+    nphi : integer
+        Physical space grid resolution. This can also be accessed as n_phi.
+    phi : ndarray (nphi,)
+        The longitude grid points
+    dphi : float
+        The grid spacing
+    mvals : ndarray (nphi/2 + 1,)
+        The angular frequencies, also accessed as angular_freq.
+
+    Methods
+    -------
+    to_spectral(data, axis=0, window=None)
+        Transform to spectral space along the given axis. A window function can be
+        applied in physical space before doing the transform by setting the window
+        to a ndarray of shape (nphi,).
+    to_physical(data, axis=0)
+        Transform to physical space along the given axis
+    d_dphi(data, axis=0, physical=True)
+        Compute a derivative with respect to phi along the given axis. Data is assumed
+        to be in physical space (physical=True)
+    """
 
     def __init__(self, N):
         """
@@ -234,7 +260,9 @@ class Fourier:
         self.dx = np.mean(self.x[1:]-self.x[:-1])
 
         # alias
+        self.dphi = self.dx
         self.phi = self.x
+        self.nphi = self.n_phi = self.N
 
         # compute frequencies
         self.freq = self.frequencies()
@@ -242,6 +270,7 @@ class Fourier:
         self.high_freq = self.freq.max()
 
         self.angular_freq = 2*np.pi*self.freq
+        self.mvals = self.angular_freq
 
     def frequencies(self):
         """
@@ -504,6 +533,34 @@ def compute_Pl(x, lmax):
     return Pl
 
 class Legendre:
+    """
+    Handle data on a Legendre grid, i.e., latitude/theta grid
+
+    Attributes
+    ----------
+    nth : integer
+        Physical space grid resolution. This can also be accessed as ntheta or n_theta.
+    lmax : integer
+        Maximum polynomial degree in spectral space. This can also be accessed as l_max.
+    nl : integer
+        Number of polynomials in spectral space. This can also be accessed as nell.
+    theta : ndarray (nth,)
+        The co-latitude grid points
+    costh : ndarray (nth,)
+        The cosine of the co-latitude points. This can also be accessed as costheta.
+    sinth : ndarray (nth,)
+        The sine of the co-latitude points. This can also be accessed as sintheta.
+
+    Methods
+    -------
+    to_spectral(data, axis=0)
+        Transform to spectral space along the given axis
+    to_physical(data, axis=0)
+        Transform to physical space along the given axis
+    d_dtheta(data, axis=0, physical=True)
+        Compute a derivative with respect to theta along the given axis. Data is assumed
+        to be in physical space (physical=True)
+    """
 
     def __init__(self, N, spectral=False, dealias=1.5):
         """
@@ -529,9 +586,15 @@ class Legendre:
         self.x, self.w = self.grid(self.nth)
 
         # alias
+        self.ntheta = self.nth
+        self.n_theta = self.ntheta
+        self.l_max = self.lmax
+        self.nl = self.nell
         self.sinth = np.sqrt(1.- self.x*self.x)
         self.costh = self.x
         self.theta = np.arccos(self.costh)
+        self.costheta = self.costh
+        self.sintheta = self.sinth
 
     def grid(self, Npts):
         """
@@ -622,7 +685,7 @@ class Legendre:
         # build proper weights for transform
         iPl = 2*np.pi*np.reshape(self.w, (self.nth,1))*self.Pl # (nth,lmax+1)
 
-        # perform the transform with calls to scipy BLAS
+        # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
@@ -632,9 +695,9 @@ class Legendre:
         n, ny, nz, nt = np.shape(data_in)
         for j in range(nt):
             for i in range(nz):
-                data_out[:,:,i,j] = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
-                                                            trans_a=1, trans_b=0,
-                                                            a=iPl, b=data_in[:,:,i,j])
+                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
+                                          trans_a=1, trans_b=0,
+                                          a=iPl, b=data_in[:,:,i,j])
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
 
@@ -676,7 +739,7 @@ class Legendre:
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # perform the transform with calls to scipy BLAS
+        # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
         shape = list(data_in.shape); shape[transform_axis] = self.nth; shape = tuple(shape)
@@ -686,9 +749,9 @@ class Legendre:
         n, ny, nz, nt = np.shape(data_in)
         for j in range(nt):
             for i in range(nz):
-                data_out[:,:,i,j] = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
-                                                            trans_a=0, trans_b=0,
-                                                            a=self.Pl, b=data_in[:,:,i,j])
+                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
+                                          trans_a=0, trans_b=0,
+                                          a=self.Pl, b=data_in[:,:,i,j])
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
 
@@ -773,7 +836,7 @@ class Legendre:
         data_out = self.to_physical(data_out, axis=transform_axis)
 
         # undo the sin(th) part in physical space
-        nshp = [1]*len(data_out.shape); nshp[axis] = -1; nshp = tuple(nshp)
+        nshp = [1]*len(data_out.shape); nshp[transform_axis] = -1; nshp = tuple(nshp)
         sinth = np.reshape(self.sinth, nshp)
         data_out /= sinth
 
@@ -815,6 +878,44 @@ def chebyshev_zeros(Npts, reverse=False):
     return grid
 
 class Chebyshev:
+    """
+    Handle data on a Chebyshev grid, i.e., radius grid
+
+    Attributes
+    ----------
+    nr : integer
+        The total number of radial grid points. This can also be accessed as n_r.
+    radius : ndarray (nr,)
+        The radial grid points
+    n_domains : integer
+        Number of separate radial domains
+    nr_domains : ndarray (n_domains,)
+        The number of radial grid points in each domain
+    npoly : ndarray (n_domains,)
+        The number of polynomials used in each domain
+    boundaries : ndarray (n_domains+1,)
+        The domain boundaries
+    rmin : float
+        The minimum radius, i.e., the lower boundary
+    rmax : float
+        The maximum radius, i.e., the upper boundary
+    aspect_ratio : float
+        The ratio of rmin/rmax
+    shell_depth : float
+        The depth of the shell, rmax-rmin
+    dealias : ndarray (n_domains,)
+        The amount of dealiasing for each domain.
+
+    Methods
+    -------
+    to_spectral(data, axis=0)
+        Transform to spectral space along the given axis
+    to_physical(data, axis=0)
+        Transform to physical space along the given axis
+    d_dr(data, axis=0, physical=True)
+        Compute a derivative with respect to radius along the given axis. Data is assumed
+        to be in physical space (physical=True)
+    """
 
     def __init__(self, nr_domains,
                  rmin=None, rmax=None, aspect_ratio=None, shell_depth=None,
@@ -944,7 +1045,7 @@ class Chebyshev:
             n_r = np.sum(nr_domains)
 
             if (uniform_bounds): # same as (b) above, but allows different resolutions
-                n_uniform_domains = len(n_domains)
+                n_uniform_domains = n_domains
                 boundaries = [0]*(n_domains+1)
                 boundaries[0] = rmin
                 dr = (shell_depth)/n_domains
@@ -966,6 +1067,7 @@ class Chebyshev:
 
         # alias
         self.radius = self.grid
+        self.nr = self.n_r
 
     def build_grid(self, dmax=3):
         """
@@ -983,10 +1085,11 @@ class Chebyshev:
             n = self.nr_domains[i]
             self.npoly[i] = n
             db = int(2*n/3)+1
+            self.rda[i] = db
             if (self.dealias[i] > 0):
                 db = self.dealias[i]
                 if ((db >= 1) and (db < n)):
-                    db = n - db + 1
+                    self.rda[i] = n - db + 1
 
         self.npoly = self.npoly[::-1]
         self.rda = self.rda[::-1]
@@ -1211,7 +1314,7 @@ class Chebyshev:
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # perform the transform with calls to scipy BLAS
+        # perform the transform with calls to BLAS
         beta = 0.0
 
         shape = list(data_in.shape); shape[transform_axis] = self.ntotal; shape = tuple(shape)
@@ -1241,10 +1344,10 @@ class Chebyshev:
                                                data_in[hoff+n_max-1-i,j,k,kk]
 
             # call BLAS
-            c_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
-                                             trans_a=1, trans_b=0,
-                                             a=self.cheby_even[hh],
-                                             b=f_even[:,:,:,:])
+            c_temp = DGEMM(alpha=alpha, beta=beta,
+                           trans_a=1, trans_b=0,
+                           a=self.cheby_even[hh],
+                           b=f_even[:,:,:,:])
             c_temp = np.reshape(c_temp, (n_even, n2, n3, n4))
 
             # unpack the output
@@ -1258,10 +1361,10 @@ class Chebyshev:
             #    c_temp = np.zeros((n_odd, n2, n3, n4))
 
             # call BLAS
-            c_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
-                                             trans_a=1, trans_b=0,
-                                             a=self.cheby_odd[hh],
-                                             b=f_odd[:,:,:,:])
+            c_temp = DGEMM(alpha=alpha, beta=beta,
+                           trans_a=1, trans_b=0,
+                           a=self.cheby_odd[hh],
+                           b=f_odd[:,:,:,:])
             c_temp = np.reshape(c_temp, (n_odd, n2, n3, n4))
 
             # unpack the output
@@ -1314,7 +1417,7 @@ class Chebyshev:
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # perform the transform with calls to scipy BLAS
+        # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
         shape = list(data_in.shape); shape[transform_axis] = self.n_r; shape = tuple(shape)
@@ -1338,10 +1441,10 @@ class Chebyshev:
                             c_temp[i,j,k,kk] = data_in[hoff+2*i,j,k,kk]
 
             # call BLAS
-            f_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
-                                             trans_a=0, trans_b=0,
-                                             a=self.cheby_even[hh],
-                                             b=c_temp[:,:,:,:])
+            f_temp = DGEMM(alpha=alpha, beta=beta,
+                           trans_a=0, trans_b=0,
+                           a=self.cheby_even[hh],
+                           b=c_temp[:,:,:,:])
             f_temp = np.reshape(f_temp, (n_x, n2, n3, n4))
 
             # unpack the output
@@ -1363,10 +1466,10 @@ class Chebyshev:
                             c_temp[i,j,k,kk] = data_in[hoff+2*i+1,j,k,kk]
 
             # call BLAS
-            f_temp = scipy.linalg.blas.dgemm(alpha=alpha, beta=beta,
-                                             trans_a=0, trans_b=0,
-                                             a=self.cheby_odd[hh],
-                                             b=c_temp[:,:,:,:])
+            f_temp = DGEMM(alpha=alpha, beta=beta,
+                           trans_a=0, trans_b=0,
+                           a=self.cheby_odd[hh],
+                           b=c_temp[:,:,:,:])
             f_temp = np.reshape(f_temp, (n_x, n2, n3, n4))
 
             # unpack the output
