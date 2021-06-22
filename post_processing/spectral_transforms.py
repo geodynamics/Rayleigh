@@ -10,6 +10,7 @@ R. Orvedahl May 24, 2021
 from __future__ import print_function
 import numpy as np
 from scipy.linalg.blas import dgemm as DGEMM
+from scipy.linalg.blas import zgemm as ZGEMM
 
 def check_dims(array, max_dims):
     """
@@ -426,6 +427,61 @@ class Fourier:
 
         return data_out
 
+def legendre_grid(Npts, quad=False):
+    """
+    Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1)
+
+    Args
+    ----
+    Npts : int
+        Number of grid points
+    quad : bool, optional
+        Return arrays using quad precision, default is double
+
+    Returns
+    -------
+    x : (Npts,) ndarray
+        The Legendre grid points
+    w : (Npts,) ndarray
+        The Legendre integration weights
+    """
+    x = np.zeros((Npts), dtype=np.float64); w = np.zeros((Npts), dtype=np.float64)
+    _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
+    midpoint = np.asarray(0.0, dtype=np.float128)
+    scaling = np.asarray(1.0, dtype=np.float128)
+    n_roots = int((Npts + 1)/2)
+
+    eps = np.asarray(3.e-15, dtype=np.float128)
+
+    # this is a Newton-Rhapson find for the roots
+    for i in range(n_roots):
+        ith_root = np.asarray(np.cos(np.pi*(i+0.75)/(Npts+0.5)), dtype=np.float128)
+        converged = False; iters = 0
+        while (not converged):
+            pn, deriv_pn = _evaluate_Pl(ith_root, Npts)
+
+            new_guess = ith_root - pn/deriv_pn
+            delta = np.abs(ith_root - new_guess)
+            ith_root = new_guess
+            if (delta <= eps):
+                converged = True
+
+            _x[i] = midpoint - scaling*ith_root
+            _x[Npts-1-i] = midpoint + scaling*ith_root
+
+            _w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
+            _w[Npts-1-i] = _w[i]
+            iters += 1
+
+    # store in double precision
+    x[:] = _x[:]
+    w[:] = _w[:]
+
+    if (quad):
+        return _x, _w
+    else:
+        return x, w
+
 def _evaluate_Pl(x, n):
     """
     Evaluate n-th Legendre polynomial at the given grid point:
@@ -583,7 +639,14 @@ class Legendre:
         self.parity  = False
 
         # generate grid, weights, and Pl array
-        self.x, self.w = self.grid(self.nth)
+        _x, _w = legendre_grid(self.nth, quad=True)
+        self.x = np.zeros((self.nth), dtype=np.float64)
+        self.w = np.zeros((self.nth), dtype=np.float64)
+        self.x[:] = _x[:]
+        self.w[:] = _w[:]
+
+        # build array of P_l(x)
+        self.Pl = compute_Pl(_x, self.lmax)
 
         # alias
         self.ntheta = self.nth
@@ -595,59 +658,6 @@ class Legendre:
         self.theta = np.arccos(self.costh)
         self.costheta = self.costh
         self.sintheta = self.sinth
-
-    def grid(self, Npts):
-        """
-        Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1)
-
-        Args
-        ----
-        Npts : int
-            Number of grid points
-
-        Returns
-        -------
-        x : (Npts,) ndarray
-            The Legendre grid points
-        w : (Npts,) ndarray
-            The Legendre integration weights
-        """
-        x = np.zeros((Npts)); w = np.zeros((Npts))
-        _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
-        midpoint = np.asarray(0.0, dtype=np.float128)
-        scaling = np.asarray(1.0, dtype=np.float128)
-        n_roots = int((Npts + 1)/2)
-
-        eps = np.asarray(3.e-15, dtype=np.float128)
-
-        # this is a Newton-Rhapson find for the roots
-        for i in range(n_roots):
-            ith_root = np.asarray(np.cos(np.pi*(i+0.75)/(Npts+0.5)), dtype=np.float128)
-            converged = False; iters = 0
-            while (not converged):
-                pn, deriv_pn = _evaluate_Pl(ith_root, Npts)
-
-                new_guess = ith_root - pn/deriv_pn
-                delta = np.abs(ith_root - new_guess)
-                ith_root = new_guess
-                if (delta <= eps):
-                    converged = True
-
-                _x[i] = midpoint - scaling*ith_root
-                _x[Npts-1-i] = midpoint + scaling*ith_root
-
-                _w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
-                _w[Npts-1-i] = _w[i]
-                iters += 1
-
-        # store in double precision
-        x[:] = _x[:]
-        w[:] = _w[:]
-
-        # build array of P_l(x)
-        self.Pl = compute_Pl(_x, self.lmax)
-
-        return x, w
 
     def to_spectral(self, data_in, axis=0):
         """
@@ -1610,7 +1620,7 @@ class SHT:
         Transform to physical space along the given axes
     """
 
-    def __init__(self, N, spectral=False, dealias=1.5):
+    def __init__(self, N, spectral=False, dealias=1.5, parity=True):
         """
         Initialize the SHT grid and transform
 
@@ -1624,93 +1634,212 @@ class SHT:
             is that N refers to the physical space resolution (N_theta)
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
+        parity : bool, optional
+            Exploit parity during the Legendre transforms
         """
         self.nth, self.lmax = grid_size(N, spectral, dealias)
         self.nell    = self.lmax + 1
         self.dealias = dealias
-        self.parity  = False
+        self.parity  = parity
 
         self.nphi = 2*self.nth
 
-        # generate grid, weights, and Pl array
-        self.x, self.w = self.grid(self.nth)
+        # build Fourier grid/transforms
+        self.fourier = Fourier(self.nphi)
+
+        # generate grid, weights (xq = x in quad precision)
+        self.xq, self.wq = legendre_grid(self.nth, quad=True)
+        self.x = np.zeros((self.nth), dtype=np.float64)
+        self.w = np.zeros((self.nth), dtype=np.float64)
+        self.x[:] = self.xq[:]
+        self.w[:] = self.wq[:]
 
         # alias
         self.ntheta = self.nth
         self.n_theta = self.ntheta
         self.l_max = self.lmax
         self.nl = self.nell
+        self.nm = self.nl
         self.sinth = np.sqrt(1.- self.x*self.x)
         self.costh = self.x
         self.theta = np.arccos(self.costh)
         self.costheta = self.costh
         self.sintheta = self.sinth
 
-    def grid(self, Npts):
+        self.dphi = self.fourier.dphi
+        self.phi = self.fourier.phi
+        self.cosphi = np.cos(self.phi)
+        self.sinphi = np.sin(self.phi)
+
+        # build arrays of P_l^m(x)
+        self.compute_Plm()
+
+    def compute_Plm(self):
         """
-        Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1)
-
-        Args
-        ----
-        Npts : int
-            Number of grid points
-
-        Returns
-        -------
-        x : (Npts,) ndarray
-            The Legendre grid points
-        w : (Npts,) ndarray
-            The Legendre integration weights
+        Compute various arrays holding the A_l^m*P_l^m data evaluated on the grid
         """
-        x = np.zeros((Npts)); w = np.zeros((Npts))
-        _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
-        midpoint = np.asarray(0.0, dtype=np.float128)
-        scaling = np.asarray(1.0, dtype=np.float128)
-        n_roots = int((Npts + 1)/2)
+        n_m = self.nm
 
-        eps = np.asarray(3.e-15, dtype=np.float128)
+        n_l = np.zeros((n_m), dtype=np.int32)
+        p_lm = [0]*n_m
+        p_lmq = [0]*n_m
+        ip_lm = [0]*n_m
+        ntmax = self.nth
+        if (self.parity):
+            p_lm_odd = [0]*n_m
+            p_lm_even = [0]*n_m
+            ip_lm_odd = [0]*n_m
+            ip_lm_even = [0]*n_m
+            n_l_odd = np.zeros((n_m), dtype=np.int32)
+            n_l_even = np.zeros((n_m), dtype=np.int32)
+            lvals = [{'even':None, 'odd':None}]*n_m
+            lvalsi = [{'even':None, 'odd':None}]*n_m
+            ntmax = int(self.nth / 2)
 
-        # this is a Newton-Rhapson find for the roots
-        for i in range(n_roots):
-            ith_root = np.asarray(np.cos(np.pi*(i+0.75)/(Npts+0.5)), dtype=np.float128)
-            converged = False; iters = 0
-            while (not converged):
-                pn, deriv_pn = _evaluate_Pl(ith_root, Npts)
+        piq = np.asarray(np.pi, dtype=np.float128)
+        one = np.asarray(1.0, dtype=np.float128)
+        two = np.asarray(2.0, dtype=np.float128)
+        four = np.asarray(4.0, dtype=np.float128)
+        half = np.asarray(0.5, dtype=np.float128)
 
-                new_guess = ith_root - pn/deriv_pn
-                delta = np.abs(ith_root - new_guess)
-                ith_root = new_guess
-                if (delta <= eps):
-                    converged = True
+        for m in range(n_m): # m loop index is also actual m value
+            n_l[m] = self.lmax - m + 1
+            p_lmq[m] = np.zeros((ntmax, self.lmax+1)) # really should be (nt, m:lmax)
 
-                _x[i] = midpoint - scaling*ith_root
-                _x[Npts-1-i] = midpoint + scaling*ith_root
+            factorial_ratio = np.asarray(1.0, dtype=np.float128)
+            for i in range(1,m):
+                factorial *= ((i-half)/i)**half
 
-                _w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
-                _w[Npts-1-i] = _w[i]
-                iters += 1
+            amp = ((m+half)/(2*piq))**half
+            amp *= factorial_ratio
 
-        # store in double precision
-        x[:] = _x[:]
-        w[:] = _w[:]
+            for i in range(ntmax):
+                x = self.xq[i]
+                tmp = one - x*x
 
-        # build array of P_l(x)
-        self.Pl = compute_Pl(_x, self.lmax)
+                # l=m pieces
+                if (m%2 == 1):
+                    p_lmq[m][i,m] = -amp*tmp**(int(m/2)+half)
+                else:
+                    p_lmq[m][i,m] = amp*tmp**(int(m/2))
 
-        return x, w
+                # l = m+1 pieces
+                if (m < self.lmax):
+                    p_lmq[m][i,m+1] = p_lmq[m][i,m]*x*(two*m+3)**half
 
-    def to_spectral(self, data_in, laxis=0, maxis=1):
+            # general recursion for l > m+1
+            for l in range(m+2,lmax+1):
+                for i in range(ntmax):
+                    x = self.xq[i]
+                    amp = (l-1)**2 - m*m
+                    amp = amp / (four*(l-1)**2-one)
+                    amp = amp**half
+                    tmp = p_lmq[m][i,l-1]*x - amp*p_lmq[m][i,l-2]
+                    amp = (four*l*l-one)/(l*l-m*m)
+                    p_lmq[m][i,l] = tmp*amp**half
+
+            if (self.parity): # parity resort
+                if (m == 0):
+                    pts_norm = 1./(2*self.nth)
+                    stp_norm = 1.0
+                else:
+                    pts_norm = 1./(self.nth)
+                    stp_norm = 0.5
+
+                n_l_even[m] = 0
+                n_l_odd[m] = 0
+                for l in range(m, self.lmax+1):
+                    parity_test = l-m
+                    if (parity_test % 2 == 1):
+                        n_l_odd[m] += 1
+                    else:
+                        n_l_even[m] += 1
+
+                if (n_l_even[m] > 0):
+                    ip_lm_even[m] = np.zeros((self.nth/2, n_l_even[m]))
+                    p_lm_even[m] = np.zeros((n_l_even[m], self.nth/2))
+                    lvals[m]['even'] = np.zeros((n_l_even[m]))
+                    lvalsi[m]['even'] = np.zeros((n_l_even[m]), dtype=np.int32)
+                if (n_l_odd[m] > 0):
+                    ip_lm_odd[m] = np.zeros((self.nth/2, n_l_odd[m]))
+                    p_lm_odd[m] = np.zeros((n_l_odd[m], self.nth/2))
+                    lvals[m]['odd'] = np.zeros((n_l_odd[m]))
+                    lvalsi[m]['odd'] = np.zeros((n_l_odd[m]), dtype=np.int32)
+
+                indeven = 1; indodd = 1
+                for l in range(m, self.lmax+1):
+                    parity_test = l-m
+                    if (parity_test % 2 == 1):
+                        lvals[m]['odd'][indodd] = l
+                        lvalsi[m]['odd'][indodd] = l
+                        for i in range(self.nth/2):
+                            renorm = two*piq*self.wq[i]
+                            tmp = p_lmq[m][i,l]*renorm
+                            ip_lm_odd[m][i,indodd] = tmp*pts_norm
+                            p_lm_odd[m][indodd,i] = p_lmq[m][i,l]*stp_norm
+                        indodd += 1
+                    else:
+                        lvals[m]['even'][indeven] = l
+                        lvalsi[m]['even'][indeven] = l
+                        for i in range(self.nth/2):
+                            renorm = two*piq*self.wq[i]
+                            tmp = p_lmq[m][i,l]*renorm
+                            ip_lm_even[m][i,indeven] = tmp*pts_norm
+                            p_lm_even[m][indeven,i] = p_lmq[m][i,l]*stp_norm
+                        indeven += 1
+
+            else:
+                # store in double precision
+                p_lm[m]  = np.zeros((self.lmax+1, ntmax), dtype=np.float64)
+
+                p_lm[m] = np.transpose(p_lmq[m])
+                renorm = np.reshape(two*piq*self.wq, (self.nth,1))
+
+                ip_lm[m] = np.asarray(p_lmq[m]*renorm, dtype=np.float64)
+
+            # try to release some memory
+            p_lmq[m] = None
+            if (self.parity):
+                p_lm[m] = None
+                ip_lm[m] = None
+
+        # try to release some memory
+        p_lmq = None
+        if (self.parity):
+            p_lm = None
+            ip_lm = None
+
+        # make available to class
+        self.ntmax = ntmax
+        if (self.parity):
+            self.lvals = lvals
+            self.lvalsi = lvalsi
+            self.p_lm_even = p_lm_even
+            self.p_lm_odd = p_lm_odd
+            self.ip_lm_even = ip_lm_even
+            self.ip_lm_odd = ip_lm_odd
+            self.n_l_even = n_l_even
+            self.n_l_odd = n_l_odd
+        else:
+            self.p_lm = p_lm
+            self.ip_lm = ip_lm
+
+    def to_spectral(self, data_in, th_axis=0, phi_axis=1, fft=True):
         """
         SHT transform from physical space (theta,phi) to spectral space (l,m)
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed, must be dimension 4 or less
-        laxis : int, optional
+            Input data to be transformed
+        th_axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place
-        maxis : int, optional
+        phi_axis : int, optional
             The axis over which the Fourier transform (phi/m) will take place
+        fft : bool, optional
+            If fft=True, a full SHT transform from (th,phi) to (l,m) will occur,
+            starting with a FFT in the phi direction. If False, the FFT will not
+            occur and the Legendre transform will assume m=0.
 
         Returns
         -------
@@ -1719,42 +1848,64 @@ class SHT:
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        axis = pos_axis(axis, dim)
+        th_axis = pos_axis(th_axis, dim)
+        phi_axis = pos_axis(phi_axis, dim)
 
-        check_dims(data_in, 4) # only coded for 4D or less
+        if (dim < 2 and fft):
+            e = "Full SHT requires data to be 2d,3d, or 4d. Found {}d"
+            raise ValueError(e.format(dim))
 
-        if (shp[axis] != self.nth):
-            e = "Legendre transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.nth, axis, shp[axis]))
+        if (shp[th_axis] != self.nth):
+            e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
 
-        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+        if (shp[phi_axis] != self.nphi):
+            e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
+
+        if (fft): # first do FFT
+            data_in = self.fourier.to_spectral(data_in, axis=phi_axis)
+
+            # trim the m-axis to be consistent with triangular truncation
+            slc = [slice(None)]*dim
+            slc[phi_axis] = slice(0, self.nm)
+            data_in = data_in[tuple(slc)]
 
         # make the transform axis first
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # build proper weights for transform
-        iPl = 2*np.pi*np.reshape(self.w, (self.nth,1))*self.Pl # (nth,lmax+1)
+        # allocate space
+        shape = list(data_in.shape); shape[transform_axis] = self.nl
+        data_out = np.zeros(tuple(shape))
 
-        # perform the transform with calls to BLAS
+        shape[transform_axis] = self.nth/2
+        f_even = np.zeros_like(tuple(shape))
+        f_odd  = np.zeros_like(tuple(shape))
+
+        # build even/odd input data
+        for i in range(int(self.nth/2)):
+            f_even[i,...] = data_in[i,...] + data_in[self.nth-1-i,...]
+            f_odd[i,...]  = data_in[i,...] - data_in[self.nth-1-i,...]
+
         alpha = 1.0; beta = 0.0
+        if (fft):
+            slc = [slice(None)]*dim
+            for m in range(self.nm):
+                slc[phi_axis] = m
+                if (self.n_l_even[m] > 0):
+                    out_shape = list(f_even.shape)
+                    out_shape[transform_axis] = 
+                    c_temp = ZGEMM(alpha=alpha, beta=beta,
+                                   trans_a=1, trans_b=0,
+# ip_lm_even should be indexed specifically as ip_lm_even[m][i,m:lmax] or whatever it is
+                                   a=self.ip_lm_even[m],
+                                   b=f_even[tuple(slc)])
+                    c_temp = np.reshape(c_temp, ?????)
+        else:
 
-        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
-        data_out = np.zeros((shape))
-
-        # data assumed to be 4D, so two for loops plus a matrix multiply
-        n, ny, nz, nt = np.shape(data_in)
-        for j in range(nt):
-            for i in range(nz):
-                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
-                                          trans_a=1, trans_b=0,
-                                          a=iPl, b=data_in[:,:,i,j])
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
-
-        # remove any dimensions that were added
-        data_out = np.squeeze(data_out, axis=added_axes)
 
         return data_out
 
