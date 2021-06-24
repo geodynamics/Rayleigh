@@ -1852,14 +1852,14 @@ class SHT:
         phi_axis = pos_axis(phi_axis, dim)
 
         if (dim < 2 and fft):
-            e = "Full SHT requires data to be 2d,3d, or 4d. Found {}d"
+            e = "Full SHT requires data to be at least 2d. Found {}d"
             raise ValueError(e.format(dim))
 
         if (shp[th_axis] != self.nth):
             e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
 
-        if (shp[phi_axis] != self.nphi):
+        if (fft and (shp[phi_axis] != self.nphi)):
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
 
@@ -1890,78 +1890,157 @@ class SHT:
 
         alpha = 1.0; beta = 0.0
         if (fft):
-            slc = [slice(None)]*dim
-            for m in range(self.nm):
-                slc[phi_axis] = m
-                if (self.n_l_even[m] > 0):
-                    out_shape = list(f_even.shape)
-                    out_shape[transform_axis] = 
-                    c_temp = ZGEMM(alpha=alpha, beta=beta,
-                                   trans_a=1, trans_b=0,
-# ip_lm_even should be indexed specifically as ip_lm_even[m][i,m:lmax] or whatever it is
-                                   a=self.ip_lm_even[m],
-                                   b=f_even[tuple(slc)])
-                    c_temp = np.reshape(c_temp, ?????)
+            _nm = self.nm
         else:
+            _nm = [0] # assume only m=0 for "pure" Legendre transform
+
+        slc = [slice(None)]*dim
+        for m in range(_nm):
+            if (fft):
+                slc[phi_axis] = m
+            if (self.n_l_even[m] > 0):
+                out_shape = list(f_even.shape)
+                out_shape[transform_axis] = self.n_l_even[m]
+                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                                trans_a=1, trans_b=0,
+                                a=self.ip_lm_even[m][:,m:self.lmax+1], # (nth/2, n_l_even)
+                                b=f_even[tuple(slc)])                  # (nth/2, ...)
+                c_temp = np.reshape(c_temp, tuple(out_shape))          # (n_l_even, ...)
+
+                # store output
+                for j in range(1,self.n_l_even[m]+1):
+                    l = self.lvalsi[m]['even'][j]
+                    data_out[l,...] = c_temp[j,...]
+
+            if (self.n_l_odd[m] > 0):
+                out_shape = list(f_odd.shape)
+                out_shape[transform_axis] = self.n_l_odd[m]
+                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                                trans_a=1, trans_b=0,
+                                a=self.ip_lm_odd[m][:,m:self.lmax+1], # (nth/2, n_l_odd)
+                                b=f_odd[tuple(slc)])                  # (nth/2, ...)
+                c_temp = np.reshape(c_temp, tuple(out_shape))         # (n_l_odd, ...)
+
+                # store output
+                for j in range(1,self.n_l_odd[m]+1):
+                    l = self.lvalsi[m]['odd'][j]
+                    data_out[l,...] = c_temp[j,...]
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
 
         return data_out
 
-    def to_physical(self, data_in, laxis=0, maxis=1):
+    def to_physical(self, data_in, th_axis=0, phi_axis=1, fft=True):
         """
         SHT transform from spectral space (l,m) to physical space (theta,phi)
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed, must be dimension 4 or less
-        laxis : int, optional
+            Input data to be transformed
+        th_axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place
-        maxis : int, optional
+        phi_axis : int, optional
             The axis over which the Fourier transform (phi/m) will take place
+        fft : bool, optional
+            If fft=True, a full SHT transform from (l,m) to (th,phi) will occur,
+            starting with a FFT in the phi direction. If False, the FFT will not
+            occur and the Legendre transform will assume m=0.
 
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axis
+            Transformed data, same shape as input, except along the transformed axes
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        axis = pos_axis(axis, dim)
+        th_axis = pos_axis(th_axis, dim)
+        phi_axis = pos_axis(phi_axis, dim)
 
-        check_dims(data_in, 4) # only coded for 4D or less
+        if (dim < 2 and fft):
+            e = "Full SHT requires data to be at least 2d. Found {}d"
+            raise ValueError(e.format(dim))
 
-        if (shp[axis] != self.lmax+1):
-            e = "Legendre transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.nth, axis, shp[axis]))
+        if (shp[th_axis] != self.nth):
+            e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
 
-        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
+        if (fft and (shp[phi_axis] != self.nphi)):
+            e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
+
+        if (fft): # first do FFT
+            data_in = self.fourier.to_physical(data_in, axis=phi_axis)
 
         # make the transform axis first
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # perform the transform with calls to BLAS
+        # allocate space
+        shape = list(data_in.shape); shape[transform_axis] = self.nth
+        data_out = np.zeros(tuple(shape))
+
+        shape[transform_axis] = self.nth/2
+        out_shape = list(shape)
+
+        for i in range(int(self.nth/2)):
+            f_even[i,...] = data_in[i,...] + data_in[self.nth-1-i,...]
+            f_odd[i,...]  = data_in[i,...] - data_in[self.nth-1-i,...]
+
         alpha = 1.0; beta = 0.0
+        if (fft):
+            _nm = self.nm
+        else:
+            _nm = [0] # assume only m=0 for "pure" Legendre transform
 
-        shape = list(data_in.shape); shape[transform_axis] = self.nth; shape = tuple(shape)
-        data_out = np.zeros((shape))
+        slc = [slice(None)]*dim
+        for m in range(_nm):
+            if (fft):
+                slc[phi_axis] = m
 
-        # data assumed to be 4D, so two for loops plus a matrix multiply
-        n, ny, nz, nt = np.shape(data_in)
-        for j in range(nt):
-            for i in range(nz):
-                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
-                                          trans_a=0, trans_b=0,
-                                          a=self.Pl, b=data_in[:,:,i,j])
+            if (self.n_l_even[m] > 0):
+                shape[transform_axis] = self.n_l_even[m]
+                f_even = np.zeros_like(tuple(shape))
+
+                for j in range(1,self.n_l_even[m]+1):
+                    l = self.lvalsi[m]['even'][j]
+                    f_even[j,...] = data_in[l,...]
+
+                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                                trans_a=1, trans_b=0,
+                                a=self.p_lm_even[m][:,m:self.lmax+1], # (n_l_even, nth/2)
+                                b=f_even[tuple(slc)])                 # (n_l_even, ...)
+                c_temp = np.reshape(c_temp, tuple(out_shape))         # (nth/2, ...)
+
+                # store first half of output
+                data_out[:int(self.nth/2),...] = c_temp[:,...]
+
+                # reflect evenly
+                for j in range(int(self.nth/2)):
+                    data_out[self.nth-j-1,...] = data_out[j,...]
+
+            if (self.n_l_odd[m] > 0):
+                shape[transform_axis] = self.n_l_odd[m]
+                f_odd  = np.zeros_like(tuple(shape))
+
+                for j in range(1,self.n_l_odd[m]+1):
+                    l = self.lvalsi[m]['odd'][j]
+                    f_odd[j,...] = data_in[l,...]
+
+                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                                trans_a=1, trans_b=0,
+                                a=self.p_lm_odd[m][:,m:self.lmax+1], # (n_l_odd, nth/2)
+                                b=f_odd[tuple(slc)])                 # (n_l_odd, ...)
+                c_temp = np.reshape(c_temp, tuple(out_shape))        # (nth/2, ...)
+
+                # add output to already computed even stuff
+                for j in range(int(self.nth/2)):
+                    data_out[j,...] += c_temp[j,...]            # include first half
+                    data_out[self.nth-j-1,...] -= c_temp[j,...] # odd-reflect
+
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
-
-        # remove any dimensions that were added
-        data_out = np.squeeze(data_out, axis=added_axes)
 
         return data_out
 
