@@ -592,6 +592,14 @@ class Legendre:
     """
     Handle data on a Legendre grid, i.e., latitude/theta grid
 
+    The data is decomposed as
+
+    .. math::
+        F(x) = \\sum C_l A_l^{m=0} P_l^{m=0}(x)
+
+    where :math:`P_l^m` are the associated Legendre functions for :math:`m=0` and
+    :math:`A_l^m` are the Spherical harmonic normalization coefficients.
+
     Attributes
     ----------
     nth : integer
@@ -890,6 +898,9 @@ def chebyshev_zeros(Npts, reverse=False):
 class Chebyshev:
     """
     Handle data on a Chebyshev grid, i.e., radius grid
+
+    The grid is based on the zeros of the Chebyshev polynomials and includes the
+    endpoints of the domain as grid points.
 
     Attributes
     ----------
@@ -1620,27 +1631,24 @@ class SHT:
         Transform to physical space along the given axes
     """
 
-    def __init__(self, N, spectral=False, dealias=1.5, parity=True):
+    def __init__(self, N, spectral=False, dealias=1.5):
         """
         Initialize the SHT grid and transform
 
         Args
         ----
         N : int
-            Resolution of the theta grid
+            Resolution of the latitude/theta grid
         spectral : bool, optional
             Does N refer to physical space or spectral space. If spectral=True,
             N would be the maximum polynomial degree (l_max). The default
             is that N refers to the physical space resolution (N_theta)
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
-        parity : bool, optional
-            Exploit parity during the Legendre transforms
         """
         self.nth, self.lmax = grid_size(N, spectral, dealias)
         self.nell    = self.lmax + 1
         self.dealias = dealias
-        self.parity  = parity
 
         self.nphi = 2*self.nth
 
@@ -1681,20 +1689,20 @@ class SHT:
         n_m = self.nm
 
         n_l = np.zeros((n_m), dtype=np.int32)
-        p_lm = [0]*n_m
         p_lmq = [0]*n_m
-        ip_lm = [0]*n_m
-        ntmax = self.nth
-        if (self.parity):
-            p_lm_odd = [0]*n_m
-            p_lm_even = [0]*n_m
-            ip_lm_odd = [0]*n_m
-            ip_lm_even = [0]*n_m
-            n_l_odd = np.zeros((n_m), dtype=np.int32)
-            n_l_even = np.zeros((n_m), dtype=np.int32)
-            lvals = [{'even':None, 'odd':None}]*n_m
-            lvalsi = [{'even':None, 'odd':None}]*n_m
-            ntmax = int(self.nth / 2)
+        p_lm_odd = [0]*n_m
+        p_lm_even = [0]*n_m
+        ip_lm_odd = [0]*n_m
+        ip_lm_even = [0]*n_m
+        n_l_odd = np.zeros((n_m), dtype=np.int32)
+        n_l_even = np.zeros((n_m), dtype=np.int32)
+        lvals = [{'even':None, 'odd':None}]*n_m
+        lvalsi = [{'even':None, 'odd':None}]*n_m
+        ntmax = int(self.nth / 2)
+        nth_half = int(self.nth / 2)
+
+        # build azimuthal wavenumbers
+        m_values = np.asarray(np.arange(n_m), dtype=np.int32)
 
         piq = np.asarray(np.pi, dtype=np.float128)
         one = np.asarray(1.0, dtype=np.float128)
@@ -1702,127 +1710,119 @@ class SHT:
         four = np.asarray(4.0, dtype=np.float128)
         half = np.asarray(0.5, dtype=np.float128)
 
-        for m in range(n_m): # m loop index is also actual m value
-            n_l[m] = self.lmax - m + 1
-            p_lmq[m] = np.zeros((ntmax, self.lmax+1)) # really should be (nt, m:lmax)
+        for m in range(n_m):
+            mv = m_values[m]
+
+            n_l[m] = self.lmax - mv + 1
+            p_lmq[m] = np.zeros((ntmax, n_l[m])) # really should be (nt, m:lmax)
+                                                 # therefore all indices into the
+                                                 # l-axis are indexed as [l-m], where
+                                                 # m is the actual m-value, in order
+                                                 # to make it zero-based indexing.
+                                                 # this is not necessary in Fortran
 
             factorial_ratio = np.asarray(1.0, dtype=np.float128)
-            for i in range(1,m):
-                factorial *= ((i-half)/i)**half
+            for i in range(1,mv):
+                factorial_ratio *= ((i-half)/i)**half
 
-            amp = ((m+half)/(2*piq))**half
+            amp = ((mv+half)/(2*piq))**half
             amp *= factorial_ratio
 
+            # closed form to get l=m and l=m+1
             for i in range(ntmax):
                 x = self.xq[i]
                 tmp = one - x*x
 
-                # l=m pieces
-                if (m%2 == 1):
-                    p_lmq[m][i,m] = -amp*tmp**(int(m/2)+half)
+                # l=m pieces, always the first element in the p_lm array at this m_value
+                if (mv%2 == 1):
+                    # odd m
+                    p_lmq[m][i,mv-mv] = -amp*tmp**(int(mv/2)+half)
                 else:
-                    p_lmq[m][i,m] = amp*tmp**(int(m/2))
+                    # even m
+                    p_lmq[m][i,mv-mv] = amp*tmp**(int(mv/2))
 
-                # l = m+1 pieces
-                if (m < self.lmax):
-                    p_lmq[m][i,m+1] = p_lmq[m][i,m]*x*(two*m+3)**half
+                # l = m+1 pieces, always the second element in the p_lm array at this m_value
+                if (mv < self.lmax):
+                    p_lmq[m][i,mv+1-mv] = p_lmq[m][i,mv-mv]*x*(two*mv+3)**half
 
-            # general recursion for l > m+1
-            for l in range(m+2,lmax+1):
+            # general recursion for l > m+1, starts at the 3rd element and moves to last
+            for l in range(mv+2,self.lmax+1):
                 for i in range(ntmax):
                     x = self.xq[i]
-                    amp = (l-1)**2 - m*m
+                    amp = (l-1)**2 - mv*mv
                     amp = amp / (four*(l-1)**2-one)
                     amp = amp**half
-                    tmp = p_lmq[m][i,l-1]*x - amp*p_lmq[m][i,l-2]
-                    amp = (four*l*l-one)/(l*l-m*m)
-                    p_lmq[m][i,l] = tmp*amp**half
+                    tmp = p_lmq[m][i,l-1-mv]*x - amp*p_lmq[m][i,l-2-mv]
+                    amp = (four*l*l-one)/(l*l-mv*mv)
+                    p_lmq[m][i,l-mv] = tmp*amp**half
 
-            if (self.parity): # parity resort
-                if (m == 0):
-                    pts_norm = 1./(2*self.nth)
-                    stp_norm = 1.0
-                else:
-                    pts_norm = 1./(self.nth)
-                    stp_norm = 0.5
-
-                n_l_even[m] = 0
-                n_l_odd[m] = 0
-                for l in range(m, self.lmax+1):
-                    parity_test = l-m
-                    if (parity_test % 2 == 1):
-                        n_l_odd[m] += 1
-                    else:
-                        n_l_even[m] += 1
-
-                if (n_l_even[m] > 0):
-                    ip_lm_even[m] = np.zeros((self.nth/2, n_l_even[m]))
-                    p_lm_even[m] = np.zeros((n_l_even[m], self.nth/2))
-                    lvals[m]['even'] = np.zeros((n_l_even[m]))
-                    lvalsi[m]['even'] = np.zeros((n_l_even[m]), dtype=np.int32)
-                if (n_l_odd[m] > 0):
-                    ip_lm_odd[m] = np.zeros((self.nth/2, n_l_odd[m]))
-                    p_lm_odd[m] = np.zeros((n_l_odd[m], self.nth/2))
-                    lvals[m]['odd'] = np.zeros((n_l_odd[m]))
-                    lvalsi[m]['odd'] = np.zeros((n_l_odd[m]), dtype=np.int32)
-
-                indeven = 1; indodd = 1
-                for l in range(m, self.lmax+1):
-                    parity_test = l-m
-                    if (parity_test % 2 == 1):
-                        lvals[m]['odd'][indodd] = l
-                        lvalsi[m]['odd'][indodd] = l
-                        for i in range(self.nth/2):
-                            renorm = two*piq*self.wq[i]
-                            tmp = p_lmq[m][i,l]*renorm
-                            ip_lm_odd[m][i,indodd] = tmp*pts_norm
-                            p_lm_odd[m][indodd,i] = p_lmq[m][i,l]*stp_norm
-                        indodd += 1
-                    else:
-                        lvals[m]['even'][indeven] = l
-                        lvalsi[m]['even'][indeven] = l
-                        for i in range(self.nth/2):
-                            renorm = two*piq*self.wq[i]
-                            tmp = p_lmq[m][i,l]*renorm
-                            ip_lm_even[m][i,indeven] = tmp*pts_norm
-                            p_lm_even[m][indeven,i] = p_lmq[m][i,l]*stp_norm
-                        indeven += 1
-
+            # parity resort
+            if (mv == 0):
+                pts_norm = 1./(2*self.nth)
+                stp_norm = 1.0
             else:
-                # store in double precision
-                p_lm[m]  = np.zeros((self.lmax+1, ntmax), dtype=np.float64)
+                pts_norm = 1./(self.nth)
+                stp_norm = 0.5
 
-                p_lm[m] = np.transpose(p_lmq[m])
-                renorm = np.reshape(two*piq*self.wq, (self.nth,1))
+            n_l_even[m] = 0
+            n_l_odd[m] = 0
+            for l in range(mv, self.lmax+1):
+                parity_test = l-mv
+                if (parity_test % 2 == 1):
+                    n_l_odd[m] += 1
+                else:
+                    n_l_even[m] += 1
 
-                ip_lm[m] = np.asarray(p_lmq[m]*renorm, dtype=np.float64)
+            if (n_l_even[m] > 0):
+                ip_lm_even[m] = np.zeros((nth_half, n_l_even[m]))
+                p_lm_even[m] = np.zeros((n_l_even[m], nth_half))
+                lvals[m]['even'] = np.zeros((n_l_even[m]))
+                lvalsi[m]['even'] = np.zeros((n_l_even[m]), dtype=np.int32)
+            if (n_l_odd[m] > 0):
+                ip_lm_odd[m] = np.zeros((nth_half, n_l_odd[m]))
+                p_lm_odd[m] = np.zeros((n_l_odd[m], nth_half))
+                lvals[m]['odd'] = np.zeros((n_l_odd[m]))
+                lvalsi[m]['odd'] = np.zeros((n_l_odd[m]), dtype=np.int32)
+
+            indeven = 0; indodd = 0
+            for l in range(mv, self.lmax+1):
+                parity_test = l-mv
+                if (parity_test % 2 == 1):
+                    lvals[m]['odd'][indodd] = l
+                    lvalsi[m]['odd'][indodd] = l
+                    for i in range(nth_half):
+                        renorm = two*piq*self.wq[i]
+                        tmp = p_lmq[m][i,l-mv]*renorm
+                        ip_lm_odd[m][i,indodd] = tmp*pts_norm
+                        p_lm_odd[m][indodd,i] = p_lmq[m][i,l-mv]*stp_norm
+                    indodd += 1
+                else:
+                    lvals[m]['even'][indeven] = l
+                    lvalsi[m]['even'][indeven] = l
+                    for i in range(nth_half):
+                        renorm = two*piq*self.wq[i]
+                        tmp = p_lmq[m][i,l-mv]*renorm
+                        ip_lm_even[m][i,indeven] = tmp*pts_norm
+                        p_lm_even[m][indeven,i] = p_lmq[m][i,l-mv]*stp_norm
+                    indeven += 1
 
             # try to release some memory
             p_lmq[m] = None
-            if (self.parity):
-                p_lm[m] = None
-                ip_lm[m] = None
 
         # try to release some memory
         p_lmq = None
-        if (self.parity):
-            p_lm = None
-            ip_lm = None
 
         # make available to class
         self.ntmax = ntmax
-        if (self.parity):
-            self.lvals = lvals
-            self.lvalsi = lvalsi
-            self.p_lm_even = p_lm_even
-            self.p_lm_odd = p_lm_odd
-            self.ip_lm_even = ip_lm_even
-            self.ip_lm_odd = ip_lm_odd
-            self.n_l_even = n_l_even
-            self.n_l_odd = n_l_odd
-        else:
-            self.p_lm = p_lm
-            self.ip_lm = ip_lm
+        self.nth_half = nth_half
+        self.lvals = lvals
+        self.lvalsi = lvalsi
+        self.p_lm_even = p_lm_even
+        self.p_lm_odd = p_lm_odd
+        self.ip_lm_even = ip_lm_even
+        self.ip_lm_odd = ip_lm_odd
+        self.n_l_even = n_l_even
+        self.n_l_odd = n_l_odd
 
     def to_spectral(self, data_in, th_axis=0, phi_axis=1, fft=True):
         """
@@ -1835,7 +1835,8 @@ class SHT:
         th_axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place
         phi_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place
+            The axis over which the Fourier transform (phi/m) will take place, not
+            used if fft=False.
         fft : bool, optional
             If fft=True, a full SHT transform from (th,phi) to (l,m) will occur,
             starting with a FFT in the phi direction. If False, the FFT will not
@@ -1879,12 +1880,12 @@ class SHT:
         shape = list(data_in.shape); shape[transform_axis] = self.nl
         data_out = np.zeros(tuple(shape))
 
-        shape[transform_axis] = self.nth/2
+        shape[transform_axis] = self.nth_half
         f_even = np.zeros_like(tuple(shape))
         f_odd  = np.zeros_like(tuple(shape))
 
         # build even/odd input data
-        for i in range(int(self.nth/2)):
+        for i in range(int(self.nth_half)):
             f_even[i,...] = data_in[i,...] + data_in[self.nth-1-i,...]
             f_odd[i,...]  = data_in[i,...] - data_in[self.nth-1-i,...]
 
@@ -1894,37 +1895,48 @@ class SHT:
         else:
             _nm = [0] # assume only m=0 for "pure" Legendre transform
 
+        if (fft):
+            GEMM = ZGEMM
+        else:
+            GEMM = DGEMM
+
         slc = [slice(None)]*dim
+        oslc = [slice(None)]*dim
+        out_shape_even = list(f_even.shape)
+        out_shape_odd = list(f_odd.shape)
         for m in range(_nm):
             if (fft):
                 slc[phi_axis] = m
+                oslc[phi_axis] = m
+                out_shape_even[phi_axis] = m
+                out_shape_odd[phi_axis] = m
             if (self.n_l_even[m] > 0):
-                out_shape = list(f_even.shape)
-                out_shape[transform_axis] = self.n_l_even[m]
-                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                out_shape_even[transform_axis] = self.n_l_even[m]
+                f_even = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
-                                a=self.ip_lm_even[m][:,m:self.lmax+1], # (nth/2, n_l_even)
-                                b=f_even[tuple(slc)])                  # (nth/2, ...)
-                c_temp = np.reshape(c_temp, tuple(out_shape))          # (n_l_even, ...)
+                                a=self.ip_lm_even[m][:,:],         # (nth/2, n_l_even)
+                                b=f_even[tuple(slc)])              # (nth/2, ...)
+                f_even = np.reshape(f_even, tuple(out_shape_even)) # (n_l_even, ...)
 
                 # store output
-                for j in range(1,self.n_l_even[m]+1):
+                for j in range(self.n_l_even[m]):
                     l = self.lvalsi[m]['even'][j]
-                    data_out[l,...] = c_temp[j,...]
+                    oslc[0] = l
+                    data_out[tuple(oslc)] = f_even[j,...]
 
             if (self.n_l_odd[m] > 0):
-                out_shape = list(f_odd.shape)
-                out_shape[transform_axis] = self.n_l_odd[m]
-                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                out_shape_odd[transform_axis] = self.n_l_odd[m]
+                f_odd = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
-                                a=self.ip_lm_odd[m][:,m:self.lmax+1], # (nth/2, n_l_odd)
-                                b=f_odd[tuple(slc)])                  # (nth/2, ...)
-                c_temp = np.reshape(c_temp, tuple(out_shape))         # (n_l_odd, ...)
+                                a=self.ip_lm_odd[m][:,:],         # (nth/2, n_l_odd)
+                                b=f_odd[tuple(slc)])              # (nth/2, ...)
+                f_odd = np.reshape(f_odd, tuple(out_shape_odd)) # (n_l_odd, ...)
 
                 # store output
-                for j in range(1,self.n_l_odd[m]+1):
+                for j in range(self.n_l_odd[m]):
                     l = self.lvalsi[m]['odd'][j]
-                    data_out[l,...] = c_temp[j,...]
+                    oslc[0] = l
+                    data_out[tuple(oslc)] = f_odd[j,...]
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -1942,7 +1954,8 @@ class SHT:
         th_axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place
         phi_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place
+            The axis over which the Fourier transform (phi/m) will take place, not
+            used if fft=False.
         fft : bool, optional
             If fft=True, a full SHT transform from (l,m) to (th,phi) will occur,
             starting with a FFT in the phi direction. If False, the FFT will not
@@ -1962,9 +1975,9 @@ class SHT:
             e = "Full SHT requires data to be at least 2d. Found {}d"
             raise ValueError(e.format(dim))
 
-        if (shp[th_axis] != self.nth):
+        if (shp[th_axis] != (self.lmax+1)):
             e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
+            raise ValueError(e.format(self.lmax+1, th_axis, shp[th_axis]))
 
         if (fft and (shp[phi_axis] != self.nphi)):
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
@@ -1981,12 +1994,8 @@ class SHT:
         shape = list(data_in.shape); shape[transform_axis] = self.nth
         data_out = np.zeros(tuple(shape))
 
-        shape[transform_axis] = self.nth/2
+        shape[transform_axis] = self.nth_half
         out_shape = list(shape)
-
-        for i in range(int(self.nth/2)):
-            f_even[i,...] = data_in[i,...] + data_in[self.nth-1-i,...]
-            f_odd[i,...]  = data_in[i,...] - data_in[self.nth-1-i,...]
 
         alpha = 1.0; beta = 0.0
         if (fft):
@@ -1994,50 +2003,65 @@ class SHT:
         else:
             _nm = [0] # assume only m=0 for "pure" Legendre transform
 
+        if (fft):
+            GEMM = ZGEMM
+        else:
+            GEMM = DGEMM
+
         slc = [slice(None)]*dim
+        oslc = [slice(None)]*dim
+        oslc2 = [slice(None)]*dim
         for m in range(_nm):
             if (fft):
                 slc[phi_axis] = m
+                oslc[phi_axis] = m
+                oslc2[phi_axis] = m
+                out_shape[phi_axis] = m
 
             if (self.n_l_even[m] > 0):
                 shape[transform_axis] = self.n_l_even[m]
                 f_even = np.zeros_like(tuple(shape))
 
-                for j in range(1,self.n_l_even[m]+1):
+                for j in range(self.n_l_even[m]): # re-index into even/odd
                     l = self.lvalsi[m]['even'][j]
                     f_even[j,...] = data_in[l,...]
 
-                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                f_even = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
-                                a=self.p_lm_even[m][:,m:self.lmax+1], # (n_l_even, nth/2)
-                                b=f_even[tuple(slc)])                 # (n_l_even, ...)
-                c_temp = np.reshape(c_temp, tuple(out_shape))         # (nth/2, ...)
+                                a=self.p_lm_even[m][:,:],     # (n_l_even, nth/2)
+                                b=f_even[tuple(slc)])         # (n_l_even, ...)
+                f_even = np.reshape(f_even, tuple(out_shape)) # (nth/2, ...)
 
                 # store first half of output
-                data_out[:int(self.nth/2),...] = c_temp[:,...]
+                oslc[0] = slice(0,self.nth_half+1)
+                data_out[tuple(oslc)] = f_even[:,...]
 
                 # reflect evenly
-                for j in range(int(self.nth/2)):
-                    data_out[self.nth-j-1,...] = data_out[j,...]
+                for j in range(self.nth_half):
+                    oslc[0] = self.nth-j-1
+                    oslc2[0] = j
+                    data_out[tuple(oslc)] = data_out[tuple(oslc2)]
 
             if (self.n_l_odd[m] > 0):
                 shape[transform_axis] = self.n_l_odd[m]
                 f_odd  = np.zeros_like(tuple(shape))
 
-                for j in range(1,self.n_l_odd[m]+1):
+                for j in range(self.n_l_odd[m]): # re-index into even/odd
                     l = self.lvalsi[m]['odd'][j]
                     f_odd[j,...] = data_in[l,...]
 
-                c_temp = ZGEMM(alpha=alpha, beta=beta,
+                f_odd = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
-                                a=self.p_lm_odd[m][:,m:self.lmax+1], # (n_l_odd, nth/2)
-                                b=f_odd[tuple(slc)])                 # (n_l_odd, ...)
-                c_temp = np.reshape(c_temp, tuple(out_shape))        # (nth/2, ...)
+                                a=self.p_lm_odd[m][:,:],    # (n_l_odd, nth/2)
+                                b=f_odd[tuple(slc)])        # (n_l_odd, ...)
+                f_odd = np.reshape(f_odd, tuple(out_shape)) # (nth/2, ...)
 
                 # add output to already computed even stuff
-                for j in range(int(self.nth/2)):
-                    data_out[j,...] += c_temp[j,...]            # include first half
-                    data_out[self.nth-j-1,...] -= c_temp[j,...] # odd-reflect
+                for j in range(self.nth_half):
+                    oslc[0] = j
+                    data_out[tuple(oslc)] += f_odd[j,...] # include first half
+                    oslc[0] = self.nth-j-1
+                    data_out[tuple(oslc)] -= f_odd[j,...] # odd-reflect
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
