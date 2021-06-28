@@ -1600,9 +1600,9 @@ class SHT:
 
     Methods
     -------
-    to_spectral(data, laxis=0, maxis=1)
+    to_spectral(data, th_axis=0, phi_axis=1)
         Transform to spectral space along the given axes
-    to_physical(data, laxis=0, maxis=1)
+    to_physical(data, th_axis=0, phi_axis=1)
         Transform to physical space along the given axes
     """
 
@@ -1671,8 +1671,8 @@ class SHT:
         self.ip_lm_even = [0]*n_m
         self.n_l_odd = np.zeros((n_m), dtype=np.int32)
         self.n_l_even = np.zeros((n_m), dtype=np.int32)
-        self.lvals = [{'even':None, 'odd':None}]*n_m
-        self.lvalsi = [{'even':None, 'odd':None}]*n_m
+        self.lvals_even = [0]*n_m
+        self.lvals_odd = [0]*n_m
         self.ntmax = ntmax = int(self.nth / 2)
         self.nth_half = nth_half = int(self.nth / 2)
 
@@ -1751,20 +1751,17 @@ class SHT:
             if (self.n_l_even[m] > 0):
                 self.ip_lm_even[m] = np.zeros((nth_half, self.n_l_even[m]))
                 self.p_lm_even[m] = np.zeros((self.n_l_even[m], nth_half))
-                self.lvals[m]['even'] = np.zeros((self.n_l_even[m],))
-                self.lvalsi[m]['even'] = np.zeros((self.n_l_even[m],), dtype=np.int32)
+                self.lvals_even[m] = np.zeros((self.n_l_even[m],), dtype=np.int32)
             if (self.n_l_odd[m] > 0):
                 self.ip_lm_odd[m] = np.zeros((nth_half, self.n_l_odd[m]))
                 self.p_lm_odd[m] = np.zeros((self.n_l_odd[m], nth_half))
-                self.lvals[m]['odd'] = np.zeros((self.n_l_odd[m],))
-                self.lvalsi[m]['odd'] = np.zeros((self.n_l_odd[m],), dtype=np.int32)
+                self.lvals_odd[m] = np.zeros((self.n_l_odd[m],), dtype=np.int32)
 
             indeven = 0; indodd = 0
             for l in range(mv, self.lmax+1):
                 parity_test = l-mv
                 if (parity_test % 2 == 1):
-                    self.lvals[m]['odd'][indodd] = l
-                    self.lvalsi[m]['odd'][indodd] = l
+                    self.lvals_odd[m][indodd] = l
                     for i in range(nth_half):
                         renorm = two*piq*self.wq[i]
                         tmp = p_lmq[m][i,l-mv]*renorm
@@ -1772,26 +1769,19 @@ class SHT:
                         self.p_lm_odd[m][indodd,i] = p_lmq[m][i,l-mv]*stp_norm
                     indodd += 1
                 else:
-                    self.lvals[m]['even'][indeven] = l
-                    self.lvalsi[m]['even'][indeven] = l
+                    self.lvals_even[m][indeven] = l
                     for i in range(nth_half):
                         renorm = two*piq*self.wq[i]
                         tmp = p_lmq[m][i,l-mv]*renorm
                         self.ip_lm_even[m][i,indeven] = tmp*pts_norm
                         self.p_lm_even[m][indeven,i] = p_lmq[m][i,l-mv]*stp_norm
                     indeven += 1
-            #print(m, self.lvalsi[m]['even'], self.lvalsi[m]['even'].shape)
 
             # try to release some memory
             p_lmq[m] = None
 
         # try to release some memory
         p_lmq = None
-
-        #print("#############")
-        #for m in range(n_m):
-        #    #print(m, self.lvalsi[m]['even'], self.lvalsi[m]['even'].shape)
-        #    print(self.p_lm_even[m].shape, self.ip_lm_even[m].shape)
 
     def to_spectral(self, data_in, th_axis=0, phi_axis=1, fft=True):
         """
@@ -1841,7 +1831,7 @@ class SHT:
             complex_data = False
             dtype = np.float64
 
-        if (fft): # first do FFT
+        if (False): # first do FFT
             data_in = self.fourier.to_spectral(data_in, axis=phi_axis)
             complex_data = True
             dtype = np.complex128
@@ -1892,6 +1882,13 @@ class SHT:
                 out_shape_odd[phi_axis] = 1
             if (self.n_l_even[m] > 0):
                 out_shape_even[transform_axis] = self.n_l_even[m]
+                print("#########")
+                print("m={}".format(m))
+                print(self.ip_lm_even[m].T.shape)
+                print(self.n_l_even[m])
+                print(slc)
+                print(np.shape(f_even[tuple(slc)]))
+                print(tuple(out_shape_even))
                 f_even = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
                                 a=self.ip_lm_even[m][:,:],         # (nth/2, n_l_even)
@@ -1903,7 +1900,7 @@ class SHT:
                 #print(self.n_l_even[m], len(self.lvalsi[m]['even']))
                 #print(self.n_l_even[m])
                 for j in range(self.n_l_even[m]):
-                    l = self.lvalsi[m]['even'][j]
+                    l = self.lvals_even[m][j]
                     oslc[0] = l
                     data_out[tuple(oslc)] = f_even[j,...]
 
@@ -1917,7 +1914,7 @@ class SHT:
 
                 # store output
                 for j in range(self.n_l_odd[m]):
-                    l = self.lvalsi[m]['odd'][j]
+                    l = self.lvals_odd[m][j]
                     oslc[0] = l
                     data_out[tuple(oslc)] = f_odd[j,...]
 
@@ -2014,7 +2011,7 @@ class SHT:
                 f_even = np.zeros(tuple(shape), dtype=dtype)
 
                 for j in range(self.n_l_even[m]): # re-index into even/odd
-                    l = self.lvalsi[m]['even'][j]
+                    l = self.lvals_even[m][j]
                     f_even[j,...] = data_in[l,...]
 
                 f_even = GEMM(alpha=alpha, beta=beta,
@@ -2038,7 +2035,7 @@ class SHT:
                 f_odd  = np.zeros(tuple(shape), dtype=dtype)
 
                 for j in range(self.n_l_odd[m]): # re-index into even/odd
-                    l = self.lvalsi[m]['odd'][j]
+                    l = self.lvals_odd[m][j]
                     f_odd[j,...] = data_in[l,...]
 
                 f_odd = GEMM(alpha=alpha, beta=beta,
