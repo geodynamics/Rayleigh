@@ -1688,18 +1688,18 @@ class SHT:
         """
         n_m = self.nm
 
-        n_l = np.zeros((n_m), dtype=np.int32)
+        # allocate storage structures
         p_lmq = [0]*n_m
-        p_lm_odd = [0]*n_m
-        p_lm_even = [0]*n_m
-        ip_lm_odd = [0]*n_m
-        ip_lm_even = [0]*n_m
-        n_l_odd = np.zeros((n_m), dtype=np.int32)
-        n_l_even = np.zeros((n_m), dtype=np.int32)
-        lvals = [{'even':None, 'odd':None}]*n_m
-        lvalsi = [{'even':None, 'odd':None}]*n_m
-        ntmax = int(self.nth / 2)
-        nth_half = int(self.nth / 2)
+        self.p_lm_odd = [0]*n_m
+        self.p_lm_even = [0]*n_m
+        self.ip_lm_odd = [0]*n_m
+        self.ip_lm_even = [0]*n_m
+        self.n_l_odd = np.zeros((n_m), dtype=np.int32)
+        self.n_l_even = np.zeros((n_m), dtype=np.int32)
+        self.lvals = [{'even':None, 'odd':None}]*n_m
+        self.lvalsi = [{'even':None, 'odd':None}]*n_m
+        self.ntmax = ntmax = int(self.nth / 2)
+        self.nth_half = nth_half = int(self.nth / 2)
 
         # build azimuthal wavenumbers
         m_values = np.asarray(np.arange(n_m), dtype=np.int32)
@@ -1713,13 +1713,13 @@ class SHT:
         for m in range(n_m):
             mv = m_values[m]
 
-            n_l[m] = self.lmax - mv + 1
-            p_lmq[m] = np.zeros((ntmax, n_l[m])) # really should be (nt, m:lmax)
-                                                 # therefore all indices into the
-                                                 # l-axis are indexed as [l-m], where
-                                                 # m is the actual m-value, in order
-                                                 # to make it zero-based indexing.
-                                                 # this is not necessary in Fortran
+            n_l = self.lmax - mv + 1
+            p_lmq[m] = np.zeros((ntmax, n_l)) # really should be (nt, m:lmax)
+                                              # therefore all indices into the
+                                              # l-axis are indexed as [l-m], where
+                                              # m is the actual m-value, in order
+                                              # to make it zero-based indexing.
+                                              # this is not necessary in Fortran
 
             factorial_ratio = np.asarray(1.0, dtype=np.float128)
             for i in range(1,mv):
@@ -1764,47 +1764,48 @@ class SHT:
                 pts_norm = 1./(self.nth)
                 stp_norm = 0.5
 
-            n_l_even[m] = 0
-            n_l_odd[m] = 0
+            self.n_l_even[m] = 0
+            self.n_l_odd[m] = 0
             for l in range(mv, self.lmax+1):
                 parity_test = l-mv
                 if (parity_test % 2 == 1):
-                    n_l_odd[m] += 1
+                    self.n_l_odd[m] += 1
                 else:
-                    n_l_even[m] += 1
+                    self.n_l_even[m] += 1
 
-            if (n_l_even[m] > 0):
-                ip_lm_even[m] = np.zeros((nth_half, n_l_even[m]))
-                p_lm_even[m] = np.zeros((n_l_even[m], nth_half))
-                lvals[m]['even'] = np.zeros((n_l_even[m]))
-                lvalsi[m]['even'] = np.zeros((n_l_even[m]), dtype=np.int32)
-            if (n_l_odd[m] > 0):
-                ip_lm_odd[m] = np.zeros((nth_half, n_l_odd[m]))
-                p_lm_odd[m] = np.zeros((n_l_odd[m], nth_half))
-                lvals[m]['odd'] = np.zeros((n_l_odd[m]))
-                lvalsi[m]['odd'] = np.zeros((n_l_odd[m]), dtype=np.int32)
+            if (self.n_l_even[m] > 0):
+                self.ip_lm_even[m] = np.zeros((nth_half, self.n_l_even[m]))
+                self.p_lm_even[m] = np.zeros((self.n_l_even[m], nth_half))
+                self.lvals[m]['even'] = np.zeros((self.n_l_even[m],))
+                self.lvalsi[m]['even'] = np.zeros((self.n_l_even[m],), dtype=np.int32)
+            if (self.n_l_odd[m] > 0):
+                self.ip_lm_odd[m] = np.zeros((nth_half, self.n_l_odd[m]))
+                self.p_lm_odd[m] = np.zeros((self.n_l_odd[m], nth_half))
+                self.lvals[m]['odd'] = np.zeros((self.n_l_odd[m],))
+                self.lvalsi[m]['odd'] = np.zeros((self.n_l_odd[m],), dtype=np.int32)
 
             indeven = 0; indodd = 0
             for l in range(mv, self.lmax+1):
                 parity_test = l-mv
                 if (parity_test % 2 == 1):
-                    lvals[m]['odd'][indodd] = l
-                    lvalsi[m]['odd'][indodd] = l
+                    self.lvals[m]['odd'][indodd] = l
+                    self.lvalsi[m]['odd'][indodd] = l
                     for i in range(nth_half):
                         renorm = two*piq*self.wq[i]
                         tmp = p_lmq[m][i,l-mv]*renorm
-                        ip_lm_odd[m][i,indodd] = tmp*pts_norm
-                        p_lm_odd[m][indodd,i] = p_lmq[m][i,l-mv]*stp_norm
+                        self.ip_lm_odd[m][i,indodd] = tmp*pts_norm
+                        self.p_lm_odd[m][indodd,i] = p_lmq[m][i,l-mv]*stp_norm
                     indodd += 1
                 else:
-                    lvals[m]['even'][indeven] = l
-                    lvalsi[m]['even'][indeven] = l
+                    self.lvals[m]['even'][indeven] = l
+                    self.lvalsi[m]['even'][indeven] = l
                     for i in range(nth_half):
                         renorm = two*piq*self.wq[i]
                         tmp = p_lmq[m][i,l-mv]*renorm
-                        ip_lm_even[m][i,indeven] = tmp*pts_norm
-                        p_lm_even[m][indeven,i] = p_lmq[m][i,l-mv]*stp_norm
+                        self.ip_lm_even[m][i,indeven] = tmp*pts_norm
+                        self.p_lm_even[m][indeven,i] = p_lmq[m][i,l-mv]*stp_norm
                     indeven += 1
+            print(m, self.lvalsi[m]['even'], self.lvalsi[m]['even'].shape)
 
             # try to release some memory
             p_lmq[m] = None
@@ -1812,17 +1813,10 @@ class SHT:
         # try to release some memory
         p_lmq = None
 
-        # make available to class
-        self.ntmax = ntmax
-        self.nth_half = nth_half
-        self.lvals = lvals
-        self.lvalsi = lvalsi
-        self.p_lm_even = p_lm_even
-        self.p_lm_odd = p_lm_odd
-        self.ip_lm_even = ip_lm_even
-        self.ip_lm_odd = ip_lm_odd
-        self.n_l_even = n_l_even
-        self.n_l_odd = n_l_odd
+        print("#############")
+        for m in range(n_m):
+            #print(m, self.lvalsi[m]['even'], self.lvalsi[m]['even'].shape)
+            print(self.p_lm_even[m].shape, self.ip_lm_even[m].shape)
 
     def to_spectral(self, data_in, th_axis=0, phi_axis=1, fft=True):
         """
@@ -1864,9 +1858,20 @@ class SHT:
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
 
+        tol = 1e-14
+        if (np.any(np.abs(np.imag(data_in)) > tol)):
+            complex_data = True
+            dtype = np.complex128
+        else:
+            complex_data = False
+            dtype = np.float64
+
         if (fft): # first do FFT
             data_in = self.fourier.to_spectral(data_in, axis=phi_axis)
+            complex_data = True
+            dtype = np.complex128
 
+#FIXME:
             # trim the m-axis to be consistent with triangular truncation
             slc = [slice(None)]*dim
             slc[phi_axis] = slice(0, self.nm)
@@ -1874,15 +1879,15 @@ class SHT:
 
         # make the transform axis first
         transform_axis = 0
-        data_in = swap_axis(data_in, axis, transform_axis)
+        data_in = swap_axis(data_in, th_axis, transform_axis)
 
         # allocate space
         shape = list(data_in.shape); shape[transform_axis] = self.nl
-        data_out = np.zeros(tuple(shape))
+        data_out = np.zeros(tuple(shape), dtype=dtype)
 
         shape[transform_axis] = self.nth_half
-        f_even = np.zeros_like(tuple(shape))
-        f_odd  = np.zeros_like(tuple(shape))
+        f_even = np.zeros(tuple(shape), dtype=dtype)
+        f_odd  = np.zeros(tuple(shape), dtype=dtype)
 
         # build even/odd input data
         for i in range(int(self.nth_half)):
@@ -1895,7 +1900,7 @@ class SHT:
         else:
             _nm = [0] # assume only m=0 for "pure" Legendre transform
 
-        if (fft):
+        if (complex_data):
             GEMM = ZGEMM
         else:
             GEMM = DGEMM
@@ -1906,10 +1911,10 @@ class SHT:
         out_shape_odd = list(f_odd.shape)
         for m in range(_nm):
             if (fft):
-                slc[phi_axis] = m
-                oslc[phi_axis] = m
-                out_shape_even[phi_axis] = m
-                out_shape_odd[phi_axis] = m
+                slc[phi_axis] = slice(m,m+1)
+                oslc[phi_axis] = slice(m,m+1)
+                out_shape_even[phi_axis] = 1
+                out_shape_odd[phi_axis] = 1
             if (self.n_l_even[m] > 0):
                 out_shape_even[transform_axis] = self.n_l_even[m]
                 f_even = GEMM(alpha=alpha, beta=beta,
@@ -1919,6 +1924,9 @@ class SHT:
                 f_even = np.reshape(f_even, tuple(out_shape_even)) # (n_l_even, ...)
 
                 # store output
+                print('m = {} of {}'.format(m,_nm))
+                print(self.n_l_even[m], len(self.lvalsi[m]['even']))
+                print(self.n_l_even[m])
                 for j in range(self.n_l_even[m]):
                     l = self.lvalsi[m]['even'][j]
                     oslc[0] = l
@@ -1939,7 +1947,7 @@ class SHT:
                     data_out[tuple(oslc)] = f_odd[j,...]
 
         # restore axis order
-        data_out = swap_axis(data_out, transform_axis, axis)
+        data_out = swap_axis(data_out, transform_axis, th_axis)
 
         return data_out
 
@@ -1983,12 +1991,20 @@ class SHT:
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
 
+        tol = 1e-14
+        if (np.any(np.abs(np.imag(data_in)) > tol)):
+            complex_data = True
+            dtype = np.complex128
+        else:
+            complex_data = False
+            dtype = np.float64
+
         if (fft): # first do FFT
             data_in = self.fourier.to_physical(data_in, axis=phi_axis)
 
         # make the transform axis first
         transform_axis = 0
-        data_in = swap_axis(data_in, axis, transform_axis)
+        data_in = swap_axis(data_in, th_axis, transform_axis)
 
         # allocate space
         shape = list(data_in.shape); shape[transform_axis] = self.nth
@@ -2003,7 +2019,7 @@ class SHT:
         else:
             _nm = [0] # assume only m=0 for "pure" Legendre transform
 
-        if (fft):
+        if (complex_data):
             GEMM = ZGEMM
         else:
             GEMM = DGEMM
@@ -2020,7 +2036,7 @@ class SHT:
 
             if (self.n_l_even[m] > 0):
                 shape[transform_axis] = self.n_l_even[m]
-                f_even = np.zeros_like(tuple(shape))
+                f_even = np.zeros(tuple(shape), dtype=dtype)
 
                 for j in range(self.n_l_even[m]): # re-index into even/odd
                     l = self.lvalsi[m]['even'][j]
@@ -2044,7 +2060,7 @@ class SHT:
 
             if (self.n_l_odd[m] > 0):
                 shape[transform_axis] = self.n_l_odd[m]
-                f_odd  = np.zeros_like(tuple(shape))
+                f_odd  = np.zeros(tuple(shape), dtype=dtype)
 
                 for j in range(self.n_l_odd[m]): # re-index into even/odd
                     l = self.lvalsi[m]['odd'][j]
@@ -2064,7 +2080,7 @@ class SHT:
                     data_out[tuple(oslc)] -= f_odd[j,...] # odd-reflect
 
         # restore axis order
-        data_out = swap_axis(data_out, transform_axis, axis)
+        data_out = swap_axis(data_out, transform_axis, th_axis)
 
         return data_out
 
