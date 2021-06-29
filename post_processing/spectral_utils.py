@@ -1627,8 +1627,10 @@ class SHT:
 
         self.nphi = 2*self.nth
 
-        # build Fourier grid/transforms
-        self.fourier = Fourier(self.nphi)
+        # fourier grid
+        self.dphi = 2.*np.pi/self.nphi
+        self.phi = self.dphi*np.arange(self.nphi)
+        self.mmax = self.m_max = self.lmax
 
         # generate grid, weights (xq = x in quad precision)
         self.xq, self.wq = legendre_grid(self.nth, quad=True)
@@ -1649,8 +1651,9 @@ class SHT:
         self.costheta = self.costh
         self.sintheta = self.sinth
 
-        self.dphi = self.fourier.dphi
-        self.phi = self.fourier.phi
+        # number of physical/relevent frequencies numpy.rfft will produce
+        self._fft_to_phys_size = int(self.nphi/2)
+
         self.cosphi = np.cos(self.phi)
         self.sinphi = np.sin(self.phi)
 
@@ -1783,7 +1786,87 @@ class SHT:
         # try to release some memory
         p_lmq = None
 
-    def to_spectral(self, data_in, th_axis=0, phi_axis=1, fft=True):
+    def fft_to_spectral(self, data_in, axis=0):
+        """
+        Fourier transform from physical to spectral
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, assumed to be real
+        axis : int, optional
+            The axis over which the transform will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Complex transformed data, same shape as input, except along the transformed axis
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        if (shp[axis] != self.nphi):
+            e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nphi, axis, shp[axis]))
+
+        norm = 2./self.nphi # assumes complex conjugate symmetry for real data
+        data_out = norm*np.fft.rfft(data_in, axis=axis)
+
+        # dealias, i.e., restrict m-values according to triangular truncation
+        slc = [slice(None)]*dim
+        slc[axis] = slice(0, self.mmax+1)
+        data_out = data_out[tuple(slc)]
+
+        return data_out
+
+    def fft_to_physical(self, data_in, axis=0):
+        """
+        Fourier transform from spectral to physical.
+
+        Args
+        ----
+        data_in : ndarray
+            Complex input data to be transformed
+        axis : int, optional
+            The axis over which the transform will take place
+
+        Returns
+        -------
+        data_out : ndarray
+            Real transformed data, same shape as input, except along the transformed axis
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        if (shp[axis] != self.nm):
+            e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nm, axis, shp[axis]))
+
+        shp = list(data_in.shape); shp[axis] = self._fft_to_phys_size
+
+        # copy data into "dealiased" size
+        temp = np.zeros_like(data_in)
+        slc = [slice(None)]*dim
+        slc[axis] = slice(0,self.nm)
+        temp[tuple(slc)] = data_in[...]
+
+        # assumes complex conjugate symmetry for real data
+        if (self.nm % 2 == 0):
+            N = 2*self.nm - 1
+        else:
+            N = 2*self.nm - 2
+        norm = 2./N
+
+        data_out = np.fft.irfft(temp/norm, axis=axis)
+
+        # ensure real data is returned
+        data_out = data_out.real
+
+        return data_out
+
+    def to_spectral(self, data_in, th_axis=0, phi_axis=1):
         """
         SHT transform from physical space (theta,phi) to spectral space (l,m)
 
@@ -1794,24 +1877,23 @@ class SHT:
         th_axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place
         phi_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place, not
-            used if fft=False.
-        fft : bool, optional
-            If fft=True, a full SHT transform from (th,phi) to (l,m) will occur,
-            starting with a FFT in the phi direction. If False, the FFT will not
-            occur and the Legendre transform will assume m=0.
+            The axis over which the Fourier transform (phi/m) will take place
 
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axes
+            Transformed data, same shape as input, except along the transformed axis
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
         th_axis = pos_axis(th_axis, dim)
         phi_axis = pos_axis(phi_axis, dim)
 
-        if (dim < 2 and fft):
+        if (th_axis == phi_axis):
+            e = "SHT: theta & phi axes must be different, th_axis={}, phi_axis={}"
+            raise ValueError(e.format(th_axis, phi_axis))
+
+        if (dim < 2):
             e = "Full SHT requires data to be at least 2d. Found {}d"
             raise ValueError(e.format(dim))
 
@@ -1819,32 +1901,18 @@ class SHT:
             e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
 
-        if (fft and (shp[phi_axis] != self.nphi)):
-            e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
+        # first do the FFT to put everything in m-space
+        data_in = self.fft_to_spectral(data_in, axis=phi_axis)
 
-        tol = 1e-14
-        if (np.any(np.abs(np.imag(data_in)) > tol)):
-            complex_data = True
-            dtype = np.complex128
-        else:
-            complex_data = False
-            dtype = np.float64
-
-        if (False): # first do FFT
-            data_in = self.fourier.to_spectral(data_in, axis=phi_axis)
-            complex_data = True
-            dtype = np.complex128
-
-#FIXME:
-            # trim the m-axis to be consistent with triangular truncation
-            slc = [slice(None)]*dim
-            slc[phi_axis] = slice(0, self.nm)
-            data_in = data_in[tuple(slc)]
-
-        # make the transform axis first
+        # make the theta axis first
         transform_axis = 0
         data_in = swap_axis(data_in, th_axis, transform_axis)
+
+        GEMM, is_complex = choose_gemm(data_in)
+        if (is_complex):
+            dtype = np.complex128
+        else:
+            dtype = np.float64
 
         # allocate space
         shape = list(data_in.shape); shape[transform_axis] = self.nl
@@ -1860,63 +1928,68 @@ class SHT:
             f_odd[i,...]  = data_in[i,...] - data_in[self.nth-1-i,...]
 
         alpha = 1.0; beta = 0.0
-        if (fft):
-            _nm = self.nm
-        else:
-            _nm = [0] # assume only m=0 for "pure" Legendre transform
-
-        if (complex_data):
-            GEMM = ZGEMM
-        else:
-            GEMM = DGEMM
 
         slc = [slice(None)]*dim
         oslc = [slice(None)]*dim
         out_shape_even = list(f_even.shape)
         out_shape_odd = list(f_odd.shape)
-        for m in range(_nm):
-            if (fft):
-                slc[phi_axis] = slice(m,m+1)
-                oslc[phi_axis] = slice(m,m+1)
-                out_shape_even[phi_axis] = 1
-                out_shape_odd[phi_axis] = 1
+        for m in range(self.nm): # phi-axis is now m-values in spectral space
+
             if (self.n_l_even[m] > 0):
+                slc[phi_axis] = slice(m, m+1)  # select single m
+                oslc[phi_axis] = slice(m, m+1)
+                out_shape_even[phi_axis] = 1   # update the shape after selecting single m
+
                 out_shape_even[transform_axis] = self.n_l_even[m]
-                print("#########")
-                print("m={}".format(m))
-                print(self.ip_lm_even[m].T.shape)
-                print(self.n_l_even[m])
-                print(slc)
-                print(np.shape(f_even[tuple(slc)]))
-                print(tuple(out_shape_even))
-                f_even = GEMM(alpha=alpha, beta=beta,
+                c_even = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
                                 a=self.ip_lm_even[m][:,:],         # (nth/2, n_l_even)
                                 b=f_even[tuple(slc)])              # (nth/2, ...)
-                f_even = np.reshape(f_even, tuple(out_shape_even)) # (n_l_even, ...)
+                c_even = np.reshape(c_even, tuple(out_shape_even)) # (n_l_even, ...)
+
+                # c_even refers to single m value, so "undo" the slice that selects single m
+                slc[phi_axis] = slice(None)
 
                 # store output
-                #print('m = {} of {}'.format(m,_nm))
-                #print(self.n_l_even[m], len(self.lvalsi[m]['even']))
-                #print(self.n_l_even[m])
                 for j in range(self.n_l_even[m]):
                     l = self.lvals_even[m][j]
                     oslc[0] = l
-                    data_out[tuple(oslc)] = f_even[j,...]
+                    slc[0] = j
+                    data_out[tuple(oslc)] = c_even[tuple(slc)]
+
+                # restore slice object before odd section
+                oslc[0] = slice(None)
+                slc[0] = slice(None)
 
             if (self.n_l_odd[m] > 0):
+                slc[phi_axis] = slice(m, m+1)  # select single m
+                oslc[phi_axis] = slice(m, m+1)
+                out_shape_odd[phi_axis] = 1    # update the shape after selecting single m
+
                 out_shape_odd[transform_axis] = self.n_l_odd[m]
-                f_odd = GEMM(alpha=alpha, beta=beta,
+                c_odd = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
-                                a=self.ip_lm_odd[m][:,:],         # (nth/2, n_l_odd)
-                                b=f_odd[tuple(slc)])              # (nth/2, ...)
-                f_odd = np.reshape(f_odd, tuple(out_shape_odd)) # (n_l_odd, ...)
+                                a=self.ip_lm_odd[m][:,:],       # (nth/2, n_l_odd)
+                                b=f_odd[tuple(slc)])            # (nth/2, ...)
+                c_odd = np.reshape(c_odd, tuple(out_shape_odd)) # (n_l_odd, ...)
+
+                # c_odd refers to single m value, so "undo" the slice that selects single m
+                slc[phi_axis] = slice(None)
 
                 # store output
                 for j in range(self.n_l_odd[m]):
                     l = self.lvals_odd[m][j]
                     oslc[0] = l
-                    data_out[tuple(oslc)] = f_odd[j,...]
+                    slc[0] = j
+                    data_out[tuple(oslc)] = c_odd[tuple(slc)]
+
+                # restore slice object before even section (next iteration
+                oslc[0] = slice(None)
+                slc[0] = slice(None)
+
+        # ensure
+        slc = [slice(None)]*dim
+        
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, th_axis)
