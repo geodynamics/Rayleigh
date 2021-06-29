@@ -1999,7 +1999,7 @@ class SHT:
 
         return data_out
 
-    def to_physical(self, data_in, th_axis=0, phi_axis=1, fft=True):
+    def to_physical(self, data_in, l_axis=0, m_axis=1):
         """
         SHT transform from spectral space (l,m) to physical space (theta,phi)
 
@@ -2007,15 +2007,10 @@ class SHT:
         ----
         data_in : ndarray
             Input data to be transformed
-        th_axis : int, optional
+        l_axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place
-        phi_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place, not
-            used if fft=False.
-        fft : bool, optional
-            If fft=True, a full SHT transform from (l,m) to (th,phi) will occur,
-            starting with a FFT in the phi direction. If False, the FFT will not
-            occur and the Legendre transform will assume m=0.
+        m_axis : int, optional
+            The axis over which the Fourier transform (phi/m) will take place
 
         Returns
         -------
@@ -2024,71 +2019,56 @@ class SHT:
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        th_axis = pos_axis(th_axis, dim)
-        phi_axis = pos_axis(phi_axis, dim)
+        l_axis = pos_axis(l_axis, dim)
+        m_axis = pos_axis(m_axis, dim)
 
         if (dim < 2 and fft):
             e = "Full SHT requires data to be at least 2d. Found {}d"
             raise ValueError(e.format(dim))
 
-        if (shp[th_axis] != (self.lmax+1)):
+        if (shp[l_axis] != (self.lmax+1)):
             e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.lmax+1, th_axis, shp[th_axis]))
-
-        if (fft and (shp[phi_axis] != self.nphi)):
-            e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
-            raise ValueError(e.format(self.nphi, phi_axis, shp[phi_axis]))
-
-        tol = 1e-14
-        if (np.any(np.abs(np.imag(data_in)) > tol)):
-            complex_data = True
-            dtype = np.complex128
-        else:
-            complex_data = False
-            dtype = np.float64
-
-        if (fft): # first do FFT
-            data_in = self.fourier.to_physical(data_in, axis=phi_axis)
+            raise ValueError(e.format(self.lmax+1, l_axis, shp[l_axis]))
 
         # make the transform axis first
         transform_axis = 0
-        data_in = swap_axis(data_in, th_axis, transform_axis)
+        data_in = swap_axis(data_in, l_axis, transform_axis)
+
+        GEMM, is_complex = choose_gemm(data_in)
+        if (is_complex):
+            dtype = np.complex128
+        else:
+            dtype = np.float64
 
         # allocate space
         shape = list(data_in.shape); shape[transform_axis] = self.nth
-        data_out = np.zeros(tuple(shape))
+        data_out = np.zeros(tuple(shape), dtype=dtype)
 
         shape[transform_axis] = self.nth_half
         out_shape = list(shape)
 
         alpha = 1.0; beta = 0.0
-        if (fft):
-            _nm = self.nm
-        else:
-            _nm = [0] # assume only m=0 for "pure" Legendre transform
-
-        if (complex_data):
-            GEMM = ZGEMM
-        else:
-            GEMM = DGEMM
 
         slc = [slice(None)]*dim
         oslc = [slice(None)]*dim
         oslc2 = [slice(None)]*dim
         for m in range(_nm):
-            if (fft):
-                slc[phi_axis] = m
-                oslc[phi_axis] = m
-                oslc2[phi_axis] = m
-                out_shape[phi_axis] = m
-
             if (self.n_l_even[m] > 0):
+                slc[m_axis] = m
+                oslc[m_axis] = m
+                oslc2[m_axis] = m
+                out_shape[m_axis] = m
+
                 shape[transform_axis] = self.n_l_even[m]
                 f_even = np.zeros(tuple(shape), dtype=dtype)
 
                 for j in range(self.n_l_even[m]): # re-index into even/odd
                     l = self.lvals_even[m][j]
-                    f_even[j,...] = data_in[l,...]
+                    oslc[transform_axis] = l
+                    slc[transform_axis] = j
+                    f_even[tuple(slc)] = data_in[tuple(oslc)]
+
+                slc[transform_axis] = slice(None) # "undo" the particular j index from above
 
                 f_even = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
@@ -2097,22 +2077,34 @@ class SHT:
                 f_even = np.reshape(f_even, tuple(out_shape)) # (nth/2, ...)
 
                 # store first half of output
-                oslc[0] = slice(0,self.nth_half+1)
+                oslc[transform_axis] = slice(0,self.nth_half+1)
                 data_out[tuple(oslc)] = f_even[:,...]
 
                 # reflect evenly
                 for j in range(self.nth_half):
-                    oslc[0] = self.nth-j-1
-                    oslc2[0] = j
+                    oslc[transform_axis] = self.nth-j-1
+                    oslc2[transform_axis] = j
                     data_out[tuple(oslc)] = data_out[tuple(oslc2)]
 
+                oslc[transform_axis] = slice(None) # "undo" the particular j index from above
+                oslc2[transform_axis] = slice(None)
+
             if (self.n_l_odd[m] > 0):
+                slc[m_axis] = m
+                oslc[m_axis] = m
+                oslc2[m_axis] = m
+                out_shape[m_axis] = m
+
                 shape[transform_axis] = self.n_l_odd[m]
                 f_odd  = np.zeros(tuple(shape), dtype=dtype)
 
                 for j in range(self.n_l_odd[m]): # re-index into even/odd
                     l = self.lvals_odd[m][j]
-                    f_odd[j,...] = data_in[l,...]
+                    oslc[transform_axis] = l
+                    slc[transform_axis] = j
+                    f_odd[tuple(slc)] = data_in[tuple(oslc)]
+
+                slc[transform_axis] = slice(None) # "undo" the particular j index from above
 
                 f_odd = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
@@ -2122,13 +2114,19 @@ class SHT:
 
                 # add output to already computed even stuff
                 for j in range(self.nth_half):
-                    oslc[0] = j
+                    oslc[transform_axis] = j
                     data_out[tuple(oslc)] += f_odd[j,...] # include first half
-                    oslc[0] = self.nth-j-1
+                    oslc[transform_axis] = self.nth-j-1
                     data_out[tuple(oslc)] -= f_odd[j,...] # odd-reflect
 
+                oslc[transform_axis] = slice(None) # "undo" the particular j index from above
+                oslc2[transform_axis] = slice(None)
+
+        # lastly do the FFT
+        data_out = self.fft_to_physical(data_out, axis=m_axis)
+
         # restore axis order
-        data_out = swap_axis(data_out, transform_axis, th_axis)
+        data_out = swap_axis(data_out, transform_axis, l_axis)
 
         return data_out
 
