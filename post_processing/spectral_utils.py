@@ -1953,13 +1953,13 @@ class SHT:
                 # store output
                 for j in range(self.n_l_even[m]):
                     l = self.lvals_even[m][j]
-                    oslc[0] = l
-                    slc[0] = j
+                    oslc[transform_axis] = l
+                    slc[transform_axis] = j
                     data_out[tuple(oslc)] = c_even[tuple(slc)]
 
                 # restore slice object before odd section
-                oslc[0] = slice(None)
-                slc[0] = slice(None)
+                oslc[transform_axis] = slice(None)
+                slc[transform_axis] = slice(None)
 
             if (self.n_l_odd[m] > 0):
                 slc[phi_axis] = slice(m, m+1)  # select single m
@@ -1979,17 +1979,20 @@ class SHT:
                 # store output
                 for j in range(self.n_l_odd[m]):
                     l = self.lvals_odd[m][j]
-                    oslc[0] = l
-                    slc[0] = j
+                    oslc[transform_axis] = l
+                    slc[transform_axis] = j
                     data_out[tuple(oslc)] = c_odd[tuple(slc)]
 
                 # restore slice object before even section (next iteration
-                oslc[0] = slice(None)
-                slc[0] = slice(None)
+                oslc[transform_axis] = slice(None)
+                slc[transform_axis] = slice(None)
 
-        # ensure
+        # ensure m>l modes are zero
         slc = [slice(None)]*dim
-        
+        for l in range(self.lmax+1):
+            slc[transform_axis] = l          # this is the "ell" axis now
+            slc[phi_axis] = slice(l+1, None) # this is the "m" axis now
+            data_out[tuple(slc)] = 0.0
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, th_axis)
