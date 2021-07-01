@@ -42,24 +42,6 @@ def choose_gemm(data, tol=1e-14):
 
     return gemm, is_complex
 
-def check_dims(array, max_dims):
-    """
-    Verify array has less dimensions than allowed maximum
-
-    Args
-    ----
-    array : ndarray
-        The input array
-    max_dims : int
-        The maximum allowed number of dimensions
-    """
-    array = np.asarray(array)
-    shp = array.shape
-    ndims = len(shp)
-    if (ndims > max_dims):
-        d = "Array must have <= {} dimensions, given array has dims = {}"
-        raise ValueError(e.format(max_dims, ndims))
-
 def swap_axis(array, axis0, axis1):
     """
     Swap axes of array, other axes remain untouched
@@ -91,11 +73,11 @@ def swap_axis(array, axis0, axis1):
     """
     array = np.asarray(array)
     dim = len(np.shape(array))
+    axis0 = pos_axis(axis0, dim)
+    axis1 = pos_axis(axis1, dim)
+    if (axis0 == axis1): return array
+
     if (dim != 0):
-        axis0 = pos_axis(axis0, dim)
-        axis1 = pos_axis(axis1, dim)
-        if (axis0 == axis1):
-            return array
         return np.swapaxes(array, axis0, axis1)
     else:
         return array
@@ -127,109 +109,25 @@ def pos_axis(axis, dim):
     >>> Axis
     1
     """
-    if (axis >= 0):
-        if (axis >= dim):
-            raise ValueError("axis must be < dim, axis={}, dim={}".format(axis, dim))
-        paxis = axis
-    else:
-        if (abs(axis) > dim):
-            raise ValueError("|axis| must be <= dim, axis={}, dim={}".format(axis, dim))
+    try:
         paxis = np.arange(dim)[axis]
-    return paxis
-
-def more_dimensions(C, Ndim, prepend=False, axis=None):
-    """
-    Increase dimensionality of array, newly added axes will be of size 1.
-
-    Args
-    ----
-    C : ndarray
-        Array to modify, must have dimension <= Ndim
-    Ndim : int
-        New dimensionality of array
-    axis : int, optional
-        Convert "old" axis so it points to the same data set in the new array.
-    prepend : bool, optional
-        Add any necessary dimensions at beginning of shape
-
-    Returns
-    -------
-    C : ndarray
-        Modified array with Ndim dimensions. Newly formed axes have size 1.
-    added_axes : tuple of ints
-        Collection of axes into new array that were added
-    axis : int
-        Modified axis that points to same data as the given axis, only returned
-        if axis was provided.
-
-    Example
-    -------
-    >>> x.shape
-    (128,64,8)
-    >>> X,new = more_dimensions(x, 5)
-    >>> X.shape
-    (128,64,8,1,1)
-    >>> new
-    (3,4)
-    >>>
-    >>> x.shape
-    (128,64,8)
-    >>> axis = 1  # first axis of x has 64 elements
-    >>>
-    >>> X, new, Axis = more_dimensions(x, 5, axis=axis, prepend=True)
-    >>> X.shape
-    (1,1,128,64,8)
-    >>> Axis      # Axis references same data as before with 64 elements
-    3
-    >>> new
-    (0,1)
-    """
-    C = np.asarray(C)
-    shp = np.shape(C); dim = len(shp)
-
-    if (axis is not None):
-        paxis = pos_axis(axis, dim)
-
-    if (Ndim == dim): # don't need to do anything
-        added = ()
-        if (axis is not None):
-            return C, added, paxis
+    except:
+        if (axis > 0):
+            raise ValueError("axis must be < dim, axis={}, dim={}".format(axis, dim))
         else:
-            return C, added
-
-    if (Ndim < dim):
-        e = "Cannot decrease dimensionality, Ndim must be >= {}, Ndim = {}"
-        raise ValueError(e.format(dim, Ndim))
-
-    Ndiff = Ndim - dim
-
-    new = (1,)*Ndiff
-    if (prepend):
-        shape = new + shp
-        added = tuple(np.arange(Ndiff))
-        new_axis = paxis + Ndiff
-    else:
-        shape = shp + new
-        added = tuple(np.arange(len(shape))[-Ndiff:])
-        new_axis = paxis
-
-    C = np.reshape(C, shape)
-
-    if (axis is not None):
-        return C, added, new_axis
-    else:
-        return C, added
+            raise ValueError("|axis| must be <= dim, axis={}, dim={}".format(axis, dim))
+    return paxis
 
 def grid_size(N, spectral, dealias=1.0):
     """
-    Find size of physical and spectral grids
+    Find size of physical and spectral grids with dealiasing
 
     Args
     ----
     N : int
         Number of grid points or coefficients
     spectral : bool
-        Does the incoming `N` refer to physical space (Ngrid) or spectral (Npoly_max)
+        Does the incoming N refer to physical space (Ngrid) or spectral (Npoly_max)
     dealias : float, optional
         Amount to dealias: N_grid = dealias*(N_poly_max + 1)
 
@@ -704,7 +602,7 @@ class Legendre:
         Args
         ----
         data_in : ndarray
-            Input data to be transformed, must be dimension 4 or less
+            Input data to be transformed
         axis : int, optional
             The axis over which the transform will take place
 
@@ -717,14 +615,9 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        check_dims(data_in, 4) # only coded for 4D or less
-
         if (shp[axis] != self.nth):
             e = "Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, axis, shp[axis]))
-
-        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the transform axis first
         transform_axis = 0
@@ -736,21 +629,17 @@ class Legendre:
         # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
-        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
-        data_out = np.zeros((shape))
+        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1
 
-        # data assumed to be 4D, so two for loops plus a matrix multiply
-        n, ny, nz, nt = np.shape(data_in)
-        for j in range(nt):
-            for i in range(nz):
-                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
-                                          trans_a=1, trans_b=0,
-                                          a=iPl, b=data_in[:,:,i,j])
+        GEMM, is_complex = choose_gemm(data_in)
+
+        data_out = GEMM(alpha=alpha, beta=beta,
+                        trans_a=1, trans_b=0,
+                        a=iPl, b=data_in[...])
+        data_out = np.reshape(data_out, tuple(shape))
+
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
-
-        # remove any dimensions that were added
-        data_out = np.squeeze(data_out, axis=added_axes)
 
         return data_out
 
@@ -761,7 +650,7 @@ class Legendre:
         Args
         ----
         data_in : ndarray
-            Input data to be transformed, must be dimension 4 or less
+            Input data to be transformed
         axis : int, optional
             The axis over which the transform will take place
 
@@ -774,14 +663,9 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        check_dims(data_in, 4) # only coded for 4D or less
-
         if (shp[axis] != self.lmax+1):
             e = "Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, axis, shp[axis]))
-
-        # increase dimensionality of input data, as necessary...assumes max of 4 dimensions
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the transform axis first
         transform_axis = 0
@@ -790,21 +674,17 @@ class Legendre:
         # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
-        shape = list(data_in.shape); shape[transform_axis] = self.nth; shape = tuple(shape)
-        data_out = np.zeros((shape))
+        shape = list(data_in.shape); shape[transform_axis] = self.nth
 
-        # data assumed to be 4D, so two for loops plus a matrix multiply
-        n, ny, nz, nt = np.shape(data_in)
-        for j in range(nt):
-            for i in range(nz):
-                data_out[:,:,i,j] = DGEMM(alpha=alpha, beta=beta,
-                                          trans_a=0, trans_b=0,
-                                          a=self.Pl, b=data_in[:,:,i,j])
+        GEMM, is_complex = choose_gemm(data_in)
+
+        data_out = GEMM(alpha=alpha, beta=beta,
+                        trans_a=0, trans_b=0,
+                        a=self.Pl, b=data_in[...])
+        data_out = np.reshape(data_out, tuple(shape))
+
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
-
-        # remove any dimensions that were added
-        data_out = np.squeeze(data_out, axis=added_axes)
 
         return data_out
 
@@ -815,7 +695,7 @@ class Legendre:
         Args
         ----
         data_in : ndarray
-            Input data array, must be dimension 4 or less
+            Input data array
         axis : int, optional
             The axis over which the derivative will take place
         physical : bool, optional
@@ -830,8 +710,6 @@ class Legendre:
         shp = np.shape(data_in); dim = len(shp)
         axis = pos_axis(axis, dim)
 
-        check_dims(data_in, 4) # only coded for 4D or less
-
         if (physical):
             if (shp[axis] != (self.nth)):
                 e = "d_dtheta expected length={} along axis={}, found N={}"
@@ -840,9 +718,6 @@ class Legendre:
             if (shp[axis] != (self.lmax+1)):
                 e = "d_dtheta expected length={} along axis={}, found N={}"
                 raise ValueError(e.format(self.lmax+1, axis, shp[axis]))
-
-        # increase dimensionality of input data, as necessary
-        data_in, added_axes, axis = more_dimensions(data_in, 4, prepend=False, axis=axis)
 
         # make the d/dx axis first
         transform_axis = 0
@@ -861,8 +736,8 @@ class Legendre:
             den = 4.*l*l-1.
             Dl0[l] = np.sqrt(num/den)
 
-        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1; shape = tuple(shape)
-        data_out = np.zeros((shape))
+        shape = list(data_in.shape); shape[transform_axis] = self.lmax+1
+        data_out = np.zeros(tuple(shape), dtype=data_in.dtype)
 
         # F = sum C_l*P_l
         # sin(th)dF/dth = sum C_l*sin(th)dP_l/dth
@@ -893,9 +768,6 @@ class Legendre:
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
-
-        # remove any dimensions that were added
-        data_out = np.squeeze(data_out, axis=added_axes)
 
         return data_out
 
@@ -975,7 +847,7 @@ class Chebyshev:
                  boundaries=None,
                  n_uniform_domains=1, uniform_bounds=False,
                  dealias=None,
-                 dmax=3):
+                 dmax=1):
         """
         Initialize the Chebyshev grid and transform
 
@@ -1566,7 +1438,7 @@ class Chebyshev:
         Args
         ----
         data_in : ndarray
-            Input data array, must be dimension 4 or less
+            Input data array
         axis : int, optional
             The axis over which the derivative will take place
         physical : bool, optional
@@ -1664,9 +1536,7 @@ class SHT:
             Amount to dealias: N_theta = dealias*(l_max + 1)
         """
         self.nth, self.lmax = grid_size(N, spectral, dealias)
-        self.nell    = self.lmax + 1
-        self.dealias = dealias
-
+        self.nell = self.lmax + 1
         self.nphi = 2*self.nth
 
         # fourier grid
@@ -1674,7 +1544,7 @@ class SHT:
         self.phi = self.dphi*np.arange(self.nphi)
         self.mmax = self.m_max = self.lmax
 
-        # generate grid, weights (xq = x in quad precision)
+        # legendre grid, weights (xq = x in quad precision)
         self.xq, self.wq = legendre_grid(self.nth, quad=True)
         self.x = np.zeros((self.nth), dtype=np.float64)
         self.w = np.zeros((self.nth), dtype=np.float64)
@@ -1694,7 +1564,7 @@ class SHT:
         self.sintheta = self.sinth
 
         # number of physical/relevent frequencies numpy.rfft will produce.
-        # basically used for dealiasing with numpy.rfft
+        # only used for dealiasing when interfacing with numpy.rfft
         self._fft_to_phys_size = int(self.nphi/2)+1
 
         self.cosphi = np.cos(self.phi)
@@ -1909,7 +1779,7 @@ class SHT:
 
         return data_out
 
-    def to_spectral(self, data_in, th_axis=0, phi_axis=1):
+    def to_spectral(self, data_in, th_axis=0, phi_axis=1, no_fft=False):
         """
         SHT transform from physical space (theta,phi) to spectral space (l,m)
 
@@ -1921,6 +1791,9 @@ class SHT:
             The axis over which the Legendre transform (theta/l) will take place
         phi_axis : int, optional
             The axis over which the Fourier transform (phi/m) will take place
+        no_fft : bool, optional
+            If True, the FFT to spectral space is not completed and the data is
+            assumed to already be in Fourier spectral space.
 
         Returns
         -------
@@ -1937,7 +1810,7 @@ class SHT:
             raise ValueError(e.format(th_axis, phi_axis))
 
         if (dim < 2):
-            e = "Full SHT requires data to be at least 2d. Found {}d"
+            e = "SHT requires data to be at least 2d. Found {}d"
             raise ValueError(e.format(dim))
 
         if (shp[th_axis] != self.nth):
@@ -1945,7 +1818,8 @@ class SHT:
             raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
 
         # first do the FFT to put everything in m-space
-        data_in = self.fft_to_spectral(data_in, axis=phi_axis)
+        if (not no_fft):
+            data_in = self.fft_to_spectral(data_in, axis=phi_axis)
 
         # make the theta axis first
         transform_axis = 0
@@ -2042,7 +1916,7 @@ class SHT:
 
         return data_out
 
-    def to_physical(self, data_in, l_axis=0, m_axis=1):
+    def to_physical(self, data_in, l_axis=0, m_axis=1, no_fft=False):
         """
         SHT transform from spectral space (l,m) to physical space (theta,phi)
 
@@ -2054,6 +1928,9 @@ class SHT:
             The axis over which the Legendre transform (theta/l) will take place
         m_axis : int, optional
             The axis over which the Fourier transform (phi/m) will take place
+        no_fft : bool, optional
+            If True, the FFT to physical space is not completed and the data is
+            assumed to already be in Fourier spectral space.
 
         Returns
         -------
@@ -2065,8 +1942,8 @@ class SHT:
         l_axis = pos_axis(l_axis, dim)
         m_axis = pos_axis(m_axis, dim)
 
-        if (dim < 2 and fft):
-            e = "Full SHT requires data to be at least 2d. Found {}d"
+        if (dim < 2):
+            e = "SHT requires data to be at least 2d. Found {}d"
             raise ValueError(e.format(dim))
 
         if (shp[l_axis] != (self.lmax+1)):
@@ -2167,7 +2044,8 @@ class SHT:
                 oslc2[transform_axis] = slice(None)
 
         # lastly do the FFT
-        data_out = self.fft_to_physical(data_out, axis=m_axis)
+        if (not no_fft):
+            data_out = self.fft_to_physical(data_out, axis=m_axis)
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, l_axis)
