@@ -1173,7 +1173,7 @@ class Chebyshev:
         for i in range(self.n_domains):
             n = self.nr_domains[i]
             self.npoly[i] = n
-            db = int(2*n/3)
+            db = int(2*n/3)+1
             self.rda[i] = db
             if (self.dealias[i] > 0):
                 db = self.dealias[i]
@@ -1326,6 +1326,45 @@ class Chebyshev:
 
         alpha = None
 
+    def _dealias(self, data, axis=0):
+        """
+        Dealias the input data along the given axis
+
+        Args
+        ----
+        data : ndarray
+            Input data to be dealiased
+        axis : int, optional
+            The axis over which the dealiasing will take place
+
+        Returns
+        -------
+        data : ndarray
+            Dealiased data, input will be modified
+        """
+        data = np.asarray(data)
+        shp = np.shape(data); dim = len(shp)
+        axis = pos_axis(axis, dim)
+
+        # make the dealiased axis first
+        transform_axis = 0
+        data = swap_axis(data, axis, transform_axis)
+
+        slc = [slice(None)]*dim
+
+        offset = 0
+        for n in range(self.n_domains):
+            ind1 = self.rda[n] + offset
+            ind2 = self.npoly[n] + offset
+            slc[transform_axis] = slice(ind1,ind2)
+            data[tuple(slc)] = 0.0
+            offset += self.npoly[n]
+
+        # restore axis order
+        data = swap_axis(data, transform_axis, axis)
+
+        return data
+
     def to_spectral(self, data_in, axis=0):
         """
         Chebyshev transform from physical space to spectral space
@@ -1408,6 +1447,9 @@ class Chebyshev:
                 data_out[hoff+2*i+1,...] = c_temp[i,...]
 
             hoff += self.npoly[hh]
+
+        # dealias
+        self._dealias(data_out, axis=transform_axis)
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -1651,8 +1693,9 @@ class SHT:
         self.costheta = self.costh
         self.sintheta = self.sinth
 
-        # number of physical/relevent frequencies numpy.rfft will produce
-        self._fft_to_phys_size = int(self.nphi/2)
+        # number of physical/relevent frequencies numpy.rfft will produce.
+        # basically used for dealiasing with numpy.rfft
+        self._fft_to_phys_size = int(self.nphi/2)+1
 
         self.cosphi = np.cos(self.phi)
         self.sinphi = np.sin(self.phi)
@@ -1847,7 +1890,7 @@ class SHT:
         shp = list(data_in.shape); shp[axis] = self._fft_to_phys_size
 
         # copy data into "dealiased" size
-        temp = np.zeros_like(data_in)
+        temp = np.zeros(tuple(shp), dtype=data_in.dtype)
         slc = [slice(None)]*dim
         slc[axis] = slice(0,self.nm)
         temp[tuple(slc)] = data_in[...]
@@ -2052,12 +2095,13 @@ class SHT:
         slc = [slice(None)]*dim
         oslc = [slice(None)]*dim
         oslc2 = [slice(None)]*dim
-        for m in range(_nm):
+        for m in range(self.nm):
+
             if (self.n_l_even[m] > 0):
-                slc[m_axis] = m
-                oslc[m_axis] = m
-                oslc2[m_axis] = m
-                out_shape[m_axis] = m
+                slc[m_axis] = slice(m, m+1)
+                oslc[m_axis] = slice(m, m+1)
+                oslc2[m_axis] = slice(m, m+1)
+                out_shape[m_axis] = 1
 
                 shape[transform_axis] = self.n_l_even[m]
                 f_even = np.zeros(tuple(shape), dtype=dtype)
@@ -2077,7 +2121,7 @@ class SHT:
                 f_even = np.reshape(f_even, tuple(out_shape)) # (nth/2, ...)
 
                 # store first half of output
-                oslc[transform_axis] = slice(0,self.nth_half+1)
+                oslc[transform_axis] = slice(0,self.nth_half)
                 data_out[tuple(oslc)] = f_even[:,...]
 
                 # reflect evenly
@@ -2090,10 +2134,10 @@ class SHT:
                 oslc2[transform_axis] = slice(None)
 
             if (self.n_l_odd[m] > 0):
-                slc[m_axis] = m
-                oslc[m_axis] = m
-                oslc2[m_axis] = m
-                out_shape[m_axis] = m
+                slc[m_axis] = slice(m, m+1)
+                oslc[m_axis] = slice(m, m+1)
+                oslc2[m_axis] = slice(m, m+1)
+                out_shape[m_axis] = 1
 
                 shape[transform_axis] = self.n_l_odd[m]
                 f_odd  = np.zeros(tuple(shape), dtype=dtype)
