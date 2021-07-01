@@ -1173,7 +1173,7 @@ class Chebyshev:
         for i in range(self.n_domains):
             n = self.nr_domains[i]
             self.npoly[i] = n
-            db = int(2*n/3)+1
+            db = int(2*n/3)
             self.rda[i] = db
             if (self.dealias[i] > 0):
                 db = self.dealias[i]
