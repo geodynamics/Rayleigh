@@ -12,6 +12,146 @@ import numpy as np
 from scipy.linalg.blas import dgemm as DGEMM
 from scipy.linalg.blas import zgemm as ZGEMM
 
+def ddx(data, grid, axis=0):
+    """
+    6th order centered finite difference on a non-uniform mesh, one-sided
+    differences on the boundary points.
+
+    Args
+    ----
+    data : ndarray
+        The data values on the grid
+    grid : 1D ndarray of shape (N,)
+        The grid point values
+    axis : int, optional
+        The axis over which to take the derivative
+
+    Returns
+    -------
+    dfdx : ndarray
+        Derivative evaluated on the grid, same shape as input
+    """
+    x = np.asarray(grid); f = np.asarray(data)
+
+    # swap axis order
+    f = swap_axis(f, axis, -1)
+
+    nx = np.shape(f)[-1]
+    dfdx = np.zeros_like(f)
+    # solve the following system for f' using determinants
+    # f(-3) = f0 + dxm30*f'+dxm30**2*f''/2+dxm30**3*f'''/6+dxm30**4*f''''/24
+    # f(-2) = f0 + dxm20*f'+dxm20**2*f''/2+dxm20**3*f'''/6+dxm20**4*f''''/24
+    # f(-1) = f0 + dxm10*f'+dxm10**2*f''/2+dxm10**3*f'''/6+dxm10**4*f''''/24
+    # f(1)  = f0 + dxp10*f'+dxp10**2*f''/2+dxp10**3*f'''/6+dxp10**4*f''''/24
+    # f(2)  = f0 + dxp20*f'+dxp20**2*f''/2+dxp20**3*f'''/6+dxp20**4*f''''/24
+    # f(3)  = f0 + dxp30*f'+dxp30**2*f''/2+dxp30**3*f'''/6+dxp30**4*f''''/24
+    # dxpj0 = x(j) - x(0); dxmj0 = x(-j) - x(0)
+    sh2 = np.shape(f)[:-1] + (7,7)
+    sh = tuple([1]*len(np.shape(f)[:-1])) + (7,)
+    N = np.zeros(sh2)
+    for i in range(3,nx-3):
+        dxm30 = x[i-3] - x[i]; dxm20 = x[i-2] - x[i]; dxm10 = x[i-1] - x[i]
+        dxp10 = x[i+1] - x[i]; dxp20 = x[i+2] - x[i]; dxp30 = x[i+3] - x[i]
+        delta = (abs(dxm30)+abs(dxm20)+abs(dxm10)+abs(dxp10)+abs(dxp20)+abs(dxp30))/6.
+        dxm30 /= delta; dxm20 /= delta; dxm10 /= delta
+        dxp10 /= delta; dxp20 /= delta; dxp30 /= delta
+
+        a = [1., dxm30, dxm30**2, dxm30**3, dxm30**4, dxm30**5, dxm30**6]
+        N[...,0,:] = np.array(a).reshape(sh)
+
+        a = [1., dxm20, dxm20**2, dxm20**3, dxm20**4, dxm20**5, dxm20**6]
+        N[...,1,:] = np.array(a).reshape(sh)
+
+        a = [1., dxm10, dxm10**2, dxm10**3, dxm10**4, dxm10**5, dxm10**6]
+        N[...,2,:] = np.array(a).reshape(sh)
+
+        a = [1.,     0,     0   ,     0   ,     0   ,     0   ,     0   ]
+        N[...,3,:] = np.array(a).reshape(sh)
+
+        a = [1., dxp10, dxp10**2, dxp10**3, dxp10**4, dxp10**5, dxp10**6]
+        N[...,4,:] = np.array(a).reshape(sh)
+
+        a = [1., dxp20, dxp20**2, dxp20**3, dxp20**4, dxp20**5, dxp20**6]
+        N[...,5,:] = np.array(a).reshape(sh)
+
+        a = [1., dxp30, dxp30**2, dxp30**3, dxp30**4, dxp30**5, dxp30**6]
+        N[...,6,:] = np.array(a).reshape(sh)
+
+        # construct 1st derivative, multiply (num/den) by n!/delta**n for nth derivative
+        dfdx[...,i] = np.linalg.solve(N, f[...,i-3:i+4])[...,1]/delta
+
+    # left/right boundary point
+    dfdx[...,0]    = _one_sided_6th(x[:7], f[...,:7])
+    dfdx[...,nx-1] = _one_sided_6th(x[-7:], f[...,-7:], right_edge=True)
+
+    # first/last interior point
+    dfdx[...,1]    = _one_sided_6th(x[1:8], f[...,1:8])
+    dfdx[...,nx-2] = _one_sided_6th(x[-8:-1], f[...,-8:-1], right_edge=True)
+
+    # second/second to last interior point
+    dfdx[...,2]    = _one_sided_6th(x[2:9], f[...,2:9])
+    dfdx[...,nx-3] = _one_sided_6th(x[-9:-2], f[...,-9:-2], right_edge=True)
+
+    # restore axis order
+    dfdx = swap_axis(dfdx, -1, axis)
+
+    return dfdx
+
+def _one_sided_6th(xx, ff, right_edge=False):
+    """
+    One sided 6th order finite difference on a non-uniform mesh over the last axis.
+
+    Args
+    ----
+    xx : (7,) ndarray
+        The three grid points, the left edge is assumed to be the boundary
+    ff : (...,7) ndarray
+        The data values on the grid
+    right_edge : bool, optional
+        Calculate the one sided difference on the right boundary
+
+    Returns
+    -------
+    dfdx : (...,1) ndarray
+        Derivative evaluated on the left/right boundary, if f is shape tuple + (7,)
+        then dfdx will have shape tuple
+    """
+    xx = np.asarray(xx); ff = np.asarray(ff)
+    if (right_edge):
+        xx = xx[::-1]; ff = ff[...,::-1]
+    # generate matrix such that A*f' = f
+    # where the rows of A are taylor expansions:
+    # f0 = f0
+    # f1 = f0 + dx10*f' + dx10**2*f''/2 + dx10**3*f'''/6 + dx10**4*f''''/24 + ...
+    # f2 = f0 + dx20*f' + dx20**2*f''/2 + dx20**3*f'''/6 + dx20**4*f''''/24 + ...
+    # f3 = f0 + dx30*f' + dx30**2*f''/2 + dx30**3*f'''/6 + dx30**4*f''''/24 + ...
+    # f4 = f0 + dx40*f' + dx40**2*f''/2 + dx40**3*f'''/6 + dx40**4*f''''/24 + ...
+    # f5 = f0 + dx50*f' + dx50**2*f''/2 + dx50**3*f'''/6 + dx50**4*f''''/24 + ...
+    # f6 = f0 + dx60*f' + dx60**2*f''/2 + dx60**3*f'''/6 + dx60**4*f''''/24 + ...
+    # rewrite it so dx --> dx/delta for matrix conditioning
+    # this makes the unknown vector f^(n)*delta**n/n!
+
+    dx10 = xx[1] - xx[0]; dx20 = xx[2] - xx[0]; dx30 = xx[3] - xx[0]
+    dx40 = xx[4] - xx[0]; dx50 = xx[5] - xx[0]; dx60 = xx[6] - xx[0]
+    delta = (abs(dx10) + abs(dx20) + abs(dx30) + abs(dx40) + abs(dx50) + abs(dx60))/6.
+    dx10 /= delta; dx20 /= delta; dx30 /= delta; dx40 /= delta; dx50 /= delta; dx60 /= delta
+
+    sh2 = np.shape(ff)[:-1] + (7,7)
+    N = np.zeros(sh2)
+    sh = tuple([1]*len(np.shape(ff)[:-1])) + (7,)
+    N[...,0,:] = np.array([1., 0.,   0.,      0.,      0.,      0.,      0.     ]).reshape(sh)
+    N[...,1,:] = np.array([1., dx10, dx10**2, dx10**3, dx10**4, dx10**5, dx10**6]).reshape(sh)
+    N[...,2,:] = np.array([1., dx20, dx20**2, dx20**3, dx20**4, dx20**5, dx20**6]).reshape(sh)
+    N[...,3,:] = np.array([1., dx30, dx30**2, dx30**3, dx30**4, dx30**5, dx30**6]).reshape(sh)
+    N[...,4,:] = np.array([1., dx40, dx40**2, dx40**3, dx40**4, dx40**5, dx40**6]).reshape(sh)
+    N[...,5,:] = np.array([1., dx50, dx50**2, dx50**3, dx50**4, dx50**5, dx50**6]).reshape(sh)
+    N[...,6,:] = np.array([1., dx60, dx60**2, dx60**3, dx60**4, dx60**5, dx60**6]).reshape(sh)
+
+    # fNprime = dn_f_dxn[N] * N! / delta**N where N specifies what derivative
+    f1prime = np.linalg.solve(N, ff)[...,1]/delta
+
+    return f1prime
+
 def choose_gemm(data, tol=1e-14):
     """
     Determine correct GEMM routine to use: real vs complex
@@ -636,7 +776,7 @@ class Legendre:
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=1, trans_b=0,
                         a=iPl, b=data_in[...])
-        data_out = np.reshape(data_out, tuple(shape))
+        data_out = np.reshape(data_out, tuple(shape), order='A')
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -681,7 +821,7 @@ class Legendre:
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=0, trans_b=0,
                         a=self.Pl, b=data_in[...])
-        data_out = np.reshape(data_out, tuple(shape))
+        data_out = np.reshape(data_out, tuple(shape), order='A')
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, axis)
@@ -1300,7 +1440,7 @@ class Chebyshev:
                            a=self.cheby_even[hh],
                            b=f_even)
             shp[0] = n_even
-            c_temp = np.reshape(c_temp, tuple(shp))
+            c_temp = np.reshape(c_temp, tuple(shp), order='A')
 
             # unpack the output
             for i in range(n_even):
@@ -1312,7 +1452,7 @@ class Chebyshev:
                            a=self.cheby_odd[hh],
                            b=f_odd)
             shp[0] = n_odd
-            c_temp = np.reshape(c_temp, tuple(shp))
+            c_temp = np.reshape(c_temp, tuple(shp), order='A')
 
             # unpack the output
             for i in range(n_odd):
@@ -1388,7 +1528,7 @@ class Chebyshev:
                            a=self.cheby_even[hh],
                            b=c_temp)
             shp[0] = n_x
-            f_temp = np.reshape(f_temp, tuple(shp))
+            f_temp = np.reshape(f_temp, tuple(shp), order='A')
 
             # unpack the output
             for i in range(n_even):
@@ -1409,7 +1549,7 @@ class Chebyshev:
                            a=self.cheby_odd[hh],
                            b=c_temp)
             shp[0] = n_x
-            f_temp = np.reshape(f_temp, tuple(shp))
+            f_temp = np.reshape(f_temp, tuple(shp), order='A')
 
             # unpack the output
             for i in range(n_odd):
@@ -1862,7 +2002,7 @@ class SHT:
                                 trans_a=1, trans_b=0,
                                 a=self.ip_lm_even[m][:,:],         # (nth/2, n_l_even)
                                 b=f_even[tuple(slc)])              # (nth/2, ...)
-                c_even = np.reshape(c_even, tuple(out_shape_even)) # (n_l_even, ...)
+                c_even = np.reshape(c_even, tuple(out_shape_even), order='A') # (n_l_even, ...)
 
                 # c_even refers to single m value, so "undo" the slice that selects single m
                 slc[phi_axis] = slice(None)
@@ -1888,7 +2028,7 @@ class SHT:
                                 trans_a=1, trans_b=0,
                                 a=self.ip_lm_odd[m][:,:],       # (nth/2, n_l_odd)
                                 b=f_odd[tuple(slc)])            # (nth/2, ...)
-                c_odd = np.reshape(c_odd, tuple(out_shape_odd)) # (n_l_odd, ...)
+                c_odd = np.reshape(c_odd, tuple(out_shape_odd), order='A') # (n_l_odd, ...)
 
                 # c_odd refers to single m value, so "undo" the slice that selects single m
                 slc[phi_axis] = slice(None)
@@ -1995,7 +2135,7 @@ class SHT:
                                 trans_a=1, trans_b=0,
                                 a=self.p_lm_even[m][:,:],     # (n_l_even, nth/2)
                                 b=f_even[tuple(slc)])         # (n_l_even, ...)
-                f_even = np.reshape(f_even, tuple(out_shape)) # (nth/2, ...)
+                f_even = np.reshape(f_even, tuple(out_shape), order='A') # (nth/2, ...)
 
                 # store first half of output
                 oslc[transform_axis] = slice(0,self.nth_half)
@@ -2031,7 +2171,7 @@ class SHT:
                                 trans_a=1, trans_b=0,
                                 a=self.p_lm_odd[m][:,:],    # (n_l_odd, nth/2)
                                 b=f_odd[tuple(slc)])        # (n_l_odd, ...)
-                f_odd = np.reshape(f_odd, tuple(out_shape)) # (nth/2, ...)
+                f_odd = np.reshape(f_odd, tuple(out_shape), order='A') # (nth/2, ...)
 
                 # add output to already computed even stuff
                 for j in range(self.nth_half):
