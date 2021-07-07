@@ -12,6 +12,61 @@ import numpy as np
 from scipy.linalg.blas import dgemm as DGEMM
 from scipy.linalg.blas import zgemm as ZGEMM
 
+def ddx_repeated_gridpoints(data, grid, indices, axis=0):
+    """
+    6th order centered finite difference on a non-uniform mesh that contains
+    repeated grid points. For example, a grid that looks like this
+        |---x---x---x
+                    x---x---x---x---x
+                                    x---x---x---|
+    where there are repeated grid points at internal boundaries. This appears
+    when using multiple chebyshev domains; the grid points at the internal
+    boundaries are repeated.
+
+    Args
+    ----
+    data : ndarray
+        The data values on the grid
+    grid : 1D ndarray of shape (N,)
+        The grid point values. Each subdomain must contain more than 7 grid points.
+    indices : 1D array_like
+        Each element gives the index to the second instance of a repeated grid point, e.g.,
+        the first repeated grid point occurs at grid[indices[0]] and grid[indices[0]-1].
+    axis : int, optional
+        The axis over which to take the derivative
+
+    Returns
+    -------
+    dfdx : ndarray
+        Derivative evaluated on the grid, same shape as input
+    """
+    grid = np.asarray(grid); data = np.asarray(data)
+
+    # swap axis order
+    data = swap_axis(data, axis, -1)
+
+    dfdx = np.zeros_like(data)
+
+    # compute derivative in each subdomain
+    slc = [slice(None)]*len(dfdx.shape)
+    start = 0
+    for i in indices:
+        stop = i
+        slc[-1] = slice(start,stop)
+        Ncheck = len(grid[start:stop])
+        if (Ncheck < 9):
+            e = "Subdomains must have 9 or more grid points, only found N = {}"
+            raise ValueError(e.format(Ncheck))
+        dfdx[tuple(slc)] = ddx(data[tuple(slc)], grid[start:stop], axis=-1)
+        start = i
+    slc[-1] = slice(start, None)
+    dfdx[tuple(slc)] = ddx(data[tuple(slc)], grid[start:], axis=-1)
+
+    # restore axis order
+    dfdx = swap_axis(dfdx, -1, axis)
+
+    return dfdx
+
 def ddx(data, grid, axis=0):
     """
     6th order centered finite difference on a non-uniform mesh, one-sided
@@ -960,6 +1015,23 @@ class Chebyshev:
         The number of dealiased polynomials used in each domain
     boundaries : ndarray (n_domains+1,)
         The domain boundaries
+    boundary_indices : list (n_domains-1,)
+        Indices of the internal boundaries. Use these indices to slice out the radial
+        grid points of a particular subdomain; the radial grid points of the first
+        domain are accessed as:
+            start = 0
+            stop = boundary_indices[0]
+            radius_first = radius[start:stop]
+        and the radial grid points associated with the second domain would be:
+            start = boundary_indices[0]
+            stop = boundary_indices[1]
+            radius_second = radius[start:stop]
+        The grid points in the final domain would be:
+            start = boundary_indices[-1]
+            stop = nr
+            radius_second = radius[start:stop]
+        Indices to the global domain bounds (rmin and rmax) are not included. The list
+        will be empty if a single domain is used.
     rmin : float
         The minimum radius, i.e., the lower boundary
     rmax : float
@@ -1169,6 +1241,13 @@ class Chebyshev:
         self.nr = self.n_r
 
         self.npoly_dealias = self.rda # number of dealiased polynomials per domain
+
+        # indices that allow splitting up the domains
+        inds = []; tol = 1e-12
+        for i in range(1,self.nr):
+            if (abs(self.radius[i] - self.radius[i-1]) < tol):
+                inds.append(i)
+        self.boundary_indices = inds
 
     def build_grid(self, dmax=3):
         """
