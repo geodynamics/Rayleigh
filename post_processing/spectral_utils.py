@@ -966,7 +966,7 @@ class Legendre:
 
         return data_out
 
-def chebyshev_zeros(Npts, reverse=False):
+def chebyshev_zeros(Npts, reverse=False, quad=False):
     """
     generate the Chebysheve zeros grid
 
@@ -976,20 +976,24 @@ def chebyshev_zeros(Npts, reverse=False):
         The number of grid points
     reverse : bool, optional
         Reverse the grid order to be x[i] > x[i+1], i.e., x = (-1,1)
+    quad : bool, optional
+        Return arrays using quad precision, default is double
 
     Returns
     -------
     grid : 1D array
         The array of grid points
     """
-    grid = np.zeros((Npts))
-    dcth = np.pi/Npts
-    arg = dcth*0.5
+    grid = np.zeros((Npts), dtype=np.float128)
+    dcth = np.asarray(np.pi/Npts, dtype=np.float128)
+    arg = dcth*np.asarray(0.5, dtype=np.float128)
     for i in range(Npts):
-        grid[i] = np.cos(arg)
+        grid[i] = np.asarray(np.cos(arg), dtype=np.float128)
         arg += dcth
     if (not reverse):
         grid = grid[::-1] # this will produce x[i] < x[i+1]
+    if (not quad):
+        grid = np.asarray(grid, dtype=np.float64)
     return grid
 
 class Chebyshev:
