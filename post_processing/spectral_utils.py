@@ -1843,32 +1843,28 @@ class SHT:
             amp *= factorial_ratio
 
             # closed form to get l=m and l=m+1
-            for i in range(ntmax):
-                x = self.xq[i]
-                tmp = one - x*x
+            tmp = one - self.xq[:ntmax]*self.xq[:ntmax]
 
-                # l=m pieces, always the first element in the p_lm array at this m_value
-                if (mv%2 == 1):
-                    # odd m
-                    p_lmq[m][i,mv-mv] = -amp*tmp**(int(mv/2)+half)
-                else:
-                    # even m
-                    p_lmq[m][i,mv-mv] = amp*tmp**(int(mv/2))
+            # l=m pieces, always the first element in the p_lm array at this m_value
+            if (mv%2 == 1):
+                # odd m
+                p_lmq[m][:ntmax,mv-mv] = -amp*tmp**(int(mv/2)+half)
+            else:
+                # even m
+                p_lmq[m][:ntmax,mv-mv] = amp*tmp**(int(mv/2))
 
-                # l = m+1 pieces, always the second element in the p_lm array at this m_value
-                if (mv < self.lmax):
-                    p_lmq[m][i,mv+1-mv] = p_lmq[m][i,mv-mv]*x*(two*mv+3)**half
+            # l = m+1 pieces, always the second element in the p_lm array at this m_value
+            if (mv < self.lmax):
+                p_lmq[m][:ntmax,mv+1-mv] = p_lmq[m][:ntmax,mv-mv]*self.xq[:ntmax]*(two*mv+3)**half
 
             # general recursion for l > m+1, starts at the 3rd element and moves to last
             for l in range(mv+2,self.lmax+1):
-                for i in range(ntmax):
-                    x = self.xq[i]
-                    amp = (l-1)**2 - mv*mv
-                    amp = amp / (four*(l-1)**2-one)
-                    amp = amp**half
-                    tmp = p_lmq[m][i,l-1-mv]*x - amp*p_lmq[m][i,l-2-mv]
-                    amp = (four*l*l-one)/(l*l-mv*mv)
-                    p_lmq[m][i,l-mv] = tmp*amp**half
+                amp = (l-1)**2 - mv*mv
+                amp = amp / (four*(l-1)**2-one)
+                amp = amp**half
+                tmp = p_lmq[m][:ntmax,l-1-mv]*self.xq[:ntmax] - amp*p_lmq[m][:ntmax,l-2-mv]
+                amp = (four*l*l-one)/(l*l-mv*mv)
+                p_lmq[m][:ntmax,l-mv] = tmp*amp**half
 
             # parity resort
             if (mv == 0):
@@ -1901,19 +1897,17 @@ class SHT:
                 parity_test = l-mv
                 if (parity_test % 2 == 1):
                     self.lvals_odd[m][indodd] = l
-                    for i in range(nth_half):
-                        renorm = two*piq*self.wq[i]
-                        tmp = p_lmq[m][i,l-mv]*renorm
-                        self.ip_lm_odd[m][i,indodd] = tmp*pts_norm
-                        self.p_lm_odd[m][indodd,i] = p_lmq[m][i,l-mv]*stp_norm
+                    renorm = two*piq*self.wq[:nth_half]
+                    tmp = p_lmq[m][:nth_half,l-mv]*renorm
+                    self.ip_lm_odd[m][:nth_half,indodd] = tmp*pts_norm
+                    self.p_lm_odd[m][indodd,:nth_half] = p_lmq[m][:nth_half,l-mv]*stp_norm
                     indodd += 1
                 else:
                     self.lvals_even[m][indeven] = l
-                    for i in range(nth_half):
-                        renorm = two*piq*self.wq[i]
-                        tmp = p_lmq[m][i,l-mv]*renorm
-                        self.ip_lm_even[m][i,indeven] = tmp*pts_norm
-                        self.p_lm_even[m][indeven,i] = p_lmq[m][i,l-mv]*stp_norm
+                    renorm = two*piq*self.wq[:nth_half]
+                    tmp = p_lmq[m][:nth_half,l-mv]*renorm
+                    self.ip_lm_even[m][:nth_half,indeven] = tmp*pts_norm
+                    self.p_lm_even[m][indeven,:nth_half] = p_lmq[m][:nth_half,l-mv]*stp_norm
                     indeven += 1
 
             # try to release some memory
