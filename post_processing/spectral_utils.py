@@ -685,26 +685,24 @@ def compute_Pl(x, lmax):
 
     amp = np.sqrt((mv+0.5)/(2.*np.pi))
     amp *= ratio
-    for i in range(n):
-        xi = x[i]
-        tmp = 1. - xi*xi
-        if (mv%2 == 1):
-            _Pl[i,mv] = -amp*tmp**(mv/2+0.5) # odd m
-        else:
-            _Pl[i,mv] = amp*tmp**(mv/2) # even m
 
-        # l=m+1 part
-        if (mv < lmax):
-            _Pl[i,mv+1] = _Pl[i,mv]*xi*np.sqrt(2.*mv+3)
+    tmp = 1. - x[:]*x[:]
+    if (mv%2 == 1):
+        _Pl[:,mv] = -amp*tmp**(mv/2+0.5) # odd m
+    else:
+        _Pl[:,mv] = amp*tmp**(mv/2) # even m
+
+    # l=m+1 part
+    if (mv < lmax):
+        _Pl[:,mv+1] = _Pl[:,mv]*x[:]*np.sqrt(2.*mv+3)
 
     # l>m+1 part
     for l in range(mv+2,lmax+1):
         amp = np.sqrt( ((l-1)**2 - mv*mv) / (4.*(l-1)**2 - 1.) )
         amp2 = np.sqrt( (4.*l*l-1.) / (l*l-mv*mv) )
-        for i in range(n):
-            xi = x[i]
-            tmp = _Pl[i,l-1]*xi - amp*_Pl[i,l-2]
-            _Pl[i,l] = tmp*amp2
+        #for i in range(n):
+        tmp = _Pl[:,l-1]*x[:] - amp*_Pl[:,l-2]
+        _Pl[:,l] = tmp*amp2
 
     # store in double precision
     Pl[:,:] = _Pl[:,:]
