@@ -207,7 +207,7 @@ def _one_sided_6th(xx, ff, right_edge=False):
 
     return f1prime
 
-def choose_gemm(data, tol=1e-14):
+def choose_gemm(data, tol=1e-15):
     """
     Determine correct GEMM routine to use: real vs complex
 
@@ -747,7 +747,7 @@ class Legendre:
         to be in physical space (physical=True)
     """
 
-    def __init__(self, N, spectral=False, dealias=1.5):
+    def __init__(self, N, spectral=False, dealias=1.5, dgemm_tol=1e-14):
         """
         Initialize the Legendre grid and transform
 
@@ -761,11 +761,20 @@ class Legendre:
             is that N refers to the physical space resolution (N_theta)
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
+        dgemm_tol : float, optional
+            If any imaginary part of the data is above this tolerance, the
+            complex zgemm routine will be used. Using a tolerance that is too
+            large could lead to a ComplexWarning about discarding the imaginary part.
         """
         self.nth, self.lmax = grid_size(N, spectral, dealias)
         self.nell    = self.lmax + 1
         self.dealias = dealias
         self.parity  = False
+        self.dgemm_tol = dgemm_tol
+
+        if (self.nth % 2 == 1):
+            e = "Theta grid must have even number of grid points, found = {}"
+            raise ValueError(e.format(self.nth))
 
         # generate grid, weights, and Pl array
         _x, _w = legendre_grid(self.nth, quad=True)
@@ -824,7 +833,7 @@ class Legendre:
 
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1
 
-        GEMM, is_complex = choose_gemm(data_in)
+        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
 
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=1, trans_b=0,
@@ -869,7 +878,7 @@ class Legendre:
 
         shape = list(data_in.shape); shape[transform_axis] = self.nth
 
-        GEMM, is_complex = choose_gemm(data_in)
+        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
 
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=0, trans_b=0,
@@ -1061,7 +1070,8 @@ class Chebyshev:
                  boundaries=None,
                  n_uniform_domains=1, uniform_bounds=False,
                  dealias=None,
-                 dmax=1):
+                 dmax=1,
+                 dgemm_tol=1e-14):
         """
         Initialize the Chebyshev grid and transform
 
@@ -1108,6 +1118,10 @@ class Chebyshev:
                 n_polynomials = 2*n_r/3
         dmax : int, optional
             Allocate array storage space for up to and including the dmax-th derivative
+        dgemm_tol : float, optional
+            If any imaginary part of the data is above this tolerance, the
+            complex zgemm routine will be used. Using a tolerance that is too
+            large could lead to a ComplexWarning about discarding the imaginary part.
 
         Examples
         --------
@@ -1143,6 +1157,8 @@ class Chebyshev:
         [20, 36, 16]
 
         """
+        self.dgemm_tol = dgemm_tol
+
         if (not hasattr(nr_domains, "__len__")): # user gave a single value
             nr_domains = [nr_domains]
 
@@ -1489,7 +1505,7 @@ class Chebyshev:
         # perform the transform with calls to BLAS
         beta = 0.0
 
-        GEMM, is_complex = choose_gemm(data_in)
+        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
@@ -1580,7 +1596,7 @@ class Chebyshev:
         # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
-        GEMM, is_complex = choose_gemm(data_in)
+        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
@@ -1741,7 +1757,7 @@ class SHT:
         Transform to physical space along the given axes
     """
 
-    def __init__(self, N, spectral=False, dealias=1.5):
+    def __init__(self, N, spectral=False, dealias=1.5, dgemm_tol=1e-14):
         """
         Initialize the SHT grid and transform
 
@@ -1755,10 +1771,19 @@ class SHT:
             is that N refers to the physical space resolution (N_theta)
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
+        dgemm_tol : float, optional
+            If any imaginary part of the data is above this tolerance, the
+            complex zgemm routine will be used. Using a tolerance that is too
+            large could lead to a ComplexWarning about discarding the imaginary part.
         """
+        self.dgemm_tol = dgemm_tol
         self.nth, self.lmax = grid_size(N, spectral, dealias)
         self.nell = self.lmax + 1
         self.nphi = 2*self.nth
+
+        if (self.nth % 2 == 1):
+            e = "Theta grid must have even number of grid points, found = {}"
+            raise ValueError(e.format(self.nth))
 
         # fourier grid
         self.dphi = 2.*np.pi/self.nphi
@@ -1786,6 +1811,7 @@ class SHT:
 
         # number of physical/relevent frequencies numpy.rfft will produce.
         # only used for dealiasing when interfacing with numpy.rfft
+        # when N is even, FFT(N) -> N/2+1, so iFFT(N/2+1) -> N
         self._fft_to_phys_size = int(self.nphi/2)+1
 
         self.cosphi = np.cos(self.phi)
@@ -1938,12 +1964,14 @@ class SHT:
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nphi, axis, shp[axis]))
 
-        norm = 2./self.nphi # assumes complex conjugate symmetry for real data
+        #norm = 2./self.nphi # assumes complex conjugate symmetry for real data
+        norm = 1.
+
         data_out = norm*np.fft.rfft(data_in, axis=axis)
 
         # dealias, i.e., restrict m-values according to triangular truncation
         slc = [slice(None)]*dim
-        slc[axis] = slice(0, self.mmax+1)
+        slc[axis] = slice(0, self.nm)
         data_out = data_out[tuple(slc)]
 
         return data_out
@@ -1985,7 +2013,8 @@ class SHT:
             N = 2*self.nm - 1
         else:
             N = 2*self.nm - 2
-        norm = 2./N
+        #norm = 2./N
+        norm = 1.0
 
         data_out = np.fft.irfft(temp/norm, axis=axis)
 
@@ -2040,7 +2069,7 @@ class SHT:
         transform_axis = 0
         data_in = swap_axis(data_in, th_axis, transform_axis)
 
-        GEMM, is_complex = choose_gemm(data_in)
+        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
@@ -2169,7 +2198,7 @@ class SHT:
         transform_axis = 0
         data_in = swap_axis(data_in, l_axis, transform_axis)
 
-        GEMM, is_complex = choose_gemm(data_in)
+        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
