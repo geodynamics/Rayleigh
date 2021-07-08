@@ -11,6 +11,7 @@ from __future__ import print_function
 import numpy as np
 from scipy.linalg.blas import dgemm as DGEMM
 from scipy.linalg.blas import zgemm as ZGEMM
+import warnings
 
 def ddx_repeated_gridpoints(data, grid, indices, axis=0):
     """
@@ -762,9 +763,8 @@ class Legendre:
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
         dgemm_tol : float, optional
-            If any imaginary part of the data is above this tolerance, the
-            complex zgemm routine will be used. Using a tolerance that is too
-            large could lead to a ComplexWarning about discarding the imaginary part.
+            If the data has any imaginary part with magnitude above this tolerance, then
+            the complex BLAS routine will be used.
         """
         self.nth, self.lmax = grid_size(N, spectral, dealias)
         self.nell    = self.lmax + 1
@@ -1119,9 +1119,10 @@ class Chebyshev:
         dmax : int, optional
             Allocate array storage space for up to and including the dmax-th derivative
         dgemm_tol : float, optional
-            If any imaginary part of the data is above this tolerance, the
-            complex zgemm routine will be used. Using a tolerance that is too
-            large could lead to a ComplexWarning about discarding the imaginary part.
+            If the data has any imaginary part with magnitude above this tolerance, then
+            the complex BLAS routine will be used. If the real BLAS routine is selected,
+            then all ComplexWarning messages associated with discarding the imaginary
+            part will be ignored.
 
         Examples
         --------
@@ -1510,6 +1511,7 @@ class Chebyshev:
             dtype = np.complex128
         else:
             dtype = np.float64
+            warnings.simplefilter("ignore", np.ComplexWarning)
 
         shape = list(data_in.shape); shape[transform_axis] = self.ntotal
         data_out = np.zeros(tuple(shape), dtype=dtype)
@@ -1601,6 +1603,7 @@ class Chebyshev:
             dtype = np.complex128
         else:
             dtype = np.float64
+            warnings.simplefilter("ignore", np.ComplexWarning)
 
         shape = list(data_in.shape); shape[transform_axis] = self.n_r
         data_out = np.zeros(tuple(shape), dtype=dtype)
@@ -1772,9 +1775,10 @@ class SHT:
         dealias : float, optional
             Amount to dealias: N_theta = dealias*(l_max + 1)
         dgemm_tol : float, optional
-            If any imaginary part of the data is above this tolerance, the
-            complex zgemm routine will be used. Using a tolerance that is too
-            large could lead to a ComplexWarning about discarding the imaginary part.
+            If the data has any imaginary part with magnitude above this tolerance, then
+            the complex BLAS routine will be used. If the real BLAS routine is selected,
+            then all ComplexWarning messages associated with discarding the imaginary
+            part will be ignored.
         """
         self.dgemm_tol = dgemm_tol
         self.nth, self.lmax = grid_size(N, spectral, dealias)
@@ -2008,15 +2012,8 @@ class SHT:
         slc[axis] = slice(0,self.nm)
         temp[tuple(slc)] = data_in[...]
 
-        # assumes complex conjugate symmetry for real data
-        if (self.nm % 2 == 0):
-            N = 2*self.nm - 1
-        else:
-            N = 2*self.nm - 2
-        #norm = 2./N
-        norm = 1.0
-
-        data_out = np.fft.irfft(temp/norm, axis=axis)
+        norm = self.nphi
+        data_out = np.fft.irfft(temp*norm, axis=axis)
 
         # ensure real data is returned
         data_out = data_out.real
@@ -2074,6 +2071,7 @@ class SHT:
             dtype = np.complex128
         else:
             dtype = np.float64
+            warnings.simplefilter("ignore", np.ComplexWarning)
 
         # allocate space
         shape = list(data_in.shape); shape[transform_axis] = self.nl
@@ -2203,6 +2201,7 @@ class SHT:
             dtype = np.complex128
         else:
             dtype = np.float64
+            warnings.simplefilter("ignore", np.ComplexWarning)
 
         # allocate space
         shape = list(data_in.shape); shape[transform_axis] = self.nth
