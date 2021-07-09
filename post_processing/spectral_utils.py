@@ -526,12 +526,16 @@ class Fourier:
         axis : int, optional
             Axis along which the derivative will be computed.
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral.
+            Specify the incoming data as being in physical space or spectral. The
+            data will be transformed to spectral space (if necessary) to compute
+            the derivative.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dphi.
+            Output data containing d/dphi, in the same space as incoming data. If
+            incoming data was in physical space, the derivative will also be in
+            physical space.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -920,12 +924,16 @@ class Legendre:
         axis : int, optional
             The axis over which the derivative will take place.
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral space.
+            Specify the incoming data as being in physical space or spectral. The
+            data will be transformed to spectral space (if necessary) to compute
+            the derivative.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dtheta.
+            Output data containing d/dtheta, in the same space as incoming data. If
+            incoming data was in physical space, the derivative will also be in
+            physical space.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -1699,12 +1707,16 @@ class Chebyshev:
         axis : int, optional
             The axis over which the derivative will take place.
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral space.
+            Specify the incoming data as being in physical space or spectral. The
+            data will be transformed to spectral space (if necessary) to compute
+            the derivative.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dr.
+            Output data containing d/dr, in the same space as incoming data. If
+            incoming data was in physical space, the derivative will also be in
+            physical space.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -2445,6 +2457,52 @@ class SHT:
 
             # FFT to spectral
             data_out = self.fft_to_spectral(data_out, axis=phi_axis)
+
+        return data_out
+
+    def d_dphi(self, data_in, phi_axis=1, physical=True):
+        """
+        Take a derivative with respect to phi/longitude.
+
+        Args
+        ----
+        data_in : ndarray
+            Input data array.
+        axis : int, optional
+            Axis along which the derivative will be computed.
+        physical : bool, optional
+            Specify the incoming data as being in physical space or spectral. The
+            data will be transformed to spectral space (if necessary) to compute
+            the derivative.
+
+        Returns
+        -------
+        data_out : ndarray
+            Output data containing d/dphi, in the same space as incoming data. If
+            incoming data was in physical space, the derivative will also be in
+            physical space.
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        phi_axis = pos_axis(phi_axis, dim)
+
+        if (physical): # go to spectral space first, if necessary
+            data_in = self.fft_to_spectral(data_in, axis=phi_axis)
+        else:
+            # fft_to_spectral does a shape check when physical=True
+            if (shp[phi_axis] != self.nm):
+                e = "SHT: d_dphi expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(self.nm, phi_axis, shp[phi_axis]))
+
+        nshp = [1]*dim; nshp[phi_axis] = -1; nshp = tuple(nshp)
+        freq = 1.j*np.arange(self.nm)
+        freq = np.reshape(freq, nshp)
+
+        # multiply by i*m to compute derivative
+        data_out = freq*data_in
+
+        if (physical): # go back to physical if necessary
+            data_out = self.fft_to_physical(data_out, axis=phi_axis)
 
         return data_out
 
