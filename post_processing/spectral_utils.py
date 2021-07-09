@@ -1828,10 +1828,10 @@ class SHT:
         Legendre transform to spectral space along the given axis.
     LT_to_physical(data, l_axis=0, m_axis=1, no_fft=False)
         Legendre transform to physical space along the given axis.
-    d_dphi(data, axis=0, physical=True)
+    d_dphi(data, phi_axis=0, phi_physical=True)
         Compute a derivative with respect to phi along the given axis. Data is assumed
         to be in physical space (physical=True).
-    d_dtheta(data, axis=0, physical=True)
+    d_dtheta(data, th_axis=0, phi_axis=1, th_physical=True, phi_physical=True)
         Compute a derivative with respect to theta along the given axis. Data is assumed
         to be in physical space (physical=True).
     """
@@ -2460,7 +2460,7 @@ class SHT:
 
         return data_out
 
-    def d_dphi(self, data_in, phi_axis=1, physical=True):
+    def d_dphi(self, data_in, phi_axis=0, phi_physical=True):
         """
         Take a derivative with respect to phi/longitude.
 
@@ -2468,9 +2468,9 @@ class SHT:
         ----
         data_in : ndarray
             Input data array.
-        axis : int, optional
+        phi_axis : int, optional
             Axis along which the derivative will be computed.
-        physical : bool, optional
+        phi_physical : bool, optional
             Specify the incoming data as being in physical space or spectral. The
             data will be transformed to spectral space (if necessary) to compute
             the derivative.
@@ -2486,7 +2486,7 @@ class SHT:
         shp = np.shape(data_in); dim = len(shp)
         phi_axis = pos_axis(phi_axis, dim)
 
-        if (physical): # go to spectral space first, if necessary
+        if (phi_physical): # go to spectral space first, if necessary
             data_in = self.fft_to_spectral(data_in, axis=phi_axis)
         else:
             # fft_to_spectral does a shape check when physical=True
@@ -2501,8 +2501,118 @@ class SHT:
         # multiply by i*m to compute derivative
         data_out = freq*data_in
 
-        if (physical): # go back to physical if necessary
+        if (phi_physical): # go back to physical if necessary
             data_out = self.fft_to_physical(data_out, axis=phi_axis)
 
         return data_out
+
+    def d_dtheta(self, data_in, th_axis=0, phi_axis=1, th_physical=True, phi_physical=True):
+        """
+        Take a derivative with respect to theta/co-latitude.
+
+        Args
+        ----
+        data_in : ndarray
+            Input data array.
+        th_axis : int, optional
+            Axis along which the derivative will be computed.
+        phi_axis : int, optional
+            Axis in the phi direction.
+        th_physical : bool, optional
+            Specify the incoming data as being in physical space or spectral along the
+            theta axis. The data will be transformed to spectral space (if necessary)
+            to compute the derivative.
+        phi_physical : bool, optional
+            Specify the incoming data as being in physical space or spectral along the
+            phi axis. The data will be transformed to spectral space (if necessary)
+            to compute the derivative.
+
+        Returns
+        -------
+        data_out : ndarray
+            Output data containing d/dtheta, in the same space as incoming data. If
+            incoming data was in physical space, the derivative will also be in
+            physical space.
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        phi_axis = pos_axis(phi_axis, dim)
+
+        if (th_physical):
+            if (shp[th_axis] != self.nth):
+                e = "d_dtheta expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
+        else:
+            if (shp[th_axis] != self.nl):
+                e = "d_dtheta expected length={} along axis={}, found N={}"
+                raise ValueError(e.format(self.nl, th_axis, shp[th_axis]))
+
+        if (phi_physical): # go to spectral space first, if necessary
+            data_in = self.fft_to_spectral(data_in, axis=phi_axis)
+
+        if (th_physical): # go to spectral space, if necessary
+            data_in = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
+
+        # compute the derivative: sin(th)*dF/dth
+        #     sin(th)*dP_l^m/dth = l*D_{l+1}^m*P_{l+1}^m - (l+1)*D_l^m*P_{l-1}^m
+        #     where P_l^m includes the A_l^m normalization of the spherical harmonics
+        #     and D_l^m = sqrt[ ((l-m)*(l+m)) / ((2l-1)*(2l+1)) ]
+        Dlm = np.zeros((self.nl,self.nm))
+        for l in range(self.nl):
+            for m in range(
+
+        for m in range(n_m):
+            mv = m_values[m]
+
+        # l=0 part is zero
+        data_out = np.zeros_like(data_in)
+        slc = [slice(None)]*dim
+
+        Dlm = np.zeros((self.nl,self.nm))
+        for l in range(1,self.nl):
+            Dlm[l,0] = l/np.sqrt(4*l*l-1.)
+            for m in range(1,l+1):
+                num = l*l - m*m
+                den = 4.*l*l-1.
+                Dlm[l,m] = np.sqrt(num/den)
+
+        # 0 < l < l_max part
+        for l in range(1,self.lmax): # exclude lmax
+
+            # m=0 parts
+
+            slc[phi_axis] = m
+            slc[th_axis] = l
+            data_out[tuple(slc)] =
+            for m in range(1,l+1):
+
+        # l_max part
+
+        # convert back to physical space
+        data_out = self.to_physical(data_out, l_axis=th_axis, m_axis=phi_axis, no_fft=1)
+
+        # undo the sin(th) part in physical space
+        nshp = [1]*len(data_out.shape); nshp[th_axis] = -1; nshp = tuple(nshp)
+        sinth = np.reshape(self.sinth, nshp)
+        data_out /= sinth
+
+        # currently in (th,m), return to proper space, transform as necessary
+        current_th = True; current_phi = False
+        if ((not th_physical) and (not phi_physical)): # (th,m) ---> l,m
+            return self.LT_to_physical(data_out, th_axis=th_axis, phi_axis=phi_axis,
+                                       phi_physical=current_phi)
+
+        elif ((not th_physical) and phi_physical): # (th,m) ---> (l,m) ---> l,phi
+            data_out = self.LT_to_spectral(data_out, th_axis=th_axis, phi_axis=phi_axis,
+                                           phi_physical=current_phi)
+            return self.fft_to_physical(data_out, axis=phi_axis)
+
+        elif (th_physical and (not phi_physical)): # (th,m) ---> th,m
+            return data_out
+
+        elif (th_physical and phi_physical): # (th,m) ---> th,phi
+              return self.fft_to_physical(data_out, axis=phi_axis)
+
+        else:
+            raise ValueError("should never be here")
 
