@@ -27,19 +27,19 @@ def ddx_repeated_gridpoints(data, grid, indices, axis=0):
     Args
     ----
     data : ndarray
-        The data values on the grid
+        The data values on the grid.
     grid : 1D ndarray of shape (N,)
         The grid point values. Each subdomain must contain more than 7 grid points.
     indices : 1D array_like
         Each element gives the index to the second instance of a repeated grid point, e.g.,
         the first repeated grid point occurs at grid[indices[0]] and grid[indices[0]-1].
     axis : int, optional
-        The axis over which to take the derivative
+        The axis over which to take the derivative.
 
     Returns
     -------
     dfdx : ndarray
-        Derivative evaluated on the grid, same shape as input
+        Derivative evaluated on the grid, same shape as input.
     """
     grid = np.asarray(grid); data = np.asarray(data)
 
@@ -76,16 +76,16 @@ def ddx(data, grid, axis=0):
     Args
     ----
     data : ndarray
-        The data values on the grid
+        The data values on the grid.
     grid : 1D ndarray of shape (N,)
-        The grid point values
+        The grid point values.
     axis : int, optional
-        The axis over which to take the derivative
+        The axis over which to take the derivative.
 
     Returns
     -------
     dfdx : ndarray
-        Derivative evaluated on the grid, same shape as input
+        Derivative evaluated on the grid, same shape as input.
     """
     x = np.asarray(grid); f = np.asarray(data)
 
@@ -160,17 +160,17 @@ def _one_sided_6th(xx, ff, right_edge=False):
     Args
     ----
     xx : (7,) ndarray
-        The three grid points, the left edge is assumed to be the boundary
+        The three grid points, the left edge is assumed to be the boundary.
     ff : (...,7) ndarray
-        The data values on the grid
+        The data values on the grid.
     right_edge : bool, optional
-        Calculate the one sided difference on the right boundary
+        Calculate the one sided difference on the right boundary.
 
     Returns
     -------
     dfdx : (...,1) ndarray
         Derivative evaluated on the left/right boundary, if f is shape tuple + (7,)
-        then dfdx will have shape tuple
+        then dfdx will have shape tuple.
     """
     xx = np.asarray(xx); ff = np.asarray(ff)
     if (right_edge):
@@ -210,21 +210,21 @@ def _one_sided_6th(xx, ff, right_edge=False):
 
 def choose_gemm(data, tol=1e-15):
     """
-    Determine correct GEMM routine to use: real vs complex
+    Determine correct GEMM routine to use: real vs complex.
 
     Args
     ----
     data : array_like
-        The input data
+        The input data.
     tol : float, optional
-        Choose tolerance below which the imaginary part is considered zero
+        Choose tolerance below which the imaginary part is considered zero.
 
     Returns
     -------
     gemm : scipy function
         Reference to either dgemm or zgemm from scipy.linalg.blas
     is_complex : bool
-        Describes the chosen scipy routine as either real or complex
+        Describes the chosen scipy routine as either real or complex.
     """
     data = np.asarray(data)
 
@@ -240,21 +240,21 @@ def choose_gemm(data, tol=1e-15):
 
 def swap_axis(array, axis0, axis1):
     """
-    Swap axes of array, other axes remain untouched
+    Swap axes of array, other axes remain untouched.
 
     Args
     ----
     array : ndarray
-        The input array
+        The input array.
     axis0 : int
-        The original axis that will be swapped
+        The original axis that will be swapped.
     axis1 : int
-        The final destination axis
+        The final destination axis.
 
     Returns
     -------
     array : ndarray
-        The input array with the swapped axes
+        The input array with the swapped axes.
 
     Examples
     --------
@@ -280,19 +280,19 @@ def swap_axis(array, axis0, axis1):
 
 def pos_axis(axis, dim):
     """
-    Convert axis to a positive integer into array of size dim
+    Convert axis to a positive integer into array of size dim.
 
     Args
     ----
     axis : int
-        The axis to verify
+        The axis to verify.
     dim : int
-        Number of dimensions where axis is valid
+        Number of dimensions where axis is valid.
 
     Returns
     -------
     axis : int
-        The positive integer reference to the given axis
+        The positive integer reference to the given axis.
 
     Example
     -------
@@ -316,25 +316,24 @@ def pos_axis(axis, dim):
 
 def grid_size(N, spectral, dealias=1.0):
     """
-    Find size of physical and spectral grids with dealiasing
+    Find size of physical and spectral grids with dealiasing.
 
     Args
     ----
     N : int
-        Number of grid points or coefficients
+        Number of grid points or coefficients.
     spectral : bool
-        Does the incoming N refer to physical space (Ngrid) or spectral (Npoly_max)
+        Does the incoming N refer to physical space (Ngrid) or spectral (Npoly_max).
     dealias : float, optional
-        Amount to dealias: N_grid = dealias*(N_poly_max + 1)
+        Amount to dealias: N_grid = dealias*(N_poly_max + 1).
 
     Returns
     -------
     Ngrid : int
-        Number of physical space grid points
+        Number of physical space grid points.
     Npoly_max : int
-        Maximum degree in polynomial expansion
+        Maximum degree in polynomial expansion.
     """
-    # N_grid = dealias*(N_poly_max + 1)
     if (spectral):
         Npoly_max = N
         Ngrid = int(dealias*(Npoly_max+1))
@@ -345,16 +344,26 @@ def grid_size(N, spectral, dealias=1.0):
 
 class Fourier:
     """
-    Handle real data on a Fourier grid, i.e., longitude/phi grid
+    Handle real data on a Fourier grid, i.e., longitude/phi grid.
+
+    This is a stand alone class meant to be used for data where only operations
+    in the longitude direction are required, e.q., phi derivative or FFT with no
+    Legendre transform. For data that requires a transform in both longitude and
+    latitude, the SHT class is more appropriate.
+
+    This Fourier class can do transforms and derivatives along
+    any axis of the real data, but keeps all modes up to the Nyquist frequency.
+    This behavior is different compared to a full spherical harmonic transform,
+    which applies a triangular truncation of the azimuthal wavenumbers (see SHT).
 
     Attributes
     ----------
     nphi : integer
         Physical space grid resolution. This can also be accessed as n_phi.
     phi : ndarray (nphi,)
-        The longitude grid points
+        The longitude grid points.
     dphi : float
-        The grid spacing
+        The grid spacing.
     mvals : ndarray (nphi/2 + 1,)
         The angular frequencies, also accessed as angular_freq.
 
@@ -365,20 +374,20 @@ class Fourier:
         applied in physical space before doing the transform by setting the window
         to a ndarray of shape (nphi,).
     to_physical(data, axis=0)
-        Transform to physical space along the given axis
+        Transform to physical space along the given axis.
     d_dphi(data, axis=0, physical=True)
         Compute a derivative with respect to phi along the given axis. Data is assumed
-        to be in physical space (physical=True)
+        to be in physical space (physical=True).
     """
 
     def __init__(self, N):
         """
-        Initialize the Fourier grid and FFT (assumes real data)
+        Initialize the Fourier grid and FFT (assumes real data).
 
         Args
         ----
         N : int
-            Number of physical space grid points
+            Number of physical space grid points.
         """
         self.N = N
         self.x = self.grid()
@@ -399,12 +408,12 @@ class Fourier:
 
     def frequencies(self):
         """
-        Calculate frequencies on the Fourier grid
+        Calculate frequencies on the Fourier grid.
 
         Returns
         -------
         freq : 1D array
-            Array of positive frequencies
+            Array of positive frequencies.
         """
         freq = np.fft.fftfreq(self.N, d=self.dx) # all frequencies: positive & negative
         freq = np.abs(freq[0:int(self.N/2)+1]) # only keep positive frequencies
@@ -412,12 +421,12 @@ class Fourier:
 
     def grid(self):
         """
-        Calculate Fourier grid points in [0,2pi)
+        Calculate Fourier grid points in [0,2pi).
 
         Returns
         -------
         x : 1D array
-            Physical space grid points
+            Physical space grid points.
         """
         self.period = 2.*np.pi
         dphi = self.period/self.N
@@ -426,21 +435,21 @@ class Fourier:
 
     def to_spectral(self, data_in, axis=0, window=None):
         """
-        FFT from physical space to spectral space
+        FFT from physical space to spectral space.
 
         Args
         ----
         data_in : ndarray
-            Input data array of real values
+            Input data array of real values.
         axis : int, optional
-            The axis along which the FFT will be taken
+            The axis along which the FFT will be taken.
         window : 1D array, optional
-            Apply a window in physical space before the FFT
+            Apply a window in physical space before the FFT.
 
         Returns
         -------
         data_out : ndarray
-            Complex Fourier coefficients
+            Complex Fourier coefficients.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -469,19 +478,19 @@ class Fourier:
 
     def to_physical(self, data_in, axis=0):
         """
-        FFT from spectral space to physical space
+        FFT from spectral space to physical space.
 
         Args
         ----
         data_in : ndarray
-            Spectral space coefficients
+            Spectral space coefficients.
         axis : int, optional
-            The axis along which the FFT will be taken
+            The axis along which the FFT will be taken.
 
         Returns
         -------
         data_out : ndarray
-            Array of physical space values
+            Array of physical space values.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -508,21 +517,21 @@ class Fourier:
 
     def d_dphi(self, data_in, axis=0, physical=True):
         """
-        Take a phi derivative
+        Take a phi derivative.
 
         Args
         ----
         data_in : ndarray
-            Input data array
+            Input data array.
         axis : int, optional
-            Axis along which the derivative will be computed
+            Axis along which the derivative will be computed.
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral
+            Specify the incoming data as being in physical space or spectral.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dphi
+            Output data containing d/dphi.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -553,21 +562,21 @@ class Fourier:
 
 def legendre_grid(Npts, quad=False):
     """
-    Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1)
+    Calculate the Legendre grid points ordered as x[i] < x[i+1] with x in (-1,1).
 
     Args
     ----
     Npts : int
-        Number of grid points
+        Number of grid points.
     quad : bool, optional
-        Return arrays using quad precision, default is double
+        Return arrays using quad precision, default is double.
 
     Returns
     -------
     x : (Npts,) ndarray
-        The Legendre grid points
+        The Legendre grid points.
     w : (Npts,) ndarray
-        The Legendre integration weights
+        The Legendre integration weights.
     """
     x = np.zeros((Npts), dtype=np.float64); w = np.zeros((Npts), dtype=np.float64)
     _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
@@ -617,16 +626,16 @@ def _evaluate_Pl(x, n):
     Args
     ----
     x : float or (N,) ndarray
-        The evaluation points
+        The evaluation points.
     n : int
-        The order of the Legendre function
+        The order of the Legendre function.
 
     Returns
     -------
     pn : float or (N,) ndarray
-        Legendre function evaluated at x
+        Legendre function evaluated at x.
     deriv_pn : float or (N,) ndarray
-        Derivative of the Legendre function evaluated at x
+        Derivative of the Legendre function evaluated at x.
     """
     x = np.asarray(x, dtype=np.float128)
     if (len(np.shape(x)) > 0): # x is array
@@ -660,14 +669,14 @@ def compute_Pl(x, lmax):
     Args
     ----
     x : (Nth,) ndarray
-        The Legendre grid points
+        The Legendre grid points.
     lmax : int
-        The maximum order of the Legendre polynomials that will be included
+        The maximum order of the Legendre polynomials that will be included.
 
     Returns
     -------
     Pl : (Nth, lmax+1) ndarray
-        The l-th Legendre polynomial evaluated at x[i]
+        The l-th Legendre polynomial evaluated at x[i].
     """
     x = np.asarray(x, dtype=np.float128)
     n = np.shape(x)[0]
@@ -712,15 +721,25 @@ def compute_Pl(x, lmax):
 
 class Legendre:
     """
-    Handle data on a Legendre grid, i.e., latitude/theta grid
+    Handle data on a Legendre grid, i.e., latitude/theta grid.
 
-    The data is decomposed as
+    This is a stand alone class meant to be used for data where only operations
+    in the latitude direction are required, e.q., theta derivative or Legendre
+    transform with no FFT. For data that requires a transform in both longitude
+    and latitude, the SHT class is more appropriate.
+
+    This Legendre class can do transforms and derivatives along
+    any axis of the real/complex data. The data is decomposed as
 
     .. math::
         F(x) = \\sum C_l A_l^{m=0} P_l^{m=0}(x)
 
     where :math:`P_l^m` are the associated Legendre functions for :math:`m=0` and
     :math:`A_l^m` are the Spherical harmonic normalization coefficients.
+
+    This is a different expansion than what is used for a full spherical harmonic
+    expansion, which includes nonzero values of m and applies a triangular truncation
+    to the azimuthal modes (see SHT).
 
     Attributes
     ----------
@@ -731,7 +750,7 @@ class Legendre:
     nl : integer
         Number of polynomials in spectral space. This can also be accessed as nell.
     theta : ndarray (nth,)
-        The co-latitude grid points
+        The co-latitude grid points.
     costh : ndarray (nth,)
         The cosine of the co-latitude points. This can also be accessed as costheta.
     sinth : ndarray (nth,)
@@ -740,28 +759,28 @@ class Legendre:
     Methods
     -------
     to_spectral(data, axis=0)
-        Transform to spectral space along the given axis
+        Transform to spectral space along the given axis.
     to_physical(data, axis=0)
-        Transform to physical space along the given axis
+        Transform to physical space along the given axis.
     d_dtheta(data, axis=0, physical=True)
         Compute a derivative with respect to theta along the given axis. Data is assumed
-        to be in physical space (physical=True)
+        to be in physical space (physical=True).
     """
 
     def __init__(self, N, spectral=False, dealias=1.5, dgemm_tol=1e-14):
         """
-        Initialize the Legendre grid and transform
+        Initialize the Legendre grid and transform.
 
         Args
         ----
         N : int
-            Resolution of the theta grid
+            Resolution of the theta grid.
         spectral : bool, optional
             Does N refer to physical space or spectral space. If spectral=True,
             N would be the maximum polynomial degree (l_max). The default
-            is that N refers to the physical space resolution (N_theta)
+            is that N refers to the physical space resolution (N_theta).
         dealias : float, optional
-            Amount to dealias: N_theta = dealias*(l_max + 1)
+            Amount to dealias: N_theta = dealias*(l_max + 1).
         dgemm_tol : float, optional
             If the data has any imaginary part with magnitude above this tolerance, then
             the complex BLAS routine will be used.
@@ -799,19 +818,19 @@ class Legendre:
 
     def to_spectral(self, data_in, axis=0):
         """
-        Legendre transform from physical space to spectral space
+        Legendre transform from physical space to spectral space.
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed
+            Input data to be transformed.
         axis : int, optional
-            The axis over which the transform will take place
+            The axis over which the transform will take place.
 
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axis
+            Transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -847,19 +866,19 @@ class Legendre:
 
     def to_physical(self, data_in, axis=0):
         """
-        Legendre transform from spectral space to physical space
+        Legendre transform from spectral space to physical space.
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed
+            Input data to be transformed.
         axis : int, optional
-            The axis over which the transform will take place
+            The axis over which the transform will take place.
 
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axis
+            Transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -892,21 +911,21 @@ class Legendre:
 
     def d_dtheta(self, data_in, axis=0, physical=True):
         """
-        Compute derivative with respect to theta
+        Compute derivative with respect to theta.
 
         Args
         ----
         data_in : ndarray
-            Input data array
+            Input data array.
         axis : int, optional
-            The axis over which the derivative will take place
+            The axis over which the derivative will take place.
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral space
+            Specify the incoming data as being in physical space or spectral space.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dtheta
+            Output data containing d/dtheta.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -975,21 +994,21 @@ class Legendre:
 
 def chebyshev_zeros(Npts, reverse=False, quad=False):
     """
-    generate the Chebysheve zeros grid
+    Generate the Chebysheve zeros grid.
 
     Args
     ----
     Npts : int
-        The number of grid points
+        The number of grid points.
     reverse : bool, optional
-        Reverse the grid order to be x[i] > x[i+1], i.e., x = (-1,1)
+        Reverse the grid order to be x[i] > x[i+1], i.e., x = (-1,1).
     quad : bool, optional
-        Return arrays using quad precision, default is double
+        Return arrays using quad precision, default is double.
 
     Returns
     -------
     grid : 1D array
-        The array of grid points
+        The array of grid points.
     """
     grid = np.zeros((Npts), dtype=np.float128)
     dcth = np.asarray(np.pi/Npts, dtype=np.float128)
@@ -1005,7 +1024,7 @@ def chebyshev_zeros(Npts, reverse=False, quad=False):
 
 class Chebyshev:
     """
-    Handle data on a Chebyshev grid, i.e., radius grid
+    Handle data on a Chebyshev grid, i.e., radius grid.
 
     The grid is based on the zeros of the Chebyshev polynomials and includes the
     endpoints of the domain as grid points.
@@ -1015,17 +1034,17 @@ class Chebyshev:
     nr : integer
         The total number of radial grid points. This can also be accessed as n_r.
     radius : ndarray (nr,)
-        The radial grid points
+        The radial grid points.
     n_domains : integer
-        Number of separate radial domains
+        Number of separate radial domains.
     nr_domains : ndarray (n_domains,)
-        The number of radial grid points in each domain
-    npoly : ndarray (n_domains,)
-        The number of polynomials used in each domain
+        The number of radial grid points in each domain.
     npoly_dealias : ndarray (n_domains,)
-        The number of dealiased polynomials used in each domain
+        The number of dealiased polynomials used in each domain.
+    dealias : ndarray (n_domains,)
+        The amount of dealiasing for each domain.
     boundaries : ndarray (n_domains+1,)
-        The domain boundaries
+        The domain boundaries.
     boundary_indices : list (n_domains-1,)
         Indices of the internal boundaries. Use these indices to slice out the radial
         grid points of a particular subdomain; the radial grid points of the first
@@ -1044,25 +1063,23 @@ class Chebyshev:
         Indices to the global domain bounds (rmin and rmax) are not included. The list
         will be empty if a single domain is used.
     rmin : float
-        The minimum radius, i.e., the lower boundary
+        The minimum radius, i.e., the global lower boundary.
     rmax : float
-        The maximum radius, i.e., the upper boundary
+        The maximum radius, i.e., the global upper boundary.
     aspect_ratio : float
-        The ratio of rmin/rmax
+        The ratio of rmin/rmax.
     shell_depth : float
-        The depth of the shell, rmax-rmin
-    dealias : ndarray (n_domains,)
-        The amount of dealiasing for each domain.
+        The depth of the shell, rmax-rmin.
 
     Methods
     -------
     to_spectral(data, axis=0)
-        Transform to spectral space along the given axis
+        Transform to spectral space along the given axis.
     to_physical(data, axis=0)
-        Transform to physical space along the given axis
+        Transform to physical space along the given axis.
     d_dr(data, axis=0, physical=True)
         Compute a derivative with respect to radius along the given axis. Data is assumed
-        to be in physical space (physical=True)
+        to be in physical space (physical=True).
     """
 
     def __init__(self, nr_domains,
@@ -1073,7 +1090,7 @@ class Chebyshev:
                  dmax=1,
                  dgemm_tol=1e-14):
         """
-        Initialize the Chebyshev grid and transform
+        Initialize the Chebyshev grid and transform.
 
         Support for three types of grids:
             a) single Chebyshev domain [default]
@@ -1086,13 +1103,13 @@ class Chebyshev:
             Resolution of the radial grid(s). If using uniform domains, these
             entries refer to the resolution per domain.
         rmin : float, optional
-            The lower boundary of the global domain
+            The lower boundary of the global domain.
         rmax : float, optional
-            The upper boundary of the global domain
+            The upper boundary of the global domain.
         aspect_ratio : float, optional
-            Set the aspect ratio of the domain, defined as rmin/rmax
+            Set the aspect ratio of the domain, defined as rmin/rmax.
         shell_depth : float, optional
-            The total domain shell thickness, defined as rmax-rmin
+            The total domain shell thickness, defined as rmax-rmin.
         boundaries : 1D array_like, optional
             Set the boundaries for multiple subdomains. This overrides
             the rmin/rmax and aspect_ratio/shell_depth arguments, since the first
@@ -1117,7 +1134,7 @@ class Chebyshev:
             The default behavior is the standard 2/3 rule:
                 n_polynomials = 2*n_r/3
         dmax : int, optional
-            Allocate array storage space for up to and including the dmax-th derivative
+            Allocate array storage space for up to and including the dmax-th derivative.
         dgemm_tol : float, optional
             If the data has any imaginary part with magnitude above this tolerance, then
             the complex BLAS routine will be used. If the real BLAS routine is selected,
@@ -1270,12 +1287,12 @@ class Chebyshev:
 
     def build_grid(self, dmax=3):
         """
-        Build the grid(s)
+        Build the grid(s).
 
         Args
         ----
         dmax : int, optional
-            Allocate array storage space for up to and including the dmax-th derivative
+            Allocate array storage space for up to and including the dmax-th derivative.
         """
         self.npoly = np.zeros((self.n_domains), dtype=np.int32)
         self.rda = np.zeros((self.n_domains), dtype=np.int32)
@@ -1356,7 +1373,7 @@ class Chebyshev:
 
     def find_colocation_pts(self):
         """
-        Compute the colocation grid points
+        Compute the colocation grid points.
         """
         for n in range(self.n_domains):
             n_max = self.npoly[n]
@@ -1371,7 +1388,7 @@ class Chebyshev:
 
     def find_Tn(self):
         """
-        Compute the Chebyshev polynomials evaluated at the colocation grid points
+        Compute the Chebyshev polynomials evaluated at the colocation grid points.
         """
         cheby = np.zeros((self.max_npoly, self.max_npoly), dtype=np.float64)
 
@@ -1404,7 +1421,7 @@ class Chebyshev:
 
     def find_Tn_deriv_array(self, dmax):
         """
-        Compute derivative of Chebyshev polynomials evaluated at the colocation grid points
+        Compute derivative of Chebyshev polynomials evaluated at the colocation grid points.
         """
         alpha = np.zeros((self.max_npoly, self.max_npoly), dtype=np.float64)
 
@@ -1438,19 +1455,19 @@ class Chebyshev:
 
     def _dealias(self, data, axis=0):
         """
-        Dealias the input data along the given axis
+        Dealias the input data along the given axis.
 
         Args
         ----
         data : ndarray
-            Input data to be dealiased
+            Input data to be dealiased.
         axis : int, optional
-            The axis over which the dealiasing will take place
+            The axis over which the dealiasing will take place.
 
         Returns
         -------
         data : ndarray
-            Dealiased data, input will be modified
+            Dealiased data, input will be modified.
         """
         data = np.asarray(data)
         shp = np.shape(data); dim = len(shp)
@@ -1477,19 +1494,19 @@ class Chebyshev:
 
     def to_spectral(self, data_in, axis=0):
         """
-        Chebyshev transform from physical space to spectral space
+        Chebyshev transform from physical space to spectral space.
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed
+            Input data to be transformed.
         axis : int, optional
-            The axis over which the transform will take place
+            The axis over which the transform will take place.
 
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axis
+            Transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -1569,19 +1586,19 @@ class Chebyshev:
 
     def to_physical(self, data_in, axis=0):
         """
-        Chebyshev transform from spectral space to physical space
+        Chebyshev transform from spectral space to physical space.
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed
+            Input data to be transformed.
         axis : int, optional
-            The axis over which the transform will take place
+            The axis over which the transform will take place.
 
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axis
+            Transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -1673,21 +1690,21 @@ class Chebyshev:
 
     def d_dr(self, data_in, axis=0, physical=True):
         """
-        Compute derivative with respect to radius
+        Compute derivative with respect to radius.
 
         Args
         ----
         data_in : ndarray
-            Input data array
+            Input data array.
         axis : int, optional
-            The axis over which the derivative will take place
+            The axis over which the derivative will take place.
         physical : bool, optional
-            Specify the incoming data as being in physical space or spectral space
+            Specify the incoming data as being in physical space or spectral space.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dr
+            Output data containing d/dr.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -1739,41 +1756,88 @@ class Chebyshev:
 
 class SHT:
     """
-    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m)
+    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m).
+
+    The data is expanded as
+    .. math::
+        F(th,phi) = \\sum C_l^m Y_l^m(th,phi)
+                  = \\sum C_l^m A_l^m P_l^m(cos(th)) e^(i m phi)
+
+    where :math:`P_l^m` are the associated Legendre functions and
+    :math:`A_l^m` are the Spherical harmonic normalization coefficients.
+
+    The following transformations are supported:
+
+        + (th,phi) <=> (l, m ) use to_spectral and to_physical
+        + (th, m ) <=> (l, m ) use to_spectral and to_physical with no_fft=True
+        + (th,phi) <=> (th,m ) use fft_to_spectral and fft_to_physical
+        + (th,phi) <=> (l,phi) use LT_to_spectral and LT_to_physical (quite slow)
 
     Attributes
     ----------
+    nth : integer
+        Physical space grid resolution. This can also be accessed as ntheta or n_theta.
+    lmax : integer
+        Maximum polynomial degree in spectral space. This can also be accessed as l_max.
+    nl : integer
+        Number of polynomials in spectral space. This can also be accessed as nell.
     theta : ndarray (nth,)
-        The co-latitude grid points
+        The co-latitude grid points.
     costh : ndarray (nth,)
         The cosine of the co-latitude points. This can also be accessed as costheta.
     sinth : ndarray (nth,)
         The sine of the co-latitude points. This can also be accessed as sintheta.
+    nphi : integer
+        Physical space grid resolution. This can also be accessed as n_phi.
+    mmax : integer
+        Maximum azimuthal degree in spectral space. This can also be accessed as m_max.
+    nm : integer
+        Number of azimuthal modes in spectral space.
+    dphi : float
+        The grid spacing.
     phi : ndarray (nphi,)
-        The longitude grid points
+        The longitude grid points.
+    cosphi : ndarray (nth,)
+        The cosine of the longitude points.
+    sinphi : ndarray (nth,)
+        The sine of the longitude points.
 
     Methods
     -------
-    to_spectral(data, th_axis=0, phi_axis=1)
-        Transform to spectral space along the given axes
-    to_physical(data, th_axis=0, phi_axis=1)
-        Transform to physical space along the given axes
+    to_spectral(data, th_axis=0, phi_axis=1, no_fft=False)
+        Full SHT transform to spectral space along the given axes.
+    to_physical(data, l_axis=0, m_axis=1, no_fft=False)
+        Full SHT transform to physical space along the given axes.
+    fft_to_spectral(data, axis=0)
+        Fourier transform to spectral space along the given axis.
+    fft_to_physical(data, axis=0)
+        Fourier transform to physical space along the given axis.
+    LT_to_spectral(data, th_axis=0, phi_axis=1, no_fft=False)
+        Legendre transform to spectral space along the given axis.
+    LT_to_physical(data, l_axis=0, m_axis=1, no_fft=False)
+        Legendre transform to physical space along the given axis.
+    d_dphi(data, axis=0, physical=True)
+        Compute a derivative with respect to phi along the given axis. Data is assumed
+        to be in physical space (physical=True).
+    d_dtheta(data, axis=0, physical=True)
+        Compute a derivative with respect to theta along the given axis. Data is assumed
+        to be in physical space (physical=True).
     """
 
     def __init__(self, N, spectral=False, dealias=1.5, dgemm_tol=1e-14):
         """
-        Initialize the SHT grid and transform
+        Initialize the SHT grid and transform.
 
         Args
         ----
         N : int
-            Resolution of the latitude/theta grid
+            Resolution of the latitude/theta grid.
         spectral : bool, optional
             Does N refer to physical space or spectral space. If spectral=True,
             N would be the maximum polynomial degree (l_max). The default
-            is that N refers to the physical space resolution (N_theta)
+            is that N refers to the physical space resolution (N_theta).
         dealias : float, optional
-            Amount to dealias: N_theta = dealias*(l_max + 1)
+            Amount to dealias: N_theta = dealias*(l_max + 1).
         dgemm_tol : float, optional
             If the data has any imaginary part with magnitude above this tolerance, then
             the complex BLAS routine will be used. If the real BLAS routine is selected,
@@ -1826,7 +1890,7 @@ class SHT:
 
     def compute_Plm(self):
         """
-        Compute various arrays holding the A_l^m*P_l^m data evaluated on the grid
+        Compute various arrays holding the A_l^m*P_l^m data evaluated on the grid.
         """
         n_m = self.nm
 
@@ -1946,19 +2010,19 @@ class SHT:
 
     def fft_to_spectral(self, data_in, axis=0):
         """
-        Fourier transform from physical to spectral
+        Fourier transform from physical to spectral.
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed, assumed to be real
+            Input data to be transformed, assumed to be real.
         axis : int, optional
-            The axis over which the transform will take place
+            The axis over which the transform will take place.
 
         Returns
         -------
         data_out : ndarray
-            Complex transformed data, same shape as input, except along the transformed axis
+            Complex transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -1988,14 +2052,14 @@ class SHT:
         Args
         ----
         data_in : ndarray
-            Complex input data to be transformed
+            Complex input data to be transformed.
         axis : int, optional
-            The axis over which the transform will take place
+            The axis over which the transform will take place.
 
         Returns
         -------
         data_out : ndarray
-            Real transformed data, same shape as input, except along the transformed axis
+            Real transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -2027,16 +2091,16 @@ class SHT:
 
     def to_spectral(self, data_in, th_axis=0, phi_axis=1, no_fft=False):
         """
-        SHT transform from physical space (theta,phi) to spectral space (l,m)
+        SHT transform from physical space (theta,phi) to spectral space (l,m).
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed
+            Input data to be transformed, must include theta and phi axes.
         th_axis : int, optional
-            The axis over which the Legendre transform (theta/l) will take place
+            The axis over which the Legendre transform (theta/l) will take place.
         phi_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place
+            The axis over which the Fourier transform (phi/m) will take place.
         no_fft : bool, optional
             If True, the FFT to spectral space is not completed and the data is
             assumed to already be in Fourier spectral space.
@@ -2044,7 +2108,7 @@ class SHT:
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axis
+            Transformed data, same shape as input, except along the transformed axis.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -2165,16 +2229,16 @@ class SHT:
 
     def to_physical(self, data_in, l_axis=0, m_axis=1, no_fft=False):
         """
-        SHT transform from spectral space (l,m) to physical space (theta,phi)
+        SHT transform from spectral space (l,m) to physical space (theta,phi).
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed
+            Input data to be transformed, must include l and m axes.
         l_axis : int, optional
-            The axis over which the Legendre transform (theta/l) will take place
+            The axis over which the Legendre transform (theta/l) will take place.
         m_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place
+            The axis over which the Fourier transform (phi/m) will take place.
         no_fft : bool, optional
             If True, the FFT to physical space is not completed and the data is
             assumed to already be in Fourier spectral space.
@@ -2182,7 +2246,7 @@ class SHT:
         Returns
         -------
         data_out : ndarray
-            Transformed data, same shape as input, except along the transformed axes
+            Transformed data, same shape as input, except along the transformed axes.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -2297,6 +2361,90 @@ class SHT:
 
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, l_axis)
+
+        return data_out
+
+    def LT_to_spectral(self, data_in, th_axis=0, phi_axis=1, phi_physical=True):
+        """
+        Legendre transform from physical to spectral.
+
+        The Legendre transform requires the phi data to be in spectral space first.
+        If the phi data is in physical space, a full SHT is performed, followed by
+        another FFT to bring the phi data back into physical space. As a result, this
+        can be a quite slow operation.
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, must include theta and phi axes.
+        th_axis : int, optional
+            The axis over which the Legendre transform (theta/l) will take place.
+        phi_axis : int, optional
+            The phi/m axis.
+        phi_physical : bool, optional
+            If True, the phi axis data is assumed to be in physical space and will be
+            transformed into spectral space before the Legendre transform takes place.
+            A second FFT is applied to ensure the final data is in phi-physical space.
+            If False, a simple Legendre transform will be performed.
+
+        Returns
+        -------
+        data_out : ndarray
+            Transformed data, same shape as input, except along the theta axis.
+        """
+        data_in = np.asarray(data_in)
+
+        if (not phi_physical):
+            # easy case, only LT
+            data_out = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
+        else:
+            # full SHT
+            data_out = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis)
+
+            # FFT to restore phi
+            data_out = self.fft_to_physical(data_out, axis=phi_axis)
+
+        return data_out
+
+    def LT_to_physical(self, data_in, l_axis=0, m_axis=1, phi_physical=True):
+        """
+        Legendre transform from spectral to physical.
+
+        The Legendre transform requires the phi data to be in spectral space first.
+        If the phi data is in physical space, a full SHT is performed, followed by
+        another FFT to bring the phi data back into physical space. As a result, this
+        can be a quite slow operation.
+
+        Args
+        ----
+        data_in : ndarray
+            Input data to be transformed, must include theta and phi axes.
+        l_axis : int, optional
+            The axis over which the Legendre transform (theta/l) will take place.
+        m_axis : int, optional
+            The phi/m axis.
+        phi_physical : bool, optional
+            If True, the phi axis data is assumed to be in physical space and will be
+            transformed into spectral space before the Legendre transform takes place.
+            A second FFT is applied to ensure the final data is in phi-physical space.
+            If False, a simple Legendre transform will be performed.
+
+        Returns
+        -------
+        data_out : ndarray
+            Transformed data, same shape as input, except along the theta axis.
+        """
+        data_in = np.asarray(data_in)
+
+        if (not phi_physical):
+            # easy case, only LT
+            data_out = self.to_physical(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
+        else:
+            # full SHT
+            data_out = self.to_physical(data_in, th_axis=th_axis, phi_axis=phi_axis)
+
+            # FFT to spectral
+            data_out = self.fft_to_spectral(data_out, axis=phi_axis)
 
         return data_out
 
