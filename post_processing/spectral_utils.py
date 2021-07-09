@@ -1864,7 +1864,7 @@ class SHT:
                                               # this is not necessary in Fortran
 
             factorial_ratio = np.asarray(1.0, dtype=np.float128)
-            for i in range(1,mv):
+            for i in range(1,mv+1):
                 factorial_ratio *= ((i-half)/i)**half
 
             amp = ((mv+half)/(2*piq))**half
@@ -1968,9 +1968,7 @@ class SHT:
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nphi, axis, shp[axis]))
 
-        #norm = 2./self.nphi # assumes complex conjugate symmetry for real data
         norm = 1.
-
         data_out = norm*np.fft.rfft(data_in, axis=axis)
 
         # dealias, i.e., restrict m-values according to triangular truncation
@@ -2013,7 +2011,7 @@ class SHT:
         temp[tuple(slc)] = data_in[...]
 
         norm = self.nphi
-        data_out = np.fft.irfft(temp*norm, axis=axis)
+        data_out = norm*np.fft.irfft(temp, axis=axis)
 
         # ensure real data is returned
         data_out = data_out.real
