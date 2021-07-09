@@ -1968,13 +1968,16 @@ class SHT:
             e = "SHT: Fourier transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nphi, axis, shp[axis]))
 
-        norm = 1.
-        data_out = norm*np.fft.rfft(data_in, axis=axis)
+        data_out = np.fft.rfft(data_in, axis=axis)
 
         # dealias, i.e., restrict m-values according to triangular truncation
         slc = [slice(None)]*dim
         slc[axis] = slice(0, self.nm)
         data_out = data_out[tuple(slc)]
+
+        # normalize m/=0 modes
+        slc[axis] = slice(1, self.nm)
+        data_out[tuple(slc)] *= 0.5
 
         return data_out
 
@@ -2009,6 +2012,10 @@ class SHT:
         slc = [slice(None)]*dim
         slc[axis] = slice(0,self.nm)
         temp[tuple(slc)] = data_in[...]
+
+        # normalize m/=0 modes
+        slc[axis] = slice(1,self.nm)
+        temp[tuple(slc)] *= 2
 
         norm = self.nphi
         data_out = norm*np.fft.irfft(temp, axis=axis)
