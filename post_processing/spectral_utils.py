@@ -1780,10 +1780,16 @@ class SHT:
 
     The following transformations are supported:
 
-        + (th,phi) <=> (l, m ) use to_spectral and to_physical
-        + (th, m ) <=> (l, m ) use to_spectral and to_physical with no_fft=True
-        + (th,phi) <=> (th,m ) use fft_to_spectral and fft_to_physical
-        + (th,phi) <=> (l,phi) use LT_to_spectral and LT_to_physical (quite slow)
+        + ( th, phi) --> ( l,  m  )   to_spectral
+        + ( th, m  ) --> ( l,  m  )   to_spectral with no_fft=True
+        + ( l,  m  ) --> ( th, phi)   to_physical
+        + ( l,  m  ) --> ( th, m  )   to_physical with no_fft=True
+        + ( phi    ) --> ( m      )   fft_to_spectral
+        + ( m      ) --> ( phi    )   fft_to_physical
+        + ( th, phi) --> ( l,  phi)   LT_to_spectral
+        + ( th, m  ) --> ( l,  m  )   LT_to_spectral with phi_physical=False
+        + ( l,  phi) --> ( th, phi)   LT_to_physical
+        + ( l,  m  ) --> ( th, m  )   LT_to_physical with phi_physical=False
 
     Attributes
     ----------
@@ -2406,14 +2412,16 @@ class SHT:
         """
         data_in = np.asarray(data_in)
 
-        if (not phi_physical):
+        if (not phi_physical): # input is (th,m), output will be (l,m)
             # easy case, only LT
             data_out = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
-        else:
-            # full SHT
+
+        else: # input is (th,phi), output will be (l,phi)
+
+            # full SHT to (l,m)
             data_out = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis)
 
-            # FFT to restore phi
+            # FFT to (l,phi)
             data_out = self.fft_to_physical(data_out, axis=phi_axis)
 
         return data_out
@@ -2448,15 +2456,17 @@ class SHT:
         """
         data_in = np.asarray(data_in)
 
-        if (not phi_physical):
+        if (not phi_physical): # input is (l,m), output will be (th,m)
             # easy case, only LT
-            data_out = self.to_physical(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
-        else:
-            # full SHT
-            data_out = self.to_physical(data_in, th_axis=th_axis, phi_axis=phi_axis)
+            data_out = self.to_physical(data_in, l_axis=l_axis, m_axis=m_axis, no_fft=1)
 
-            # FFT to spectral
-            data_out = self.fft_to_spectral(data_out, axis=phi_axis)
+        else: # input is (l,phi), output will be (th,phi)
+
+            # FFT to (l,m)
+            data_out = self.fft_to_spectral(data_in, axis=m_axis)
+
+            # full SHT to (th,phi)
+            data_out = self.to_physical(data_out, l_axis=l_axis, m_axis=m_axis)
 
         return data_out
 
@@ -2558,12 +2568,6 @@ class SHT:
         #     where P_l^m includes the A_l^m normalization of the spherical harmonics
         #     and D_l^m = sqrt[ ((l-m)*(l+m)) / ((2l-1)*(2l+1)) ]
         Dlm = np.zeros((self.nl,self.nm))
-        for l in range(self.nl):
-            for m in range(
-
-        for m in range(n_m):
-            mv = m_values[m]
-
         data_out = np.zeros_like(data_in)
         slc = [slice(None)]*dim
         slcp1 = [slice(None)]*dim
@@ -2598,14 +2602,14 @@ class SHT:
                 slcm1[phi_axis] = m
                 slcp1[phi_axis] = m
 
-                data_out[tuple(slc)] = (l-1)*Dlm[l,m]*data_in[tuple(slcm1)] \
-                                     - (l+2)*Dlm[l+1,m]*data_in[tuple(slcp1)]
+                data_out[tuple(slc)] = (l-1)*Dlm[l,m]*(2*data_in[tuple(slcm1)].real) \
+                                     - (l+2)*Dlm[l+1,m]*(2*data_in[tuple(slcp1)].real)
 
             # now do the m=l part (slightly different than m<l part)
             if (l < self.lmax):
                 slc[phi_axis] = l
                 slcp1[phi_axis] = l+1
-                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*data_in[tuple(slcp1)]
+                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*(2*data_in[tuple(slcp1)].real)
 
         # convert back to physical space
         data_out = self.to_physical(data_out, l_axis=th_axis, m_axis=phi_axis, no_fft=1)
@@ -2618,7 +2622,7 @@ class SHT:
         # currently in (th,m), return to proper space, transform as necessary
         current_th = True; current_phi = False
         if ((not th_physical) and (not phi_physical)): # (th,m) ---> l,m
-            return self.LT_to_physical(data_out, th_axis=th_axis, phi_axis=phi_axis,
+            return self.LT_to_physical(data_out, l_axis=th_axis, m_axis=phi_axis,
                                        phi_physical=current_phi)
 
         elif ((not th_physical) and phi_physical): # (th,m) ---> (l,m) ---> l,phi
