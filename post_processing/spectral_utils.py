@@ -2564,9 +2564,10 @@ class SHT:
         for m in range(n_m):
             mv = m_values[m]
 
-        # l=0 part is zero
         data_out = np.zeros_like(data_in)
         slc = [slice(None)]*dim
+        slcp1 = [slice(None)]*dim
+        slcm1 = [slice(None)]*dim
 
         Dlm = np.zeros((self.nl,self.nm))
         for l in range(1,self.nl):
@@ -2576,17 +2577,35 @@ class SHT:
                 den = 4.*l*l-1.
                 Dlm[l,m] = np.sqrt(num/den)
 
-        # 0 < l < l_max part
-        for l in range(1,self.lmax): # exclude lmax
+        # loop over all l
+        for l in range(1,self.lmax+1): # include lmax
+            slc[phi_axis] = 0; slc[th_axis] = l       # C_l^m
+            slcm1[phi_axis] = 0; slcm1[th_axis] = l-1 # C_{l-1}^m
+            slcp1[phi_axis] = 0; slcp1[th_axis] = l+1 # C_{l+1}^m
 
             # m=0 parts
+            if (l==0):
+                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,0]*data_in[tuple(slcp1)]
+            elif (l==self.lmax):
+                data_out[tuple(slc)] = (l-1)*data_in[tuple(slcm1)]*Dlm[l,0]
+            else:
+                data_out[tuple(slc)] = (l-1)*data_in[tuple(slcm1)]*Dlm[l,0] \
+                                     - (l+2)*data_in[tuple(slcp1)]*Dlm[l+1,0]
 
-            slc[phi_axis] = m
-            slc[th_axis] = l
-            data_out[tuple(slc)] =
-            for m in range(1,l+1):
+            # m>0 parts
+            for m in range(1,l):
+                slc[phi_axis] = m
+                slcm1[phi_axis] = m
+                slcp1[phi_axis] = m
 
-        # l_max part
+                data_out[tuple(slc)] = (l-1)*Dlm[l,m]*data_in[tuple(slcm1)] \
+                                     - (l+2)*Dlm[l+1,m]*data_in[tuple(slcp1)]
+
+            # now do the m=l part (slightly different than m<l part)
+            if (l < self.lmax):
+                slc[phi_axis] = l
+                slcp1[phi_axis] = l+1
+                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*data_in[tuple(slcp1)]
 
         # convert back to physical space
         data_out = self.to_physical(data_out, l_axis=th_axis, m_axis=phi_axis, no_fft=1)
