@@ -208,7 +208,7 @@ def _one_sided_6th(xx, ff, right_edge=False):
 
     return f1prime
 
-def choose_gemm(data, tol=1e-15):
+def _choose_gemm(data, tol=1e-15):
     """
     Determine correct GEMM routine to use: real vs complex.
 
@@ -390,7 +390,7 @@ class Fourier:
             Number of physical space grid points.
         """
         self.N = N
-        self.x = self.grid()
+        self.x = self._grid()
         self.dx = np.mean(self.x[1:]-self.x[:-1])
 
         # alias
@@ -399,14 +399,14 @@ class Fourier:
         self.nphi = self.n_phi = self.N
 
         # compute frequencies
-        self.freq = self.frequencies()
+        self.freq = self._frequencies()
         self.low_freq = self.freq.min()
         self.high_freq = self.freq.max()
 
         self.angular_freq = 2*np.pi*self.freq
         self.mvals = self.angular_freq
 
-    def frequencies(self):
+    def _frequencies(self):
         """
         Calculate frequencies on the Fourier grid.
 
@@ -419,7 +419,7 @@ class Fourier:
         freq = np.abs(freq[0:int(self.N/2)+1]) # only keep positive frequencies
         return freq
 
-    def grid(self):
+    def _grid(self):
         """
         Calculate Fourier grid points in [0,2pi).
 
@@ -582,8 +582,7 @@ def legendre_grid(Npts, quad=False):
     w : (Npts,) ndarray
         The Legendre integration weights.
     """
-    x = np.zeros((Npts), dtype=np.float64); w = np.zeros((Npts), dtype=np.float64)
-    _x = np.zeros((Npts), dtype=np.float128); _w = np.zeros((Npts), dtype=np.float128)
+    x = np.zeros((Npts), dtype=np.float128); w = np.zeros((Npts), dtype=np.float128)
     midpoint = np.asarray(0.0, dtype=np.float128)
     scaling = np.asarray(1.0, dtype=np.float128)
     n_roots = int((Npts + 1)/2)
@@ -603,21 +602,18 @@ def legendre_grid(Npts, quad=False):
             if (delta <= eps):
                 converged = True
 
-            _x[i] = midpoint - scaling*ith_root
-            _x[Npts-1-i] = midpoint + scaling*ith_root
+            x[i] = midpoint - scaling*ith_root
+            x[Npts-1-i] = midpoint + scaling*ith_root
 
-            _w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
-            _w[Npts-1-i] = _w[i]
+            w[i] = 2.*scaling/((1.-ith_root*ith_root)*deriv_pn*deriv_pn)
+            w[Npts-1-i] = w[i]
             iters += 1
 
-    # store in double precision
-    x[:] = _x[:]
-    w[:] = _w[:]
+    if (not quad): # return in double precision
+        x = np.asarray(x, dtype=np.float64)
+        w = np.asarray(w, dtype=np.float64)
 
-    if (quad):
-        return _x, _w
-    else:
-        return x, w
+    return x, w
 
 def _evaluate_Pl(x, n):
     """
@@ -661,7 +657,7 @@ def _evaluate_Pl(x, n):
 
     return pn, deriv_pn
 
-def compute_Pl(x, lmax):
+def _compute_Pl(x, lmax):
     """
     Compute array of modified associated Legendre functions for m=0. The computed
     values include the spherical harmonic normalization:
@@ -807,7 +803,7 @@ class Legendre:
         self.w[:] = _w[:]
 
         # build array of P_l(x)
-        self.Pl = compute_Pl(_x, self.lmax)
+        self.Pl = _compute_Pl(_x, self.lmax)
 
         # alias
         self.ntheta = self.nth
@@ -856,7 +852,7 @@ class Legendre:
 
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1
 
-        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
+        GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
 
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=1, trans_b=0,
@@ -901,7 +897,7 @@ class Legendre:
 
         shape = list(data_in.shape); shape[transform_axis] = self.nth
 
-        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
+        GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
 
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=0, trans_b=0,
@@ -1035,7 +1031,10 @@ class Chebyshev:
     Handle data on a Chebyshev grid, i.e., radius grid.
 
     The grid is based on the zeros of the Chebyshev polynomials and includes the
-    endpoints of the domain as grid points.
+    endpoints of the domain as grid points. There is support for three types of grids:
+            a) single Chebyshev domain [default]
+            b) uniformly distributed set of N Chebyshev domains, all with same resolution
+            c) nonuniform set of N Chebyshev domains with different resolutions
 
     Attributes
     ----------
@@ -1278,7 +1277,7 @@ class Chebyshev:
         self.dealias = dealias
         self.boundaries = boundaries
 
-        self.build_grid(dmax=dmax) # build the grid
+        self._build_grid(dmax=dmax) # build the grid
 
         # alias
         self.radius = self.grid
@@ -1293,7 +1292,7 @@ class Chebyshev:
                 inds.append(i)
         self.boundary_indices = inds
 
-    def build_grid(self, dmax=3):
+    def _build_grid(self, dmax=1):
         """
         Build the grid(s).
 
@@ -1338,9 +1337,9 @@ class Chebyshev:
         self.n_even = np.zeros((self.n_domains), dtype=np.int32)
         self.n_odd = np.zeros((self.n_domains), dtype=np.int32)
 
-        self.find_colocation_pts()
-        self.find_Tn()
-        self.find_Tn_deriv_array(dmax)
+        self._find_colocation_pts()
+        self._find_Tn()
+        self._find_Tn_deriv_array(dmax)
 
         # global grid and rescale derivative arrays
         self.deriv_scaling = np.zeros((self.n_r), dtype=np.float64)
@@ -1379,7 +1378,7 @@ class Chebyshev:
 
             ind = ind2 + 1
 
-    def find_colocation_pts(self):
+    def _find_colocation_pts(self):
         """
         Compute the colocation grid points.
         """
@@ -1394,7 +1393,7 @@ class Chebyshev:
                 self.x[i,n] = np.cos(arg)
                 arg += dth
 
-    def find_Tn(self):
+    def _find_Tn(self):
         """
         Compute the Chebyshev polynomials evaluated at the colocation grid points.
         """
@@ -1427,7 +1426,7 @@ class Chebyshev:
 
         cheby = None
 
-    def find_Tn_deriv_array(self, dmax):
+    def _find_Tn_deriv_array(self, dmax):
         """
         Compute derivative of Chebyshev polynomials evaluated at the colocation grid points.
         """
@@ -1531,7 +1530,7 @@ class Chebyshev:
         # perform the transform with calls to BLAS
         beta = 0.0
 
-        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
+        GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
@@ -1623,7 +1622,7 @@ class Chebyshev:
         # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
-        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
+        GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
@@ -1768,7 +1767,8 @@ class Chebyshev:
 
 class SHT:
     """
-    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m).
+    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m) using a triangular
+    truncation of the azimuthal modes.
 
     The data is expanded as
     .. math::
@@ -1777,6 +1777,9 @@ class SHT:
 
     where :math:`P_l^m` are the associated Legendre functions and
     :math:`A_l^m` are the Spherical harmonic normalization coefficients.
+    Transforms from any configuration to any other configuration are supported. This
+    includes full spherical harmonic transforms, as well as transforms between different
+    hybrid spaces and simple Fourier & Legendre transforms.
 
     Attributes
     ----------
@@ -1881,9 +1884,9 @@ class SHT:
         self.sinphi = np.sin(self.phi)
 
         # build arrays of P_l^m(x)
-        self.compute_Plm()
+        self._compute_Plm()
 
-    def compute_Plm(self):
+    def _compute_Plm(self):
         """
         Compute various arrays holding the A_l^m*P_l^m data evaluated on the grid.
         """
@@ -2123,7 +2126,7 @@ class SHT:
         transform_axis = 0
         data_in = swap_axis(data_in, th_axis, transform_axis)
 
-        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
+        GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
@@ -2250,7 +2253,7 @@ class SHT:
         transform_axis = 0
         data_in = swap_axis(data_in, l_axis, transform_axis)
 
-        GEMM, is_complex = choose_gemm(data_in, tol=self.dgemm_tol)
+        GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
             dtype = np.complex128
         else:
