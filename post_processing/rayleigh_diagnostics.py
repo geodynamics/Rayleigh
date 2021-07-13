@@ -1281,38 +1281,55 @@ class Shell_Spectra:
         else:
             if np.isscalar(qvals):
                 qvals = np.array([qvals])
-            iqvals = np.zeros(len(qvals))
+            iqvals = np.zeros(len(qvals), 'int')
             for j in range(len(qvals)):
                 qval = qvals[j]
                 iqvals[j] = np.argmin(np.abs(qv - qval))
 
         # now read only the records/slices we want
-        self.vals  = np.zeros((nell, nm, len(irvals), len(qvals), len(iitervals)),dtype='complex128')
+        self.iters = np.zeros(nrec,dtype='int32')
+        self.time  = np.zeros(nrec,dtype='float64')
+        self.vals  = np.zeros((nell, nm, len(irvals), len(iqvals), len(iitervals)),dtype='complex128')
 
-        # loop over everything, in Fortran order
+        # loop over everything, in Fortran/Rayleigh order
         offset = 0
-        iiter_for_arr = 0
         for iiter in range(nrec):
-            iqval_for_arr = 0
-            for iqval in range(nq):
-                irval_for_arr = 0
-                for irval in range(nr):
-                    readit = iiter in iitervals and iqval in iqvals and irval in irvals
-                    if readit:
-                        tmp = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs,offset=offset), (nell,nm), order='F')
-                        self.vals[:, :, irval_for_vals, iqval_for_arr, iiterval_for_arr].real = tmp 
-                        tmp2 = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs,offset=offset), (nell,nm), order='F')
-                        self.vals[:, :, irval_for_vals, iqval_for_arr, iiterval_for_arr].imag = tmp2
-                        iiterval_for_arr += 1
-                        iqval_for_arr += 1
-                        irval_for_arr += 1
-                        offset = 0 # always reset offset after reading
-                    else: # skip over this part; increase offset
-                        offset += 16*nell*nm
+            tmp_real = []
+            tmp_imag = []
+            for icomplex in range(2):
+                for iqval in range(nq):
+                    for irval in range(nr):
+                        readit = iiter in iitervals and iqval in iqvals and irval in irvals
+                        if readit:
+                            if icomplex == 0:
+                                tmp_real += swapread(fd,dtype='float64',count=nell*nm,swap=bs,offset=offset).tolist()
+                            elif icomplex == 1:
+                                tmp_imag += swapread(fd,dtype='float64',count=nell*nm,swap=bs,offset=offset).tolist()
+                            offset = 0 # always reset offset after reading
+                        else: # don't read this part of file; increase offset
+                            offset += 8*nell*nm
 
-            self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs, offset=offset)
-            self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
+            self.time[iiter] = swapread(fd,dtype='float64',count=1,swap=bs, offset=offset)
+            self.iters[iiter] = swapread(fd,dtype='int32',count=1,swap=bs)
             offset = 0 # always reset offset after reading
+
+            self.vals[..., iiter].real = np.reshape(tmp_real, (nell, nm, len(irvals), len(iqvals)), order='F')
+            self.vals[..., iiter].imag = np.reshape(tmp_imag, (nell, nm, len(irvals), len(iqvals)), order='F')
+
+        # now assign metadata depending on what we read
+        self.time = self.time[iitervals]
+        self.iters = self.iters[iitervals]
+        self.qv = qv[iqvals]
+
+        self.niter = len(iitervals)
+        self.nq = len(iqvals)
+        self.nr = len(irvals)
+
+        self.nell = nell
+        self.nm   = nm
+        self.lmax = lmax
+        self.mmax = mmax
+        self.version = version
 
         if (self.version != 4):
             # The m>0 --power-- is too high by a factor of 2
@@ -1322,11 +1339,11 @@ class Shell_Spectra:
         self.lut = get_lut(self.qv)
         fd.close()
 
-        self.lpower  = np.zeros((nell,nr,nq,nrec,3),dtype='float64')
+        self.lpower  = np.zeros((nell,self.nr,self.nq,self.niter,3),dtype='float64')
         #!Finally, we create the power
-        for k in range(nrec):
-            for q in range(nq):
-                for j in range(nr):
+        for k in range(self.niter):
+            for q in range(self.nq):
+                for j in range(self.nr):
                     # Load the m=0 power
                     self.lpower[:,j,q,k,1] = self.lpower[:,j,q,k,1]+np.real(self.vals[:,0,j,q,k])**2 +np.imag(self.vals[:,0,j,q,k])**2
 
@@ -1337,21 +1354,6 @@ class Shell_Spectra:
 
 
                     self.lpower[:,j,q,k,0] = self.lpower[:,j,q,k,2]+self.lpower[:,j,q,k,1] # total power
-
-        self.niter = nrec
-        self.nq = nq
-        self.nr = nr
-        self.nell = nell
-        self.nm   = nm
-        self.lmax = lmax
-        self.mmax = mmax
-
-
-        
-        self.iters = np.zeros(nrec,dtype='int32')
-        self.time  = np.zeros(nrec,dtype='float64')
-        self.version = version
-
 
 class Power_Spectrum():
     """Rayleigh Power Spectrum Structure
