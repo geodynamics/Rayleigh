@@ -1237,7 +1237,7 @@ class Shell_Spectra:
         print( 'qv       : ', self.qv)
 
 
-    def __init__(self,filename='none',path='Shell_Spectra/'):
+    def __init__(self,filename='none',path='Shell_Spectra/', irvals=None, qvals=None, iitervals=None):
         """
            filename  : The reference state file to read.
            path      : The directory where the file is located (if full path not in filename)
@@ -1258,36 +1258,61 @@ class Shell_Spectra:
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        self.niter = nrec
-        self.nq = nq
-        self.nr = nr
-        self.nell = nell
-        self.nm   = nm
-        self.lmax = lmax
-        self.mmax = mmax
-
-        self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
-        self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
-        self.vals  = np.zeros((nell,nm,nr,nq,nrec),dtype='complex128')
-        
-        self.iters = np.zeros(nrec,dtype='int32')
-        self.time  = np.zeros(nrec,dtype='float64')
-        self.version = version
-
+        qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
+        radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
+        inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         # convert from Fortran 1-based to Python 0-based indexing
-        self.inds = self.inds - 1
+        inds -= 1
 
-        for i in range(nrec):
+        if iitervals is None: # read all records
+            iitervals = np.arange(nrec)
+        else:
+            if np.isscalar(iitervals):
+                iitervals = np.array([iitervals])
 
-            tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
-            self.vals[:,:,:,:,i].real = tmp
+        if irvals is None: # read all levels
+            irvals = np.arange(nr)
+        else:
+            if np.isscalar(irvals):
+                irvals = np.array([irvals])
 
-            tmp2 = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
-            self.vals[:,:,:,:,i].imag = tmp2
+        if qvals is None: # read all levels
+            iqvals = np.arange(nq)
+        else:
+            if np.isscalar(qvals):
+                qvals = np.array([qvals])
+            iqvals = np.zeros(len(qvals))
+            for j in range(len(qvals)):
+                qval = qvals[j]
+                iqvals[j] = np.argmin(np.abs(qv - qval))
 
-            self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
+        # now read only the records/slices we want
+        self.vals  = np.zeros((nell, nm, len(irvals), len(qvals), len(iitervals)),dtype='complex128')
+
+        # loop over everything, in Fortran order
+        offset = 0
+        iiter_for_arr = 0
+        for iiter in range(nrec):
+            iqval_for_arr = 0
+            for iqval in range(nq):
+                irval_for_arr = 0
+                for irval in range(nr):
+                    readit = iiter in iitervals and iqval in iqvals and irval in irvals
+                    if readit:
+                        tmp = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs,offset=offset), (nell,nm), order='F')
+                        self.vals[:, :, irval_for_vals, iqval_for_arr, iiterval_for_arr].real = tmp 
+                        tmp2 = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs,offset=offset), (nell,nm), order='F')
+                        self.vals[:, :, irval_for_vals, iqval_for_arr, iiterval_for_arr].imag = tmp2
+                        iiterval_for_arr += 1
+                        iqval_for_arr += 1
+                        irval_for_arr += 1
+                        offset = 0 # always reset offset after reading
+                    else: # skip over this part; increase offset
+                        offset += 16*nell*nm
+
+            self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs, offset=offset)
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
+            offset = 0 # always reset offset after reading
 
         if (self.version != 4):
             # The m>0 --power-- is too high by a factor of 2
@@ -1312,6 +1337,21 @@ class Shell_Spectra:
 
 
                     self.lpower[:,j,q,k,0] = self.lpower[:,j,q,k,2]+self.lpower[:,j,q,k,1] # total power
+
+        self.niter = nrec
+        self.nq = nq
+        self.nr = nr
+        self.nell = nell
+        self.nm   = nm
+        self.lmax = lmax
+        self.mmax = mmax
+
+
+        
+        self.iters = np.zeros(nrec,dtype='int32')
+        self.time  = np.zeros(nrec,dtype='float64')
+        self.version = version
+
 
 class Power_Spectrum():
     """Rayleigh Power Spectrum Structure
@@ -1477,12 +1517,12 @@ class Power_Spectrum():
                     mpower[:,j,k,2] = mpower[:,j,k,0]-mpower[:,j,k,1]
             self.mpower = mpower
 
-def swapread(fd,dtype='float64',count=1,swap=False):
+def swapread(fd,dtype='float64',count=1,swap=False, offset=0):
         #simple wrapper to numpy.fromfile that allows byteswapping based on Boolean swap
         if (swap):
-                val = np.fromfile(fd,dtype=dtype,count=count).byteswap()
+                val = np.fromfile(fd,dtype=dtype,count=count, offset=offset).byteswap()
         else:
-                val = np.fromfile(fd,dtype=dtype,count=count)
+                val = np.fromfile(fd,dtype=dtype,count=count, offset=offset)
         if (len(val) == 1):
                 val = val[0]
         return val
