@@ -2639,3 +2639,158 @@ class SHT:
         else:
             raise ValueError("should never be here")
 
+    def transform(self, data_in, input_type, output_type, th_l_axis=0, phi_m_axis=1):
+        """
+        User interface for all transformations
+
+        Args
+        ----
+
+        Returns
+        -------
+
+        """
+        data_in = np.asarray(data_in)
+        shp = np.shape(data_in); dim = len(shp)
+        th_l_axis = pos_axis(th_l_axis, dim)
+        phi_m_axis = pos_axis(phi_m_axis, dim)
+
+        theta_in = None; phi_in = None; theta_out = None; phi_out = None
+
+        # determine what the input type is
+        input_type = input_type.lower()
+        if ("t" in input_type and "l" in input_type):
+            e = "SHT: input cannot specify 't' and 'l', choose only one. input_type={}"
+            raise ValueError(e.format(input_type))
+        if ("p" in input_type and "m" in input_type):
+            e = "SHT: input cannot specify 'p' and 'm', choose only one. input_type={}"
+            raise ValueError(e.format(input_type))
+
+        if ("t" in input_type): # input includes t or l, not both
+            theta_in = True
+        elif ("l" in input_type):
+            theta_in = False
+        if ("p" in input_type): # input includes p or m, not both
+            phi_in = True
+        elif ("m" in input_type):
+            phi_in = False
+
+        # error trap the input
+        if (theta_in is None):
+            e = "SHT: input must specify 't' or 'l' input_type={}"
+            raise ValueError(e.format(input_type))
+
+        if (phi_in is None):
+            e = "SHT: input must specify 'p' or 'm' input_type={}"
+            raise ValueError(e.format(input_type))
+
+        # determine what the output type is
+        output_type = output_type.lower()
+        if ("t" in output_type and "l" in output_type):
+            d = "SHT: output cannot specify 't' and 'l', choose only one. output_type={}"
+            raise ValueError(e.format(output_type))
+        if ("p" in output_type and "m" in output_type):
+            d = "SHT: output cannot specify 'p' and 'm', choose only one. output_type={}"
+            raise ValueError(e.format(output_type))
+
+        if ("t" in output_type): # output includes t or l, not both
+            theta_out = True
+        elif ("l" in output_type):
+            theta_out = False
+        if ("p" in output_type): # output includes p or m, not both
+            phi_out = True
+        elif ("m" in output_type):
+            phi_out = False
+
+        # error trap the output
+        if (theta_out is None):
+            e = "SHT: output must specify 't' or 'l' output_type={}"
+            raise ValueError(e.format(output_type))
+        if (phi_out is None):
+            e = "SHT: output must specify 'p' or 'm' output_type={}"
+            raise ValueError(e.format(output_type))
+
+        # convenience variables
+        lt_args = dict(axis=th_l_axis, m_axis=phi_m_axis)
+        fft_args = dict(axis=phi_m_axis)
+        l_in = not theta_in
+        m_in = not phi_in
+        l_out = not theta_out
+        m_out = not phi_out
+
+        #-------------------------------------------------------------
+        # all possible transforms of (l/th, m/phi) ---> (l/th, m/phi)
+        #-------------------------------------------------------------
+        # case  input       output      notes
+        #-----------------------------------------
+        # 1     th,m        th,phi      iFFT
+        # 2     th,m        l,m         LT
+        # 3     th,m        l,phi       LT + iFFT
+        # 4     th,phi      th,m        FFT
+        # 5     th,phi      l,phi       FFT + LT + iFFT
+        # 6     th,phi      l,m         FFT + LT
+        # 7     l,m         th,m        iLT
+        # 8     l,m         l,phi       iFFT
+        # 9     l,m         th,phi      iLT + iFFT
+        # 10    l,phi       l,m         FFT
+        # 11    l,phi       th,m        FFT + iLT
+        # 12    l,phi       th,phi      FFT + iLT + iFFT
+        # 13    th,m        th,m        do nothing
+        # 14    th,phi      th,phi      do nothing
+        # 15    l,m         l,m         do nothing
+        # 16    l,phi       l,phi       do nothing
+
+        # error trap the "do-nothing" cases
+        case13 = theta_in and m_in and theta_out and m_out
+        case14 = theta_in and phi_in and theta_out and phi_out
+        case15 = l_in and m_in and l_out and m_out
+        case16 = l_in and phi_in and l_out and phi_out
+        if (case13 or case14 or case15 or case16):
+            e = "SHT: input type is same as output type. input={}, output={}"
+            raise ValueError(e.format(input_type, output_type))
+
+        # case 1 & case 8 = simple iFFT
+        if ((theta_in and m_in and theta_out and phi_out) or \
+            (l_in and m_in and l_out and phi_out)):
+            data_out = self._fft_to_physical(data_in, **fft_args)
+
+        # case 4 & case 10 = simple FFT
+        elif ((theta_in and phi_in and theta_out and m_out) or \
+              (l_in and phi_in and l_out and m_out)):
+            data_out = self._fft_to_spectral(data_in, **fft_args)
+
+        # case 2 & case 3
+        elif (theta_in and m_in and l_out):
+            data_out = self._LT_to_spectral(data_in, **lt_args) # case 2
+
+            if (phi_out): # case 3
+                data_out = self._fft_to_physical(data_out, **fft_args)
+
+        # case 5 & case 6
+        elif (theta_in and phi_in and l_out):
+            data_out = self._fft_to_spectral(data_in, **fft_args)
+            data_out = self._LT_to_spectral(data_out, **lt_args) # case 6
+
+            if (phi_out): # case 5
+                data_out = self._fft_to_physical(data_out, **fft_args)
+
+        # case 7 & case 9
+        elif (l_in and m_in and theta_out):
+            data_out = self._LT_to_physical(data_in, **lt_args) # case 7
+
+            if (phi_out): # case 9
+                data_out = self._fft_to_physical(data_out, **fft_args)
+
+        # case 11 & case 12
+        elif (l_in and phi_in and theta_out):
+            data_out = self._fft_to_spectral(data_in, **fft_args)
+            data_out = self._LT_to_physical(data_out, **lt_args) # case 11
+
+            if (phi_out): # case 12
+                data_out = self._fft_to_physical(data_out, **fft_args)
+
+        else:
+            raise ValueError("Should never be here??")
+
+        return data_out
+
