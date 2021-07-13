@@ -1778,19 +1778,6 @@ class SHT:
     where :math:`P_l^m` are the associated Legendre functions and
     :math:`A_l^m` are the Spherical harmonic normalization coefficients.
 
-    The following transformations are supported:
-
-        + ( th, phi) --> ( l,  m  )   to_spectral
-        + ( th, m  ) --> ( l,  m  )   to_spectral with no_fft=True
-        + ( l,  m  ) --> ( th, phi)   to_physical
-        + ( l,  m  ) --> ( th, m  )   to_physical with no_fft=True
-        + ( phi    ) --> ( m      )   fft_to_spectral
-        + ( m      ) --> ( phi    )   fft_to_physical
-        + ( th, phi) --> ( l,  phi)   LT_to_spectral
-        + ( th, m  ) --> ( l,  m  )   LT_to_spectral with phi_physical=False
-        + ( l,  phi) --> ( th, phi)   LT_to_physical
-        + ( l,  m  ) --> ( th, m  )   LT_to_physical with phi_physical=False
-
     Attributes
     ----------
     nth : integer
@@ -1822,18 +1809,8 @@ class SHT:
 
     Methods
     -------
-    to_spectral(data, th_axis=0, phi_axis=1, no_fft=False)
-        Full SHT transform to spectral space along the given axes.
-    to_physical(data, l_axis=0, m_axis=1, no_fft=False)
-        Full SHT transform to physical space along the given axes.
-    fft_to_spectral(data, axis=0)
-        Fourier transform to spectral space along the given axis.
-    fft_to_physical(data, axis=0)
-        Fourier transform to physical space along the given axis.
-    LT_to_spectral(data, th_axis=0, phi_axis=1, no_fft=False)
-        Legendre transform to spectral space along the given axis.
-    LT_to_physical(data, l_axis=0, m_axis=1, no_fft=False)
-        Legendre transform to physical space along the given axis.
+    transform(data, input_type, output_type, th_l_axis=0, phi_m_axis=1)
+        Interface to compute Fourier, Legendre and full spherical harmonic transforms.
     d_dphi(data, phi_axis=0, phi_physical=True)
         Compute a derivative with respect to phi along the given axis. Data is assumed
         to be in physical space (physical=True).
@@ -2026,7 +2003,7 @@ class SHT:
         # try to release some memory
         p_lmq = None
 
-    def fft_to_spectral(self, data_in, axis=0):
+    def _fft_to_spectral(self, data_in, axis=0):
         """
         Fourier transform from physical to spectral.
 
@@ -2063,7 +2040,7 @@ class SHT:
 
         return data_out
 
-    def fft_to_physical(self, data_in, axis=0):
+    def _fft_to_physical(self, data_in, axis=0):
         """
         Fourier transform from spectral to physical.
 
@@ -2107,21 +2084,18 @@ class SHT:
 
         return data_out
 
-    def to_spectral(self, data_in, th_axis=0, phi_axis=1, no_fft=False):
+    def _LT_to_spectral(self, data_in, axis=0, m_axis=1):
         """
-        SHT transform from physical space (theta,phi) to spectral space (l,m).
+        Legendre transform from physical space (theta,m) to spectral space (l,m).
 
         Args
         ----
         data_in : ndarray
-            Input data to be transformed, must include theta and phi axes.
-        th_axis : int, optional
+            Input data to be transformed, must include theta and phi/m axes.
+        axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place.
-        phi_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place.
-        no_fft : bool, optional
-            If True, the FFT to spectral space is not completed and the data is
-            assumed to already be in Fourier spectral space.
+        m_axis : int, optional
+            The axis that holds the phi data in spectral space.
 
         Returns
         -------
@@ -2130,8 +2104,8 @@ class SHT:
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        th_axis = pos_axis(th_axis, dim)
-        phi_axis = pos_axis(phi_axis, dim)
+        th_axis = pos_axis(axis, dim)
+        phi_axis = pos_axis(m_axis, dim)
 
         if (th_axis == phi_axis):
             e = "SHT: theta & phi axes must be different, th_axis={}, phi_axis={}"
@@ -2144,10 +2118,6 @@ class SHT:
         if (shp[th_axis] != self.nth):
             e = "SHT: Legendre transform expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
-
-        # first do the FFT to put everything in m-space
-        if (not no_fft):
-            data_in = self.fft_to_spectral(data_in, axis=phi_axis)
 
         # make the theta axis first
         transform_axis = 0
@@ -2245,21 +2215,18 @@ class SHT:
 
         return data_out
 
-    def to_physical(self, data_in, l_axis=0, m_axis=1, no_fft=False):
+    def _LT_to_physical(self, data_in, axis=0, m_axis=1):
         """
-        SHT transform from spectral space (l,m) to physical space (theta,phi).
+        Legendre transform from spectral space (l,m) to physical space (theta,m).
 
         Args
         ----
         data_in : ndarray
             Input data to be transformed, must include l and m axes.
-        l_axis : int, optional
+        axis : int, optional
             The axis over which the Legendre transform (theta/l) will take place.
         m_axis : int, optional
-            The axis over which the Fourier transform (phi/m) will take place.
-        no_fft : bool, optional
-            If True, the FFT to physical space is not completed and the data is
-            assumed to already be in Fourier spectral space.
+            The axis that holds the phi data in spectral space.
 
         Returns
         -------
@@ -2373,100 +2340,8 @@ class SHT:
                 oslc[transform_axis] = slice(None) # "undo" the particular j index from above
                 oslc2[transform_axis] = slice(None)
 
-        # lastly do the FFT
-        if (not no_fft):
-            data_out = self.fft_to_physical(data_out, axis=m_axis)
-
         # restore axis order
         data_out = swap_axis(data_out, transform_axis, l_axis)
-
-        return data_out
-
-    def LT_to_spectral(self, data_in, th_axis=0, phi_axis=1, phi_physical=True):
-        """
-        Legendre transform from physical to spectral.
-
-        The Legendre transform requires the phi data to be in spectral space first.
-        If the phi data is in physical space, a full SHT is performed, followed by
-        another FFT to bring the phi data back into physical space. As a result, this
-        can be a quite slow operation.
-
-        Args
-        ----
-        data_in : ndarray
-            Input data to be transformed, must include theta and phi axes.
-        th_axis : int, optional
-            The axis over which the Legendre transform (theta/l) will take place.
-        phi_axis : int, optional
-            The phi/m axis.
-        phi_physical : bool, optional
-            If True, the phi axis data is assumed to be in physical space and will be
-            transformed into spectral space before the Legendre transform takes place.
-            A second FFT is applied to ensure the final data is in phi-physical space.
-            If False, a simple Legendre transform will be performed.
-
-        Returns
-        -------
-        data_out : ndarray
-            Transformed data, same shape as input, except along the theta axis.
-        """
-        data_in = np.asarray(data_in)
-
-        if (not phi_physical): # input is (th,m), output will be (l,m)
-            # easy case, only LT
-            data_out = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
-
-        else: # input is (th,phi), output will be (l,phi)
-
-            # full SHT to (l,m)
-            data_out = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis)
-
-            # FFT to (l,phi)
-            data_out = self.fft_to_physical(data_out, axis=phi_axis)
-
-        return data_out
-
-    def LT_to_physical(self, data_in, l_axis=0, m_axis=1, phi_physical=True):
-        """
-        Legendre transform from spectral to physical.
-
-        The Legendre transform requires the phi data to be in spectral space first.
-        If the phi data is in physical space, a full SHT is performed, followed by
-        another FFT to bring the phi data back into physical space. As a result, this
-        can be a quite slow operation.
-
-        Args
-        ----
-        data_in : ndarray
-            Input data to be transformed, must include theta and phi axes.
-        l_axis : int, optional
-            The axis over which the Legendre transform (theta/l) will take place.
-        m_axis : int, optional
-            The phi/m axis.
-        phi_physical : bool, optional
-            If True, the phi axis data is assumed to be in physical space and will be
-            transformed into spectral space before the Legendre transform takes place.
-            A second FFT is applied to ensure the final data is in phi-physical space.
-            If False, a simple Legendre transform will be performed.
-
-        Returns
-        -------
-        data_out : ndarray
-            Transformed data, same shape as input, except along the theta axis.
-        """
-        data_in = np.asarray(data_in)
-
-        if (not phi_physical): # input is (l,m), output will be (th,m)
-            # easy case, only LT
-            data_out = self.to_physical(data_in, l_axis=l_axis, m_axis=m_axis, no_fft=1)
-
-        else: # input is (l,phi), output will be (th,phi)
-
-            # FFT to (l,m)
-            data_out = self.fft_to_spectral(data_in, axis=m_axis)
-
-            # full SHT to (th,phi)
-            data_out = self.to_physical(data_out, l_axis=l_axis, m_axis=m_axis)
 
         return data_out
 
@@ -2497,7 +2372,7 @@ class SHT:
         phi_axis = pos_axis(phi_axis, dim)
 
         if (phi_physical): # go to spectral space first, if necessary
-            data_in = self.fft_to_spectral(data_in, axis=phi_axis)
+            data_in = self._fft_to_spectral(data_in, axis=phi_axis)
         else:
             # fft_to_spectral does a shape check when physical=True
             if (shp[phi_axis] != self.nm):
@@ -2512,7 +2387,7 @@ class SHT:
         data_out = freq*data_in
 
         if (phi_physical): # go back to physical if necessary
-            data_out = self.fft_to_physical(data_out, axis=phi_axis)
+            data_out = self._fft_to_physical(data_out, axis=phi_axis)
 
         return data_out
 
@@ -2558,10 +2433,10 @@ class SHT:
                 raise ValueError(e.format(self.nl, th_axis, shp[th_axis]))
 
         if (phi_physical): # go to spectral space first, if necessary
-            data_in = self.fft_to_spectral(data_in, axis=phi_axis)
+            data_in = self._fft_to_spectral(data_in, axis=phi_axis)
 
         if (th_physical): # go to spectral space, if necessary
-            data_in = self.to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
+            data_in = self._LT_to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
 
         # compute the derivative: sin(th)*dF/dth
         #     sin(th)*dP_l^m/dth = l*D_{l+1}^m*P_{l+1}^m - (l+1)*D_l^m*P_{l-1}^m
@@ -2612,7 +2487,7 @@ class SHT:
                 data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*(2*data_in[tuple(slcp1)].real)
 
         # convert back to physical space
-        data_out = self.to_physical(data_out, l_axis=th_axis, m_axis=phi_axis, no_fft=1)
+        data_out = self._LT_to_physical(data_out, l_axis=th_axis, m_axis=phi_axis)
 
         # undo the sin(th) part in physical space
         nshp = [1]*len(data_out.shape); nshp[th_axis] = -1; nshp = tuple(nshp)
@@ -2622,32 +2497,87 @@ class SHT:
         # currently in (th,m), return to proper space, transform as necessary
         current_th = True; current_phi = False
         if ((not th_physical) and (not phi_physical)): # (th,m) ---> l,m
-            return self.LT_to_physical(data_out, l_axis=th_axis, m_axis=phi_axis,
+            return self._LT_to_physical(data_out, l_axis=th_axis, m_axis=phi_axis,
                                        phi_physical=current_phi)
 
         elif ((not th_physical) and phi_physical): # (th,m) ---> (l,m) ---> l,phi
-            data_out = self.LT_to_spectral(data_out, th_axis=th_axis, phi_axis=phi_axis,
+            data_out = self._LT_to_spectral(data_out, th_axis=th_axis, phi_axis=phi_axis,
                                            phi_physical=current_phi)
-            return self.fft_to_physical(data_out, axis=phi_axis)
+            return self._fft_to_physical(data_out, axis=phi_axis)
 
         elif (th_physical and (not phi_physical)): # (th,m) ---> th,m
             return data_out
 
         elif (th_physical and phi_physical): # (th,m) ---> th,phi
-              return self.fft_to_physical(data_out, axis=phi_axis)
+              return self._fft_to_physical(data_out, axis=phi_axis)
 
         else:
             raise ValueError("should never be here")
 
-    def transform(self, data_in, input_type, output_type, th_l_axis=0, phi_m_axis=1):
+    def transform(self, data_in, input_config, output_config, th_l_axis=0, phi_m_axis=1):
         """
-        User interface for all transformations
+        Interface for all transformations
 
         Args
         ----
+        data_in : ndarray
+            The data values on the grid in any configuration; full spectral (l,m),
+            hybrid (l,phi), (th,m), or full physical (th,phi) space.
+        input_config : str
+            Describe the configuration space of the incoming data using a single string
+            of comma separated values. To denote physical space, use
+
+                + physical space (theta): "t", "th", "theta", or anything containing "t"
+                + physical space (phi): "p", "phi", or anything containing "p"
+
+            and for spectral space, use
+
+                + spectral space (theta): "l", "ell", or anything containing "l"
+                + spectral space (phi): "m", "mval", or anything containing "m"
+
+            Full physical space could be specified as "theta,phi" or "th,phi", and full
+            spectral space could be provided as "ell,m" or "l,m". Hybrid spaces involve
+            any combination, e.g., "l,phi" or "th,m". The order of the configuration does
+            not matter, i.e., "l,m" is equivalent to "m,l" and "th,phi" is the same as "p,t".
+        output_config : str
+            Describe the configuration of the output data, see the input_config for options.
+        th_l_axis : int, optional
+            The axis containing the theta/l data, over which Legendre transforms will
+            take place, if necessary.
+        phi_m_axis : int, optional
+            The axis containing the phi/m data, over which Fourier transforms will
+            take place, if necessary.
 
         Returns
         -------
+        data_out : ndarray
+            The transformed data, same shape as the input except along the transformed axes.
+
+        Examples
+        --------
+        All of the following examples assume the theta/l axis is 0 and the phi/m axis is 1.
+        Use th_l_axis and phi_m_axis accordingly if this is not the case. The order of
+        the input/output configurations does not matter, "th,phi" is the same as "phi,th".
+
+        Full SHT from physical space (theta, phi) to spectral space (ell, m):
+        >>> in_config = "th,phi"
+        >>> out_config = "l,m"
+        >>> spectra = transform(physical, in_config, out_config)
+
+        A Fourier transform from spectral space (theta, m) to physical space (theta, phi):
+        >>> in_config = "theta,m"
+        >>> out_config = "phi,th"
+        >>> physical = transform(hybrid, in_config, out_config)
+
+        A Legendre transform from spectral space (ell, m) to physical space (theta, m):
+        >>> in_config = "ell,m"
+        >>> out_config = "t,m"
+        >>> hybrid = transform(spectra, in_config, out_config)
+
+        Transform from hybrid space (ell, phi) to another hybrid space (theta, m):
+        >>> in_config = "l,phi"
+        >>> out_config = "th,m"
+        >>> hybrid_out = transform(hybrid_in, in_config, out_config)
 
         """
         data_in = np.asarray(data_in)
@@ -2658,7 +2588,7 @@ class SHT:
         theta_in = None; phi_in = None; theta_out = None; phi_out = None
 
         # determine what the input type is
-        input_type = input_type.lower()
+        input_type = input_config.lower()
         if ("t" in input_type and "l" in input_type):
             e = "SHT: input cannot specify 't' and 'l', choose only one. input_type={}"
             raise ValueError(e.format(input_type))
@@ -2685,7 +2615,7 @@ class SHT:
             raise ValueError(e.format(input_type))
 
         # determine what the output type is
-        output_type = output_type.lower()
+        output_type = output_config.lower()
         if ("t" in output_type and "l" in output_type):
             d = "SHT: output cannot specify 't' and 'l', choose only one. output_type={}"
             raise ValueError(e.format(output_type))
