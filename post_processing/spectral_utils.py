@@ -2006,7 +2006,7 @@ class SHT:
         # try to release some memory
         p_lmq = None
 
-    def _fft_to_spectral(self, data_in, axis=0):
+    def _fft_to_spectral(self, data_in, axis=0, norm=False):
         """
         Fourier transform from physical to spectral.
 
@@ -2016,6 +2016,10 @@ class SHT:
             Input data to be transformed, assumed to be real.
         axis : int, optional
             The axis over which the transform will take place.
+        norm : bool, optional
+            The SHT class combines some FFT normalizations into the Legendre weights.
+            Using norm=True will allow this routine to function as a stand alone FFT,
+            by including the correct normalization that provides FFT(iFFT(y))==y.
 
         Returns
         -------
@@ -2037,13 +2041,19 @@ class SHT:
         slc[axis] = slice(0, self.nm)
         data_out = data_out[tuple(slc)]
 
-        # normalize m/=0 modes
-        slc[axis] = slice(1, self.nm)
-        data_out[tuple(slc)] *= 0.5
+        # normalize modes
+        if (not norm):
+            # play nice with full SHT
+            slc[axis] = slice(1, self.nm)
+            data_out[tuple(slc)] *= 0.5
+        else:
+            # stand alone FFT
+            slc[axis] = slice(0, self.nm)
+            data_out[tuple(slc)] *= 2./self.nphi
 
         return data_out
 
-    def _fft_to_physical(self, data_in, axis=0):
+    def _fft_to_physical(self, data_in, axis=0, norm=False):
         """
         Fourier transform from spectral to physical.
 
@@ -2053,6 +2063,10 @@ class SHT:
             Complex input data to be transformed.
         axis : int, optional
             The axis over which the transform will take place.
+        norm : bool, optional
+            The SHT class combines some FFT normalizations into the Legendre weights.
+            Using norm=True will allow this routine to function as a stand alone FFT,
+            by including the correct normalization that provides FFT(iFFT(y))==y.
 
         Returns
         -------
@@ -2075,11 +2089,22 @@ class SHT:
         slc[axis] = slice(0,self.nm)
         temp[tuple(slc)] = data_in[...]
 
-        # normalize m/=0 modes
-        slc[axis] = slice(1,self.nm)
-        temp[tuple(slc)] *= 2
+        # normalize modes
+        if (not norm):
+            # play nice with full SHT
+            slc[axis] = slice(1,self.nm)
+            temp[tuple(slc)] *= 2
 
-        norm = self.nphi
+            norm = self.nphi
+        else:
+            # stand alone FFT
+            if (self.nm % 2 == 0):
+                N = 2*self._fft_to_phys_size - 1
+            else:
+                N = 2*self._fft_to_phys_size - 2
+
+            norm = 0.5*N
+
         data_out = norm*np.fft.irfft(temp, axis=axis)
 
         # ensure real data is returned
@@ -2238,7 +2263,7 @@ class SHT:
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        l_axis = pos_axis(l_axis, dim)
+        l_axis = pos_axis(axis, dim)
         m_axis = pos_axis(m_axis, dim)
 
         if (dim < 2):
@@ -2535,7 +2560,7 @@ class SHT:
 
             and for spectral space, use
 
-                + spectral space (theta): "l", "ell", or anything containing "l"
+                + spectral space (theta): "l", "ell", "lval", or anything containing "l"
                 + spectral space (phi): "m", "mval", or anything containing "m"
 
             Full physical space could be specified as "theta,phi" or "th,phi", and full
@@ -2592,6 +2617,7 @@ class SHT:
 
         # determine what the input type is
         input_type = input_config.lower()
+        input_type = input_type.replace("val", "")
         if ("t" in input_type and "l" in input_type):
             e = "SHT: input cannot specify 't' and 'l', choose only one. input_type={}"
             raise ValueError(e.format(input_type))
@@ -2619,11 +2645,12 @@ class SHT:
 
         # determine what the output type is
         output_type = output_config.lower()
+        output_type = output_type.replace("val", "")
         if ("t" in output_type and "l" in output_type):
-            d = "SHT: output cannot specify 't' and 'l', choose only one. output_type={}"
+            e = "SHT: output cannot specify 't' and 'l', choose only one. output_type={}"
             raise ValueError(e.format(output_type))
         if ("p" in output_type and "m" in output_type):
-            d = "SHT: output cannot specify 'p' and 'm', choose only one. output_type={}"
+            e = "SHT: output cannot specify 'p' and 'm', choose only one. output_type={}"
             raise ValueError(e.format(output_type))
 
         if ("t" in output_type): # output includes t or l, not both
@@ -2679,18 +2706,19 @@ class SHT:
         case15 = l_in and m_in and l_out and m_out
         case16 = l_in and phi_in and l_out and phi_out
         if (case13 or case14 or case15 or case16):
-            e = "SHT: input type is same as output type. input={}, output={}"
-            raise ValueError(e.format(input_type, output_type))
+            e = "SHT WARNING: input type is same as output type. input={}, output={}"
+            print(e.format(input_type, output_type))
+            return data_in
 
         # case 1 & case 8 = simple iFFT
         if ((theta_in and m_in and theta_out and phi_out) or \
             (l_in and m_in and l_out and phi_out)):
-            data_out = self._fft_to_physical(data_in, **fft_args)
+            data_out = self._fft_to_physical(data_in, norm=True, **fft_args)
 
         # case 4 & case 10 = simple FFT
         elif ((theta_in and phi_in and theta_out and m_out) or \
               (l_in and phi_in and l_out and m_out)):
-            data_out = self._fft_to_spectral(data_in, **fft_args)
+            data_out = self._fft_to_spectral(data_in, norm=True, **fft_args)
 
         # case 2 & case 3
         elif (theta_in and m_in and l_out):
