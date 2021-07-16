@@ -1320,6 +1320,8 @@ class Shell_Spectra:
         self.time = self.time[iitervals]
         self.iters = self.iters[iitervals]
         self.qv = qv[iqvals]
+        self.radius = radius[irvals]
+        self.inds = irvals
 
         self.niter = len(iitervals)
         self.nq = len(iqvals)
