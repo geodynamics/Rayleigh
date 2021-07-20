@@ -1812,8 +1812,10 @@ class SHT:
 
     Methods
     -------
-    transform(data, input_type, output_type, th_l_axis=0, phi_m_axis=1)
-        Interface to compute Fourier, Legendre and full spherical harmonic transforms.
+    to_spectral(data, th_l_axis=0, phi_m_axis=1)
+        Full transform from physical (th,phi) to spectral (l,m) space.
+    to_physical(data, th_l_axis=0, phi_m_axis=1)
+        Full transform from spectral (l,m) to physical (th,phi) space.
     d_dphi(data, phi_axis=0, phi_physical=True)
         Compute a derivative with respect to phi along the given axis. Data is assumed
         to be in physical space (physical=True).
@@ -2127,6 +2129,8 @@ class SHT:
         # make the theta axis first
         transform_axis = 0
         data_in = swap_axis(data_in, th_axis, transform_axis)
+        if (phi_axis == transform_axis): # rare case where th and phi swapped places
+            phi_axis = th_axis
 
         GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
@@ -2254,6 +2258,8 @@ class SHT:
         # make the transform axis first
         transform_axis = 0
         data_in = swap_axis(data_in, l_axis, transform_axis)
+        if (m_axis == transform_axis): # rare case where l and m swapped places
+            m_axis = l_axis
 
         GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
         if (is_complex):
@@ -2350,49 +2356,37 @@ class SHT:
 
         return data_out
 
-    def d_dphi(self, data_in, phi_axis=0, phi_physical=True):
+    def d_dphi(self, data_in, axis=0):
         """
-        Take a derivative with respect to phi/longitude.
+        Take a derivative with respect to phi/longitude in spectral space
 
         Args
         ----
         data_in : ndarray
-            Input data array.
-        phi_axis : int, optional
+            Input data array in spectral space.
+        axis : int, optional
             Axis along which the derivative will be computed.
-        phi_physical : bool, optional
-            Specify the incoming data as being in physical space or spectral. The
-            data will be transformed to spectral space (if necessary) to compute
-            the derivative.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dphi, in the same space as incoming data. If
-            incoming data was in physical space, the derivative will also be in
-            physical space.
+            Output data containing d/dphi, in spectral space.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        phi_axis = pos_axis(phi_axis, dim)
+        axis = pos_axis(axis, dim)
 
-        if (phi_physical): # go to spectral space first, if necessary
-            data_in = self._fft_to_spectral(data_in, axis=phi_axis)
-        else:
-            # fft_to_spectral does a shape check when physical=True
-            if (shp[phi_axis] != self.nm):
-                e = "SHT: d_dphi expected length={} along axis={}, found N={}"
-                raise ValueError(e.format(self.nm, phi_axis, shp[phi_axis]))
+        # fft_to_spectral does a shape check when physical=True
+        if (shp[axis] != self.nm):
+            e = "SHT: d_dphi expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nm, axis, shp[axis]))
 
-        nshp = [1]*dim; nshp[phi_axis] = -1; nshp = tuple(nshp)
+        nshp = [1]*dim; nshp[axis] = -1; nshp = tuple(nshp)
         freq = 1.j*np.arange(self.nm)
         freq = np.reshape(freq, nshp)
 
         # multiply by i*m to compute derivative
         data_out = freq*data_in
-
-        if (phi_physical): # go back to physical if necessary
-            data_out = self._fft_to_physical(data_out, axis=phi_axis)
 
         return data_out
 
