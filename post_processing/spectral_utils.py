@@ -2534,7 +2534,7 @@ class SHT:
             The transformed data, same shape as the input except along the transformed axes.
         """
         data_out = self.transform(data_in, "th,phi", "l,m",
-                                  th_l_axis=th_l_axis, phi_m_axis=phi_maxis)
+                                  th_l_axis=th_l_axis, phi_m_axis=phi_m_axis)
 
         return data_out
 
@@ -2559,7 +2559,7 @@ class SHT:
             The transformed data, same shape as the input except along the transformed axes.
         """
         data_out = self.transform(data_in, "l,m", "th,phi",
-                                  th_l_axis=th_l_axis, phi_m_axis=phi_maxis)
+                                  th_l_axis=th_l_axis, phi_m_axis=phi_m_axis)
 
         return data_out
 
