@@ -2041,7 +2041,7 @@ class SHT:
 
         # normalize modes
         slc[axis] = slice(1, self.nm)
-        data_out[tuple(slc)] *= 0.5
+        data_out[tuple(slc)] *= np.sqrt(0.5)
 
         return data_out
 
@@ -2079,7 +2079,7 @@ class SHT:
 
         # normalize modes
         slc[axis] = slice(1,self.nm)
-        temp[tuple(slc)] *= 2
+        temp[tuple(slc)] *= np.sqrt(2)
 
         norm = self.nphi
 
