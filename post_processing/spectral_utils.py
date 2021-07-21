@@ -71,7 +71,7 @@ def ddx_repeated_gridpoints(data, grid, indices, axis=0):
 def ddx(data, grid, axis=0):
     """
     6th order centered finite difference on a non-uniform mesh, one-sided
-    differences on the boundary points.
+    differences on the boundary points. The grid points must be unique.
 
     Args
     ----
@@ -210,7 +210,7 @@ def _one_sided_6th(xx, ff, right_edge=False):
 
 def _choose_gemm(data, tol=1e-15):
     """
-    Determine correct GEMM routine to use: real vs complex.
+    Determine correct BLASS GEMM routine to use: real vs complex.
 
     Args
     ----
@@ -273,7 +273,7 @@ def swap_axis(array, axis0, axis1):
     axis1 = pos_axis(axis1, dim)
     if (axis0 == axis1): return array
 
-    if (dim != 0):
+    if (dim > 1): # swap only needed if larger than 1D
         return np.swapaxes(array, axis0, axis1)
     else:
         return array
@@ -440,11 +440,11 @@ class Fourier:
         Args
         ----
         data_in : ndarray
-            Input data array of real values.
+            Input data array of real values in physical space.
         axis : int, optional
             The axis along which the FFT will be taken.
         window : 1D array, optional
-            Apply a window in physical space before the FFT.
+            Apply a window defined in physical space before doing the FFT.
 
         Returns
         -------
@@ -483,14 +483,14 @@ class Fourier:
         Args
         ----
         data_in : ndarray
-            Spectral space coefficients.
+            Input data array of complex values in spectral space.
         axis : int, optional
             The axis along which the FFT will be taken.
 
         Returns
         -------
         data_out : ndarray
-            Array of physical space values.
+            Array of physical space values, all real.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -517,12 +517,12 @@ class Fourier:
 
     def d_dphi(self, data_in, axis=0, physical=True):
         """
-        Take a phi derivative.
+        Compute a derivative with respect to phi/longitude.
 
         Args
         ----
         data_in : ndarray
-            Input data array.
+            Input data array in either physical or spectral space.
         axis : int, optional
             Axis along which the derivative will be computed.
         physical : bool, optional
@@ -681,10 +681,8 @@ def _compute_Pl(x, lmax):
     x = np.asarray(x, dtype=np.float128)
     n = np.shape(x)[0]
 
-    Pl = np.zeros((n,lmax+1), dtype=np.float64)
-
     # compute in "quad" precision...it will actually be closer to 80 bit
-    _Pl = np.zeros((n,lmax+1), dtype=np.float128)
+    Pl = np.zeros((n,lmax+1), dtype=np.float128)
 
     mv = 0 # azimuthal wavenumber
 
@@ -698,24 +696,23 @@ def _compute_Pl(x, lmax):
 
     tmp = 1. - x[:]*x[:]
     if (mv%2 == 1):
-        _Pl[:,mv] = -amp*tmp**(mv/2+0.5) # odd m
+        Pl[:,mv] = -amp*tmp**(mv/2+0.5) # odd m
     else:
-        _Pl[:,mv] = amp*tmp**(mv/2) # even m
+        Pl[:,mv] = amp*tmp**(mv/2) # even m
 
     # l=m+1 part
     if (mv < lmax):
-        _Pl[:,mv+1] = _Pl[:,mv]*x[:]*np.sqrt(2.*mv+3)
+        Pl[:,mv+1] = Pl[:,mv]*x[:]*np.sqrt(2.*mv+3)
 
     # l>m+1 part
     for l in range(mv+2,lmax+1):
         amp = np.sqrt( ((l-1)**2 - mv*mv) / (4.*(l-1)**2 - 1.) )
         amp2 = np.sqrt( (4.*l*l-1.) / (l*l-mv*mv) )
-        #for i in range(n):
-        tmp = _Pl[:,l-1]*x[:] - amp*_Pl[:,l-2]
-        _Pl[:,l] = tmp*amp2
+        tmp = Pl[:,l-1]*x[:] - amp*Pl[:,l-2]
+        Pl[:,l] = tmp*amp2
 
     # store in double precision
-    Pl[:,:] = _Pl[:,:]
+    Pl = np.asarray(Pl, dtype=np.float64)
 
     return Pl
 
@@ -748,7 +745,7 @@ class Legendre:
     lmax : integer
         Maximum polynomial degree in spectral space. This can also be accessed as l_max.
     nl : integer
-        Number of polynomials in spectral space. This can also be accessed as nell.
+        Number of polynomials in spectral space. This can also be accessed as nell or n_l.
     theta : ndarray (nth,)
         The co-latitude grid points.
     costh : ndarray (nth,)
@@ -809,7 +806,7 @@ class Legendre:
         self.ntheta = self.nth
         self.n_theta = self.ntheta
         self.l_max = self.lmax
-        self.nl = self.nell
+        self.nl = self.n_l = self.nell
         self.sinth = np.sqrt(1.- self.x*self.x)
         self.costh = self.x
         self.theta = np.arccos(self.costh)
@@ -998,14 +995,14 @@ class Legendre:
 
 def chebyshev_zeros(Npts, reverse=False, quad=False):
     """
-    Generate the Chebysheve zeros grid.
+    Generate the Chebyshev zeros grid with x in (-1,1)
 
     Args
     ----
     Npts : int
         The number of grid points.
     reverse : bool, optional
-        Reverse the grid order to be x[i] > x[i+1], i.e., x = (-1,1).
+        If True, the grid order will be x[i] > x[i+1], i.e., x in (1,-1).
     quad : bool, optional
         Return arrays using quad precision, default is double.
 
@@ -1767,8 +1764,8 @@ class Chebyshev:
 
 class SHT:
     """
-    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m) using a triangular
-    truncation of the azimuthal modes.
+    Handle full spherical harmonic transforms of (theta,phi) to/from (l,m) using a
+    combination of Legendre and Fourier transforms.
 
     The data is expanded as
     .. math::
@@ -1777,9 +1774,6 @@ class SHT:
 
     where :math:`P_l^m` are the associated Legendre functions and
     :math:`A_l^m` are the Spherical harmonic normalization coefficients.
-    Transforms from any configuration to any other configuration are supported. This
-    includes full spherical harmonic transforms, as well as transforms between different
-    hybrid spaces and simple Fourier & Legendre transforms.
 
     Attributes
     ----------
@@ -1788,7 +1782,7 @@ class SHT:
     lmax : integer
         Maximum polynomial degree in spectral space. This can also be accessed as l_max.
     nl : integer
-        Number of polynomials in spectral space. This can also be accessed as nell.
+        Number of polynomials in spectral space. This can also be accessed as nell or n_l.
     theta : ndarray (nth,)
         The co-latitude grid points.
     costh : ndarray (nth,)
@@ -1867,7 +1861,7 @@ class SHT:
         self.ntheta = self.nth
         self.n_theta = self.ntheta
         self.l_max = self.lmax
-        self.nl = self.nell
+        self.nl = self.n_l = self.nell
         self.nm = self.nl
         self.sinth = np.sqrt(1.- self.x*self.x)
         self.costh = self.x
@@ -2379,7 +2373,7 @@ class SHT:
         Args
         ----
         data_in : ndarray
-            Input data array in spectral space.
+            Input data array in spectral space along the phi/m direction.
         m_axis : int, optional
             Axis along which the derivative will be computed.
 
@@ -2422,7 +2416,7 @@ class SHT:
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dtheta, in spectral space.
+            Output data containing sin(th)*dA/dth, in spectral space.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
@@ -2532,7 +2526,7 @@ class SHT:
 
     def transform(self, data_in, input_config, output_config, th_l_axis=0, phi_m_axis=1):
         """
-        General interface for all available SHT transformations
+        General interface for all available SHT transformations.
 
         Args
         ----
@@ -2555,12 +2549,12 @@ class SHT:
             any combination, e.g., "l,phi" or "th,m". The order of the configuration does
             not matter, i.e., "l,m" is equivalent to "m,l" and "th,phi" is the same as "p,t".
         output_config : str
-            Describe the configuration of the output data, see the input_config for options.
+            Describe the configuration of the output data, see input_config for options.
         th_l_axis : int, optional
-            The axis containing the theta/l data, over which Legendre transform will
+            The axis containing the theta/l data, over which the Legendre transform will
             take place.
         phi_m_axis : int, optional
-            The axis containing the phi/m data, over which Fourier transform will
+            The axis containing the phi/m data, over which the Fourier transform will
             take place.
 
         Returns
