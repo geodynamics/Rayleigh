@@ -1816,12 +1816,10 @@ class SHT:
         Full transform from physical (th,phi) to spectral (l,m) space.
     to_physical(data, th_l_axis=0, phi_m_axis=1)
         Full transform from spectral (l,m) to physical (th,phi) space.
-    d_dphi(data, phi_axis=0, phi_physical=True)
-        Compute a derivative with respect to phi along the given axis. Data is assumed
-        to be in physical space (physical=True).
-    d_dtheta(data, th_axis=0, phi_axis=1, th_physical=True, phi_physical=True)
-        Compute a derivative with respect to theta along the given axis. Data is assumed
-        to be in physical space (physical=True).
+    d_dphi(data, m_axis=0)
+        Compute a derivative with respect to phi along the given axis in spectral space.
+    sin_d_dtheta(data, l_axis=0, m_axis=1)
+        Compute sin(th)*dA/dth along the given axis in spectral space.
     """
 
     def __init__(self, N, spectral=False, dealias=1.5, dgemm_tol=1e-14):
@@ -2039,7 +2037,16 @@ class SHT:
         slc[axis] = slice(0, self.nm)
         data_out = data_out[tuple(slc)]
 
-        # normalize modes
+        # normalize modes: this ensures SHT[ShellSlice] == ShellSpectra
+        # NOTE about the m>0 power:
+        #     For a pure signal such as
+        #         F(th,phi) = 2*Y_1^3 + 5*Y_4^2 + complex conj.
+        #     the expected spectral coefficients would be C_1^3=2 and C_4^2=5
+        #     This is not the case when the norm=sqrt(1/2), as it is below.
+        #     To have this behavior, the norm should be 1/2, and the corresponding
+        #     fft_to_physical norm should be 2.
+        #
+        #     The norm is left as sqrt(1/2) purely so SHT[ShellSlice] == ShellSpectra
         slc[axis] = slice(1, self.nm)
         data_out[tuple(slc)] *= np.sqrt(0.5)
 
@@ -2077,7 +2084,16 @@ class SHT:
         slc[axis] = slice(0,self.nm)
         temp[tuple(slc)] = data_in[...]
 
-        # normalize modes
+        # normalize modes: this ensures iSHT[ShellSpectra] == ShellSlice
+        # NOTE about the m>0 power:
+        #     For a pure signal such as
+        #         F(th,phi) = 2*Y_1^3 + 5*Y_4^2 + complex conj.
+        #     the expected spectral coefficients would be C_1^3=2 and C_4^2=5
+        #     This is not the case when the norm=sqrt(2), as it is below.
+        #     To have this behavior, the norm should be 2, and the corresponding
+        #     fft_to_spectral norm should be 1/2.
+        #
+        #     The norm is left as sqrt(2) purely so iSHT[ShellSpectra] == ShellSlice
         slc[axis] = slice(1,self.nm)
         temp[tuple(slc)] *= np.sqrt(2)
 
@@ -2356,7 +2372,7 @@ class SHT:
 
         return data_out
 
-    def d_dphi(self, data_in, axis=0):
+    def d_dphi(self, data_in, m_axis=0):
         """
         Take a derivative with respect to phi/longitude from within spectral space.
 
@@ -2364,7 +2380,7 @@ class SHT:
         ----
         data_in : ndarray
             Input data array in spectral space.
-        axis : int, optional
+        m_axis : int, optional
             Axis along which the derivative will be computed.
 
         Returns
@@ -2374,7 +2390,7 @@ class SHT:
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        axis = pos_axis(axis, dim)
+        axis = pos_axis(m_axis, dim)
 
         # fft_to_spectral does a shape check when physical=True
         if (shp[axis] != self.nm):
@@ -2390,9 +2406,9 @@ class SHT:
 
         return data_out
 
-    def d_dtheta(self, data_in, l_axis=0, m_axis=1):
+    def sin_d_dtheta(self, data_in, l_axis=0, m_axis=1):
         """
-        Take a derivative with respect to theta/co-latitude from within spectral space.
+        Compute sin(th)*dA/dth from within spectral space.
 
         Args
         ----
@@ -2414,7 +2430,7 @@ class SHT:
         m_axis = pos_axis(m_axis, dim)
 
         if (shp[l_axis] != self.nl):
-            e = "d_dtheta expected length={} along axis={}, found N={}"
+            e = "sin_d_dtheta expected length={} along axis={}, found N={}"
             raise ValueError(e.format(self.nl, l_axis, shp[l_axis]))
 
         # compute the derivative: sin(th)*dF/dth
@@ -2435,53 +2451,32 @@ class SHT:
                 den = 4.*l*l-1.
                 Dlm[l,m] = np.sqrt(num/den)
 
-        # loop over all l
-        for l in range(0,self.lmax): # exclude lmax
-            slc[m_axis] = 0; slc[l_axis] = l       # C_l^m
-            slcm1[m_axis] = 0; slcm1[l_axis] = l-1 # C_{l-1}^m
-            slcp1[m_axis] = 0; slcp1[l_axis] = l+1 # C_{l+1}^m
+        for m in range(0,self.lmax+1): # exclude lmax
+            slc[m_axis] = m   # C_l^m
+            slcm1[m_axis] = m # C_{l-1}^m
+            slcp1[m_axis] = m # C_{l+1}^m
 
-            # m=0 parts
-            if ((0 < l) and (l < self.lmax)):
-                data_out[tuple(slc)] = (l-1)*data_in[tuple(slcm1)]*Dlm[l,0] \
-                                     - (l+2)*data_in[tuple(slcp1)]*Dlm[l+1,0]
-            elif (l==0):
-                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,0]*data_in[tuple(slcp1)]
+            if (m != self.lmax):
+                for l in range(m+1,self.lmax): # exclude l=lmax
+                    slc[l_axis] = l
+                    slcm1[l_axis] = l-1
+                    slcp1[l_axis] = l+1
 
-            # m>0 parts
-            for m in range(1,l): # exclude m=l
-                slc[m_axis] = m
-                slcm1[m_axis] = m
-                slcp1[m_axis] = m
+                    data_out[tuple(slc)] = (l-1)*Dlm[l,m]*data_in[tuple(slcm1)] \
+                                         - (l+2)*Dlm[l+1,m]*data_in[tuple(slcp1)]
+                # l=m
+                slc[l_axis] = m
+                slcp1[l_axis] = m+1
+                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,m]*data_in[tuple(slcp1)]
 
-                data_out[tuple(slc)] = (l-1)*Dlm[l,m]*data_in[tuple(slcm1)] \
-                                     - (l+2)*Dlm[l+1,m]*data_in[tuple(slcp1)]
-
-            # now do the m=l part (slightly different than m<l part)
-            slc[m_axis] = l
-            slcp1[m_axis] = l
-            data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*data_in[tuple(slcp1)]
-
-        # lmax part
-        slc[m_axis] = 0; slc[l_axis] = self.lmax       # C_l^m
-        slcm1[m_axis] = 0; slcm1[l_axis] = self.lmax-1 # C_{l-1}^m
-        data_out[tuple(slc)] = (self.lmax-1)*data_in[tuple(slcm1)]*Dlm[self.lmax,0]
-        # m>0 parts
-        for m in range(1,self.lmax+1): # include m=lmax
-            slc[m_axis] = m
-            slcm1[m_axis] = m
-            data_out[tuple(slc)] = (self.lmax-1)*Dlm[self.lmax,m]*data_in[tuple(slcm1)]
-
-        # convert back to physical space
-        data_out = self._LT_to_physical(data_out, axis=l_axis, m_axis=m_axis)
-
-        # undo the sin(th) part in physical space
-        nshp = [1]*len(data_out.shape); nshp[l_axis] = -1; nshp = tuple(nshp)
-        sinth = np.reshape(self.sinth, nshp)
-        data_out /= sinth
-
-        # go back to spectral
-        data_out = self._LT_to_spectral(data_out, axis=l_axis, m_axis=m_axis)
+                # l=lmax
+                slc[l_axis] = self.lmax
+                slcm1[l_axis] = self.lmax-1
+                data_out[tuple(slc)] = (self.lmax-1)*Dlm[self.lmax,m]*data_in[tuple(slcm1)]
+            else:
+                # l=m=lmax
+                slc[l_axis] = m
+                data_out[tuple(slc)] = 0.0
 
         return data_out
 
