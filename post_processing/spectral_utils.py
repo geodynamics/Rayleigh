@@ -2358,7 +2358,7 @@ class SHT:
 
     def d_dphi(self, data_in, axis=0):
         """
-        Take a derivative with respect to phi/longitude in spectral space
+        Take a derivative with respect to phi/longitude from within spectral space.
 
         Args
         ----
@@ -2390,52 +2390,32 @@ class SHT:
 
         return data_out
 
-    def d_dtheta(self, data_in, th_axis=0, phi_axis=1, th_physical=True, phi_physical=True):
+    def d_dtheta(self, data_in, l_axis=0, m_axis=1):
         """
-        Take a derivative with respect to theta/co-latitude.
+        Take a derivative with respect to theta/co-latitude from within spectral space.
 
         Args
         ----
         data_in : ndarray
-            Input data array.
-        th_axis : int, optional
+            Input data array in spectral (l,m) space.
+        l_axis : int, optional
             Axis along which the derivative will be computed.
-        phi_axis : int, optional
+        m_axis : int, optional
             Axis in the phi direction.
-        th_physical : bool, optional
-            Specify the incoming data as being in physical space or spectral along the
-            theta axis. The data will be transformed to spectral space (if necessary)
-            to compute the derivative.
-        phi_physical : bool, optional
-            Specify the incoming data as being in physical space or spectral along the
-            phi axis. The data will be transformed to spectral space (if necessary)
-            to compute the derivative.
 
         Returns
         -------
         data_out : ndarray
-            Output data containing d/dtheta, in the same space as incoming data. If
-            incoming data was in physical space, the derivative will also be in
-            physical space.
+            Output data containing d/dtheta, in spectral space.
         """
         data_in = np.asarray(data_in)
         shp = np.shape(data_in); dim = len(shp)
-        phi_axis = pos_axis(phi_axis, dim)
+        l_axis = pos_axis(l_axis, dim)
+        m_axis = pos_axis(m_axis, dim)
 
-        if (th_physical):
-            if (shp[th_axis] != self.nth):
-                e = "d_dtheta expected length={} along axis={}, found N={}"
-                raise ValueError(e.format(self.nth, th_axis, shp[th_axis]))
-        else:
-            if (shp[th_axis] != self.nl):
-                e = "d_dtheta expected length={} along axis={}, found N={}"
-                raise ValueError(e.format(self.nl, th_axis, shp[th_axis]))
-
-        if (phi_physical): # go to spectral space first, if necessary
-            data_in = self._fft_to_spectral(data_in, axis=phi_axis)
-
-        if (th_physical): # go to spectral space, if necessary
-            data_in = self._LT_to_spectral(data_in, th_axis=th_axis, phi_axis=phi_axis, no_fft=1)
+        if (shp[l_axis] != self.nl):
+            e = "d_dtheta expected length={} along axis={}, found N={}"
+            raise ValueError(e.format(self.nl, l_axis, shp[l_axis]))
 
         # compute the derivative: sin(th)*dF/dth
         #     sin(th)*dP_l^m/dth = l*D_{l+1}^m*P_{l+1}^m - (l+1)*D_l^m*P_{l-1}^m
@@ -2456,62 +2436,54 @@ class SHT:
                 Dlm[l,m] = np.sqrt(num/den)
 
         # loop over all l
-        for l in range(1,self.lmax+1): # include lmax
-            slc[phi_axis] = 0; slc[th_axis] = l       # C_l^m
-            slcm1[phi_axis] = 0; slcm1[th_axis] = l-1 # C_{l-1}^m
-            slcp1[phi_axis] = 0; slcp1[th_axis] = l+1 # C_{l+1}^m
+        for l in range(0,self.lmax): # exclude lmax
+            slc[m_axis] = 0; slc[l_axis] = l       # C_l^m
+            slcm1[m_axis] = 0; slcm1[l_axis] = l-1 # C_{l-1}^m
+            slcp1[m_axis] = 0; slcp1[l_axis] = l+1 # C_{l+1}^m
 
             # m=0 parts
-            if (l==0):
-                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,0]*data_in[tuple(slcp1)]
-            elif (l==self.lmax):
-                data_out[tuple(slc)] = (l-1)*data_in[tuple(slcm1)]*Dlm[l,0]
-            else:
+            if ((0 < l) and (l < self.lmax)):
                 data_out[tuple(slc)] = (l-1)*data_in[tuple(slcm1)]*Dlm[l,0] \
                                      - (l+2)*data_in[tuple(slcp1)]*Dlm[l+1,0]
+            elif (l==0):
+                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,0]*data_in[tuple(slcp1)]
 
             # m>0 parts
-            for m in range(1,l):
-                slc[phi_axis] = m
-                slcm1[phi_axis] = m
-                slcp1[phi_axis] = m
+            for m in range(1,l): # exclude m=l
+                slc[m_axis] = m
+                slcm1[m_axis] = m
+                slcp1[m_axis] = m
 
-                data_out[tuple(slc)] = (l-1)*Dlm[l,m]*(2*data_in[tuple(slcm1)].real) \
-                                     - (l+2)*Dlm[l+1,m]*(2*data_in[tuple(slcp1)].real)
+                data_out[tuple(slc)] = (l-1)*Dlm[l,m]*data_in[tuple(slcm1)] \
+                                     - (l+2)*Dlm[l+1,m]*data_in[tuple(slcp1)]
 
             # now do the m=l part (slightly different than m<l part)
-            if (l < self.lmax):
-                slc[phi_axis] = l
-                slcp1[phi_axis] = l+1
-                data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*(2*data_in[tuple(slcp1)].real)
+            slc[m_axis] = l
+            slcp1[m_axis] = l
+            data_out[tuple(slc)] = -(l+2)*Dlm[l+1,l]*data_in[tuple(slcp1)]
+
+        # lmax part
+        slc[m_axis] = 0; slc[l_axis] = self.lmax       # C_l^m
+        slcm1[m_axis] = 0; slcm1[l_axis] = self.lmax-1 # C_{l-1}^m
+        data_out[tuple(slc)] = (self.lmax-1)*data_in[tuple(slcm1)]*Dlm[self.lmax,0]
+        # m>0 parts
+        for m in range(1,self.lmax+1): # include m=lmax
+            slc[m_axis] = m
+            slcm1[m_axis] = m
+            data_out[tuple(slc)] = (self.lmax-1)*Dlm[self.lmax,m]*data_in[tuple(slcm1)]
 
         # convert back to physical space
-        data_out = self._LT_to_physical(data_out, l_axis=th_axis, m_axis=phi_axis)
+        data_out = self._LT_to_physical(data_out, axis=l_axis, m_axis=m_axis)
 
         # undo the sin(th) part in physical space
-        nshp = [1]*len(data_out.shape); nshp[th_axis] = -1; nshp = tuple(nshp)
+        nshp = [1]*len(data_out.shape); nshp[l_axis] = -1; nshp = tuple(nshp)
         sinth = np.reshape(self.sinth, nshp)
         data_out /= sinth
 
-        # currently in (th,m), return to proper space, transform as necessary
-        current_th = True; current_phi = False
-        if ((not th_physical) and (not phi_physical)): # (th,m) ---> l,m
-            return self._LT_to_physical(data_out, l_axis=th_axis, m_axis=phi_axis,
-                                       phi_physical=current_phi)
+        # go back to spectral
+        data_out = self._LT_to_spectral(data_out, axis=l_axis, m_axis=m_axis)
 
-        elif ((not th_physical) and phi_physical): # (th,m) ---> (l,m) ---> l,phi
-            data_out = self._LT_to_spectral(data_out, th_axis=th_axis, phi_axis=phi_axis,
-                                           phi_physical=current_phi)
-            return self._fft_to_physical(data_out, axis=phi_axis)
-
-        elif (th_physical and (not phi_physical)): # (th,m) ---> th,m
-            return data_out
-
-        elif (th_physical and phi_physical): # (th,m) ---> th,phi
-              return self._fft_to_physical(data_out, axis=phi_axis)
-
-        else:
-            raise ValueError("should never be here")
+        return data_out
 
     def to_spectral(self, data_in, th_l_axis=0, phi_m_axis=1):
         """
