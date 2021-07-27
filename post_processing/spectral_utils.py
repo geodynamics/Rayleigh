@@ -961,16 +961,9 @@ class Legendre:
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1
         data_out = np.zeros(tuple(shape), dtype=data_in.dtype)
 
-        # F = sum C_l*P_l
-        # sin(th)dF/dth = sum C_l*sin(th)dP_l/dth
-        #               = sum_{l=0}^lmax C_l * [ a_l*P_{l+1} + b_l*P_{l-1} ]
-        #               = sum_{l=0}^lmax C_l*a_l*P_{l+1} + sum_{l=0}^lmax C_l*b_l*P_{l-1}
-        #        redo sum indices: k=l+1 for first one and k=l-1 for second one
-        #               = sum_{k=1}^lmax C_{k-1}*a_{k-1}*P_k
-        #                  + sum_{k=0}^{lmax-1} C_{k+1}*b_{k+1}*P_k
-        #               = sum_{l=1}^{lmax-1} [C_{l-1}*a_{l-1} + C_{l+1}*b_{l+1}]*P_l
-        #                  + C_{lmax-1}*a_{lmax-1}*P_lmax
-        # the l=0 component is zero
+        # l=0 component
+        data_out[0,...] = -data_in[1,...]*2*Dl0[1]
+
         for l in range(1,self.lmax): # interior l values
             data_out[l,...] = -(l+2)*Dl0[l+1]*data_in[l+1,...] + (l-1)*Dl0[l]*data_in[l-1,...]
 
@@ -2166,14 +2159,14 @@ class SHT:
 
         slc = [slice(None)]*dim
         oslc = [slice(None)]*dim
-        out_shape_even = list(f_even.shape)
-        out_shape_odd = list(f_odd.shape)
+        out_slc = [slice(None)]*(dim-1)
+        out_shape_even = list(f_even.shape); del out_shape_even[phi_axis]
+        out_shape_odd = list(f_odd.shape); del out_shape_odd[phi_axis]
         for m in range(self.nm): # phi-axis is now m-values in spectral space
 
             if (self.n_l_even[m] > 0):
-                slc[phi_axis] = slice(m, m+1)  # select single m
-                oslc[phi_axis] = slice(m, m+1)
-                out_shape_even[phi_axis] = 1   # update the shape after selecting single m
+                slc[phi_axis] = m  # select single m
+                oslc[phi_axis] = m
 
                 out_shape_even[transform_axis] = self.n_l_even[m]
                 c_even = GEMM(alpha=alpha, beta=beta,
@@ -2183,23 +2176,23 @@ class SHT:
                 c_even = np.reshape(c_even, tuple(out_shape_even), order='A') # (n_l_even, ...)
 
                 # c_even refers to single m value, so "undo" the slice that selects single m
-                slc[phi_axis] = slice(None)
+                #slc[phi_axis] = slice(None)
 
                 # store output
                 for j in range(self.n_l_even[m]):
                     l = self.lvals_even[m][j]
                     oslc[transform_axis] = l
-                    slc[transform_axis] = j
-                    data_out[tuple(oslc)] = c_even[tuple(slc)]
+                    out_slc[transform_axis] = j
+                    data_out[tuple(oslc)] = c_even[tuple(out_slc)]
 
                 # restore slice object before odd section
+                out_slc[transform_axis] = slice(None)
                 oslc[transform_axis] = slice(None)
                 slc[transform_axis] = slice(None)
 
             if (self.n_l_odd[m] > 0):
-                slc[phi_axis] = slice(m, m+1)  # select single m
-                oslc[phi_axis] = slice(m, m+1)
-                out_shape_odd[phi_axis] = 1    # update the shape after selecting single m
+                slc[phi_axis] = m  # select single m
+                oslc[phi_axis] = m
 
                 out_shape_odd[transform_axis] = self.n_l_odd[m]
                 c_odd = GEMM(alpha=alpha, beta=beta,
@@ -2215,10 +2208,11 @@ class SHT:
                 for j in range(self.n_l_odd[m]):
                     l = self.lvals_odd[m][j]
                     oslc[transform_axis] = l
-                    slc[transform_axis] = j
-                    data_out[tuple(oslc)] = c_odd[tuple(slc)]
+                    out_slc[transform_axis] = j
+                    data_out[tuple(oslc)] = c_odd[tuple(out_slc)]
 
                 # restore slice object before even section (next iteration
+                out_slc[transform_axis] = slice(None)
                 oslc[transform_axis] = slice(None)
                 slc[transform_axis] = slice(None)
 
@@ -2284,6 +2278,7 @@ class SHT:
 
         shape[transform_axis] = self.nth_half
         out_shape = list(shape)
+        del out_shape[m_axis] # remove m-axis
 
         alpha = 1.0; beta = 0.0
 
@@ -2293,10 +2288,9 @@ class SHT:
         for m in range(self.nm):
 
             if (self.n_l_even[m] > 0):
-                slc[m_axis] = slice(m, m+1)
-                oslc[m_axis] = slice(m, m+1)
-                oslc2[m_axis] = slice(m, m+1)
-                out_shape[m_axis] = 1
+                slc[m_axis] = m
+                oslc[m_axis] = m
+                oslc2[m_axis] = m
 
                 shape[transform_axis] = self.n_l_even[m]
                 f_even = np.zeros(tuple(shape), dtype=dtype)
@@ -2329,10 +2323,9 @@ class SHT:
                 oslc2[transform_axis] = slice(None)
 
             if (self.n_l_odd[m] > 0):
-                slc[m_axis] = slice(m, m+1)
-                oslc[m_axis] = slice(m, m+1)
-                oslc2[m_axis] = slice(m, m+1)
-                out_shape[m_axis] = 1
+                slc[m_axis] = m
+                oslc[m_axis] = m
+                oslc2[m_axis] = m
 
                 shape[transform_axis] = self.n_l_odd[m]
                 f_odd  = np.zeros(tuple(shape), dtype=dtype)
