@@ -131,7 +131,7 @@ Contains
         Type(Communicator), Intent(In) :: comm
         Logical :: found
         Integer, Intent(InOut) :: m_values(1:)
-        Integer :: n_m, ind, dpair,k
+        Integer :: n_m, ind, dpair,k, ind2
         Integer :: npairs , np, i, mcheck, mextra
         Integer :: offset, current_pair,p,my_npairs
         Integer, Allocatable :: pairs(:,:), unpaired(:), i_am_holding(:)
@@ -158,11 +158,11 @@ Contains
         do p = 0, np-1
             my_npairs = lb_in(p)%delta/2
             ind = lb_in(p)%min
+            ind2 = lb_in(p)%max
             do i = 1, my_npairs
-                m_values(ind) = pairs(1,current_pair)
-                m_values(ind+1) = pairs(2,current_pair)
+                m_values(ind+i-1) = pairs(1,current_pair)
+                m_values(ind2-i+1) = pairs(2,current_pair)
                 current_pair = current_pair+1
-                ind = ind+2
                 i_am_holding(p) = i_am_holding(p)+2
             enddo
         enddo

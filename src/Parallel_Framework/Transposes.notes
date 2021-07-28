@@ -1,17 +1,18 @@
 
-Jul 27, 2021:
-	+ Original transpose 2a3a routine:
-		-the p2a buffer is accessed as (i,j,k)
+===================
+Original Version 0
+===================
+	+ transpose_2a3a routine:
+		-the p2a buffer = (i,j,k) and p3a buffer = (k_ind,j,i,f)
 
-		-the p3a buffer is accessed as (k,j,i,f)
-
-		-the loop that builds the send buffer was:
+		-the loop that builds the send buffer was ordered:
 			do p=0, np-1
 			    ...
 			    do k=kmin, kmax
 			    do f=1, nf
 			    do j=jmin, jmax
 			    do i=imin, imax
+			        send_buffer(ii) = p2a(i,j+delf,k)
 			        ...
 			    enddo
 			    enddo
@@ -19,29 +20,15 @@ Jul 27, 2021:
 			    enddo
 			enddo
 
-		-the loop that extracts the recv buffer had the same ordering
-
-	+ Original transpose 3b2b routine (basically same as 2a3a):
-		-the p2b buffer is accessed as (i,j,k)
-
-		-the p3b buffer is accessed as (k,j,i,f)
-
-		-the loop that builds the send buffer and the loop that extracts the
-		 recv buffer appear in the same order as those found in the 2a3a routine
-
-	+ Version 1 of transpose 2a3a routine:
-		-the p2a buffer is accessed as (i,j,k)
-
-		-the p3a buffer is accessed as (k,j,i,f), now the loop ordering
-		 follows Fortran "best" practices for the p3a array
-
-		-the loop order that builds the send buffer is changed to be:
+		-the loop that extracts the recv buffer has the same ordering:
 			do p=0, np-1
 			    ...
-			    do f=1, nf
-			    do i=imin, imax
-			    do j=jmin, jmax
 			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        ...
+			        p3a(k_ind,j,i,f) = recv_buffer(ii)
 			        ...
 			    enddo
 			    enddo
@@ -49,14 +36,124 @@ Jul 27, 2021:
 			    enddo
 			enddo
 
-		-the loop that extracts the recv buffer was changed in the same way
+	+ transpose_3b2b routine:
+		-the p3b buffer = (k_ind,j,i,f) and p2b buffer = (i,j,f)
 
-	+ Version 1 of transpose 3b2b routine (basically same as version-1 2a3a):
-		-the p2b buffer is accessed as (i,j,k)
+		-the loop that builds the send buffer was ordered:
+			do p=0, np-1
+			    ...
+			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        ...
+			        send_buffer(ii) = p3b(k_ind,j,i,f)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-		-the p3b buffer is accessed as (k,j,i,f)
+		-the loop that extracts the recv buffer has the same ordering:
+			do p=0, np-1
+			    ...
+			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        p2b(i,j+delf,k) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-		-the loops were modified in the same way as the version-1 2a3a routine
+===================
+Version 1 (Ryan)
+===================
+	+ transpose_2a3a routine:
+		-the loop order that builds the send buffer is modified to be:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        send_buffer(ii) = p2a(i,j+delf,k)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-	+ Version 2 of transpose 2a3a:
+		-the loop that extracts the recv buffer was changed in the same way:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        ...
+			        p3a(k_ind,j,i,f) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+	+ transpose_3b2b routine:
+		-the loop order that builds the send buffer is modified to be:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        ...
+			        send_buffer(ii) = p3b(k_ind,j,i,f)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+		-the loop that extracts the recv buffer was changed in the same way:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        ...
+			        p2b(i,j+delf,k) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+===================
+Version 2 (Nick)
+===================
+	+ transpose_2a3a routine:
+		-the loop to build the send buffer is identical to Version 1
+
+		-the loop to extract the recv buffer is entirely changed:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(kone:kone+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
