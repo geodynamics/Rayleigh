@@ -24,6 +24,7 @@ Module Spherical_Buffer
     Use Structures
     Use Load_Balance
     Use General_MPI
+    Use Timers
     Implicit None
     Private
 
@@ -196,6 +197,8 @@ Contains
         Integer :: i,f,j,p,k,k_ind,delf,delj
         Integer, Intent(In), Optional :: extra_recv
         Integer :: numalloc
+        Call StopWatch(prepare_rbuffer_time)%StartClock()
+        Call StopWatch(prepare_2a3a_time)%StartClock()
         ! This is where we we move from theta, delta_r, delta_m
         !  to m, delta_r, delta_theta
         If (self%dynamic_transpose_buffers) Then
@@ -224,11 +227,11 @@ Contains
             ii = self%sdisp23(p)+1
             imin = pfi%all_2p(p)%min
             imax = pfi%all_2p(p)%max
-            Do k = kmin, kmax
             Do f = 1,nf
             delf = (f-1)*delj*2
-            Do j = jmin,jmax
             Do i = imin,imax
+            Do j = jmin,jmax
+            Do k = kmin, kmax
 
                 self%send_buff(ii) = self%p2a(i,j+delf,k)
                 self%send_buff(ii+1) = self%p2a(i,j+delf+delj,k)
@@ -244,9 +247,17 @@ Contains
 
         self%recv_buff(:) = 0.0d0
 
+        Call StopWatch(prepare_rbuffer_time)%Increment()
+        Call StopWatch(prepare_2a3a_time)%Increment()
+        Call StopWatch(all_to_all_rtime)%StartClock()
+        Call StopWatch(all2all_2a3a_time)%StartClock()
 
         Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount23, &
                 self%sdisp23, self%rcount23, self%rdisp23, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all_to_all_rtime)%Increment()
+        Call StopWatch(all2all_2a3a_time)%Increment()
+        Call StopWatch(extract_rbuffer_time)%StartClock()
+        Call StopWatch(extract_2a3a_time)%StartClock()
         !--------------------------------------------------
         If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
 
@@ -273,10 +284,10 @@ Contains
             ii = self%rdisp23(p)+1
             kmin = pfi%all_3s(p)%min
             kmax = pfi%all_3s(p)%max
-            Do k = kmin, kmax
             Do f = 1,nf
-            Do j = jmin,jmax
             Do i = imin,imax
+            Do j = jmin,jmax
+            Do k = kmin, kmax
 
                 k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
 
@@ -319,6 +330,8 @@ Contains
         self%config = 'p3a'
         If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
 
+        Call StopWatch(extract_rbuffer_time)%Increment()
+        Call StopWatch(extract_2a3a_time)%Increment()
 
     End Subroutine Transpose_2a3a
 
@@ -329,6 +342,8 @@ Contains
         Integer :: i,f,j,p,k,k_ind
         Integer :: delf, delj
 
+        Call StopWatch(prepare_rbuffer_time)%StartClock()
+        Call StopWatch(prepare_3b2b_time)%StartClock()
 
         ! This is where we we move from theta, delta_r, delta_m
         !  to m, delta_r, delta_theta
@@ -353,10 +368,10 @@ Contains
             ii = self%sdisp32(p)+1
             kmin = pfi%all_3s(p)%min
             kmax = pfi%all_3s(p)%max
-            Do k = kmin, kmax
             Do f = 1,nf
-            Do j = jmin,jmax
             Do i = imin,imax        ! interleave real and imaginary parts
+            Do j = jmin,jmax
+            Do k = kmin, kmax
                 k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
 
                 self%send_buff(ii) = self%p3b(k_ind,j,i,f)! real part
@@ -379,8 +394,16 @@ Contains
         self%recv_buff(:) = 0.0d0
         !----- This is where alltoall will be called
 
+        Call StopWatch(prepare_rbuffer_time)%Increment()
+        Call StopWatch(prepare_3b2b_time)%Increment()
+        Call StopWatch(all_to_all_rtime)%StartClock()
+        Call StopWatch(all2all_3b2b_time)%StartClock()
         Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount32, &
                 self%sdisp32, self%rcount32, self%rdisp32, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all_to_all_rtime)%Increment()
+        Call StopWatch(all2all_3b2b_time)%Increment()
+        Call StopWatch(extract_rbuffer_time)%StartClock()
+        Call StopWatch(extract_3b2b_time)%StartClock()
 
         !--------------------------------------------------
         If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
@@ -404,11 +427,11 @@ Contains
             ii = self%rdisp32(p)+1
             imin = pfi%all_2p(p)%min
             imax = pfi%all_2p(p)%max
-            Do k = kmin, kmax
             Do f = 1,nf
                 delf = (f-1)*delj*2
-            Do j = jmin,jmax
             Do i = imin,imax
+            Do j = jmin,jmax
+            Do k = kmin, kmax
                 !p2b needs to be reshaped
                 !   self%p2b(i,j*2*f,k) -- since dgemm needs a 2D array
 
@@ -435,6 +458,10 @@ Contains
 
         self%config = 'p2b'
         If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
+
+        Call StopWatch(extract_rbuffer_time)%Increment()
+        Call StopWatch(extract_3b2b_time)%Increment()
+
     End Subroutine Transpose_3b2b
 
     Subroutine Transpose_2b1b(self)
@@ -453,6 +480,9 @@ Contains
         Integer :: inext, pcurrent
 
         Class(SphericalBuffer) :: self
+
+        Call StopWatch(prepare_cbuffer_time)%StartClock()
+        Call StopWatch(prepare_2b1b_time)%StartClock()
 
         n1 = pfi%n1p
         np = pfi%ccomm%np
@@ -524,8 +554,16 @@ Contains
         Allocate(recv_buff(1:self%recv_size21))
 
         recv_buff = 0.0d0
+        Call StopWatch(prepare_cbuffer_time)%Increment()
+        Call StopWatch(prepare_2b1b_time)%Increment()
+        Call StopWatch(all_to_all_ctime)%StartClock()
+        Call StopWatch(all2all_2b1b_time)%StartClock()
         Call Standard_Transpose(send_buff, recv_buff, self%scount21, self%sdisp21, self%rcount21, &
             self%rdisp21, pfi%ccomm, self%pad_buffer)
+        Call StopWatch(all_to_all_ctime)%Increment()
+        Call StopWatch(all2all_2b1b_time)%Increment()
+        Call StopWatch(extract_cbuffer_time)%StartClock()
+        Call StopWatch(extract_2b1b_time)%StartClock()
         DeAllocate(send_buff)
 
         Call self%construct('p1b')
@@ -567,6 +605,9 @@ Contains
         self%config='p1b'
       Deallocate(recv_buff)
 
+        Call StopWatch(extract_cbuffer_time)%Increment()
+        Call StopWatch(extract_2b1b_time)%Increment()
+
     End Subroutine Transpose_2b1b
 
     Subroutine Transpose_1a2a(self,extra_recv)
@@ -582,6 +623,9 @@ Contains
         Integer :: inext, pcurrent
 
         Class(SphericalBuffer) :: self
+
+        Call StopWatch(prepare_cbuffer_time)%StartClock()
+        Call StopWatch(prepare_1a2a_time)%StartClock()
 
         nfields = self%nf1a
 
@@ -618,8 +662,16 @@ Contains
         Allocate(recv_buff(1:self%recv_size12))
 
 
+        Call StopWatch(prepare_cbuffer_time)%Increment()
+        Call StopWatch(prepare_1a2a_time)%Increment()
+        Call StopWatch(all_to_all_ctime)%StartClock()
+        Call StopWatch(all2all_1a2a_time)%StartClock()
         Call Standard_Transpose(send_buff, recv_buff, self%scount12, self%sdisp12, &
              self%rcount12, self%rdisp12, pfi%ccomm, self%pad_buffer)
+        Call StopWatch(all_to_all_ctime)%Increment()
+        Call StopWatch(all2all_1a2a_time)%Increment()
+        Call StopWatch(extract_cbuffer_time)%StartClock()
+        Call StopWatch(extract_1a2a_time)%StartClock()
         DeAllocate(send_buff)
 
         If (present(extra_recv)) Then
@@ -657,6 +709,9 @@ Contains
 
         self%config='s2a'
         Deallocate(recv_buff)
+
+        Call StopWatch(extract_cbuffer_time)%Increment()
+        Call StopWatch(extract_1a2a_time)%Increment()
 
     End Subroutine Transpose_1a2a
 
