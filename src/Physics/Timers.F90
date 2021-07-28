@@ -31,7 +31,15 @@ Module Timers
     Integer, Parameter :: ar_time = 15, seteq_time = 16, init_time = 17, cread_time = 18, cwrite_time = 19
     Integer, Parameter :: walltime = 20  ! This contains local elapsed time since mpi was initialized
 
-    Integer, Parameter :: ntimers = 21
+    Integer, Parameter :: prepare_rbuffer_time = 21, prepare_cbuffer_time = 22
+    Integer, Parameter :: all_to_all_ctime = 23, all_to_all_rtime = 24
+    Integer, Parameter :: extract_rbuffer_time = 25, extract_cbuffer_time = 26
+    Integer, Parameter :: prepare_1a2a_time = 27, all2all_1a2a_time = 28, extract_1a2a_time = 29
+    Integer, Parameter :: prepare_2a3a_time = 30, all2all_2a3a_time = 31, extract_2a3a_time = 32
+    Integer, Parameter :: prepare_3b2b_time = 33, all2all_3b2b_time = 34, extract_3b2b_time = 35
+    Integer, Parameter :: prepare_2b1b_time = 36, all2all_2b1b_time = 37, extract_2b1b_time = 38
+    Integer, Parameter :: ntimers = 38
+
     Type(Timer), Allocatable :: StopWatch(:)
     Real*8 :: timer_ticklength !Length of 1 tick in seconds
 Contains
