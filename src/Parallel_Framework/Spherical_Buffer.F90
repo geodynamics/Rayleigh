@@ -106,12 +106,12 @@ Module Spherical_Buffer
         Procedure :: unload_cargo
 
         ! test out different versions of transpose routines
-        Procedure :: tranpspose_2a3a_v0 ! original version
-        Procedure :: tranpspose_2a3a_v1
-        Procedure :: tranpspose_2a3a_v2
+        Procedure :: transpose_2a3a_v0 ! original version
+        Procedure :: transpose_2a3a_v1
+        Procedure :: transpose_2a3a_v2
 
-        Procedure :: tranpspose_3b2b_v0
-        Procedure :: tranpspose_3b2b_v1
+        Procedure :: transpose_3b2b_v0
+        Procedure :: transpose_3b2b_v1
     End Type SphericalBuffer
 
 Contains
