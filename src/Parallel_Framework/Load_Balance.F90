@@ -160,9 +160,17 @@ Contains
             ind = lb_in(p)%min
             ind2 = lb_in(p)%max
             do i = 1, my_npairs
-                m_values(ind+i-1) = pairs(1,current_pair)
-                m_values(ind2-i+1) = pairs(2,current_pair)
+                ! new "v2" version
+                !m_values(ind+i-1) = pairs(1,current_pair)
+                !m_values(ind2-i+1) = pairs(2,current_pair)
+                !current_pair = current_pair+1
+
+                ! original "v0" version:
+                m_values(ind) = pairs(1,current_pair)
+                m_values(ind+1) = pairs(2,current_pair)
                 current_pair = current_pair+1
+                ind = ind+2
+
                 i_am_holding(p) = i_am_holding(p)+2
             enddo
         enddo

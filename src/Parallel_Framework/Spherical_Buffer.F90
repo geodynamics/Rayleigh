@@ -97,7 +97,7 @@ Module Spherical_Buffer
         Procedure :: set_buffer_sizes
         Procedure :: transpose_1a2a
         Procedure :: Compute_Packet_Sizes12
-        Procedure :: transpose_2a3a => transpose_2a3a_v2 ! Move from 2a to 3a
+        Procedure :: transpose_2a3a => transpose_2a3a_v0 ! Move from 2a to 3a
         Procedure :: Compute_Packet_Sizes23
         Procedure :: transpose_3b2b => transpose_3b2b_v0
         Procedure :: transpose_2b1b
@@ -105,13 +105,6 @@ Module Spherical_Buffer
         Procedure :: load_cargo
         Procedure :: unload_cargo
 
-        ! test out different versions of transpose routines
-        Procedure :: transpose_2a3a_v0 ! original version
-        Procedure :: transpose_2a3a_v1
-        Procedure :: transpose_2a3a_v2
-
-        Procedure :: transpose_3b2b_v0
-        Procedure :: transpose_3b2b_v1
     End Type SphericalBuffer
 
 Contains
@@ -556,11 +549,11 @@ Contains
             kmin = pfi%all_3s(p)%min
             kmax = pfi%all_3s(p)%max
             Do k = kmin, kmax
-            k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
             Do f = 1,nf
             Do j = jmin,jmax
             Do i = imin,imax
 
+                k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
 
                 self%p3a(k_ind,j,i,f)=self%recv_buff(ii)
                 self%p3a(k_ind+1,j,i,f)=self%recv_buff(ii+1)

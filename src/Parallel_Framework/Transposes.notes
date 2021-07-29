@@ -1,7 +1,19 @@
 
-===================
-Original Version 0
-===================
+===============================================================================
+Original Version 0 --- Requires the v0 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ m_balance routine:
+		-the loop that sets m_values(:) array appears as:
+			do p=0, np-1
+			    ...
+			    do i=1, my_npairs
+			        m_values(ind) = pairs(1,current_pair)
+			        m_values(ind+1) = pairs(2,current_pair)
+			        current_pair += 1
+			        ind += 2
+			    enddo
+			enddo
+
 	+ transpose_2a3a routine:
 		-the p2a buffer = (i,j,k) and p3a buffer = (k_ind,j,i,f)
 
@@ -70,9 +82,9 @@ Original Version 0
 			    enddo
 			enddo
 
-===================
-Version 1 (Ryan)
-===================
+===============================================================================
+Version 1 (Ryan) --- Requires the v0 M_Balance routine from Load_Balance.F90
+===============================================================================
 	+ transpose_2a3a routine:
 		-the loop order that builds the send buffer is modified to be:
 			do p=0, np-1
@@ -138,9 +150,20 @@ Version 1 (Ryan)
 			    enddo
 			enddo
 
-===================
-Version 2 (Nick)
-===================
+===============================================================================
+Version 2 (Nick) --- Requires the v2 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ m_balance routine:
+		-the loop that sets m_values(:) array appears as:
+			do p=0, np-1
+			    ...
+			    do i=1, my_npairs
+			        m_values(ind+i-1) = pairs(1,current_pair)
+			        m_values(ind2-i+1) = pairs(2,current_pair)
+			        current_pair += 1
+			    enddo
+			enddo
+
 	+ transpose_2a3a routine:
 		-the loop to build the send buffer is identical to Version 1
 
