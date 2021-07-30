@@ -598,6 +598,132 @@ Contains
 
     End Subroutine Transpose_2a3a_v0
 
+    Subroutine Transpose_3b2b_v2(self)
+        Class(SphericalBuffer) :: self
+        Integer :: np
+        Integer :: imin, imax, jmin, jmax, kmin,kmax,ii,nf
+        Integer :: i,f,j,p,k,k_ind,kone,nmode,ktwo
+        Integer :: delf, delj
+
+        Call StopWatch(pre_3b2b_time)%StartClock()
+
+        ! This is where we we move from theta, delta_r, delta_m
+        !  to m, delta_r, delta_theta
+        If (self%dynamic_transpose_buffers) Then
+            Allocate(self%send_buff(1:self%send_size32))
+        Endif
+        !write(6,*)'executing new transpose'
+        !--- Not sure if this is good or bad, but copy out the bounds of the loop for now
+        nf = self%nf3b
+
+        jmin = pfi%my_1p%min
+        jmax = pfi%my_1p%max
+
+        np = pfi%rcomm%np
+
+
+        !///////////////////
+        !  Again stripe in the natural order of the send buffer
+        imin = pfi%my_2p%min
+        imax = pfi%my_2p%max
+        ii = 1
+        Do p = 0, np -1
+            !ii = self%sdisp32(p)+1
+            kmin = pfi%all_3s(p)%min
+            kmax = pfi%all_3s(p)%max
+            !k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
+            kone = pfi%inds_3s(kmin)*2+1
+            nmode = pfi%all_3s(p)%delta
+            ktwo = pfi%inds_3s(kmin+nmode/2)*2+1
+            Do f = 1,nf
+            Do i = imin,imax        ! interleave real and imaginary parts
+            Do j = jmin,jmax
+
+            self%send_buff(ii:ii+nmode-1) = self%p3b(kone:kone+nmode-1,j,i,f)
+            ii = ii + nmode
+
+            self%send_buff(ii:ii+nmode-1) = self%p3b(ktwo:ktwo+nmode-1,j,i,f)
+            ii = ii + nmode
+
+            Enddo
+            Enddo
+            Enddo
+         if (self%have_cargo) Then
+             self%send_buff(ii:ii+self%ncargo-1) = self%cargo(1:self%ncargo) !self%mrv
+             ii = ii+self%ncargo ! 1
+         Endif
+        Enddo
+
+        Call StopWatch(pre_3b2b_time)%Increment()
+
+        !/////////////////////////////////////
+        Call self%deconstruct('p3b')
+        If (self%dynamic_transpose_buffers) Allocate(self%recv_buff(1:self%recv_size32))
+        self%recv_buff(:) = 0.0d0
+        !----- This is where alltoall will be called
+
+        Call StopWatch(all2all_3b2b_time)%StartClock()
+        Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount32, &
+                self%sdisp32, self%rcount32, self%rdisp32, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all2all_3b2b_time)%Increment()
+
+        !--------------------------------------------------
+        If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
+
+        Call self%construct('p2b')        ! p2a and p2b can share the same buffer space... maybe just call this p2...
+
+        Call StopWatch(post_3b2b_time)%StartClock()
+
+        delj = pfi%my_1p%delta
+
+        !///////////////////////////////////////
+        ! Read from the receive buffer in its natural order
+        kmin = pfi%my_3s%min
+        kmax = pfi%my_3s%max
+
+        jmin = 1
+        jmax = pfi%my_1p%delta
+
+        Do p = 0, np -1
+            ii = self%rdisp32(p)+1
+            imin = pfi%all_2p(p)%min
+            imax = pfi%all_2p(p)%max
+            Do f = 1,nf
+                delf = (f-1)*delj*2
+            Do i = imin,imax
+            Do j = jmin,jmax
+            Do k = kmin, kmax
+                !p2b needs to be reshaped
+                !   self%p2b(i,j*2*f,k) -- since dgemm needs a 2D array
+
+                self%p2b(i,j+delf ,k)   = self%recv_buff(ii)  ! real
+                self%p2b(i,j+delf+delj,k) = self%recv_buff(ii+1)    ! complex
+                ii = ii+2 ! added +2
+            Enddo
+            Enddo
+            Enddo
+            Enddo
+            if (self%have_cargo) then
+                self%tmp_cargo(1:self%ncargo) = self%recv_buff(ii:ii+self%ncargo-1)
+                Do i = 1, self%ncargo
+                    If ( self%tmp_cargo(i) .gt. self%cargo(i) ) self%cargo(i) = self%tmp_cargo(i)
+                Enddo
+
+
+                !self%mrv = max(self%mrv,self%cargo(1))  ! not quite sure how to handle mrv yet
+                ii = ii+self%ncargo ! 1
+            endif
+        Enddo
+
+
+
+        self%config = 'p2b'
+        If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
+
+        Call StopWatch(post_3b2b_time)%Increment()
+
+    End Subroutine Transpose_3b2b_v2
+
     Subroutine Transpose_3b2b_v1(self)
         Class(SphericalBuffer) :: self
         Integer :: np
