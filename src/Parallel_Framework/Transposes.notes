@@ -180,3 +180,63 @@ Version 2 (Nick) --- Requires the v2 M_Balance routine from Load_Balance.F90
 			    enddo
 			enddo
 
+===============================================================================
+Version 3 (Nick) --- Requires the v2 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop to extract the recv buffer is split into two:
+        		ii = 1
+        		Do p = 0, np -1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(kone:kone+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ii += nmode
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+        		nmode = pfi%all_3s(0)%delta
+			ii += nmode
+        		Do p = 0, np -1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(ktwo:ktwo+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ii += nmode
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+===============================================================================
+Version 4 (Ryan) --- Requires the v2 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop to extract the recv buffer becomes:
+
+        		Do p = 0, np -1
+			    ...
+			    k_array(p,1) = kmin
+			    k_array(p,2) = kone
+			    k_array(p,3) = nmode
+			    k_array(p,4) = ktwo
+			enddo
+
+        		ii = 1
+        		Do p = 0, np -1
+			    ...using k_array
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(kone:kone+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ii += nmode
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
