@@ -800,7 +800,10 @@ class Legendre:
         self.w[:] = _w[:]
 
         # build array of P_l(x)
-        self.Pl = _compute_Pl(_x, self.lmax)
+        self.Pl = _compute_Pl(_x, self.lmax) # (nth,nl)
+
+        # array for transforming to spectral
+        self.iPl = np.transpose(2*np.pi*np.reshape(self.w, (self.nth,1))*self.Pl) # (nl,nth)
 
         # alias
         self.ntheta = self.nth
@@ -841,9 +844,6 @@ class Legendre:
         transform_axis = 0
         data_in = swap_axis(data_in, axis, transform_axis)
 
-        # build proper weights for transform
-        iPl = 2*np.pi*np.reshape(self.w, (self.nth,1))*self.Pl # (nth,lmax+1)
-
         # perform the transform with calls to BLAS
         alpha = 1.0; beta = 0.0
 
@@ -851,9 +851,10 @@ class Legendre:
 
         GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
 
+        # (nl,nth) * (nth,...)
         data_out = GEMM(alpha=alpha, beta=beta,
-                        trans_a=1, trans_b=0,
-                        a=iPl, b=data_in[...])
+                        trans_a=0, trans_b=0,
+                        a=self.iPl, b=data_in[...])
         data_out = np.reshape(data_out, tuple(shape), order='A')
 
         # restore axis order
@@ -896,6 +897,7 @@ class Legendre:
 
         GEMM, is_complex = _choose_gemm(data_in, tol=self.dgemm_tol)
 
+        # (nth,nl) * (nl,...)
         data_out = GEMM(alpha=alpha, beta=beta,
                         trans_a=0, trans_b=0,
                         a=self.Pl, b=data_in[...])
@@ -954,9 +956,8 @@ class Legendre:
         #     and D_l^m = sqrt[ ((l-m)*(l+m)) / ((2l-1)*(2l+1)) ]
         Dl0 = np.zeros((self.lmax+1))
         for l in range(1,self.lmax+1):
-            num = l*l
             den = 4.*l*l-1.
-            Dl0[l] = np.sqrt(num/den)
+            Dl0[l] = l/np.sqrt(den)
 
         shape = list(data_in.shape); shape[transform_axis] = self.lmax+1
         data_out = np.zeros(tuple(shape), dtype=data_in.dtype)
