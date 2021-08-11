@@ -63,7 +63,7 @@ class BaseFile(object):
             self.endian = endian
 
     def get_value(self, dtype: str, shape=[1]):
-        dtype = np.dtype(self.endian + dtype)
+        dtype = np.dtype(dtype).newbyteorder(self.endian)
         size = np.product(shape)
         if self._memmap:
             out = np.ndarray(shape, dtype=dtype, buffer=self.fh,
@@ -179,3 +179,83 @@ class Spherical_3D(object):
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
         return self.q(qcode)
+
+class Shell_Slice_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.ntheta = self.get_value('i4')
+        self.nphi = 2 * self.ntheta
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+
+        self.rs = self.get_value('f8', shape=[self.nr])
+        self.inds = self.get_value('i4', shape=[self.nr]) - 1
+        self.costheta = self.get_value('f8', shape=[self.ntheta])
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
+
+        self.val = self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq, self.nrec])
+
+class G_Avgs_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+
+        self.vals = np.empty((self.nrec, self.nq), dtype='f8')
+        self.time = np.empty((self.nrec,), dtype='f8')
+        self.iters = np.empty((self.nrec,), dtype='i4')
+
+        buf = self.get_value(np.dtype([('val', 'f8', (self.nq,)),
+                                       ('time', 'f8'),
+                                       ('iters', 'i4')]),
+                              shape=[self.nrec])
+
+        self.vals = buf['val']
+        self.time = buf['time']
+        self.iters = buf['iters']
+
+class Shell_Avgs_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        if self.version >= 6:
+            npcol = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+
+        if self.version == 1:
+            dtype = np.dtype([('val', 'f8', (self.nr, self.nq)),
+                              ('time', 'f8'),
+                              ('iters', 'i4')])
+        elif self.version < 6:
+            dtype = np.dtype([('val', 'f8', (self.nr, 4, self.nq)),
+                              ('time', 'f8'),
+                              ('iters', 'i4')])
+        else:
+            # fixme
+            dtype = np.dtype([('val', 'f8', (self.nr, 4, self.nq)),
+                              ('time', 'f8'),
+                              ('iters', 'i4')])
+
+        buf = self.get_value(dtype, shape=[self.nrec])
+        self.val = buf['val']
+        self.time = buf['time']
+        self.iters = buf['iters']
