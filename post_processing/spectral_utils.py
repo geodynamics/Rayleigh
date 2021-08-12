@@ -92,6 +92,13 @@ def ddx(data, grid, axis=0):
     # swap axis order
     f = swap_axis(f, axis, -1)
 
+    if (grid[0] < grid[1]):
+        data_reversed = False
+    else:
+        data_reversed = True
+        x = x[::-1]
+        f = f[...,::-1]
+
     nx = np.shape(f)[-1]
     dfdx = np.zeros_like(f)
     # solve the following system for f' using determinants
@@ -147,6 +154,9 @@ def ddx(data, grid, axis=0):
     # second/second to last interior point
     dfdx[...,2]    = _one_sided_6th(x[2:9], f[...,2:9])
     dfdx[...,nx-3] = _one_sided_6th(x[-9:-2], f[...,-9:-2], right_edge=True)
+
+    if (data_reversed):
+        dfdx = dfdx[...,::-1]
 
     # restore axis order
     dfdx = swap_axis(dfdx, -1, axis)
@@ -210,7 +220,7 @@ def _one_sided_6th(xx, ff, right_edge=False):
 
 def _choose_gemm(data, tol=1e-15):
     """
-    Determine correct BLASS GEMM routine to use: real vs complex.
+    Determine correct BLAS GEMM routine to use: real vs complex.
 
     Args
     ----
@@ -2304,11 +2314,14 @@ class SHT:
 
                 slc[transform_axis] = slice(None) # "undo" the particular j index from above
 
-                f_even = GEMM(alpha=alpha, beta=beta,
+                if (self.n_l_even[m] > 1):
+                    f_even = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
                                 a=self.p_lm_even[m][:,:],     # (n_l_even, nth/2)
                                 b=f_even[tuple(slc)])         # (n_l_even, ...)
-                f_even = np.reshape(f_even, tuple(out_shape), order='A') # (nth/2, ...)
+                    f_even = np.reshape(f_even, tuple(out_shape), order='A') # (nth/2, ...)
+                else:
+                    f_even = np.tensordot(self.p_lm_even[m], f_even[tuple(slc)], axes=(0,0))
 
                 # store first half of output
                 oslc[transform_axis] = slice(0,self.nth_half)
@@ -2339,11 +2352,14 @@ class SHT:
 
                 slc[transform_axis] = slice(None) # "undo" the particular j index from above
 
-                f_odd = GEMM(alpha=alpha, beta=beta,
+                if (self.n_l_odd[m] > 1):
+                    f_odd = GEMM(alpha=alpha, beta=beta,
                                 trans_a=1, trans_b=0,
                                 a=self.p_lm_odd[m][:,:],    # (n_l_odd, nth/2)
                                 b=f_odd[tuple(slc)])        # (n_l_odd, ...)
-                f_odd = np.reshape(f_odd, tuple(out_shape), order='A') # (nth/2, ...)
+                    f_odd = np.reshape(f_odd, tuple(out_shape), order='A') # (nth/2, ...)
+                else:
+                    f_odd = np.tensordot(self.p_lm_odd[m], f_odd[tuple(slc)], axes=(0,0))
 
                 # add output to already computed even stuff
                 for j in range(self.nth_half):
