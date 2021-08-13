@@ -273,6 +273,7 @@ class Meridional_Slices_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.rs = self.get_value('f8', shape=[self.nr])
         self.costheta = self.get_value('f8', shape=[self.ntheta])
@@ -287,9 +288,68 @@ class Meridional_Slices_file(BaseFile):
             self.phi[i] = self.phi_inds[i]*dphi
 
         self.val = []
-        self.time = np.zeros(self.nrec, dtype='f8')
-        self.iters = np.zeros(self.nrec, dtype='i4')
+        self.time = []
+        self.iter = []
         for i in range(self.nrec):
             self.val.append(self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq]))
-            self.time[i] = self.get_value('f8')
-            self.iters[i] = self.get_value('i4')
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+class Meridional_Slices(object):
+    def __init__(self, directory='Meridional_Slices'):
+        super().__init__()
+
+        self.directory = directory
+        files = os.listdir(directory)
+        files.sort()
+        self.val = []
+        self.time = []
+        self.iter = []
+        self.gridpointer = []
+
+        self.rs = []
+        self.costheta = []
+        self.sintheta = []
+        self.qvmap = []
+
+        for i, f in enumerate(files):
+            m = Meridional_Slices_file(os.path.join(directory, f))
+            self.val += m.val
+            self.time += m.time
+            self.iter += m.iter
+
+            self.gridpointer += len(m.val) * [i]
+            self.rs.append(m.rs)
+            self.costheta.append(m.costheta)
+            self.sintheta.append(m.sintheta)
+            self.qvmap.append(m.qvmap)
+
+    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, **kwargs):
+        qcode, name = lut.parse_quantity(q)
+        if qcode is None:
+            raise AttributeError("unknown quantity ({})".format(q))
+        fig = plt.gcf()
+        if Clear:
+            fig.clear()
+
+        ax = fig.add_subplot(111)
+
+        igrid = self.gridpointer[i]
+        X = self.costheta[igrid][:, None] * self.rs[igrid][None, :]
+        Y = self.sintheta[igrid][:, None] * self.rs[igrid][None, :]
+        im = ax.pcolormesh(X, Y, self.val[i][iphi, :, :, self.qvmap[igrid][qcode]], shading='gouraud', **kwargs)
+        if Colorbar:
+            plt.colorbar(im, ax=ax)
+        ax.set_title(f"{name} at $t={self.time[i]}$")
+
+    def q(self, q):
+        return Spherical_3D_TimeSeries(self.directory, q, self.snaps)
+
+    def __getitem__(self, ind):
+        return Spherical_3D_Snapshot(self.directory, ind)
+
+    def __getattr__(self, q):
+        qcode = lut.parse_quantity(q)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity ({})".format(q))
+        return self.q(qcode)
