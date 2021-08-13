@@ -259,3 +259,37 @@ class Shell_Avgs_file(BaseFile):
         self.val = buf['val']
         self.time = buf['time']
         self.iters = buf['iters']
+
+class Meridional_Slices_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nr = self.get_value('i4')
+        self.ntheta = self.get_value('i4')
+        self.nphi = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+
+        self.rs = self.get_value('f8', shape=[self.nr])
+        self.costheta = self.get_value('f8', shape=[self.ntheta])
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
+        self.phi_inds = self.get_value('i4', shape=[self.nphi]) - 1
+        if self.nphi == 1:
+            self.phi_inds = np.array([self.phi_inds])
+        self.phi = np.zeros(self.nphi,dtype='float64')
+
+        dphi = (2*np.pi)/(self.ntheta*2)
+        for i in range(self.nphi):
+            self.phi[i] = self.phi_inds[i]*dphi
+
+        self.val = []
+        self.time = np.zeros(self.nrec, dtype='f8')
+        self.iters = np.zeros(self.nrec, dtype='i4')
+        for i in range(self.nrec):
+            self.val.append(self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq]))
+            self.time[i] = self.get_value('f8')
+            self.iters[i] = self.get_value('i4')
