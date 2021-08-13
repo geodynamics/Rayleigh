@@ -968,13 +968,22 @@ class Shell_Slices:
             print('.......................')
             print('costheta : ', self.costheta)
 
-    def __init__(self,filename='none',path='Shell_Slices/',slice_spec = [], rec0 = False):
+    def __init__(self,filename='none',path='Shell_Slices/', slice_spec=[], rec0=False, irvals=None, qvals=None, iitervals=None):
         """filename   : The reference state file to read.
            path       : The directory where the file is located (if full path not in filename)
            slice_spec : Optional list of [time index, quantity code, radial index].  If 
                         specified, only a single shell is read.  time indexing and radial 
                         indexing start at 0
-           rec0      : Set to true to read the first timestep's data only.
+           rec0       : Set to true to read the first timestep's data only.
+           irvals     : read only radial levels denoted by irvals (0-based indexing)
+           qvals      : read only quantity codes denoted by qvals
+           iitervalsi : read only records denoted by iitervals (0-based indexing)
+           NOTE: irvals, qvals, iitervals can be non-contiguous; they trump the earlier slice_spec and rec0; scalars are interpreted as rank-1 arrays
+           rec0=True is equivalent to iitervals=0
+           slice_spec = [time index, quantity code, radial index] = [iiterval, qval, irval]
+           is equivalent to iitervals=iiterval, qvals=qval, irvals=irval
+           
+
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -988,123 +997,90 @@ class Shell_Slices:
         bs = check_endian(fd,314,'int32')
         version = swapread(fd,dtype='int32',count=1,swap=bs)
         nrec = swapread(fd,dtype='int32',count=1,swap=bs)
-
         ntheta = swapread(fd,dtype='int32',count=1,swap=bs)
         nphi = 2*ntheta
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        self.nq = nq
-        self.nr = nr
-        self.ntheta = ntheta
-        self.nphi = nphi
-
         qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
-
-        self.lut = get_lut(qv)
-
         radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
         inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
-        self.costheta = np.reshape(swapread(fd,dtype='float64',count=ntheta,swap=bs),(ntheta), order = 'F')
-        self.sintheta = (1.0-self.costheta**2)**0.5
-
         # convert from Fortran 1-based to Python 0-based indexing
-        inds = inds - 1
+        inds -= 1
+        costheta = np.reshape(swapread(fd,dtype='float64',count=ntheta,swap=bs),(ntheta), order = 'F')
 
-        if (len(slice_spec) == 3):
+        # determine which slices to read (default all of them)
 
-            self.iters = np.zeros(1,dtype='int32')
-            self.qv    = np.zeros(1,dtype='int32')
-            self.inds  = np.zeros(1,dtype='int32')
-            self.time  = np.zeros(1,dtype='float64')
-            self.iters = np.zeros(1,dtype='float64')
-            self.radius = np.zeros(1,dtype='float64')
-            self.version = version
+        # keep slice_spec and rec0 for backward compatibility
+        if len(slice_spec) == 3:
+            iitervals = slice_spec[0]
+            qvals = slice_spec[1]
+            irvals = slice_spec[2]
+        if rec0:
+            iitervals = 0
 
-            self.niter = 1
-            self.nq = 1
-            self.nr = 1
-            self.vals  = np.zeros((nphi,ntheta,1,1,1),dtype='float64')
-
-            error = False
-            tspec = slice_spec[0]
-            qspec = slice_spec[1]
-            rspec = slice_spec[2]
-
-            if (tspec > (nrec-1)):
-                print(" ")
-                print( "---------------------------------------------------------")
-                print( " Error: specified time index out of range.")
-                print( " Number of records in this file : ", nrec)
-                print( " Specified time index           : ", tspec)
-                print( " Valid time indices range from 0 through "+str(nrec-1)+".")
-                print( "---------------------------------------------------------")
-                print( " " )
-                error = True
-
-            if (rspec > (nr-1)):
-                error = True
-                print(" ")
-                print("---------------------------------------------------------")
-                print(" Error: specified radial index out of range.")
-                print(" Number of radii in this file     : ", nr)
-                print(" Specified radial index           : ", rspec)
-                print(" Valid radial indices range from 0 through "+str(nr-1)+".") 
-                print( "---------------------------------------------------------")
-                print( " ")
-            qind = -1
-            for i in range(nq):
-                if (qv[i] == qspec):
-                    qind = i
-            if (qind == -1):
-                print(" ")
-                print("---------------------------------------------------------")
-                print(" Error: Quantity code not found")
-                print(" Specified quantity code: ", qind)
-                print(" Valid quantity codes: ")
-                print(" ", qv)
-                print("---------------------------------------------------------")
-                print(" ")
-                error = True
-
-            if (error):
-                print(" Returning zero shell-slice structure.")
-                fd.close()
-                return
-
-            self.lut[:] = maxq
-            self.lut[qspec] = 0
-            slice_size  = ntheta*nphi*8
-            qsize       = nr*slice_size
-            rec_size    = nq*qsize+12  # 8-byte timestamp and 4-byte time index.
-            seek_offset = rec_size*tspec+qsize*qind+slice_size*rspec
-            seek_bytes  = seek_offset 
-            fd.seek(seek_bytes,1)
-
-            self.radius[0] = radius[rspec]
-            self.inds[0]   = inds[rspec]
-            self.qv[0] = qspec
-            tmp = np.reshape(swapread(fd,dtype='float64',count=ntheta*nphi,swap=bs),(nphi,ntheta), order = 'F')
-            self.vals[:,:,0,0,0] = tmp
-            self.time[0]  = swapread(fd, dtype='float64',count=1,swap=bs)
-            self.iters[0] = swapread(fd, dtype='int32'  ,count=1,swap=bs)
+        # iitervals, qvals, irvals specified directly trumps slice_spec and rec0
+        if iitervals is None: # read all records
+            iitervals = np.arange(nrec)
         else:
-            if (rec0):
-                #If true, read only the first record of the file.
-                nrec = 1  
-            self.radius = radius
-            self.inds   = inds
-            self.qv     = qv
-            self.niter = nrec
-            self.vals  = np.zeros((nphi,ntheta,nr,nq,nrec),dtype='float64')
-            self.iters = np.zeros(nrec,dtype='int32')
-            self.time  = np.zeros(nrec,dtype='float64')
-            self.version = version
-            for i in range(nrec):
-                tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*ntheta*nphi,swap=bs),(nphi,ntheta,nr,nq), order = 'F')
-                self.vals[:,:,:,:,i] = tmp
-                self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
-                self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
+            if np.isscalar(iitervals):
+                iitervals = np.array([iitervals])
+
+        if irvals is None: # read all levels
+            irvals = np.arange(nr)
+        else:
+            if np.isscalar(irvals):
+                irvals = np.array([irvals])
+
+        if qvals is None: # read all levels
+            iqvals = np.arange(nq)
+        else:
+            if np.isscalar(qvals):
+                qvals = np.array([qvals])
+            iqvals = np.zeros(len(qvals), 'int')
+            for j in range(len(qvals)):
+                qval = qvals[j]
+                iqvals[j] = np.argmin(np.abs(qv - qval))
+
+        # now read only the records/slices we want
+        self.iters = np.zeros(nrec,dtype='int32')
+        self.time  = np.zeros(nrec,dtype='float64')
+        self.vals  = np.zeros((nphi, ntheta, len(irvals), len(iqvals), len(iitervals)),dtype='complex128')
+
+        # loop over everything, in Fortran/Rayleigh order
+        offset = 0
+        for iiter in range(len(iitervals)):
+            tmp = []
+            for iqval in range(nq):
+                for irval in range(nr):
+                    readit = iiter in iitervals and iqval in iqvals and irval in irvals
+                    if readit:
+                        tmp += swapread(fd,dtype='float64',count=nphi*ntheta,swap=bs,offset=offset).tolist()
+                        offset = 0 # always reset offset after reading
+                    else: # don't read this part of file; increase offset
+                        offset += 8*nphi*ntheta
+
+            self.time[iiter] = swapread(fd,dtype='float64',count=1,swap=bs, offset=offset)
+            self.iters[iiter] = swapread(fd,dtype='int32',count=1,swap=bs)
+            offset = 0 # always reset offset after reading
+
+            self.vals[..., iiter] = np.reshape(tmp, (nphi, ntheta, len(irvals), len(iqvals)), order='F')
+
+        # now assign metadata depending on what we read
+        self.niter = len(iitervals)
+        self.nq = len(iqvals)
+        self.nr = len(irvals)
+        self.ntheta = ntheta
+        self.nphi = nphi
+        self.qv = qv[iqvals]
+        self.radius = radius[irvals]
+        self.inds = irvals
+        self.costheta = costheta
+        self.sintheta = (1.0-self.costheta**2)**0.5
+        self.iters = self.iters[iitervals]
+        self.time = self.time[iitervals]
+        self.version = version
+        self.lut = get_lut(self.qv)
 
         fd.close()
 
