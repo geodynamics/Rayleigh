@@ -1045,7 +1045,7 @@ class Shell_Slices:
         # now read only the records/slices we want
         self.iters = np.zeros(nrec,dtype='int32')
         self.time  = np.zeros(nrec,dtype='float64')
-        self.vals  = np.zeros((nphi, ntheta, len(irvals), len(iqvals), len(iitervals)),dtype='complex128')
+        self.vals  = np.zeros((nphi, ntheta, len(irvals), len(iqvals), len(iitervals)))
 
         # loop over everything, in Fortran/Rayleigh order
         offset = 0
