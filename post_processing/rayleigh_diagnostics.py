@@ -977,7 +977,7 @@ class Shell_Slices:
            rec0       : Set to true to read the first timestep's data only.
            irvals     : read only radial levels denoted by irvals (0-based indexing)
            qvals      : read only quantity codes denoted by qvals
-           iitervalsi : read only records denoted by iitervals (0-based indexing)
+           iitervals  : read only records denoted by iitervals (0-based indexing)
            NOTE: irvals, qvals, iitervals can be non-contiguous; they trump the earlier slice_spec and rec0; scalars are interpreted as rank-1 arrays
            rec0=True is equivalent to iitervals=0
            slice_spec = [time index, quantity code, radial index] = [iiterval, qval, irval]
@@ -1217,6 +1217,11 @@ class Shell_Spectra:
         """
            filename  : The reference state file to read.
            path      : The directory where the file is located (if full path not in filename)
+           irvals     : read only radial levels denoted by irvals (0-based indexing)
+           qvals      : read only quantity codes denoted by qvals
+           iitervals  : read only records denoted by iitervals (0-based indexing)
+           NOTE: irvals, qvals, iitervals can be non-contiguous; scalars are interpreted as rank-1 arrays
+
         """
         if (filename == 'none'):
             the_file = path+'00000001'
@@ -1263,13 +1268,15 @@ class Shell_Spectra:
                 iqvals[j] = np.argmin(np.abs(qv - qval))
 
         # now read only the records/slices we want
+        # we'll read each iter and time value at first, then keep 
+        # only the ones for slices we read
         self.iters = np.zeros(nrec,dtype='int32')
         self.time  = np.zeros(nrec,dtype='float64')
         self.vals  = np.zeros((nell, nm, len(irvals), len(iqvals), len(iitervals)),dtype='complex128')
 
         # loop over everything, in Fortran/Rayleigh order
         offset = 0
-        for iiter in range(nrec):
+        for iiter in range(len(iitervals)):
             tmp_real = []
             tmp_imag = []
             for icomplex in range(2):
