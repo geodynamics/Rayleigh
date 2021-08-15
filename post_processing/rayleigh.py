@@ -325,7 +325,7 @@ class Meridional_Slices(object):
             self.qvmap.append(m.qvmap)
 
     def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, **kwargs):
-        qcode, name = lut.parse_quantity(q)
+        qcode = lut.parse_quantity(q)[0]
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
         fig = plt.gcf()
@@ -340,7 +340,7 @@ class Meridional_Slices(object):
         im = ax.pcolormesh(X, Y, self.val[i][iphi, :, :, self.qvmap[igrid][qcode]], shading='gouraud', **kwargs)
         if Colorbar:
             plt.colorbar(im, ax=ax)
-        ax.set_title(f"{name} at $t={self.time[i]}$")
+        ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
 
     def q(self, q):
         return Spherical_3D_TimeSeries(self.directory, q, self.snaps)
