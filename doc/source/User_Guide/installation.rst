@@ -56,8 +56,9 @@ these commands:
 
 #. **make install** – This places the Rayleigh executables in
    Rayleigh/bin. If you would like to place them in (say)
-   /home/my_rayleigh, run configure as: **./configure
-   –prefix=/home/my_rayleigh**.
+   /home/my_rayleigh/bin, run configure as: **./configure
+   –prefix=/home/my_rayleigh**, i.e., the executables will be placed in the
+   **$(prefix)/bin** directory.
 
 For most builds, two executables will be created: rayleigh.opt and
 rayleigh.dbg. Use them as follows:
@@ -77,6 +78,42 @@ etc. will be placed in Rayleigh/bin. This is useful if running on a
 machine with heterogeneous node architectures (e.g., Pleiades). If you
 are not running on such a machine, pick the appropriate vectorization
 level, and rayleigh.opt will be compiled using that vectorization level.
+
+The default behavior of the **make** command is to build both the
+optimized, **rayleigh.opt**, and the debug versions, **rayleigh.dbg**. As
+described above, if Intel is used and *all* is selected, every version will
+be compiled. To build only a single version, the **target=<target>** option
+may be used at the **make** stage, for example:
+
+#. **make target=opt** - build only the optimzed version, **rayleigh.opt**
+
+#. **make target=dbg** - build only the debug version, **rayleigh.dbg**
+
+#. **make target=avx** - build only the AVX version, **rayleigh.avx**
+
+When building a single target, the final name of the executable can be changed
+with the **output=<output>** option during the **make install** command. For example,
+to build the optimized version and name the executable **a.out**:
+
+#. **make target=opt** - only build the optimized version
+
+#. **make target=opt output=a.out install** - install the optimized version as **a.out**
+
+Inspection of the **$(prefix)/bin** directory (specified at configure time with the -prefix
+option) will show a new file named **a.out**.
+
+If both the optimized version and the debug version have already been built, they
+can be renamed at install time as:
+
+#. **make** - build both optimized and debug verion (or all versions)
+
+#. **make target=opt output=a.out.opt install** - install and rename the optimzed version
+
+#. **make target=dbg output=a.out.dbg install** - install and rename the debug version
+
+The **output** option is only respected when a particular **target** is specified. Running
+**make output=a.out install** will install all **rayleigh.*** executables, they will not
+be renamed.
 
 Verifying Your Installation
 ---------------------------
