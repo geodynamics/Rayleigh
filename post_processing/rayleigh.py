@@ -324,7 +324,7 @@ class Meridional_Slices(object):
             self.sintheta.append(m.sintheta)
             self.qvmap.append(m.qvmap)
 
-    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, **kwargs):
+    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, shading='nearest', **kwargs):
         qcode = lut.parse_quantity(q)[0]
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
@@ -335,12 +335,13 @@ class Meridional_Slices(object):
         ax = fig.add_subplot(111)
 
         igrid = self.gridpointer[i]
-        X = self.costheta[igrid][:, None] * self.rs[igrid][None, :]
-        Y = self.sintheta[igrid][:, None] * self.rs[igrid][None, :]
-        im = ax.pcolormesh(X, Y, self.val[i][iphi, :, :, self.qvmap[igrid][qcode]], shading='gouraud', **kwargs)
+        X = self.sintheta[igrid][:, None] * self.rs[igrid][None, :]
+        Y = self.costheta[igrid][:, None] * self.rs[igrid][None, :]
+        im = ax.pcolormesh(X, Y, self.val[i][iphi, :, :, self.qvmap[igrid][qcode]], shading=shading, **kwargs)
         if Colorbar:
             plt.colorbar(im, ax=ax)
         ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
+        ax.set_aspect('equal')
 
     def q(self, q):
         return Spherical_3D_TimeSeries(self.directory, q, self.snaps)
