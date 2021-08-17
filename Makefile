@@ -72,9 +72,21 @@ clear_ipynb:
 
 .PHONY: install
 install:
+ifeq ($(target), "all")
 	@echo "Installing executables into: " $(PREFIX)"/bin"
 	@mkdir -p $(PREFIX)/bin
 	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
+else
+ifdef output
+	@echo "Installing rayleigh.$(target) into: " $(PREFIX)"/bin/$(output)"
+	@mkdir -p $(PREFIX)/bin
+	@cp $(BUILD)/compiled/rayleigh.$(target) $(PREFIX)/bin/$(output)
+else
+	@echo "Installing executables into: " $(PREFIX)"/bin"
+	@mkdir -p $(PREFIX)/bin
+	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
+endif
+endif
 
 .PHONY: doc
 doc:
