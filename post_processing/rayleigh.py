@@ -385,13 +385,6 @@ class Equatorial_Slices_file(BaseFile):
 
         self.rs = self.get_value('f8', shape=[self.nr])
 
-        #self.costheta = self.get_value('f8', shape=[self.ntheta])
-        #self.sintheta = np.sqrt(1.0 - self.costheta**2)
-        #self.phi_inds = self.get_value('i4', shape=[self.nphi]) - 1
-        #if self.nphi == 1:
-            #self.phi_inds = np.array([self.phi_inds])
-        #self.phi = np.zeros(self.nphi,dtype='float64')
-
         dphi = 2 * np.pi / self.nphi
         self.phi = np.arange(self.nphi) * dphi
 
