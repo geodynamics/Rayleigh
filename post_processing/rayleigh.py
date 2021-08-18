@@ -434,3 +434,38 @@ class Equatorial_Slices(Plot2D):
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
+
+class PDE_Coefficients(BaseFile):
+    nconst = 10
+    nfunc = 14
+
+    def __init__(self, filename='equation_coefficients', **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.cset = self.get_value('i4', shape=[self.nconst])
+        self.fset = self.get_value('i4', shape=[self.nfunc])
+
+        self.constants = self.get_value('f8', shape=[self.nconst])
+        self.nr = self.get_value('i4')
+        self.radius = self.get_value('f8', shape=[self.nr])
+        self.functions = self.get_value('f8', shape=[self.nr, self.nfunc])
+
+        # aliases
+        self.density = self.rho = self.functions[:,1-1]
+        self.dlnrho  = self.functions[:,8-1]
+        self.d2lnrho = self.functions[:,9-1]
+
+        self.temperature = self.T = self.functions[:,4-1]
+        self.dlnT        = self.functions[:,10-1]
+
+        self.dsdr = self.functions[:,14-1]
+
+        self.heating = self.functions[:,6-1]*self.constants[10-1]/self.rho/self.T
+
+        self.nu   = self.functions[:,3-1]
+        self.dlnu = self.functions[:,11-1]
+        self.kappa    = self.functions[:,5-1]
+        self.dlnkappa = self.functions[:,12-1]
+        self.eta    = self.functions[:,7-1]
+        self.dlneta = self.functions[:,13-1]
