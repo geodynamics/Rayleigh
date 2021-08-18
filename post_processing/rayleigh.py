@@ -34,6 +34,10 @@ if sys.maxsize < 2**63 - 1:
 else:
     use_mmap = True
 
+def get_bounds(a, start, end):
+    a = 0.5 * (a[:-1] + a[1:])
+    return np.concatenate([[start], a, [end]], axis=0)
+
 class BaseFile(object):
     @staticmethod
     def get_endian(fd, sig: int, sigtype) -> str:
@@ -269,7 +273,7 @@ class Plot2D(abc.ABC):
     def get_q(self, i, qcode):
         pass
 
-    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, shading='nearest', **kwargs):
+    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, **kwargs):
         qcode = lut.parse_quantity(q)[0]
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
@@ -280,8 +284,7 @@ class Plot2D(abc.ABC):
         ax = fig.add_subplot(111)
 
         X, Y = self.get_coords(i)
-        im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iphi, :, :],
-                shading=shading, **kwargs)
+        im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iphi, :, :], **kwargs)
         if Colorbar:
             plt.colorbar(im, ax=ax)
         ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
@@ -351,10 +354,14 @@ class Meridional_Slices(Plot2D):
             self.sintheta.append(m.sintheta)
             self.qvmap.append(m.qvmap)
 
+        self.theta = [np.arccos(x) for x in self.costheta]
+        self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.)) for t in self.theta]
+        self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
+
     def get_coords(self, i):
         igrid = self.gridpointer[i]
-        X = self.sintheta[igrid][:, None] * self.rs[igrid][None, :]
-        Y = self.costheta[igrid][:, None] * self.rs[igrid][None, :]
+        X = self.sintheta_bounds[igrid][:, None] * self.rs[igrid][None, :]
+        Y = self.costheta_bounds[igrid][:, None] * self.rs[igrid][None, :]
         return X, Y
 
     def get_q(self, i, qcode):
@@ -423,10 +430,12 @@ class Equatorial_Slices(Plot2D):
             self.phi.append(m.phi)
             self.qvmap.append(m.qvmap)
 
+        self.phi_bounds = [get_bounds(p, 0., 2. * np.pi) for p in self.phi]
+
     def get_coords(self, i):
         igrid = self.gridpointer[i]
-        X = np.cos(self.phi[igrid][:, None]) * self.rs[igrid][None, :]
-        Y = np.sin(self.phi[igrid][:, None]) * self.rs[igrid][None, :]
+        X = np.cos(self.phi_bounds[igrid][:, None]) * self.rs[igrid][None, :]
+        Y = np.sin(self.phi_bounds[igrid][:, None]) * self.rs[igrid][None, :]
         return X, Y
 
     def get_q(self, i, qcode):
