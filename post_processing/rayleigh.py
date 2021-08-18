@@ -21,7 +21,7 @@
 import sys
 import os
 import mmap
-import glob
+import abc
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -260,6 +260,33 @@ class Shell_Avgs_file(BaseFile):
         self.time = buf['time']
         self.iters = buf['iters']
 
+class Plot2D(abc.ABC):
+    @abc.abstractmethod
+    def get_coords(self, i):
+        pass
+
+    @abc.abstractmethod
+    def get_q(self, i, qcode):
+        pass
+
+    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, shading='nearest', **kwargs):
+        qcode = lut.parse_quantity(q)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity ({})".format(q))
+        fig = plt.gcf()
+        if Clear:
+            fig.clear()
+
+        ax = fig.add_subplot(111)
+
+        X, Y = self.get_coords(i)
+        im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iphi, :, :],
+                shading=shading, **kwargs)
+        if Colorbar:
+            plt.colorbar(im, ax=ax)
+        ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
+        ax.set_aspect('equal')
+
 class Meridional_Slices_file(BaseFile):
     def __init__(self, filename, **kwargs):
         super().__init__(filename, **kwargs)
@@ -295,7 +322,7 @@ class Meridional_Slices_file(BaseFile):
             self.time.append(self.get_value('f8'))
             self.iter.append(self.get_value('i4'))
 
-class Meridional_Slices(object):
+class Meridional_Slices(Plot2D):
     def __init__(self, directory='Meridional_Slices'):
         super().__init__()
 
@@ -324,33 +351,84 @@ class Meridional_Slices(object):
             self.sintheta.append(m.sintheta)
             self.qvmap.append(m.qvmap)
 
-    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, shading='nearest', **kwargs):
-        qcode = lut.parse_quantity(q)[0]
-        if qcode is None:
-            raise AttributeError("unknown quantity ({})".format(q))
-        fig = plt.gcf()
-        if Clear:
-            fig.clear()
-
-        ax = fig.add_subplot(111)
-
+    def get_coords(self, i):
         igrid = self.gridpointer[i]
         X = self.sintheta[igrid][:, None] * self.rs[igrid][None, :]
         Y = self.costheta[igrid][:, None] * self.rs[igrid][None, :]
-        im = ax.pcolormesh(X, Y, self.val[i][iphi, :, :, self.qvmap[igrid][qcode]], shading=shading, **kwargs)
-        if Colorbar:
-            plt.colorbar(im, ax=ax)
-        ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
-        ax.set_aspect('equal')
+        return X, Y
 
-    def q(self, q):
-        return Spherical_3D_TimeSeries(self.directory, q, self.snaps)
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
 
-    def __getitem__(self, ind):
-        return Spherical_3D_Snapshot(self.directory, ind)
 
-    def __getattr__(self, q):
-        qcode = lut.parse_quantity(q)[0]
-        if qcode is None:
-            raise AttributeError("unknown quantity ({})".format(q))
-        return self.q(qcode)
+class Equatorial_Slices_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nphi = self.get_value('i4')
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.rs = self.get_value('f8', shape=[self.nr])
+
+        #self.costheta = self.get_value('f8', shape=[self.ntheta])
+        #self.sintheta = np.sqrt(1.0 - self.costheta**2)
+        #self.phi_inds = self.get_value('i4', shape=[self.nphi]) - 1
+        #if self.nphi == 1:
+            #self.phi_inds = np.array([self.phi_inds])
+        #self.phi = np.zeros(self.nphi,dtype='float64')
+
+        dphi = 2 * np.pi / self.nphi
+        self.phi = np.arange(self.nphi) * dphi
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(self.get_value('f8', shape=[self.nphi, self.nr, self.nq]))
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+class Equatorial_Slices(Plot2D):
+    def __init__(self, directory='Equatorial_Slices'):
+        super().__init__()
+
+        self.directory = directory
+        files = os.listdir(directory)
+        files.sort()
+        self.val = []
+        self.time = []
+        self.iter = []
+        self.gridpointer = []
+
+        self.rs = []
+        self.phi = []
+        self.qvmap = []
+
+        for i, f in enumerate(files):
+            m = Equatorial_Slices_file(os.path.join(directory, f))
+            self.val += m.val
+            self.time += m.time
+            self.iter += m.iter
+
+            self.gridpointer += len(m.val) * [i]
+            self.rs.append(m.rs)
+            self.phi.append(m.phi)
+            self.qvmap.append(m.qvmap)
+
+    def get_coords(self, i):
+        igrid = self.gridpointer[i]
+        X = np.cos(self.phi[igrid][:, None]) * self.rs[igrid][None, :]
+        Y = np.sin(self.phi[igrid][:, None]) * self.rs[igrid][None, :]
+        return X, Y
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
