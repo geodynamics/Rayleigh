@@ -357,11 +357,14 @@ class Meridional_Slices(Plot2D):
         self.theta = [np.arccos(x) for x in self.costheta]
         self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.)) for t in self.theta]
         self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
+        self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
+                                         r[-1] - 0.5 * (r[-2] - r[-1]))
+                              for r in self.rs]
 
     def get_coords(self, i):
         igrid = self.gridpointer[i]
-        X = self.sintheta_bounds[igrid][:, None] * self.rs[igrid][None, :]
-        Y = self.costheta_bounds[igrid][:, None] * self.rs[igrid][None, :]
+        X = self.sintheta_bounds[igrid][:, None] * self.radius_bounds[igrid][None, :]
+        Y = self.costheta_bounds[igrid][:, None] * self.radius_bounds[igrid][None, :]
         return X, Y
 
     def get_q(self, i, qcode):
@@ -424,11 +427,14 @@ class Equatorial_Slices(Plot2D):
             self.qvmap.append(m.qvmap)
 
         self.phi_bounds = [get_bounds(p, 0., 2. * np.pi) for p in self.phi]
+        self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
+                                         r[-1] - 0.5 * (r[-2] - r[-1]))
+                              for r in self.rs]
 
     def get_coords(self, i):
         igrid = self.gridpointer[i]
-        X = np.cos(self.phi_bounds[igrid][:, None]) * self.rs[igrid][None, :]
-        Y = np.sin(self.phi_bounds[igrid][:, None]) * self.rs[igrid][None, :]
+        X = np.cos(self.phi_bounds[igrid][:, None]) * self.radius_bounds[igrid][None, :]
+        Y = np.sin(self.phi_bounds[igrid][:, None]) * self.radius_bounds[igrid][None, :]
         return X, Y
 
     def get_q(self, i, qcode):
