@@ -485,6 +485,50 @@ class Equatorial_Slices(Rayleigh_Output, Plot2D):
         return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
 
 
+class Point_Probes_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nr = self.get_value('i4')
+        self.ntheta = self.get_value('i4')
+        self.nphi = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+        self.rad_inds = self.get_value('i4', shape=[self.nr]) - 1
+        self.costheta = self.get_value('f8', shape=[self.ntheta])
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
+        self.theta_inds = self.get_value('i4', shape=[self.ntheta]) - 1
+        self.phi = self.get_value('f8', shape=[self.nphi])
+        self.phi_inds = self.get_value('i4', shape=[self.nphi]) - 1
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq]))
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+class Point_Probes(Rayleigh_Output):
+    attrs = ("radius", "costheta", "sintheta", "phi", "qvmap")
+
+    def __init__(self, directory='Point_Probes'):
+        super().__init__(Point_Probes_file, directory)
+
+        self.theta = [np.arccos(x) for x in self.costheta]
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
+
+
 class PDE_Coefficients(BaseFile):
     nconst = 10
     nfunc = 14
