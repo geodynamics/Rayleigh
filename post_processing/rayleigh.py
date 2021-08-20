@@ -209,28 +209,6 @@ class Spherical_3D(object):
             raise AttributeError("unknown quantity ({})".format(q))
         return self.q(qcode)
 
-class Shell_Slice_file(BaseFile):
-    def __init__(self, filename, **kwargs):
-        super().__init__(filename, **kwargs)
-
-        self.version = self.get_value('i4')
-        self.nrec = self.get_value('i4')
-
-        self.ntheta = self.get_value('i4')
-        self.nphi = 2 * self.ntheta
-        self.nr = self.get_value('i4')
-        self.nq = self.get_value('i4')
-
-        self.qv = self.get_value('i4', shape=[self.nq])
-
-        self.radius = self.get_value('f8', shape=[self.nr])
-        self.inds = self.get_value('i4', shape=[self.nr]) - 1
-        self.costheta = self.get_value('f8', shape=[self.ntheta])
-        self.sintheta = np.sqrt(1.0 - self.costheta**2)
-
-        self.val = self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq, self.nrec])
-
-
 class Rayleigh_TimeSeries(collections.abc.Sequence):
     def __init__(self, base, qcode):
         self.base = base
@@ -308,7 +286,7 @@ class Plot2D(abc.ABC):
     def get_coords(self, i):
         pass
 
-    def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, **kwargs):
+    def pcolor(self, i, q, Clear=True, iv=0, Colorbar=True, projection=None, **kwargs):
         qcode = lut.parse_quantity(q)[0]
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
@@ -316,14 +294,15 @@ class Plot2D(abc.ABC):
         if Clear:
             fig.clear()
 
-        ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111, projection=projection)
 
         X, Y = self.get_coords(i)
-        im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iphi, :, :], **kwargs)
+        im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iv, :, :], **kwargs)
         if Colorbar:
             plt.colorbar(im, ax=ax)
         ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
-        ax.set_aspect('equal')
+        if projection is None:
+            ax.set_aspect('equal')
 
 
 class Meridional_Slices_file(BaseFile):
@@ -525,6 +504,65 @@ class AZ_Avgs(Rayleigh_Output, Plot2D):
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
+
+
+class Shell_Slices_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.ntheta = self.get_value('i4')
+        self.nphi = 2 * self.ntheta
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+        self.inds = self.get_value('i4', shape=[self.nr]) - 1
+        self.costheta = self.get_value('f8', shape=[self.ntheta])
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
+
+        dphi = 2 * np.pi / self.nphi
+        self.phi = np.arange(self.nphi) * dphi
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq]))
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+
+class Shell_Slices(Rayleigh_Output, Plot2D):
+    attrs = ("radius", "costheta", "sintheta", "phi", "qvmap")
+
+    def __init__(self, directory='Shell_Slices'):
+        super().__init__(Shell_Slices_file, directory)
+
+        self.theta = [np.arccos(x) for x in self.costheta]
+        self.theta_bounds = [get_bounds(t, np.pi, 0.) for t in self.theta]
+        self.costheta_bounds = [np.cos(t) for t in self.theta_bounds]
+        self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
+        self.phi_bounds = [get_bounds(p, 0., 2. * np.pi) for p in self.phi]
+
+    def get_coords(self, i):
+        igrid = self.gridpointer[i]
+        X = np.repeat(self.phi_bounds[igrid][:, None], len(self.theta_bounds[igrid]), axis=1)
+        Y = np.repeat(self.theta_bounds[igrid][None, :], len(self.phi_bounds[igrid]), axis=0)
+        # Adjust to bounds used for projection.
+        X = X - np.pi
+        Y = 0.5 * np.pi - Y
+        return X, Y
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        x = self.val[i][:, :, :, self.qvmap[igrid][qcode]]
+        # Move radial coordinate to first position so it can be selected in pcolor.
+        return np.moveaxis(x, 2, 0)
 
 
 class SPH_Modes_file(BaseFile):
