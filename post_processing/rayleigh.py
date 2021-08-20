@@ -248,41 +248,6 @@ class G_Avgs_file(BaseFile):
         self.time = buf['time']
         self.iters = buf['iters']
 
-class Shell_Avgs_file(BaseFile):
-    def __init__(self, filename, **kwargs):
-        super().__init__(filename, **kwargs)
-
-        self.version = self.get_value('i4')
-        self.nrec = self.get_value('i4')
-
-        self.nr = self.get_value('i4')
-        self.nq = self.get_value('i4')
-
-        if self.version >= 6:
-            npcol = self.get_value('i4')
-
-        self.qv = self.get_value('i4', shape=[self.nq])
-
-        self.radius = self.get_value('f8', shape=[self.nr])
-
-        if self.version == 1:
-            dtype = np.dtype([('val', 'f8', (self.nr, self.nq)),
-                              ('time', 'f8'),
-                              ('iters', 'i4')])
-        elif self.version < 6:
-            dtype = np.dtype([('val', 'f8', (self.nr, 4, self.nq)),
-                              ('time', 'f8'),
-                              ('iters', 'i4')])
-        else:
-            # fixme
-            dtype = np.dtype([('val', 'f8', (self.nr, 4, self.nq)),
-                              ('time', 'f8'),
-                              ('iters', 'i4')])
-
-        buf = self.get_value(dtype, shape=[self.nrec])
-        self.val = buf['val']
-        self.time = buf['time']
-        self.iters = buf['iters']
 
 
 class Rayleigh_TimeSeries(collections.abc.Sequence):
@@ -637,6 +602,59 @@ class SPH_Modes(Rayleigh_Output):
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
+
+
+class Shell_Avgs_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        if self.version >= 6:
+            npcol = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+
+        self.val = []
+        self.time = []
+        self.iter = []
+
+        for i in range(self.nrec):
+            if self.version == 1:
+                self.val.append(self.get_value('f8', shape=[self.nr, self.nq]))
+            elif self.version < 6:
+                self.val.append(self.get_value('f8', shape=[self.nr, 4, self.nq]))
+            else:
+                self.val.append(np.zeros([self.nr, 4, self.nq], dtype='f8'))
+                rind = 0
+                nr_base = self.nr // npcol
+                nr_mod = self.nr % npcol
+                for j in range(npcol):
+                    nrout= nr_base
+                    if (j < nr_mod) :
+                        nrout=nrout+1
+                    self.val[-1][rind:rind+nrout,:,:] = self.get_value('f8', shape=[nrout, 4, self.nq])
+                    rind=rind+nrout
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+
+class Shell_Avgs(Rayleigh_Output):
+    attrs = ("radius", "qvmap")
+
+    def __init__(self, directory='Shell_Avgs'):
+        super().__init__(Shell_Avgs_file, directory)
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][:, :, self.qvmap[igrid][qcode]]
 
 
 class PDE_Coefficients(BaseFile):
