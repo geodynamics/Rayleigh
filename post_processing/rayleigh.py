@@ -225,30 +225,6 @@ class Shell_Slice_file(BaseFile):
 
         self.val = self.get_value('f8', shape=[self.nphi, self.ntheta, self.nr, self.nq, self.nrec])
 
-class G_Avgs_file(BaseFile):
-    def __init__(self, filename, **kwargs):
-        super().__init__(filename, **kwargs)
-
-        self.version = self.get_value('i4')
-        self.nrec = self.get_value('i4')
-        self.nq = self.get_value('i4')
-
-        self.qv = self.get_value('i4', shape=[self.nq])
-
-        self.vals = np.empty((self.nrec, self.nq), dtype='f8')
-        self.time = np.empty((self.nrec,), dtype='f8')
-        self.iters = np.empty((self.nrec,), dtype='i4')
-
-        buf = self.get_value(np.dtype([('val', 'f8', (self.nq,)),
-                                       ('time', 'f8'),
-                                       ('iters', 'i4')]),
-                              shape=[self.nrec])
-
-        self.vals = buf['val']
-        self.time = buf['time']
-        self.iters = buf['iters']
-
-
 
 class Rayleigh_TimeSeries(collections.abc.Sequence):
     def __init__(self, base, qcode):
@@ -655,6 +631,37 @@ class Shell_Avgs(Rayleigh_Output):
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][:, :, self.qvmap[igrid][qcode]]
+
+
+class G_Avgs_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(self.get_value('f8', shape=[self.nq]))
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+
+class G_Avgs(Rayleigh_Output):
+    attrs = ("qvmap",)
+
+    def __init__(self, directory='G_Avgs'):
+        super().__init__(G_Avgs_file, directory)
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][self.qvmap[igrid][qcode]]
 
 
 class PDE_Coefficients(BaseFile):
