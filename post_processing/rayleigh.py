@@ -286,6 +286,10 @@ class Plot2D(abc.ABC):
     def get_coords(self, i):
         pass
 
+    @abc.abstractmethod
+    def get_coord_labels(self):
+        pass
+
     def pcolor(self, i, q, Clear=True, iv=0, Colorbar=True, projection=None, **kwargs):
         qcode = lut.parse_quantity(q)[0]
         if qcode is None:
@@ -297,10 +301,16 @@ class Plot2D(abc.ABC):
         ax = fig.add_subplot(111, projection=projection)
 
         X, Y = self.get_coords(i)
+        Xl, Yl = self.get_coord_labels()
         im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iv, :, :], **kwargs)
         if Colorbar:
-            plt.colorbar(im, ax=ax)
-        ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
+            cbar = plt.colorbar(im, ax=ax)
+            cbar.set_label(f"{lut.latex_formula(q)}")
+
+        ax.set_xlabel(Xl)
+        ax.set_ylabel(Yl)
+
+        ax.set_title(f"$t={self.time[i]}$")
         if projection is None:
             ax.set_aspect('equal')
 
@@ -359,6 +369,9 @@ class Meridional_Slices(Rayleigh_Output, Plot2D):
         Y = self.costheta_bounds[igrid][:, None] * self.radius_bounds[igrid][None, :]
         return X, Y
 
+    def get_coord_labels(self):
+        return "$x$", "$y$"
+
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
@@ -407,6 +420,9 @@ class Equatorial_Slices(Rayleigh_Output, Plot2D):
         X = np.cos(self.phi_bounds[igrid][:, None]) * self.radius_bounds[igrid][None, :]
         Y = np.sin(self.phi_bounds[igrid][:, None]) * self.radius_bounds[igrid][None, :]
         return X, Y
+
+    def get_coord_labels(self):
+        return "$x$", "$y$"
 
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
@@ -501,6 +517,9 @@ class AZ_Avgs(Rayleigh_Output, Plot2D):
         Y = self.costheta_bounds[igrid][:, None] * self.radius_bounds[igrid][None, :]
         return X, Y
 
+    def get_coord_labels(self):
+        return "$x$", "$y$"
+
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
@@ -557,6 +576,9 @@ class Shell_Slices(Rayleigh_Output, Plot2D):
         X = X - np.pi
         Y = 0.5 * np.pi - Y
         return X, Y
+
+    def get_coord_labels(self):
+        return r"$\phi$", r"$\theta$"
 
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
