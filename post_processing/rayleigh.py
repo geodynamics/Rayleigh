@@ -81,8 +81,13 @@ class BaseFile(object):
         else:
             self.endian = endian
 
-    def get_value(self, dtype: str, shape=[1]):
+    def get_value(self, dtype: str, shape=None):
         dtype = np.dtype(dtype).newbyteorder(self.endian)
+        if shape is None:
+            scalar = True
+            shape = [1]
+        else:
+            scalar = False
         size = np.product(shape)
         if self._memmap:
             out = np.ndarray(shape, dtype=dtype, buffer=self.fh,
@@ -91,7 +96,7 @@ class BaseFile(object):
         else:
             out = np.fromfile(self.fh, dtype=dtype, count=size)
             out.shape = shape
-        if size == 1:
+        if scalar:
             return out[0]
         else:
             return out
