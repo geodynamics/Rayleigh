@@ -664,6 +664,63 @@ class G_Avgs(Rayleigh_Output):
         return self.val[i][self.qvmap[igrid][qcode]]
 
 
+class Shell_Spectra_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.lmax = self.get_value('i4')
+        self.nell = self.lmax + 1
+        self.nm = self.nell
+        self.mmax = self.nm - 1
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+        self.inds = self.get_value('i4', shape=[self.nr]) - 1
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(np.zeros([self.nell, self.nm, self.nr, self.nq], dtype='c16'))
+            self.val[-1].real = self.get_value('f8', shape=[self.nell, self.nm, self.nr, self.nq])
+            self.val[-1].imag = self.get_value('f8', shape=[self.nell, self.nm, self.nr, self.nq])
+            if (self.version != 4):
+                # The m>0 --power-- is too high by a factor of 2
+                # We divide the --complex amplitude-- by sqrt(2)
+                self.val[-1][:,1:,:,:] /= np.sqrt(2.0)
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+
+class Shell_Spectra(Rayleigh_Output):
+    attrs = ("radius", "lmax", "mmax", "qvmap")
+
+    def __init__(self, directory='Shell_Spectra'):
+        super().__init__(Shell_Spectra_file, directory)
+
+    def lpower(self, i, qcode):
+        val = self.get_q(i, qcode)
+
+        # m = 0 power
+        x = np.abs(val[:, 0, :, None])**2
+
+        # m != 0 (convective) power
+        y = (np.abs(val[:, 1:, :, None])**2).sum(axis=1)
+
+        return np.concatenate((x + y, x, y), axis=2)
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
+
+
 class PDE_Coefficients(BaseFile):
     nconst = 10
     nfunc = 14
