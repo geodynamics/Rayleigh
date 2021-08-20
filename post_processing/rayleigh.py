@@ -307,6 +307,30 @@ class Rayleigh_Output(collections.abc.Sequence):
     def __getitem__(self, i):
         return Rayleigh_TimeStep(self, i)
 
+    def __init__(self, filecls, directory):
+        super().__init__()
+
+        self.directory = directory
+        files = os.listdir(directory)
+        files.sort()
+        self.val = []
+        self.time = []
+        self.iter = []
+        self.gridpointer = []
+
+        for a in self.attrs:
+            setattr(self, a, [])
+
+        for i, f in enumerate(files):
+            m = filecls(os.path.join(directory, f))
+            self.val += m.val
+            self.time += m.time
+            self.iter += m.iter
+
+            self.gridpointer += len(m.val) * [i]
+
+            for a in self.attrs:
+                getattr(self, a).append(getattr(m, a))
 
 class Plot2D(abc.ABC):
     @abc.abstractmethod
@@ -368,33 +392,10 @@ class Meridional_Slices_file(BaseFile):
 
 
 class Meridional_Slices(Rayleigh_Output, Plot2D):
+    attrs = ("rs", "costheta", "sintheta", "qvmap")
+
     def __init__(self, directory='Meridional_Slices'):
-        super().__init__()
-
-        self.directory = directory
-        files = os.listdir(directory)
-        files.sort()
-        self.val = []
-        self.time = []
-        self.iter = []
-        self.gridpointer = []
-
-        self.rs = []
-        self.costheta = []
-        self.sintheta = []
-        self.qvmap = []
-
-        for i, f in enumerate(files):
-            m = Meridional_Slices_file(os.path.join(directory, f))
-            self.val += m.val
-            self.time += m.time
-            self.iter += m.iter
-
-            self.gridpointer += len(m.val) * [i]
-            self.rs.append(m.rs)
-            self.costheta.append(m.costheta)
-            self.sintheta.append(m.sintheta)
-            self.qvmap.append(m.qvmap)
+        super().__init__(Meridional_Slices_file, directory)
 
         self.theta = [np.arccos(x) for x in self.costheta]
         self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.)) for t in self.theta]
@@ -443,31 +444,10 @@ class Equatorial_Slices_file(BaseFile):
 
 
 class Equatorial_Slices(Rayleigh_Output, Plot2D):
+    attrs = ("rs", "phi", "qvmap")
+
     def __init__(self, directory='Equatorial_Slices'):
-        super().__init__()
-
-        self.directory = directory
-        files = os.listdir(directory)
-        files.sort()
-        self.val = []
-        self.time = []
-        self.iter = []
-        self.gridpointer = []
-
-        self.rs = []
-        self.phi = []
-        self.qvmap = []
-
-        for i, f in enumerate(files):
-            m = Equatorial_Slices_file(os.path.join(directory, f))
-            self.val += m.val
-            self.time += m.time
-            self.iter += m.iter
-
-            self.gridpointer += len(m.val) * [i]
-            self.rs.append(m.rs)
-            self.phi.append(m.phi)
-            self.qvmap.append(m.qvmap)
+        super().__init__(Equatorial_Slices_file, directory)
 
         self.phi_bounds = [get_bounds(p, 0., 2. * np.pi) for p in self.phi]
         self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
