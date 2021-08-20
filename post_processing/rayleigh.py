@@ -534,6 +534,57 @@ class Point_Probes(Rayleigh_Output):
         return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
 
 
+class AZ_Avgs_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nr = self.get_value('i4')
+        self.ntheta = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+        self.costheta = self.get_value('f8', shape=[self.ntheta])
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(self.get_value('f8', shape=[self.ntheta, self.nr, self.nq]))
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+
+class AZ_Avgs(Rayleigh_Output, Plot2D):
+    attrs = ("radius", "costheta", "sintheta", "qvmap")
+
+    def __init__(self, directory='AZ_Avgs'):
+        super().__init__(AZ_Avgs_file, directory)
+
+        self.theta = [np.arccos(x) for x in self.costheta]
+        self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.)) for t in self.theta]
+        self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
+        self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
+                                         r[-1] - 0.5 * (r[-2] - r[-1]))
+                              for r in self.radius]
+
+    def get_coords(self, i):
+        igrid = self.gridpointer[i]
+        X = self.sintheta_bounds[igrid][:, None] * self.radius_bounds[igrid][None, :]
+        Y = self.costheta_bounds[igrid][:, None] * self.radius_bounds[igrid][None, :]
+        return X, Y
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
+
+
 class PDE_Coefficients(BaseFile):
     nconst = 10
     nfunc = 14
