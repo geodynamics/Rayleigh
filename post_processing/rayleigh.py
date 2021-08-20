@@ -101,6 +101,11 @@ class BaseFile(object):
         else:
             return out
 
+    @property
+    def qvmap(self):
+        return {v: i for i, v in enumerate(self.qv)}
+
+
 class TimeSeries(object):
     pass
 
@@ -334,7 +339,6 @@ class Meridional_Slices_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
         self.costheta = self.get_value('f8', shape=[self.ntheta])
@@ -393,7 +397,6 @@ class Equatorial_Slices_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
 
@@ -444,7 +447,6 @@ class Point_Probes_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
         self.rad_inds = self.get_value('i4', shape=[self.nr]) - 1
@@ -487,7 +489,6 @@ class AZ_Avgs_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
         self.costheta = self.get_value('f8', shape=[self.ntheta])
@@ -538,7 +539,6 @@ class SPH_Modes_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
         self.inds = self.get_value('i4', shape=[self.nr]) - 1
@@ -594,7 +594,6 @@ class Shell_Avgs_file(BaseFile):
             npcol = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
 
@@ -642,7 +641,6 @@ class G_Avgs_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.val = []
         self.time = []
@@ -679,7 +677,6 @@ class Shell_Spectra_file(BaseFile):
         self.nq = self.get_value('i4')
 
         self.qv = self.get_value('i4', shape=[self.nq])
-        self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
         self.radius = self.get_value('f8', shape=[self.nr])
         self.inds = self.get_value('i4', shape=[self.nr]) - 1
