@@ -35,6 +35,20 @@ if sys.maxsize < 2**63 - 1:
 else:
     use_mmap = True
 
+try:
+    import tqdm
+    try:
+        in_notebook = get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except NameError:
+        in_notebook = False
+
+    if in_notebook:
+        progress = tqdm.tqdm_notebook
+    else:
+        progress = tqdm.tqdm
+except ImportError:
+    progress = lambda x: x
+
 def get_bounds(a, start, end):
     a = 0.5 * (a[:-1] + a[1:])
     return np.concatenate([[start], a, [end]], axis=0)
@@ -157,7 +171,7 @@ class Spherical_3D(object):
         self.snaps = set()
         self.quants = set()
 
-        for f in files:
+        for f in progress(files):
             snap, quant = f.split('_')
             if quant == 'grid':
                 continue
@@ -307,12 +321,18 @@ class Rayleigh_Output(collections.abc.Sequence):
     def __getitem__(self, i):
         return Rayleigh_TimeStep(self, i)
 
-    def __init__(self, filecls, directory):
+    def __init__(self, filecls, directory, subrange=None):
         super().__init__()
 
         self.directory = directory
         files = os.listdir(directory)
         files.sort()
+
+        if subrange is not None:
+            if isinstance(subrange, int):
+                subrange = range(0, len(files), subrange)
+            files = files[subrange]
+
         self.val = []
         self.time = []
         self.iter = []
@@ -321,7 +341,7 @@ class Rayleigh_Output(collections.abc.Sequence):
         for a in self.attrs:
             setattr(self, a, [])
 
-        for i, f in enumerate(files):
+        for i, f in enumerate(progress(files)):
             m = filecls(os.path.join(directory, f))
             self.val += m.val
             self.time += m.time
