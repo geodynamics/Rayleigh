@@ -21,6 +21,7 @@
 import sys
 import os
 import mmap
+import collections.abc
 import abc
 
 import numpy as np
@@ -264,13 +265,52 @@ class Shell_Avgs_file(BaseFile):
         self.time = buf['time']
         self.iters = buf['iters']
 
+
+class Rayleigh_TimeSeries(collections.abc.Sequence):
+    def __init__(self, base, qcode):
+        self.base = base
+        self.qcode = qcode
+
+    def __getitem__(self, i):
+        return self.base.get_q(i, self.qcode)
+
+    def __len__(self):
+        return len(self.base)
+
+
+class Rayleigh_TimeStep(object):
+    def __init__(self, base, i):
+        self.base = base
+        self.i = i
+
+    def __getattr__(self, name):
+        qcode = lut.parse_quantity(name)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity '{}'".format(name))
+        return self.base.get_q(self.i, qcode)
+
+
+class Rayleigh_Output(collections.abc.Sequence):
+    @abc.abstractmethod
+    def get_q(self, i, qcode):
+        pass
+
+    def __len__(self):
+        return len(self.val)
+
+    def __getattr__(self, name):
+        qcode = lut.parse_quantity(name)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity '{}'".format(name))
+        return Rayleigh_TimeSeries(self, qcode)
+
+    def __getitem__(self, i):
+        return Rayleigh_TimeStep(self, i)
+
+
 class Plot2D(abc.ABC):
     @abc.abstractmethod
     def get_coords(self, i):
-        pass
-
-    @abc.abstractmethod
-    def get_q(self, i, qcode):
         pass
 
     def pcolor(self, i, q, Clear=True, iphi=0, Colorbar=True, **kwargs):
@@ -289,6 +329,7 @@ class Plot2D(abc.ABC):
             plt.colorbar(im, ax=ax)
         ax.set_title(f"{lut.latex_formula(q)} at $t={self.time[i]}$")
         ax.set_aspect('equal')
+
 
 class Meridional_Slices_file(BaseFile):
     def __init__(self, filename, **kwargs):
@@ -325,7 +366,8 @@ class Meridional_Slices_file(BaseFile):
             self.time.append(self.get_value('f8'))
             self.iter.append(self.get_value('i4'))
 
-class Meridional_Slices(Plot2D):
+
+class Meridional_Slices(Rayleigh_Output, Plot2D):
     def __init__(self, directory='Meridional_Slices'):
         super().__init__()
 
@@ -399,7 +441,8 @@ class Equatorial_Slices_file(BaseFile):
             self.time.append(self.get_value('f8'))
             self.iter.append(self.get_value('i4'))
 
-class Equatorial_Slices(Plot2D):
+
+class Equatorial_Slices(Rayleigh_Output, Plot2D):
     def __init__(self, directory='Equatorial_Slices'):
         super().__init__()
 
@@ -440,6 +483,7 @@ class Equatorial_Slices(Plot2D):
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
+
 
 class PDE_Coefficients(BaseFile):
     nconst = 10
