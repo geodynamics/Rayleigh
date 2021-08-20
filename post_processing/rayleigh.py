@@ -106,7 +106,7 @@ class Spherical_3D_grid(BaseFile):
         self.nr, self.ntheta, self.nphi = self.get_value('i4', shape=[3])
         assert(self.nphi == 2 * self.ntheta)
 
-        self.rs = self.get_value('f8', shape=[self.nr])
+        self.radius = self.get_value('f8', shape=[self.nr])
         self.thetas = self.get_value('f8', shape=[self.ntheta])
 
 class Spherical_3D_value(np.ndarray):
@@ -143,7 +143,7 @@ class Spherical_3D_Snapshot(object):
         f = os.path.join(self.directory, "{:08d}_grid".format(snap))
         grid = Spherical_3D_grid(f)
 
-        self.rs = grid.rs
+        self.radius = grid.radius
         self.thetas = grid.thetas
         self.phi_edge = np.linspace(0., 2 * np.pi, grid.nphi)
         self.phis = 0.5 * (self.phi_edge[1:] + self.phi_edge[:-1])
@@ -152,7 +152,7 @@ class Spherical_3D_Snapshot(object):
 
     def q(self, q):
         f = os.path.join(self.directory, "{:08d}_{:04d}".format(self.snap, q))
-        return Spherical_3D_value(f, len(self.rs), len(self.thetas),
+        return Spherical_3D_value(f, len(self.radius), len(self.thetas),
                                   len(self.phis), endian=self.endian)
 
     def __getattr__(self, q):
@@ -213,7 +213,7 @@ class Shell_Slice_file(BaseFile):
 
         self.qv = self.get_value('i4', shape=[self.nq])
 
-        self.rs = self.get_value('f8', shape=[self.nr])
+        self.radius = self.get_value('f8', shape=[self.nr])
         self.inds = self.get_value('i4', shape=[self.nr]) - 1
         self.costheta = self.get_value('f8', shape=[self.ntheta])
         self.sintheta = np.sqrt(1.0 - self.costheta**2)
@@ -390,7 +390,7 @@ class Meridional_Slices_file(BaseFile):
         self.qv = self.get_value('i4', shape=[self.nq])
         self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
-        self.rs = self.get_value('f8', shape=[self.nr])
+        self.radius = self.get_value('f8', shape=[self.nr])
         self.costheta = self.get_value('f8', shape=[self.ntheta])
         self.sintheta = np.sqrt(1.0 - self.costheta**2)
         self.phi_inds = self.get_value('i4', shape=[self.nphi]) - 1
@@ -412,7 +412,7 @@ class Meridional_Slices_file(BaseFile):
 
 
 class Meridional_Slices(Rayleigh_Output, Plot2D):
-    attrs = ("rs", "costheta", "sintheta", "qvmap")
+    attrs = ("radius", "costheta", "sintheta", "qvmap")
 
     def __init__(self, directory='Meridional_Slices'):
         super().__init__(Meridional_Slices_file, directory)
@@ -422,7 +422,7 @@ class Meridional_Slices(Rayleigh_Output, Plot2D):
         self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
         self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
                                          r[-1] - 0.5 * (r[-2] - r[-1]))
-                              for r in self.rs]
+                              for r in self.radius]
 
     def get_coords(self, i):
         igrid = self.gridpointer[i]
@@ -449,7 +449,7 @@ class Equatorial_Slices_file(BaseFile):
         self.qv = self.get_value('i4', shape=[self.nq])
         self.qvmap = {v: i for i, v in enumerate(self.qv)}
 
-        self.rs = self.get_value('f8', shape=[self.nr])
+        self.radius = self.get_value('f8', shape=[self.nr])
 
         dphi = 2 * np.pi / self.nphi
         self.phi = np.arange(self.nphi) * dphi
@@ -464,7 +464,7 @@ class Equatorial_Slices_file(BaseFile):
 
 
 class Equatorial_Slices(Rayleigh_Output, Plot2D):
-    attrs = ("rs", "phi", "qvmap")
+    attrs = ("radius", "phi", "qvmap")
 
     def __init__(self, directory='Equatorial_Slices'):
         super().__init__(Equatorial_Slices_file, directory)
@@ -472,7 +472,7 @@ class Equatorial_Slices(Rayleigh_Output, Plot2D):
         self.phi_bounds = [get_bounds(p, 0., 2. * np.pi) for p in self.phi]
         self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
                                          r[-1] - 0.5 * (r[-2] - r[-1]))
-                              for r in self.rs]
+                              for r in self.radius]
 
     def get_coords(self, i):
         igrid = self.gridpointer[i]
