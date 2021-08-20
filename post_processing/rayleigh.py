@@ -585,6 +585,60 @@ class AZ_Avgs(Rayleigh_Output, Plot2D):
         return self.val[i][None, :, :, self.qvmap[igrid][qcode]]
 
 
+class SPH_Modes_file(BaseFile):
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+
+        self.version = self.get_value('i4')
+        self.nrec = self.get_value('i4')
+
+        self.nell = self.get_value('i4')
+        self.nr = self.get_value('i4')
+        self.nq = self.get_value('i4')
+
+        self.qv = self.get_value('i4', shape=[self.nq])
+        self.qvmap = {v: i for i, v in enumerate(self.qv)}
+
+        self.radius = self.get_value('f8', shape=[self.nr])
+        self.inds = self.get_value('i4', shape=[self.nr]) - 1
+        self.lvals = self.get_value('i4', shape=[self.nell])
+
+        nm = np.max(self.lvals) + 1
+
+        self.val = []
+        self.time = []
+        self.iter = []
+        for i in range(self.nrec):
+            self.val.append(np.zeros([nm, self.nell, self.nr, self.nq], dtype='c16'))
+            for qv in range(self.nq):
+                for p in range(2):
+                    for rr in range(self.nr):
+                        for lv in range(self.nell):
+                            nm = self.lvals[lv] + 1
+                            tmp = self.get_value('f8', shape=[nm])
+                            if p == 0:
+                                self.val[-1][:nm, lv, rr, qv].real = tmp
+                            else:
+                                self.val[-1][:nm, lv, rr, qv].imag = tmp
+            if (self.version < 4):
+                # The m>0 --power-- is too high by a factor of 2
+                # We divide the --complex amplitude-- by sqrt(2)
+                self.vals[-1][1:,:,:,:] /= np.sqrt(2.0)
+            self.time.append(self.get_value('f8'))
+            self.iter.append(self.get_value('i4'))
+
+
+class SPH_Modes(Rayleigh_Output):
+    attrs = ("radius", "lvals", "qvmap")
+
+    def __init__(self, directory='SPH_Modes'):
+        super().__init__(SPH_Modes_file, directory)
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
+
+
 class PDE_Coefficients(BaseFile):
     nconst = 10
     nfunc = 14
