@@ -53,6 +53,22 @@ def get_bounds(a, start, end):
     a = 0.5 * (a[:-1] + a[1:])
     return np.concatenate([[start], a, [end]], axis=0)
 
+def format_time(t: float, unit=None, digits=2, return_scaled_t=False):
+    factors = {'s': 1., 'min': 60., 'hour': 3600., 'day': 24.*3600., 'year': 31556926.}
+    if unit is None:
+        fac = 1.
+        name = ''
+    elif isinstance(unit, str):
+        fac = factors[unit]
+        name = ' ' + unit
+    else:
+        raise ValueError('unknown value for unit "{}"'.format(unit))
+
+    if return_scaled_t:
+        return t/fac
+    else:
+        return ('{0:.%df}{1}'%digits).format(t/fac, name)
+
 class BaseFile(object):
     @staticmethod
     def get_endian(fd, sig: int, sigtype) -> str:
@@ -290,7 +306,8 @@ class Plot2D(abc.ABC):
     def get_coord_labels(self):
         pass
 
-    def pcolor(self, i, q, Clear=True, iv=0, Colorbar=True, projection=None, **kwargs):
+    def pcolor(self, i, q, Clear=True, iv=0, Colorbar=True, projection=None,
+               tunit=None, **kwargs):
         qcode = lut.parse_quantity(q)[0]
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
@@ -310,7 +327,7 @@ class Plot2D(abc.ABC):
         ax.set_xlabel(Xl)
         ax.set_ylabel(Yl)
 
-        ax.set_title(f"$t={self.time[i]}$")
+        ax.set_title(f"$t=${format_time(self.time[i], unit=tunit)}")
         if projection is None:
             ax.set_aspect('equal')
 
