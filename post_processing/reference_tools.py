@@ -39,7 +39,7 @@ class equation_coefficients:
         if name in self.f_dict:
             self.set_function(value, name)
         elif name in self.c_dict:
-            self.set_constant[name]
+            self.set_constant(value, name)
         else:
             super().__setattr__(name, value)
 
