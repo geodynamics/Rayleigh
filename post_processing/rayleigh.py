@@ -331,6 +331,36 @@ class Plot2D(abc.ABC):
         if projection is None:
             ax.set_aspect('equal')
 
+class Plot1D(abc.ABC):
+    @abc.abstractmethod
+    def get_coords(self, i):
+        pass
+
+    @abc.abstractmethod
+    def get_coord_labels(self):
+        pass
+
+    def plot(self, i, q, Clear=True, iv=0, tunit=None, legend=False, **kwargs):
+        qcode = lut.parse_quantity(q)[0]
+        if qcode is None:
+            raise AttributeError("unknown quantity ({})".format(q))
+        fig = plt.gcf()
+        if Clear:
+            fig.clear()
+
+        ax = fig.gca()
+
+        X = self.get_coords(i)
+        Xl = self.get_coord_labels()
+
+        l, = ax.plot(X, self.get_q(i, qcode)[iv, :], label=format_time(self.time[i], tunit), **kwargs)
+
+        ax.set_xlabel(Xl)
+        ax.set_ylabel(f"{lut.latex_formula(q)}")
+
+        if legend:
+            ax.legend()
+
 
 class Meridional_Slices_file(BaseFile):
     def __init__(self, filename, **kwargs):
@@ -698,15 +728,23 @@ class Shell_Avgs_file(BaseFile):
             self.iter.append(self.get_value('i4'))
 
 
-class Shell_Avgs(Rayleigh_Output):
+class Shell_Avgs(Rayleigh_Output, Plot1D):
     attrs = ("radius", "qvmap")
 
     def __init__(self, directory='Shell_Avgs'):
         super().__init__(Shell_Avgs_file, directory)
 
+    def get_coords(self, i):
+        return self.radius[self.gridpointer[i]]
+
+    def get_coord_labels(self):
+        return "$r$"
+
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
-        return self.val[i][:, :, self.qvmap[igrid][qcode]]
+        x = self.val[i][:, :, self.qvmap[igrid][qcode]]
+        # Move radial coordinate to first position so it can be selected in plot.
+        return np.moveaxis(x, 1, 0)
 
 
 class G_Avgs_file(BaseFile):
@@ -737,6 +775,30 @@ class G_Avgs(Rayleigh_Output):
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
         return self.val[i][self.qvmap[igrid][qcode]]
+
+    def time_plot(self, q, tunit=None, Clear=False, legend=False, **kwargs):
+        fig = plt.gcf()
+        if Clear:
+            fig.clear()
+        ax = fig.gca()
+
+        X = [format_time(t, unit=tunit, return_scaled_t=True) for t in self.time]
+        if callable(q):
+            Y = [q(self, i) for i in range(len(self))]
+            Yl = None
+        else:
+            Y = [self.get_q(i, q) for i in range(len(self))]
+            Yl = lut.latex_formula(q)
+
+        ax.plot(X, Y, **kwargs)
+
+        if tunit is not None:
+            ax.set_xlabel(fr"$t/\mathrm{{{tunit}}}$")
+        if Yl:
+            ax.set_ylabel(Yl)
+
+        if legend:
+            ax.legend()
 
 
 class Shell_Spectra_file(BaseFile):
