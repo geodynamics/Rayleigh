@@ -69,6 +69,19 @@ def format_time(t: float, unit=None, digits=2, return_scaled_t=False):
     else:
         return ('{0:.%df}{1}'%digits).format(t/fac, name)
 
+# A way to make complex values use mmaps when the real and imaginary parts are output separately.
+class ComplexVal(object):
+    def __init__(self, real, imag, modifier=None):
+        self.real = real
+        self.imag = imag
+        self.modifier = modifier
+
+    def __getitem__(self, i):
+        x = self.real + 1j * self.imag
+        if self.modifier:
+            x = self.modifier(x)
+        return x[i]
+
 class BaseFile(object):
     @staticmethod
     def get_endian(fd, sig: int, sigtype) -> str:
@@ -823,14 +836,17 @@ class Shell_Spectra_file(BaseFile):
         self.val = []
         self.time = []
         self.iter = []
+        if (self.version != 4):
+            def modifier(x):
+                    # The m>0 --power-- is too high by a factor of 2
+                    # We divide the --complex amplitude-- by sqrt(2)
+                    return x[:,1:,:,:] / np.sqrt(2.0)
+        else:
+            modifier = None
         for i in range(self.nrec):
-            self.val.append(np.zeros([self.nell, self.nm, self.nr, self.nq], dtype='c16'))
-            self.val[-1].real = self.get_value('f8', shape=[self.nell, self.nm, self.nr, self.nq])
-            self.val[-1].imag = self.get_value('f8', shape=[self.nell, self.nm, self.nr, self.nq])
-            if (self.version != 4):
-                # The m>0 --power-- is too high by a factor of 2
-                # We divide the --complex amplitude-- by sqrt(2)
-                self.val[-1][:,1:,:,:] /= np.sqrt(2.0)
+            self.val.append(ComplexVal(self.get_value('f8', shape=[self.nell, self.nm, self.nr, self.nq]),
+                                       self.get_value('f8', shape=[self.nell, self.nm, self.nr, self.nq]),
+                                       modifier=modifier))
             self.time.append(self.get_value('f8'))
             self.iter.append(self.get_value('i4'))
 
