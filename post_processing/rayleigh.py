@@ -53,7 +53,7 @@ def get_bounds(a, start, end):
     a = 0.5 * (a[:-1] + a[1:])
     return np.concatenate([[start], a, [end]], axis=0)
 
-def format_time(t: float, unit=None, digits=2, return_scaled_t=False):
+def format_time(t: float, unit=None, digits=2, return_factor=False):
     factors = {'s': 1., 'min': 60., 'hour': 3600., 'day': 24.*3600., 'year': 31556926.}
     if unit is None:
         fac = 1.
@@ -64,8 +64,8 @@ def format_time(t: float, unit=None, digits=2, return_scaled_t=False):
     else:
         raise ValueError('unknown value for unit "{}"'.format(unit))
 
-    if return_scaled_t:
-        return t/fac
+    if return_factor:
+        return fac
     else:
         return ('{0:.%df}{1}'%digits).format(t/fac, name)
 
@@ -278,6 +278,13 @@ class Rayleigh_Output(collections.abc.Sequence):
 
     def __getitem__(self, i):
         return Rayleigh_TimeStep(self, i)
+
+    def find_time(self, t, tunit=None):
+        t = t * format_time(t, tunit, return_factor=True)
+        return np.searchsorted(self.time, t)
+
+    def time_range(self, t1, t2, stride=1, tunit=None):
+        return slice(self.find_time(t1, tunit), self.find_time(t2, tunit), stride)
 
     def __init__(self, filecls, directory, subrange=None):
         super().__init__()
@@ -795,7 +802,7 @@ class G_Avgs(Rayleigh_Output):
             fig.clear()
         ax = fig.gca()
 
-        X = [format_time(t, unit=tunit, return_scaled_t=True) for t in self.time]
+        X = [t/format_time(t, unit=tunit, return_factor=True) for t in self.time]
         if callable(q):
             Y = [q(self, i) for i in range(len(self))]
             Yl = None
