@@ -284,7 +284,7 @@ class Rayleigh_Output(collections.abc.Sequence):
         return np.searchsorted(self.time, t)
 
     def time_range(self, t1, t2, stride=1, tunit=None):
-        return slice(self.find_time(t1, tunit), self.find_time(t2, tunit), stride)
+        return range(self.find_time(t1, tunit), self.find_time(t2, tunit), stride)
 
     def __init__(self, filecls, directory, subrange=None):
         super().__init__()
