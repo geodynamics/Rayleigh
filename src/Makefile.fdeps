@@ -69,14 +69,14 @@ Sphere_Hybrid_Space.o : Sphere_Hybrid_Space.F90 indices.F PDE_Coefficients.o Clo
 Sphere_Linear_Terms.o : Sphere_Linear_Terms.F90 Math_Constants.o PDE_Coefficients.o ClockInfo.o Timers.o BoundaryConditions.o Fields.o Linear_Solve.o ProblemSize.o Controls.o Load_Balance.o 
 Sphere_Physical_Space.o : Sphere_Physical_Space.F90 indices.F Benchmarking.o Math_Constants.o PDE_Coefficients.o ClockInfo.o Timers.o General_MPI.o Diagnostics_Interface.o Fields.o Spectral_Derivatives.o Fourier_Transform.o ProblemSize.o Controls.o Parallel_Framework.o 
 Sphere_Spectral_Space.o : Sphere_Spectral_Space.F90 Sphere_Linear_Terms.o Timers.o ClockInfo.o BoundaryConditions.o Fields.o Linear_Solve.o Finite_Difference.o ProblemSize.o Controls.o Parallel_Framework.o Load_Balance.o 
-Spherical_Buffer.o : Spherical_Buffer.F90 General_MPI.o Load_Balance.o Structures.o Parallel_Framework.o MPI_LAYER.o 
+Spherical_Buffer.o : Spherical_Buffer.F90 Timers.o General_MPI.o Load_Balance.o Structures.o Parallel_Framework.o MPI_LAYER.o 
 Spherical_IO.o : Spherical_IO.F90 Ra_MPI_Base.o Parallel_IO.o MakeDir.o Math_Constants.o BufferedOutput.o Legendre_Transforms.o Fourier_Transform.o General_MPI.o ISendReceive.o SendReceive.o Parallel_Framework.o Spherical_Buffer.o 
 Structures.o : Structures.F90 
 TestSuite.o : TestSuite.F90 ProblemSize.o Test_Cheby.o Test_SHT.o 
 Test_Cheby.o : Test_Cheby.F90 ProblemSize.o 
 Test_SHT.o : Test_SHT.F90 SendReceive.o Legendre_Transforms.o Fourier_Transform.o Parallel_Framework.o Fields.o ProblemSize.o 
 Theta_Derivatives.o : Theta_Derivatives.F90 Structures.o 
-Timers.o : Timers.F90 Controls.o SendReceive.o Parallel_Framework.o Timing.o 
+Timers.o : Timers.F90 SendReceive.o Parallel_Framework.o Timing.o 
 Timing.o : Timing.F90 Ra_MPI_Base.o 
 amom_equation_codes.o : amom_equation_codes.F 
 axial_field_codes.o : axial_field_codes.F 
