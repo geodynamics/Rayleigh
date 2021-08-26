@@ -24,6 +24,7 @@ Module Spherical_Buffer
     Use Structures
     Use Load_Balance
     Use General_MPI
+    Use Timers
     Implicit None
     Private
 
