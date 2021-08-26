@@ -105,7 +105,7 @@ With the newly generated mapping, the above code could be rewritten as:
     files = build_file_list(0, 10000000, path='G_Avgs')
     g = G_Avgs(filename=files[0], path='')
 
-    ke_code = lookup('kinetic_energy') # use quantity *name* in lookup table
+    ke_code = g.lut[lookup('kinetic_energy')] # use quantity *name* in lookup table
 
     ke = g.data[:, ke_code] # extract KE as a function of time, same as before
 
@@ -136,7 +136,7 @@ the above example for extracting the kinetic energy is even more simple:
     files = build_file_list(0, 10000000, path='G_Avgs')
     g = G_Avgs(filename=files[0], path='')
 
-    ke_code = lookup('ke') # user defined *name* in lookup table
+    ke_code = g.lut[lookup('ke')] # user defined *name* in lookup table
 
     ke = g.data[:, ke_code] # extract KE as a function of time, same as before
 
