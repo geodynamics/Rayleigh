@@ -240,3 +240,38 @@ Version 4 (Ryan) --- Requires the v2 M_Balance routine from Load_Balance.F90
 			    enddo
 			enddo
 
+===============================================================================
+Version 5 (Ryan) --- Requires the v0 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop order that builds the send buffer is modified to be:
+			do p=0, np-1
+			    ...
+			    do f=1, nf
+			    do i=imin, imax
+			    do k=kmin, kmax
+			    do j=jmin, jmax
+			        send_buffer(ii) = p2a(i,j+delf,k)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+		-the loop that extracts the recv buffer was changed in the same way:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do k=kmin, kmax
+			    do j=jmin, jmax
+			        ...
+			        p3a(k_ind,j,i,f) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
