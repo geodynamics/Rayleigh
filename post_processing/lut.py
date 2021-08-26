@@ -9,7 +9,11 @@ try:
 except ImportError:
     from lut_mapping import code_given_name, name_given_code, tex_given_code
 
-from lut_shortcuts import shortcuts
+# include user defined shortcuts, if they exist
+try:
+    from lut_shortcuts import shortcuts
+except ImportError:
+    shortcuts = {}
 
 def lookup(quantity, __check_shortcuts=True):
     """
