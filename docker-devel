@@ -1,0 +1,3 @@
+#!/bin/sh
+
+docker run -it --rm -v $HOME:/work -e HOSTUID=$(id -u) -e HOSTGID=$(id -g) -e HOSTUSER=$(id -n -u) geodynamics/rayleigh-devel-bionic:latest
