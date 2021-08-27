@@ -58,7 +58,6 @@ Magnetic_Prandtl_Number = 5.0d0
 reference_type = 1
 heating_type = 0
 gravity_power = 1.0d0
-dimensional = .false.
 /
 &Transport_Namelist
 /

@@ -228,7 +228,6 @@ Contains
             poly_mass = 1.9D30
             poly_rho_i = 1.1d0
             pressure_specific_heat = 1.0509d8
-            !dimensional = .true.
             angular_velocity = 1.76d-4
 
             !Transport Namelist
@@ -291,7 +290,6 @@ Contains
             poly_mass = 1.9D30
             poly_rho_i = 1.1d0
             pressure_specific_heat = 1.0509d8
-            !dimensional = .true.
             angular_velocity = 1.76d-4
 
             !Transport Namelist
