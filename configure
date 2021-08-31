@@ -25,6 +25,10 @@ function compiler_version {
   then
     VTMP="GNU"
   fi
+  if [[ $VSTR == *"AOCC"* ]]
+  then
+    VTMP="AOCC"
+  fi
   echo $VTMP
 }
 
@@ -40,6 +44,11 @@ function opt_flags {
   then
     echo '-O3 -ffixed-line-length-132'
   fi
+
+  if [[ $1 == "AOCC" ]]
+  then
+    echo '-O3 -ffixed-line-length-132'
+  fi
 }
 
 function dbg_flags {
@@ -52,6 +61,10 @@ function dbg_flags {
   if [[ $1 == "GNU" ]]
   then
     echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132'
+  fi
+  if [[ $1 == "AOCC" ]]
+  then
+    echo '-O0 -g -ffixed-line-length-132'
   fi
 }
 
@@ -514,6 +527,12 @@ else
       DBG_FLAGS="$DBG_FLAGS -DGNU_COMPILER"
   fi
 
+  if [ $FVERSION == "AOCC" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DAOCC_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DAOCC_COMPILER"
+  fi
+
   echo ' '
   echo " Compiler manufacturer      : " $FVERSION
   echo ' Fortran compiler command   : ' $FCOMP
@@ -667,7 +686,7 @@ then
 
 fi
 
-if [[ $FVERSION == "GNU" ]] &&  [[ $DEVELMODE != "TRUE" ]]
+if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]] &&  [[ $DEVELMODE != "TRUE" ]]
 then
 
   echo "***********************************************************************"
@@ -710,7 +729,7 @@ then
          break
        fi
        FFLAGS[0]="${OPT_FLAGS} -march=${opt}"
-       if [ "$opt" = "native" ]; then
+       if [[ "$opt" == "native" && $FVERSION == "GNU" ]]; then
                echo "CPU autodetect result: $(gfortran -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
        fi
        break
@@ -748,7 +767,7 @@ then
     then
         LIB_FLAGS="-mkl -lstdc++"
     fi
-    if [[ $FVERSION == "GNU" ]]
+    if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
     then
         if [[ $CONDAMKL == "TRUE" ]]
         then
@@ -875,7 +894,7 @@ then
     echo "FFTWLINK = "$FFTWLINK >> $OFILE
     echo "" >> $OFILE
 else
-    if [[ $FVERSION == "GNU" ]]
+    if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
     then
         echo "" >> $OFILE
         echo "MKL_LIB = "$MKL_LIB >> $OFILE
