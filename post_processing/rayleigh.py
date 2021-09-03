@@ -903,6 +903,18 @@ class PDE_Coefficients(BaseFile):
     nconst = 10
     nfunc = 14
 
+    version=1
+    c_dict = {'two_omega': 1, 'buoy_fact': 2, 'p_fact': 3, 'lorentz_fact': 4,
+              'visc_fact': 5, 'diff_fact': 6, 'resist_fact': 7,
+              'nu_heat_fact': 8, 'ohm_heat_fact': 9, 'luminosity': 10}
+    f_dict = {'density': 1, 'buoy': 2, 'nu': 3, 'temperature': 4, 'kappa': 5,
+              'heating': 6, 'eta': 7, 'd_ln_rho': 8, 'd2_ln_rho': 9,
+              'd_ln_T': 10, 'd_ln_nu': 11, 'd_ln_kappa': 12,
+              'd_ln_eta': 13, 'ds_dr': 14}
+    # additional names for compatibility
+    f_dict['rho'] = f_dict['density']
+    f_dict['T'] = f_dict['temperature']
+
     def __init__(self, filename='equation_coefficients', **kwargs):
         super().__init__(filename, **kwargs)
 
@@ -915,21 +927,41 @@ class PDE_Coefficients(BaseFile):
         self.radius = self.get_value('f8', shape=[self.nr])
         self.functions = self.get_value('f8', shape=[self.nr, self.nfunc])
 
-        # aliases
-        self.density = self.rho = self.functions[:,1-1]
-        self.dlnrho  = self.functions[:,8-1]
-        self.d2lnrho = self.functions[:,9-1]
+    @property
+    def N2(self):
+        """returnts the Brunt-Vaisala frequency"""
+        return self.ds_dr * self.buoy / self.density
 
-        self.temperature = self.T = self.functions[:,4-1]
-        self.dlnT        = self.functions[:,10-1]
+    def __getattr__(self, name):
+        if name in self.f_dict:
+            return self.functions[:, self.f_dict[name] - 1]
+        elif name in self.c_dict:
+            return self.constants[self.c_dict[name] - 1]
+        else:
+            return super().__getattribute__(name)
 
-        self.dsdr = self.functions[:,14-1]
+    def __setattr__(self, name, value):
+        if name in self.f_dict:
+            self.set_function(value, name)
+        elif name in self.c_dict:
+            self.set_constant[name]
+        else:
+            super().__setattr__(name, value)
 
-        self.heating = self.functions[:,6-1]*self.constants[10-1]/self.rho/self.T
+    def set_function(self, y, f_name):
 
-        self.nu   = self.functions[:,3-1]
-        self.dlnu = self.functions[:,11-1]
-        self.kappa    = self.functions[:,5-1]
-        self.dlnkappa = self.functions[:,12-1]
-        self.eta    = self.functions[:,7-1]
-        self.dlneta = self.functions[:,13-1]
+        if (isinstance(f_name, str)):
+            fi = self.f_dict[f_name]
+        else:
+            fi = f_name
+
+        self.functions[:, fi-1] = y
+        self.fset[fi-1] = 1
+
+    def set_constant(self, c, c_name):
+        if (isinstance(c_name, str)):
+            ci = self.c_dict[c_name]
+        else:
+            ci = c_name
+        self.constants[ci-1] = c
+        self.cset[ci-1] = 1
