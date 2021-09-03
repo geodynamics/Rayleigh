@@ -238,6 +238,7 @@ class Spherical_3D(object):
             raise AttributeError("unknown quantity ({})".format(q))
         return self.q(qcode)
 
+
 class Rayleigh_TimeSeries(collections.abc.Sequence):
     def __init__(self, base, qcode):
         self.base = base
@@ -248,6 +249,24 @@ class Rayleigh_TimeSeries(collections.abc.Sequence):
 
     def __len__(self):
         return len(self.base)
+
+    def frequency_spectrum(self, select=slice(None), istart=None, iend=None, d=None):
+        import scipy.interpolate
+        time = np.array(self.base.time[istart:iend])
+        if d is None:
+            d = np.diff(time).mean()
+        if istart is None:
+            istart = 0
+        if iend is None:
+            iend = len(self)
+
+        val = np.array([self[i][select] for i in range(istart, iend)])
+
+        teq = np.arange(time[0], time[-1], d)
+        freq = np.fft.rfftfreq(len(teq), d)
+        fval = np.fft.rfft(scipy.interpolate.interp1d(time, val, axis=0,
+                           copy=False)(teq), axis=0)
+        return freq, fval
 
 
 class Rayleigh_TimeStep(object):
