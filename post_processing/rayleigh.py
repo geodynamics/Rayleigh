@@ -263,6 +263,8 @@ class Rayleigh_TimeSeries(collections.abc.Sequence):
         val = np.array([self[i][select] for i in range(istart, iend)])
 
         teq = np.arange(time[0], time[-1], d)
+        if teq[-1] > time[-1]:
+            teq = teq[:-1]
         freq = np.fft.rfftfreq(len(teq), d)
         fval = np.fft.rfft(scipy.interpolate.interp1d(time, val, axis=0,
                            copy=False)(teq), axis=0)
