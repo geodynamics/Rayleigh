@@ -206,6 +206,28 @@ Note that the interpretation of :math:`rmin` and :math:`rmax` depends on
 whether your simulation is dimensional or nondimensional. We discuss
 these alternative formulations in §\ :ref:`physics`
 
+It is possible to run Rayleigh with multiple, stacked domains in the
+radial direction. Each of these is discretized using their own set of
+Chebyshev polynomials. The boundaries and number of polynomials can be
+set for each domain indiviadually, which makes it possible to control
+the radial resolution at different radii.
+
+To use this feature the problem size has to be specified using
+``domain_bounds`` and ``ncheby`` instead of ``rmin``, ``rmax``, and
+``n_r``. ``ncheby`` takes a comma-separated list of the number of
+polynomials to use in each domain. ``domain_bounds`` takes
+a comma-separated list of the radii of the domain boundaries. It has one
+element more than the number of domains. This is an example of two
+radial domains, one covering the radii 1 to 2 with 16 polynomials, the
+other the radii 2 to 4 with 64 polynomials.
+
+::
+
+   &problemsize_namelist
+    domain_bounds = 1.0, 2.0, 4.0
+    ncheby = 16, 64
+   /
+
 Controlling Run Length & Time Stepping
 --------------------------------------
 
