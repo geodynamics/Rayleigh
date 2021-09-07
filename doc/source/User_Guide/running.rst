@@ -181,7 +181,7 @@ or
    /
 
 The radial domain bounds are determined by the namelist variables
-:math:`rmin` (the lower radial boundary) and :math:`rmax` (the upper
+``rmin`` (the lower radial boundary) and ``rmax`` (the upper
 radial boundary):
 
 ::
@@ -191,9 +191,9 @@ radial boundary):
     rmax = 2.0
    /
 
-Alternatively, the user may specify the shell depth (:math:`rmax-rmin`)
-and aspect ratio (:math:`rmin/rmax`) in lieu of :math:`rmin` and
-:math:`rmax`. The preceding example may then be written as:
+Alternatively, the user may specify the shell depth (``rmax-rmin``)
+and aspect ratio (``rmin/rmax``) in lieu of ``rmin`` and
+``rmax``. The preceding example may then be written as:
 
 ::
 
@@ -202,7 +202,7 @@ and aspect ratio (:math:`rmin/rmax`) in lieu of :math:`rmin` and
     shell_depth = 1.0
    /
 
-Note that the interpretation of :math:`rmin` and :math:`rmax` depends on
+Note that the interpretation of ``rmin`` and ``rmax`` depends on
 whether your simulation is dimensional or nondimensional. We discuss
 these alternative formulations in §\ :ref:`physics`
 
