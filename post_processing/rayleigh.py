@@ -23,6 +23,7 @@ import os
 import mmap
 import collections.abc
 import abc
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -896,8 +897,20 @@ class Shell_Spectra(Rayleigh_Output):
     def __init__(self, directory='Shell_Spectra'):
         super().__init__(Shell_Spectra_file, directory)
 
-    def lpower(self, i, qcode):
-        val = self.get_q(i, qcode)
+    @property
+    def lpower(self):
+        # reinterpret a shallow copy of self as the lpower class
+        lp = copy.copy(self)
+        lp.__class__ = Shell_Spectra_lpower
+        return lp
+
+    def get_q(self, i, qcode):
+        igrid = self.gridpointer[i]
+        return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
+
+class Shell_Spectra_lpower(Shell_Spectra):
+    def get_q(self, i, qcode):
+        val = super().get_q(i, qcode)
 
         # m = 0 power
         x = np.abs(val[:, 0, :, None])**2
@@ -906,10 +919,6 @@ class Shell_Spectra(Rayleigh_Output):
         y = (np.abs(val[:, 1:, :, None])**2).sum(axis=1)
 
         return np.concatenate((x + y, x, y), axis=2)
-
-    def get_q(self, i, qcode):
-        igrid = self.gridpointer[i]
-        return self.val[i][:, :, :, self.qvmap[igrid][qcode]]
 
 
 class PDE_Coefficients(BaseFile):
