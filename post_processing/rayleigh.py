@@ -146,7 +146,10 @@ class Spherical_3D_grid(BaseFile):
         assert(self.nphi == 2 * self.ntheta)
 
         self.radius = self.get_value('f8', shape=[self.nr])
-        self.thetas = self.get_value('f8', shape=[self.ntheta])
+        self.theta = self.get_value('f8', shape=[self.ntheta])
+        self.theta_bounds = get_bounds(self.theta, np.pi, 0.0)
+        self.phi_bounds = np.linspace(0., 2 * np.pi, self.nphi + 1)
+        self.phi = 0.5 * (self.phi_bounds[1:] + self.phi_bounds[:-1])
 
 class Spherical_3D_value(np.ndarray):
     def __new__(cls, filename, nr, ntheta, nphi, endian, **kwargs):
@@ -155,12 +158,12 @@ class Spherical_3D_value(np.ndarray):
         return f.get_value('f8', shape=[nphi, ntheta, nr]).view(type=cls)
 
 class Spherical_3D_TimeSeries(TimeSeries):
-    def __init__(self, directory, qcode, snaps):
+    def __init__(self, directory, qcode, i):
         super().__init__()
 
         self.directory = directory
         self.qcode = qcode
-        self.snaps = snaps
+        self.iter = i
 
     def __getitem__(self, ind):
         def getone(i):
@@ -170,9 +173,9 @@ class Spherical_3D_TimeSeries(TimeSeries):
             return Spherical_3D_value(f, grid.nr, grid.ntheta, grid.nphi,
                                       endian=grid.endian)
         if np.isscalar(ind):
-            return getone(self.snaps[ind])
+            return getone(self.iter[ind])
         else:
-            return [getone(i) for i in self.snaps[ind]]
+            return [getone(i) for i in self.iter[ind]]
 
 class Spherical_3D_Snapshot(object):
     def __init__(self, directory, snap):
@@ -183,16 +186,15 @@ class Spherical_3D_Snapshot(object):
         grid = Spherical_3D_grid(f)
 
         self.radius = grid.radius
-        self.thetas = grid.thetas
-        self.phi_edge = np.linspace(0., 2 * np.pi, grid.nphi)
-        self.phis = 0.5 * (self.phi_edge[1:] + self.phi_edge[:-1])
+        self.theta = grid.theta
+        self.phi = grid.phi
 
         self.endian = grid.endian
 
     def q(self, q):
         f = os.path.join(self.directory, "{:08d}_{:04d}".format(self.snap, q))
-        return Spherical_3D_value(f, len(self.radius), len(self.thetas),
-                                  len(self.phis), endian=self.endian)
+        return Spherical_3D_value(f, len(self.radius), len(self.theta),
+                                  len(self.phi), endian=self.endian)
 
     def __getattr__(self, q):
         qcode = lut.parse_quantity(q)[0]
@@ -207,7 +209,7 @@ class Spherical_3D(object):
 
         self.directory = directory
         files = os.listdir(directory)
-        self.snaps = set()
+        self.iter = set()
         self.quants = set()
 
         for f in progress(files):
@@ -218,19 +220,19 @@ class Spherical_3D(object):
             q = int(quant)
             assert("{:08d}".format(s) == snap)
             assert("{:04d}".format(q) == quant)
-            self.snaps.add(s)
+            self.iter.add(s)
             self.quants.add(q)
 
-        self.snaps = list(self.snaps)
-        self.snaps.sort()
+        self.iter = list(self.iter)
+        self.iter.sort()
         self.quants = list(self.quants)
         self.quants.sort()
 
     def q(self, q):
-        return Spherical_3D_TimeSeries(self.directory, q, self.snaps)
+        return Spherical_3D_TimeSeries(self.directory, q, self.iter)
 
     def __getitem__(self, ind):
-        return Spherical_3D_Snapshot(self.directory, ind)
+        return Spherical_3D_Snapshot(self.directory, self.iter[ind])
 
     def __getattr__(self, q):
         qcode = lut.parse_quantity(q)[0]
@@ -417,7 +419,9 @@ class Meridional_Slices_file(BaseFile):
 
         self.qv = self.get_value('i4', shape=[self.nq])
 
-        self.radius = self.get_value('f8', shape=[self.nr])
+        self.radius = r = self.get_value('f8', shape=[self.nr])
+        self.radius_bounds = get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
+                                         r[-1] - 0.5 * (r[-2] - r[-1]))
         self.costheta = self.get_value('f8', shape=[self.ntheta])
         self.sintheta = np.sqrt(1.0 - self.costheta**2)
         self.phi_inds = self.get_value('i4', shape=[self.nphi]) - 1
