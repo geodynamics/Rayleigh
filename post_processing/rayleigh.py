@@ -916,7 +916,7 @@ class PDE_Coefficients(BaseFile):
     nconst = 10
     nfunc = 14
 
-    version=1
+    version = 1
     c_dict = {'two_omega': 1, 'buoy_fact': 2, 'p_fact': 3, 'lorentz_fact': 4,
               'visc_fact': 5, 'diff_fact': 6, 'resist_fact': 7,
               'nu_heat_fact': 8, 'ohm_heat_fact': 9, 'luminosity': 10}
@@ -931,7 +931,9 @@ class PDE_Coefficients(BaseFile):
     def __init__(self, filename='equation_coefficients', **kwargs):
         super().__init__(filename, **kwargs)
 
-        self.version = self.get_value('i4')
+        file_version = self.get_value('i4')
+        if self.version != file_version:
+            raise NotImplementedError(f"version {file_version} of PDE coefficients is not implemented yet")
         self.cset = self.get_value('i4', shape=[self.nconst])
         self.fset = self.get_value('i4', shape=[self.nfunc])
 
