@@ -85,7 +85,7 @@ class ComplexVal(object):
 
 class BaseFile(object):
     @staticmethod
-    def get_endian(fd, sig: int, sigtype) -> str:
+    def get_endian(fd, sig: int, sigtype, filename: str) -> str:
         """returns > if the file is big endian and < if the file is little endian"""
         dtype = np.dtype(sigtype)
         buf = fd.read(dtype.itemsize)
@@ -94,7 +94,7 @@ class BaseFile(object):
         elif np.frombuffer(buf, dtype=">"+sigtype, count=1)[0] == sig:
             return ">"
         else:
-            raise IOError("could not determine endianness")
+            raise IOError(f"could not determine endianness in file '{filename}'")
 
     def __init__(self, filename: str, endian=None, memmap=use_mmap):
 
@@ -107,7 +107,7 @@ class BaseFile(object):
             self.fh = buf
 
         if endian is None:
-            self.endian = self.get_endian(self.fh, 314, 'i4')
+            self.endian = self.get_endian(self.fh, 314, 'i4', filename)
         else:
             self.endian = endian
 
