@@ -317,6 +317,22 @@ class Rayleigh_Output(collections.abc.Sequence):
     def time_range(self, t1, t2, stride=1, tunit=None):
         return range(self.find_time(t1, tunit), self.find_time(t2, tunit), stride)
 
+    def quantities(self, i=None, numeric=False):
+        """return the set of all available quantities
+        i: only return quantities in output i (default: union of all outputs
+        numeric: return numeric codes instead of names
+        """
+        if i is None:
+            qs = set()
+            for d in self.qvmap:
+                qs.update(d.keys())
+        else:
+            qs = set(self.qvmap[self.gridpointer[i]].keys())
+        if numeric:
+            return qs
+        else:
+            return set(lut.parse_quantities(qs)[1])
+
     def __init__(self, filecls, directory, subrange=None):
         super().__init__()
 
