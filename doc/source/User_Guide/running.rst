@@ -214,12 +214,12 @@ the radial resolution at different radii.
 
 To use this feature the problem size has to be specified using
 ``domain_bounds`` and ``ncheby`` instead of ``rmin``, ``rmax``, and
-``n_r``. ``ncheby`` takes a comma-separated list of the number of
-polynomials to use in each domain. ``domain_bounds`` takes
-a comma-separated list of the radii of the domain boundaries. It has one
-element more than the number of domains. This is an example of two
-radial domains, one covering the radii 1 to 2 with 16 polynomials, the
-other the radii 2 to 4 with 64 polynomials.
+``n_r``. ``ncheby`` takes a comma-separated list of the number of radial
+points to use in each domain. ``domain_bounds`` takes a comma-separated
+list of the radii of the domain boundaries, starting with the smallest
+radius. It has one element more than the number of domains. This is an
+example of two radial domains, one covering the radii 1 to 2 with 16
+polynomials, the other the radii 2 to 4 with 64 polynomials.
 
 ::
 
@@ -227,6 +227,10 @@ other the radii 2 to 4 with 64 polynomials.
     domain_bounds = 1.0, 2.0, 4.0
     ncheby = 16, 64
    /
+
+Radial values in the diagnostic output will be repeated at the inner
+domain boundaries. Most quantities are forced to be continuous at these
+points.
 
 Controlling Run Length & Time Stepping
 --------------------------------------
