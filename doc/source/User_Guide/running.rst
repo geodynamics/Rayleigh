@@ -219,7 +219,7 @@ points to use in each domain. ``domain_bounds`` takes a comma-separated
 list of the radii of the domain boundaries, starting with the smallest
 radius. It has one element more than the number of domains. This is an
 example of two radial domains, one covering the radii 1 to 2 with 16
-polynomials, the other the radii 2 to 4 with 64 polynomials.
+radial points, the other the radii 2 to 4 with 64 radial points.
 
 ::
 
