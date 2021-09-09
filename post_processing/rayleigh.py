@@ -373,7 +373,7 @@ class Plot2D(abc.ABC):
         im = ax.pcolormesh(X, Y, self.get_q(i, qcode)[iv, :, :], **kwargs)
         if Colorbar:
             cbar = plt.colorbar(im, ax=ax)
-            cbar.set_label(f"{lut.latex_formula(q)}")
+            cbar.set_label(f"{lut.latex_formula(qcode)}")
 
         ax.set_xlabel(Xl)
         ax.set_ylabel(Yl)
