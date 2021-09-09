@@ -453,8 +453,8 @@ class Meridional_Slices_file(BaseFile):
 class Meridional_Slices(Rayleigh_Output, Plot2D):
     attrs = ("radius", "costheta", "sintheta", "qvmap")
 
-    def __init__(self, directory='Meridional_Slices'):
-        super().__init__(Meridional_Slices_file, directory)
+    def __init__(self, directory='Meridional_Slices', **kwargs):
+        super().__init__(Meridional_Slices_file, directory, **kwargs)
 
         self.theta = [np.arccos(x) for x in self.costheta]
         self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.)) for t in self.theta]
@@ -507,8 +507,8 @@ class Equatorial_Slices_file(BaseFile):
 class Equatorial_Slices(Rayleigh_Output, Plot2D):
     attrs = ("radius", "phi", "qvmap")
 
-    def __init__(self, directory='Equatorial_Slices'):
-        super().__init__(Equatorial_Slices_file, directory)
+    def __init__(self, directory='Equatorial_Slices', **kwargs):
+        super().__init__(Equatorial_Slices_file, directory, **kwargs)
 
         self.phi_bounds = [get_bounds(p, 0., 2. * np.pi) for p in self.phi]
         self.radius_bounds = [get_bounds(r, r[0] + 0.5 * (r[0] - r[1]),
@@ -562,8 +562,8 @@ class Point_Probes_file(BaseFile):
 class Point_Probes(Rayleigh_Output):
     attrs = ("radius", "costheta", "sintheta", "phi", "qvmap")
 
-    def __init__(self, directory='Point_Probes'):
-        super().__init__(Point_Probes_file, directory)
+    def __init__(self, directory='Point_Probes', **kwargs):
+        super().__init__(Point_Probes_file, directory, **kwargs)
 
         self.theta = [np.arccos(x) for x in self.costheta]
 
@@ -601,8 +601,8 @@ class AZ_Avgs_file(BaseFile):
 class AZ_Avgs(Rayleigh_Output, Plot2D):
     attrs = ("radius", "costheta", "sintheta", "qvmap")
 
-    def __init__(self, directory='AZ_Avgs'):
-        super().__init__(AZ_Avgs_file, directory)
+    def __init__(self, directory='AZ_Avgs', **kwargs):
+        super().__init__(AZ_Avgs_file, directory, **kwargs)
 
         self.theta = [np.arccos(x) for x in self.costheta]
         self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.)) for t in self.theta]
@@ -659,8 +659,8 @@ class Shell_Slices_file(BaseFile):
 class Shell_Slices(Rayleigh_Output, Plot2D):
     attrs = ("radius", "costheta", "sintheta", "phi", "qvmap")
 
-    def __init__(self, directory='Shell_Slices'):
-        super().__init__(Shell_Slices_file, directory)
+    def __init__(self, directory='Shell_Slices', **kwargs):
+        super().__init__(Shell_Slices_file, directory, **kwargs)
 
         self.theta = [np.arccos(x) for x in self.costheta]
         self.theta_bounds = [get_bounds(t, np.pi, 0.) for t in self.theta]
@@ -732,8 +732,8 @@ class SPH_Modes_file(BaseFile):
 class SPH_Modes(Rayleigh_Output):
     attrs = ("radius", "lvals", "qvmap")
 
-    def __init__(self, directory='SPH_Modes'):
-        super().__init__(SPH_Modes_file, directory)
+    def __init__(self, directory='SPH_Modes', **kwargs):
+        super().__init__(SPH_Modes_file, directory, **kwargs)
 
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
@@ -784,8 +784,8 @@ class Shell_Avgs_file(BaseFile):
 class Shell_Avgs(Rayleigh_Output, Plot1D):
     attrs = ("radius", "qvmap")
 
-    def __init__(self, directory='Shell_Avgs'):
-        super().__init__(Shell_Avgs_file, directory)
+    def __init__(self, directory='Shell_Avgs', **kwargs):
+        super().__init__(Shell_Avgs_file, directory, **kwargs)
 
     def get_coords(self, i):
         return self.radius[self.gridpointer[i]]
@@ -822,8 +822,8 @@ class G_Avgs_file(BaseFile):
 class G_Avgs(Rayleigh_Output):
     attrs = ("qvmap",)
 
-    def __init__(self, directory='G_Avgs'):
-        super().__init__(G_Avgs_file, directory)
+    def __init__(self, directory='G_Avgs', **kwargs):
+        super().__init__(G_Avgs_file, directory, **kwargs)
 
     def get_q(self, i, qcode):
         igrid = self.gridpointer[i]
@@ -894,8 +894,8 @@ class Shell_Spectra_file(BaseFile):
 class Shell_Spectra(Rayleigh_Output):
     attrs = ("radius", "lmax", "mmax", "qvmap")
 
-    def __init__(self, directory='Shell_Spectra'):
-        super().__init__(Shell_Spectra_file, directory)
+    def __init__(self, directory='Shell_Spectra', **kwargs):
+        super().__init__(Shell_Spectra_file, directory, **kwargs)
 
     @property
     def lpower(self):
