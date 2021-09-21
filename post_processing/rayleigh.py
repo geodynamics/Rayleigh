@@ -48,7 +48,8 @@ try:
     else:
         progress = tqdm.tqdm
 except ImportError:
-    progress = lambda x: x
+    def progress(x):
+        return x
 
 def get_bounds(a, start, end):
     a = 0.5 * (a[:-1] + a[1:])
