@@ -1,8 +1,0 @@
-sphinxcontrib-bibtex
-recommonmark
-ipykernel
-nbsphinx
-pandoc
-numpy
-scipy
-matplotlib
