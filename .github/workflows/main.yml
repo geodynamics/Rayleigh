@@ -6,6 +6,10 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Fix OpenMPI issue in Docker : https://github.com/open-mpi/ompi/issues/4948
+  OMPI_MCA_btl_vader_single_copy_mechanism: none
+
 jobs:
   test:
     name: linux-bionic-container-build

@@ -22,7 +22,6 @@ Module Timers
     Use Timing
     Use Parallel_Framework
     Use SendReceive
-    Use Controls, Only : my_path
     Implicit None
     Integer, Parameter :: loop_time = 1, legendre_time = 2, fft_time = 3, solve_time = 4
     Integer, Parameter :: rtranspose_time = 5, ctranspose_time = 6
@@ -39,9 +38,13 @@ Module Timers
 
     Type(Timer), Allocatable :: StopWatch(:)
     Real*8 :: timer_ticklength !Length of 1 tick in seconds
+    Character*120 :: timing_path ! Full path to local run directory.  
+                                 ! Copy of my_path from Controls.F90, passed during init below.
 Contains
-    Subroutine Initialize_Timers()
+    Subroutine Initialize_Timers(in_path)
         Integer :: i
+        Character*120, Intent(In) :: in_path
+        timing_path = in_path
         Allocate(StopWatch(1:ntimers))
         Do i = 1, ntimers
             Call StopWatch(i)%init()
@@ -121,7 +124,7 @@ Contains
             write(row_string,'(i4.4)') rownp
             write(col_string,'(i4.4)') colnp
             timing_file = 'Timings/lmax'//TRIM(lmax_string)//'_nr'//TRIM(nr_string)//'_ncol'//TRIM(col_string)
-            timing_file = Trim(my_path)//TRIM(timing_file)//'_nrow'//TRIM(row_string)
+            timing_file = Trim(timing_path)//TRIM(timing_file)//'_nrow'//TRIM(row_string)
          Open(unit=15,file=timing_file,status='replace', ACCESS="STREAM")
          Write(15)colnp
             Write(15)rownp

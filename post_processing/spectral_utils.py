@@ -346,10 +346,10 @@ def grid_size(N, spectral, dealias=1.0):
     """
     if (spectral):
         Npoly_max = N
-        Ngrid = int(dealias*(Npoly_max+1))
+        Ngrid = int(np.floor(dealias*(Npoly_max+1)))
     else:
         Ngrid = N
-        Npoly_max = int(Ngrid/dealias - 1)
+        Npoly_max = int(np.ceil(Ngrid/dealias - 1))
     return Ngrid, Npoly_max
 
 class Fourier:

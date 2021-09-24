@@ -1,3 +1,9 @@
+# Rayleigh development environment.
+#
+# If you change this file with a package relevant for
+# building the documentation make sure to also update
+# environment_doc.yml.
+
 name: radev
 channels:
   - conda-forge
@@ -19,3 +25,4 @@ dependencies:
   - mpich=3.4
   - funcsigs=1.0
   - vtk=9.0
+  - docopt=0.6

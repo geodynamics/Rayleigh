@@ -167,7 +167,7 @@ Contains
 
         tnr = 2*my_r%delta
         ! Once MPI has been initialized, we can start timing
-        Call Initialize_Timers()
+        Call Initialize_Timers(my_path)
         Call StopWatch(init_time)%startclock()
         Call StopWatch(walltime)%startclock()
     End Subroutine Init_Comm
