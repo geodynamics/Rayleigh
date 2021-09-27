@@ -755,7 +755,7 @@ Contains
         If (present(filename)) Then
             ref_file = Trim(my_path)//filename
         Else
-            ref_file = 'equation_coefficients'
+            ref_file = Trim(my_path)//'equation_coefficients'
         Endif
 
         If (my_rank .eq. 0) Then
@@ -798,7 +798,7 @@ Contains
         If (present(filename)) Then
             ref_file = Trim(my_path)//filename
         Else
-            ref_file = 'reference'
+            ref_file = Trim(my_path)//'reference'
         Endif
 
         Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream')
