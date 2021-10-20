@@ -109,7 +109,7 @@ Contains
 
             If (compute_quantity(s_diff)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)
+                    qty(PSI) = tmp1(PSI)+qty(PSI)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -169,7 +169,7 @@ Contains
 
             If (compute_quantity(sp_diff)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)
+                    qty(PSI) = tmp1(PSI)+qty(PSI)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -228,7 +228,7 @@ Contains
 
             If (compute_quantity(sm_diff)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)
+                    qty(PSI) = tmp1(PSI)+qty(PSI)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -885,7 +885,7 @@ Contains
             qty(PSI) = qty(PSI)-tmp*tmp*one_third   ! + 2*e_phi_theta**2
         END_DO
         DO_PSI
-            qty(PSI) = viscous_heating_coeff(r)*qty(PSI)
+            qty(PSI) = viscous_heating_coeff(r)*qty(PSI)*ref%density(r)*ref%temperature(r)
         END_DO
 
 
