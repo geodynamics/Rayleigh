@@ -133,3 +133,6 @@
     Integer, Parameter :: cond_fluxm_r     = te_eq_off+76    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{\partial \overline{\Theta}}{\partial r}$
     Integer, Parameter :: cond_fluxm_theta = te_eq_off+77    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r}\frac{\partial \overline{\Theta}}{\partial \theta}$
     Integer, Parameter :: cond_fluxm_phi   = te_eq_off+78    !  :tex:  $-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \overline{\Theta}}{\partial \phi}$
+    Integer, Parameter :: ref_advec        = te_eq_off+79    !  :tex: $\mathrm{f}_1\mathrm{f}_4 v_r \mathrm{f}_{14} $
+    Integer, Parameter :: ref_advec_p      = te_eq_off+80    !  :tex: $\mathrm{f}_1\mathrm{f}_4 v_r' \mathrm{f}_{14} $
+    Integer, Parameter :: ref_advec_m      = te_eq_off+81    !  :tex: $\mathrm{f}_1\mathrm{f}_4 \overline{v_r} \mathrm{f}_{14} $

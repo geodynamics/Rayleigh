@@ -318,6 +318,28 @@ Contains
         Allocate(rhot(1:N_R))
         rhot = ref%density*ref%temperature
 
+        ! Reference state advection
+        If (Compute_Quantity(ref_advec)) Then
+            DO_PSI
+                qty(PSI)=buffer(PSI,vr)*ref%dsdr(r)*rhot(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif        
+        
+        If (Compute_Quantity(ref_advec_p)) Then
+            DO_PSI
+                qty(PSI)=fbuffer(PSI,vr)*ref%dsdr(r)*rhot(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif    
+        
+        If (Compute_Quantity(ref_advec_m)) Then
+            DO_PSI
+                qty(PSI)=m0_values(PSI2,vr)*ref%dsdr(r)*rhot(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif            
+
 
         ! Advective terms (full)
         If (Compute_Quantity(rhotv_grad_s)) Then
