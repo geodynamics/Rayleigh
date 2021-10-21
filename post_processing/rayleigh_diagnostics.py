@@ -726,16 +726,18 @@ class Point_Probes:
     self.costheta[0:ntheta-1]                     : cos(theta grid)
     self.sintheta[0:ntheta-1]                     : sin(theta grid)
     self.phi[0:nphi-1]                            : phi values (radians)
-    self.rad_inds[0:nphi-1]                       : radial indices (from the full simulation radial grid) 
+    self.rad_inds[0:self.nr-1]                    : radial indices (from the full simulation radial grid) 
                                                   : corresponding to each point in self.radius
-    self.theta_inds[0:nphi-1]                     : theta indices (from the full simulation theta grid) 
+    self.theta_inds[0:self.ntheta-1]              : theta indices (from the full simulation theta grid) 
                                                   : corresponding to each point in self.costheta
-    self.phi_inds[0:nphi-1]                       : phi indices (from 1 to nphi)
+    self.phi_inds[0:self.nphi-1]                  : phi indices (from the full simulation theta grid) 
+                                                  : corresponding to each point in self.phi
     self.vals[0:nphi-1,0:ntheta-1,0:nr-1,0:nq-1,0:niter-1] : The meridional slices 
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+    ///// Note that the indices (phi_inds,rad_inds, theta_inds) correspond to Rayleigh's internal, Fortran 1-based indexing ///
     """
 
     def __init__(self,filename='none',path='Point_Probes/'):
