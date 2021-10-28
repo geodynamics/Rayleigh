@@ -34,11 +34,7 @@ Contains
 
         If (compute_quantity(visc_heating)) Then
             !Fairly complicated expression -- gets its own routine
-            If (viscous_heating) Then
-                Call Viscous_Heating_Diagnostics(buffer)
-            Else
-                qty(:,:,:) = 0.0d0
-            Endif
+            Call Viscous_Heating_Diagnostics(buffer)
             Call Add_Quantity(qty)
         Endif
         If (magnetism) Call Compute_Ohmic_Heating_Diag(buffer)
@@ -793,59 +789,42 @@ Contains
         ! The "Diag" in the name refers to "diagnostics," and not "diagonal"
 
         If (compute_quantity(ohmic_heat)) Then
-            If (ohmic_heating) Then
-                DO_PSI
-                    qty(PSI) = ohmic_heating_coeff(r)*(buffer(PSI,curlbr)**2 + &
-                               &   buffer(PSI,curlbtheta)**2 + &
-                               &   buffer(PSI,curlbphi)**2) &
-                               & *ref%density(r)*ref%temperature(r)
-                END_DO
-            Else
-                qty(:,:,:) = 0.0d0
-            Endif
+            DO_PSI
+                qty(PSI) = ohmic_heating_coeff(r)*(buffer(PSI,curlbr)**2 + &
+                           &   buffer(PSI,curlbtheta)**2 + &
+                           &   buffer(PSI,curlbphi)**2) &
+                           & *ref%density(r)*ref%temperature(r)
+            END_DO
             Call Add_Quantity(qty)
         Endif
         If (compute_quantity(ohmic_heat_pp)) Then
-            If (ohmic_heating) Then
-                DO_PSI
-                    qty(PSI) = ohmic_heating_coeff(r)*(fbuffer(PSI,curlbr)**2 + &
-                               &   fbuffer(PSI,curlbtheta)**2 + &
-                               &   fbuffer(PSI,curlbphi)**2) &
-                               & *ref%density(r)*ref%temperature(r)
-                END_DO
-            Else
-                qty(:,:,:) = 0.0d0
-            Endif
+            DO_PSI
+                qty(PSI) = ohmic_heating_coeff(r)*(fbuffer(PSI,curlbr)**2 + &
+                           &   fbuffer(PSI,curlbtheta)**2 + &
+                           &   fbuffer(PSI,curlbphi)**2) &
+                           & *ref%density(r)*ref%temperature(r)
+            END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(ohmic_heat_pm)) Then
-            If (ohmic_heating) Then
-                DO_PSI
-                    qty(PSI) = ohmic_heating_coeff(r)*(fbuffer(PSI,curlbr)*m0_values(PSI2,curlbr) + &
-                               &   fbuffer(PSI,curlbtheta)*m0_values(PSI2,curlbtheta) + &
-                               &   fbuffer(PSI,curlbphi)*m0_values(PSI2,curlbphi)) &
-                               & *ref%density(r)*ref%temperature(r)
-                END_DO
-            Else
-                qty(:,:,:) = 0.0d0
-            Endif
+            DO_PSI
+                qty(PSI) = ohmic_heating_coeff(r)*(fbuffer(PSI,curlbr)*m0_values(PSI2,curlbr) + &
+                           &   fbuffer(PSI,curlbtheta)*m0_values(PSI2,curlbtheta) + &
+                           &   fbuffer(PSI,curlbphi)*m0_values(PSI2,curlbphi)) &
+                           & *ref%density(r)*ref%temperature(r)
+            END_DO
             Call Add_Quantity(qty)
         Endif
 
 
         If (compute_quantity(ohmic_heat_mm)) Then
-            If (ohmic_heating) Then
-                DO_PSI
-                    qty(PSI) = ohmic_heating_coeff(r)*(m0_values(PSI2,curlbr)**2 + &
-                               &   m0_values(PSI2,curlbtheta)**2 + &
-                               &   m0_values(PSI2,curlbphi)**2) &
-                               & *ref%density(r)*ref%temperature(r)
-                END_DO
-
-            Else
-                qty(:,:,:) = 0.0d0
-            Endif
+            DO_PSI
+                qty(PSI) = ohmic_heating_coeff(r)*(m0_values(PSI2,curlbr)**2 + &
+                           &   m0_values(PSI2,curlbtheta)**2 + &
+                           &   m0_values(PSI2,curlbphi)**2) &
+                           & *ref%density(r)*ref%temperature(r)
+            END_DO
             Call Add_Quantity(qty)
         Endif
 
