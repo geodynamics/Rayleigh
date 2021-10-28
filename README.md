@@ -36,15 +36,20 @@ More information
 ----------------
 - For questions on the source code of Rayleigh, portability, installation, new or existing features, etc., use the [Rayleigh forum](https://community.geodynamics.org/c/rayleigh/5). This forum is where the Rayleigh users and developers all hang out.
 
-- Rayleigh is being developed by a large, collaborative, and inclusive community. It is currently maintained by the following people:
+- Rayleigh is continually being improved by a large, collaborative, and inclusive community. It is primarily developed and maintained by:
     - Nicholas Featherstone
+    - Philipp Edelmann
+    - Rene Gassmoeller
+    - Loren Matilsky
+    - Ryan Orvedahl
+    - Cian Wilson
 
 
 - A complete and growing list of the many authors that have contributed over the years can be found at [GitHub contributors](https://github.com/geodynamics/Rayleigh/graphs/contributors).
 
 Authors
 --------
-Rayleigh was written by Nicholas Featherstone with NSF support through [CIG](https://geodynamics.org).  Please see the [ACKNOWLEDGE](ACKNOWLEDGE) file for citation information.
+Rayleigh was originally written by Nicholas Featherstone with NSF support through [CIG](https://geodynamics.org).  Please see the [ACKNOWLEDGE](ACKNOWLEDGE) file for citation information.
 
 License
 -------

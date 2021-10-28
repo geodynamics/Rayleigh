@@ -109,7 +109,7 @@ Contains
 
             If (compute_quantity(s_diff)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)
+                    qty(PSI) = tmp1(PSI)+qty(PSI)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -169,7 +169,7 @@ Contains
 
             If (compute_quantity(sp_diff)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)
+                    qty(PSI) = tmp1(PSI)+qty(PSI)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -228,7 +228,7 @@ Contains
 
             If (compute_quantity(sm_diff)) Then
                 DO_PSI
-                    tmp1(PSI) = tmp1(PSI)+qty(PSI)
+                    qty(PSI) = tmp1(PSI)+qty(PSI)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -317,6 +317,28 @@ Contains
 
         Allocate(rhot(1:N_R))
         rhot = ref%density*ref%temperature
+
+        ! Reference state advection
+        If (Compute_Quantity(ref_advec)) Then
+            DO_PSI
+                qty(PSI)=buffer(PSI,vr)*ref%dsdr(r)*rhot(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif        
+        
+        If (Compute_Quantity(ref_advec_p)) Then
+            DO_PSI
+                qty(PSI)=fbuffer(PSI,vr)*ref%dsdr(r)*rhot(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif    
+        
+        If (Compute_Quantity(ref_advec_m)) Then
+            DO_PSI
+                qty(PSI)=m0_values(PSI2,vr)*ref%dsdr(r)*rhot(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif            
 
 
         ! Advective terms (full)
@@ -775,7 +797,8 @@ Contains
                 DO_PSI
                     qty(PSI) = ohmic_heating_coeff(r)*(buffer(PSI,curlbr)**2 + &
                                &   buffer(PSI,curlbtheta)**2 + &
-                               &   buffer(PSI,curlbphi)**2)
+                               &   buffer(PSI,curlbphi)**2) &
+                               & *ref%density(r)*ref%temperature(r)
                 END_DO
             Else
                 qty(:,:,:) = 0.0d0
@@ -787,7 +810,8 @@ Contains
                 DO_PSI
                     qty(PSI) = ohmic_heating_coeff(r)*(fbuffer(PSI,curlbr)**2 + &
                                &   fbuffer(PSI,curlbtheta)**2 + &
-                               &   fbuffer(PSI,curlbphi)**2)
+                               &   fbuffer(PSI,curlbphi)**2) &
+                               & *ref%density(r)*ref%temperature(r)
                 END_DO
             Else
                 qty(:,:,:) = 0.0d0
@@ -800,7 +824,8 @@ Contains
                 DO_PSI
                     qty(PSI) = ohmic_heating_coeff(r)*(fbuffer(PSI,curlbr)*m0_values(PSI2,curlbr) + &
                                &   fbuffer(PSI,curlbtheta)*m0_values(PSI2,curlbtheta) + &
-                               &   fbuffer(PSI,curlbphi)*m0_values(PSI2,curlbphi))
+                               &   fbuffer(PSI,curlbphi)*m0_values(PSI2,curlbphi)) &
+                               & *ref%density(r)*ref%temperature(r)
                 END_DO
             Else
                 qty(:,:,:) = 0.0d0
@@ -814,7 +839,8 @@ Contains
                 DO_PSI
                     qty(PSI) = ohmic_heating_coeff(r)*(m0_values(PSI2,curlbr)**2 + &
                                &   m0_values(PSI2,curlbtheta)**2 + &
-                               &   m0_values(PSI2,curlbphi)**2)
+                               &   m0_values(PSI2,curlbphi)**2) &
+                               & *ref%density(r)*ref%temperature(r)
                 END_DO
 
             Else
@@ -885,7 +911,7 @@ Contains
             qty(PSI) = qty(PSI)-tmp*tmp*one_third   ! + 2*e_phi_theta**2
         END_DO
         DO_PSI
-            qty(PSI) = viscous_heating_coeff(r)*qty(PSI)
+            qty(PSI) = viscous_heating_coeff(r)*qty(PSI)*ref%density(r)*ref%temperature(r)
         END_DO
 
 
