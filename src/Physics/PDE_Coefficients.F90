@@ -780,7 +780,7 @@ Contains
     End Subroutine Write_Equation_Coefficients_File
 
     Subroutine Read_Custom_Reference_File(filename)
-        Character*120, Intent(In), Optional :: filename
+        Character*120, Intent(In) :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
         Integer :: i, k, j
@@ -795,11 +795,9 @@ Contains
         cset(:) = 0
         input_constants(:) = 0.0d0
 
-        If (present(filename)) Then
-            ref_file = Trim(my_path)//filename
-        Else
-            ref_file = Trim(my_path)//'reference'
-        Endif
+        
+        ref_file = Trim(my_path)//filename
+
 
         Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream')
 
