@@ -737,7 +737,10 @@ class Point_Probes:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
-    ///// Note that the indices (phi_inds,rad_inds, theta_inds) correspond to Rayleigh's internal, Fortran 1-based indexing ///
+    
+    --Note that the indices (phi_inds,rad_inds, theta_inds) uses Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def __init__(self,filename='none',path='Point_Probes/'):
