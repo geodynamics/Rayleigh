@@ -14,6 +14,7 @@
  benchmark_mode = 4
  benchmark_integration_interval = 100
  benchmark_report_interval = 10000
+ advect_reference_state = .false.
 /
 &temporal_controls_namelist
  max_time_step = 200.0d0

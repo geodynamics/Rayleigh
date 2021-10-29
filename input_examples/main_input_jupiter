@@ -12,6 +12,7 @@
 /
 &physical_controls_namelist
  rotation  = .true.
+ advect_reference_state = .false.
 /
 &temporal_controls_namelist
  max_time_step = 0.05d0  ! timescale is 1/Omega, fastest wave is 1/2 that - divide by 10 to be safe
