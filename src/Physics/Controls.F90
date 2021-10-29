@@ -59,8 +59,8 @@ Module Controls
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
-    Logical :: advect_reference_state = .false.  ! Set to true to advect the reference state
-                                                ! Generally only do this if reference state is nonadiabatic
+    Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
+                                                ! This has no effect for adiabatic reference states.
 
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
