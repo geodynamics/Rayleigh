@@ -726,12 +726,21 @@ class Point_Probes:
     self.costheta[0:ntheta-1]                     : cos(theta grid)
     self.sintheta[0:ntheta-1]                     : sin(theta grid)
     self.phi[0:nphi-1]                            : phi values (radians)
-    self.phi_indices[0:nphi-1]                    : phi indices (from 1 to nphi)
+    self.rad_inds[0:self.nr-1]                    : radial indices (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.theta_inds[0:self.ntheta-1]              : theta indices (from the full simulation theta grid) 
+                                                  : corresponding to each point in self.costheta
+    self.phi_inds[0:self.nphi-1]                  : phi indices (from the full simulation theta grid) 
+                                                  : corresponding to each point in self.phi
     self.vals[0:nphi-1,0:ntheta-1,0:nr-1,0:nq-1,0:niter-1] : The meridional slices 
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+    
+    --Note that the indices (phi_inds,rad_inds, theta_inds) uses Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def __init__(self,filename='none',path='Point_Probes/'):
