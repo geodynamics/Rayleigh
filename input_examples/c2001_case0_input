@@ -16,6 +16,7 @@
  magnetism = .false.
  viscous_heating = .false.
  ohmic_heating = .false.
+ advect_reference_state = .false. 
 /
 &temporal_controls_namelist
  max_time_step = 1.0d-4
