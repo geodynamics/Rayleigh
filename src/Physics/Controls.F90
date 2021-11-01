@@ -210,7 +210,7 @@ Contains
         lorentz_forces = .true.
         viscous_heating = .true.
         ohmic_heating = .true.
-        advect_reference_state = .false.
+        advect_reference_state = .true.
         benchmark_mode = 0
         benchmark_integration_interval = -1
         benchmark_report_interval = -1
