@@ -949,7 +949,9 @@ class Shell_Slices:
     self.nphi                                     : number of phi points
     self.qv[0:nq-1]                               : quantity codes for the diagnostics output
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.costheta[0:ntheta-1]                     : cos(theta grid)
     self.sintheta[0:ntheta-1]                     : sin(theta grid)
     self.vals[0:nphi-1,0:ntheta-1,0:nr-1,0:nq-1,0:niter-1] 
@@ -958,6 +960,10 @@ class Shell_Slices:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def print_info(self, print_costheta = False):
@@ -971,7 +977,7 @@ class Shell_Slices:
         print( '.......................')
         print( 'radius   : ', self.radius)
         print( '.......................')
-        print( 'inds     : ', self.inds)
+        print( 'rad_inds : ', self.rad_inds)
         print( '.......................')
         print( 'iters    : ', self.iters)
         print( '.......................')
@@ -1018,18 +1024,18 @@ class Shell_Slices:
         self.lut = get_lut(qv)
 
         radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.costheta = np.reshape(swapread(fd,dtype='float64',count=ntheta,swap=bs),(ntheta), order = 'F')
         self.sintheta = (1.0-self.costheta**2)**0.5
 
         # convert from Fortran 1-based to Python 0-based indexing
-        inds = inds - 1
+        rad_inds = rad_inds - 1
 
         if (len(slice_spec) == 3):
 
             self.iters = np.zeros(1,dtype='int32')
             self.qv    = np.zeros(1,dtype='int32')
-            self.inds  = np.zeros(1,dtype='int32')
+            self.rad_inds  = np.zeros(1,dtype='int32')
             self.time  = np.zeros(1,dtype='float64')
             self.iters = np.zeros(1,dtype='float64')
             self.radius = np.zeros(1,dtype='float64')
@@ -1096,7 +1102,7 @@ class Shell_Slices:
             fd.seek(seek_bytes,1)
 
             self.radius[0] = radius[rspec]
-            self.inds[0]   = inds[rspec]
+            self.rad_inds[0]   = rad_inds[rspec]
             self.qv[0] = qspec
             tmp = np.reshape(swapread(fd,dtype='float64',count=ntheta*nphi,swap=bs),(nphi,ntheta), order = 'F')
             self.vals[:,:,0,0,0] = tmp
@@ -1107,7 +1113,8 @@ class Shell_Slices:
                 #If true, read only the first record of the file.
                 nrec = 1  
             self.radius = radius
-            self.inds   = inds
+            self.rad_inds   = rad_inds
+            self.inds = rad_inds
             self.qv     = qv
             self.niter = nrec
             self.vals  = np.zeros((nphi,ntheta,nr,nq,nrec),dtype='float64')
@@ -1131,7 +1138,9 @@ class SPH_Modes:
     self.nell                                     : number of ell values
     self.qv[0:nq-1]                               : quantity codes for the diagnostics output
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.lvals[0:nell-1]                          : ell-values output
     self.vals[0:lmax,0:nell-1,0:nr-1,0:nq-1,0:niter-1] 
                                                   : The complex spectra of the SPH modes output
@@ -1140,6 +1149,10 @@ class SPH_Modes:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def __init__(self,filename='none',path='SPH_Modes/'):
@@ -1168,13 +1181,14 @@ class SPH_Modes:
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        self.rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.lvals = np.reshape(swapread(fd,dtype='int32',count=nell,swap=bs),(nell), order = 'F')
         lmax = np.max(self.lvals)
         nm = lmax+1
 
         # convert from Fortran 1-based to Python 0-based indexing
-        self.inds = self.inds - 1
+        self.rad_inds = self.rad_inds - 1
+        self.inds = self.rad_inds
 
         self.vals  = np.zeros((nm,nell,nr,nq,nrec),dtype='complex128')
         
@@ -1218,7 +1232,9 @@ class Shell_Spectra:
     self.mmax                                     : maximum spherical harmonic degree m
     self.qv[0:nq-1]                               : quantity codes for the diagnostics output
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.vals[0:lmax,0:mmax,0:nr-1,0:nq-1,0:niter-1] 
                                                   : The complex spectra of the shells output 
     self.lpower[0:lmax,0:nr-1,0:nq-1,0:niter-1,3]    : The power as a function of ell, integrated over m
@@ -1227,6 +1243,10 @@ class Shell_Spectra:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def print_info(self):
@@ -1242,7 +1262,7 @@ class Shell_Spectra:
         print( '.......................')
         print( 'radius   : ', self.radius)
         print( '.......................')
-        print( 'inds     : ', self.inds)
+        print( 'rad_inds : ', self.rad_inds)
         print( '.......................')
         print( 'iters    : ', self.iters)
         print( '.......................')
@@ -1282,7 +1302,7 @@ class Shell_Spectra:
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        self.rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.vals  = np.zeros((nell,nm,nr,nq,nrec),dtype='complex128')
         
         self.iters = np.zeros(nrec,dtype='int32')
@@ -1290,7 +1310,8 @@ class Shell_Spectra:
         self.version = version
 
         # convert from Fortran 1-based to Python 0-based indexing
-        self.inds = self.inds - 1
+        self.rad_inds = self.rad_inds - 1
+        self.inds = self.rad_inds
 
         for i in range(nrec):
 
@@ -1334,13 +1355,19 @@ class Power_Spectrum():
     self.nr                                       : number of radii at which power spectra are available
     self.lmax                                     : maximum spherical harmonic degree l
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.power[0:lmax,0:nr-1,0:niter-1,0:2]       : the velocity power spectrum.  The third
                                                   : index indicates (0:total,1:m=0, 2:total-m=0 power)
     self.mpower[0:lmax,0:nr-1,0:niter-1,0:2]      : the magnetic power spectrum
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.magnetic                                 : True if mpower exists
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
     #Power Spectrum Class - generated using shell spectra files
     def __init__(self,infile, dims=[],power_file = False, magnetic = False, path="Shell_Spectra"):
@@ -1368,6 +1395,7 @@ class Power_Spectrum():
         self.iters[:]  = iters[:]
         self.time[:]   = time[:]
         self.inds[:]   = inds[:]
+        self.rad_inds = self.inds
         self.radius[:] = radius[:]
     def power_file_init(self,pfile):
         fd = open(pfile,'rb')  
@@ -1383,6 +1411,7 @@ class Power_Spectrum():
         self.iters = np.reshape(swapread(fd,dtype='int32',count=niter,swap=bs),(niter), order = 'F')
         self.time = np.reshape(swapread(fd,dtype='float64',count=niter,swap=bs),(niter), order = 'F')
         self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        self.rad_inds = self.inds
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
         pcount = (lmax+1)*nr*niter*3
         pdim = (lmax+1,nr,niter,3)
@@ -1430,6 +1459,7 @@ class Power_Spectrum():
         self.niter = nt
         self.radius = a.radius
         self.inds = a.inds
+        self.rad_inds = self.inds
         self.iters = a.iters
         self.time = a.time
 
