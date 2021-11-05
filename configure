@@ -752,7 +752,7 @@ then
        fi
        FFLAGS[0]="${OPT_FLAGS} -march=${opt}"
        if [[ "$opt" == "native" && $FVERSION == "GNU" ]]; then
-               echo "CPU autodetect result: $(gfortran -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
+               echo "CPU autodetect result: $($FC -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
        fi
        break
     done
