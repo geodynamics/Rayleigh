@@ -15,6 +15,7 @@
 &physical_controls_namelist
  rotation  = .true.
  magnetism = .false.
+ advect_reference_state = .false. 
 /
 &temporal_controls_namelist
  max_time_step = 1000.0d0

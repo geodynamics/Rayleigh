@@ -2230,6 +2230,18 @@ name_given_code[1478] = "cond_fluxm_phi"
 code_given_name["cond_fluxm_phi"] = 1478
 tex_given_code[1478] = r"$-c_6\mathrm{f}_1\mathrm{f}_4\mathrm{f}_5\frac{1}{r \mathrm{sin}\theta}\frac{\partial \overline{\Theta}}{\partial \phi}$"
 
+name_given_code[1479] = "ref_advec"
+code_given_name["ref_advec"] = 1479
+tex_given_code[1479] = r"$\mathrm{f}_1\mathrm{f}_4 v_r \mathrm{f}_{14} $"
+
+name_given_code[1480] = "ref_advec_p"
+code_given_name["ref_advec_p"] = 1480
+tex_given_code[1480] = r"$\mathrm{f}_1\mathrm{f}_4 v_r' \mathrm{f}_{14} $"
+
+name_given_code[1481] = "ref_advec_m"
+code_given_name["ref_advec_m"] = 1481
+tex_given_code[1481] = r"$\mathrm{f}_1\mathrm{f}_4 \overline{v_r} \mathrm{f}_{14} $"
+
 name_given_code[1601] = "induct_shear_r"
 code_given_name["induct_shear_r"] = 1601
 tex_given_code[1601] = r"$\left[\boldsymbol{B}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]_r$"

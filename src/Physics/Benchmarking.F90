@@ -100,9 +100,12 @@ Contains
             shell_depth = 1.0d0
             aspect_ratio = 0.35d0
 
-            !Temporal Controls
+            !Physical Controls
             rotation = .true.
             viscous_heating = .false.
+            advect_reference_state = .false.
+            
+            !Temporal Controls            
             max_time_step = 1.0d-4
             alpha_implicit = 0.50001d0
             cflmin = 0.4d0
@@ -146,6 +149,7 @@ Contains
             magnetism = .true.
             viscous_heating = .false.
             ohmic_heating = .false.
+            advect_reference_state = .false.            
 
             !Temporal Controls
             max_time_step = 1.0d-4
@@ -193,6 +197,7 @@ Contains
 
             !Physical Controls
             rotation = .true.
+            advect_reference_state = .false.            
 
 
             !Temporal Controls
@@ -248,6 +253,7 @@ Contains
             !Physical Controls
             rotation = .true.
             magnetism = .true.
+            advect_reference_state = .false.
 
             !Temporal Controls
             max_time_step = 200.0d0
