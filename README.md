@@ -1,7 +1,7 @@
 
 # Rayleigh - dynamo in spherical geometry #
 [![License GPL3:](https://img.shields.io/badge/license-GPL-blue)](https://github.com/geodynamics/Rayleigh/blob/master/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1236565.svg)](https://doi.org/10.5281/zenodo.1236565)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5683601.svg)](https://doi.org/10.5281/zenodo.5683601)
 
 
 Rayleigh is a 3-D convection code designed for the study of dynamo behavior in spherical geometry.  It evolves the incompressible and anelastic MHD equations in spherical geometry using a pseudo-spectral approach.  Rayleigh employs spherical harmonics in the horizontal direction and Chebyshev polynomials in the radial direction.  The code has undergone extensive accuracy testing using the [Christensen et al. (2001)](http://adsabs.harvard.edu/abs/2001PEPI..128...25C) Boussinesq benchmarks and the [Jones et al. (2011)](http://adsabs.harvard.edu/abs/2011Icar..216..120J) anelastic benchmarks.   Rayleigh has been developed with NSF support through the Computational Infrastructure for Geodynamics ([CIG](https://geodynamics.org/cig/news/newsletters/may-2016/)).
