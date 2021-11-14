@@ -29,6 +29,9 @@ Please cite the code as:
 
   Featherstone, N. (2018), Rayleigh Version 0.9.1, Computational Infrastructure for Geodynamics,
   DOI: 10.5281/zenodo.1236565
+  
+  Featherstone, N.A., Edelmann, P.V.F., Gassmoeller, R., Matilsky, L.I., Orvedahl, R.J. & Wilson, C.R., (2021, Rayleigh Version 1.0.0, 
+  Computational Infrastructure for Geodynamics, DOI:  10.5281/zenodo.5683601
 
 .. code-block::
 
@@ -40,6 +43,17 @@ Please cite the code as:
 	optkeywords="Rayleigh",
 	doi="http://doi.org/10.5281/zenodo.1236565",
 	opturl="https://doi.org/10.5281/zenodo.1236565"}
+	
+.. code-block::
+
+  @Software{featherstone_et_al_2021,
+	author = "{Featherstone}, N.A. and {Edelmann}, P.~V.~F. and {Gassmoeller}, R. and {Matilsky}, L.~I. and {Orvedahl}, R.~J. and {Wilson}, C.~R.",
+	title="Rayleigh 1.0.0",
+	year="2021",
+	organization="",
+	optkeywords="Rayleigh",
+	doi="http://doi.org/10.5281/zenodo.5683601",
+	opturl="https://doi.org/10.5281/zenodo.5683601"}
 
 Please also cite the following references:
 
