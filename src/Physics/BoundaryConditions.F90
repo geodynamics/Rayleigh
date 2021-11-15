@@ -137,7 +137,7 @@ Contains
                 Ftop = ra_constants(10)/(four_pi*radius(1)*radius(1))
                 rhotk_top = ref%density(1)*ref%temperature(1)*kappa(1)
                 dTdr_top = -Ftop/rhotk_top
-                Write(6,*)'Adjusting dtdr: ', dtdr_top
+                if (my_rank .eq. 0) Write(6,*)'Adjusting dtdr: ', dtdr_top
             Endif
         Endif
 
