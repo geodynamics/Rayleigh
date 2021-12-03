@@ -208,6 +208,8 @@ Contains
             ! A-terms (Toroidal magnetic field)
 
             Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
+            
+            Call Add_Derivative(aeq,avar,1,wsp%p1b,wsp%p1a,dadr)
 
             !///////////////////
             ! C-terms (Poloidal magnetic field)
