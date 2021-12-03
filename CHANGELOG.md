@@ -17,7 +17,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - None yet
 
 ### Fixed
-- Radially varying magnetic diffusivity is now correctly evolved using the Crank-Nicholson scheme for the toroidal magnetic potential *A*.
+- Radially varying magnetic diffusivity is now correctly evolved using the Crank-Nicholson scheme for the toroidal magnetic scalar potential *A*. \[Nick Featherstone; 12-03-2021; [#289](github.com/GeodynamicWorldBuilder/WorldBuilder/issues/289)\]
 
 
 ## [0.9.0] - 01-23-2018
