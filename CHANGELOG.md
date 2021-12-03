@@ -20,16 +20,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Radially varying magnetic diffusivity is now correctly evolved using the Crank-Nicholson scheme for the toroidal magnetic scalar potential *A*. \[Nick Featherstone; 12-03-2021; [#346](https://github.com/geodynamics/Rayleigh/pull/346)\]
 
 ## [1.0.0] - 11-12-2021
+### Added
 - Online, up-to-date-documentation is now available [here](https://rayleigh-documentation.readthedocs.io/en/latest/index.html).  The source files for this documentation are provided as part of the repository and are stored in the ‘doc’ directory.
-- Customizability enhancements:  Users may specify custom boundary conditions and/or initial conditions as described [here](https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/User_Guide/physics.html?highlight=generic#generic-boundary-conditions) and [here](https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/User_Guide/physics.html?highlight=generic#generic-initial-conditions).  Users are also free to fully specify the set of constant and nonconstant coefficients that define the system of PDEs solved by Rayleigh, as described in
+- Customizability enhancements:  Users may specify custom boundary conditions and/or initial conditions as described [here](https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/User_Guide/physics.html?highlight=generic#generic-boundary-conditions) and [here](https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/User_Guide/physics.html?highlight=generic#generic-initial-conditions).  Users are also free to fully specify the set of constant and nonconstant coefficients that define the system of PDEs solved by Rayleigh, as described in the [documentation](https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/User_Guide/custom_reference_states.html).
+
+### Changed
+- Portable checkpoint format:  The checkpoint format has changed such that each checkpoint resides in its own directory.  All files and information needed to restart a model, including a copy of main_input, are now stored within each numbered checkpoint directory.
 
 ## [0.9.1] - 04-28-2018
 ### Added
 - The configure script now accepts the --with-custom and -devel flags (run ./configure --help for details)
  
-### Changed
-- None
-
 ### Fixed
 - Several output-quantity codes were double-booked. The output quantity tables have been adjust accordingly.  This error produced issues with quantity codes in the following ranges:
 
