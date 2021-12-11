@@ -112,6 +112,11 @@ Module PDE_Coefficients
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
+    
+    !///////////////////////////////////////////////
+    ! Minimum time step based on rotation rate
+    ! (determined by the reference state)
+    Real*8 :: max_dt_rotation = 0.0d0
 
 
 
@@ -188,6 +193,8 @@ Contains
 
         If (with_custom_reference) Call Augment_Reference()  
 
+        If (rotation) Call Set_Rotation_dt()
+
     End Subroutine Initialize_Reference
 
     Subroutine Allocate_Reference_State
@@ -225,6 +232,20 @@ Contains
         ref%Lorentz_Coeff  = Zero
 
     End Subroutine Allocate_Reference_State
+
+    Subroutine Set_Rotation_dt()
+        Implicit None
+        Real*8 :: rotational_timescale
+        !Adjust the maximum timestep to account for rotation rate, if necessary.
+        
+        rotational_timescale = 1.0d0/ref%Coriolis_Coeff
+        
+        ! Minimum sampling would require two time samples per rotational timescale.
+        ! We specify 4 samples and further adjust by the CFL safety factor.
+        max_dt_rotation = rotational_timescale*0.25d0*cflmax  
+        max_time_step = Min(max_time_step,max_dt_rotation)
+    
+    End Subroutine Set_Rotation_dt
 
     Subroutine Constant_Reference()
         Implicit None
