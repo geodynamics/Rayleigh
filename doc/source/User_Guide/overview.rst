@@ -27,8 +27,8 @@ part using Rayleigh.  To cite other versions of the code, please see: https://ge
 
 Please cite the code as:
   
-  Featherstone, N.A., Edelmann, P.V.F., Gassmoeller, R., Matilsky, L.I., Orvedahl, R.J. & Wilson, C.R., 2021, Rayleigh Version 1.0.0, 
-  Computational Infrastructure for Geodynamics, DOI:  10.5281/zenodo.5683601
+  Featherstone, N.A., Edelmann, P.V.F., Gassmoeller, R., Matilsky, L.I., Orvedahl, R.J. & Wilson, C.R., 2021, Rayleigh Version 1.0.1, 
+  Computational Infrastructure for Geodynamics, DOI:  10.5281/zenodo.5774039
 
 
 .. code-block::
