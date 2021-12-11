@@ -35,12 +35,12 @@ Please cite the code as:
 
   @Software{featherstone_et_al_2021,
 	author = "{Featherstone}, N.~A. and {Edelmann}, P.~V.~F. and {Gassmoeller}, R. and {Matilsky}, L.~I. and {Orvedahl}, R.~J. and {Wilson}, C.~R.",
-	title="Rayleigh 1.0.0",
+	title="Rayleigh 1.0.1",
 	year="2021",
 	organization="",
 	optkeywords="Rayleigh",
-	doi="http://doi.org/10.5281/zenodo.5683601",
-	opturl="https://doi.org/10.5281/zenodo.5683601"}
+	doi="http://doi.org/10.5281/zenodo.5774039",
+	opturl="https://doi.org/10.5281/zenodo.5774039"}
 
 Please also cite the following references:
 
