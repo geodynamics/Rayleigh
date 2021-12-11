@@ -243,7 +243,11 @@ Contains
         ! Minimum sampling would require two time samples per rotational timescale.
         ! We specify 4 samples and further adjust by the CFL safety factor.
         max_dt_rotation = rotational_timescale*0.25d0*cflmax  
-        max_time_step = Min(max_time_step,max_dt_rotation)
+        
+        ! We only modify the timestep if not running a benchmark.
+        ! Those models require set timesteps to satisfy the automated
+        ! benchmark test during continuous integration.
+        If (benchmark_mode .eq. 0) max_time_step = Min(max_time_step,max_dt_rotation)
     
     End Subroutine Set_Rotation_dt
 
