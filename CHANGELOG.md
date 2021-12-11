@@ -7,6 +7,16 @@ Add new entries a the bottom of the current list in the subheading. Item format:
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- None yet
+
+### Changed
+- None yet
+
+### Fixed
+- None yet
+
 ## [1.0.1] - 12-11-2021
 ### Fixed
 - Radially varying magnetic diffusivity is now correctly evolved using the Crank-Nicholson scheme for the toroidal magnetic scalar potential *A*. \[Nick Featherstone; 12-03-2021; [#346](https://github.com/geodynamics/Rayleigh/pull/346)\]
