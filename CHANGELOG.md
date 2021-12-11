@@ -7,7 +7,7 @@ Add new entries a the bottom of the current list in the subheading. Item format:
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.1] - 12-11-2021
 ### Added
 - None yet
  
