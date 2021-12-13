@@ -27,20 +27,20 @@ part using Rayleigh.  To cite other versions of the code, please see: https://ge
 
 Please cite the code as:
   
-  Featherstone, N.A., Edelmann, P.V.F., Gassmoeller, R., Matilsky, L.I., Orvedahl, R.J. & Wilson, C.R., 2021, Rayleigh Version 1.0.0, 
-  Computational Infrastructure for Geodynamics, DOI:  10.5281/zenodo.5683601
+  Featherstone, N.A., Edelmann, P.V.F., Gassmoeller, R., Matilsky, L.I., Orvedahl, R.J. & Wilson, C.R., 2021, Rayleigh Version 1.0.1, 
+  Computational Infrastructure for Geodynamics, DOI:  10.5281/zenodo.5774039
 
 
 .. code-block::
 
   @Software{featherstone_et_al_2021,
 	author = "{Featherstone}, N.~A. and {Edelmann}, P.~V.~F. and {Gassmoeller}, R. and {Matilsky}, L.~I. and {Orvedahl}, R.~J. and {Wilson}, C.~R.",
-	title="Rayleigh 1.0.0",
+	title="Rayleigh 1.0.1",
 	year="2021",
 	organization="",
 	optkeywords="Rayleigh",
-	doi="http://doi.org/10.5281/zenodo.5683601",
-	opturl="https://doi.org/10.5281/zenodo.5683601"}
+	doi="http://doi.org/10.5281/zenodo.5774039",
+	opturl="https://doi.org/10.5281/zenodo.5774039"}
 
 Please also cite the following references:
 
