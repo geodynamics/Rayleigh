@@ -531,6 +531,12 @@ variable in radius, but constant in *energy density*. Namely
 The constant :math:`\gamma` in this case is also set by enforcing
 Equation eq_lum_.
 
+**Note:** If internal heating is used in combination with **fix_dTdr_top**, then the value of :math:`\partial\Theta/\partial r` 
+at the upper boundary is set by Rayleigh.  Any value for **dTdr_top** specified in main_input is ignored.  This is done to ensure consistency with the internal 
+heating and any flux passing through the lower boundary due
+to the use of a fixed-flux condition.  To override this behavior, set **adjust_dTdr_top** to .false. in the
+**Boundary_Conditions** namelist.
+
 General Physics Controls
 ------------------------
 

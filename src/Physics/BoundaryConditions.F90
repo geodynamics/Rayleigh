@@ -45,7 +45,7 @@ Module BoundaryConditions
     Logical :: Fix_poloidalfield_bottom = .False.
     Logical :: Impose_Dipole_Field = .False.
     Logical :: Dipole_Field_Bottom = .False.
-    Logical :: adjust_dTdr_Top = .False.
+    Logical :: adjust_dTdr_Top = .True.
 
     Real*8  :: T_Bottom     = 1.0d0
     Real*8  :: T_Top        = 0.0d0
@@ -88,7 +88,7 @@ Contains
     Subroutine Initialize_Boundary_Conditions()
         Implicit None
         Real*8 :: tilt_angle_radians,a,b
-        Real*8 :: Ftop, rhotk_top
+        Real*8 :: Ftop, rhotk_top, Fbottom
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
@@ -134,10 +134,19 @@ Contains
         If (adjust_dTdr_top .and. fix_dtdr_top) Then
             If (heating_type .gt. 0) Then
 
-                Ftop = ra_constants(10)/(four_pi*radius(1)*radius(1))
+                ! Adjust dTdr_top so that it is consistent with internal heating and lower B.C.
+
+                Ftop = ra_constants(10)/(four_pi*radius(1)**2) ! Flux due to internal heating
+
+                If (fix_dtdr_bottom) Then
+                    ! Account for any additional flux passing through the lower boundary
+                    Fbottom=-dTdr_bottom*ref%density(N_R)*ref%temperature(N_R)*kappa(N_R)
+                    Ftop = Ftop+Fbottom*(radius(N_R)/radius(1))**2
+                Endif
+                
                 rhotk_top = ref%density(1)*ref%temperature(1)*kappa(1)
                 dTdr_top = -Ftop/rhotk_top
-                if (my_rank .eq. 0) Write(6,*)'Adjusting dtdr: ', dtdr_top
+
             Endif
         Endif
 
