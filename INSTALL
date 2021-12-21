@@ -20,11 +20,11 @@ three commands from within <rayleigh root>:
 (4.) Running 'make distclean' will revert <rayleigh root> to it's
 pre-configured state.
 
-The configure script automatically supports both GNU and Intel Compilers.  An
-IBM-compiler example is provided at the end of this document.  On many
-Intel-based machines, running ./configure or ./configure -mkl  will suffice.
-In other circumstances, it may be necessary to specify a subset of configure's
-options.  Some possible variations are illustrated in section III.
+The configure script automatically supports the GNU, Intel, AOCC, and Cray
+compilers.  An IBM-compiler example is provided at the end of this document.
+On many Intel-based machines, running ./configure or ./configure -mkl  will
+suffice.  In other circumstances, it may be necessary to specify a subset of
+configure's options.  Some possible variations are illustrated in section III.
 
 To see a detailed description of all available options, run ./configure -h.
 
@@ -167,11 +167,11 @@ FFTWROOT=/software/fftw/3.3.4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 III.e  Configuration using Alternative Compilers / Customized Compiler Flags
 
-For compilers other than GNU or Intel, you will need to manually specify the
-optimization, library, and include flags.  You may also wish to do this if you
-are experimenting with new compilation flags that are not automatically
-provided by configure for Intel or GNU.   These flags can be set using
---LIBFLAGS, --FFLAGS_OPT, --FFLAGS_DBG, and --INCLUDE.  FFLAGS_OPT and
+For compilers other than GNU, Intel, AOCC, or Cray, you will need to manually
+specify the optimization, library, and include flags.  You may also wish to do
+this if you are experimenting with new compilation flags that are not
+automatically provided by configure for known compilers.   These flags can be set
+using --LIBFLAGS, --FFLAGS_OPT, --FFLAGS_DBG, and --INCLUDE.  FFLAGS_OPT and
 FFLAGS_DBG define the optimization flags used for rayleigh.opt and rayleigh.dbg
 respectively.
 
