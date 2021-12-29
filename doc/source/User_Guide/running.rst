@@ -42,8 +42,8 @@ Soft-linking is recommended; if you recompile the code, the executable
 remains up-to-date. If running on an IBM machine, copy the script named
 Rayleigh/etc/make_dirs to your run directory and execute the script.
 This will create the directory structure expected by Rayleigh for its
-outputs. This step is unnecessary when compiling with the Intel or GNU
-compilers.
+outputs. This step is unnecessary when compiling with the Intel, GNU,
+AOCC, or Cray compilers.
 
 Next, you must create a main_input file. This file contains the
 information that describes how your simulation is run. Rayleigh always

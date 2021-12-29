@@ -9,6 +9,11 @@ function compiler_version {
   #$1 --version
   VSTR=$($1 --version)
   VTMP="unknown"
+  # List Cray first because other compilers might have Cray company name in their version string.
+  if [[ $VSTR == *"Cray"* ]]
+  then
+    VTMP="CRAY"
+  fi
   if [[ $VSTR == *"Intel"* ]]
   then
     VTMP="INTEL"
@@ -49,6 +54,11 @@ function opt_flags {
   then
     echo '-O3 -ffixed-line-length-132'
   fi
+
+  if [[ $1 == "CRAY" ]]
+  then
+    echo '-O3'
+  fi
 }
 
 function dbg_flags {
@@ -65,6 +75,10 @@ function dbg_flags {
   if [[ $1 == "AOCC" ]]
   then
     echo '-O0 -g -ffixed-line-length-132'
+  fi
+  if [[ $1 == "CRAY" ]]
+  then
+    echo '-O0 -g'
   fi
 }
 
@@ -539,6 +553,12 @@ else
   then
       OPT_FLAGS="$OPT_FLAGS -DAOCC_COMPILER"
       DBG_FLAGS="$DBG_FLAGS -DAOCC_COMPILER"
+  fi
+
+  if [ $FVERSION == "CRAY" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DCRAY_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DCRAY_COMPILER"
   fi
 
   echo ' '
