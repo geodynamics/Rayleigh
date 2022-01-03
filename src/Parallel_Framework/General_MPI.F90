@@ -59,8 +59,13 @@ Contains
         Real*8, Intent(In)  :: sendbuf
         Real*8, Intent(Out) :: recvbuf
         Type(communicator), Optional :: grp
-        Integer :: icount,  comm
+        Integer :: icount
         Integer :: MPI_err
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         icount = 1
 
@@ -95,7 +100,12 @@ Contains
         Integer*4, Intent(In)  :: sendbuf
         Integer*4, Intent(Out) :: recvbuf
         Type(communicator), Optional :: grp
-        Integer :: icount,  comm, MPI_err
+        Integer :: icount, MPI_err
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         icount = 1
 
@@ -131,7 +141,12 @@ Contains
         Real*8, Intent(Out) :: recvbuf(:)
         Type(communicator), Optional :: grp
         Integer, Intent(In), Optional :: ddest
-        Integer :: icount,  comm, MPI_err, dest
+        Integer :: icount, MPI_err, dest
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
         If (present(ddest)) then
             dest = ddest
         Else
@@ -169,7 +184,12 @@ Contains
         Real*8 :: sendbuf(1:)
         Real*8, Intent(Out) :: recvbuf(1:)
         Type(communicator), Optional :: grp
-        Integer :: icount,  comm, MPI_err
+        Integer :: icount, MPI_err
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         icount = size(sendbuf)
 
@@ -204,7 +224,12 @@ Contains
         Real*8, Intent(Out) :: recvbuf(:,:,:)
         Type(communicator), Optional  :: grp
         Integer, Intent(In), Optional :: ddest
-        Integer :: icount,  comm, MPI_err, dest
+        Integer :: icount,  MPI_err, dest
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         If (present(ddest)) then
             dest = ddest
@@ -247,7 +272,12 @@ Contains
         Real*8, Intent(Out) :: recvbuf(:,:)
         Type(communicator), Optional  :: grp
         Integer, Intent(In), Optional :: ddest
-        Integer :: icount,  comm, MPI_err, dest
+        Integer :: icount, MPI_err, dest
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         If (present(ddest)) then
             dest = ddest
@@ -287,8 +317,12 @@ Contains
         Real*8, Intent(IN)  :: sendbuf(1:,1:)
         Real*8, Intent(Out) :: recvbuf(1:,1:)
         Type(communicator), Optional :: grp
-        Integer :: icount,  comm, MPI_err
-
+        Integer :: icount, MPI_err
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         icount = size(sendbuf)
 
@@ -320,7 +354,12 @@ Contains
         Real*8, INTENT(INOUT) :: buff(:,:)
         Type(communicator), INTENT(IN), Optional :: grp
         Integer, Intent(In), Optional :: broot
-        Integer :: icount,  comm, MPI_err, root
+        Integer :: icount, MPI_err, root
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         If (present(broot)) then
             root = broot
@@ -357,7 +396,12 @@ Contains
         Integer*4, INTENT(INOUT) :: buff(:)
         Type(communicator), INTENT(IN), Optional :: grp
         Integer, Intent(In), Optional :: broot
-        Integer :: icount,  comm, MPI_err, root
+        Integer :: icount, MPI_err, root
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm
+#else
+        Integer :: comm
+#endif
 
         If (present(broot)) then
             root = broot

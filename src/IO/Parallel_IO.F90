@@ -1249,7 +1249,11 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Allocatable :: rirqs(:), sirqs(:)
+#else
         Integer, Allocatable :: rirqs(:), sirqs(:)
+#endif
         Integer :: inds(4)
         Integer :: my_nm
 
@@ -1360,7 +1364,11 @@ Contains
         Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Allocatable :: rirqs(:), sirqs(:)
+#else
         Integer, Allocatable :: rirqs(:), sirqs(:)
+#endif
         Integer :: inds(4)
         Integer :: ncache
 
@@ -1537,9 +1545,15 @@ Contains
     Subroutine Write_Data(self,disp,file_unit,filename)
         Implicit None
         Class(io_buffer) :: self
-        Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
-        Integer :: funit, ierr, j
+        Integer :: ierr, j
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File), Intent(In), Optional :: file_unit
+        Type(MPI_File) :: funit
+#else
+        Integer, Intent(In), Optional :: file_unit
+        Integer :: funit
+#endif
         Logical :: error
         Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: hdisp, tdisp, fdisp, bdisp
@@ -1640,9 +1654,15 @@ Contains
     Subroutine Read_Data(self,disp,file_unit,filename)
         Implicit None
         Class(io_buffer) :: self
-        Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
-        Integer :: funit, ierr, j
+        Integer :: ierr, j
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File), Intent(In), Optional :: file_unit
+        Type(MPI_File) :: funit
+#else
+        Integer, Intent(In), Optional :: file_unit
+        Integer :: funit
+#endif
         Logical :: error
         Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: hdisp, fdisp

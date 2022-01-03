@@ -84,7 +84,11 @@ Module Spherical_IO
         Integer :: nq, nlevels ! Number of nonzero elements of values and levels
         Integer :: my_nlevels  ! Number of nonzero elements of levels that are in process
 
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: file_unit
+#else
         Integer :: file_unit
+#endif
         Character*120 :: file_prefix = 'None'
 
         Integer, Allocatable :: oqvals(:)   ! Array of size nq used by I/O process to record output ordering of diagnostics
@@ -137,7 +141,12 @@ Module Spherical_IO
         Real*8, Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
 
         !Communicatory Info for parallel writing (if used)
-        Integer :: ocomm, orank, onp
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Comm) :: ocomm
+#else
+        Integer :: ocomm
+#endif
+        Integer :: orank, onp
         Logical :: master = .false.
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -686,7 +695,12 @@ Contains
     Subroutine Write_Header_Data(self)
         Implicit None
         Class(DiagnosticInfo) :: self
-        Integer :: ierr, bsize, btype, i, funit, nbuff, ii,di
+        Integer :: ierr, bsize, btype, i, nbuff, ii,di
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
         funit = self%file_unit
         nbuff = self%nheader
         di = 1
@@ -727,7 +741,12 @@ Contains
         Class(DiagnosticInfo) :: self
         INTEGER(kind=MPI_OFFSET_KIND) :: new_disp, full_disp
         Logical :: responsible, output_rank
-        Integer :: orank, funit, error, ncache
+        Integer :: orank, error, ncache
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
 
         If ((self%nq > 0) .and. (Mod(this_iter,self%frequency) .eq. 0 )) Then
 
@@ -1148,7 +1167,12 @@ Contains
         Character*120 :: iterstring
         Character*120 :: filename
         Integer :: modcheck, imod, ibelong, icomp
-        Integer :: buffsize, funit
+        Integer :: buffsize
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
         integer(kind=MPI_OFFSET_KIND) :: disp
         Logical :: create_file
         Logical :: file_exists

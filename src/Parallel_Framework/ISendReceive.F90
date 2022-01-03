@@ -79,7 +79,12 @@ Contains
     !/////////////////////////////////////////////////////////////////////
     Subroutine IWait(irq)
         Implicit None
-        Integer :: irq, mpi_err
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request) :: irq
+#else
+        Integer :: irq
+#endif
+        Integer :: mpi_err
         Call MPI_WAIT(irq,MPI_STATUS_IGNORE,mpi_err)
     End Subroutine IWait
 
@@ -96,7 +101,11 @@ Contains
     !
     !/////////////////////////////////////////////////////////////////////
     Subroutine IWaitAll(n,irq)
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request) :: irq(:)
+#else
         Integer :: irq(:)
+#endif
         Integer, Intent(In) :: n
         Integer :: mpi_err
         Call MPI_WAITALL(n,irq,MPI_STATUSES_IGNORE,mpi_err)
@@ -166,8 +175,14 @@ Contains
         Real(8), Intent(In)  :: x(:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,istart
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -207,8 +222,14 @@ Contains
         Real*8, Intent(in)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), optional :: grp
+        Integer :: p, n, tag2, istart, kstart, jstart,lstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, istart, kstart, jstart,lstart
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -252,9 +273,15 @@ Contains
         Real*8, Intent(Out)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), Optional :: grp
-        Integer :: p, n, comm2, tag2
-        Integer, Intent(Out) :: irq
+        Integer :: p, n, tag2
         Integer :: istart,jstart,kstart,lstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -300,9 +327,15 @@ Contains
         Real*8, Intent(In)  :: x(1:,1:,1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:5)
         Type(communicator), optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart, kstart, jstart,lstart, mstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -348,9 +381,15 @@ Contains
         Real*8, Intent(Out)  :: x(1:,1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:5)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart,jstart,kstart,lstart,mstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -398,8 +437,14 @@ Contains
         Complex*16, Intent(In)  :: x(:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,istart
         Type(communicator),Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -439,9 +484,15 @@ Contains
         Real(8), Intent(In)  :: x(1:,1:)
         Type(communicator), Intent(In), optional :: grp
         Integer, Intent(In), Optional :: dest, n_elements, tag, indstart(2)
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: ione, jone
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -482,9 +533,15 @@ Contains
         Real*8, Intent(in)  :: x(1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart, kstart, jstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -526,8 +583,14 @@ Contains
         Complex*16, Intent(In)  :: x(:,:)
         Integer, Intent(In), Optional :: dest, n_elements, tag
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -561,8 +624,14 @@ Contains
         Complex*16, Intent(In)  :: x(:,:,:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, istart, kstart, jstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, istart, kstart, jstart
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -604,8 +673,14 @@ Contains
         Real(8), Intent(Out)  :: x(:)
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -646,8 +721,14 @@ Contains
         Complex*16, Intent(Out)  :: x(:)
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -688,8 +769,15 @@ Contains
         Real(8), Intent(Out):: x(1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator),  Optional :: grp
+        Integer :: p, n, tag2, ione, jone
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione, jone
+        Integer :: comm2
+#endif
+
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -732,9 +820,15 @@ Contains
         Real*8, Intent(Out)  :: x(1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart,jstart,kstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -780,8 +874,15 @@ Contains
         Complex*16, Intent(Out)  :: x(:,:)
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, istart, jstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, istart, jstart
+        Integer :: comm2
+#endif
+
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -823,9 +924,15 @@ Contains
         Complex*16, Intent(Out)  :: x(:,:,:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart, jstart, kstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements

@@ -46,7 +46,12 @@ contains
     integer :: l_endian_tag, version, fmode, n_lmn, l_l_max, l_n_max, k_lm_owner, l_max_n
     integer :: i, j, k, l, m, n, lm, mp, j1, jc, jn, jo, ji, p, col_np, col_mp_min
     integer :: start_count, end_count, my_lmn_count, total_lmn_count, col_lmn_n, col_lmn_i, l_lm_count
-    integer :: offset, ierr, funit
+    integer :: offset, ierr
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
     integer(kind=MPI_ADDRESS_KIND) :: lb, int_size, real_size
     integer(kind=MPI_OFFSET_KIND) :: disp1, disp2
     integer, dimension(3) :: pars
