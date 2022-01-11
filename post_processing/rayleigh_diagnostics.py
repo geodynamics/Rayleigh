@@ -34,6 +34,237 @@ def get_lut(quantities):
             lut[q] = i
     return lut.astype('int32')
 
+class main_input:
+    """ 
+    Class for working with main_input files.
+    
+    Attributes:
+        vals : Dictionary that reflects the main_input file structure.
+                   
+    Initializiation syntax:
+        a = main_input(file)  , where
+        file = 'main_input', 'jobinfo.txt' or any similar file containing Fortran namelists.
+        
+    """
+    def __init__(self,file):
+        """ 
+        Initialization routine.
+        
+        Input parameters:
+            file : A main_input or jobinfo.txt file from which the namelist structure
+                   and values may be read.
+        """
+        self.vals = {}
+        self.namelists = []
+        self.read(file)
+        self.namelists = list(self.vals.keys())
+                    
+    def __repr__(self, verbose = False):
+        """
+        Provides 'print()' functionality for the main_input class.
+        """
+        self.write(verbose = verbose)
+        return ""
+
+    def unset(self):
+        """
+        Resets all keys in self.vals to the null string "".
+        """
+        for nml in self.namelists:
+            for var in self.vals[nml].keys():
+                self.vals[nml][var] =""  
+
+                
+    def set(self,nml="",var="",val="", force = False):
+        """
+            Sets the value of a key in vals and checks for valid key names.
+            
+            Parameters:
+                nml : the namelist to be modified
+                var : the variable within nml to modify
+                val : the value to which vals[nml][var] will be set
+                
+                force (optional) : When set to True, nml and/or var will
+                                   be created on the fly if they do not exist.
+                                   
+            Calling syntax:
+                mi.set(nml = 'problemsize', var ='n_r', val = 128)
+        
+        """
+        nml_lower = nml.strip().lower()
+        var_lower = var.strip().lower()
+        
+        if (force):
+            if (not (nml_lower in self.namelists)):
+                self.vals[nml_lower] = {}
+                self.namelists = list(self.vals.keys())
+                
+            var_names = list(self.vals[nml_lower].keys())
+            
+            if (not (var_lower in var_names)):
+                self.vals[nml_lower][var_lower]=""
+        
+        if nml_lower in self.namelists:
+            var_names = list(self.vals[nml_lower].keys())
+            if var_lower in var_names:
+                self.vals[nml_lower][var_lower]=val
+            else:
+                print('\nError:  variable '+var+' is not present in '+nml_lower+' namelist\n')
+        else:
+            print('\nError: '+nml_lower+' is not a valid namelist name.\n')
+        
+        
+    def write(self, verbose = False, file=None, ndecimal=6, namelist=None):
+        """
+        Displays the contents of the vals dictionary and generates
+        a new main_input file if desired.  Floats are expressed in
+        scientific notation.
+        
+        Input parameters:
+            verbose (optional)  : When set to True, all values, including null strings
+                                  are displayed.  When set to False (default), only
+                                  non-empty dictionary entries are displayed.
+                                 
+            file (optional)     : If a value for file is provided, the contents of
+                                  the vals dictionary will be written to file in
+                                  Fortran-readable namelist format.
+                                 
+            ndecimal (optional) : Number of digits to the right of decimal place
+                                  to maintain when expressing floats in sci-not.
+        
+        """
+
+        if (type(ndecimal) != type(6)):
+            ndecimal = 6
+        dstr = str(ndecimal)
+        
+        lprint = print
+        endl=""
+        if (file != None):
+            fd = open(file, "w")
+            lprint = fd.write
+            endl="\n"
+        
+        if (namelist in list(self.vals.keys())):
+            namelists = [namelist]
+        else:
+            namelists = self.namelists
+        
+        
+        for nml in namelists:
+            
+            nml_line="&"+nml+"_namelist"+endl
+            lprint(nml_line)             
+
+            for var in self.vals[nml].keys():
+                val = self.vals[nml][var]
+                if (type(val) == type(3.14)):
+                    fstring = "{:."+dstr+"e}"
+                    val = fstring.format(val)
+                if (type(val) != type('astring')):
+                    val = str(val)
+                if ((val != "") or verbose):
+                    val_line = var+' = '+val+endl
+                    lprint(val_line)
+
+            lprint("/"+endl)
+            
+        if (file != None):
+            fd.close()
+
+    def read_file_lines(self,filename):
+        """
+        
+           Helper routine.  Reads a file and returns it as a list of
+           strings with one file line per list element.
+           
+           Input parameters:
+               filename :  The file to be read
+           
+        """
+        fd = open(filename, "r")
+        flines = []
+        while True:                            
+            oneline = fd.readline()   
+            if len(oneline) == 0:              
+                break                         
+            else:
+                flines.append(oneline)        
+        fd.close()
+        return flines
+    
+    def read(self, infile):
+        """
+        
+           Populates the vals dictionary using values obtained from a main_input file. 
+        
+           Input parameters:
+               infile     :  A main_input or jobinfo.txt file from which to extract 
+                             namelist information.
+                             
+           Calling Syntax:
+               mi.read('main_input')
+               
+           Note:
+               Only namelist variables specified within infile are assigned
+               an associated key/value combination.  If a variable is not defined in
+               infile, it's corresponding key in the vals dictionary will remain 
+               undefined.  If a value for the main_input variable already exists in 
+               vals, it will be overwritten using the associated value from infile. 
+        
+        """
+        
+        
+        flines = self.read_file_lines(infile)
+
+        #####################################
+        # Iterate over the main_input file and 
+        # extract namelist and associated 
+        # variable names 
+        
+        nlines = len(flines)
+        nread = 0
+        
+        while (nread < nlines):
+            
+            nextline = flines[nread].strip().lower() #strip white-space and force lower case
+            nread+=1
+ 
+            if (len(nextline) != 0):
+                
+                # Test for beginning of new namelist
+                # (first character of line is &)
+                tchar = nextline[0]
+                if (tchar == '&'):  
+                    
+                    # Extract namelist name. 
+                    # Update the namelist list as we go.
+                    
+                    nml_name = nextline[1:].split('namelist')[0][:-1]
+                    if (not nml_name in self.namelists):
+                        self.vals[nml_name] = {}
+                        self.namelists = list(self.vals.keys())
+                        
+                    # Read all variable names until we reach the end of the namelist
+                    reading_nml = True
+                    while (reading_nml):
+                        nextline = flines[nread].strip()
+                        nread +=1
+                        if(len(nextline) != 0):
+                            if (nextline[0]=='/'):  # A forward slash marks the end of a namelist
+                                reading_nml = False
+
+                            # Extract the variable names and values. Strip out comments.
+                            # Some lines in jobinfo.txt are split across multiple lines.
+                            # Only those with the '=' sign contain variable names
+                            lsep = nextline.split('=')                        
+                            if (len(lsep) > 1 and reading_nml and (lsep[0][0] != '!')):
+                                var_name = lsep[0].strip().lower()
+                                var_val = lsep[1].strip().split('!')[0]
+                                self.vals[nml_name][var_name] = var_val
+
+    
+
 class Spherical_3D:
     """Rayleigh Spherical_3D Structure
     ----------------------------------
