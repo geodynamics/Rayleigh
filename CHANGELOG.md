@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
-- Added new main_input class to rayleigh_diagnostics.py.   Usage examples are provided in Rayleigh/examples/main_input_class. 
+- Added new main_input class to rayleigh_diagnostics.py.   Usage examples are provided in Rayleigh/examples/main_input_class. \[Nick Featherstone; 1-11-2022; [#352](https://github.com/geodynamics/Rayleigh/pull/352)\]
 ### Changed
 - The rotation rate is now accounted for when computing the maximum allowable timestep.  Now, the timestep may not exceed CFLMax/(c1*4), where CFLMax is the CFL safety factor.  c1 is the 1st Rayleigh constant, effectively the inverse of the rotational timescale (c1 = 2 Omega for reference_type=2 and 2/Ek for reference_type=1). \[Nick Featherstone; 12-11-2021; [#348](https://github.com/geodynamics/Rayleigh/pull/348)\]
 
