@@ -19,9 +19,9 @@ Third-Party Dependencies
 
 In order to compile Rayleigh, you will need to have MPI (Message Passing
 Interface) installed along with a Fortran 2003-compliant compiler.
-Rayleigh has been successfully compiled with GNU, Intel, and IBM
-compilers (PGI has not been tested yet). Rayleigh’s configure script
-provides native support for the Intel and GNU compilers. See
+Rayleigh has been successfully compiled with GNU, Intel, IBM, AOCC, and
+Cray compilers (PGI has not been tested yet). Rayleigh’s configure script
+provides native support for the Intel, GNU, AOCC, and Cray compilers. See
 Rayleigh/INSTALL for an example of configuration using the IBM compiler.
 
 Rayleigh depends on the following third party libraries:
