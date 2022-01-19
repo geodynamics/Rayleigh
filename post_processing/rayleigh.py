@@ -438,6 +438,7 @@ class Plot2D(abc.ABC):
         if projection is None:
             ax.set_aspect("equal")
 
+        return im
 
 class Plot1D(abc.ABC):
     @abc.abstractmethod
@@ -473,6 +474,8 @@ class Plot1D(abc.ABC):
 
         if legend:
             ax.legend()
+
+        return l
 
 
 class Meridional_Slices_file(BaseFile):
