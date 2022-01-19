@@ -349,7 +349,7 @@ class Rayleigh_Output(collections.abc.Sequence):
 
     def quantities(self, i=None, numeric=False):
         """return the set of all available quantities
-        i: only return quantities in output i (default: union of all outputs
+        i: only return quantities in output i (default: union of all outputs)
         numeric: return numeric codes instead of names
         """
         if i is None:
