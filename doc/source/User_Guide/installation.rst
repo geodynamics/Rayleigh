@@ -123,3 +123,45 @@ installation is performing correctly. If you are running Rayleigh for
 the first time, or running on a new machine, follow along with the
 example in §\ :ref:`benchmarking`, that you receive an accurate benchmark report before running a custom
 model.
+
+.. _spack-setup:
+
+Alternative: Installation using Spack
+---------------------------------------
+
+Spack is a package management tool designed to support multiple versions and
+configurations of software on a wide variety of platforms and environments. It can be used to build Rayleigh with different compilers and a custom set of libraries for MPI, LAPACK, and FFTW. It can automatically build dependencies itself or use those provided by the HPC environment.
+
+To set up Spack in your environment follow the instructions in the `documentation <https://spack.readthedocs.io/en/latest/getting_started.html>`_. Add local `compilers <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>`_ and `packages <https://spack.readthedocs.io/en/latest/getting_started.html#system-packages>`_ as desired.
+
+The next step has only to be performed once to add the Rayleigh package repository. Run this from the base directory of the Rayleigh repository.
+
+.. code-block:: bash
+
+    spack add spack-repo
+
+Afterwards you can just install Rayleigh and its dependencies using:
+
+.. code-block:: bash
+
+    spack install rayleigh
+
+Once the build succeeded the package can be loaded using the following command, which will make the ``rayleigh.opt`` and ``rayleigh.dbg`` executables available in the ``PATH`` and can be run to start simulations as usual.
+
+.. code-block:: bash
+
+    spack load rayleigh
+
+There are many ways in which to modify the compiler and dependencies being used. They can be found in the `Spack documentation <https://spack.readthedocs.io/en/latest/index.html>`_.
+
+As an example you can install Rayleigh using MKL for LAPACK and FFTW using:
+
+.. code-block:: bash
+
+    spack install rayleigh ^intel-mkl
+
+To see the dependencies being installed you can use:
+
+.. code-block:: bash
+
+    spack spec rayleigh ^intel-mkl
