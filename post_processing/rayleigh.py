@@ -440,6 +440,7 @@ class Plot2D(abc.ABC):
 
         return im
 
+
 class Plot1D(abc.ABC):
     @abc.abstractmethod
     def get_coords(self, i):
