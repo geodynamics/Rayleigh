@@ -23,19 +23,28 @@ class Rayleigh(MakefilePackage):
     depends_on('lapack')
 
     def edit(self, spec, prefix):
-        env['FC'] = spec['mpi'].mpifc
+        if spec.satisfies('^cray-mpich'):
+            # The Cray wrapper takes care of linking MPI correctly for all compilers.
+            env['FC'] = 'ftn'
+        else:
+            env['FC'] = spec['mpi'].mpifc
         args = ['--prefix={}'.format(prefix)]
 
         if spec.satisfies('^mkl'):
             args.append('--with-mkl={}'.format(spec['mkl'].headers.directories[0][:-len('/include')]))
         else:
-            args.append('--with-fftw={}'.format(spec['fftw'].prefix))
+            if not spec.satisfies('^cray-fftw'):
+                args.append('--with-fftw={}'.format(spec['fftw'].prefix))
 
             if spec.satisfies('^openblas'):
                 args.append('--openblas')
-            else:
+            elif not spec.satisfies('^cray-libsci'):
                 args.append('--with-lapack={}'.format(spec['lapack'].prefix))
                 args.append('--with-blas={}'.format(spec['blas'].prefix))
+            else:
+                # Cray options are handled through modules and the compiler wrapper.
+                args.append('--LIBFLAGS=')
+                args.append('--INCLUDE=')
 
         args.append('--FFLAGS_DBG=-O0 -g')
         args.append('--FFLAGS_OPT=-O3 {}'.format(spec.target.optimization_flags(spec.compiler.name, str(spec.compiler.version))))
