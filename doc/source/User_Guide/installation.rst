@@ -85,7 +85,7 @@ described above, if Intel is used and *all* is selected, every version will
 be compiled. To build only a single version, the **target=<target>** option
 may be used at the **make** stage, for example:
 
-#. **make target=opt** - build only the optimzed version, **rayleigh.opt**
+#. **make target=opt** - build only the optimized version, **rayleigh.opt**
 
 #. **make target=dbg** - build only the debug version, **rayleigh.dbg**
 
@@ -105,9 +105,9 @@ option) will show a new file named **a.out**.
 If both the optimized version and the debug version have already been built, they
 can be renamed at install time as:
 
-#. **make** - build both optimized and debug verion (or all versions)
+#. **make** - build both optimized and debug version (or all versions)
 
-#. **make target=opt output=a.out.opt install** - install and rename the optimzed version
+#. **make target=opt output=a.out.opt install** - install and rename the optimized version
 
 #. **make target=dbg output=a.out.dbg install** - install and rename the debug version
 
