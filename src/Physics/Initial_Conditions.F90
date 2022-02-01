@@ -65,13 +65,14 @@ Module Initial_Conditions
     Character*120 :: z_init_file = '__nothing__'
     Character*120 :: c_init_file = '__nothing__'
     Character*120 :: a_init_file = '__nothing__'
+    Character*120 :: custom_thermal_file = '__nothing__'
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
             & magnetic_init_type,alt_check, mag_amp, conductive_profile, rescale_velocity, &
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
             & rescale_pressure, tvar_scale, pressure_scale, mdelta, &
             & t_init_file, w_init_file, p_init_file, z_init_file, &
-            & c_init_file, a_init_file
+            & c_init_file, a_init_file, custom_thermal_file
 Contains
 
     Subroutine Initialize_Fields()
@@ -516,6 +517,15 @@ Contains
                 profile0(:) = s_conductive(:)
 
             Endif
+            Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0)
+            DeAllocate(profile0)            
+                    
+        Else If (trim(custom_thermal_file) .ne. '__nothing__') then
+            Allocate(profile0(1:N_R))
+            profile0(:) = 0.0d0
+            
+            Call Load_Radial_Profile(custom_thermal_file,profile0)
+
             ! Randomize the entropy
             Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0)
             DeAllocate(profile0)
@@ -1002,49 +1012,65 @@ Contains
         Real*8, Allocatable :: radius_in(:), profile_in(:), spy2(:)
         Real*8 :: min_r_in, max_r_in, min_p_in, max_p_in
         Real*8 :: splx, sply
-        Integer :: nr_in, r
+        Integer*4 :: nr_in, r, etag
         ! Reads in a 1-D radial profile of some quantity,
         ! interpolates it (using cubic splines) to the current grid,
         ! and stores it in profile_out.
+        If (my_rank .eq. 0) Write(6,*)''
+        If (my_rank .eq. 0) Write(6,*)'------ Reading custom thermal profile for ell=0'
+        Open(unit=892, file = profile_file, form = 'unformatted', status = 'old',access='stream')
+        Read(892)etag
+        
+        If (etag .eq. 314) Then
+            Read(892)nr_in
 
-      Open(unit=892, file = profile_file, form = 'unformatted', status = 'old')
-      Read(892)nr_in
-      Allocate(profile_in(1:nr_in))
-      Allocate(radius_in(1:nr_in))
-      Read(892)(radius_in(r),r=1,nr_in)
-      Read(892)(profile_in(r),r = 1, nr_in)
-      Close(892)
+            If (my_rank .eq. 0) Write(6,*)'------ nr_in is: ', nr_in
+            Allocate(profile_in(1:nr_in))
+            Allocate(radius_in(1:nr_in))
+            Read(892)(radius_in(r),r=1,nr_in)
+            Read(892)(profile_in(r),r = 1, nr_in)
+            Close(892)
 
-     !--------------------------------------------------------------
-      ! Interpolate onto our grid (assume custom_radius and custom_entropy are backwards
-      min_r_in = radius_in(nr_in)
-      max_r_in = radius_in(1)
-      max_p_in = profile_in(nr_in)
-      min_p_in = profile_in(1)
+            !--------------------------------------------------------------
+            ! Interpolate onto our grid (assume custom_radius and custom_entropy are backwards
+            min_r_in = radius_in(nr_in)
+            max_r_in = radius_in(1)
+            max_p_in = profile_in(nr_in)
+            min_p_in = profile_in(1)
 
-      Allocate(spy2(1:nr_in))
-      spy2(1:nr_in) = 0.0d0
-      profile_out(1:N_R) = 0.0d0
-      Call Spline(radius_in, profile_in, nr_in, 2.0D30, 2.0D30, spy2)
-      Do r = 1, N_R
-         If ( (radius(r) .le. max_r_in) .and. (radius(r) .ge. min_r_in) ) Then
-            splx = radius(r)
-            Call Splint(radius_in, profile_in,spy2,nr_in, splx, sply)
-            profile_out(r) = sply
-         Endif
-      Enddo
+            If (my_rank .eq. 0) Write(6,*)'------ rmin_in, rmax_in: ', min_r_in, max_r_in
+            If (my_rank .eq. 0) Write(6,*)'------ profile_min, profile_max: ', min_p_in, max_p_in
+            If (my_rank .eq. 0) Write(6,*)''
 
-      ! Take care of any out of bounds radial values
-      Do r = 1, N_R
-         If (radius(r) .ge. max_r_in) Then
-            profile_out(r) = min_p_in
-         Endif
-         If (radius(r) .le. min_r_in) Then
-            profile_out(r) = max_p_in
-         Endif
-      Enddo
+            Allocate(spy2(1:nr_in))
+            spy2(1:nr_in) = 0.0d0
+            profile_out(1:N_R) = 0.0d0
+            Call Spline(radius_in, profile_in, nr_in, 2.0D30, 2.0D30, spy2)
+            Do r = 1, N_R
+                If ( (radius(r) .le. max_r_in) .and. (radius(r) .ge. min_r_in) ) Then
+                    splx = radius(r)
+                    Call Splint(radius_in, profile_in,spy2,nr_in, splx, sply)
+                    profile_out(r) = sply
+                Endif
+            Enddo
 
-        DeAllocate(radius_in, profile_in, spy2)
+            ! Take care of any out of bounds radial values
+            Do r = 1, N_R
+                If (radius(r) .ge. max_r_in) Then
+                    profile_out(r) = min_p_in
+                Endif
+                If (radius(r) .le. min_r_in) Then
+                    profile_out(r) = max_p_in
+                Endif
+            Enddo
+
+            DeAllocate(radius_in, profile_in, spy2)
+        Else
+            close(892)
+            If (my_rank .eq. 0) Write(6,*)'------ Error: Endian check failed.  Returning 0'
+            If (my_rank .eq. 0) Write(6,*)''
+            profile_out(:) = 0.0d0
+        Endif  
     End Subroutine Load_Radial_Profile
 
 
