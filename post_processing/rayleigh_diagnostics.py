@@ -1540,31 +1540,52 @@ def check_endian(fd,sig,sigtype):
     else:
         return True
 
-def build_file_list(istart,iend,path = '.',diter = -1,ndig = 8,special=False):
+def build_file_list(istart,iend,path = '.',diter = -1,ndig = 8):
+    """
+    Rayleigh file listing routine.  Returns a list of numbered files in the range istart:iend.
+    
+    By default, a file listing of all numbered files in path is generated using listdir.
+    
+    Alternatively, diter may be specified to create a list of files with a predetermined
+    spacing between numbered files.
+    
+    Input Parameters:
+    
+        istart :  the smallest file number to generate / retrieve
+        iend   :  the largest file number to generate / retrieve
+
+    Optional Parameters:
+        path   :  full path to directory containing the numbered files 
+                  (default is current directory)
+        diter  :  if specified, files will be generated between istart and iend with
+                  a spacing of diter
+        ndig   :  if generating files using diter, set this value to the number of digits
+                  in a filename (default is 8)
+
+    """
     files = []
+    
     if (diter < 1):
         # Examine the directory and grab all files that fall between istart and iend
         allfiles = os.listdir(path)
         allfiles.sort()
+        
         for f in allfiles:
-            if ( ('special' in f) and special ):
-                fint = int(f[0:7])
-                if ( (fint >= istart ) and (fint <= iend)  ):
-                    files.append(path+'/'+f)
-            if ( (not 'special' in f) and not(special) ):
+            try:
                 fint = int(f)
                 if ( (fint >= istart ) and (fint <= iend)  ):
                     files.append(path+'/'+f)
+            except:
+                print("Skipping ",f+'.  Unable to convert to integer.')
     else:
         # Generate filename manually (no ls)
         i = istart
         digmod = "%0"+str(ndig)+"d"
         while (i <= iend):
             fiter = digmod % i           
-            if (special):
-                fiter=fiter+'_special'
             files.append(path+'/'+fiter)
             i = i+diter
+            
     return files
 
 ########################################################
