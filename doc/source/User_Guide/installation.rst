@@ -138,7 +138,7 @@ The next step has only to be performed once to add the Rayleigh package reposito
 
 .. code-block:: bash
 
-    spack add spack-repo
+    spack repo add spack-repo
 
 Afterwards you can just install Rayleigh and its dependencies using:
 
