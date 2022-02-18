@@ -22,6 +22,7 @@ from __future__ import print_function
 import numpy as np
 import os
 import glob
+from collections import OrderedDict
 
 maxq = 4000
 
@@ -33,6 +34,237 @@ def get_lut(quantities):
         if ((0 <= q) and ( q <= maxq-1)): # quantity must be in [0, maxq-1]
             lut[q] = i
     return lut.astype('int32')
+
+class main_input:
+    """ 
+    Class for working with main_input files.
+    
+    Attributes:
+        vals : Dictionary that reflects the main_input file structure.
+                   
+    Initializiation syntax:
+        a = main_input(file)  , where
+        file = 'main_input', 'jobinfo.txt' or any similar file containing Fortran namelists.
+        
+    """
+    def __init__(self,file):
+        """ 
+        Initialization routine.
+        
+        Input parameters:
+            file : A main_input or jobinfo.txt file from which the namelist structure
+                   and values may be read.
+        """
+        self.vals = OrderedDict()
+        self.namelists = []
+        self.read(file)
+        self.namelists = list(self.vals.keys())
+                    
+    def __repr__(self, verbose = False):
+        """
+        Provides 'print()' functionality for the main_input class.
+        """
+        self.write(verbose = verbose)
+        return ""
+
+    def unset(self):
+        """
+        Resets all keys in self.vals to the null string "".
+        """
+        for nml in self.namelists:
+            for var in self.vals[nml].keys():
+                self.vals[nml][var] =""  
+
+                
+    def set(self,nml="",var="",val="", force = False):
+        """
+            Sets the value of a key in vals and checks for valid key names.
+            
+            Parameters:
+                nml : the namelist to be modified
+                var : the variable within nml to modify
+                val : the value to which vals[nml][var] will be set
+                
+                force (optional) : When set to True, nml and/or var will
+                                   be created on the fly if they do not exist.
+                                   
+            Calling syntax:
+                mi.set(nml = 'problemsize', var ='n_r', val = 128)
+        
+        """
+        nml_lower = nml.strip().lower()
+        var_lower = var.strip().lower()
+        
+        if (force):
+            if (not (nml_lower in self.namelists)):
+                self.vals[nml_lower] = OrderedDict()
+                self.namelists = list(self.vals.keys())
+                
+            var_names = list(self.vals[nml_lower].keys())
+            
+            if (not (var_lower in var_names)):
+                self.vals[nml_lower][var_lower]=""
+        
+        if nml_lower in self.namelists:
+            var_names = list(self.vals[nml_lower].keys())
+            if var_lower in var_names:
+                self.vals[nml_lower][var_lower]=val
+            else:
+                print('\nError:  variable '+var+' is not present in '+nml_lower+' namelist\n')
+        else:
+            print('\nError: '+nml_lower+' is not a valid namelist name.\n')
+        
+        
+    def write(self, verbose = False, file=None, ndecimal=6, namelist=None):
+        """
+        Displays the contents of the vals dictionary and generates
+        a new main_input file if desired.  Floats are expressed in
+        scientific notation.
+        
+        Input parameters:
+            verbose (optional)  : When set to True, all values, including null strings
+                                  are displayed.  When set to False (default), only
+                                  non-empty dictionary entries are displayed.
+                                 
+            file (optional)     : If a value for file is provided, the contents of
+                                  the vals dictionary will be written to file in
+                                  Fortran-readable namelist format.
+                                 
+            ndecimal (optional) : Number of digits to the right of decimal place
+                                  to maintain when expressing floats in sci-not.
+        
+        """
+
+        if (type(ndecimal) != type(6)):
+            ndecimal = 6
+        dstr = str(ndecimal)
+        
+        lprint = print
+        endl=""
+        if (file != None):
+            fd = open(file, "w")
+            lprint = fd.write
+            endl="\n"
+        
+        if (namelist in list(self.vals.keys())):
+            namelists = [namelist]
+        else:
+            namelists = self.namelists
+        
+        
+        for nml in namelists:
+            
+            nml_line="&"+nml+"_namelist"+endl
+            lprint(nml_line)             
+
+            for var in self.vals[nml].keys():
+                val = self.vals[nml][var]          
+                if (type(val) == type(3.14)):
+                    fstring = "{:."+dstr+"e}"
+                    val = fstring.format(val)
+                if (type(val) != type('astring')):
+                    val = str(val)
+                if ((val != "") or verbose):
+                    val_line = var+' = '+val+endl
+                    lprint(val_line)
+
+            lprint("/"+endl)
+            
+        if (file != None):
+            fd.close()
+
+    def read_file_lines(self,filename):
+        """
+        
+           Helper routine.  Reads a file and returns it as a list of
+           strings with one file line per list element.
+           
+           Input parameters:
+               filename :  The file to be read
+           
+        """
+        fd = open(filename, "r")
+        flines = []
+        while True:                            
+            oneline = fd.readline()   
+            if len(oneline) == 0:              
+                break                         
+            else:
+                flines.append(oneline)        
+        fd.close()
+        return flines
+    
+    def read(self, infile):
+        """
+        
+           Populates the vals dictionary using values obtained from a main_input file. 
+        
+           Input parameters:
+               infile     :  A main_input or jobinfo.txt file from which to extract 
+                             namelist information.
+                             
+           Calling Syntax:
+               mi.read('main_input')
+               
+           Note:
+               Only namelist variables specified within infile are assigned
+               an associated key/value combination.  If a variable is not defined in
+               infile, it's corresponding key in the vals dictionary will remain 
+               undefined.  If a value for the main_input variable already exists in 
+               vals, it will be overwritten using the associated value from infile. 
+        
+        """
+        
+        
+        flines = self.read_file_lines(infile)
+
+        #####################################
+        # Iterate over the main_input file and 
+        # extract namelist and associated 
+        # variable names 
+        
+        nlines = len(flines)
+        nread = 0
+        
+        while (nread < nlines):
+            
+            nextline = flines[nread].strip().lower() #strip white-space and force lower case
+            nread+=1
+ 
+            if (len(nextline) != 0):
+                
+                # Test for beginning of new namelist
+                # (first character of line is &)
+                tchar = nextline[0]
+                if (tchar == '&'):  
+                    
+                    # Extract namelist name. 
+                    # Update the namelist list as we go.
+                    
+                    nml_name = nextline[1:].split('namelist')[0][:-1]
+                    if (not nml_name in self.namelists):
+                        self.vals[nml_name] = OrderedDict()
+                        self.namelists = list(self.vals.keys())
+                        
+                    # Read all variable names until we reach the end of the namelist
+                    reading_nml = True
+                    while (reading_nml):
+                        nextline = flines[nread].strip()
+                        nread +=1
+                        if(len(nextline) != 0):
+                            if (nextline[0]=='/'):  # A forward slash marks the end of a namelist
+                                reading_nml = False
+
+                            # Extract the variable names and values. Strip out comments.
+                            # Some lines in jobinfo.txt are split across multiple lines.
+                            # Only those with the '=' sign contain variable names
+                            lsep = nextline.split('=')                        
+                            if (len(lsep) > 1 and reading_nml and (lsep[0][0] != '!')):
+                                var_name = lsep[0].strip().lower()
+                                var_val = lsep[1].strip().split('!')[0]
+                                self.vals[nml_name][var_name] = var_val
+
+    
 
 class Spherical_3D:
     """Rayleigh Spherical_3D Structure
@@ -520,8 +752,10 @@ class GridInfo:
 
         fd.close()
         
+
+
 class G_Avgs:
-    """Rayleigh GlobalAverage Structure
+    """Rayleigh GlobalAverage Data Structure
     ----------------------------------
     self.niter                  : number of time steps
     self.nq                     : number of diagnostic quantities output
@@ -531,37 +765,229 @@ class G_Avgs:
     self.time[0:niter-1]        : The simulation time corresponding to each time step
     self.version                : The version code for this particular output (internal use)
     self.lut                    : Lookup table for the different diagnostics output
+
+    Initialization Examples:
+        (1):  Read in a single G_Avgs file
+              a = G_Avgs('00000001',path='./G_Avgs/')
+              
+        (2):  Concatenate time-series data from multiple G_Avgs files:
+              a = G_Avgs(['00000001','00000002'])
+
+        (3):  Concatenate time-series data from multiple G_Avgs files + save data to new G_Avgs file:
+              a = G_Avgs(['00000001','00000002'],ofile='my_save_file.dat')
+              
+        (4):  Concatenate time-series data from multiple G_Avgs files.
+              Extract only quantity codes 401 and 402:
+              a = G_Avgs(['00000001','00000002'], qcodes = [401,402])
+
+    Additional Notes:
+        For concatenated data:
+        
+            - Output files are written in identical format to a standard G_Avgs file. They may be
+              read in using the same syntax described above.
+              
     """
 
-    def __init__(self,filename='none',path='G_Avgs/'):
-        """filename  : The reference state file to read.
-           path      : The directory where the file is located (if full path not in filename)
-        """
-        if (filename == 'none'):
-            the_file = path+'00000001'
-        else:
-            the_file = path+filename
-        fd = open(the_file,'rb')
-        # We read an integer to assess which endian the file was written in...
-        bs = check_endian(fd,314,'int32')
-        version = swapread(fd,dtype='int32',count=1,swap=bs)
-        nrec = swapread(fd,dtype='int32',count=1,swap=bs)
-        nq = swapread(fd,dtype='int32',count=1,swap=bs)
-        self.niter = nrec
-        self.nq = nq
-        self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
-        self.vals  = np.zeros((nrec,nq),dtype='float64')
-        self.iters = np.zeros(nrec,dtype='int32')
-        self.time  = np.zeros(nrec,dtype='float64')
-        self.version = version
-        for i in range(nrec):
-            tmp = np.reshape(swapread(fd,dtype='float64',count=nq,swap=bs),(nq), order = 'F')
-            self.vals[i,:] = tmp
-            self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
-            self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
+    def __init__(self,filename='none',path='G_Avgs/', ofile='none', qcodes=[], nfiles=-1):
 
-        self.lut = get_lut(self.qv)
+        """
+           Initializer for the G_Avgs class.
+           
+           Input parameters:
+               filename  : (a) {string} The G_Avgs file to read.
+                         : (b) {list of strings} The G_Avgs files whose time-series
+                               data you wish to concatenate.
+               path      : The directory where the file is located (if full path not in filename)
+               qcodes    : {optional; list of ints} Quantity codes you wish to extract (if not all)
+               ofile     : {optional; string} Filename to save time-averaged data to, if desired.
+        """
+        # Check to see if we are compiling data from multiple files
+        # This is true if (a) ofile is set or (b) filename is a list of files, rather than a single string
+        # if (a) is false, but (b) is true, no output is written, but compiled output is returned        
+        
+        #(a)
+        multiple_files = False
+        mainfile=filename
+        if (ofile != 'none'):
+            multiple_files = True
+            
+        #(b)
+        ltype = type([])        
+        ftype=type(filename)
+        if (ltype == ftype):
+            multiple_files = True
+        else:
+            if (mainfile == 'none'):
+                mainfile = path+'00000001'
+            else:
+                mainfile = path+mainfile             
+        
+        if (multiple_files):
+            mainfile = filename[0]
+        
+        # Read the main file no matter what    
+        self.read_dimensions(mainfile)   
+        self.read_data(qcodes=qcodes)
+        
+        if (multiple_files):
+            self.compile_multiple_files(filename, qcodes = qcodes,path=path)
+
+        if (ofile != 'none'):
+            self.write(ofile)
+            
+            
+    def write(self,outfile):
+        """
+            Writing routine for G_Avgs class.
+            
+            Input parameters:
+               outfile  : (a) {string} The G_Avgs file to be written.
+
+            Calling Syntax:
+                my_gavgs.write("my_file.dat")
+                (writes all data contained in my_gavgs to my_file.dat, in standard G_Avgs format)
+
+        """
+        one_rec = np.dtype([('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32)  ])
+        fstruct = np.dtype([ ('fdims', np.int32,4), ('qvals', np.int32,(self.nq)), ('fdata', one_rec, [self.niter,])  ])
+        
+        odata = np.zeros((1,),dtype=fstruct)
+        odata['fdims'][0,0]=314
+        odata[0]['fdims'][1]=self.version
+        odata[0]['fdims'][2]=self.niter
+        odata[0]['fdims'][3]=self.nq
+        odata[0]['qvals'][:]=self.qv[:]
+        odata[0]['fdata']['times'][:]=self.time
+        odata[0]['fdata']['iters'][:]=self.iters
+        odata[0]['fdata']['vals'][:,:]=self.vals
+        fd = open(outfile,'wb')
+        odata.tofile(fd)
         fd.close()
+        
+
+    def compile_multiple_files(self,filelist,qcodes=[],path=''):
+        """
+           Time-series concatenation routine for the G_Avgs class.
+           
+           Input parameters:
+               filelist  : {list of strings} The G_Avgs files to be concatenated.
+               path      : The directory where the files are located (if full path not in filename)
+               qcodes    : {optional; list of ints} Quantity codes you wish to extract (if not all)
+        """
+        nfiles = len(filelist)
+        new_nrec = self.niter*nfiles
+        self.niter = new_nrec
+        self.vals = np.zeros((self.niter,self.nq),dtype='float64')
+        self.iters = np.zeros(self.niter          ,dtype='int32')
+        self.time  = np.zeros(self.niter          ,dtype='float64')        
+        
+        k = 0
+        for i in range(nfiles):
+            a = G_Avgs(filelist[i],qcodes=qcodes,path=path)
+
+            #If the iteration count isn't constant throughout a run,
+            #we may need to resize the arrays
+            if (k+a.niter > self.niter):
+                self.niter = k+a.niter
+                self.vals.resize((self.niter,self.nq))
+                self.time.resize((self.niter))
+                self.iters.resize( (self.niter))
+
+            self.time[k:k+a.niter]   = a.time[:]
+            self.iters[k:k+a.niter]  = a.iters[:]
+            self.vals[k:k+a.niter,:] = a.vals[:]
+            k+=a.niter
+            
+        # Trim off any excess zeros 
+        # (in case last final was incomplete)
+        self.niter = k
+        self.time = self.time[0:self.niter]
+        self.iters = self.iters[0:self.niter]
+        self.vals = self.vals[0:self.niter,:]
+        
+        
+    def read_data(self,qcodes = []):
+        """
+           Data-reading routine for the G_Avgs class.
+           
+           Input parameters:
+               qcodes    : {optional; list of ints} Quantity codes you wish to extract (if not all)
+           
+           Notes:
+                - This routine does not read header information.  Read_dimensions must be called first
+                  so that dimentions and the file descriptor are initialized. 
+        """
+    
+        self.qv    = np.zeros(self.nq             ,dtype='int32')
+        self.vals  = np.zeros((self.niter,self.nq),dtype='float64')
+        self.iters = np.zeros(self.niter          ,dtype='int32')
+        self.time  = np.zeros(self.niter          ,dtype='float64')
+
+        
+        one_rec = np.dtype([('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32)  ])
+        fstruct = np.dtype([ ('qvals', np.int32,(self.nq)), ('fdata', one_rec, [self.niter,])  ])
+        
+        if (self.byteswap):
+                fdata = np.fromfile(self.fd,dtype=fstruct,count=1).byteswap()
+        else:
+                fdata = np.fromfile(self.fd,dtype=fstruct)
+                
+        self.time[:] = fdata['fdata']['times'][0,:]
+        self.iters[:] = fdata['fdata']['iters'][0,:]
+        self.qv[:] = fdata['qvals'][0,:]
+   
+        self.fd.close()
+        
+        self.lut = get_lut(self.qv)  # Lookup table
+        
+        ########################################################
+        # We may want to extract a subset of the quantity codes
+        if (len(qcodes) == 0):
+            self.vals[:,:] = fdata['fdata']['vals'][0,:,:]
+        else:
+            nqfile = self.nq        # number of quantity codes in the file
+            qget = np.array(qcodes,dtype='int32')
+            self.qv = qget  # Don't update the lookup table yet
+            self.nq = len(self.qv)  # number of quantity codes we will extract
+            self.vals  = np.zeros((self.niter,self.nq),dtype='float64')
+            for q in range(self.nq):
+                qcheck = self.lut[qget[q]]
+                if (qcheck < maxq):
+                    self.vals[:,q] = fdata['fdata']['vals'][0,:,qcheck]
+            self.lut = get_lut(self.qv)  # Rebuild the lookup table since qv has changed
+
+            
+    def read_dimensions(self,the_file,closefile=False):
+        """
+        
+            Header-reading routine for the G_Avgs class.
+            
+            This routine initialized the file descriptor and reads the dimensions 
+            and Endian information of a G_Avgs file only. It does not read the G_Avgs data itself.
+
+           
+            Input parameters:
+               the_file    : {string} G_Avgs file whose header is to be read.
+               closefile   : (Boolean; optional; default=False) Set to True to close the file 
+                             after reading the header information. 
+                   
+
+        """
+        self.fd = open(the_file,'rb')        
+        specs = np.fromfile(self.fd,dtype='int32',count=4)
+        bcheck = specs[0]       # If not 314, we need to swap the bytes
+        self.byteswap = False
+        if (bcheck != 314):
+            specs.byteswap()
+            self.byteswap = True
+            
+        self.version = specs[1]
+        self.niter = specs[2]
+        self.nq = specs[3]
+        if (closefile):
+            self.fd.close()
+   
+
 
 class Shell_Avgs:
     """Rayleigh Shell Average Structure
@@ -1540,52 +1966,31 @@ def check_endian(fd,sig,sigtype):
     else:
         return True
 
-def build_file_list(istart,iend,path = '.',diter = -1,ndig = 8):
-    """
-    Rayleigh file listing routine.  Returns a list of numbered files in the range istart:iend.
-    
-    By default, a file listing of all numbered files in path is generated using listdir.
-    
-    Alternatively, diter may be specified to create a list of files with a predetermined
-    spacing between numbered files.
-    
-    Input Parameters:
-    
-        istart :  the smallest file number to generate / retrieve
-        iend   :  the largest file number to generate / retrieve
-
-    Optional Parameters:
-        path   :  full path to directory containing the numbered files 
-                  (default is current directory)
-        diter  :  if specified, files will be generated between istart and iend with
-                  a spacing of diter
-        ndig   :  if generating files using diter, set this value to the number of digits
-                  in a filename (default is 8)
-
-    """
+def build_file_list(istart,iend,path = '.',diter = -1,ndig = 8,special=False):
     files = []
-    
     if (diter < 1):
         # Examine the directory and grab all files that fall between istart and iend
         allfiles = os.listdir(path)
         allfiles.sort()
-        
         for f in allfiles:
-            try:
+            if ( ('special' in f) and special ):
+                fint = int(f[0:7])
+                if ( (fint >= istart ) and (fint <= iend)  ):
+                    files.append(path+'/'+f)
+            if ( (not 'special' in f) and not(special) ):
                 fint = int(f)
                 if ( (fint >= istart ) and (fint <= iend)  ):
                     files.append(path+'/'+f)
-            except:
-                print("Skipping ",f+'.  Unable to convert to integer.')
     else:
         # Generate filename manually (no ls)
         i = istart
         digmod = "%0"+str(ndig)+"d"
         while (i <= iend):
             fiter = digmod % i           
+            if (special):
+                fiter=fiter+'_special'
             files.append(path+'/'+fiter)
             i = i+diter
-            
     return files
 
 ########################################################
