@@ -1,0 +1,307 @@
+
+===========================================================================
+ Job Information
+===========================================================================
+Date = 2021-08-25
+Time = 15:55:51
+Path = 
+
+===========================================================================
+ Compiler Information
+===========================================================================
+Compiler Location = /custom/miniconda3/envs/radev/bin/mpifort
+Compiler Version  = GNU Fortran (GCC) 9.4.0
+
+Compiler Flags    = -O3 -ffixed-line-length-132 -DGNU_COMPILER -march=haswell
+Compiler Library  = -L/custom/miniconda3/envs/radev/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++
+
+===========================================================================
+ Build Information
+===========================================================================
+Build Date       = Wed 25 Aug 2021 03:47:49 PM MDT
+Build Machine    = Linux Sanitas 5.11.0-27-generic #29~20.04.1-Ubuntu SMP Wed Aug 11 15:58:17 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
+Build Directory  = /home/feathern/devel/forks/Nick/Rayleigh
+Custom Directory = 
+
+Build Version = opt
+Git Hash = 624e326f07a2f81f76ef41604977a584427ae570 +++ Mon Aug 16 13:16:33 2021 -0600
+Git URL = git@github.com:feathern/Rayleigh.git
+Git Branch = timing
+
+===========================================================================
+ Preamble Information
+===========================================================================
+ MPI
+    NCPU  :      8
+    NPROW :      2
+    NPCOL :      4
+
+ Grid
+    N_R                :     64
+    N_THETA            :     96
+    Ell_MAX            :     63
+    R_MIN              :  5.3846E-01
+    R_MAX              :  1.5385E+00
+    Chebyshev Domains  :      1
+
+      Domain      1
+        Grid points           :     64
+        Dealiased Polynomials :     42
+        Domain Lower Bound    :  5.3846E-01
+        Domain Upper Bound    :  1.5385E+00
+
+ Reference State
+    Reference type          : Boussinesq (Non-dimensional)
+    Rayleigh Number         :  1.0000E+05
+    Ekman Number            :  1.0000E-03
+    Prandtl Number          :  1.0000E+00
+
+===========================================================================
+ Namelist Information
+===========================================================================
+&PROBLEMSIZE_NAMELIST
+ N_R=64         ,
+ N_THETA=96         ,
+ NPROW=2          ,
+ NPCOL=4          ,
+ RMIN= 0.53846153846153832     ,
+ RMAX=  1.5384615384615383     ,
+ NPOUT=1          ,
+ PRECISE_BOUNDS=-1         ,
+ GRID_TYPE=2          ,
+ L_MAX=63         ,
+ N_L=64         ,
+ ASPECT_RATIO= 0.34999999999999998     ,
+ SHELL_DEPTH=  1.0000000000000000     ,
+ NCHEBY=64         , 255*-1         ,
+ DOMAIN_BOUNDS= 0.53846153846153832     ,  1.5384615384615383     , 255*-1.0000000000000000      ,
+ DEALIAS_BY= 256*-1         ,
+ N_UNIFORM_DOMAINS=1          ,
+ UNIFORM_BOUNDS=F,
+ /
+&NUMERICAL_CONTROLS_NAMELIST
+ CHEBYSHEV=T,
+ BANDSOLVE=F,
+ STATIC_TRANSPOSE=F,
+ STATIC_CONFIG=F,
+ USE_PARITY=T,
+ DERIV_CLUGE=T,
+ PAD_ALLTOALL=F,
+ SPARSESOLVE=F,
+ /
+&PHYSICAL_CONTROLS_NAMELIST
+ MAGNETISM=F,
+ NONLINEAR=T,
+ ROTATION=T,
+ LORENTZ_FORCES=T,
+ VISCOUS_HEATING=F,
+ OHMIC_HEATING=F,
+ ADVECT_REFERENCE_STATE=F,
+ BENCHMARK_MODE=1          ,
+ BENCHMARK_INTEGRATION_INTERVAL=100        ,
+ BENCHMARK_REPORT_INTERVAL=500        ,
+ MOMENTUM_ADVECTION=T,
+ INERTIA=T,
+ /
+&TEMPORAL_CONTROLS_NAMELIST
+ ALPHA_IMPLICIT= 0.50000999999999995     ,
+ MAX_ITERATIONS=25000      ,
+ CHECK_FREQUENCY=-1         ,
+ CFLMAX= 0.59999999999999998     ,
+ CFLMIN= 0.40000000000000002     ,
+ MAX_TIME_STEP=  1.0000000000000000E-004,
+ DIAGNOSTIC_REBOOT_INTERVAL=10000000   ,
+ MIN_TIME_STEP=  1.0000000000000000E-013,
+ NUM_QUICKSAVES=2          ,
+ QUICKSAVE_INTERVAL=10000      ,
+ CHECKPOINT_INTERVAL=100000     ,
+ QUICKSAVE_MINUTES= -1.0000000000000000     ,
+ MAX_TIME_MINUTES=  100000000.00000000     ,
+ SAVE_LAST_TIMESTEP=T,
+ NEW_ITERATION=0          ,
+ SAVE_ON_SIGTERM=F,
+ MAX_SIMULATED_TIME=  1.0000000000000000E+020,
+ /
+&IO_CONTROLS_NAMELIST
+ STDOUT_FLUSH_INTERVAL=50         ,
+ TERMINATE_CHECK_INTERVAL=50         ,
+ STATUSLINE_INTERVAL=1          ,
+ STDOUT_FILE="nofile                                                                                                                  ",
+ JOBINFO_FILE="jobinfo.txt                                                                                                             ",
+ TERMINATE_FILE="terminate                                                                                                               ",
+ INTEGER_OUTPUT_DIGITS=8          ,
+ INTEGER_INPUT_DIGITS=8          ,
+ DECIMAL_PLACES=3          ,
+ OUTPUTS_PER_ROW=1          ,
+ /
+&OUTPUT_NAMELIST
+ MEM_FRIENDLY=F,
+ MERIDIONAL_VALUES= 4000*-1         ,
+ MERIDIONAL_FREQUENCY=90000000   ,
+ MERIDIONAL_NREC=1          ,
+ EQUATORIAL_VALUES= 4000*-1         ,
+ EQUATORIAL_FREQUENCY=90000000   ,
+ EQUATORIAL_NREC=1          ,
+ SHELLSLICE_VALUES= 4000*-1         ,
+ SHELLSLICE_FREQUENCY=90000000   ,
+ SHELLSLICE_NREC=1          ,
+ SHELLSPECTRA_VALUES= 4000*-1         ,
+ SHELLSPECTRA_FREQUENCY=90000000   ,
+ SHELLSPECTRA_NREC=1          ,
+ AZAVG_VALUES= 4000*-1         ,
+ AZAVG_FREQUENCY=90000000   ,
+ AZAVG_NREC=1          ,
+ SHELLAVG_VALUES= 4000*-1         ,
+ SHELLAVG_FREQUENCY=90000000   ,
+ SHELLAVG_NREC=1          ,
+ GLOBALAVG_VALUES= 4000*-1         ,
+ GLOBALAVG_FREQUENCY=90000000   ,
+ GLOBALAVG_NREC=1          ,
+ SPH_MODE_VALUES= 4000*-1         ,
+ SPH_MODE_FREQUENCY=90000000   ,
+ SPH_MODE_NREC=0          ,
+ POINT_PROBE_VALUES= 4000*0          ,
+ POINT_PROBE_FREQUENCY=90000000   ,
+ POINT_PROBE_NREC=1          ,
+ FULL3D_VALUES= 4000*-1         ,
+ FULL3D_FREQUENCY=90000000   ,
+ MERIDIONAL_INDICES= 8192*-1         ,
+ SHELLSLICE_LEVELS= 2048*-1         ,
+ SHELLSPECTRA_LEVELS= 2048*-1         ,
+ POINT_PROBE_R= 4096*-1         ,
+ POINT_PROBE_THETA= 4096*-1         ,
+ POINT_PROBE_PHI= 4096*-1         ,
+ SPH_MODE_ELL= 2048*-1         ,
+ SPH_MODE_LEVELS= 2048*-1         ,
+ SHELLSLICE_LEVELS_NRM= 2048*-3.0000000000000000      ,
+ SHELLSPECTRA_LEVELS_NRM= 2048*-3.0000000000000000      ,
+ MERIDIONAL_INDICES_NRM= 8192*-3.0000000000000000      ,
+ POINT_PROBE_R_NRM= 4096*-3.0000000000000000      ,
+ POINT_PROBE_PHI_NRM= 4096*-3.0000000000000000      ,
+ POINT_PROBE_THETA_NRM= 4096*-3.0000000000000000      ,
+ SPH_MODE_LEVELS_NRM= 2048*-3.0000000000000000      ,
+ POINT_PROBE_CACHE_SIZE=1          ,
+ GLOBALAVG_CACHE_SIZE=1          ,
+ SHELLAVG_CACHE_SIZE=1          ,
+ TEMP_IO_VALUES= 4000*-1         ,
+ TEMP_IO_FREQUENCY=90000000   ,
+ TEMP_IO_NREC=-1         ,
+ TEMP_IO_CACHE_SIZE=1          ,
+ TEMP_IO_ELL= 2048*-1         ,
+ TEMP_IO_R= 4096*-1         ,
+ TEMP_IO_THETA= 4096*-1         ,
+ TEMP_IO_PHI= 4096*-1         ,
+ TEMP_IO_R_NRM= 4096*-3.0000000000000000      ,
+ TEMP_IO_THETA_NRM= 4096*-3.0000000000000000      ,
+ TEMP_IO_PHI_NRM= 4096*-3.0000000000000000      ,
+ /
+&BOUNDARY_CONDITIONS_NAMELIST
+ FIX_TVAR_TOP=T,
+ FIX_TVAR_BOTTOM=T,
+ T_BOTTOM=  1.0000000000000000     ,
+ T_TOP=  0.0000000000000000     ,
+ DTDR_TOP=  0.0000000000000000     ,
+ DTDR_BOTTOM=  0.0000000000000000     ,
+ FIX_DTDR_BOTTOM=F,
+ FIX_DTDR_TOP=F,
+ FIX_DIVRT_TOP=F,
+ FIX_DIVT_TOP=F,
+ FIX_DIVRFC_TOP=F,
+ FIX_DIVFC_TOP=F,
+ NO_SLIP_BOUNDARIES=T,
+ STRICT_L_CONSERVATION=F,
+ FIX_POLOIDALFIELD_TOP=F,
+ FIX_POLOIDALFIELD_BOTTOM=F,
+ C10_BOTTOM=  0.0000000000000000     ,
+ C10_TOP=  0.0000000000000000     ,
+ C11_BOTTOM=  0.0000000000000000     ,
+ C11_TOP=  0.0000000000000000     ,
+ C1M1_BOTTOM=  0.0000000000000000     ,
+ C1M1_TOP=  0.0000000000000000     ,
+ BR_BOTTOM=  0.0000000000000000     ,
+ DIPOLE_TILT_DEGREES=  0.0000000000000000     ,
+ IMPOSE_DIPOLE_FIELD=F,
+ NO_SLIP_TOP=T,
+ NO_SLIP_BOTTOM=T,
+ STRESS_FREE_TOP=F,
+ STRESS_FREE_BOTTOM=F,
+ T_TOP_FILE="__nothing__                                                                                                             ",
+ T_BOTTOM_FILE="__nothing__                                                                                                             ",
+ DTDR_TOP_FILE="__nothing__                                                                                                             ",
+ DTDR_BOTTOM_FILE="__nothing__                                                                                                             ",
+ C_TOP_FILE="__nothing__                                                                                                             ",
+ C_BOTTOM_FILE="__nothing__                                                                                                             ",
+ DIPOLE_FIELD_BOTTOM=F,
+ /
+&INITIAL_CONDITIONS_NAMELIST
+ INIT_TYPE=1          ,
+ TEMP_AMP=  1.0000000000000000     ,
+ TEMP_W= 0.29999999999999999     ,
+ RESTART_ITER=0          ,
+ MAGNETIC_INIT_TYPE=1          ,
+ ALT_CHECK=F,
+ MAG_AMP=  1.0000000000000000     ,
+ CONDUCTIVE_PROFILE=F,
+ RESCALE_VELOCITY=F,
+ RESCALE_BFIELD=F,
+ VELOCITY_SCALE=  1.0000000000000000     ,
+ BFIELD_SCALE=  1.0000000000000000     ,
+ RESCALE_TVAR=F,
+ RESCALE_PRESSURE=F,
+ TVAR_SCALE=  1.0000000000000000     ,
+ PRESSURE_SCALE=  1.0000000000000000     ,
+ MDELTA=  0.0000000000000000     ,
+ T_INIT_FILE="__nothing__                                                                                                             ",
+ W_INIT_FILE="__nothing__                                                                                                             ",
+ P_INIT_FILE="__nothing__                                                                                                             ",
+ Z_INIT_FILE="__nothing__                                                                                                             ",
+ C_INIT_FILE="__nothing__                                                                                                             ",
+ A_INIT_FILE="__nothing__                                                                                                             ",
+ /
+&TEST_NAMELIST
+ TEST_MODE=F,
+ NTEST_LEGENDRE=1          ,
+ TEST_LEGENDRE=F,
+ TEST_CHEBYSHEV=F,
+ /
+&REFERENCE_NAMELIST
+ REFERENCE_TYPE=1          ,
+ POLY_N=  0.0000000000000000     ,
+ POLY_NRHO=  0.0000000000000000     ,
+ POLY_MASS=  0.0000000000000000     ,
+ POLY_RHO_I=  0.0000000000000000     ,
+ PRESSURE_SPECIFIC_HEAT=  1.0000000000000000     ,
+ HEATING_TYPE=0          ,
+ LUMINOSITY=  0.0000000000000000     ,
+ ANGULAR_VELOCITY=  1.0000000000000000     ,
+ RAYLEIGH_NUMBER=  100000.00000000000     ,
+ EKMAN_NUMBER=  1.0000000000000000E-003,
+ PRANDTL_NUMBER=  1.0000000000000000     ,
+ MAGNETIC_PRANDTL_NUMBER=  1.0000000000000000     ,
+ GRAVITY_POWER=  1.0000000000000000     ,
+ CUSTOM_REFERENCE_FILE="nothing                                                                                                                 ",
+ DISSIPATION_NUMBER=  0.0000000000000000     ,
+ MODIFIED_RAYLEIGH_NUMBER=  0.0000000000000000     ,
+ HEATING_INTEGRAL=  0.0000000000000000     ,
+ OVERRIDE_CONSTANTS=F,
+ OVERRIDE_CONSTANT= 10*F,
+ RA_CONSTANTS=  2000.0000000000000     ,  100000.00000000000     ,  1000.0000000000000     ,  0.0000000000000000     , 2*1.0000000000000000       ,
+  4*0.0000000000000000       ,
+ WITH_CUSTOM_CONSTANTS= 10*0          ,
+ WITH_CUSTOM_FUNCTIONS= 14*0          ,
+ WITH_CUSTOM_REFERENCE=F,
+ /
+&TRANSPORT_NAMELIST
+ NU_TYPE=1          ,
+ KAPPA_TYPE=1          ,
+ ETA_TYPE=1          ,
+ NU_POWER=  0.0000000000000000     ,
+ KAPPA_POWER=  0.0000000000000000     ,
+ ETA_POWER=  0.0000000000000000     ,
+ NU_TOP=  1.0000000000000000     ,
+ KAPPA_TOP=  1.0000000000000000     ,
+ ETA_TOP=  0.0000000000000000     ,
+ HYPERDIFFUSION=F,
+ HYPERDIFFUSION_BETA=  0.0000000000000000     ,
+ HYPERDIFFUSION_ALPHA=  1.0000000000000000     ,
+ /
