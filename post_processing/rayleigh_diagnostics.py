@@ -22,6 +22,7 @@ from __future__ import print_function
 import numpy as np
 import os
 import glob
+from collections import OrderedDict
 
 maxq = 4000
 
@@ -54,7 +55,7 @@ class main_input:
             file : A main_input or jobinfo.txt file from which the namelist structure
                    and values may be read.
         """
-        self.vals = {}
+        self.vals = OrderedDict()
         self.namelists = []
         self.read(file)
         self.namelists = list(self.vals.keys())
@@ -96,7 +97,7 @@ class main_input:
         
         if (force):
             if (not (nml_lower in self.namelists)):
-                self.vals[nml_lower] = {}
+                self.vals[nml_lower] = OrderedDict()
                 self.namelists = list(self.vals.keys())
                 
             var_names = list(self.vals[nml_lower].keys())
@@ -157,7 +158,7 @@ class main_input:
             lprint(nml_line)             
 
             for var in self.vals[nml].keys():
-                val = self.vals[nml][var]
+                val = self.vals[nml][var]          
                 if (type(val) == type(3.14)):
                     fstring = "{:."+dstr+"e}"
                     val = fstring.format(val)
@@ -242,7 +243,7 @@ class main_input:
                     
                     nml_name = nextline[1:].split('namelist')[0][:-1]
                     if (not nml_name in self.namelists):
-                        self.vals[nml_name] = {}
+                        self.vals[nml_name] = OrderedDict()
                         self.namelists = list(self.vals.keys())
                         
                     # Read all variable names until we reach the end of the namelist
