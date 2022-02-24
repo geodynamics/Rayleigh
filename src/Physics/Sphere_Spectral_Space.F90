@@ -205,6 +205,8 @@ Contains
         Call Add_Derivative(chieq,chivar,1,wsp%p1b,wsp%p1a,dchidr)   
         Call Add_Derivative(chieq,chivar,2,wsp%p1b,wsp%p1a,d2chidr2)   
 
+        Call Add_Derivative(weq,chivar,0, wsp%p1b,wsp%p1a,chivar)    ! gravity
+
         !///////////////////////////////
         !  Z Terms
 
