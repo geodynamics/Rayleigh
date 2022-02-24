@@ -205,6 +205,8 @@ Contains
         Call Add_Derivative(chieq,chivar,1,wsp%p1b,wsp%p1a,dchidr)   
         Call Add_Derivative(chieq,chivar,2,wsp%p1b,wsp%p1a,d2chidr2)   
 
+        Call Add_Derivative(weq,chivar,0, wsp%p1b,wsp%p1a,chivar)    ! gravity
+
         !///////////////////////////////
         !  Z Terms
 
@@ -219,6 +221,8 @@ Contains
             ! A-terms (Toroidal magnetic field)
 
             Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
+            
+            Call Add_Derivative(aeq,avar,1,wsp%p1b,wsp%p1a,dadr)
 
             !///////////////////
             ! C-terms (Poloidal magnetic field)
@@ -280,7 +284,7 @@ Contains
     End Subroutine AdvanceTime
     Subroutine Finalize_EMF()
         Implicit None
-        Integer m, i,j,jstart,jend
+        Integer m, i
         ! we need to take one last radial derivative and combine terms
 
         If (chebyshev) Then

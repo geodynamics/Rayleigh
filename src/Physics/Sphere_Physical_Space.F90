@@ -40,7 +40,7 @@ Module Sphere_Physical_Space
 Contains
     Subroutine physical_space()
         Implicit None
-        Integer :: t, r,k
+
         ! We aren't quite in physical space yet.
         ! 1st, get the phi derivatives
         Call StopWatch(dphi_time)%startclock()
@@ -625,8 +625,6 @@ Contains
     End Subroutine Momentum_Advection_Phi
     Subroutine Phi_Derivatives()
         Implicit None
-        Integer :: r,t,k
-
 
         Call d_by_dphi(wsp%p3a,vr,dvrdp)
         Call d_by_dphi(wsp%p3a,vtheta,dvtdp)
@@ -696,7 +694,6 @@ Contains
 
     Subroutine Diagnostics_Copy_and_Derivs()
         Implicit None
-        Integer :: t,r,k
         !Copy everything from out auxiliary output buffer into the main buffer
 
         wsp%p3a(:,:,:,dpdr) = cobuffer%p3a(:,:,:,dpdr_cb)

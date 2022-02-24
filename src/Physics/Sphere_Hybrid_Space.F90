@@ -57,7 +57,7 @@ Contains
 
     Subroutine rlm_spacea()
         Implicit None
-        Integer :: mp,r,imi,m,l, ind_top
+        Integer :: mp
         Call StopWatch(rlma_time)%startclock()
 
         ! Zero out l_max mode
@@ -212,7 +212,7 @@ Contains
 
     Subroutine Hydro_Output_Derivatives()
         Implicit None
-        Integer :: r, l, m, mp, imi
+        Integer :: r, m, mp, imi
         ! Compute sin(theta) dP/dtheta and
         ! place it in the cobuffer
         Call d_by_dtheta(wsp%s2a,pvar,ftemp1)
@@ -261,7 +261,7 @@ Contains
 
     Subroutine Velocity_Derivatives()
         Implicit None
-        Integer :: r, l, m, mp, imi
+        Integer :: r, m, mp, imi
         !/////////////////////////////////
         ! sintheta dv theta dr
         Call d_by_dtheta(wsp%s2a,d2wdr2,ftemp1)    ! Store sintheta dwdtheta there for now.  We're going to use it a bit anyway.
@@ -416,7 +416,7 @@ Contains
 
     Subroutine Bfield_Derivatives()
         Implicit None
-        Integer :: r, l, m, mp, imi
+        Integer :: r, m, mp, imi
 
         ! These terms are only needed if we want to output
         ! inductions terms in the diagnostics
@@ -484,7 +484,7 @@ Contains
 
     Subroutine Hybrid_Output_Initial()
         Implicit None
-        Integer :: r, l, m, mp, imi
+        Integer :: r, m, mp, imi
         If (magnetism) Then
             Call Allocate_rlm_Field(ftemp3)
             Call Allocate_rlm_Field(ftemp4)
@@ -514,7 +514,7 @@ Contains
 
     Subroutine Hybrid_Output_Final()
         Implicit None
-        Integer :: r, l, m, mp, imi
+        Integer :: mp
         Do mp = my_mp%min, my_mp%max
             ASBUFFA(l_max,:,:,:) = 0.0d0
         Enddo

@@ -70,6 +70,7 @@ Contains
         Character*120 :: file_remember
         ! This routine re-initializes input values to their benchmark values
 
+        ref_remember = 1
         If (benchmark_mode .gt. 0) Then
 
             mode_remember = benchmark_mode  ! Keep track of a few things before restoring defaults
@@ -99,9 +100,12 @@ Contains
             shell_depth = 1.0d0
             aspect_ratio = 0.35d0
 
-            !Temporal Controls
+            !Physical Controls
             rotation = .true.
             viscous_heating = .false.
+            advect_reference_state = .false.
+            
+            !Temporal Controls            
             max_time_step = 1.0d-4
             alpha_implicit = 0.50001d0
             cflmin = 0.4d0
@@ -145,6 +149,7 @@ Contains
             magnetism = .true.
             viscous_heating = .false.
             ohmic_heating = .false.
+            advect_reference_state = .false.            
 
             !Temporal Controls
             max_time_step = 1.0d-4
@@ -192,6 +197,7 @@ Contains
 
             !Physical Controls
             rotation = .true.
+            advect_reference_state = .false.            
 
 
             !Temporal Controls
@@ -227,7 +233,6 @@ Contains
             poly_mass = 1.9D30
             poly_rho_i = 1.1d0
             pressure_specific_heat = 1.0509d8
-            !dimensional = .true.
             angular_velocity = 1.76d-4
 
             !Transport Namelist
@@ -248,6 +253,7 @@ Contains
             !Physical Controls
             rotation = .true.
             magnetism = .true.
+            advect_reference_state = .false.
 
             !Temporal Controls
             max_time_step = 200.0d0
@@ -290,7 +296,6 @@ Contains
             poly_mass = 1.9D30
             poly_rho_i = 1.1d0
             pressure_specific_heat = 1.0509d8
-            !dimensional = .true.
             angular_velocity = 1.76d-4
 
             !Transport Namelist
@@ -594,7 +599,7 @@ Contains
         Integer, Intent(In) :: iteration
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,:)
         Real*8, Intent(In) :: current_time
-        Real*8 :: tmp, tmp2, tmp3, time_passed, over_n_phi
+        Real*8 :: tmp, tmp2, over_n_phi
         Real*8 :: rel_diff, mean_value, sdev_value
 
         Integer :: i,p,t,r, funit, iter_start, iter_end

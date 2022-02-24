@@ -98,8 +98,10 @@ Contains
         my_sim_rank = sim_comm%rank
 
         ! Rank zero read the file and broadcasts the file size to all other ranks.
-        If (my_sim_rank .eq. 0)  Call File_to_String(input_file,input_as_string,nlines,line_len)
-        pars(1:2) = (/ nlines, line_len /)
+        If (my_sim_rank .eq. 0)  Then 
+          Call File_to_String(input_file,input_as_string,nlines,line_len)
+          pars(1:2) = (/ nlines, line_len /)
+        Endif
         Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
 
         nlines = pars(1)
@@ -215,7 +217,7 @@ Contains
         Character(len=:), Allocatable, Intent(out) :: lines(:)
         Integer, Intent(Out) :: nlines, max_len
         Integer :: iunit,istat
-        Character(2048):: line, line2
+        Character(2048):: line
         Integer :: com_check, line_len, i
 
         ! This routine reads filename into the output character array 'lines.'
@@ -274,7 +276,7 @@ Contains
         ! Checks the command line for multiple run flag
         Implicit None
         Character*10 :: arg, arg2
-        Integer :: i, itemp
+        Integer :: i
         Logical :: eof_err
         Character*120 :: aline, ifile
         Integer :: errcheck,  rcount, cpu_count, cmin, mx_rank, mn_rank
@@ -383,8 +385,6 @@ Contains
             ! Checks the command line for acceptable arguments.
             ! Specified values overwrite namelist inputs.
             Implicit None
-            Character*120 :: arg, arg2
-            Integer :: i, itemp
 
             Call Read_CMD_Line('-new_iter' , new_iteration)
             Call Read_CMD_Line('-nprow'    , nprow)

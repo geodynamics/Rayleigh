@@ -93,10 +93,10 @@ indicated in brackets.
 
 Variables in the Reference_Namelist that
 must be specified when running in dimensional anelastic mode. In
-addition, reference_type=2 must also be specified.
+addition, **reference_type=2** must also be specified.
 
    +-----------------------------------+-----------------------------------+
-   | Variable                          | Description                       |
+   | Variable [Default value]          | Description                       |
    +===================================+===================================+
    | poly_n [0]                        | polytropic index                  |
    |                                   | (:math:`P\propto\rho^n`)          |
@@ -123,11 +123,11 @@ addition, reference_type=2 must also be specified.
 
 Variables in the Transport_Namelist
 that must be specified when running in dimensional anelastic mode. In
-addition, reference_type=2 must also be specified in the
+addition, **reference_type=2** must also be specified in the
 Reference_Namelist.
 
    +-----------------------------------+-----------------------------------+
-   | Variable                          | Description                       |
+   | Variable [Default value]          | Description                       |
    +===================================+===================================+
    | nu_top [1.0]                      | kinematic viscosity at rmax,      |
    |                                   | :math:`\nu(rmax)`                 |
@@ -295,7 +295,7 @@ nu_top, kappa_top, or eta_top.
 
 Variables in the Reference_Namelist that
 must be specified when running in nondimensional Boussinesq mode. In
-addition, reference_type=1 must also be specified.
+addition, **reference_type=1** must also be specified.
 
    +-----------------------------------+-----------------------------------+
    | Variable                          | Description                       |
@@ -404,7 +404,7 @@ index and number of density scale heights.
 
 Variables in the Reference_Namelist that
 must be specified when running in nondimensional anelastic mode. In
-addition, reference_type=3 must also be specified.
+addition, **reference_type=3** must also be specified.
 
    +-----------------------------------+-----------------------------------+
    | Variable                          | Description                       |
@@ -531,6 +531,12 @@ variable in radius, but constant in *energy density*. Namely
 The constant :math:`\gamma` in this case is also set by enforcing
 Equation eq_lum_.
 
+**Note:** If internal heating is used in combination with **fix_dTdr_top**, then the value of :math:`\partial\Theta/\partial r` 
+at the upper boundary is set by Rayleigh.  Any value for **dTdr_top** specified in main_input is ignored.  This is done to ensure consistency with the internal 
+heating and any flux passing through the lower boundary due
+to the use of a fixed-flux condition.  To override this behavior, set **adjust_dTdr_top** to .false. in the
+**Boundary_Conditions** namelist.
+
 General Physics Controls
 ------------------------
 
@@ -548,7 +554,7 @@ that may be specified to control run behavior (defaults indicated in
 brackets)
 
    +-----------------------------------+-----------------------------------+
-   | Variable                          | Description                       |
+   | Variable [Default value]          | Description                       |
    +===================================+===================================+
    | magnetism [.false.]               | Turn magnetism on or off          |
    +-----------------------------------+-----------------------------------+

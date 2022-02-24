@@ -24,6 +24,7 @@ Module Spherical_Buffer
     Use Structures
     Use Load_Balance
     Use General_MPI
+    Use Timers
     Implicit None
     Private
 
@@ -443,11 +444,11 @@ Contains
         ! share a common set of ell-m values).
         Implicit None
 
-        Integer :: r,l, mp, lp, indx, r_min, r_max, dr,  cnt,i, imi, rind
-        Integer :: n1, n, nfields, offset, delta_r, rmin, rmax, np,p
+        Integer :: r, l, mp, lp, indx, r_min, r_max, dr,  cnt, i, imi
+        Integer :: n1, n, nfields, np, p
 
         Real*8, Allocatable :: send_buff(:),recv_buff(:)
-        Integer :: tnr, send_offset
+        Integer :: send_offset
 
         ! cargo information
         Integer :: inext, pcurrent
@@ -573,9 +574,9 @@ Contains
         ! Go from implicit configuration (1 physical) to configuration 2 (spectral)
         Implicit None
 
-        Integer :: r,l, mp, lp, indx, r_min, r_max, dr, cnt,i
-        Integer :: n, nfields, offset, delta_r, rmin, rmax, np,p,rind
-        Integer :: recv_offset, tnr
+        Integer :: r, l, mp, lp, indx, r_min, r_max, dr, cnt,i
+        Integer :: n, nfields, np, p
+        Integer :: recv_offset
         Integer :: imi, numalloc
         Integer, Intent(In), Optional :: extra_recv
         Real*8, Allocatable :: send_buff(:),recv_buff(:)

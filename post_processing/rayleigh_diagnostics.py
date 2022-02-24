@@ -22,6 +22,7 @@ from __future__ import print_function
 import numpy as np
 import os
 import glob
+from collections import OrderedDict
 
 maxq = 4000
 
@@ -33,6 +34,237 @@ def get_lut(quantities):
         if ((0 <= q) and ( q <= maxq-1)): # quantity must be in [0, maxq-1]
             lut[q] = i
     return lut.astype('int32')
+
+class main_input:
+    """ 
+    Class for working with main_input files.
+    
+    Attributes:
+        vals : Dictionary that reflects the main_input file structure.
+                   
+    Initializiation syntax:
+        a = main_input(file)  , where
+        file = 'main_input', 'jobinfo.txt' or any similar file containing Fortran namelists.
+        
+    """
+    def __init__(self,file):
+        """ 
+        Initialization routine.
+        
+        Input parameters:
+            file : A main_input or jobinfo.txt file from which the namelist structure
+                   and values may be read.
+        """
+        self.vals = OrderedDict()
+        self.namelists = []
+        self.read(file)
+        self.namelists = list(self.vals.keys())
+                    
+    def __repr__(self, verbose = False):
+        """
+        Provides 'print()' functionality for the main_input class.
+        """
+        self.write(verbose = verbose)
+        return ""
+
+    def unset(self):
+        """
+        Resets all keys in self.vals to the null string "".
+        """
+        for nml in self.namelists:
+            for var in self.vals[nml].keys():
+                self.vals[nml][var] =""  
+
+                
+    def set(self,nml="",var="",val="", force = False):
+        """
+            Sets the value of a key in vals and checks for valid key names.
+            
+            Parameters:
+                nml : the namelist to be modified
+                var : the variable within nml to modify
+                val : the value to which vals[nml][var] will be set
+                
+                force (optional) : When set to True, nml and/or var will
+                                   be created on the fly if they do not exist.
+                                   
+            Calling syntax:
+                mi.set(nml = 'problemsize', var ='n_r', val = 128)
+        
+        """
+        nml_lower = nml.strip().lower()
+        var_lower = var.strip().lower()
+        
+        if (force):
+            if (not (nml_lower in self.namelists)):
+                self.vals[nml_lower] = OrderedDict()
+                self.namelists = list(self.vals.keys())
+                
+            var_names = list(self.vals[nml_lower].keys())
+            
+            if (not (var_lower in var_names)):
+                self.vals[nml_lower][var_lower]=""
+        
+        if nml_lower in self.namelists:
+            var_names = list(self.vals[nml_lower].keys())
+            if var_lower in var_names:
+                self.vals[nml_lower][var_lower]=val
+            else:
+                print('\nError:  variable '+var+' is not present in '+nml_lower+' namelist\n')
+        else:
+            print('\nError: '+nml_lower+' is not a valid namelist name.\n')
+        
+        
+    def write(self, verbose = False, file=None, ndecimal=6, namelist=None):
+        """
+        Displays the contents of the vals dictionary and generates
+        a new main_input file if desired.  Floats are expressed in
+        scientific notation.
+        
+        Input parameters:
+            verbose (optional)  : When set to True, all values, including null strings
+                                  are displayed.  When set to False (default), only
+                                  non-empty dictionary entries are displayed.
+                                 
+            file (optional)     : If a value for file is provided, the contents of
+                                  the vals dictionary will be written to file in
+                                  Fortran-readable namelist format.
+                                 
+            ndecimal (optional) : Number of digits to the right of decimal place
+                                  to maintain when expressing floats in sci-not.
+        
+        """
+
+        if (type(ndecimal) != type(6)):
+            ndecimal = 6
+        dstr = str(ndecimal)
+        
+        lprint = print
+        endl=""
+        if (file != None):
+            fd = open(file, "w")
+            lprint = fd.write
+            endl="\n"
+        
+        if (namelist in list(self.vals.keys())):
+            namelists = [namelist]
+        else:
+            namelists = self.namelists
+        
+        
+        for nml in namelists:
+            
+            nml_line="&"+nml+"_namelist"+endl
+            lprint(nml_line)             
+
+            for var in self.vals[nml].keys():
+                val = self.vals[nml][var]          
+                if (type(val) == type(3.14)):
+                    fstring = "{:."+dstr+"e}"
+                    val = fstring.format(val)
+                if (type(val) != type('astring')):
+                    val = str(val)
+                if ((val != "") or verbose):
+                    val_line = var+' = '+val+endl
+                    lprint(val_line)
+
+            lprint("/"+endl)
+            
+        if (file != None):
+            fd.close()
+
+    def read_file_lines(self,filename):
+        """
+        
+           Helper routine.  Reads a file and returns it as a list of
+           strings with one file line per list element.
+           
+           Input parameters:
+               filename :  The file to be read
+           
+        """
+        fd = open(filename, "r")
+        flines = []
+        while True:                            
+            oneline = fd.readline()   
+            if len(oneline) == 0:              
+                break                         
+            else:
+                flines.append(oneline)        
+        fd.close()
+        return flines
+    
+    def read(self, infile):
+        """
+        
+           Populates the vals dictionary using values obtained from a main_input file. 
+        
+           Input parameters:
+               infile     :  A main_input or jobinfo.txt file from which to extract 
+                             namelist information.
+                             
+           Calling Syntax:
+               mi.read('main_input')
+               
+           Note:
+               Only namelist variables specified within infile are assigned
+               an associated key/value combination.  If a variable is not defined in
+               infile, it's corresponding key in the vals dictionary will remain 
+               undefined.  If a value for the main_input variable already exists in 
+               vals, it will be overwritten using the associated value from infile. 
+        
+        """
+        
+        
+        flines = self.read_file_lines(infile)
+
+        #####################################
+        # Iterate over the main_input file and 
+        # extract namelist and associated 
+        # variable names 
+        
+        nlines = len(flines)
+        nread = 0
+        
+        while (nread < nlines):
+            
+            nextline = flines[nread].strip().lower() #strip white-space and force lower case
+            nread+=1
+ 
+            if (len(nextline) != 0):
+                
+                # Test for beginning of new namelist
+                # (first character of line is &)
+                tchar = nextline[0]
+                if (tchar == '&'):  
+                    
+                    # Extract namelist name. 
+                    # Update the namelist list as we go.
+                    
+                    nml_name = nextline[1:].split('namelist')[0][:-1]
+                    if (not nml_name in self.namelists):
+                        self.vals[nml_name] = OrderedDict()
+                        self.namelists = list(self.vals.keys())
+                        
+                    # Read all variable names until we reach the end of the namelist
+                    reading_nml = True
+                    while (reading_nml):
+                        nextline = flines[nread].strip()
+                        nread +=1
+                        if(len(nextline) != 0):
+                            if (nextline[0]=='/'):  # A forward slash marks the end of a namelist
+                                reading_nml = False
+
+                            # Extract the variable names and values. Strip out comments.
+                            # Some lines in jobinfo.txt are split across multiple lines.
+                            # Only those with the '=' sign contain variable names
+                            lsep = nextline.split('=')                        
+                            if (len(lsep) > 1 and reading_nml and (lsep[0][0] != '!')):
+                                var_name = lsep[0].strip().lower()
+                                var_val = lsep[1].strip().split('!')[0]
+                                self.vals[nml_name][var_name] = var_val
+
+    
 
 class Spherical_3D:
     """Rayleigh Spherical_3D Structure
@@ -726,12 +958,21 @@ class Point_Probes:
     self.costheta[0:ntheta-1]                     : cos(theta grid)
     self.sintheta[0:ntheta-1]                     : sin(theta grid)
     self.phi[0:nphi-1]                            : phi values (radians)
-    self.phi_indices[0:nphi-1]                    : phi indices (from 1 to nphi)
+    self.rad_inds[0:self.nr-1]                    : radial indices (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.theta_inds[0:self.ntheta-1]              : theta indices (from the full simulation theta grid) 
+                                                  : corresponding to each point in self.costheta
+    self.phi_inds[0:self.nphi-1]                  : phi indices (from the full simulation phi grid) 
+                                                  : corresponding to each point in self.phi
     self.vals[0:nphi-1,0:ntheta-1,0:nr-1,0:nq-1,0:niter-1] : The meridional slices 
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+    
+    --Note that the indices (phi_inds,rad_inds, theta_inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def __init__(self,filename='none',path='Point_Probes/'):
@@ -805,12 +1046,17 @@ class Meridional_Slices:
     self.costheta[0:ntheta-1]                     : cos(theta grid)
     self.sintheta[0:ntheta-1]                     : sin(theta grid)
     self.phi[0:nphi-1]                            : phi values (radians)
-    self.phi_indices[0:nphi-1]                    : phi indices (from 1 to nphi)
+    self.phi_inds[0:nphi-1]                       : phi indices (from the full simulation phi grid) 
+
     self.vals[0:nphi-1,0:ntheta-1,0:nr-1,0:nq-1,0:niter-1] : The meridional slices 
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (phi_inds) use Python's 0-based array indexing.
+    --This means that if phi_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through n_phi.
     """
 
     def __init__(self,filename='none',path='Meridional_Slices/'):
@@ -935,7 +1181,9 @@ class Shell_Slices:
     self.nphi                                     : number of phi points
     self.qv[0:nq-1]                               : quantity codes for the diagnostics output
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.costheta[0:ntheta-1]                     : cos(theta grid)
     self.sintheta[0:ntheta-1]                     : sin(theta grid)
     self.vals[0:nphi-1,0:ntheta-1,0:nr-1,0:nq-1,0:niter-1] 
@@ -944,6 +1192,10 @@ class Shell_Slices:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def print_info(self, print_costheta = False):
@@ -957,7 +1209,7 @@ class Shell_Slices:
         print( '.......................')
         print( 'radius   : ', self.radius)
         print( '.......................')
-        print( 'inds     : ', self.inds)
+        print( 'rad_inds : ', self.rad_inds)
         print( '.......................')
         print( 'iters    : ', self.iters)
         print( '.......................')
@@ -1004,18 +1256,18 @@ class Shell_Slices:
         self.lut = get_lut(qv)
 
         radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.costheta = np.reshape(swapread(fd,dtype='float64',count=ntheta,swap=bs),(ntheta), order = 'F')
         self.sintheta = (1.0-self.costheta**2)**0.5
 
         # convert from Fortran 1-based to Python 0-based indexing
-        inds = inds - 1
+        rad_inds = rad_inds - 1
 
         if (len(slice_spec) == 3):
 
             self.iters = np.zeros(1,dtype='int32')
             self.qv    = np.zeros(1,dtype='int32')
-            self.inds  = np.zeros(1,dtype='int32')
+            self.rad_inds  = np.zeros(1,dtype='int32')
             self.time  = np.zeros(1,dtype='float64')
             self.iters = np.zeros(1,dtype='float64')
             self.radius = np.zeros(1,dtype='float64')
@@ -1082,7 +1334,7 @@ class Shell_Slices:
             fd.seek(seek_bytes,1)
 
             self.radius[0] = radius[rspec]
-            self.inds[0]   = inds[rspec]
+            self.rad_inds[0]   = rad_inds[rspec]
             self.qv[0] = qspec
             tmp = np.reshape(swapread(fd,dtype='float64',count=ntheta*nphi,swap=bs),(nphi,ntheta), order = 'F')
             self.vals[:,:,0,0,0] = tmp
@@ -1093,7 +1345,8 @@ class Shell_Slices:
                 #If true, read only the first record of the file.
                 nrec = 1  
             self.radius = radius
-            self.inds   = inds
+            self.rad_inds   = rad_inds
+            self.inds = rad_inds
             self.qv     = qv
             self.niter = nrec
             self.vals  = np.zeros((nphi,ntheta,nr,nq,nrec),dtype='float64')
@@ -1117,7 +1370,9 @@ class SPH_Modes:
     self.nell                                     : number of ell values
     self.qv[0:nq-1]                               : quantity codes for the diagnostics output
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.lvals[0:nell-1]                          : ell-values output
     self.vals[0:lmax,0:nell-1,0:nr-1,0:nq-1,0:niter-1] 
                                                   : The complex spectra of the SPH modes output
@@ -1126,6 +1381,10 @@ class SPH_Modes:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def __init__(self,filename='none',path='SPH_Modes/'):
@@ -1154,13 +1413,14 @@ class SPH_Modes:
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        self.rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.lvals = np.reshape(swapread(fd,dtype='int32',count=nell,swap=bs),(nell), order = 'F')
         lmax = np.max(self.lvals)
         nm = lmax+1
 
         # convert from Fortran 1-based to Python 0-based indexing
-        self.inds = self.inds - 1
+        self.rad_inds = self.rad_inds - 1
+        self.inds = self.rad_inds
 
         self.vals  = np.zeros((nm,nell,nr,nq,nrec),dtype='complex128')
         
@@ -1204,7 +1464,9 @@ class Shell_Spectra:
     self.mmax                                     : maximum spherical harmonic degree m
     self.qv[0:nq-1]                               : quantity codes for the diagnostics output
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.vals[0:lmax,0:mmax,0:nr-1,0:nq-1,0:niter-1] 
                                                   : The complex spectra of the shells output 
     self.lpower[0:lmax,0:nr-1,0:nq-1,0:niter-1,3]    : The power as a function of ell, integrated over m
@@ -1213,6 +1475,10 @@ class Shell_Spectra:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
 
     def print_info(self):
@@ -1228,7 +1494,7 @@ class Shell_Spectra:
         print( '.......................')
         print( 'radius   : ', self.radius)
         print( '.......................')
-        print( 'inds     : ', self.inds)
+        print( 'rad_inds : ', self.rad_inds)
         print( '.......................')
         print( 'iters    : ', self.iters)
         print( '.......................')
@@ -1268,7 +1534,7 @@ class Shell_Spectra:
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        self.rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
         self.vals  = np.zeros((nell,nm,nr,nq,nrec),dtype='complex128')
         
         self.iters = np.zeros(nrec,dtype='int32')
@@ -1276,7 +1542,8 @@ class Shell_Spectra:
         self.version = version
 
         # convert from Fortran 1-based to Python 0-based indexing
-        self.inds = self.inds - 1
+        self.rad_inds = self.rad_inds - 1
+        self.inds = self.rad_inds
 
         for i in range(nrec):
 
@@ -1320,13 +1587,19 @@ class Power_Spectrum():
     self.nr                                       : number of radii at which power spectra are available
     self.lmax                                     : maximum spherical harmonic degree l
     self.radius[0:nr-1]                           : radii of the shell slices output
-    self.inds[0:nr-1]                             : radial indices of the shell slices output
+    self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
+                                                  : corresponding to each point in self.radius
+    self.inds                                     : same as self.rad_inds (for backwards compatibility)
     self.power[0:lmax,0:nr-1,0:niter-1,0:2]       : the velocity power spectrum.  The third
                                                   : index indicates (0:total,1:m=0, 2:total-m=0 power)
     self.mpower[0:lmax,0:nr-1,0:niter-1,0:2]      : the magnetic power spectrum
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.magnetic                                 : True if mpower exists
+
+    --Note that the indices (rad_inds = inds) use Python's 0-based array indexing.
+    --This means that if rad_inds are 1,2,5, say, then in Rayleigh they correspond to points 2,3,6 
+    --on the global grid that runs from 1 through N_R.
     """
     #Power Spectrum Class - generated using shell spectra files
     def __init__(self,infile, dims=[],power_file = False, magnetic = False, path="Shell_Spectra"):
@@ -1354,6 +1627,7 @@ class Power_Spectrum():
         self.iters[:]  = iters[:]
         self.time[:]   = time[:]
         self.inds[:]   = inds[:]
+        self.rad_inds = self.inds
         self.radius[:] = radius[:]
     def power_file_init(self,pfile):
         fd = open(pfile,'rb')  
@@ -1369,6 +1643,7 @@ class Power_Spectrum():
         self.iters = np.reshape(swapread(fd,dtype='int32',count=niter,swap=bs),(niter), order = 'F')
         self.time = np.reshape(swapread(fd,dtype='float64',count=niter,swap=bs),(niter), order = 'F')
         self.inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+        self.rad_inds = self.inds
         self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
         pcount = (lmax+1)*nr*niter*3
         pdim = (lmax+1,nr,niter,3)
@@ -1416,6 +1691,7 @@ class Power_Spectrum():
         self.niter = nt
         self.radius = a.radius
         self.inds = a.inds
+        self.rad_inds = self.inds
         self.iters = a.iters
         self.time = a.time
 
@@ -1453,9 +1729,9 @@ class Power_Spectrum():
         if(self.magnetic):
             #Do the same thing for the magnetic field components
             # We use the lookup table to find where br, vtheta, and bphi are stored
-            br_index = a.lut[401]
-            bt_index = a.lut[402]
-            bp_index = a.lut[403]
+            br_index = a.lut[801]
+            bt_index = a.lut[802]
+            bp_index = a.lut[803]
             #the last index indicates 0:full power, 1:m0 power, 2:full-m0
             mpower = np.zeros((lmax+1,nr,nt,3),dtype='float64')
             
@@ -1496,31 +1772,52 @@ def check_endian(fd,sig,sigtype):
     else:
         return True
 
-def build_file_list(istart,iend,path = '.',diter = -1,ndig = 8,special=False):
+def build_file_list(istart,iend,path = '.',diter = -1,ndig = 8):
+    """
+    Rayleigh file listing routine.  Returns a list of numbered files in the range istart:iend.
+    
+    By default, a file listing of all numbered files in path is generated using listdir.
+    
+    Alternatively, diter may be specified to create a list of files with a predetermined
+    spacing between numbered files.
+    
+    Input Parameters:
+    
+        istart :  the smallest file number to generate / retrieve
+        iend   :  the largest file number to generate / retrieve
+
+    Optional Parameters:
+        path   :  full path to directory containing the numbered files 
+                  (default is current directory)
+        diter  :  if specified, files will be generated between istart and iend with
+                  a spacing of diter
+        ndig   :  if generating files using diter, set this value to the number of digits
+                  in a filename (default is 8)
+
+    """
     files = []
+    
     if (diter < 1):
         # Examine the directory and grab all files that fall between istart and iend
         allfiles = os.listdir(path)
         allfiles.sort()
+        
         for f in allfiles:
-            if ( ('special' in f) and special ):
-                fint = int(f[0:7])
-                if ( (fint >= istart ) and (fint <= iend)  ):
-                    files.append(path+'/'+f)
-            if ( (not 'special' in f) and not(special) ):
+            try:
                 fint = int(f)
                 if ( (fint >= istart ) and (fint <= iend)  ):
                     files.append(path+'/'+f)
+            except:
+                print("Skipping ",f+'.  Unable to convert to integer.')
     else:
         # Generate filename manually (no ls)
         i = istart
         digmod = "%0"+str(ndig)+"d"
         while (i <= iend):
             fiter = digmod % i           
-            if (special):
-                fiter=fiter+'_special'
             files.append(path+'/'+fiter)
             i = i+diter
+            
     return files
 
 ########################################################

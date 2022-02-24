@@ -9,9 +9,12 @@ export LC_COLLATE=C
 # make the CUSTOMROOT variable available to sub-make processes
 export CUSTOMROOT
 
+# running "make target=dbg" will only compile the specified target
+target=all
+
 rayleigh: prepare_directory
 	@$(MAKE) --no-print-directory --directory=$(BUILD) clean_exec
-	@$(MAKE) --no-print-directory --directory=$(BUILD) all
+	@$(MAKE) --no-print-directory --directory=$(BUILD) $(target)
 	@echo ""
 	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	@echo "Compilation is complete."
@@ -69,9 +72,21 @@ clear_ipynb:
 
 .PHONY: install
 install:
+ifeq ($(target), "all")
 	@echo "Installing executables into: " $(PREFIX)"/bin"
 	@mkdir -p $(PREFIX)/bin
 	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
+else
+ifdef output
+	@echo "Installing rayleigh.$(target) into: " $(PREFIX)"/bin/$(output)"
+	@mkdir -p $(PREFIX)/bin
+	@cp $(BUILD)/compiled/rayleigh.$(target) $(PREFIX)/bin/$(output)
+else
+	@echo "Installing executables into: " $(PREFIX)"/bin"
+	@mkdir -p $(PREFIX)/bin
+	@cp $(BUILD)/compiled/rayleigh.* $(PREFIX)/bin/.
+endif
+endif
 
 .PHONY: doc
 doc:

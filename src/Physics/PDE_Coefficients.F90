@@ -106,16 +106,21 @@ Module PDE_Coefficients
 
     !/////////////////////////////////////////////////////////////////////////////////////
     ! Nondimensional Parameters
-    Real*8 :: Rayleigh_Number              = 1.0d0
+    Real*8 :: Rayleigh_Number         = 1.0d0
     Real*8 :: chi_Rayleigh_Number          = 0.0d0
-    Real*8 :: Ekman_Number                 = 1.0d0
-    Real*8 :: Prandtl_Number               = 1.0d0
+    Real*8 :: Ekman_Number            = 1.0d0
+    Real*8 :: Prandtl_Number          = 1.0d0
     Real*8 :: chi_Prandtl_Number           = 1.0d0
-    Real*8 :: Magnetic_Prandtl_Number      = 1.0d0
-    Real*8 :: gravity_power                = 0.0d0
-    Real*8 :: Dissipation_Number           = 0.0d0
-    Real*8 :: Modified_Rayleigh_Number     = 0.0d0
+    Real*8 :: Magnetic_Prandtl_Number = 1.0d0
+    Real*8 :: gravity_power           = 0.0d0
+    Real*8 :: Dissipation_Number      = 0.0d0
+    Real*8 :: Modified_Rayleigh_Number = 0.0d0
     Real*8 :: chi_modified_rayleigh_number = 0.0d0
+    
+    !///////////////////////////////////////////////
+    ! Minimum time step based on rotation rate
+    ! (determined by the reference state)
+    Real*8 :: max_dt_rotation = 0.0d0
 
 
 
@@ -195,6 +200,8 @@ Contains
 
         If (with_custom_reference) Call Augment_Reference()  
 
+        If (rotation) Call Set_Rotation_dt()
+
     End Subroutine Initialize_Reference
 
     Subroutine Allocate_Reference_State
@@ -235,6 +242,24 @@ Contains
 
     End Subroutine Allocate_Reference_State
 
+    Subroutine Set_Rotation_dt()
+        Implicit None
+        Real*8 :: rotational_timescale
+        !Adjust the maximum timestep to account for rotation rate, if necessary.
+        
+        rotational_timescale = 1.0d0/ref%Coriolis_Coeff
+        
+        ! Minimum sampling would require two time samples per rotational timescale.
+        ! We specify 4 samples and further adjust by the CFL safety factor.
+        max_dt_rotation = rotational_timescale*0.25d0*cflmax  
+        
+        ! We only modify the timestep if not running a benchmark.
+        ! Those models require set timesteps to satisfy the automated
+        ! benchmark test during continuous integration.
+        If (benchmark_mode .eq. 0) max_time_step = Min(max_time_step,max_dt_rotation)
+    
+    End Subroutine Set_Rotation_dt
+
     Subroutine Constant_Reference()
         Implicit None
         Integer :: i
@@ -257,6 +282,10 @@ Contains
                 Write(dstring,dofmt)Magnetic_Prandtl_Number
                 Call stdout%print(" ---- Magnetic Prandtl Number  : "//trim(dstring))
             Endif
+            Write(dstring,dofmt)chi_Rayleigh_Number
+            Call stdout%print(" ---- Chi Rayleigh Number      : "//trim(dstring))
+            Write(dstring,dofmt)chi_Prandtl_Number
+            Call stdout%print(" ---- Chi Prandtl Number       : "//trim(dstring))
         Endif
 
         ref%density      = 1.0d0
@@ -430,7 +459,7 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
         If (magnetism) Then
-        	ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
+            ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
         DeAllocate(dtmparr, gravity)
     End Subroutine Polytropic_ReferenceND
@@ -776,7 +805,7 @@ Contains
         If (present(filename)) Then
             ref_file = Trim(my_path)//filename
         Else
-            ref_file = 'equation_coefficients'
+            ref_file = Trim(my_path)//'equation_coefficients'
         Endif
 
         If (my_rank .eq. 0) Then
@@ -801,7 +830,7 @@ Contains
     End Subroutine Write_Equation_Coefficients_File
 
     Subroutine Read_Custom_Reference_File(filename)
-        Character*120, Intent(In), Optional :: filename
+        Character*120, Intent(In) :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
         Integer :: i, k, j
@@ -816,11 +845,9 @@ Contains
         cset(:) = 0
         input_constants(:) = 0.0d0
 
-        If (present(filename)) Then
-            ref_file = Trim(my_path)//filename
-        Else
-            ref_file = 'reference'
-        Endif
+        
+        ref_file = Trim(my_path)//filename
+
 
         Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream')
 
