@@ -3,7 +3,7 @@
 cd tests/chi_scalar
 
 #cd bench
-#mpirun -np 4 ../../../bin/rayleigh.dbg
+#mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 #cd ..
 
 # generate initial conditions
@@ -11,11 +11,11 @@ cd tests/chi_scalar
    -e 'import numpy as np; x = 2*radius - rmin - rmax; rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)'
 
 cd T
-mpirun -np 4 ../../../bin/rayleigh.dbg
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 cd chi
-mpirun -np 4 ../../../bin/rayleigh.dbg
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # after both versions have run, we test the output for errors
