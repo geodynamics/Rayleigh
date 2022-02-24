@@ -47,7 +47,7 @@ Contains
                 qty = tmp1*qty
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         If (compute_quantity(vm_z) .or. compute_quantity(vortm_z) .or. compute_quantity(kin_helicity_z_mm) .or.&
             compute_quantity(kin_helicity_z_mp) .or. compute_quantity(kin_helicity_z_pm)) Then
@@ -101,7 +101,7 @@ Contains
                 qty = tmp3*tmp4
                 Call Add_Quantity(qty)
             Endif
-        Endif	
+        Endif
 
         !/////////////////////////////////////////////////
         ! 2. The term involving dvzdz
@@ -111,7 +111,7 @@ Contains
                 (buffer(PSI,dvrdt)-buffer(PSI,vtheta))+one_over_r(r)*(buffer(PSI,vr)+buffer(PSI,dvtdt)) !dvzdz
             END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
 
         If (compute_quantity(dvzdz_m)) Then
             DO_PSI
@@ -120,14 +120,14 @@ Contains
                 m0_values(PSI2,dvtdt)) !dvzdz_m
             END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
         If (compute_quantity(dvzdz_p)) Then
             DO_PSI
                 qty(PSI)=fbuffer(PSI,dvrdr)-fbuffer(PSI,dvtdr)*tantheta(t)-cottheta(t)*one_over_r(r)*&
                 (fbuffer(PSI,dvrdt)-fbuffer(PSI,vtheta))+one_over_r(r)*(fbuffer(PSI,vr)+fbuffer(PSI,dvtdt)) !dvzdz_p
             END_DO
             Call Add_Quantity(qty)
-        Endif	
+        Endif
         !///////////////////////////////////////////
         ! 3. terms involving B_z/J_z/dTvardz/dPdz/
      

@@ -148,10 +148,6 @@ Subroutine Test_Legendre
         Enddo
     Enddo
 
-
-
-103 format(d11.2)
-
     DeAllocate(theta)
     DeAllocate(ylm)
     DeAllocate(tmp)
@@ -977,9 +973,9 @@ Subroutine StP_4d_dgp2(data_in, data_out)
     Type(rmcontainer4d), Intent(In) :: data_in(:)
     Real*8, Intent(InOut) :: data_out(:,:,:)
     Real*8 :: alpha, beta
-    Real*8, Allocatable :: temp(:,:),temp2(:,:), temp3(:,:,:,:)
-    Integer :: m,nl,nt1,i,j,l, nt2, ddims(3), nrhs, jstart, jend,r,lstart
-    Integer :: nfield, rmn, rmx, oddims(4),imi,f,iend,istart
+    Real*8, Allocatable :: temp(:,:), temp3(:,:,:,:)
+    Integer :: m,nl,nt1,i,j,l, nt2, ddims(3), nrhs, jend,r
+    Integer :: nfield, rmn, rmx, oddims(4),imi,f
 
     ddims = shape(data_out)
     n_m = ddims(3)
@@ -1087,7 +1083,7 @@ Subroutine PtS_4d_dgpv3(data_in, data_out)
     Real*8, Allocatable :: temp(:,:,:,:),fodd(:,:,:), feven(:,:,:)
     Integer :: m,nl,nt1,i,j,l, nt2,ddims(3),k
     Integer :: oddims(4), nfield
-    Integer :: rmn, rmx, f, imi, istart, iend, jend,r
+    Integer :: rmn, rmx, f, imi, jend, r
 
     oddims = shape(data_out(1)%data)
     nfield = oddims(4)

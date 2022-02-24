@@ -105,7 +105,7 @@ Contains
 
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
-        Real*8 :: mtmp1, mtmp2, mtmp3   ! temporary variables for use as needed
+        ! Real*8 :: mtmp1, mtmp2, mtmp3   ! temporary variables for use as needed
 
 
         ! TUTORIAL EXAMPLE 1:
@@ -190,7 +190,7 @@ Contains
         Integer :: r,k, t
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
-        Real*8 :: htmp1, htmp2, htmp3   ! temporary variables for use if needed
+        ! Real*8 :: htmp1, htmp2, htmp3   ! temporary variables for use if needed
 
         ! Tutorial Exercise 2:
         !   Uncomment and modify the code below to assign

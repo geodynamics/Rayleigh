@@ -42,8 +42,8 @@ Soft-linking is recommended; if you recompile the code, the executable
 remains up-to-date. If running on an IBM machine, copy the script named
 Rayleigh/etc/make_dirs to your run directory and execute the script.
 This will create the directory structure expected by Rayleigh for its
-outputs. This step is unnecessary when compiling with the Intel or GNU
-compilers.
+outputs. This step is unnecessary when compiling with the Intel, GNU,
+AOCC, or Cray compilers.
 
 Next, you must create a main_input file. This file contains the
 information that describes how your simulation is run. Rayleigh always
@@ -181,7 +181,7 @@ or
    /
 
 The radial domain bounds are determined by the namelist variables
-:math:`rmin` (the lower radial boundary) and :math:`rmax` (the upper
+``rmin`` (the lower radial boundary) and ``rmax`` (the upper
 radial boundary):
 
 ::
@@ -191,9 +191,9 @@ radial boundary):
     rmax = 2.0
    /
 
-Alternatively, the user may specify the shell depth (:math:`rmax-rmin`)
-and aspect ratio (:math:`rmin/rmax`) in lieu of :math:`rmin` and
-:math:`rmax`. The preceding example may then be written as:
+Alternatively, the user may specify the shell depth (``rmax-rmin``)
+and aspect ratio (``rmin/rmax``) in lieu of ``rmin`` and
+``rmax``. The preceding example may then be written as:
 
 ::
 
@@ -202,9 +202,35 @@ and aspect ratio (:math:`rmin/rmax`) in lieu of :math:`rmin` and
     shell_depth = 1.0
    /
 
-Note that the interpretation of :math:`rmin` and :math:`rmax` depends on
+Note that the interpretation of ``rmin`` and ``rmax`` depends on
 whether your simulation is dimensional or nondimensional. We discuss
 these alternative formulations in §\ :ref:`physics`
+
+It is possible to run Rayleigh with multiple, stacked domains in the
+radial direction. Each of these is discretized using their own set of
+Chebyshev polynomials. The boundaries and number of polynomials can be
+set for each domain indiviadually, which makes it possible to control
+the radial resolution at different radii.
+
+To use this feature the problem size has to be specified using
+``domain_bounds`` and ``ncheby`` instead of ``rmin``, ``rmax``, and
+``n_r``. ``ncheby`` takes a comma-separated list of the number of radial
+points to use in each domain. ``domain_bounds`` takes a comma-separated
+list of the radii of the domain boundaries, starting with the smallest
+radius. It has one element more than the number of domains. This is an
+example of two radial domains, one covering the radii 1 to 2 with 16
+radial points, the other the radii 2 to 4 with 64 radial points.
+
+::
+
+   &problemsize_namelist
+    domain_bounds = 1.0, 2.0, 4.0
+    ncheby = 16, 64
+   /
+
+Radial values in the diagnostic output will be repeated at the inner
+domain boundaries. Most quantities are forced to be continuous at these
+points.
 
 Controlling Run Length & Time Stepping
 --------------------------------------
