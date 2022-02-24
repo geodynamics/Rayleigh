@@ -16,8 +16,8 @@
  ohmic_heating = .false.
 /
 &temporal_controls_namelist
- max_time_step = 1.0d-4
- max_iterations = 100
+ max_time_step = 7.5e-5
+ max_iterations = 17
  checkpoint_interval = 10000
  cflmin = 0.4d0
  cflmax = 0.6d0
@@ -26,8 +26,8 @@
 /
 &output_namelist
 globalavg_values = 401
-globalavg_frequency = 10
-globalavg_nrec = 10
+globalavg_frequency = 17
+globalavg_nrec = 1
 /
 &Boundary_Conditions_Namelist
 no_slip_boundaries = .true.

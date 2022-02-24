@@ -2,9 +2,9 @@
 
 cd tests/chi_scalar
 
-cd bench
-mpirun -np 4 ../../../bin/rayleigh.dbg
-cd ..
+#cd bench
+#mpirun -np 4 ../../../bin/rayleigh.dbg
+#cd ..
 
 # generate initial conditions
 ../../pre_processing/rayleigh_spectral_input.py -ar 0.35 -sd 1.0 -nt 64 -nr 48 -o bench_t_init \

@@ -46,6 +46,10 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         sh ./tests/generic_input/run_test.sh
 
+        # chi scalar test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/chi_scalar/run_test.sh
+
         git diff > changes.diff
         git diff --exit-code --name-only
 
