@@ -74,6 +74,31 @@ if maxabsdiff > 1.e-10:
   print("ERROR: generic input bc produced an unexpected result (within a tolerance of 1.e-10)!")
   error = True
 
+# test using the raw data imported from the output files for radial case
+base_r = Spherical_3D_multi('00000001_0501', path='radial_base/Spherical_3D/')
+sparse_r = Spherical_3D_multi('00000001_0501', path='radial_sparse/Spherical_3D/')
+maxabsdiff = 0.0
+for k in base_r.vals.keys():
+  maxabsdiffk = np.abs(base_r.vals[k] - sparse_r.vals[k]).max() 
+  print("Maximum difference ({}) = {}".format(k, maxabsdiffk,))
+  maxabsdiff = max(maxabsdiff, maxabsdiffk)
+
+if maxabsdiff > 1.e-10:
+  print("ERROR: init_type 7 and init_type 8 (sparse) produced different initial conditions (within a tolerance of 1.e-10)!")
+  error = True
+
+# test using the raw data imported from the output files for radial case
+dense_r = Spherical_3D_multi('00000001_0501', path='radial_dense/Spherical_3D/')
+maxabsdiff = 0.0
+for k in base_r.vals.keys():
+  maxabsdiffk = np.abs(base_r.vals[k] - dense_r.vals[k]).max() 
+  print("Maximum difference ({}) = {}".format(k, maxabsdiffk,))
+  maxabsdiff = max(maxabsdiff, maxabsdiffk)
+
+if maxabsdiff > 1.e-10:
+  print("ERROR: init_type 7 and init_type 8 (dense) produced different initial conditions (within a tolerance of 1.e-10)!")
+  error = True
+
 # test spectral input reading and inverse transforming
 maxabsdiff = 0.0
 
