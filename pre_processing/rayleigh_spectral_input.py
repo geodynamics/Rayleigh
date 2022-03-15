@@ -460,11 +460,11 @@ class SpectralInput(object):
     # work out lm_max, l_max, m_max & n_max
     lm_max = self.lm_max
     if lm_max is None: lm_max = dealias_g2m(n_theta)
-    l_max = min(lm_max, n_theta)
-    m_max = min(lm_max, n_phi)
+    l_max = min(lm_max, dealias_g2m(n_theta))
+    m_max = min(lm_max, dealias_g2m(n_phi))
     n_max = self.n_max
     if n_max is None: n_max = dealias_g2m(n_r)
-    n_max = min(n_max, n_r)
+    n_max = min(n_max, dealias_g2m(n_r))
 
     # get Legendre Gauss integration points and weights
     if costheta is None or weights is None:

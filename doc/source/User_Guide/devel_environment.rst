@@ -149,3 +149,19 @@ You can check the newly built container is there using this command.
 .. code-block:: bash
 
     docker images
+
+Spack Environment
+-----------------
+
+`Spack <https://github.com/spack/spack>`_ can be used to create a development environment to build the code in a local directory. First set up Spack using the instructions in :ref:`spack-setup`
+
+Afterwards create a new environment, activate it and set the status of the Rayleigh package to development. We select ``$PWD`` as the path, so run this command from the base directory of your git clone.
+
+.. code-block:: bash
+
+    spack env create rayleigh
+    spack env activate rayleigh
+    spack add rayleigh@master
+    spack develop -p "$PWD" rayleigh@master
+
+A subsequent ``spack install`` will install necessary dependencies and build Rayleigh in the selected directory.
