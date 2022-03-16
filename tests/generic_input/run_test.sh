@@ -38,6 +38,24 @@ cd bcs_script
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
+# test the radial case...
+# first a base case not using generic input
+cd radial_base
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
+# then a case that generates a sparse radial generic input file
+cd radial_sparse
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_input.py
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
+# finally a version that generates a dense radial generic input file
+cd radial_dense
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_input.py
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
 # after both versions have run, we test the output for errors
 PYTHONPATH=../../post_processing:../../pre_processing:$PYTHONPATH python test_output.py
 
