@@ -1009,68 +1009,47 @@ Contains
         Implicit None
         Character*120, Intent(In) :: profile_file
         Real*8, Intent(InOut) :: profile_out(1:)
-        Real*8, Allocatable :: radius_in(:), profile_in(:), spy2(:)
-        Real*8 :: min_r_in, max_r_in, min_p_in, max_p_in
-        Real*8 :: splx, sply
-        Integer*4 :: nr_in, r, etag
+        Real*8 :: ov_root_fourpi
+        type(SphericalBuffer) :: tempfield
+        integer :: fcount(3,2)
+        integer :: r, m, mp
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Reads in a 1-D radial profile of some quantity,
         ! interpolates it (using cubic splines) to the current grid,
         ! and stores it in profile_out.
-        If (my_rank .eq. 0) Write(6,*)''
-        If (my_rank .eq. 0) Write(6,*)'------ Reading custom thermal profile for ell=0'
-        Open(unit=892, file = profile_file, form = 'unformatted', status = 'old',access='stream')
-        Read(892)etag
+
+        fcount(:,:) = 1
+        call tempfield%init(field_count = fcount, config = 'p1b')
+        call tempfield%construct('p1b')        ! read_input expects field to be in p1b configuration
+        call read_input(profile_file, 1, tempfield) ! Read the data
         
-        If (etag .eq. 314) Then
-            Read(892)nr_in
+        Call tempfield%construct('p1a')  ! transform from Chebyshev space to radial grid
+        Call gridcp%From_Spectral(tempfield%p1b,tempfield%p1a)
+        tempfield%config='p1a'
+        Call tempfield%reform()  ! move from p1a to s2a
+        
+        ! Next move to rlm space
+        
+        ! Extract ell=0 profile
 
-            If (my_rank .eq. 0) Write(6,*)'------ nr_in is: ', nr_in
-            Allocate(profile_in(1:nr_in))
-            Allocate(radius_in(1:nr_in))
-            Read(892)(radius_in(r),r=1,nr_in)
-            Read(892)(profile_in(r),r = 1, nr_in)
-            Close(892)
+        ov_root_fourpi = 1.0d0/sqrt(four_pi)
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            If (m .eq. 0) Then
 
-            !--------------------------------------------------------------
-            ! Interpolate onto our grid (assume custom_radius and custom_entropy are backwards
-            min_r_in = radius_in(nr_in)
-            max_r_in = radius_in(1)
-            max_p_in = profile_in(nr_in)
-            min_p_in = profile_in(1)
-
-            If (my_rank .eq. 0) Write(6,*)'------ rmin_in, rmax_in: ', min_r_in, max_r_in
-            If (my_rank .eq. 0) Write(6,*)'------ profile_min, profile_max: ', min_p_in, max_p_in
-            If (my_rank .eq. 0) Write(6,*)''
-
-            Allocate(spy2(1:nr_in))
-            spy2(1:nr_in) = 0.0d0
-            profile_out(1:N_R) = 0.0d0
-            Call Spline(radius_in, profile_in, nr_in, 2.0D30, 2.0D30, spy2)
-            Do r = 1, N_R
-                If ( (radius(r) .le. max_r_in) .and. (radius(r) .ge. min_r_in) ) Then
-                    splx = radius(r)
-                    Call Splint(radius_in, profile_in,spy2,nr_in, splx, sply)
-                    profile_out(r) = sply
-                Endif
-            Enddo
-
-            ! Take care of any out of bounds radial values
-            Do r = 1, N_R
-                If (radius(r) .ge. max_r_in) Then
-                    profile_out(r) = min_p_in
-                Endif
-                If (radius(r) .le. min_r_in) Then
-                    profile_out(r) = max_p_in
-                Endif
-            Enddo
-
-            DeAllocate(radius_in, profile_in, spy2)
-        Else
-            close(892)
-            If (my_rank .eq. 0) Write(6,*)'------ Error: Endian check failed.  Returning 0'
-            If (my_rank .eq. 0) Write(6,*)''
-            profile_out(:) = 0.0d0
-        Endif  
+                Do r = my_r%min, my_r%max
+                    profile_out(r) = tempfield%s2a(mp)%data(0,r,1,1)*ov_root_fourpi
+                Enddo
+            Endif
+        Enddo
+        
+        
+        ! clean up
+        Call tempfield%deconstruct('s2a')
+        Call tempfield%deconstruct('p1b')
+        
+        
+ 
     End Subroutine Load_Radial_Profile
 
 
