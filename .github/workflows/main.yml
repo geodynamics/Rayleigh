@@ -40,7 +40,7 @@ jobs:
 
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
 
-        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../bin/rayleigh.dbg
+        mpiexec -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../bin/rayleigh.dbg
 
         # Generic input test
         cd "$GITHUB_WORKSPACE"
