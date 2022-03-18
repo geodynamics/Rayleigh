@@ -10,6 +10,10 @@ Rayleigh User Manual
    devel_environment
    running
    benchmarking
+   grid_specification
+   initial_conditions
+   boundary_conditions
+   timing_control
    physics
    checkpointing
    cookbooks
