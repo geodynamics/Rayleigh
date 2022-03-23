@@ -22,7 +22,7 @@ Module ProblemSize
     Use Parallel_Framework, Only : pfi, Load_Config, Spherical
     Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
     Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
-    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row
+    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row, m_balance_contiguous
     Use Chebyshev_Polynomials, Only : Cheby_Grid
     Use Math_Constants
     Use BufferedOutput
@@ -135,7 +135,7 @@ Contains
     Subroutine Init_Comm()
         Implicit None
         Integer :: cpu_tmp(1)
-        Integer :: ppars(1:11)
+        Integer :: ppars(1:12)
         !/////////////////////////////////////////////////////////
         ! Initialize MPI and load balancing (if no errors detected)
         ncpu = nprow*npcol
@@ -150,6 +150,11 @@ Contains
         ppars(9) = nprow
         ppars(10) = npcol
         ppars(11) = outputs_per_row
+        If (m_balance_contiguous) Then
+            ppars(12) = 1 ! use version 1
+        Else
+            ppars(12) = 0 ! use version 0, i.e., the original
+        Endif
         If (multi_run_mode) Then
             Call pfi%init(ppars,run_cpus, grid_error)
         Else

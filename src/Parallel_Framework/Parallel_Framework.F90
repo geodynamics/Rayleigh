@@ -50,6 +50,7 @@ Module Parallel_Framework
         Integer :: n1p, n1s, n2p, n2s, n3p, n3s
         Integer :: npe, nprow, npcol, npio,npc
         Integer :: nthreads = 1
+        Integer :: m_balance_version = 0 ! which m_balance routine is used to load balance
         Integer, Allocatable :: inds_3s(:)
         Type(communicator) :: rcomm ! row communicator
         Type(communicator) :: ccomm ! column communicator
@@ -150,7 +151,8 @@ Contains
             self%output_columns = pars(11)
         Endif
         If (self%output_columns .lt. 1) self%output_columns = 1
-        
+
+        self%m_balance_version = pars(12)
 
         If (size(ncpus) .gt. 1) Then
             !Multiple run Mode
@@ -300,7 +302,17 @@ Contains
         ! This means that we need to set up an index array
         ! for the m-values that tells how many each processor has.
         Allocate(self%inds_3s(1:self%n3s))
-        Call m_balance(self%all_3s, self%inds_3s, self%rcomm)
+        If (self%m_balance_version .eq. 0) Then
+            Call m_balance_v0(self%all_3s, self%inds_3s, self%rcomm)
+        ElseIf (self%m_balance_version .eq. 1) Then
+            Call m_balance_v1(self%all_3s, self%inds_3s, self%rcomm)
+        Else
+            If (self%gcomm%rank .eq. 0) Then
+                Call stdout%print('........................................................')
+                Call stdout%print(' --- Error:  m_balance_contiguous is not recognized.  Exiting...')
+            Endif
+            Call self%exit()
+        Endif
         Call LM_Load_Balance(pfi%my_3s,self%inds_3s,self%ccomm)
         If (self%gcomm%rank .eq. -100) Then
             unit1 = 10

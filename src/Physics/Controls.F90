@@ -45,8 +45,12 @@ Module Controls
     Logical :: pad_alltoall = .false.       ! Normally all-to-allv is used.  Standard alltoall with zero padded buffers can be used when this flag is on.
     Logical :: sparsesolve = .false.
 
+    Logical :: m_balance_contiguous = .false. ! Use alternative ordering of m-values such that access of successive values is contiguous
+                                              ! There are currently only 2 versions, T/F is mapped to integer 1/0. If more versions
+                                              ! are added in the future, the Logical type and variable name should change
+
     Namelist /Numerical_Controls_Namelist/ chebyshev, bandsolve, static_transpose, static_config, &
-            & use_parity, deriv_cluge, pad_alltoall, sparsesolve
+            & use_parity, deriv_cluge, pad_alltoall, sparsesolve, m_balance_contiguous
 
     !////////////////////////////////////////////////////////////////////////////////
     ! Physical Controls
@@ -225,6 +229,7 @@ Contains
         use_parity = .true.
         deriv_cluge = .true.
         pad_alltoall = .false.
+        m_balance_contiguous = .false.
     End Subroutine Restore_Numerical_Defaults
 
     Subroutine Restore_Temporal_Defaults
