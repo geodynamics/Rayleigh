@@ -1662,24 +1662,18 @@ Contains
         Class(SphericalBuffer) :: self
         Select Case(self%config)
             Case ('p2a')
-                If (pfi%m_balance_contiguous .eq. 0) Then
+                If (pfi%m_balance_version .eq. 0) Then
                     If (present(nextra_recv)) Then
                         Call self%transpose_2a3a_v0(extra_recv = nextra_recv)
                     Else
                         Call self%transpose_2a3a_v0()
                     Endif
-                ElseIf (pfi%m_balance_contiguous .eq. 1) Then
+                ElseIf (pfi%m_balance_version .eq. 1) Then
                     If (present(nextra_recv)) Then
                         Call self%transpose_2a3a_v2(extra_recv = nextra_recv)
                     Else
                         Call self%transpose_2a3a_v2()
                     Endif
-                Else
-                    If (pfi%gcomm%rank .eq. 0) Then
-                        Call stdout%print('........................................................')
-                        Call stdout%print(' --- Error:  should never reach this part?  Exiting...')
-                    Endif
-                    Call self%exit()
                 Endif
             Case ('p3b')
 

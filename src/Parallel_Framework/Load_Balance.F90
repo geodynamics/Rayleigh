@@ -249,7 +249,7 @@ Contains
         Type(Load_Config), Intent(InOut) :: lb_in(0:)
         Type(Communicator), Intent(In) :: comm
         Integer, Intent(InOut) :: m_values(:)
-        Integer :: this_row_rank, nrow_cpu
+        Integer :: nrow_cpu
         Integer :: n_m, mcheck, n_m_per_rank
         Integer :: this_rank, npairs, m, mlow, mhigh
         Integer :: ind1, ind2
