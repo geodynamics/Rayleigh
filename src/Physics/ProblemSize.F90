@@ -398,7 +398,7 @@ Contains
         If ( (l_max .le. 0) .and. (n_l .le. 0) ) Then
 
             If (dealias) Then
-                l_max = (2*n_theta)/3 - 1
+                l_max = (2*n_theta/3) - 1
             Else
                 l_max = n_theta-1
             Endif
