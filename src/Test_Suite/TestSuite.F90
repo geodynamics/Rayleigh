@@ -31,6 +31,7 @@ Contains
     Subroutine Test_Lib()
         If (my_rank .eq. 0) Then
             write(6,*)'Initiating library function tests.'
+            write(6,*)
         Endif
         If (test_legendre) Call Test_Spherical_Transforms()
         If (test_chebyshev) Call Test_Chebyshev_Transforms()
