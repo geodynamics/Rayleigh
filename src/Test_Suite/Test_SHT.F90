@@ -30,16 +30,19 @@ Module Test_SHT
     Use Legendre_Transforms, Only : Legendre_Transform
     Use SendReceive
     Implicit None
-    Integer :: ntest_legendre = 1
+    Integer :: ntest_transform_loops = 1
     Real*8 :: passing_tolerance = 1.0d-10
 Contains
 
-    Subroutine Test_Spherical_Transforms() ! main driver routine for all tests
+    Subroutine Test_Spherical_Transforms()
+        Call test_LT_FFT()
+    End Subroutine Test_Spherical_Transforms
+
+    Subroutine Test_Legendre_Transforms()
         Call single_mode_LT()
         Call single_mode_loops_LT()
         Call white_noise_LT()
-        Call white_noise_LT_FFT()
-    End Subroutine Test_Spherical_Transforms
+    End Subroutine Test_Legendre_Transforms
 
     Subroutine single_mode_LT()
         ! -intialize single (l,m) mode in spectral space
@@ -249,7 +252,7 @@ Contains
         Call mytest%construct('p2a')
 
         ! compute spectral -> physical -> spectral -> physical -> ...
-        do i=1, ntest_legendre
+        do i=1, ntest_transform_loops
 
             do mp=my_mp%min, my_mp%max ! "undo" FFT norm of to-physical direction
                m = m_values(mp)
@@ -303,13 +306,13 @@ Contains
         if ((rowrank .eq. 0) .and. (colrank .eq. 0)) then
             write(6,*)
             write(6,*) 'Using tolerance = ', passing_tolerance
-            write(6,*) 'Completed number of loops = ', ntest_legendre
+            write(6,*) 'Completed number of loops = ', ntest_transform_loops
             write(6,*)
-            if ((mxdiff_reduced/ntest_legendre) .lt. passing_tolerance) then
+            if ((mxdiff_reduced/ntest_transform_loops) .lt. passing_tolerance) then
                 write(6,*) 'Spec -> Phys -> Spec -> ... result = PASSING'
             else
                 write(6,*) 'Spec -> Phys -> Spec -> ... result = FAIL, error per loop: ', &
-                                                         mxdiff_reduced/ntest_legendre
+                                                         mxdiff_reduced/ntest_transform_loops
             endif
             write(6,*)
         endif
@@ -375,7 +378,7 @@ Contains
         Call test%construct('p2a')
 
         ! compute spectral -> physical -> spectral -> physical -> ...
-        Do i=1, ntest_legendre
+        Do i=1, ntest_transform_loops
 
             do mp=my_mp%min, my_mp%max ! "undo" FFT norm of to-physical direction
                m = m_values(mp)
@@ -424,13 +427,13 @@ Contains
         if ((rowrank .eq. 0) .and. (colrank .eq. 0)) then
             write(6,*)
             write(6,*) 'Using tolerance = ', passing_tolerance
-            write(6,*) 'Completed number of loops = ', ntest_legendre
+            write(6,*) 'Completed number of loops = ', ntest_transform_loops
             write(6,*)
-            if (mxdiff_reduced/ntest_legendre .lt. passing_tolerance) then
+            if (mxdiff_reduced/ntest_transform_loops .lt. passing_tolerance) then
                 write(6,*) 'Spec -> Phys -> Spec -> ... result = PASSING'
             else
                 write(6,*) 'Spec -> Phys -> Spec -> ... result = FAIL, error per loop: ', &
-                                                         mxdiff_reduced/ntest_legendre
+                                                         mxdiff_reduced/ntest_transform_loops
             endif
             write(6,*)
         endif
@@ -443,7 +446,7 @@ Contains
 
     End Subroutine white_noise_LT
 
-    Subroutine white_noise_LT_FFT()
+    Subroutine test_LT_FFT()
         ! -intialize all modes to "random" values
         ! -loop that includes LegendreTransform, FFT, and transposes, i.e., full SHT
         ! -compute the error
@@ -495,7 +498,7 @@ Contains
         Call test%construct('p2a')
 
         ! model the full simulation loop
-        Do i=1, ntest_legendre
+        Do i=1, ntest_transform_loops
 
             do mp=my_mp%min,my_mp%max ! zero out l_max mode (done in production runs too)
                 test%s2a(mp)%data(l_max,:,:,:) = 0.0d0
@@ -554,13 +557,13 @@ Contains
         if ((rowrank .eq. 0) .and. (colrank .eq. 0)) then
             write(6,*)
             write(6,*) 'Using tolerance = ', passing_tolerance
-            write(6,*) 'Completed number of loops = ', ntest_legendre
+            write(6,*) 'Completed number of loops = ', ntest_transform_loops
             write(6,*)
-            if ((mxdiff_reduced/ntest_legendre) .lt. passing_tolerance) then
+            if ((mxdiff_reduced/ntest_transform_loops) .lt. passing_tolerance) then
                 write(6,*) 'LT/FFT/transpose result = PASSING'
             else
                 write(6,*) 'LT/FFT/transpose result = FAIL, error per loop: ', &
-                                                         mxdiff_reduced/ntest_legendre
+                                                         mxdiff_reduced/ntest_transform_loops
             endif
             write(6,*)
         endif
@@ -569,6 +572,6 @@ Contains
         Call test%deconstruct('p2a')
         Call test%deconstruct('s2a')
 
-    End Subroutine white_noise_LT_FFT
+    End Subroutine test_LT_FFT
 
 End Module Test_SHT

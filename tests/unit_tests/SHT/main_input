@@ -22,7 +22,8 @@
 &Test_Namelist
  test_mode = .true.
  test_legendre = .true.
- ntest_legendre = 10
+ test_full_sht = .true.
+ ntest_transform_loops = 10
 /
 &Reference_Namelist
 /
