@@ -536,7 +536,7 @@ Contains
                         if (m .gt. 0) then
                             ans = (m+1)*1.0d0*(4*f+5)*r*r/norm(mp,2) ! imag part
                         else
-                            ans = 0.0d0 ! imag part
+                            ans = 0.1d0 ! imag part
                         endif
                         diff = max(diff, abs(ans - test%s2a(mp)%data(l,r,2,f)))
                     Enddo
