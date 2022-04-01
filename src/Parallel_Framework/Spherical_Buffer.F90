@@ -98,8 +98,7 @@ Module Spherical_Buffer
         Procedure :: transpose_1a2a
         Procedure :: Compute_Packet_Sizes12
         Procedure :: transpose_2a3a_v0 ! the original version
-        Procedure :: transpose_2a3a_v1 ! swapped order of loops to be more efficient
-        Procedure :: transpose_2a3a_v2 ! takes advantage of the m_balance_contiguous layout
+        Procedure :: transpose_2a3a_v1 ! takes advantage of the m_balance_contiguous layout
         Procedure :: Compute_Packet_Sizes23
         Procedure :: transpose_3b2b_v0 ! the original version
         Procedure :: transpose_3b2b_v1 ! swapped order of loops to be more efficient
@@ -193,7 +192,7 @@ Contains
             Allocate(self%send_buff(1:self%max_send))
     End Subroutine Set_Buffer_Sizes
 
-    Subroutine Transpose_2a3a_v2(self,extra_recv)
+    Subroutine Transpose_2a3a_v1(self,extra_recv)
         Class(SphericalBuffer) :: self
         !Real*8, Allocatable :: send_buff(:), recv_buff(:)
         Integer :: np
@@ -308,149 +307,6 @@ Contains
 
         Enddo
 
-        self%config = 'p3a'
-        If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
-
-        Call StopWatch(post_2a3a_time)%Increment()
-
-    End Subroutine Transpose_2a3a_v2
-
-    Subroutine Transpose_2a3a_v1(self,extra_recv)
-        Class(SphericalBuffer) :: self
-        !Real*8, Allocatable :: send_buff(:), recv_buff(:)
-        Integer :: np
-        Integer :: imin, imax, jmin, jmax, kmin,kmax,ii,nf
-        Integer :: i,f,j,p,k,k_ind,delf,delj
-        Integer, Intent(In), Optional :: extra_recv
-        Integer :: numalloc
-
-        Call StopWatch(pre_2a3a_time)%StartClock()
-
-        ! This is where we we move from theta, delta_r, delta_m
-        !  to m, delta_r, delta_theta
-        If (self%dynamic_transpose_buffers) Then
-
-
-            Allocate(self%send_buff(1:self%send_size23))
-        Endif
-        !--- Not sure if this is good or bad, but copy out the bounds of the loop for now
-        nf = self%nf2a
-        kmin = pfi%my_3s%min
-        kmax = pfi%my_3s%max
-        !jmin = pfi%my_1p%min
-        !jmax = pfi%my_1p%max
-
-        jmin = 1
-        jmax = pfi%my_1p%delta
-
-        np = pfi%rcomm%np
-        ! Possibly better ways to stripe, but for now, we will stripe each processors data all at once
-        ! This means the the send buffer is accessed "naturally," but that the p2a array
-        ! gets jumped around in
-        delj = pfi%my_1p%delta
-
-
-        Do p = 0, np -1
-            ii = self%sdisp23(p)+1
-            imin = pfi%all_2p(p)%min
-            imax = pfi%all_2p(p)%max
-            Do f = 1,nf
-            delf = (f-1)*delj*2
-            Do i = imin,imax
-            Do j = jmin,jmax
-            Do k = kmin, kmax
-
-                self%send_buff(ii) = self%p2a(i,j+delf,k)
-                self%send_buff(ii+1) = self%p2a(i,j+delf+delj,k)
-                ii = ii+2
-            Enddo
-            Enddo
-            Enddo
-            Enddo
-        Enddo
-
-        Call StopWatch(pre_2a3a_time)%Increment()
-
-        Call self%deconstruct('p2a')
-        If (self%dynamic_transpose_buffers) Allocate(self%recv_buff(1:self%recv_size23))
-
-        self%recv_buff(:) = 0.0d0
-
-        Call StopWatch(all2all_2a3a_time)%StartClock()
-        Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount23, &
-                self%sdisp23, self%rcount23, self%rdisp23, pfi%rcomm, self%pad_buffer)
-        Call StopWatch(all2all_2a3a_time)%Increment()
-
-        !--------------------------------------------------
-        If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
-
-        Call StopWatch(post_2a3a_time)%StartClock()
-
-        !Here, we need self%construct('p3a',extra =nfextra or another number)
-
-        If (present(extra_recv)) Then
-            !Allocate an s2a buffer that is larger than normal
-            numalloc = extra_recv+self%nf3a
-            Call self%construct('p3a',numfields = numalloc)
-        Else
-            Call self%construct('p3a')
-        Endif
-
-        self%p3a(:,:,:,:) = 0.0d0    ! This is important because we are going to take an fft later (De-aliasing is implicit here because
-        ! we only stripe in data of the de-aliased m's, but we need to make sure the higher m's are zero!
-        !Stripe from the receive buff
-        !Here we access the receive buffer in the 'natural' order
-        imin = pfi%my_2p%min
-        imax = pfi%my_2p%max
-        jmin = pfi%my_1p%min
-        jmax = pfi%my_1p%max
-        Do p = 0, np -1
-            ii = self%rdisp23(p)+1
-            kmin = pfi%all_3s(p)%min
-            kmax = pfi%all_3s(p)%max
-            Do f = 1,nf
-            Do i = imin,imax
-            Do j = jmin,jmax
-            Do k = kmin, kmax
-
-                k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
-
-                self%p3a(k_ind,j,i,f)=self%recv_buff(ii)
-                self%p3a(k_ind+1,j,i,f)=self%recv_buff(ii+1)
-
-                ii = ii+2
-
-            Enddo
-            Enddo
-            Enddo
-            ! <----------- Here we want another loop if additional fields were added
-            !              send counts, recv counts, send displ, and recv displ will need to be adjusted
-            !   foff = self%nf3a
-            !   nfextra = number of additional fields being sent
-            !   p3a also needs to be bigger (see pseudo code above)
-
-            !Do f = 1,nfextra
-            !Do j = jmin,jmax
-            !Do i = imin,imax
-
-            !    k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
-
-            !    self%p3a(k_ind,j,i,foff+1)=self%recv_buff(ii)
-            !    self%p3a(k_ind+1,j,i,foff+f)=self%recv_buff(ii+1)
-
-            !    ii = ii+2
-
-            !Enddo
-            !Enddo
-            !Enddo
-
-
-
-            Enddo ! K
-
-
-
-        Enddo
         self%config = 'p3a'
         If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
 
@@ -1670,14 +1526,18 @@ Contains
                     Endif
                 ElseIf (pfi%m_balance_version .eq. 1) Then
                     If (present(nextra_recv)) Then
-                        Call self%transpose_2a3a_v2(extra_recv = nextra_recv)
+                        Call self%transpose_2a3a_v1(extra_recv = nextra_recv)
                     Else
-                        Call self%transpose_2a3a_v2()
+                        Call self%transpose_2a3a_v1()
                     Endif
                 Endif
             Case ('p3b')
 
-                Call self%transpose_3b2b_v0()
+                If (pfi%m_balance_version .eq. 0) Then
+                    Call self%transpose_3b2b_v0()
+                ElseIf (pfi%m_balance_version .eq. 1) Then
+                    Call self%transpose_3b2b_v1()
+                Endif
 
             Case ('s2b')
 

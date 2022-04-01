@@ -152,8 +152,14 @@ Contains
         ppars(11) = outputs_per_row
         If (m_balance_contiguous) Then
             ppars(12) = 1 ! use version 1
+            If (my_rank .eq. 0) Then
+                call stdout%print("Using version=1 m_balance routines")
+            Endif
         Else
             ppars(12) = 0 ! use version 0, i.e., the original
+            If (my_rank .eq. 0) Then
+                call stdout%print("Using version=0 m_balance routines")
+            Endif
         Endif
         If (multi_run_mode) Then
             Call pfi%init(ppars,run_cpus, grid_error)

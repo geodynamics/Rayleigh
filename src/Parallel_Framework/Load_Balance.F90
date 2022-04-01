@@ -270,7 +270,7 @@ Contains
             npairs = lb_in(this_rank)%delta/2  ! number of pairs this rank can handle
             Do m = 1, npairs
                 m_values(ind1+m-1) = mlow  ! place the lower part of the pair
-                m_values(ind2-m-1) = mhigh ! place the high part of the pair
+                m_values(ind2-m+1) = mhigh ! place the high part of the pair
 
                 mlow = mlow + 1    ! update actual m-value for the next high/low pair
                 mhigh = mhigh - 1
