@@ -1,0 +1,24 @@
+**magnetism**  
+  When set to .true., the MHD approximation is employed.   The default (magnetism=.false.) is to omit the effects of magnetism.   
+**nonlinear**  
+  When set to .false., all nonlinear terms are omitted in the model.  The default (nonlinear=.true.) is to include those terms.    
+**momentum_advection**  
+  When set to .false., :math:`\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}=0`.  This flag is primarily for debugging purposes.  The default value is .true.  
+**inertia**
+  When set to .false., the material derivative of velocity is omitted (:math:`\frac{D\boldsymbol{v}}{Dt}=0`).  This option is primarily intended for mantle convection models.  The default value is .true.  
+**rotation**
+  When set to .true., the Coriolis term is included in the momentum equation.   The default behavior is to omit rotation in a Rayleigh model (rotation = .false.).
+**lorentz_forces**  
+  Set this debugging/development flag to .false. to disable the Lorentz force.  Default value is .true., but this flag is ignored entirely when magnetism = .false.  
+**viscous_heating**
+  Determines whether viscous heating is included in the thermal energy equation.  Default value is .true.  Note that the user-supplied value of this variable is ignored entirely for Boussinesq models run with reference_type = 1.  In those models, viscous_heating is set to .false.
+**ohmic_heating**
+  Determines whether ohmic heating is included in the thermal energy equation.  Default value is .true.  Note that the user-supplied value of this variable is ignored entirely for Boussinesq models run with reference_type = 1.  In those models, ohmic_heating is set to .false.
+**advect_reference_state**
+  Determines whether the reference-state entropy is advected.  The default is .true.  When set to .false., the :math:`v_r\frac{\partial\overline{S}}{\partial r}` term is omitted in the thermal energy equation.  Note that this variable has no impact on models with an adiabatic background state.
+**benchmark_mode**
+  When set to a positive value in the interval [1,4], an accuracy benchmark will be performed.  The default is 0 (no benchmarking).  Boussinesq benchmarks are peformed for values of 1 (nonmagnetic) and 2 (magnetic).  Anelastic benchmarks are performed if benchmark_mode has a value of 3 (nonmagnetic) or 4 (magnetic).
+**benchmark_integration_interval**
+  Determines the interval (in timesteps) between successive benchmark snapshot analyses.
+**benchmark_report_interval**
+  Determines the interval (in timesteps) between successive benchmark report outputs.  Each output contains an average over all benchmark snapshot analyses performed since the previous report.
