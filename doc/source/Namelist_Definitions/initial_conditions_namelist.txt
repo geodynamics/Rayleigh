@@ -1,0 +1,50 @@
+**init_type**  
+  Integer value indicating how nonmagnetic variables should be initialized. 
+   * type -1:  Restart from a checkpoint
+   * type  1:  Hydro Boussinesq benchmark init (Christensen et al. 2001).  The temperature field is initialized with an :math:`\ell=4` , m=4 perturbation on top of a conductive profile.  Velocity/pressure are zero.
+   * type  6:  Hydro anelastic benchmark init (Jones et al. 2011).  The entropy field is initialized with an :math:`\ell=19` , m=19 and :math:`\ell=1` , m=1  perturbation on top of a conductive profile.  Velocity/pressure are zero.
+   * type  7:  A randomized temperature/entropy field is initialized.  Velocity and pressure are set to zero.
+   * type  8:  Velocity, entropy/temperature, and pressure are initialized to zero, or if an associated filename is provided, they are initialized using the generic input interface.
+
+**magnetic_init_type**
+  Integer value indicating how magnetic field should be initialized.
+   * type -1:  Initialize magnetic field from a checkpoint.
+   * type  1:  Magnetic initialization for  Christensen et al. (2001), case 1.  The poloidal flux function is initialized using an :math:`\ell=1,m=0` mode.  THe toroidal flux function is initialized with an :math:`\ell=2,m=0` mode.  
+   * type  7:  The poloidal and toroidal flux functions are initialized to randomized values.  
+   * type  8:  The poloidal and toroidal flux functions are intialized to zero, and then if a corresponding generic input file is specified, their initial state is read from that file.
+**restart_iter**
+  Iteration number indicating the checkpoint to restart from when init_type and magnetic_init_type equal 1.
+
+**temp_amp**
+  Amplitude of randomized temperature/entropy perturbations to use with init_type = 7.
+**mag_amp**
+  Amplitude of randomized magnetic perturbations to use with magnetic_init_type = 7.
+
+**t_init_file**
+  Name of generic input file that, if init_type=8, will be used to initialize temperature/entropy.
+**p_init_file**
+  Name of generic input file that, if init_type=8, will be used to initialize pressure.
+**w_init_file**
+  Name of generic input file that, if init_type=8, will be used to initialize the poloidal stream function *W*.
+**z_init_file**
+  Name of generic input file that, if init_type=8, will be used to initialize the toroidal stream function *Z*.
+**c_init_file**
+  Name of generic input file that, if init_type=8, will be used to initialize the poloidal stream function *C*.
+**a_init_file**
+  Name of generic input file that, if init_type=8, will be used to initialize the toroidal stream function *A*.
+**rescale_velocity**
+  Logical variable indicating that the velocity field should be rescaled upon restart.  Default = .false.
+**velocity_scale**
+  Factor by which to rescale the velocity field upon restart.
+**rescale_pressure**
+  Logical variable indicating that the pressure field should be rescaled upon restart.  Default = .false.
+**pressure_scale**
+  Factor by which to rescale the pressure field upon restart.
+**rescale_tvar**
+  Logical variable indicating that the temperature/entropy field should be rescaled upon restart.  Default = .false.
+**tvar_scale**
+  Factor by which to rescale the temperature/entropy field upon restart.
+**rescale_bfield**
+  Logical variable indicating that the magnetic field should be rescaled upon restart.  Default = .false.
+**bfield_scale**
+  Factor by which to rescale the magnetic field upon restart.

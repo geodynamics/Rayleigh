@@ -1,0 +1,30 @@
+**alpha_implicit**  
+  Determines the value of :math:`\alpha` used in the Crank-Nicolson semi-implicit time-stepping scheme employed for linear terms.  The default value is 0.5, which ensures second-order accuracy of the algorithm.  A value of 1 (0) describes a fully implicit (explicit) algorithm.
+**max_iterations**
+  Maximum number of timesteps for which to evolve a single instance of Rayleigh before exiting the program.  Note that this value does not describe the maximum number of timesteps a model can be run for.  Instead, it determines the maximum number of timesteps Rayleigh will run for during a given session (i.e. following a single call to mpiexec/mpirun).  The default value is 1,000,000.
+**max_time_minutes**
+  Maximum walltime (in minutes) for which to run a single instance of Rayleigh before exiting.  As with max_iterations, this is specific to a given Rayleigh session.  Default is :math:`10^8` minutes (essentially, unlimited).
+**max_simulated_time**
+  The maximum time, in simulation units, for which to evolve a Rayleigh model.  Restarting a model that has already reached this limit will result in running for a single time step before exiting.  The default is effectively unlimited, with a value of :math:`10^{20}`.
+**save_last_timestep**
+  When set to .true. (default), Rayleigh will checkpoint before exiting normally. Note that this generally occurs when the maximum time or iterations is reached.  This does not apply when a job is terminated by the MPI job scheduler.
+**checkpoint_interval**
+  Number of iterations between successive checkpoint outputs.  Default value is -1 (no checkpointing).
+**check_frequency**
+  (deprecated) Same as checkpoint_interval.
+**quicksave_interval**
+  Number of iterations between successive quicksave outputs.  Default value is -1 (no quicksaves).
+**num_quicksaves**
+  Number of quicksave slots (i.e., rapid, rolling checkpoint folders) to use for a given simulation.  Default value is 3.
+**quicksave_minutes**
+  Time in minutes between successive quicksaves.  If this variable is set to a positive value (default is -1), the value of quicksave_interval will be ignored.
+**max_time_step**
+  The maximum allowed time step.  This value will respected even when if the CFL constraint admits a larger time-step size.  Default value is 1.0.
+**min_time_step**   
+  The minimum allowable time step.  If the CFL contraint forces a time-step size that falls below this value, Rayleigh will exit.
+**cflmin**
+  Used for adaptive timestep control.  Rayleigh ensures that the time-step size never falls below :math:`cflmin\times t_{CFL}`, where :math:`t_{CFL}` is the minimum timestep allowed by the CFL constraint.  The default value is 0.4.
+**clfmax**
+  Used for adaptive timestep control.  Rayleigh ensures that the time-step size never exceeds :math:`\mathrm{cflmax}\times t_\mathrm{CFL}`, where :math:`t_\mathrm{CFL}` is the minimum timestep allowed by the CFL constraint. The default value is 0.6.
+**new_iteration**
+  If desired, a simulation's iteration numbers may be reset upon restarting from a checkpoint.  Set this value to the new iteration number to use (must be greater than zero), and the old iteration number contained in the checkpoint file will ignored.  The default value is 0.
