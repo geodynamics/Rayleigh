@@ -381,7 +381,12 @@ class RayleighTiming:
                       'Sin(theta) Division', 'CFL Calculation', 'NULL', 
                       'Linear Coefficients/Implicit Matrix Computation',
                       'Run Initialization', 'Checkpointing (Read)', 'Checkpointing (Write)',
-                      'Total Runtime'] 
+                      'Total Runtime',
+                      'Transpose 1a2a pre', 'Transpose 1a2a all-to-all', 'Transpose 1a2a post',
+                      'Transpose 2a3a pre', 'Transpose 2a3a all-to-all', 'Transpose 2a3a post',
+                      'Transpose 3b2b pre', 'Transpose 3b2b all-to-all', 'Transpose 3b2b post',
+                      'Transpose 2b1b pre', 'Transpose 2b1b all-to-all', 'Transpose 2b1b post',
+                     ]
 
 class RayleighProfile:
     """Rayleigh Profile Structure
