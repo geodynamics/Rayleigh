@@ -1,0 +1,19 @@
+**{nu,kappa,eta}_type**  
+  Determines the radial profile of the associated diffusion coefficient. 
+   * type 1 : no radial variation
+   * type 2 : diffusivity profile varies as :math:`\rho^{n}` for some real number *n*.
+   * type 3 : diffusivity profile is read from a custom-reference-state file
+
+**{nu,kappa,eta}_top**
+  Specifies the value of the associated diffusion coefficient at the upper boundary.  This is primarily used for dimensional models or those employing a custom nondimensionalization via Rayleigh's custom-reference interface.   For Rayleigh's intrinsic nondimensional reference states, the following values are assumed:
+   * reference_type 1:  :math:`\nu_\mathrm{top}=1`, :math:`\kappa_\mathrm{top}=1/\mathrm{Pr}`, :math:`\eta_\mathrm{top}=1/\mathrm{Pm}`
+   * reference_type 3: :math:`\nu_\mathrm{top}=\mathrm{Ek}`, :math:`\kappa_\mathrm{top}=\mathrm{Ek}/\mathrm{Pr}`, :math:`\eta_\mathrm{top}=\mathrm{Ek}/\mathrm{Pm}`
+**{nu,kappa,eta}_power**
+  Denotes the value of the exponent *n* in the :math:`\rho^{n}` variation associated with diffusion type 2.
+**hyperdiffusion**
+  Set this to variable to .true. to enable hyperdiffusion.  The default value is .false.  When active, diffusivities are multiplied by an additional factor such that:
+   * :math:`\{\nu,\kappa,\eta\}\rightarrow\{\nu,\kappa,\eta\}\left(1+\alpha\left(\frac{\ell-1}{\ell_\mathrm{max}-1}\right)^\beta\right)`
+**hyperdiffusion_alpha**
+  Determines the value of :math:`\alpha` when hyper diffusion is active.
+**hyperdiffusion_beta**
+  Determines the value of :math:`\beta` when hyper diffusion is active.
