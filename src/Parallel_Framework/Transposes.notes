@@ -1,27 +1,277 @@
-Module Transposes
 
-Contains
+===============================================================================
+Original Version 0 --- Requires the v0 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ m_balance routine:
+		-the loop that sets m_values(:) array appears as:
+			do p=0, np-1
+			    ...
+			    do i=1, my_npairs
+			        m_values(ind) = pairs(1,current_pair)
+			        m_values(ind+1) = pairs(2,current_pair)
+			        current_pair += 1
+			        ind += 2
+			    enddo
+			enddo
 
+	+ transpose_2a3a routine:
+		-the p2a buffer = (i,j,k) and p3a buffer = (k_ind,j,i,f)
 
-	Subroutine Initialize_Transpose()
-		! Just some thoughts
-		! We need to know the buffer size to initialize a transpose for it
-		! nx,ny,nz
-		! Also we need to know the geometry (spherical has special load-balancing)
-		
-		! Transpose also defined by starting config/ending config
+		-the loop that builds the send buffer was ordered:
+			do p=0, np-1
+			    ...
+			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        send_buffer(ii) = p2a(i,j+delf,k)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-		! Buffer will be dimensioned as (in_processor, delta_n2, delta_n3*nfields)
-		
-		! Config 1
-		! z-inprocessor, x,y distributed
-		! (nz, delta_x, delta_y*nfields)
+		-the loop that extracts the recv buffer has the same ordering:
+			do p=0, np-1
+			    ...
+			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        ...
+			        p3a(k_ind,j,i,f) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-		! Config 2
-		! (
+	+ transpose_3b2b routine:
+		-the p3b buffer = (k_ind,j,i,f) and p2b buffer = (i,j,f)
 
+		-the loop that builds the send buffer was ordered:
+			do p=0, np-1
+			    ...
+			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        ...
+			        send_buffer(ii) = p3b(k_ind,j,i,f)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-	End Subroutine Initialize_Transpose
+		-the loop that extracts the recv buffer has the same ordering:
+			do p=0, np-1
+			    ...
+			    do k=kmin, kmax
+			    do f=1, nf
+			    do j=jmin, jmax
+			    do i=imin, imax
+			        p2b(i,j+delf,k) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
+===============================================================================
+Version 1 (Ryan) --- Requires the v0 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop order that builds the send buffer is modified to be:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        send_buffer(ii) = p2a(i,j+delf,k)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
 
-End Module Transposes
+		-the loop that extracts the recv buffer was changed in the same way:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        ...
+			        p3a(k_ind,j,i,f) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+	+ transpose_3b2b routine:
+		-the loop order that builds the send buffer is modified to be:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        ...
+			        send_buffer(ii) = p3b(k_ind,j,i,f)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+		-the loop that extracts the recv buffer was changed in the same way:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			    do k=kmin, kmax
+			        ...
+			        p2b(i,j+delf,k) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+===============================================================================
+Version 2 (Nick) --- Requires the v2 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ m_balance routine:
+		-the loop that sets m_values(:) array appears as:
+			do p=0, np-1
+			    ...
+			    do i=1, my_npairs
+			        m_values(ind+i-1) = pairs(1,current_pair)
+			        m_values(ind2-i+1) = pairs(2,current_pair)
+			        current_pair += 1
+			    enddo
+			enddo
+
+	+ transpose_2a3a routine:
+		-the loop to build the send buffer is identical to Version 1
+
+		-the loop to extract the recv buffer is entirely changed:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(kone:kone+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+===============================================================================
+Version 3 (Nick) --- Requires the v2 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop to extract the recv buffer is split into two:
+        		ii = 1
+        		Do p = 0, np -1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(kone:kone+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ii += nmode
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+        		nmode = pfi%all_3s(0)%delta
+			ii += nmode
+        		Do p = 0, np -1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(ktwo:ktwo+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ii += nmode
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+===============================================================================
+Version 4 (Ryan) --- Requires the v2 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop to extract the recv buffer becomes:
+
+        		Do p = 0, np -1
+			    ...
+			    k_array(p,1) = kmin
+			    k_array(p,2) = kone
+			    k_array(p,3) = nmode
+			    k_array(p,4) = ktwo
+			enddo
+
+        		ii = 1
+        		Do p = 0, np -1
+			    ...using k_array
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do j=jmin, jmax
+			        p3a(kone:kone+nmode-1,j,i,f) = recv_buffer(ii:ii+nmode-1)
+			        ii += nmode
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+===============================================================================
+Version 5 (Ryan) --- Requires the v0 M_Balance routine from Load_Balance.F90
+===============================================================================
+	+ transpose_2a3a routine:
+		-the loop order that builds the send buffer is modified to be:
+			do p=0, np-1
+			    ...
+			    do f=1, nf
+			    do i=imin, imax
+			    do k=kmin, kmax
+			    do j=jmin, jmax
+			        send_buffer(ii) = p2a(i,j+delf,k)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+
+		-the loop that extracts the recv buffer was changed in the same way:
+			do p=0, np-1
+			    ...
+			    do f=1, nf       ! previous order was k,f,j,i
+			    do i=imin, imax
+			    do k=kmin, kmax
+			    do j=jmin, jmax
+			        ...
+			        p3a(k_ind,j,i,f) = recv_buffer(ii)
+			        ...
+			    enddo
+			    enddo
+			    enddo
+			    enddo
+			enddo
+

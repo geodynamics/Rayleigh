@@ -123,7 +123,7 @@ Contains
     !            lb_in    - array of load_config objects containing the load balancing
     !                           information for each member of comm_group
     !//////////////////////////////////////////////////////////////////////////////////////////////////////
-    Subroutine M_Balance(lb_in, m_values,comm)
+    Subroutine M_Balance_v0(lb_in, m_values,comm)
         ! Pair up high and low m's
         ! Does not have to be m's.  Can be any index
         Implicit None
@@ -223,8 +223,67 @@ Contains
 
         DeAllocate(i_am_holding)
         DeAllocate(pairs)
-    End Subroutine M_Balance
+    End Subroutine M_Balance_v0
 
+    !////////////////////////////////////////////////////////////////////////////////////////////////////
+    ! SUBROUTINE:  M_Balance, with m_values stored in contiguous fashion, still hi/lo paired
+    !
+    ! DESCRIPTION:  Handles load balancing of grid indices across the members of
+    !                 of the MPI communicator group 'comm'.  Grid indices are
+    !                 assumed to run from 1 through nx.  Balancing is accomplished
+    !                 in the "m"-fashion such that pairs of high- and low-valued
+    !                 grid indices are distributed amongst the processes in comm_group.
+    !
+    ! INPUTS:
+    !            comm   - MPI communicator across which load balancing is to be done
+    !
+    ! OUTPUTS:
+    !
+    !            m_values - integer array which, upon exit of the subroutine, contains a list of
+    !                       grid indices ordered as they have been distributed across processes.
+    !            lb_in    - array of load_config objects containing the load balancing
+    !                           information for each member of comm_group
+    !//////////////////////////////////////////////////////////////////////////////////////////////////////
+    Subroutine M_Balance_v1(lb_in, m_values, comm)
+        Implicit None
+        Type(Load_Config), Intent(InOut) :: lb_in(0:)
+        Type(Communicator), Intent(In) :: comm
+        Integer, Intent(InOut) :: m_values(:)
+        Integer :: nrow_cpu
+        Integer :: n_m, mcheck, n_m_per_rank
+        Integer :: this_rank, npairs, m, mlow, mhigh
+        Integer :: ind1, ind2
+
+        n_m = lb_in(0)%nx
+        npairs = n_m/2     ! number of high/low m-pairs
+
+        nrow_cpu = comm%np
+
+        n_m_per_rank = n_m/nrow_cpu
+        mcheck = Mod(n_m, nrow_cpu)  ! if my_rank < mcheck, I get extra values
+
+        mlow = 0      ! actual m-value for the first high/low pair
+        mhigh = n_m-1
+        Do this_rank = 0, nrow_cpu-1
+            ind1 = lb_in(this_rank)%min        ! this rank's start index into global array
+            ind2 = lb_in(this_rank)%max        ! ending index
+            npairs = lb_in(this_rank)%delta/2  ! number of pairs this rank can handle
+            Do m = 1, npairs
+                m_values(ind1+m-1) = mlow  ! place the lower part of the pair
+                m_values(ind2-m+1) = mhigh ! place the high part of the pair
+
+                mlow = mlow + 1    ! update actual m-value for the next high/low pair
+                mhigh = mhigh - 1
+            Enddo
+
+            ! this rank has extra space for more m values: include the low value of the pair
+            If (npairs*2 .lt. lb_in(this_rank)%delta) Then
+                m_values(ind1+npairs) = mlow
+                mlow = mlow + 1
+            Endif
+        Enddo
+        if (comm%rank .eq. 0) write(*,*) m_values
+    End Subroutine M_Balance_v1
 
     !////////////////////////////////////////////////////////////////////////////////////////////////////
     ! SUBROUTINE:  LM_Load_Balance
