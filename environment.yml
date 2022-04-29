@@ -19,7 +19,7 @@ dependencies:
   - nbsphinx=0.8
   - pandoc=2.13
   - recommonmark=0.7
-  - compilers=1.1.3
+  - compilers=1.4.2
   - mkl=2020.4
   - fftw=3.3
   - mpich=3.4
