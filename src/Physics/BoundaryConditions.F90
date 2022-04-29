@@ -67,7 +67,8 @@ Module BoundaryConditions
     Character*120 :: C_top_file       = '__nothing__'
     Character*120 :: C_bottom_file    = '__nothing__'
 
-    Logical :: Strict_L_Conservation = .false.         ! (In-Progress) Turn on to enforce angular momentum conservation abous x,y, and z-axes
+    Logical :: Strict_L_Conservation = .false.  ! Turn on to enforce angular momentum conservation 
+                                                ! about x,y, and z-axes via integral constraint on Z(ell=1)
     Logical :: no_slip_boundaries = .false. ! Set to true to use no-slip boundaries.  Stree-free boundaries are the default.
     Logical :: stress_free_top = .true., stress_free_bottom = .true.
     Logical :: no_slip_top = .false., no_slip_bottom = .false.
@@ -92,14 +93,39 @@ Contains
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
+        If (my_rank .eq. 0) Then
+            If (no_slip_top .and. strict_L_Conservation) Then
+                Call stdout%print(" -- Error:  Incompatible boundary conditions.")
+                Call stdout%print("        Both strict_L_Conservation and no_slip_top were set to True.")
+                Call stdout%print("        No_slip_top = True will be retained.")
+                Call stdout%print("        Strict_L_Conservation will be set to False.")
+                Call stdout%print("        If you wish to set Strict_L_Conservation=True, please explictly")
+                Call stdout%print("        set no_slip_top to False in main_input.")      
+                Call stdout%print("        ")      
+                strict_L_conservation = .false.                  
+            Endif
 
+            If (no_slip_boundaries .and. strict_L_Conservation) Then
+                Call stdout%print(" -- Error:  Incompatible boundary conditions.")
+                Call stdout%print("        Both strict_L_Conservation and no_slip_boundaries were set to True.")
+                Call stdout%print("        no_slip_boundaries = True will be retained.")
+                Call stdout%print("        Strict_L_Conservation will be set to False.")
+                Call stdout%print("        If you wish to set Strict_L_Conservation=True, please explictly")
+                Call stdout%print("        set no_slip_boundaries to False in main_input.")   
+                Call stdout%print("        ")                        
+                strict_L_conservation = .false.                  
+            Endif
+        Endif
 
         If (no_slip_boundaries) Then
             no_slip_top = .true.
             no_slip_bottom = .true.
         Endif
-        stress_free_top = .not. no_slip_top
+        stress_free_top    = .not. no_slip_top
         stress_free_bottom = .not. no_slip_bottom
+
+
+
 
         !/////////////////////////////////////////
         ! There are three possible magnetic boundary conditions
