@@ -9,6 +9,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
+- None yet
+### Changed
+- None yet
+### Fixed
+- None yet
+
+
+## [1.1.0] - 4-29-2022
+### Added
 - Added new main_input class to rayleigh_diagnostics.py.   Usage examples are provided in Rayleigh/examples/main_input_class. \[Nick Featherstone; 1-11-2022; [#352](https://github.com/geodynamics/Rayleigh/pull/352)\]
 
 - New namelist option m_balance_contiguous = True/False in the numerical_controls_namelist allows using faster transpose routines for 2a3a and 3b2b directions. When True, this option stores the high/low m values in a contiguous fashion, suitable for better vector operations within loops. The default (False) is to use the original high-low pairing. \[Ryan Orvedahl; 4-9-2022; [#363](https://github.com/geodynamics/Rayleigh/pull/363)\] 
