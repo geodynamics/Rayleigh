@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Rayleigh'
-copyright = '2019, Nick Featherstone'
+copyright = '2022, Nick Featherstone'
 author = 'Nick Featherstone'
 
 
