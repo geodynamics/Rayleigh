@@ -96,7 +96,7 @@ Contains
 
         If (no_slip_top .and. strict_L_Conservation) Then
             If (my_rank .eq. 0) Then
-                Call stdout%print(" -- Error:  Incompatible boundary conditions.")
+                Call stdout%print(" -- Warning:  Incompatible boundary conditions.")
                 Call stdout%print("        Both strict_L_Conservation and no_slip_top were set to True.")
                 Call stdout%print("        No_slip_top = True will be retained.")
                 Call stdout%print("        Strict_L_Conservation will be set to False.")
@@ -109,7 +109,7 @@ Contains
 
         If (no_slip_boundaries .and. strict_L_Conservation) Then
             If (my_rank .eq. 0) Then
-                Call stdout%print(" -- Error:  Incompatible boundary conditions.")
+                Call stdout%print(" -- Warning:  Incompatible boundary conditions.")
                 Call stdout%print("        Both strict_L_Conservation and no_slip_boundaries were set to True.")
                 Call stdout%print("        no_slip_boundaries = True will be retained.")
                 Call stdout%print("        Strict_L_Conservation will be set to False.")
