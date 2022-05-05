@@ -39,8 +39,8 @@ Please cite the code as:
 	year="2022",
 	organization="",
 	optkeywords="Rayleigh",
-	doi="http://doi.org/10.5281/zenodo.5805063",
-	opturl="https://doi.org/10.5281/zenodo.5805063"}
+	doi="http://doi.org/10.5281/zenodo.6522806",
+	opturl="https://doi.org/10.5281/zenodo.6522806"}
 
 Please also cite the following references:
 
