@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 import lut
 
-if sys.maxsize < 2 ** 63 - 1:
+if sys.maxsize < 2**63 - 1:
     # We don't want mmap on 32-bit systems where virtual memory is limited.
     use_mmap = False
 else:
@@ -498,7 +498,7 @@ class Meridional_Slices_file(BaseFile):
             r, r[0] + 0.5 * (r[0] - r[1]), r[-1] - 0.5 * (r[-2] - r[-1])
         )
         self.costheta = self.get_value("f8", shape=[self.ntheta])
-        self.sintheta = np.sqrt(1.0 - self.costheta ** 2)
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
         self.phi_inds = self.get_value("i4", shape=[self.nphi]) - 1
         if self.nphi == 1:
             self.phi_inds = np.array([self.phi_inds])
@@ -527,7 +527,7 @@ class Meridional_Slices(Rayleigh_Output, Plot2D):
 
         self.theta = [np.arccos(x) for x in self.costheta]
         self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.0)) for t in self.theta]
-        self.sintheta_bounds = [np.sqrt(1.0 - ct ** 2) for ct in self.costheta_bounds]
+        self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
         self.radius_bounds = [
             get_bounds(r, r[0] + 0.5 * (r[0] - r[1]), r[-1] - 0.5 * (r[-2] - r[-1]))
             for r in self.radius
@@ -617,7 +617,7 @@ class Point_Probes_file(BaseFile):
         self.radius = self.get_value("f8", shape=[self.nr])
         self.rad_inds = self.get_value("i4", shape=[self.nr]) - 1
         self.costheta = self.get_value("f8", shape=[self.ntheta])
-        self.sintheta = np.sqrt(1.0 - self.costheta ** 2)
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
         self.theta_inds = self.get_value("i4", shape=[self.ntheta]) - 1
         self.phi = self.get_value("f8", shape=[self.nphi])
         self.phi_inds = self.get_value("i4", shape=[self.nphi]) - 1
@@ -661,7 +661,7 @@ class AZ_Avgs_file(BaseFile):
 
         self.radius = self.get_value("f8", shape=[self.nr])
         self.costheta = self.get_value("f8", shape=[self.ntheta])
-        self.sintheta = np.sqrt(1.0 - self.costheta ** 2)
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
 
         self.val = []
         self.time = []
@@ -680,7 +680,7 @@ class AZ_Avgs(Rayleigh_Output, Plot2D):
 
         self.theta = [np.arccos(x) for x in self.costheta]
         self.costheta_bounds = [np.cos(get_bounds(t, np.pi, 0.0)) for t in self.theta]
-        self.sintheta_bounds = [np.sqrt(1.0 - ct ** 2) for ct in self.costheta_bounds]
+        self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
         self.radius_bounds = [
             get_bounds(r, r[0] + 0.5 * (r[0] - r[1]), r[-1] - 0.5 * (r[-2] - r[-1]))
             for r in self.radius
@@ -717,7 +717,7 @@ class Shell_Slices_file(BaseFile):
         self.radius = self.get_value("f8", shape=[self.nr])
         self.inds = self.get_value("i4", shape=[self.nr]) - 1
         self.costheta = self.get_value("f8", shape=[self.ntheta])
-        self.sintheta = np.sqrt(1.0 - self.costheta ** 2)
+        self.sintheta = np.sqrt(1.0 - self.costheta**2)
 
         dphi = 2 * np.pi / self.nphi
         self.phi = np.arange(self.nphi) * dphi
@@ -742,7 +742,7 @@ class Shell_Slices(Rayleigh_Output, Plot2D):
         self.theta = [np.arccos(x) for x in self.costheta]
         self.theta_bounds = [get_bounds(t, np.pi, 0.0) for t in self.theta]
         self.costheta_bounds = [np.cos(t) for t in self.theta_bounds]
-        self.sintheta_bounds = [np.sqrt(1.0 - ct ** 2) for ct in self.costheta_bounds]
+        self.sintheta_bounds = [np.sqrt(1.0 - ct**2) for ct in self.costheta_bounds]
         self.phi_bounds = [get_bounds(p, 0.0, 2.0 * np.pi) for p in self.phi]
 
     def get_coords(self, i):
@@ -933,7 +933,7 @@ class G_Avgs(Rayleigh_Output):
         ax.plot(X, Y, **kwargs)
 
         if tunit is not None:
-            ax.set_xlabel(fr"$t/\mathrm{{{tunit}}}$")
+            ax.set_xlabel(rf"$t/\mathrm{{{tunit}}}$")
         if Yl:
             ax.set_ylabel(Yl)
 
