@@ -408,6 +408,7 @@ class Plot2D(abc.ABC):
         self,
         i,
         q,
+        fig=None,
         Clear=True,
         iv=0,
         Colorbar=True,
@@ -418,7 +419,8 @@ class Plot2D(abc.ABC):
         qcode = lut.parse_quantity(q)[0]
         if qcode is None:
             raise AttributeError("unknown quantity ({})".format(q))
-        fig = plt.gcf()
+        if fig is None:
+            fig = plt.gcf()
         if Clear:
             fig.clear()
 
