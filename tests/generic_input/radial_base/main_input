@@ -1,0 +1,63 @@
+! This is a smaller version of the input_examples/benchmark_diagnostics_input 
+! model that only runs for a single time-step so that we can check the initial condition.
+
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ rmin = 0.5
+ rmax = 1.0
+/
+&numerical_controls_namelist
+ chebyshev = .true.
+/
+&physical_controls_namelist
+ rotation  = .True.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 1.0d-4
+ max_iterations = 1
+ alpha_implicit = 0.50001d0
+ checkpoint_interval = 500000
+ quicksave_interval = 1000000
+ num_quicksaves = -1
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+full3d_values = 501
+full3d_frequency = 1
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 7  ! initialize a random thermal field
+temp_amp = 0   ! but with zero amplitude
+conductive_profile = .true. ! on top of a conductive profile
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 1.0d5
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/

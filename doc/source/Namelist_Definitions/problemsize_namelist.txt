@@ -1,0 +1,30 @@
+**n_r** 
+  Number of radial points in model grid
+**rmin**
+  Radius of the inner domain boundary, :math:`r_\mathrm{min}`
+**rmax**
+  Radius of the outer domain boundary, :math:`r_\mathrm{max}`       
+**aspect_ratio**
+  :math:`{r_\mathrm{min}}/{r_\mathrm{max}}`  
+**shell_depth** 
+  :math:`r_\mathrm{max}-r_\mathrm{min}`
+**n_theta**
+  Number of theta points in the model grid, :math:`N_\theta`
+**l_max**
+  Truncation degree :math:`\ell_\mathrm{max}` used in the spherical harmonic expansion
+**n_l**
+  :math:`\ell_\mathrm{max}+1`  
+**nprow**
+  Number of MPI ranks within each row of the 2-D process grid 
+**npcol**
+  Number of MPI ranks within each column of the 2-D process grid
+**ncheby**
+  Comma-separated list indicating number of Chebyshev polynomials used in each radial subdomain (e.g., 16, 32, 16). Default: n_r [ single domain]
+**dealias_by**
+  Comma-separated list indicating number of Chebyshev modes dealiased to zero.  Default is 2/3 ncheby.
+**domain_bounds**
+  The domain bounds defining each Chebyshev subdomain
+**n_uniform_domains**
+  Number of uniformly-sized Chebyshev domains spanning the depth of the shell.  Default: 1 
+**uniform_bounds**
+  When set to .true., each chebyshev subdomain will possess the same radial extent.  Default:  .false.

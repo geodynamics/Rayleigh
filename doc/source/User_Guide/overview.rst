@@ -33,14 +33,14 @@ Please cite the code as:
 
 .. code-block::
 
-  @Software{featherstone_et_al_2021,
+  @Software{featherstone_et_al_2022,
 	author = "{Featherstone}, N.~A. and {Edelmann}, P.~V.~F. and {Gassmoeller}, R. and {Matilsky}, L.~I. and {Orvedahl}, R.~J. and {Wilson}, C.~R.",
-	title="Rayleigh 1.0.1",
-	year="2021",
+	title="Rayleigh 1.1.0",
+	year="2022",
 	organization="",
 	optkeywords="Rayleigh",
-	doi="http://doi.org/10.5281/zenodo.5774039",
-	opturl="https://doi.org/10.5281/zenodo.5774039"}
+	doi="http://doi.org/10.5281/zenodo.6522806",
+	opturl="https://doi.org/10.5281/zenodo.6522806"}
 
 Please also cite the following references:
 

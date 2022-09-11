@@ -568,7 +568,7 @@ Contains
         Integer, Intent(In)    :: ind, dind, dorder
         Real*8, Allocatable :: dbuffer(:,:,:)
         Integer :: dims(4), n,n2,n3, i,j,k, order
-        Integer :: kstart, kend, trank
+        Integer :: kstart, kend, trank, nthr
         Integer :: nglobal, nsub, hoff, hh
         dims = shape(buffer)
         nglobal = dims(1)
@@ -601,14 +601,14 @@ Contains
             !$OMP PARALLEL PRIVATE(i,j,k,trank,order,kstart,kend,nthr,n,hh,hoff)
 #ifdef useomp
                 trank = omp_get_thread_num()
-                  nthr  = omp_get_num_threads()
-                  kstart = (trank*n3)/nthr+1
-                  kend = ((trank+1)*n3)/nthr
+                nthr  = omp_get_num_threads()
 #else
                 trank = 0
-                kstart = 1
-                kend = n3
+                nthr = 1
 #endif
+                kstart = (trank*n3)/nthr+1
+                kend = ((trank+1)*n3)/nthr
+
                 Do k = kstart,kend
 
                     Do j = 1, n2

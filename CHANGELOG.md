@@ -9,13 +9,29 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
+- None yet
+### Changed
+- None yet
+### Fixed
+- None yet
+
+
+## [1.1.0] - 4-29-2022
+### Added
 - Added new main_input class to rayleigh_diagnostics.py.   Usage examples are provided in Rayleigh/examples/main_input_class. \[Nick Featherstone; 1-11-2022; [#352](https://github.com/geodynamics/Rayleigh/pull/352)\]
+
+- New namelist option m_balance_contiguous = True/False in the numerical_controls_namelist allows using faster transpose routines for 2a3a and 3b2b directions. When True, this option stores the high/low m values in a contiguous fashion, suitable for better vector operations within loops. The default (False) is to use the original high-low pairing. \[Ryan Orvedahl; 4-9-2022; [#363](https://github.com/geodynamics/Rayleigh/pull/363)\] 
+
+- Add some unit tests and have them run within github actions. \[Ryan Orvedahl; 3-31-2022; [#361](https://github.com/geodynamics/Rayleigh/pull/361)\]
+
 ### Changed
 - The rotation rate is now accounted for when computing the maximum allowable timestep.  Now, the timestep may not exceed CFLMax/(c1*4), where CFLMax is the CFL safety factor.  c1 is the 1st Rayleigh constant, effectively the inverse of the rotational timescale (c1 = 2 Omega for reference_type=2 and 2/Ek for reference_type=1). \[Nick Featherstone; 12-11-2021; [#348](https://github.com/geodynamics/Rayleigh/pull/348)\]
 
 - When running with both internal heating and fix_dTdr_top=.true., the value of dTdr_top is now set internally by Rayleigh.  This is done to ensure consistency with the internal heating as well as any flux passing through the lower boundary (if fixed flux lower boundary conditions are applied).   To override this behavior, set adjust_dTdr to .false. in the Boundary_Conditions namelist. \[Nick Featherstone; 12-13-2021; [#349](https://github.com/geodynamics/Rayleigh/pull/349)\]
 ### Fixed
-- None yet
+- Strict_L_conservation is now set to False when no_slip_boundaries or no_slip_top are true. \[Nick Featherstone; 4-29-2022; [#364](https://github.com/geodynamics/Rayleigh/pull/364)\]
+
+- Fix a bug that incorrectly computed l_max when n_theta was provided. L_max was off by at most one. \[Ryan Orvedahl; 3-28-2022; [#360](https://github.com/geodynamics/Rayleigh/pull/360)\]
 
 ## [1.0.1] - 12-11-2021
 ### Fixed

@@ -642,6 +642,22 @@ main_input file:
    temp_amp = 1.0d-4
    conductive_profile=.true.
    /
+   
+Alternatively, you may wish to specify an ell=0 initial thermal profile
+that is neither random nor conductive.  To create your own profile, follow the example found in
+Rayleigh/examples/custom_thermal_profile/custom_thermal_profile.ipynb.   Then, use the following combination
+of input parameters in main_input:
+
+::
+
+   &initial_conditions_namelist
+   init_type=7
+   temp_amp = 1.0d-4
+   custom_thermal_file = 'my_custom_profile.dat' 
+   /
+
+This will use the radial profile stored in my_custom_profile.dat for the ell=0 component of entropy/temperature
+Random values will be used to initialize all other modes.
 
 Magnetic-field initialization follows a similar pattern. Available
 values for magnetic_input type are:

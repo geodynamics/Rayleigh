@@ -360,7 +360,7 @@ Contains
 
         If (self%spectral)  Then
             ! Full spectral grid (can restrict via lmax_in for reading Checkpoints as lower resolution.)
-            self%lmax = (2*self%ntheta-1)/3
+            self%lmax = pfi%n2s - 1 ! get this from parallel interface: n2s = n_l = l_max + 1
             self%lmax_in = self%lmax
             self%nlm = (self%lmax+1)*(self%lmax+1) 
             self%nlm_out = (self%lmax+1)*(self%lmax+1)   

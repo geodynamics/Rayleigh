@@ -1,0 +1,42 @@
+**fix_tvar_top**  
+  Logical flag indicating whether thermal variable (T,S) should be fixed on the upper boundary.  Default = .true.
+**fix_tvar_bottom**
+  Logical flag indicating whether thermal variable (T,S) should be fixed on the lower boundary.  Default = .true.
+**fix_dtdr_top**  
+  Logical flag indicating whether the radial derivative of thermal variable (T,S) should be fixed on the upper boundary.  Default = .false.
+**fix_dtdr_bottom**  
+  Logical flag indicating whether the radial derivative of thermal variable (T,S) should be fixed on the lower boundary.  Default = .false.
+**T_top**
+  Value of thermal variable (T,S) at the upper boundary.  Default = 0.
+**T_bottom**
+  Value of thermal variable (T,S) at the lower boundary.  Default = 1.  
+**dTdr_top**
+  Value of radial derivative of thermal variable (T,S) at the upper boundary.  Default = 0.
+**dTdr_bottom**
+  Value of radial derivative of thermal variable (T,S) at the lower boundary.  Default = 0.  
+**adjust_dTdr_top**
+  Logical flag indicating that dTdr_top should be set based on the values of heating_integral (or luminosity) and the value of dTdr_bottom.  Default value is .false.  When .true., this flag only has an effect when fix_dtdr_top = .true. and heating_type > 0.  When active, dTdr_top is set such that the integrated flux passing through the upper boundary is equal to the sum of those due to internal heating and any flux passing through the lower boundary due to fixed dTdr_bottom.
+**no_slip_top**
+  When .true., a no-slip condition on the horizontal velocity field is enforced at the upper boundary.  Default = .false.
+**no_slip_bottom**
+  When .true., a no-slip condition on the horizontal velocity field is enforced at the lower boundary.  Default = .false.
+**stress_free_top**
+  When .true., a stress-free condition on the horizontal velocity field is enforced at the upper boundary.  Default = .true.
+**stress_free_bottom**
+  When .true., a stress-free condition on the horizontal velocity field is enforced at the lower boundary.  Default = .true.
+**no_slip_boundaries**
+  When .true., both no_slip_top and no_slip_bottom are set to .false.  Default = .false.
+**strict_L_Conservation**
+  In some cases, typically rotating models employing MHD or thick shells, angular momentum can leak into/out of the domain even when using stree-free boundaries.  When .true., this flag replaces the upper boundary condition with an integral constraint on the :math:`\ell=1` toroidal streamfunction that enforces strict conservation of angular momentum.  Note that the upper boundary is neither stress-free nor no-slip in this case.  Default = .false.
+**T_top_file**
+  Generic-input file containing a custom, fixed (T,S) upper boundary condition.    
+**T_bottom_file**
+  Generic-input file containing a custom, fixed (T,S) lower boundary condition.  
+**dTdr_top_file**
+  Generic-input file containing a custom, fixed (:math:`\partial T/\partial r`, :math:`\partial S/\partial r`) upper boundary condition.    
+**dTdr_bottom_file**
+  Generic-input file containing a custom, fixed (:math:`\partial T/\partial r`, :math:`\partial S/\partial r`) lower boundary condition.  
+**C_top_file**
+  Generic-input file containing a custom upper boundary condition for the poloidal flux function *C*.    
+**C_bottom_file**
+  Generic-input file containing a custom lower boundary condition for the poloidal flux function *C*. 

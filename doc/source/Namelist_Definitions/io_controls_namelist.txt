@@ -1,0 +1,22 @@
+**stdout_file**
+  If desired, set this variable to the name of a file to which Rayleigh's text output is redirected.   This can be useful for monitoring run progress and time-step size on systems that otherwise don't produce the text output until a run has complete.  The default value is 'nofile,' which indicates that Rayleigh should not redirect stdout to a file.
+**stdout_flush_interval**
+  Number of lines to cache before writing to the stdout_file if used.  This prevents excessive disk access while a model is evolving.  The default value if 50.
+**jobinfo_file**
+  Set this variable to the name of a file, generated during Rayleigh's initialization, that contains the values assigned to each namelist variable, along with compiler and Git hash information.  The default filename is 'jobinfo.txt'
+**terminate_file**
+  The name of a file that, if found in the top-level simulation directory, indicates Rayleigh should terminate execution.  This can be useful when trying to exit a run cleanly before the scheduled wall time runs out.  The default filename is 'terminate'.
+**terminate_check_interval**
+  Number of iterations between successive checks for the presence of the job termination file.  The default value is 50.
+**statusline_interval**
+  Number of iterations between successive outputs to sdout indicating time step number and size.  The default value is 1, so that iteration number and time-step size are printed during every time step.
+**outputs_per_row**
+  Determines the number of process columns that particpate in MPI-IO during checkpointing and diagnostic outputs.  Acceptable values fall in the range [1,nprow], with a default value of 1.
+**integer_output_digits**
+  Number of digits to use for all integer-based filenames (e.g., G_Avgs/00000001).  The default value is 8.
+**integer_input_digits**
+  Number of digits for integer-based checkpoint names to be read during a restart.  The default value is 8.
+**decimal_places**
+  Number of digits to use after then decimal point for those portions of Rayleigh's text output that displayed in scientific notation.  The default value is 3.
+  
+  

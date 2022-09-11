@@ -74,7 +74,7 @@ Spherical_IO.o : Spherical_IO.F90 Ra_MPI_Base.o Parallel_IO.o MakeDir.o Math_Con
 Structures.o : Structures.F90 
 TestSuite.o : TestSuite.F90 ProblemSize.o Test_Cheby.o Test_SHT.o 
 Test_Cheby.o : Test_Cheby.F90 ProblemSize.o 
-Test_SHT.o : Test_SHT.F90 SendReceive.o Legendre_Transforms.o Fourier_Transform.o Parallel_Framework.o Fields.o ProblemSize.o 
+Test_SHT.o : Test_SHT.F90 SendReceive.o Legendre_Transforms.o Fourier_Transform.o General_MPI.o Parallel_Framework.o Fields.o ProblemSize.o 
 Theta_Derivatives.o : Theta_Derivatives.F90 Structures.o 
 Timers.o : Timers.F90 SendReceive.o Parallel_Framework.o Timing.o 
 Timing.o : Timing.F90 Ra_MPI_Base.o 

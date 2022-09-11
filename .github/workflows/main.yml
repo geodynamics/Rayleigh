@@ -53,6 +53,19 @@ jobs:
         git diff > changes.diff
         git diff --exit-code --name-only
 
+    - name: Unit Tests
+      run: |
+        # Set some environment variables necessary for OpenMPI to run as root
+        # and on more MPI ranks than available cores
+        export RAYLEIGH_TEST_MPI_PARAMS="--oversubscribe --allow-run-as-root"
+
+        cd "$GITHUB_WORKSPACE"/tests/unit_tests/SHT
+
+        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg > expected_output.out
+
+        git diff > changes.diff
+        git diff --exit-code --name-only
+
   conda:
     name: conda-build
     strategy:

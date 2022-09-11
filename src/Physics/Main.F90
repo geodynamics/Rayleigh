@@ -56,6 +56,8 @@ Program Main!
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
 
     If (test_mode) Then
+        Call Initialize_Controls()
+        Call Set_Math_Constants()
         Call Init_ProblemSize()
         Call Test_Lib()
     Else
