@@ -979,16 +979,16 @@ class G_Avgs:
 
         """
         self.fd = open(the_file,'rb')        
-        specs = np.fromfile(self.fd,dtype='int32',count=4)
+        specs = np.fromfile(self.fd,dtype='int32',count=1)
         bcheck = specs[0]       # If not 314, we need to swap the bytes
         self.byteswap = False
         if (bcheck != 314):
             specs.byteswap()
             self.byteswap = True
             
-        self.version = specs[1]
-        self.niter = specs[2]
-        self.nq = specs[3]
+        self.version = swapread(self.fd,dtype='int32',count=1,swap=self.byteswap)
+        self.niter = swapread(self.fd,dtype='int32',count=1,swap=self.byteswap)
+        self.nq = swapread(self.fd,dtype='int32',count=1,swap=self.byteswap)
         if (closefile):
             self.fd.close()
    
