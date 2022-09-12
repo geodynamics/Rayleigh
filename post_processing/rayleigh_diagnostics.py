@@ -853,8 +853,8 @@ class G_Avgs:
                 (writes all data contained in my_gavgs to my_file.dat, in standard G_Avgs format)
 
         """
-        one_rec = np.dtype([('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32)  ])
-        fstruct = np.dtype([ ('fdims', np.int32,4), ('qvals', np.int32,(self.nq)), ('fdata', one_rec, [self.niter,])  ])
+        one_rec = np.dtype([ ('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32) ])
+        fstruct = np.dtype([ ('fdims', np.int32, 4), ('qvals', np.int32, [self.nq,]), ('fdata', one_rec, [self.niter,]) ])
         
         odata = np.zeros((1,),dtype=fstruct)
         odata['fdims'][0,0]=314
@@ -929,8 +929,8 @@ class G_Avgs:
         self.time  = np.zeros(self.niter          ,dtype='float64')
 
         
-        one_rec = np.dtype([('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32)  ])
-        fstruct = np.dtype([ ('qvals', np.int32,(self.nq)), ('fdata', one_rec, [self.niter,])  ])
+        one_rec = np.dtype([ ('vals', np.float64, [self.nq,]), ('times', np.float64), ('iters', np.int32)  ])
+        fstruct = np.dtype([ ('qvals', np.int32, [self.nq,]), ('fdata', one_rec, [self.niter,]) ])
         
         if (self.byteswap):
                 fdata = np.fromfile(self.fd,dtype=fstruct,count=1).byteswap()
