@@ -473,7 +473,7 @@ class Plot1D(abc.ABC):
         )
 
         ax.set_xlabel(Xl)
-        ax.set_ylabel(f"{lut.latex_formula(q)}")
+        ax.set_ylabel(f"{lut.latex_formula(qcode)}")
 
         if legend:
             ax.legend()
