@@ -455,7 +455,7 @@ do
 done
 echo ""
 echo " -----------------------------------------------------------------------------"
-echo "                          Rayleigh v0.9 Configuration"
+echo "                          Rayleigh v0.9.5 Configuration"
 echo " -----------------------------------------------------------------------------"
 echo ""
 FVERSION="unknown"
