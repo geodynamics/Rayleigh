@@ -1,21 +1,15 @@
+
 &problemsize_namelist
- n_r = 128
- n_theta = 192
- nprow = 32
- npcol = 16
+ n_r = 48
+ n_theta = 64
+ aspect_ratio = 0.35d0
+ shell_depth = 1.0d0
 /
 &numerical_controls_namelist
 /
 &physical_controls_namelist
- benchmark_mode = 3
- benchmark_integration_interval = 100
- benchmark_report_interval = 10000
 /
 &temporal_controls_namelist
- max_iterations = 200000
- checkpoint_interval = 100000
- quicksave_interval = 10000
- num_quicksaves = 2
 /
 &io_controls_namelist
 /
@@ -26,6 +20,10 @@
 &Initial_Conditions_Namelist
 /
 &Test_Namelist
+ test_mode = .true.
+ test_legendre = .true.
+ test_full_sht = .true.
+ ntest_transform_loops = 10
 /
 &Reference_Namelist
 /

@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################################
-#   Rayleigh v0.9.1 Configuration Script.
+#   Rayleigh Configuration Script.
 #   This script is built around functions as much as possible.
 #   The "actual" script is contained with the function "main,"
 #   defined at the bottom of this file.
@@ -9,6 +9,11 @@ function compiler_version {
   #$1 --version
   VSTR=$($1 --version)
   VTMP="unknown"
+  # List Cray first because other compilers might have Cray company name in their version string.
+  if [[ $VSTR == *"Cray"* ]]
+  then
+    VTMP="CRAY"
+  fi
   if [[ $VSTR == *"Intel"* ]]
   then
     VTMP="INTEL"
@@ -25,6 +30,10 @@ function compiler_version {
   then
     VTMP="GNU"
   fi
+  if [[ $VSTR == *"AOCC"* ]]
+  then
+    VTMP="AOCC"
+  fi
   echo $VTMP
 }
 
@@ -32,12 +41,23 @@ function opt_flags {
   #$1 --version
   if [[ $1 == "INTEL" ]]
   then
-    echo '-FR -fpp -r8 -O3 -shared-intel -DINTEL_COMPILER'
+    # the value for heap arrays below was chosen to mimic gnu behavior
+    echo '-FR -fpp -r8 -O3 -shared-intel -heap-arrays 65'
   fi
 
   if [[ $1 == "GNU" ]]
   then
-    echo '-O3 -ffixed-line-length-132 -DGNU_COMPILER'
+    echo '-O3 -ffixed-line-length-132'
+  fi
+
+  if [[ $1 == "AOCC" ]]
+  then
+    echo '-O3 -ffixed-line-length-132'
+  fi
+
+  if [[ $1 == "CRAY" ]]
+  then
+    echo '-O3'
   fi
 }
 
@@ -45,17 +65,26 @@ function dbg_flags {
   #$1 --version
   if [[ $1 == "INTEL" ]]
   then
-    echo '-FR -fpp -r8 -O0 -g -CB -traceback -shared-intel -DINTEL_COMPILER'
+    # the value for heap arrays below was chosen to mimic gnu behavior
+    echo '-FR -fpp -r8 -O0 -g -CB -traceback -shared-intel -heap-arrays 65'
   fi
   if [[ $1 == "GNU" ]]
   then
-    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -DGNU_COMPILER'
+    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132'
+  fi
+  if [[ $1 == "AOCC" ]]
+  then
+    echo '-O0 -g -ffixed-line-length-132'
+  fi
+  if [[ $1 == "CRAY" ]]
+  then
+    echo '-O0 -g'
   fi
 }
 
 function displayhelp {
     echo ""
-    echo "            Rayleigh v0.9.1 Configuration Help"
+    echo "            Rayleigh Configuration Help"
     echo "            ================================"
     echo " "
     echo "  usage: ./configure [options]"
@@ -164,12 +193,6 @@ function displayhelp {
     echo "      Usage Example 2:  ./configure --with-mkl='/my/mkl/root' -conda-mkl "
     echo ""
 
-    echo "  -mac-mkl:     " 
-    echo "      Link to MKL's FFTW, LAPack, and BLAS routines using syntax appropriate for Mac."
-    echo "      This flag may be used in conjunction with -conda-mkl."
-    echo "      (NOTE:  This feature is currently only supported when -conda-mkl is also used.)"
-    echo ""    
-
     echo "  --nodirs ; -nodirs: "
     echo "      Causes Make to compile Rayleigh without directory creation support."
     echo "      This is intended ONLY for machines where the make process fails when "
@@ -215,7 +238,11 @@ function displayhelp {
     echo "      library.  Set this flag to link statically instead."
     echo ""
 
-
+    echo "  --ifort-march ; -ifort-march:"
+    echo "      ifort only: Use the generic -march options for architecture selection "
+    echo "      instead of the -x options. This is needed for optimizing the code for "
+    echo "      non-Intel CPUs."
+    echo ""
 
     echo "  --with-mkl=<path to the MKL root directory>"
     echo "      Set this value if the MKLROOT environment variable is not set on your"
@@ -356,21 +383,6 @@ do
       fi 
       ;;
 
-    -mac-mkl)
-      if [ ! -z "$MKLROOT" ]
-      then
-        MACMKL="TRUE"
-        USE_MKL="TRUE"
-        RAMKLROOT=$MKLROOT
-      else
-        echo "Error Code 5: "
-        echo "MKLROOT is not defined"
-        echo "MKLROOT must be defined in your environment to use the -mkl flag."
-        echo "exiting..."
-        exit 5
-      fi 
-      ;;
-
     -mkl)
       if [ ! -z "$MKLROOT" ]
       then
@@ -422,6 +434,10 @@ do
       STATICFFTW="TRUE";
       ;;
 
+    --ifort-march | -ifort-march )
+      IFORTMARCH="TRUE";
+      ;;
+
     --CC=*)
       export CC=`expr "x$option" : "x-*CC=\(.*\)"`;
       ;;
@@ -439,7 +455,7 @@ do
 done
 echo ""
 echo " -----------------------------------------------------------------------------"
-echo "                          Rayleigh v0.9 Configuration"
+echo "                          Rayleigh v0.9.5 Configuration"
 echo " -----------------------------------------------------------------------------"
 echo ""
 FVERSION="unknown"
@@ -495,12 +511,6 @@ else
   OPT_FLAGS=$(opt_flags $FVERSION)
   DBG_FLAGS=$(dbg_flags $FVERSION)
 
-  if [ "$USEMPIF77" == "TRUE" ]
-  then
-          OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F77_BINDINGS"
-          DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F77_BINDINGS"
-  fi
-
   if [ "$CUSTOMOPT" == "TRUE" ]
   then
     echo "  Overriding optimization flags."
@@ -518,6 +528,37 @@ else
     echo "  Overriding all flags..,"
     OPT_FLAGS=$RAFFLAGS
     DBG_FLAGS=$RAFFLAGS
+  fi
+
+  # internally used preprocessor flags should appear after custom flags are set
+  if [ "$USEMPIF77" == "TRUE" ]
+  then
+          OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F77_BINDINGS"
+          DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F77_BINDINGS"
+  fi
+
+  if [ $FVERSION == "INTEL" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DINTEL_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DINTEL_COMPILER"
+  fi
+
+  if [ $FVERSION == "GNU" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DGNU_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DGNU_COMPILER"
+  fi
+
+  if [ $FVERSION == "AOCC" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DAOCC_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DAOCC_COMPILER"
+  fi
+
+  if [ $FVERSION == "CRAY" ]
+  then
+      OPT_FLAGS="$OPT_FLAGS -DCRAY_COMPILER"
+      DBG_FLAGS="$DBG_FLAGS -DCRAY_COMPILER"
   fi
 
   echo ' '
@@ -629,27 +670,41 @@ then
   echo " -- Support for all of the above    :  FAT"
   echo ""
     OPTIONS="SSE4.2 AVX AVX2 AVX512 ALL FAT NONE"
+    if [[ $IFORTMARCH == TRUE ]]
+    then
+            OSSE42="-march=corei7"
+            OAVX="-march=corei7-avx"
+            OAVX2="-march=core-avx2"
+            # There seems to be no direct equivalent for COMMON-AVX512 using the march option.
+            OAVX512="-xCOMMON-AVX512 -axCORE-AVX512,MIC-AVX512"
+    else
+            OSSE42="-xSSE4.2"
+            OAVX="-xAVX"
+            OAVX2="-xCORE-AVX2"
+            OAVX512="-xCOMMON-AVX512 -axCORE-AVX512,MIC-AVX512"
+    fi
+
     select opt in $OPTIONS; do
        if [ "$opt" = "SSE4.2" ]; then
-        FFLAGS[0]=$OPT_FLAGS" -xSSE4.2"
+        FFLAGS[0]=$OPT_FLAGS" $OSSE42"
         break
        elif [ "$opt" = "AVX" ]; then
-        FFLAGS[0]=$OPT_FLAGS" -xAVX"
+        FFLAGS[0]=$OPT_FLAGS" $OAVX"
         break        
        elif [ "$opt" = "AVX2" ]; then
-        FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX2"
+        FFLAGS[0]=$OPT_FLAGS" $OAVX2"
         break            
        elif [ "$opt" = "AVX512" ]; then
-        FFLAGS[0]=$OPT_FLAGS" -xCOMMON-AVX512 -axCORE-AVX512,MIC-AVX512"
+        FFLAGS[0]=$OPT_FLAGS" $OAVX512"
         break      
        elif [ "$opt" = "ALL" ]; then
          DEFAULT='avx2'
          nvers=5
          MULTIVEC=TRUE
-         FFLAGS[0]=$OPT_FLAGS" -xCORE-AVX2"
-         FFLAGS[2]=$OPT_FLAGS" -xAVX"
-         FFLAGS[3]=$OPT_FLAGS" -xSSE4.2"
-         FFLAGS[4]=$OPT_FLAGS" -xCOMMON-AVX512 -axCORE-AVX512,MIC-AVX512"
+         FFLAGS[0]=$OPT_FLAGS" $OAVX2"
+         FFLAGS[2]=$OPT_FLAGS" $OAVX"
+         FFLAGS[3]=$OPT_FLAGS" $OSSE42"
+         FFLAGS[4]=$OPT_FLAGS" $OAVX512"
          RVALUES[0]=$DEFAULT 
          RVALUES[2]=avx
          RVALUES[3]=sse
@@ -659,7 +714,7 @@ then
          RVTAGS[4]="AVX512"
          break
        elif [ "$opt" = "FAT" ]; then
-        FFLAGS[0]=$OPT_FLAGS" -xSSE4.2 -axAVX,CORE-AVX2,CORE-AVX512,MIC-AVX512"
+        FFLAGS[0]=$OPT_FLAGS" $OSSE42 -axAVX,CORE-AVX2,CORE-AVX512,MIC-AVX512"
         break
        elif [ "$opt" == "NONE" ]; then
          FFLAGS[0]=$OPT_FLAGS
@@ -673,7 +728,7 @@ then
 
 fi
 
-if [[ $FVERSION == "GNU" ]] &&  [[ $DEVELMODE != "TRUE" ]]
+if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]] &&  [[ $DEVELMODE != "TRUE" ]]
 then
 
   echo "***********************************************************************"
@@ -716,8 +771,8 @@ then
          break
        fi
        FFLAGS[0]="${OPT_FLAGS} -march=${opt}"
-       if [ "$opt" = "native" ]; then
-               echo "CPU autodetect result: $(gfortran -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
+       if [[ "$opt" == "native" && $FVERSION == "GNU" ]]; then
+               echo "CPU autodetect result: $($FC -march=native -Q --help=target|grep '^\s\+-march'|awk '{print $2}')"
        fi
        break
     done
@@ -754,11 +809,11 @@ then
     then
         LIB_FLAGS="-mkl -lstdc++"
     fi
-    if [[ $FVERSION == "GNU" ]]
+    if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
     then
         if [[ $CONDAMKL == "TRUE" ]]
         then
-            if [[ $MACMKL == "TRUE" ]]
+            if [[ $OSTYPE == *"darwin"* ]]
             then
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
                 LIB_FLAGS="\$(MKL_LIB) -lc++"
@@ -881,7 +936,7 @@ then
     echo "FFTWLINK = "$FFTWLINK >> $OFILE
     echo "" >> $OFILE
 else
-    if [[ $FVERSION == "GNU" ]]
+    if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
     then
         echo "" >> $OFILE
         echo "MKL_LIB = "$MKL_LIB >> $OFILE

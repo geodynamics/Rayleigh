@@ -1,0 +1,9 @@
+**band_solve**
+  For use with models employing at least three Chebyshev domains.  In those models, the rows of the normally dense matrices used in the Crank-Nicolson scheme may be rearranged into a block-banded form.  Setting this variable to .true. will perform this rearrangement, and Rayleigh will execute a band, rather than dense, solve during each timestep.  Using the band-solve approach can help save memory and may yield performance gains.  No benefit is gained for models using one or two Chebyshev domains.  The default behavior is to use a dense solve (band_solve = .false.).
+**static_transpose**
+  When set to .true., buffer space used during Rayleigh's transposes is allocated once at runtime.  The default behavior (static_tranpose=.false.) is to allocate and deallocate buffer space during each transpose.  On some machines, avoiding this cycle of allocation/deallocation has led to minor performance improvements.
+**static_config**
+  When set to .true., sphericalbuffer configurations (e.g., p3a, s2b) are allocated once at runtime.  The default behavior (static_config=.false.) is to save memory by deallocating memory associated with the prior configuration space following a transpose.  If memory is not an issue, this may lead to minor performance improvements on some systems.
+**pad_alltoall**
+  When set to .true., transpose buffers are padded throughout with zeros to enforce uniform message size, and a standard alltoall is used for each transpose.  The default behavior (pad_alltoall=.false.) uses alltoallv and variable message sizes.  Depending on the underlying alltoall algorithms in the MPI implementation used, performance my differ between these two approaches.
+  

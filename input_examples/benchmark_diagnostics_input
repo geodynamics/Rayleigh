@@ -16,6 +16,7 @@
  magnetism = .false.
  viscous_heating = .false.
  ohmic_heating = .false.
+ advect_reference_state = .false.
 /
 &temporal_controls_namelist
  max_time_step = 1.0d-4
@@ -41,7 +42,7 @@ meridional_frequency = 5000
 meridional_nrec      = 2
 meridional_indices_nrm = 0.7
 
-shellslice_levels_nrm    = 0.9
+shellslice_levels_nrm    =0.5, 0.9
 shellslice_values    = 1,2,3 ! velocity components
 shellslice_frequency = 10000
 shellslice_nrec      = 2

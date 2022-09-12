@@ -5,7 +5,7 @@ cd tests/generic_input
 # first we run the "base" case, this just sets up and runs Rayleigh for one time-step with hard-coded initial conditions 
 # for the Christensen et al., 2001 benchmark case 1
 cd base
-mpirun -np 4 ../../../bin/rayleigh.dbg
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 ../../../post_processing/convert_full3d_to_vtu.py
 cd ..
 
@@ -18,14 +18,14 @@ cd script
 # then we use a custom python script using rayleigh_spectral_input.py as a module to write the magnetic initial conditions
 PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_magnetic_input.py
 # finally we run Rayleigh
-mpirun -np 4 ../../../bin/rayleigh.dbg
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 ../../../post_processing/convert_full3d_to_vtu.py
 cd ..
 
 # onto testing bcs... again, first the base case using hard-coded Rayleigh options
 cd bcs_base
 ../../../pre_processing/rayleigh_spectral_input.py -m 0 0 0 0.0+0.j -o zero_init_vol
-mpirun -np 4 ../../../bin/rayleigh.dbg
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # then again onto the same thing but using generic input files to set the boundary conditions
@@ -35,7 +35,25 @@ cd bcs_script
 ../../../pre_processing/rayleigh_spectral_input.py -m 1 0 15.778615862127371 -m 1 1 3.9346188846598249+0.j -o cbottom_init_bc
 ../../../pre_processing/rayleigh_spectral_input.py -e '5.0' -o five_init_bc
 ../../../pre_processing/rayleigh_spectral_input.py -e '-5.0' -o mfive_init_bc
-mpirun -np 4 ../../../bin/rayleigh.dbg
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
+# test the radial case...
+# first a base case not using generic input
+cd radial_base
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
+# then a case that generates a sparse radial generic input file
+cd radial_sparse
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_input.py
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
+# finally a version that generates a dense radial generic input file
+cd radial_dense
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_input.py
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # after both versions have run, we test the output for errors

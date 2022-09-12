@@ -1,3 +1,5 @@
+.. _quantityCodes:
+
 Quantity Codes
 ================
 

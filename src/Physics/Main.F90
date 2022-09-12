@@ -56,6 +56,8 @@ Program Main!
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
 
     If (test_mode) Then
+        Call Initialize_Controls()
+        Call Set_Math_Constants()
         Call Init_ProblemSize()
         Call Test_Lib()
     Else
@@ -104,6 +106,11 @@ Contains
 
         If (my_rank .eq. 0) Then
             Call stdout%print(" Initialization Complete.")
+            Call stdout%print(" //////////////////////////////////////")
+            Call stdout%print(" ")
+            Call stdout%print(" Remember to cite Rayleigh in your publications:")
+            Call stdout%print(" Check the ACKNOWLEDGE file for more information.")
+            Call stdout%print(" ")
             Call stdout%print(" //////////////////////////////////////")
             Call stdout%print(" ")
         Endif

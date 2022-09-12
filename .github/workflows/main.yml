@@ -1,0 +1,96 @@
+name: continuous-integration
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Fix OpenMPI issue in Docker : https://github.com/open-mpi/ompi/issues/4948
+  OMPI_MCA_btl_vader_single_copy_mechanism: none
+
+jobs:
+  test:
+    name: linux-bionic-container-build
+    runs-on: [ubuntu-latest]
+    container: gassmoeller/rayleigh-buildenv-bionic
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build documentation
+      # First make sure notebooks do not contain output, then build doc
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        make clear_ipynb && git diff --exit-code --name-only
+        make doc
+    - name: Build Rayleigh
+      # First make sure notebooks do not contain output, then build doc
+      run: |
+        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr' --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+
+        make fdeps && git diff --exit-code
+        make -j
+        make install
+    - name: Test
+      run: |
+        # Set some environment variables necessary for OpenMPI to run as root
+        # and on more MPI ranks than available cores
+        export RAYLEIGH_TEST_MPI_PARAMS="--oversubscribe --allow-run-as-root"
+
+        cd "$GITHUB_WORKSPACE"/tests/c2001_case0
+
+        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../bin/rayleigh.dbg
+
+        # Generic input test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/generic_input/run_test.sh
+
+        git diff > changes.diff
+        git diff --exit-code --name-only
+
+    - name: Unit Tests
+      run: |
+        # Set some environment variables necessary for OpenMPI to run as root
+        # and on more MPI ranks than available cores
+        export RAYLEIGH_TEST_MPI_PARAMS="--oversubscribe --allow-run-as-root"
+
+        cd "$GITHUB_WORKSPACE"/tests/unit_tests/SHT
+
+        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg > expected_output.out
+
+        git diff > changes.diff
+        git diff --exit-code --name-only
+
+  conda:
+    name: conda-build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    # Needs to be here to properly detect changes to conda
+    # see https://github.com/conda-incubator/setup-miniconda#IMPORTANT
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: radev
+        environment-file: environment.yml
+    - name: Build documentation
+      continue-on-error: true
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        make doc
+    - name: Build Rayleigh
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        export MKLROOT=$CONDA_PREFIX
+        ./configure -conda-mkl --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        make -j
+        make install

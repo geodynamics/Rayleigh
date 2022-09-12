@@ -1,0 +1,62 @@
+ //////////////////////////////////////
+ Initializating Rayleigh...
+
+ -- Initalizing MPI...
+ ---- Specified parameters:
+ ---- NCPU  :      4
+ ---- NPROW :      2
+ ---- NPCOL :      2
+ -- MPI initialized.
+
+
+ -- Initalizing Grid...
+ ---- Specified parameters ----
+ ---- N_R                 :     48
+ ---- N_THETA             :     64
+ ---- Ell_MAX             :     41
+ ---- R_MIN               :  5.38462E-01
+ ---- R_MAX               :  1.53846E+00
+ ---- Chebyshev Domains   :      1
+
+        Domain 1
+          Grid points           :  48
+          Dealiased Polynomials :  32
+          Domain Lower Bound    :  5.38462E-01
+          Domain Upper Bound    :  1.53846E+00
+
+ -- Grid initialized.
+
+ Initiating library function tests.
+
+ ////////////////////////////////////////////////////////////
+ Test Legendre Transform: single mode, forward/inverse LT
+
+ Using tolerance =    1.0000000000000000E-010
+
+ Spec -> Phys result = PASSING
+ Spec -> Phys -> Spec result = PASSING
+
+ ////////////////////////////////////////////////////////////
+ Test Legendre Transform: single mode, loop over forward/inverse LT
+
+ Using tolerance =    1.0000000000000000E-010
+ Completed number of loops =           10
+
+ Spec -> Phys -> Spec -> ... result = PASSING
+
+ ////////////////////////////////////////////////////////////
+ Test Legendre Transform: all modes unit amplitude, loop over forward/inverse LT
+
+ Using tolerance =    1.0000000000000000E-010
+ Completed number of loops =           10
+
+ Spec -> Phys -> Spec -> ... result = PASSING
+
+ ////////////////////////////////////////////////////////////
+ Test Legendre Transforms, FFT, and transpose
+
+ Using tolerance =    1.0000000000000000E-010
+ Completed number of loops =           10
+
+ LT/FFT/transpose result = PASSING
+

@@ -51,6 +51,7 @@ Module BoundaryConditions
     Logical :: Fix_poloidalfield_bottom = .False.
     Logical :: Impose_Dipole_Field = .False.
     Logical :: Dipole_Field_Bottom = .False.
+    Logical :: adjust_dTdr_Top = .True.
 
     Real*8  :: T_Bottom     = 1.0d0
     Real*8  :: T_Top        = 0.0d0
@@ -82,7 +83,8 @@ Module BoundaryConditions
     Character*120 :: dchidr_top_file    = '__nothing__'
     Character*120 :: dchidr_bottom_file = '__nothing__'
 
-    Logical :: Strict_L_Conservation = .false.         ! (In-Progress) Turn on to enforce angular momentum conservation abous x,y, and z-axes
+    Logical :: Strict_L_Conservation = .false.  ! Turn on to enforce angular momentum conservation 
+                                                ! about x,y, and z-axes via integral constraint on Z(ell=1)
     Logical :: no_slip_boundaries = .false. ! Set to true to use no-slip boundaries.  Stree-free boundaries are the default.
     Logical :: stress_free_top = .true., stress_free_bottom = .true.
     Logical :: no_slip_top = .false., no_slip_bottom = .false.
@@ -96,7 +98,7 @@ Module BoundaryConditions
         C10_bottom, C10_top, C11_bottom, C11_top, C1m1_bottom, C1m1_top, Br_bottom, &
         dipole_tilt_degrees, impose_dipole_field, no_slip_top, no_slip_bottom, &
         stress_free_top, stress_free_bottom, T_top_file, T_bottom_file, dTdr_top_file, dTdr_bottom_file, &
-        C_top_file, C_bottom_file, dipole_field_bottom, &
+        C_top_file, C_bottom_file, dipole_field_bottom, adjust_dTdr_top, &
         chi_top_file, chi_bottom_file, dchidr_top_file, dchidr_bottom_file, &
         fix_chivar_top, fix_chivar_bottom, chi_bottom, chi_top, &
         fix_dchidr_bottom, fix_dchidr_top, dchidr_top, dchidr_bottom
@@ -106,7 +108,7 @@ Contains
     Subroutine Initialize_Boundary_Conditions()
         Implicit None
         Real*8 :: tilt_angle_radians,a,b
-        Real*8 :: fsun
+        Real*8 :: Ftop, rhotk_top, Fbottom
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
@@ -114,12 +116,41 @@ Contains
         fix_chivar_top = .not. fix_dchidr_top  ! PASSIVE
         fix_chivar_bottom = .not. fix_dchidr_bottom
 
+        If (no_slip_top .and. strict_L_Conservation) Then
+            If (my_rank .eq. 0) Then
+                Call stdout%print(" -- Warning:  Incompatible boundary conditions.")
+                Call stdout%print("        Both strict_L_Conservation and no_slip_top were set to True.")
+                Call stdout%print("        No_slip_top = True will be retained.")
+                Call stdout%print("        Strict_L_Conservation will be set to False.")
+                Call stdout%print("        If you wish to set Strict_L_Conservation=True, please explictly")
+                Call stdout%print("        set no_slip_top to False in main_input.")      
+                Call stdout%print("        ")      
+            Endif          
+            strict_L_conservation = .false.        
+        Endif
+
+        If (no_slip_boundaries .and. strict_L_Conservation) Then
+            If (my_rank .eq. 0) Then
+                Call stdout%print(" -- Warning:  Incompatible boundary conditions.")
+                Call stdout%print("        Both strict_L_Conservation and no_slip_boundaries were set to True.")
+                Call stdout%print("        no_slip_boundaries = True will be retained.")
+                Call stdout%print("        Strict_L_Conservation will be set to False.")
+                Call stdout%print("        If you wish to set Strict_L_Conservation=True, please explictly")
+                Call stdout%print("        set no_slip_boundaries to False in main_input.")   
+                Call stdout%print("        ")               
+            Endif         
+            strict_L_conservation = .false.                  
+        Endif
+
         If (no_slip_boundaries) Then
             no_slip_top = .true.
             no_slip_bottom = .true.
         Endif
-        stress_free_top = .not. no_slip_top
+        stress_free_top    = .not. no_slip_top
         stress_free_bottom = .not. no_slip_bottom
+
+
+
 
         !/////////////////////////////////////////
         ! There are three possible magnetic boundary conditions
@@ -149,6 +180,25 @@ Contains
             C1m1_bottom = 0.0d0 ! For the time being, we don't
             C1m1_top =  0.0d0   ! worry about phasing in longitude.
 
+        Endif
+
+        If (adjust_dTdr_top .and. fix_dtdr_top) Then
+            If (heating_type .gt. 0) Then
+
+                ! Adjust dTdr_top so that it is consistent with internal heating and lower B.C.
+
+                Ftop = ra_constants(10)/(four_pi*radius(1)**2) ! Flux due to internal heating
+
+                If (fix_dtdr_bottom) Then
+                    ! Account for any additional flux passing through the lower boundary
+                    Fbottom=-dTdr_bottom*ref%density(N_R)*ref%temperature(N_R)*kappa(N_R)
+                    Ftop = Ftop+Fbottom*(radius(N_R)/radius(1))**2
+                Endif
+                
+                rhotk_top = ref%density(1)*ref%temperature(1)*kappa(1)
+                dTdr_top = -Ftop/rhotk_top
+
+            Endif
         Endif
 
         Call Generate_Boundary_Mask()
@@ -333,7 +383,7 @@ Contains
 
     Subroutine Transport_Dependencies()
         Implicit None
-        Real*8 :: fsun, lum_top, lum_bottom
+        Real*8 :: lum_top, lum_bottom
 
         ! Odd reference state quantities that somehow depend on 
         ! boundary conditions can be set here.

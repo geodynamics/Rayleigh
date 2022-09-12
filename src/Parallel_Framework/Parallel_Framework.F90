@@ -39,7 +39,6 @@ Module Parallel_Framework
     Integer, Parameter, Public :: Cartesian = 1, Cylindrical = 2, Spherical = 3
     Integer, Parameter, Public :: p1 =1 ,s1 = 2, p2 = 3,s2a =4, p3a=5,p3b=6
     Public :: Load_Config, Full_Barrier, Main_MPI_Init
-    Character*6 :: ifmt = '(i4.4)' ! Integer format for indicating processor tag numbers in output
     Type, Public :: Parallel_Interface
         Type(Load_Config) :: my_1p, my_2p, my_3p    !  like my_r, my_theta in ASH
         Type(Load_Config) :: my_1s, my_2s, my_3s    !     like my_mp, my_n etc.
@@ -51,6 +50,7 @@ Module Parallel_Framework
         Integer :: n1p, n1s, n2p, n2s, n3p, n3s
         Integer :: npe, nprow, npcol, npio,npc
         Integer :: nthreads = 1
+        Integer :: m_balance_version = 0 ! which m_balance routine is used to load balance
         Integer, Allocatable :: inds_3s(:)
         Type(communicator) :: rcomm ! row communicator
         Type(communicator) :: ccomm ! column communicator
@@ -121,7 +121,6 @@ Contains
         Integer, Intent(In) ::  pars(1:)
         Integer, Intent(In) :: ncpus(1:)
         Integer :: pcheck, error
-        Integer :: ierr
         Character*6 :: istr
         Logical, Intent(In) :: init_only
         Class(Parallel_Interface) :: self
@@ -152,7 +151,8 @@ Contains
             self%output_columns = pars(11)
         Endif
         If (self%output_columns .lt. 1) self%output_columns = 1
-        
+
+        self%m_balance_version = pars(12)
 
         If (size(ncpus) .gt. 1) Then
             !Multiple run Mode
@@ -255,7 +255,7 @@ Contains
 #endif
 
         Class(Parallel_Interface) :: self
-        Integer :: my_mpi_rank,my_thread
+        Integer :: my_mpi_rank
         my_mpi_rank = pfi%gcomm%rank
 #ifdef useomp
         self%nthreads = omp_get_max_threads()
@@ -302,7 +302,17 @@ Contains
         ! This means that we need to set up an index array
         ! for the m-values that tells how many each processor has.
         Allocate(self%inds_3s(1:self%n3s))
-        Call m_balance(self%all_3s, self%inds_3s, self%rcomm)
+        If (self%m_balance_version .eq. 0) Then
+            Call m_balance_v0(self%all_3s, self%inds_3s, self%rcomm)
+        ElseIf (self%m_balance_version .eq. 1) Then
+            Call m_balance_v1(self%all_3s, self%inds_3s, self%rcomm)
+        Else
+            If (self%gcomm%rank .eq. 0) Then
+                Call stdout%print('........................................................')
+                Call stdout%print(' --- Error:  m_balance_contiguous is not recognized.  Exiting...')
+            Endif
+            Call self%exit()
+        Endif
         Call LM_Load_Balance(pfi%my_3s,self%inds_3s,self%ccomm)
         If (self%gcomm%rank .eq. -100) Then
             unit1 = 10

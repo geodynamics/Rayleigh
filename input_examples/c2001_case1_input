@@ -16,6 +16,7 @@
  magnetism = .true.
  viscous_heating = .false.
  ohmic_heating = .false.
+ advect_reference_state = .false.
 /
 &temporal_controls_namelist
  max_time_step = 1.0d-4
@@ -58,7 +59,6 @@ Magnetic_Prandtl_Number = 5.0d0
 reference_type = 1
 heating_type = 0
 gravity_power = 1.0d0
-dimensional = .false.
 /
 &Transport_Namelist
 /

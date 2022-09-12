@@ -1,11 +1,11 @@
 DSOBJ = Ra_Precision.o Structures.o BufferedOutput.o cmkdir.o MakeDir.o
-PFOBJ = Ra_MPI_Base.o All_to_All.o SendReceive.o ISendReceive.o General_MPI.o MPI_LAYER.o Load_Balance.o \
+PFOBJ = Ra_MPI_Base.o Timing.o All_to_All.o SendReceive.o ISendReceive.o General_MPI.o MPI_LAYER.o Timers.o Load_Balance.o \
         Parallel_Framework.o Spherical_Buffer.o Parallel_IO.o General_IO.o
-MOBJ  = Math_Constants.o Timing.o Finite_Difference.o Chebyshev_Polynomials.o \
+MOBJ  = Math_Constants.o Finite_Difference.o Chebyshev_Polynomials.o \
         Chebyshev_Polynomials_Alt.o Linear_Solve.o Legendre_Polynomials.o Legendre_Transforms.o \
         Math_Utility.o Fourier_Transform.o Spectral_Derivatives.o
 IOOBJ = Spherical_IO.o  
-POBJ  = Controls.o ClockInfo.o Timers.o ProblemSize.o PDE_Coefficients.o Fields.o \
+POBJ  = Controls.o ClockInfo.o ProblemSize.o PDE_Coefficients.o Fields.o \
         Generic_Input.o Checkpointing.o \
         BoundaryConditions.o Initial_Conditions.o \
         Diagnostics_Base.o \

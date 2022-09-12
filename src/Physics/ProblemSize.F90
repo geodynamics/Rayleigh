@@ -22,7 +22,7 @@ Module ProblemSize
     Use Parallel_Framework, Only : pfi, Load_Config, Spherical
     Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
     Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
-    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row
+    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row, m_balance_contiguous
     Use Chebyshev_Polynomials, Only : Cheby_Grid
     Use Math_Constants
     Use BufferedOutput
@@ -135,7 +135,7 @@ Contains
     Subroutine Init_Comm()
         Implicit None
         Integer :: cpu_tmp(1)
-        Integer :: ppars(1:11)
+        Integer :: ppars(1:12)
         !/////////////////////////////////////////////////////////
         ! Initialize MPI and load balancing (if no errors detected)
         ncpu = nprow*npcol
@@ -150,6 +150,11 @@ Contains
         ppars(9) = nprow
         ppars(10) = npcol
         ppars(11) = outputs_per_row
+        If (m_balance_contiguous) Then
+            ppars(12) = 1 ! use version 1
+        Else
+            ppars(12) = 0 ! use version 0, i.e., the original
+        Endif
         If (multi_run_mode) Then
             Call pfi%init(ppars,run_cpus, grid_error)
         Else
@@ -167,20 +172,20 @@ Contains
 
         tnr = 2*my_r%delta
         ! Once MPI has been initialized, we can start timing
-        Call Initialize_Timers()
+        Call Initialize_Timers(my_path)
         Call StopWatch(init_time)%startclock()
         Call StopWatch(walltime)%startclock()
     End Subroutine Init_Comm
 
     Subroutine Auto_Assign_Domain_Decomp()
         Implicit None
-        Integer :: f1, f2, imax, i, j, npairs, sind, i3, i4, ii, jj
-        Integer :: fcount, nfact_ok
+        Integer :: f1, f2, imax, i, j, npairs, i3, i4, ii, jj
+        Integer :: fcount
         Integer :: nprow_max, npcol_max, jinds(1:3), iinds(1:4)
-        Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu, factor_diff
+        Integer, Allocatable, Dimension(:,:) :: factors_of_ncpu
         Integer, Allocatable :: factor_type(:), suitable_factors(:,:,:)
         Logical, Allocatable :: factor_balanced(:), have_pair(:,:)
-        Real*8 :: ncpu_sqrt,r, rval, min_ratio, rdiff, rtol
+        Real*8 :: ncpu_sqrt, rval, min_ratio, rdiff, rtol
         Real*8, Allocatable :: ratio_measure(:,:)
         Logical :: fewer_npcol, hbal, rbal, need_pair
         ncpu_sqrt = sqrt(dble(ncpu))
@@ -315,7 +320,7 @@ Contains
 
     Subroutine Establish_Grid_Parameters()
         Implicit None
-        Integer :: cheby_count, bounds_count, i,r
+        Integer :: cheby_count, bounds_count, i
         Real*8 :: rdelta
         !Initialize everything related to grid resolution and domain bounds.
 
@@ -398,7 +403,7 @@ Contains
         If ( (l_max .le. 0) .and. (n_l .le. 0) ) Then
 
             If (dealias) Then
-                l_max = (2*n_theta-1)/3
+                l_max = (2*n_theta/3) - 1
             Else
                 l_max = n_theta-1
             Endif
@@ -600,10 +605,8 @@ Contains
 
     Subroutine Halt_On_Error()
 
-        Integer :: esize, i,j,tmp, ecode
+        Integer :: i,j,tmp, ecode
         Character*6 :: istr, istr2
-        Character*12 :: dstring
-        Character*8 :: dofmt = '(ES12.5)'
         If (maxval(perr) .gt. 0) Then
             ecode = maxval(perr)
             If (my_rank .eq. 0) Then

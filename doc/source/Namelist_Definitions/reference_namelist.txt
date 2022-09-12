@@ -1,0 +1,74 @@
+**reference_type**
+  Determines the fluid approximation and background state used by Rayleigh.
+   * type 1:  Boussinesq + nondimensional
+   * type 2:  Anelastic + polytropic background state (dimensional)
+   * type 3:  Anelastic + polytropic background state (non-dimensional)
+   * type 4:  Custom reference-state (read from file)  
+
+**poly_n**
+  The polytropic index used to describe the background state for reference types 2 and 3.
+**poly_Nrho**
+  Number of density scaleheights spanning the interval :math:`r_\mathrm{min}\le r\le r_\mathrm{max}` for reference types 2 and 3.  
+**poly_mass**
+  Mass interior to :math:`r_\mathrm{min}`, used in defining the polytropic reference state for reference types 2 and 3.
+**poly_rho_i**
+  Specifies the value of density at the inner boundary :math:`r=r_\mathrm{min}` for the polytropic reference states of reference types 2 and 3.
+**pressure_specific_heat**
+  Determines the value of the specific heat at constant pressure, :math:`c_\mathrm{p}` for reference types 2 and 3.
+**heating_type**
+  Integer value that determines the form of the internal heating function :math:`Q(r)`.  The default value is 0, which indicates no internal heating is used.  Allowable types are  
+   * type 1: :math:`Q(r)\propto\overline{\rho}(r)\overline{T}(r)`.
+   * type 4: :math:`Q(r)` is a constant function of radius.
+**heating_integral**
+  Determines the heating normalization :math:`L`, defined such that :math:`L=4\pi\int_{r_\mathrm{min}}^{r_\mathrm{max}} Q(r) r^2 dr`. 
+**luminosity**
+  Same as heating_integral.  If both are specified, the value of heating_integral will be used.
+**angular_velocity**
+  Determines the frame rotation rate :math:`\Omega` for rotating models employing reference type 2.
+**rayleigh_number**
+  Sets the value of the Rayleigh number Ra for reference type 1.
+**ekman_number**
+  Sets the value of the Ekman number Ek for reference types 1 and 3.  
+**prandtl_number**
+  Sets the value of the Prandtl number Pr for reference types 1 and 3.  
+**prandtl_number**
+  Sets the value of the magnetic Prandtl number Pm for reference types 1 and 3.    
+**dissipation_number**
+  Sets the value of the dissipationg number Di for reference type 3.    
+**modified_rayleigh_number**
+  Sets the value of the modified Rayleigh number :math:`Ra^*`  for reference type 3.    
+**gravity_power**
+  Specifies the value of *n* (real number) used to determine the radial variation of gravitational acceleration *g* in reference type 1, where :math:`g\propto\left(\frac{r}{r_\mathrm{max}}\right)^n`.
+**ra_constants**
+  Indicates the desired value of specified constant coefficients when reading the value from main_input instead of from a custom-refernce file.  For use with override_constants or override_constant flags.   Syntax is:
+  
+  ::
+  
+   &Reference_Namelist
+    ...
+    ra_constants( 2) = 1.0
+    ra_constants(10) = 14.0
+    ...
+   /
+**with_custom_constants**
+  Comma separated list of integers indicating which constant coefficients should be read from a custom-refernce file when with_custom_reference is true.  
+**with_custom_functions**
+  Comma separated list of integers indicating which non-constant coefficients should be read from a custom-refernce file when with_custom_reference is true.
+**with_custom_reference**  
+  Logical flag that indicates some constant and non-constant coefficients should be read from a custom-reference file and used to overwrite those values otherwise assigned for reference_Types 1--3.  Default value is .false.
+**custom_reference_file**
+  Name of file from which to read custom-reference-state information when using reference_type 4 or when augmenting reference types 1--3.
+**override_constants**
+  When true, ALL constant coefficients specified in the custom-reference file will be ignored, and those specified in main_input will be used instead.  Constant coefficients not specified in main_input will be assigned a value of zero.  Default value is .false.
+**override_constant**
+  Indicates that particular constant coefficients, rather than all, should be overridden using main_input values when using reference_type 4.  Multiple constant overrides can be specified, one per line, with the syntax:
+  
+  ::
+
+   &Reference_Namelist
+    ...
+    override_constant( 2) = T
+    override_constant(10) = T
+    ...
+   /
+

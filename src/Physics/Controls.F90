@@ -45,8 +45,12 @@ Module Controls
     Logical :: pad_alltoall = .false.       ! Normally all-to-allv is used.  Standard alltoall with zero padded buffers can be used when this flag is on.
     Logical :: sparsesolve = .false.
 
+    Logical :: m_balance_contiguous = .false. ! Use alternative ordering of m-values such that access of successive values is contiguous
+                                              ! There are currently only 2 versions, T/F is mapped to integer 1/0. If more versions
+                                              ! are added in the future, the Logical type and variable name should change
+
     Namelist /Numerical_Controls_Namelist/ chebyshev, bandsolve, static_transpose, static_config, &
-            & use_parity, deriv_cluge, pad_alltoall, sparsesolve
+            & use_parity, deriv_cluge, pad_alltoall, sparsesolve, m_balance_contiguous
 
     !////////////////////////////////////////////////////////////////////////////////
     ! Physical Controls
@@ -59,7 +63,8 @@ Module Controls
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
-    Logical :: advect_reference_state = .false.  ! Set to true to advect the reference state
+    Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
+                                                ! This has no effect for adiabatic reference states.
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
                                                 ! Generally only do this if reference state is nonadiabatic
@@ -212,7 +217,7 @@ Contains
         lorentz_forces = .true.
         viscous_heating = .true.
         ohmic_heating = .true.
-        advect_reference_state = .false.
+        advect_reference_state = .true.
         benchmark_mode = 0
         benchmark_integration_interval = -1
         benchmark_report_interval = -1
@@ -227,6 +232,7 @@ Contains
         use_parity = .true.
         deriv_cluge = .true.
         pad_alltoall = .false.
+        m_balance_contiguous = .false.
     End Subroutine Restore_Numerical_Defaults
 
     Subroutine Restore_Temporal_Defaults

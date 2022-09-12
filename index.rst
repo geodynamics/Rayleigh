@@ -10,9 +10,11 @@ Welcome to Rayleigh's documentation!
    :maxdepth: 2
 
    doc/source/User_Guide/index.rst
+   doc/source/Model_Setup/index.rst
    CONTRIBUTING.md
    doc/source/diagnostic_values/index
    doc/source/diagnostic_codes/qcodes
+   doc/source/Namelist_Definitions/Namelist_Variables.rst
    doc/source/publications/publications
    doc/source/vids
 

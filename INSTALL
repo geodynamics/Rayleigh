@@ -1,30 +1,30 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                Rayleigh v0.9 Installation Instructions
-                    November 21, 2017
-                    N. Featherstone
-    
+                Rayleigh Installation Instructions
+
 Throughout this Document, <rayleigh root> refers to the directory in which this
-file (named 'INSTALL') is located.  If this file is not located in <rayleigh root>,
-then you should identify the location of <rayleigh root> before proceeding.
+file (named 'INSTALL') is located.  If this file is not located in <rayleigh
+root>, then you should identify the location of <rayleigh root> before
+proceeding.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I.  Overview of the Installation Process
 
-Compilation and installation of Rayleigh is accomplished using the "configure / make 
-/ make install " process.  Building Rayleigh requires the execution of three commands from
-within <rayleigh root>:
+Compilation and installation of Rayleigh is accomplished using the "configure /
+make / make install " process.  Building Rayleigh requires the execution of
+three commands from within <rayleigh root>:
 
 1. ./configure --OPTION1=... -OPTION2=... 
 2. make
 3. make install
 
-(4.) Running 'make distclean' will revert <rayleigh root> to it's pre-configured state.
+(4.) Running 'make distclean' will revert <rayleigh root> to it's
+pre-configured state.
 
-The configure script automatically supports both GNU and Intel Compilers.  An
-IBM-compiler example is provided at the end of this document.  On many Intel-based machines, 
-running ./configure or ./configure -mkl  will suffice.  In other circumstances, it may be 
-necessary to specify a subset of configure's options.  Some possible variations are 
-illustrated in section III.
+The configure script automatically supports the GNU, Intel, AOCC, and Cray
+compilers.  An IBM-compiler example is provided at the end of this document.
+On many Intel-based machines, running ./configure or ./configure -mkl  will
+suffice.  In other circumstances, it may be necessary to specify a subset of
+configure's options.  Some possible variations are illustrated in section III.
 
 To see a detailed description of all available options, run ./configure -h.
 
@@ -142,11 +142,12 @@ Be sure to set FC to mpif90 or mpifc, and not to gfortran.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 III.d  Configuration using non-MKL libraries
 
-Rayleigh can be configured to use your preferred FFTW, BLAS, and LAPACK 
-libraries.  These directories are specified using the --with-blas, --with-lapack, 
-and --with-fftw flags.   By default, Raleigh links dynamically to shared libraries.
-To alter this behavior, use the  --static-blas, --static-lapack, and or --static-fftw
-flags.  If using OpenBLAS instead of BLAS, run configure with the -openblas flag.
+Rayleigh can be configured to use your preferred FFTW, BLAS, and LAPACK
+libraries.  These directories are specified using the --with-blas,
+--with-lapack, and --with-fftw flags.   By default, Raleigh links dynamically
+to shared libraries.  To alter this behavior, use the  --static-blas,
+--static-lapack, and or --static-fftw flags.  If using OpenBLAS instead of
+BLAS, run configure with the -openblas flag.
 
 The following example illustrates how to link with shared OpenBLAS and FFTW libraries,
 and a static LAPack library:
@@ -166,21 +167,23 @@ FFTWROOT=/software/fftw/3.3.4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 III.e  Configuration using Alternative Compilers / Customized Compiler Flags
 
-For compilers other than GNU or Intel, you will need to manually specify
-the optimization, library, and include flags.  You may also wish to do this
-if you are experimenting with new compilation flags that are not automatically
-provided by configure for Intel or GNU.   These flags can be set using --LIBFLAGS,
---FFLAGS_OPT, --FFLAGS_DBG, and --INCLUDE.  FFLAGS_OPT and FFLAGS_DBG define
-the optimization flags used for rayleigh.opt and rayleigh.dbg respectively.
+For compilers other than GNU, Intel, AOCC, or Cray, you will need to manually
+specify the optimization, library, and include flags.  You may also wish to do
+this if you are experimenting with new compilation flags that are not
+automatically provided by configure for known compilers.   These flags can be set
+using --LIBFLAGS, --FFLAGS_OPT, --FFLAGS_DBG, and --INCLUDE.  FFLAGS_OPT and
+FFLAGS_DBG define the optimization flags used for rayleigh.opt and rayleigh.dbg
+respectively.
 
 Alternatively, the --FFLAGS can be set to use the same optimization flags for
 rayleigh.opt and rayleigh.dbg.
 
 
-NOTE:  the -nodirs (or --nodirs) flag can be set on Machines where linking C-code
-code to Fortran code via Rayleigh's Makefile produces errors.  In that case, users
-will need to create their subdirectories for each Rayleigh run manually.  This
-can be done by running the script rayleigh/etc/make_dirs from within a run directory.
+NOTE:  the -nodirs (or --nodirs) flag can be set on Machines where linking
+C-code code to Fortran code via Rayleigh's Makefile produces errors.  In that
+case, users will need to create their subdirectories for each Rayleigh run
+manually.  This can be done by running the script rayleigh/etc/make_dirs from
+within a run directory.
 
 The example below shows how to configure the code for Mira, an IBM Blue Gene/Q.
 
@@ -202,16 +205,18 @@ export FFTW_INC=/soft/libraries/alcf/current/xl/FFTW3/include
 III.f  Configuration on a Mac using brew package manager
 
 Perhaps the simplest way to compile Rayleigh on a Mac is to begin by installing
-the required compilers and libraries with Homebrew. Homebrew installs all the stuff
-you need that Apple didn't. To install Homebrew on your system, follow the instructions
-on this website: https://brew.sh/
+the required compilers and libraries with Homebrew. Homebrew installs all the
+stuff you need that Apple didn't. To install Homebrew on your system, follow
+the instructions on this website: https://brew.sh/
 
-Next, install the GNU, MPI, and FFTW compilers and libraries with Homebrew as below.
+Next, install the GNU, MPI, and FFTW compilers and libraries with Homebrew as
+below.
 
 brew install gcc open-mpi fftw
 
-Working in a bash shell, the example below shows how to configure the code. To install
-Rayleigh, change the <install prefix> to an appropriate location on your machine.
+Working in a bash shell, the example below shows how to configure the code. To
+install Rayleigh, change the <install prefix> to an appropriate location on
+your machine.
 
 export FC=mpif90
 export CC=gcc
@@ -227,13 +232,15 @@ make install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 IV
 
-Ultimately, the role of 'configure' is to generate a definitions file that is included
-by 'Make' at compilation time.  This file is named "Machine_Definitions," and it is 
-placed in <rayleigh root>/src/build by configure.  As a last resort, you may edit this 
-file directly in order to customize the compiler flags generated by running configure.  
-If the configure process fails to create Machine_Definitions, your build is a challening
-one.  Run './configure --blank' to generate a template that you may edit as needed.  
-IMPORTANT:  Ensure that whitespace is removed at the end of each line in this file.
+Ultimately, the role of 'configure' is to generate a definitions file that is
+included by 'Make' at compilation time.  This file is named
+"Machine_Definitions," and it is placed in <rayleigh root>/src/build by
+configure.  As a last resort, you may edit this file directly in order to
+customize the compiler flags generated by running configure.  If the configure
+process fails to create Machine_Definitions, your build is a challening one.
+Run './configure --blank' to generate a template that you may edit as needed.
+IMPORTANT:  Ensure that whitespace is removed at the end of each line in this
+file.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 V Building the documentation

@@ -81,7 +81,7 @@ namelist.
 
    &io_controls_namelist
    stdout_flush_interval = 1000
-   stdout_file = `routput'
+   stdout_file = 'routput'
    /
 
 Set stdout_file to the name of a file that will contain Rayleigh’s text

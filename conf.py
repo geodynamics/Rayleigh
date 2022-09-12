@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Rayleigh'
-copyright = '2019, Nick Featherstone'
+copyright = '2022, Nick Featherstone'
 author = 'Nick Featherstone'
 
 
@@ -64,6 +64,9 @@ html_static_path = []
 
 html_logo = 'doc/source/rayleigh_manual_image_logo.jpeg'
 latex_logo = 'doc/source/rayleigh_manual_image_300dpi.jpeg'
+
+with open('VERSION', 'r') as file:
+    version = file.read().replace('\n','')
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
@@ -154,7 +157,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \hfill{\Huge \fontfamily{\sfdefault}\selectfont User Manual \\
 \raggedleft \huge \fontfamily{\sfdefault}\selectfont Version
 % keep the following line as is so that we can replace this using a script:
-0.9.1 %VERSION-INFO%
+%VERSION-INFO%
 \\\large(generated \today)\\
 {\Large Nicholas Featherstone\\}
 }
@@ -191,3 +194,5 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \pagebreak
 '''
 }
+
+latex_elements['maketitle'] = latex_elements['maketitle'].replace("%VERSION-INFO%", version)

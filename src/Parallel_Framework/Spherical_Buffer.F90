@@ -24,6 +24,7 @@ Module Spherical_Buffer
     Use Structures
     Use Load_Balance
     Use General_MPI
+    Use Timers
     Implicit None
     Private
 
@@ -96,13 +97,16 @@ Module Spherical_Buffer
         Procedure :: set_buffer_sizes
         Procedure :: transpose_1a2a
         Procedure :: Compute_Packet_Sizes12
-        Procedure :: transpose_2a3a  ! Move from 2a to 3a
+        Procedure :: transpose_2a3a_v0 ! the original version
+        Procedure :: transpose_2a3a_v1 ! takes advantage of the m_balance_contiguous layout
         Procedure :: Compute_Packet_Sizes23
-        Procedure :: transpose_3b2b
+        Procedure :: transpose_3b2b_v0 ! the original version
+        Procedure :: transpose_3b2b_v1 ! swapped order of loops to be more efficient
         Procedure :: transpose_2b1b
         Procedure :: write_space
         Procedure :: load_cargo
         Procedure :: unload_cargo
+
     End Type SphericalBuffer
 
 Contains
@@ -188,7 +192,129 @@ Contains
             Allocate(self%send_buff(1:self%max_send))
     End Subroutine Set_Buffer_Sizes
 
-    Subroutine Transpose_2a3a(self,extra_recv)
+    Subroutine Transpose_2a3a_v1(self,extra_recv)
+        Class(SphericalBuffer) :: self
+        !Real*8, Allocatable :: send_buff(:), recv_buff(:)
+        Integer :: np
+        Integer :: imin, imax, jmin, jmax, kmin,kmax,ii,nf
+        Integer :: i,f,j,p,k,delf,delj
+        Integer, Intent(In), Optional :: extra_recv
+        Integer :: numalloc
+        Integer :: nmode, kone, ktwo
+
+        Call StopWatch(pre_2a3a_time)%StartClock()
+
+        ! This is where we we move from theta, delta_r, delta_m
+        !  to m, delta_r, delta_theta
+        If (self%dynamic_transpose_buffers) Then
+
+
+            Allocate(self%send_buff(1:self%send_size23))
+        Endif
+        !--- Not sure if this is good or bad, but copy out the bounds of the loop for now
+        nf = self%nf2a
+        kmin = pfi%my_3s%min
+        kmax = pfi%my_3s%max
+        !jmin = pfi%my_1p%min
+        !jmax = pfi%my_1p%max
+
+        jmin = 1
+        jmax = pfi%my_1p%delta
+
+        np = pfi%rcomm%np
+        ! Possibly better ways to stripe, but for now, we will stripe each processors data all at once
+        ! This means the the send buffer is accessed "naturally," but that the p2a array
+        ! gets jumped around in
+        delj = pfi%my_1p%delta
+
+
+        Do p = 0, np -1
+            ii = self%sdisp23(p)+1
+            imin = pfi%all_2p(p)%min
+            imax = pfi%all_2p(p)%max
+            Do f = 1,nf
+            delf = (f-1)*delj*2
+            Do i = imin,imax
+            Do j = jmin,jmax
+            Do k = kmin, kmax
+
+                self%send_buff(ii) = self%p2a(i,j+delf,k)
+                self%send_buff(ii+1) = self%p2a(i,j+delf+delj,k)
+                ii = ii+2
+            Enddo
+            Enddo
+            Enddo
+            Enddo
+        Enddo
+
+        Call StopWatch(pre_2a3a_time)%Increment()
+
+        Call self%deconstruct('p2a')
+        If (self%dynamic_transpose_buffers) Allocate(self%recv_buff(1:self%recv_size23))
+
+        self%recv_buff(:) = 0.0d0
+
+        Call StopWatch(all2all_2a3a_time)%StartClock()
+        Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount23, &
+                self%sdisp23, self%rcount23, self%rdisp23, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all2all_2a3a_time)%Increment()
+
+        !--------------------------------------------------
+        If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
+
+        Call StopWatch(post_2a3a_time)%StartClock()
+
+        !Here, we need self%construct('p3a',extra =nfextra or another number)
+
+        If (present(extra_recv)) Then
+            !Allocate an s2a buffer that is larger than normal
+            numalloc = extra_recv+self%nf3a
+            Call self%construct('p3a',numfields = numalloc)
+        Else
+            Call self%construct('p3a')
+        Endif
+
+        self%p3a(:,:,:,:) = 0.0d0    ! This is important because we are going to take an fft later (De-aliasing is implicit here because
+        ! we only stripe in data of the de-aliased m's, but we need to make sure the higher m's are zero!
+        !Stripe from the receive buff
+        !Here we access the receive buffer in the 'natural' order
+        imin = pfi%my_2p%min
+        imax = pfi%my_2p%max
+        jmin = pfi%my_1p%min
+        jmax = pfi%my_1p%max
+        ii = 1
+        Do p = 0, np -1
+            !ii = self%rdisp23(p)+1
+            kmin = pfi%all_3s(p)%min
+            kmax = pfi%all_3s(p)%max
+            !k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
+            kone = pfi%inds_3s(kmin)*2+1
+            nmode = pfi%all_3s(p)%delta
+            ktwo = pfi%inds_3s(kmin+nmode/2)*2+1
+            Do f = 1,nf
+            Do i = imin,imax
+            Do j = jmin,jmax
+
+            self%p3a(kone:kone+nmode-1,j,i,f) = self%recv_buff(ii:ii+nmode-1)
+            ii = ii+nmode
+
+            self%p3a(ktwo:ktwo+nmode-1,j,i,f) = self%recv_buff(ii:ii+nmode-1)
+            ii = ii+nmode
+
+            Enddo
+            Enddo
+            Enddo
+
+        Enddo
+
+        self%config = 'p3a'
+        If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
+
+        Call StopWatch(post_2a3a_time)%Increment()
+
+    End Subroutine Transpose_2a3a_v1
+
+    Subroutine Transpose_2a3a_v0(self,extra_recv)
         Class(SphericalBuffer) :: self
         !Real*8, Allocatable :: send_buff(:), recv_buff(:)
         Integer :: np
@@ -196,6 +322,9 @@ Contains
         Integer :: i,f,j,p,k,k_ind,delf,delj
         Integer, Intent(In), Optional :: extra_recv
         Integer :: numalloc
+
+        Call StopWatch(pre_2a3a_time)%StartClock()
+
         ! This is where we we move from theta, delta_r, delta_m
         !  to m, delta_r, delta_theta
         If (self%dynamic_transpose_buffers) Then
@@ -239,16 +368,22 @@ Contains
             Enddo
         Enddo
 
+        Call StopWatch(pre_2a3a_time)%Increment()
+
         Call self%deconstruct('p2a')
         If (self%dynamic_transpose_buffers) Allocate(self%recv_buff(1:self%recv_size23))
 
         self%recv_buff(:) = 0.0d0
 
-
+        Call StopWatch(all2all_2a3a_time)%StartClock()
         Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount23, &
                 self%sdisp23, self%rcount23, self%rdisp23, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all2all_2a3a_time)%Increment()
+
         !--------------------------------------------------
         If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
+
+        Call StopWatch(post_2a3a_time)%StartClock()
 
         !Here, we need self%construct('p3a',extra =nfextra or another number)
 
@@ -259,7 +394,6 @@ Contains
         Else
             Call self%construct('p3a')
         Endif
-
 
         self%p3a(:,:,:,:) = 0.0d0    ! This is important because we are going to take an fft later (De-aliasing is implicit here because
         ! we only stripe in data of the de-aliased m's, but we need to make sure the higher m's are zero!
@@ -319,16 +453,140 @@ Contains
         self%config = 'p3a'
         If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
 
+        Call StopWatch(post_2a3a_time)%Increment()
 
-    End Subroutine Transpose_2a3a
+    End Subroutine Transpose_2a3a_v0
 
-    Subroutine Transpose_3b2b(self)
+    Subroutine Transpose_3b2b_v1(self)
         Class(SphericalBuffer) :: self
         Integer :: np
         Integer :: imin, imax, jmin, jmax, kmin,kmax,ii,nf
         Integer :: i,f,j,p,k,k_ind
         Integer :: delf, delj
 
+        Call StopWatch(pre_3b2b_time)%StartClock()
+
+        ! This is where we we move from theta, delta_r, delta_m
+        !  to m, delta_r, delta_theta
+        If (self%dynamic_transpose_buffers) Then
+            Allocate(self%send_buff(1:self%send_size32))
+        Endif
+        !write(6,*)'executing new transpose'
+        !--- Not sure if this is good or bad, but copy out the bounds of the loop for now
+        nf = self%nf3b
+
+        jmin = pfi%my_1p%min
+        jmax = pfi%my_1p%max
+
+        np = pfi%rcomm%np
+
+
+        !///////////////////
+        !  Again stripe in the natural order of the send buffer
+        imin = pfi%my_2p%min
+        imax = pfi%my_2p%max
+        Do p = 0, np -1
+            ii = self%sdisp32(p)+1
+            kmin = pfi%all_3s(p)%min
+            kmax = pfi%all_3s(p)%max
+            Do f = 1,nf
+            Do i = imin,imax        ! interleave real and imaginary parts
+            Do j = jmin,jmax
+            Do k = kmin, kmax
+                k_ind = pfi%inds_3s(k)*2+1  ! (real) m=0 stored in p3b(1,:,:,:) (img in p3b(2,:,:,:))
+
+                self%send_buff(ii) = self%p3b(k_ind,j,i,f)! real part
+                self%send_buff(ii+1) = self%p3b(k_ind+1,j,i,f)! complex part
+
+                ii = ii+2
+            Enddo
+            Enddo
+            Enddo
+            Enddo
+         if (self%have_cargo) Then
+             self%send_buff(ii:ii+self%ncargo-1) = self%cargo(1:self%ncargo) !self%mrv
+             ii = ii+self%ncargo ! 1
+         Endif
+        Enddo
+
+        Call StopWatch(pre_3b2b_time)%Increment()
+
+        !/////////////////////////////////////
+        Call self%deconstruct('p3b')
+        If (self%dynamic_transpose_buffers) Allocate(self%recv_buff(1:self%recv_size32))
+        self%recv_buff(:) = 0.0d0
+        !----- This is where alltoall will be called
+
+        Call StopWatch(all2all_3b2b_time)%StartClock()
+        Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount32, &
+                self%sdisp32, self%rcount32, self%rdisp32, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all2all_3b2b_time)%Increment()
+
+        !--------------------------------------------------
+        If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
+
+        Call self%construct('p2b')        ! p2a and p2b can share the same buffer space... maybe just call this p2...
+
+        Call StopWatch(post_3b2b_time)%StartClock()
+
+        delj = pfi%my_1p%delta
+
+        !///////////////////////////////////////
+        ! Read from the receive buffer in its natural order
+        kmin = pfi%my_3s%min
+        kmax = pfi%my_3s%max
+
+        jmin = 1
+        jmax = pfi%my_1p%delta
+
+        Do p = 0, np -1
+            ii = self%rdisp32(p)+1
+            imin = pfi%all_2p(p)%min
+            imax = pfi%all_2p(p)%max
+            Do f = 1,nf
+                delf = (f-1)*delj*2
+            Do i = imin,imax
+            Do j = jmin,jmax
+            Do k = kmin, kmax
+                !p2b needs to be reshaped
+                !   self%p2b(i,j*2*f,k) -- since dgemm needs a 2D array
+
+                self%p2b(i,j+delf ,k)   = self%recv_buff(ii)  ! real
+                self%p2b(i,j+delf+delj,k) = self%recv_buff(ii+1)    ! complex
+                ii = ii+2 ! added +2
+            Enddo
+            Enddo
+            Enddo
+            Enddo
+            if (self%have_cargo) then
+                self%tmp_cargo(1:self%ncargo) = self%recv_buff(ii:ii+self%ncargo-1)
+                Do i = 1, self%ncargo
+                    If ( self%tmp_cargo(i) .gt. self%cargo(i) ) self%cargo(i) = self%tmp_cargo(i)
+                Enddo
+
+
+                !self%mrv = max(self%mrv,self%cargo(1))  ! not quite sure how to handle mrv yet
+                ii = ii+self%ncargo ! 1
+            endif
+        Enddo
+
+
+
+        self%config = 'p2b'
+        If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
+
+        Call StopWatch(post_3b2b_time)%Increment()
+
+    End Subroutine Transpose_3b2b_v1
+
+    Subroutine Transpose_3b2b_v0(self)
+        Class(SphericalBuffer) :: self
+        Integer :: np
+        Integer :: imin, imax, jmin, jmax, kmin,kmax,ii,nf
+        Integer :: i,f,j,p,k,k_ind
+        Integer :: delf, delj
+
+        Call StopWatch(pre_3b2b_time)%StartClock()
 
         ! This is where we we move from theta, delta_r, delta_m
         !  to m, delta_r, delta_theta
@@ -373,24 +631,27 @@ Contains
          Endif
         Enddo
 
+        Call StopWatch(pre_3b2b_time)%Increment()
+
         !/////////////////////////////////////
         Call self%deconstruct('p3b')
         If (self%dynamic_transpose_buffers) Allocate(self%recv_buff(1:self%recv_size32))
         self%recv_buff(:) = 0.0d0
         !----- This is where alltoall will be called
 
+        Call StopWatch(all2all_3b2b_time)%StartClock()
         Call Standard_Transpose(self%send_buff, self%recv_buff, self%scount32, &
                 self%sdisp32, self%rcount32, self%rdisp32, pfi%rcomm, self%pad_buffer)
+        Call StopWatch(all2all_3b2b_time)%Increment()
 
         !--------------------------------------------------
         If (self%dynamic_transpose_buffers) DeAllocate(self%send_buff)
 
         Call self%construct('p2b')        ! p2a and p2b can share the same buffer space... maybe just call this p2...
 
-
+        Call StopWatch(post_3b2b_time)%StartClock()
 
         delj = pfi%my_1p%delta
-
 
         !///////////////////////////////////////
         ! Read from the receive buffer in its natural order
@@ -435,7 +696,10 @@ Contains
 
         self%config = 'p2b'
         If (self%dynamic_transpose_buffers) DeAllocate(self%recv_buff)
-    End Subroutine Transpose_3b2b
+
+        Call StopWatch(post_3b2b_time)%Increment()
+
+    End Subroutine Transpose_3b2b_v0
 
     Subroutine Transpose_2b1b(self)
         ! Go from Explicit_Part(IDX) configuration to the new Implicit%RHS configuration
@@ -443,16 +707,18 @@ Contains
         ! share a common set of ell-m values).
         Implicit None
 
-        Integer :: r,l, mp, lp, indx, r_min, r_max, dr,  cnt,i, imi, rind
-        Integer :: n1, n, nfields, offset, delta_r, rmin, rmax, np,p
+        Integer :: r, l, mp, lp, indx, r_min, r_max, dr,  cnt, i, imi
+        Integer :: n1, n, nfields, np, p
 
         Real*8, Allocatable :: send_buff(:),recv_buff(:)
-        Integer :: tnr, send_offset
+        Integer :: send_offset
 
         ! cargo information
         Integer :: inext, pcurrent
 
         Class(SphericalBuffer) :: self
+
+        Call StopWatch(pre_2b1b_time)%StartClock()
 
         n1 = pfi%n1p
         np = pfi%ccomm%np
@@ -515,6 +781,8 @@ Contains
             Endif
         Enddo
 
+        Call StopWatch(pre_2b1b_time)%Increment()
+
         !///////////////////////////////////////
 
 
@@ -524,8 +792,12 @@ Contains
         Allocate(recv_buff(1:self%recv_size21))
 
         recv_buff = 0.0d0
+
+        Call StopWatch(all2all_2b1b_time)%StartClock()
         Call Standard_Transpose(send_buff, recv_buff, self%scount21, self%sdisp21, self%rcount21, &
             self%rdisp21, pfi%ccomm, self%pad_buffer)
+        Call StopWatch(all2all_2b1b_time)%Increment()
+
         DeAllocate(send_buff)
 
         Call self%construct('p1b')
@@ -533,6 +805,8 @@ Contains
         ! WPS are coupled, but Z,Btor, and Bpol are not
         ! Let's assume that those buffers are dimensioned: (r,real/imag,mode,field)
         ! We may want to modify this later on to mesh with linear equation structure
+
+        Call StopWatch(post_2b1b_time)%StartClock()
 
         self%p1b = 0.0d0
         Do p = 0, np - 1
@@ -567,21 +841,25 @@ Contains
         self%config='p1b'
       Deallocate(recv_buff)
 
+        Call StopWatch(post_2b1b_time)%Increment()
+
     End Subroutine Transpose_2b1b
 
     Subroutine Transpose_1a2a(self,extra_recv)
         ! Go from implicit configuration (1 physical) to configuration 2 (spectral)
         Implicit None
 
-        Integer :: r,l, mp, lp, indx, r_min, r_max, dr, cnt,i
-        Integer :: n, nfields, offset, delta_r, rmin, rmax, np,p,rind
-        Integer :: recv_offset, tnr
+        Integer :: r, l, mp, lp, indx, r_min, r_max, dr, cnt,i
+        Integer :: n, nfields, np, p
+        Integer :: recv_offset
         Integer :: imi, numalloc
         Integer, Intent(In), Optional :: extra_recv
         Real*8, Allocatable :: send_buff(:),recv_buff(:)
         Integer :: inext, pcurrent
 
         Class(SphericalBuffer) :: self
+
+        Call StopWatch(pre_1a2a_time)%StartClock()
 
         nfields = self%nf1a
 
@@ -612,15 +890,22 @@ Contains
         End Do
         Call self%deconstruct('p1a')
 
+        Call StopWatch(pre_1a2a_time)%Increment()
+
         ! Load the send array in the ordering of the l-m values
         indx = 1
 
         Allocate(recv_buff(1:self%recv_size12))
 
 
+        Call StopWatch(all2all_1a2a_time)%StartClock()
         Call Standard_Transpose(send_buff, recv_buff, self%scount12, self%sdisp12, &
              self%rcount12, self%rdisp12, pfi%ccomm, self%pad_buffer)
+        Call StopWatch(all2all_1a2a_time)%Increment()
+
         DeAllocate(send_buff)
+
+        Call StopWatch(post_1a2a_time)%StartClock()
 
         If (present(extra_recv)) Then
             !Allocate an s2a buffer that is larger than normal
@@ -657,6 +942,8 @@ Contains
 
         self%config='s2a'
         Deallocate(recv_buff)
+
+        Call StopWatch(post_1a2a_time)%Increment()
 
     End Subroutine Transpose_1a2a
 
@@ -726,7 +1013,7 @@ Contains
 
                     report_file = 'parallel_framework/reports/workspace/p3a_'//Trim(report_tag)//'_'//Trim(extra_tag)
                 else
-                    report_file = 'parallel_framework/reports/workspace/p3a_'//report_tag
+                    report_file = 'parallel_framework/reports/workspace/p3a_'//Trim(report_tag)
                 endif
                 Open(unit=report_unit,file = report_file,form='unformatted',status='replace')
                 Write(report_unit)pfi%n3p
@@ -751,7 +1038,7 @@ Contains
 
                     report_file = 'parallel_framework/reports/workspace/p3b_'//Trim(report_tag)//'_'//Trim(extra_tag)
                 else
-                    report_file = 'parallel_framework/reports/workspace/p3b_'//report_tag
+                    report_file = 'parallel_framework/reports/workspace/p3b_'//Trim(report_tag)
                 endif
                 Open(unit=report_unit,file = report_file,form='unformatted',status='replace')
                 Write(report_unit)pfi%n3p
@@ -1231,14 +1518,26 @@ Contains
         Class(SphericalBuffer) :: self
         Select Case(self%config)
             Case ('p2a')
-                If (present(nextra_recv)) Then
-                    Call self%transpose_2a3a(extra_recv = nextra_recv)
-                Else
-                    Call self%transpose_2a3a()
+                If (pfi%m_balance_version .eq. 0) Then
+                    If (present(nextra_recv)) Then
+                        Call self%transpose_2a3a_v0(extra_recv = nextra_recv)
+                    Else
+                        Call self%transpose_2a3a_v0()
+                    Endif
+                ElseIf (pfi%m_balance_version .eq. 1) Then
+                    If (present(nextra_recv)) Then
+                        Call self%transpose_2a3a_v1(extra_recv = nextra_recv)
+                    Else
+                        Call self%transpose_2a3a_v1()
+                    Endif
                 Endif
             Case ('p3b')
 
-                Call self%transpose_3b2b()
+                If (pfi%m_balance_version .eq. 0) Then
+                    Call self%transpose_3b2b_v0()
+                ElseIf (pfi%m_balance_version .eq. 1) Then
+                    Call self%transpose_3b2b_v1()
+                Endif
 
             Case ('s2b')
 

@@ -1,7 +1,17 @@
-Rayleigh 
-Version 0.9.0
-Developed by Nicholas Featherstone
+Rayleigh was originally developed by Nicholas Featherstone.
 
+Since then many more people have contributed and Rayleigh has grown into a
+project with many authors. A complete and growing list can be found at:
+https://github.com/geodynamics/Rayleigh/graphs/contributors.  
 
-Special thanks to Michael Calkins, Moritz Heimpel, Bradley Hindman, Wei Jiang, and Ryan Orvedahl, 
-Krista Soderlund, and Rakesh Yadav for their intensive beta testing of the code. 
+Rayleigh's primary developers are:      
+    - Nicholas Featherstone
+    - Philipp Edelmann
+    - Rene Gassmoeller
+    - Loren Matilsky
+    - Ryan Orvedahl
+    - Cian Wilson
+
+Special thanks to Michael Calkins, Moritz Heimpel, Bradley Hindman, Wei Jiang,
+Ryan Orvedahl, Krista Soderlund, and Rakesh Yadav for their intensive beta
+testing of early version of the Rayleigh code.
