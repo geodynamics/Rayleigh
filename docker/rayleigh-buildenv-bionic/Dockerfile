@@ -10,7 +10,7 @@ RUN apt update && \
     libblas-dev \
     libfftw3-dev \
     liblapack-dev \
-    libmpich-dev \
+    libopenmpi-dev \
     make \
     nano \
     wget \
