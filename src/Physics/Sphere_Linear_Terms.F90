@@ -255,7 +255,7 @@ Contains
                 Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
                 ! Chi
-                amp = -ref%chi_buoyancy_coeff/H_Laplacian
+                amp = ref%chi_buoyancy_coeff/H_Laplacian
                 Call add_implicit_term(weq, chivar, 0, amp,lp)          ! Gravity
 
 
