@@ -455,7 +455,9 @@ do
 done
 echo ""
 echo " -----------------------------------------------------------------------------"
-echo "                          Rayleigh v1.1.0 Configuration"
+VERSION_FILE="VERSION"
+VERSION=`cat $VERSION_FILE`
+echo "                          Rayleigh v$VERSION Configuration"
 echo " -----------------------------------------------------------------------------"
 echo ""
 FVERSION="unknown"
