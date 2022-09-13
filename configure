@@ -455,12 +455,9 @@ do
 done
 echo ""
 echo " -----------------------------------------------------------------------------"
-version_file = "VERSION"
-while read -r line
-do
-  version_str = "$line"
-done < "$version_file"
-echo "                          Rayleigh v"$version_str" Configuration"
+VERSION_FILE="VERSION"
+VERSION=`cat $VERSION_FILE`
+echo "                          Rayleigh v$VERSION Configuration"
 echo " -----------------------------------------------------------------------------"
 echo ""
 FVERSION="unknown"
