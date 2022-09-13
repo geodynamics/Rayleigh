@@ -55,6 +55,7 @@ Module Chebyshev_Polynomials
             Procedure :: to_spectral => to_spectral4d
             Procedure :: from_spectral => from_spectral4d
             Procedure :: d_by_dr_cp => Cheby_Deriv_Buffer_4D
+            Procedure :: d_by_dr_nobuffer => Cheby_Deriv_OutOf_Buffer
     End Type Cheby_Grid
 
     Type(Cheby_Grid), Public :: main_grid  ! Publically accessible grid object (alleviates need for pointers)
@@ -559,6 +560,7 @@ Contains
     End Subroutine From_Spectral4D
 
     Subroutine Cheby_Deriv_Buffer_4D(self,ind,dind,buffer,dorder)
+        !Compute dorder-th derivative of buffer(:,:,:,ind) and store it in buffer(:,:,:,dind)
 #ifdef useomp
         Use Omp_lib
 #endif
@@ -643,4 +645,89 @@ Contains
         Enddo
     End Subroutine Cheby_Deriv_Buffer_4D
 
+    Subroutine Cheby_Deriv_OutOf_Buffer(self,ind,buffer,obuffer,dorder)
+        !Compute dorder-th derivative of buffer(:,:,:,ind) and store it in obuffer(:,:,:)
+#ifdef useomp
+        Use Omp_lib
+#endif
+        Implicit None
+        Class (Cheby_Grid) :: self
+        Real*8,  Intent(InOut) :: buffer(0:,1:,1:,1:)    ! Makes it easier to reconcile with my IDL code
+        Real*8,  Intent(InOut) :: obuffer(0:,1:,1:)
+        Integer, Intent(In)    :: ind, dorder
+        Real*8, Allocatable :: dbuffer(:,:,:)
+        Integer :: dims(4), n,n2,n3, i,j,k, order
+        Integer :: kstart, kend, trank, nthr
+        Integer :: nglobal, nsub, hoff, hh
+        dims = shape(buffer)
+        nglobal = dims(1)
+        nsub = self%domain_count
+
+        n2 = dims(2)
+        n3 = dims(3)
+
+        !$OMP PARALLEL DO PRIVATE(i,j,k,hh,hoff,n)
+        Do k = 1, n3
+            Do j = 1, n2
+            hoff = 0
+            DO hh = 1, nsub
+                !scaling = self%scaling(hh)
+                n = self%npoly(hh)
+
+                obuffer(hoff+n-1,j,k) = 0.0d0
+                obuffer(hoff+n-2,j,k) = 2.0d0*(n-1)*buffer(hoff+n-1,j,k,ind) !*scaling
+                Do i = n-3,0, -1
+                    obuffer(hoff+i,j,k) = obuffer(hoff+i+2,j,k) &
+                        & +2.0d0*(i+1)*buffer(hoff+i+1,j,k,ind) !*scaling
+                Enddo
+                hoff = hoff+self%npoly(hh)
+            ENDDO !hh
+            Enddo
+        Enddo
+        !$OMP END PARALLEL DO
+         
+        If (dorder .gt. 1) Then
+            Allocate(dbuffer(0:nglobal-1,1:dorder,0:cp_nthreads-1))
+            !$OMP PARALLEL PRIVATE(i,j,k,trank,order,kstart,kend,nthr,n,hh,hoff)
+#ifdef useomp
+            trank = omp_get_thread_num()
+            nthr  = omp_get_num_threads()
+#else
+            trank = 0
+            nthr = 1
+#endif
+            kstart = (trank*n3)/nthr+1
+            kend = ((trank+1)*n3)/nthr
+
+            Do k = kstart,kend
+
+                Do j = 1, n2
+                    dbuffer(:,1,trank) = obuffer(:,j,k)
+                    Do order = 2, dorder
+                        hoff = 0
+                        DO hh = 1, nsub
+                            n = self%npoly(hh)
+
+                        dbuffer(hoff+n-1,order,trank) = 0.0d0
+                        dbuffer(hoff+n-2,order,trank) = 2.0d0*(n-1)*dbuffer(hoff+n-1,order-1,trank)
+                        Do i = n -3, 0, -1
+                            dbuffer(hoff+i,order,trank) = dbuffer(hoff+i+2,order,trank)+ &
+                                & 2.0d0*(i+1)*dbuffer(hoff+i+1,order-1,trank)
+                        Enddo
+                        hoff = hoff+self%npoly(hh)
+                        ENDDO
+                    Enddo
+                    obuffer(:,j,k) = dbuffer(:,dorder,trank)
+                Enddo
+            Enddo
+            !$OMP END PARALLEL
+            DeAllocate(dbuffer)
+        Endif
+
+        Do k = 1, n3
+        Do j = 1, n2
+            obuffer(:,j,k) = obuffer(:,j,k)*(self%deriv_scaling(:)**dorder)
+        Enddo
+        Enddo
+    End Subroutine Cheby_Deriv_OutOf_Buffer
 End Module Chebyshev_Polynomials
