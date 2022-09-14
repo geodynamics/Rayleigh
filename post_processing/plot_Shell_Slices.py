@@ -89,7 +89,7 @@ vr = ss.vals[:,:,rindex,ss.lut[1],tindex]
 fig = plt.figure(figsize=sizetuple)
 ax = fig.add_subplot(111, projection='mollweide')
 
-plot1 = ax.pcolormesh(phi, theta, vr.transpose(), shading='auto', cmap='hot')
+plot1 = ax.pcolormesh(phi, theta, vr.transpose(), shading='auto', cmap='hot', rasterized=True)
 
 ax.set_xticklabels([])
 ax.set_yticklabels([])
