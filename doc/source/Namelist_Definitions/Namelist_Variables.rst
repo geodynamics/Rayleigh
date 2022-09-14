@@ -1,10 +1,10 @@
 
 .. _namelists:
 
-Main_Input Namelists
+Input parameters
 ==============================================
 
-This page provides a quick reference for all support main_input namelist variables.
+This page provides a quick reference for all supported namelist variables in the main_input file.
 
 
 Problemsize

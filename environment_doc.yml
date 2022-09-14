@@ -16,5 +16,6 @@ dependencies:
   - nbsphinx=0.8
   - pandoc=2.13
   - recommonmark=0.7
+  - sphinx-book-theme
   - funcsigs=1.0
   - vtk=9.0

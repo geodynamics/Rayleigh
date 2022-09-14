@@ -10,7 +10,7 @@ RUN apt update && \
     libblas-dev \
     libfftw3-dev \
     liblapack-dev \
-    libmpich-dev \
+    libopenmpi-dev \
     make \
     nano \
     wget \
@@ -30,7 +30,7 @@ RUN apt update && \
     python-scipy \
     python-funcsigs
 
-RUN pip3 install sphinxcontrib-bibtex==1.0.0 nbstripout nbsphinx jupyter-client ipykernel recommonmark
+RUN pip3 install sphinx==4.0 sphinxcontrib-bibtex==1.0.0 nbstripout traitlets==4.3.3 nbsphinx==0.8.5 jupyter-client ipykernel recommonmark sphinx-book-theme
 RUN pip2 install vtk
 
 # Export compilers

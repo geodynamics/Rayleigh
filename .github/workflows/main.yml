@@ -21,6 +21,9 @@ jobs:
     - name: Build documentation
       # First make sure notebooks do not contain output, then build doc
       run: |
+        # this is to fix GIT not liking owner of the checkout dir
+        # see https://github.com/actions/runner/issues/2033
+        chown -R $(id -u):$(id -g) $PWD
         cd "$GITHUB_WORKSPACE"
         make clear_ipynb && git diff --exit-code --name-only
         make doc
