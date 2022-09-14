@@ -62,7 +62,7 @@ html_theme_options = {
     "show_toc_level": 3,
     "repository_url": "https://github.com/geodynamics/rayleigh/",
     "repository_branch": "master",
-    "path_to_docs":"doc/sphinx/",
+    "path_to_docs":".",
     "icon_links": [
         {
             "name": "GitHub",
