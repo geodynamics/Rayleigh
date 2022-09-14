@@ -1,35 +1,15 @@
-.. raw:: latex
+.. _citing_rayleigh:
 
-   \clearpage
-
-.. _Overview:
-
-Overview
-==========
-
-Rayleigh solves the MHD equations, in a rotating frame, within spherical shells,
-using the anelastic or Boussinesq approximations.
-Derivatives in Rayleigh are calculated using a spectral transform scheme.
-Spherical harmonics are used as basis functions in the horizontal direction.
-Chebyshev polynomials are employed in radius.
-Time-stepping is accomplished using the semi-implicit Crank-Nicolson method
-for the linear terms, and the Adams-Bashforth method for the nonlinear terms.
-Both methods are second-order in time.
-
-This document serves as a guide to installation and running Rayleigh.
-Rayleigh's diagnostics package is discussed in the companion document :ref:`DValues2`.
-
-Referencing
------------
+Citing Rayleigh
+===============
 
 We ask that you cite the appropriate references if you publish results that were obtained in some
-part using Rayleigh.  To cite other versions of the code, please see: https://geodynamics.org/cig/abc
+part using Rayleigh.  Receiving citations for Rayleigh is important to demonstrate the relevance of our work to our funding agencies and is a matter of fairness to all the developers that have donated their effort and time to make Rayleigh what it is today.
 
 Please cite the code as:
-  
-  Featherstone, N.A., Edelmann, P.V.F., Gassmoeller, R., Matilsky, L.I., Orvedahl, R.J. & Wilson, C.R., 2021, Rayleigh Version 1.0.1, 
-  Computational Infrastructure for Geodynamics, DOI:  10.5281/zenodo.5774039
+  Featherstone, Nicholas A., Edelmann, Philipp V. F., Gassmoeller, Rene, Matilsky, Loren I., Orvedahl, Ryan J., & Wilson, Cian R. (2022). Rayleigh Version 1.1.0 (v1.1.0). Zenodo. https://doi.org/10.5281/zenodo.6522806
 
+To cite other versions of the code, please see: https://geodynamics.org/resources/rayleigh/howtocite
 
 .. code-block::
 
@@ -84,9 +64,9 @@ Please also cite the following references:
   }
 
 Rayleigh's development is supported by the
-National Science Foundation through the Geodynamo Working Group of the
+National Science Foundation through the Dynamo Working Group of the
 Computational Infrastructure for Geodynamics (CIG,
-https://geodynamics.org/cig/working-groups/geodynamo/).
+https://geodynamics.org/groups/dynamo).
 
 Please acknowledge CIG support in your work as follows:
 
