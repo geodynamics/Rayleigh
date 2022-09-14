@@ -97,7 +97,7 @@ sizetuple=(8,5)
 fig, ax = plt.subplots(figsize=(8,8))
 tsize = 20     # title font size
 cbfsize = 10   # colorbar font size
-img = ax.pcolormesh(X,Y,field,cmap='jet',shading='auto')
+img = ax.pcolormesh(X,Y,field,cmap='jet',shading='auto', rasterized=True)
 ax.axis('equal')  # Ensure that x & y axis ranges have a 1:1 aspect ratio
 ax.axis('off')    # Do not plot x & y axes
 
