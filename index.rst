@@ -1,19 +1,26 @@
-.. Rayleigh_Doc documentation master file, created by
-   sphinx-quickstart on Thu Jun  6 13:22:16 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to Rayleigh's documentation!
 ========================================
 
+Rayleigh solves the magnetohydrodynamic equations, in a rotating frame, within spherical shells,
+using the anelastic or Boussinesq approximations.
+Derivatives in Rayleigh are calculated using a spectral transform scheme.
+Spherical harmonics are used as basis functions in the horizontal direction.
+Chebyshev polynomials are employed in radius.
+Time-stepping is accomplished using the semi-implicit Crank-Nicolson method
+for the linear terms, and the Adams-Bashforth method for the nonlinear terms.
+Both methods are second-order in time.
+
+This documentation is structured into the following sections:
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    doc/source/User_Guide/index.rst
-   doc/source/diagnostic_codes/qcodes
-   doc/source/Namelist_Definitions/Namelist_Variables.rst
-   doc/source/publications/publications
-   doc/source/vids
+   doc/source/citing_rayleigh
+   doc/source/accessing_and_sharing_data
+   doc/source/research_enabled_by_rayleigh
+   doc/source/quick_reference
+   doc/source/getting_help
 
 
 Indices and tables

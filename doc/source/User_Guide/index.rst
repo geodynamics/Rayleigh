@@ -1,11 +1,10 @@
-User Manual
+User Guide
 ********************
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   overview
    installation
    devel_environment
    running
