@@ -12,9 +12,9 @@ env:
 
 jobs:
   test:
-    name: linux-bionic-container-build
+    name: linux-jammy-container-build
     runs-on: [ubuntu-latest]
-    container: gassmoeller/rayleigh-buildenv-bionic
+    container: tuks/rayleigh-buildenv-jammy
 
     steps:
     - uses: actions/checkout@v1
@@ -30,7 +30,7 @@ jobs:
     - name: Build Rayleigh
       # First make sure notebooks do not contain output, then build doc
       run: |
-        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr' --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        ./configure -debian-mkl --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
 
         make fdeps && git diff --exit-code
         make -j
