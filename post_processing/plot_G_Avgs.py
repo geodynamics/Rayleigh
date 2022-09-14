@@ -99,20 +99,27 @@ a = G_Avgs(filename=files[0],path='')  # Here, files[0]='G_Avgs/00010000'
 
 # Loop over all files and concatenate their data into a single array
 nfiles = len(files)
+i0 = 0
 for i,f in enumerate(files):
     a = G_Avgs(filename=f,path='')
+    nq = a.nq
+    niter = a.niter
     if (i == 0):
-        nq = a.nq
-        niter = a.niter
-        gavgs = numpy.zeros((niter*nfiles,nq),dtype='float64')
-        iters = numpy.zeros(niter*nfiles,dtype='int32')
-        time = numpy.zeros(niter*nfiles,dtype='float64')
-    i0 = i*niter
-    i1 = (i+1)*niter
+        gavgs = numpy.zeros((niter,nq),dtype='float64')
+        iters = numpy.zeros(niter,dtype='int32')
+        time = numpy.zeros(niter,dtype='float64')
+    else:
+        gavgs = numpy.resize(gavgs, (gavgs.shape[0] + niter, gavgs.shape[1]))
+        iters = numpy.resize(iters, iters.shape[0] + niter)
+        time = numpy.resize(time, time.shape[0] + niter)
+
+    i1 = i0 + niter
+
     gavgs[i0:i1,:] = a.vals
     time[i0:i1] = a.time
     iters[i0:i1] = a.iters
 
+    i0 = i1
 
 
 # The Lookup Table (LUT)
