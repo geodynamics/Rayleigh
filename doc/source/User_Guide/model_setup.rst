@@ -608,7 +608,7 @@ however, as Rayleigh will compute those funtions if not provided.
 
 Behavior of Transport Coefficients
 ...........................................................
-Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`here <physics_math>`.
+Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`below <transport>`.
 If you wish to specify a custom diffusivity profile, set the corresponding type to 3.  In that case, the corresponding nonconstant coefficient MUST be set in the equation coefficients file.  Moreover, if reference_type=4, these corresponding constant must be set in either the coefficients file or in main_input (regardless of the diffusion type specified).  
 
 For diffusion types 2 and 3, if the reference_type is not 4, the value of {nu,kappa,eta}_top normally used by that reference_type will be invoked if the corresponding constant coefficient is not set.
@@ -809,8 +809,67 @@ For example, if you wanted to output shell slice data for quantities 1, 2, 10, a
 
 Files output in this way will have the filename of their iteration.
 
+
+.. _transport:
+
 Transport coefficents
 ---------------------
+
+Transport coefficients (viscosity, thermal diffusivity) are specified in the transport namelist.
+
+   .. _table_anelastic_trans:
+
+
+.. centered:: **Table. Anelastic Transport.**
+
+Variables in the Transport_Namelist
+that must be specified when running in dimensional anelastic mode. In
+addition, **reference_type=2** must also be specified in the
+Reference_Namelist.
+
+   +-----------------------------------+-----------------------------------+
+   | Variable [Default value]          | Description                       |
+   +===================================+===================================+
+   | nu_top [1.0]                      | kinematic viscosity at rmax,      |
+   |                                   | :math:`\nu(rmax)`                 |
+   +-----------------------------------+-----------------------------------+
+   | nu_type [1]                       | determines whether :math:`\nu` is |
+   |                                   | constant with radius (1) or       |
+   |                                   | varies with density (2)           |
+   +-----------------------------------+-----------------------------------+
+   | nu_power [0.0]                    | exponent in :                     |
+   |                                   | :math:`\nu(r) = \left( \frac{\rho |
+   |                                   | (r)}{\rho(r=rmax)} \right)^       |
+   |                                   | {nu\_power}`;                     |
+   |                                   | use with nu_type=2                |
+   +-----------------------------------+-----------------------------------+
+   | kappa_top [1.0]                   | thermal diffusivity at rmax,      |
+   |                                   | :math:`\kappa(rmax)`              |
+   +-----------------------------------+-----------------------------------+
+   | kappa_type [1]                    | determines whether :math:`\kappa` |
+   |                                   | is constant with radius (1) or    |
+   |                                   | varies with density (2)           |
+   +-----------------------------------+-----------------------------------+
+   | kappa_power [0.0]                 | exponent in :                     |
+   |                                   | :math:`\kappa(r) = \left( \frac{\ |
+   |                                   | rho(r)}{\rho(r=rmax)} \right)^    |
+   |                                   | {kappa\_power}`;                  |
+   |                                   | use with kappa_type=2             |
+   +-----------------------------------+-----------------------------------+
+   | eta_top [1.0]                     | magnetic diffusivity at rmax,     |
+   |                                   | :math:`\eta(rmax)`                |
+   +-----------------------------------+-----------------------------------+
+   | eta_type [1]                      | determines whether :math:`\eta`   |
+   |                                   | is constant with radius (1) or    |
+   |                                   | varies with density (2)           |
+   +-----------------------------------+-----------------------------------+
+   | eta_power [0.0]                   | exponent in :                     |
+   |                                   | :math:`\eta(r) = \left( \frac{    |
+   |                                   | \rho(r)}{\rho(r=rmax)} \right)^   |
+   |                                   | {eta\_power}`;                    |
+   |                                   | use with eta_type=2               |
+   +-----------------------------------+-----------------------------------+
+
 
 .. _examples:
 
