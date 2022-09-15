@@ -10,11 +10,7 @@ Analyzing Output
 
 As discussed in :ref:`output_controls`,Rayleigh comes bundled with an in-situ diagnostics package that allows
 the user to sample a simulation in a variety of ways, and at
-user-specified intervals throughout a run. We refer the user to the diagnostics plotting notebook, located at Rayleigh/post_processing/Diagnostic_Plotting.ipynb.   An html version is provided :ref: `here <../../../post_processing/Diagnostic_Plotting.ipynb>' 
-
-
-   -  Rayleigh/post_processing/Diagnostics_Plotting.html (recommended for optimal
-      viewing; generated from the .ipynb file) `[html] <../../../post_processing/Diagnostic_Plotting.ipynb>`_
+user-specified intervals throughout a run. We refer the user to the diagnostics plotting notebook, located at Rayleigh/post_processing/Diagnostic_Plotting.ipynb.   An html version is provided `here. <../../../post_processing/Diagnostic_Plotting.ipynb>`_ 
 
 
 The Lookup Table (LUT)
