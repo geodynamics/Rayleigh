@@ -30,9 +30,9 @@ User Manual
    physics
    ../Model_Setup/index.rst
    checkpointing
-   cookbooks
    
    ..
+      cookbooks
       ../../../CONTRIBUTING.md
       custom_reference_states
       diagnostics
