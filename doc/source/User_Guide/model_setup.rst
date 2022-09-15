@@ -596,7 +596,115 @@ Files output in this way will have the filename of their iteration.
 Exampels from Recent Publications
 ---------------------------------
 
-Need text here.
+*A Solar-like Case*
+
+This is the main_input file from Case 39 from:
+
+`Hindman, Bradley W., Nicholas A. Featherstone, and Keith Julien. 2020. “Morphological 
+Classification of the Convective Regimes in Rotating Stars.” The Astrophysical Journal 
+898 (2): 120. https://doi.org/10.3847/1538-4357/ab9ec2.`
+
+
+
+::
+   &problemsize_namelist
+   n_r = 64
+   n_theta = 192
+   nprow = 32
+   npcol = 32
+   rmin = 5.0d10
+   rmax = 6.5860209d10
+   /
+   &numerical_controls_namelist
+   /
+   &physical_controls_namelist
+   rotation  = .true.
+   magnetism = .false.
+   /
+   &temporal_controls_namelist
+   max_time_step = 1000.0d0
+   max_iterations = 5000000
+   checkpoint_interval = 50000
+   quicksave_interval = 10000
+   num_quicksaves = 4
+   cflmin = 0.4d0
+   cflmax = 0.6d0
+   /
+   &io_controls_namelist
+   /
+   &output_namelist
+   !shellslice_levels    = 16,32,48,64,80,96,112
+   !shellslice_values    = 1                                               ! Codes needed for standard output routines
+   shellslice_levels    = 8,16,24,32,40,48,56,64,72,80,88,96,104,112,120
+   shellslice_values    = 1,2,3,301,302,303,304,305,306,307,308,309,401,501,502,2701,2702,2703,2704,2705,2706,2707,2708,2709,2710,2711
+   shellslice_frequency = 10000
+   shellslice_nrec      = 1
+
+   !shellspectra_values    = 1,2,3                                         ! Codes needed for standard output routines
+   shellspectra_levels    = 16,32,48,64,80,96,112
+   shellspectra_values    = 1,2,3,301,302,303,304,305,306,307,308,309,401,501,502,503,504,2701,2702,2703,2704,2705,2706,2707,2708,2709,2710,2711
+   shellspectra_frequency = 10000
+   shellspectra_nrec      = 1
+
+   !azavg_values    = 1,2,3,201,202                                        ! Codes needed for standard output routines
+   azavg_values    = 1,2,3,201,202,401,405,409,501,502,1433,1455,1470,1923,1935,1943,2701,2702,2703,2704,2705,2706,2707,2708,2709,2710,2711,2712,2713,2714,2715
+   azavg_frequency = 1000
+   azavg_nrec = 10
+
+   !shellavg_values    = 1,2,3,501,502,1433,1455,1470,1923,1935            ! Codes needed for standard output routines
+   shellavg_values    = 1,2,3,401,405,409,501,502,1433,1455,1470,1923,1935,2701,2702,2703,2704,2705,2706,2707,2708,2709,2710,2711,2712,2713,2714,2715
+   shellavg_frequency = 100
+   shellavg_nrec = 100
+
+   !globalavg_values = 401,402,403,404,405,406,407,408,409,410,411,412      ! Codes needed for standard output routines
+   globalavg_values = 401,402,403,404,405,406,407,408,409,410,411,412,413,417,421,2701,2702,2703,2704,2705,2706,2707
+   globalavg_frequency = 100
+   globalavg_nrec = 100
+
+   !equatorial_values    = 1,3      					! Codes needed for standard output routines
+   equatorial_values    = 1,2,3,4,5,6,201,203,301,302,303,304,305,306,307,308,309,401,501,502,503,504,2701,2702,2703,2704,2705,2706,2707,2708,2709,2710,2711
+   equatorial_frequency = 10000
+   equatorial_nrec      = 1
+
+   full3d_values = 4
+   full3d_frequency = 9000000
+   /
+
+   &Boundary_Conditions_Namelist
+   no_slip_boundaries = .false.
+   strict_L_Conservation = .false.
+   dtdr_bottom = 0.0d0
+   T_Top    = 0.0d0
+   T_Bottom = 851225.7d0
+   fix_tvar_top = .true.
+   fix_tvar_bottom = .false.
+   fix_dtdr_bottom = .true.
+   /
+   &Initial_Conditions_Namelist
+   init_type = 7
+   magnetic_init_type = -1
+   mag_amp = 1.0d0
+   temp_amp = 1.0d1
+   temp_w = 0.01d4
+   !restart_iter = 0	! restart from latest checkpoint of any flavor
+   /
+   &Test_Namelist
+   /
+   &Reference_Namelist
+   reference_type = 2
+   heating_type = 1
+   luminosity = 3.846d33
+   poly_n = 1.5d0
+   poly_Nrho = 3.0d0
+   poly_mass = 1.98891D33
+   poly_rho_i = 0.18053428d0
+   pressure_specific_heat = 3.5d8
+   angular_velocity = 5.74d-6	! Sidereal period of 12.7 days (twice the sidereal Carrington rate)
+   /
+   &Transport_Namelist
+   nu_top    = 4.d12
+   kappa_top = 4.d12
+   /
 
 .. _surveys:
 

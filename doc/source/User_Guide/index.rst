@@ -1,10 +1,19 @@
-User Guide
+User Manual
 ********************
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   getting_started
+   physics_math_overview
+   model_setup
+   run_rayleigh
+   run_at_scale
+   analyze_output
+   contribute
+
+   overview
    installation
    devel_environment
    running
