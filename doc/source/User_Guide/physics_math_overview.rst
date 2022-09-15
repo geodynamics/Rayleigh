@@ -12,6 +12,82 @@ Boussinesq and anelastic approximations. This section will provide a
 basic overview of those equations as well as the mathematical approach 
 Rayleigh uses to solve them. 
 
+.. _notation:
+
+Notation and Conventions
+---------------------------
+
+Vector and Tensor Notation
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All vector quantities are represented in bold italics. Components of a
+vector are indicated in non-bold italics, along with a subscript
+indicating the direction associated with that component. Unit vectors
+are written in lower-case, bold math font and are indicated by the use
+of a *hat* character. For example, a vector quantity
+:math:`\boldsymbol{a}` would represented as
+
+.. math::
+   :label: vcomp
+
+       \boldsymbol{a} = a_r\boldsymbol{\hat{a}}+a_\theta\boldsymbol{\hat{\theta}}+a_\phi\boldsymbol{\hat{\phi}}.
+
+The symbols (:math:`\boldsymbol{\hat{r}}`,
+:math:`\boldsymbol{\hat{\theta}}`, :math:`\boldsymbol{\hat{\phi}}`)
+indicate the unit vectors in the
+(:math:`r`,\ :math:`\theta`,\ :math:`\phi`) directions, and
+(:math:`a_r`, :math:`a_\theta`, :math:`a_\phi`) indicate the components
+of :math:`\boldsymbol{a}` along those directions respectively.
+
+Vectors may be written in lower case, as with the velocity field
+:math:`\boldsymbol{v}`, or in upper case as with the magnetic field
+:math:`\boldsymbol{B}`. Tensors are indicated by bold, upper-case,
+script font, as with the viscous stress tensor
+:math:`\boldsymbol{\mathcal{D}}`. Tensor components are indicated in
+non-bold, and with directional subscripts (i.e.,
+:math:`\mathcal{D}_{r\theta}`).
+
+Reference-State Values
+^^^^^^^^^^^^^^^^^^^^^^
+
+The *hat* notation is also used to indicate reference-state quantities.
+These quantities are scalar, and they are not written in bold font. They
+vary only in radius and have no :math:`\theta`-dependence or
+:math:`\phi`-dependence. The reference-state density is indicated by
+:math:`\hat{\rho}` and the reference-state temperature by
+:math:`\hat{T}`, for instance.
+
+Averaged and Fluctuating Values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Most of the output variables have been decomposed into a
+zonally-averaged value, and a fluctuation about that average. The
+average is indicated by an overbar, such that
+
+.. math::
+   :label: avging
+
+       \overline{a}\equiv \frac{1}{2\pi}\int_{0}^{2\pi} a(r,\theta,\phi)\, \mathrm{d}\phi.
+
+Fluctations about that average are indicated by a *prime* superscript,
+such that
+
+.. math::
+   :label: prime
+
+       a'(r,\theta,\phi)\equiv a(r,\theta,\phi)-\overline{a}(r,\theta)
+
+Finally, some quantities are averaged over the full sphere. These are
+indicated by a double-zero subscript (i.e. :math:`\ell=0,\,m=0`), such
+that
+
+.. math::
+   :label: fullsph
+
+   a_{00}\equiv \frac{1}{4\pi}\int_{0}^{2\pi}\int_{0}^{\pi} a(r,\theta,\phi)\, r\mathrm{sin}\,\theta\mathrm{d}\theta\mathrm{d}\phi.
+
+
+
 The Equation Sets Solved by Rayleigh
 ------------------------------------
 
@@ -223,7 +299,12 @@ When run in dimensional, anelastic mode (cgs units; **reference_type=2**
        \mathrm{f}_{14}(r)&\rightarrow \frac{d\hat{S}}{dr }&c_{10}&\rightarrow L_*.\end{aligned}
 
 Here :math:`\hat{\rho}(r)`, :math:`\hat{T}(r)`, and :math:`d\hat{S}/dr` are the spherically symmetric, time-independent reference-state
-density, temperature, and entropy gradient, respectively. :math:`g(r)` is the gravitational
+density, temperature, and entropy gradient, respectively. The thermal variables satisfy the
+linearized equation of state
+
+.. math:: \frac{P}{\hat{P}}= \frac{T}{\hat{T}} + \frac{\rho}{\hat{\rho}}
+
+:math:`g(r)` is the gravitational
 acceleration, :math:`c_P` is the specific heat at constant pressure, and
 :math:`\Omega_0` is the frame rotation rate. The viscous, thermal, and
 magnetic diffusivities (also assumed to be spherically symmetric and time-independent) are given by :math:`\nu(r)`, :math:`\kappa(r)`, and
@@ -366,80 +447,6 @@ We thus arrive at the following nondimensionalized equations:
        %
        \boldsymbol{\nabla}\cdot\left[\tilde{\rho}(r)\boldsymbol{v}\right]=\; &0 \\
        \boldsymbol{\nabla}\cdot\boldsymbol{B} =\; &0. \end{aligned}
-
-.. _notation:
-
-Notation and Conventions
----------------------------
-
-Vector and Tensor Notation
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-All vector quantities are represented in bold italics. Components of a
-vector are indicated in non-bold italics, along with a subscript
-indicating the direction associated with that component. Unit vectors
-are written in lower-case, bold math font and are indicated by the use
-of a *hat* character. For example, a vector quantity
-:math:`\boldsymbol{a}` would represented as
-
-.. math::
-   :label: vcomp
-
-       \boldsymbol{a} = a_r\boldsymbol{\hat{a}}+a_\theta\boldsymbol{\hat{\theta}}+a_\phi\boldsymbol{\hat{\phi}}.
-
-The symbols (:math:`\boldsymbol{\hat{r}}`,
-:math:`\boldsymbol{\hat{\theta}}`, :math:`\boldsymbol{\hat{\phi}}`)
-indicate the unit vectors in the
-(:math:`r`,\ :math:`\theta`,\ :math:`\phi`) directions, and
-(:math:`a_r`, :math:`a_\theta`, :math:`a_\phi`) indicate the components
-of :math:`\boldsymbol{a}` along those directions respectively.
-
-Vectors may be written in lower case, as with the velocity field
-:math:`\boldsymbol{v}`, or in upper case as with the magnetic field
-:math:`\boldsymbol{B}`. Tensors are indicated by bold, upper-case,
-script font, as with the viscous stress tensor
-:math:`\boldsymbol{\mathcal{D}}`. Tensor components are indicated in
-non-bold, and with directional subscripts (i.e.,
-:math:`\mathcal{D}_{r\theta}`).
-
-Reference-State Values
-^^^^^^^^^^^^^^^^^^^^^^
-
-The *hat* notation is also used to indicate reference-state quantities.
-These quantities are scalar, and they are not written in bold font. They
-vary only in radius and have no :math:`\theta`-dependence or
-:math:`\phi`-dependence. The reference-state density is indicated by
-:math:`\hat{\rho}` and the reference-state temperature by
-:math:`\hat{T}`, for instance.
-
-Averaged and Fluctuating Values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Most of the output variables have been decomposed into a
-zonally-averaged value, and a fluctuation about that average. The
-average is indicated by an overbar, such that
-
-.. math::
-   :label: avging
-
-       \overline{a}\equiv \frac{1}{2\pi}\int_{0}^{2\pi} a(r,\theta,\phi)\, \mathrm{d}\phi.
-
-Fluctations about that average are indicated by a *prime* superscript,
-such that
-
-.. math::
-   :label: prime
-
-       a'(r,\theta,\phi)\equiv a(r,\theta,\phi)-\overline{a}(r,\theta)
-
-Finally, some quantities are averaged over the full sphere. These are
-indicated by a double-zero subscript (i.e. :math:`\ell=0,\,m=0`), such
-that
-
-.. math::
-   :label: fullsph
-
-   a_{00}\equiv \frac{1}{4\pi}\int_{0}^{2\pi}\int_{0}^{\pi} a(r,\theta,\phi)\, r\mathrm{sin}\,\theta\mathrm{d}\theta\mathrm{d}\phi.
 
 
 .. _streamfunctions:
