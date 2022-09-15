@@ -12,6 +12,7 @@ RUN apt-get update && apt-get upgrade -y && \
 
 # Build aspect, replace git checkout command to create image for release
 RUN cd /opt && git clone 'https://github.com/geodynamics/Rayleigh.git'
+COPY configure /opt/Rayleigh/
 
 ENV FC mpifc
 ENV CC mpicc
