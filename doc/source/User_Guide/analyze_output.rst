@@ -1,3 +1,8 @@
+.. _analysis:
+
+Analyzing Ouput
+===============
+
 Rayleigh comes bundled with an in-situ diagnostics package that allows
 the user to sample a simulation in a variety of ways, and at
 user-specified intervals throughout a run. This package is comprised of
