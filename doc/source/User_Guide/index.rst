@@ -12,6 +12,7 @@ User Manual
    run_at_scale
    analyze_output
    contribute
+   troubleshooting
 
    overview
    installation
