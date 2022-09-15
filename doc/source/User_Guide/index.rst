@@ -16,6 +16,7 @@ User Manual
    analyze_output
    contribute
    troubleshooting
+   references
 
    ..
       Old User Manual 
@@ -31,10 +32,14 @@ User Manual
    checkpointing
    cookbooks
    ../../../CONTRIBUTING.md
-   custom_reference_states
-   diagnostics
-   io_control
-   ensemble_mode
-   references
-   examples
-   ../diagnostic_values/index
+   
+   
+   
+   
+   ..
+      custom_reference_states
+      diagnostics
+      io_control
+      ensemble_mode
+      examples 
+      ../diagnostic_values/index
