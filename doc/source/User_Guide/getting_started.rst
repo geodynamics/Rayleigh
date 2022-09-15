@@ -482,6 +482,8 @@ Run command:
 Available Benchmarks
 ------------------
 
+
+
 .. _table_benchmark:
 
 .. centered:: **Table. Benchmark.**
@@ -513,8 +515,8 @@ benchmarks:
 
 .. _cookbookCase0Minimal:
 
-Simple Boussinesq non-MHD benchmark: c2001_case0_minimal
---------------------------------------------------------
+Boussinesq non-MHD Benchmark: c2001_case0_minimal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This is the standard benchmark test when running Rayleigh on a new
 machine, as described in §\ :ref:`benchmarking`.
@@ -589,8 +591,8 @@ quicksaves.
 
 .. _cookbookCase1Minimal:
 
-Simple Boussinesq MHD benchmark: c2001_case1_minimal
-----------------------------------------------------
+Boussinesq MHD Benchmark: c2001_case1_minimal
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The MHD Boussinesq benchmark with an insulating inner core of
 Christensen et al. (2001) :cite:`CHRISTENSEN200125` is denoted as Case 1 and is specified with
@@ -626,8 +628,8 @@ have a percent difference of less than 1.
 
 .. _cookbookHydroAnelastic:
 
-Steady anelastic non-MHD benchmark: j2011_steady_hydro_minimal
---------------------------------------------------------------
+Steady Anelastic non-MHD Benchmark: j2011_steady_hydro_minimal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Jones et al. (2011) describes a benchmark for an anelastic hydrodynamic
 solution that is steady in a drifting frame. This benchmark is specified
@@ -667,8 +669,8 @@ percent difference of less than 1.
 
 .. _cookbookMhdAnelastic:
 
-Steady anelastic MHD benchmark: j2011_steady_mhd_minimal
---------------------------------------------------------
+Steady Anelastic MHD Benchmark: j2011_steady_mhd_minimal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The anelastic MHD benchmark described in Jones et al. (2011) can be run
 with main input file **j2011_steady_mhd_minimal**. The Fortran namelists
