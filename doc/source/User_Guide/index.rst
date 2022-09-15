@@ -22,16 +22,16 @@ User Manual
       Old User Manual 
 
 
-   overview
-   installation
-   devel_environment
-   running
-   benchmarking
    physics
-   ../Model_Setup/index.rst
-   checkpointing
    
    ..
+      overview
+      installation
+      devel_environment
+      running
+      benchmarking
+      ../Model_Setup/index.rst
+      checkpointing
       cookbooks
       ../../../CONTRIBUTING.md
       custom_reference_states
