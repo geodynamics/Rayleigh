@@ -438,7 +438,7 @@ If desired, the constant and nonconstant equation coefficients enumerated :ref:`
 In either case, constant coefficients may be defined within the coefficients file or, read in from main_input, or some combination of the two.  Moreover, the radial variation of transport coefficients, as specified by nu_type, kappa_type, and eta_type flags is respected.  We elaborate on this behavior below.
 
 Creating a Coefficients File
-.........................................
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first step in modifying Rayleigh's equation coefficients is to generate an equation coefficients file.
 This file will be used alongside options defined in main_input to determine which combination of coefficients are overridden.

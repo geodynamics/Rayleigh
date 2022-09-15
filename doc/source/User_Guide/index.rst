@@ -21,10 +21,7 @@ User Manual
    ..
       Old User Manual 
 
-
-   physics
-   
-   ..
+      
       overview
       installation
       devel_environment
@@ -32,6 +29,7 @@ User Manual
       benchmarking
       ../Model_Setup/index.rst
       checkpointing
+      physics
       cookbooks
       ../../../CONTRIBUTING.md
       custom_reference_states
