@@ -10,7 +10,7 @@ Getting Started
 Accessing Rayleigh
 ------------------
 
-You can download the Rayleigh source code from `Rayleigh's GitHub respository<https://github.com/geodynamics/Rayleigh>`_ .
+You can download the Rayleigh source code from `Rayleigh's GitHub respository <https://github.com/geodynamics/Rayleigh>`_ .
 
 Setting up a Rayleigh Development Environment
 ---------------------------------------------

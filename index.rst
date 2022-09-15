@@ -22,8 +22,3 @@ This documentation is structured into the following sections:
    doc/source/quick_reference
    doc/source/getting_help
 
-
-Indices and tables
-------------------
-
-* :ref:`search`
