@@ -5,6 +5,9 @@ User Manual
    :maxdepth: 2
    :caption: Contents:
 
+   .. 
+      New User Guide
+      
    getting_started
    physics_math_overview
    model_setup
@@ -13,6 +16,10 @@ User Manual
    analyze_output
    contribute
    troubleshooting
+
+   ..
+      Old User Manual 
+
 
    overview
    installation
