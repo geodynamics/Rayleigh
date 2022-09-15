@@ -7,6 +7,8 @@
 Troubleshooting
 ===============
 
+In general, it is a good idea to email Rene Gassmoeller at  (his first name).(his last name)@ufl.edu.  We nevertheless provide some discussion of commonly-encountered errors below.
+
 .. _compile_error:
 
 Compiling Errors

@@ -386,14 +386,11 @@ Section needs to be written.
 I/O Control
 -----------
 
-Some aspects of Rayleigh's I/O can be controlled through variables found in the io_controls namelist.  This section covers:
+Some aspects of Rayleigh's I/O can be controlled through variables found in the io_controls namelist.
 
-`I/O Format Controls`_    
-
-`I/O Redirection`_
 
 I/O Format Controls
-*********************
+~~~~~~~~~~~~~~~~~~~
 
 
 By default, integer output is reported with 8 digits and padded with leading zeros.  This includes integer iteration
@@ -441,7 +438,7 @@ digit (for the negative sign) are also provided.
 
 
 I/O Redirection
-*********************
+~~~~~~~~~~~~~~~
 
 Rayleigh writes all text output (e.g., error messages, iteration
 counter, etc.) to stdout by default. Different computing centers handle
