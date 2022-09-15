@@ -4,7 +4,7 @@
 
 .. _physics_math:
 
-The Physics and Mathematics of Rayleigh
+Underlying Physics 
 =======================================
 
 Rayleigh solves the MHD equations in spherical geometry under the
@@ -459,7 +459,7 @@ Section needed.
 
 .. _pseudospectral:
 
-The Psuedospectral Approach
+The Pseudospectral Approach
 ---------------------------
 
 Section needed.

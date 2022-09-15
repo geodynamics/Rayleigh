@@ -368,14 +368,14 @@ modify an existing benchmark-input file, delete the line containing the
 text “*benchmark_mode=X*.” When benchmark mode is active, custom inputs,
 such as Rayleigh number, are overridden and reset to their
 benchmark-appropriate values. For example, setting ``benchmark_mode = 1`` defines the appropriate Case 0
-  Christensen et al. (2001) :cite:`CHRISTENSEN200125` initial conditions. A benchmark report is
-  written every 5000 time steps by setting
-  ``benchmark_report_interval = 5000``. The benchmark reports are text
-  files found within directory **path_to_my_sim/Benchmark_Reports/** and
-  numbered according to the appropriate time step. The
+Christensen et al. (2001) :cite:`CHRISTENSEN200125` initial conditions. A benchmark report is
+written every 5000 time steps by setting
+``benchmark_report_interval = 5000``. The benchmark reports are text
+files found within directory **path_to_my_sim/Benchmark_Reports/** and
+numbered according to the appropriate time step. The
 | ``benchmark_integration_interval`` variable sets the interval at which
-  measurements are taken to calculate the values reported in the
-  benchmark reports.
+measurements are taken to calculate the values reported in the
+benchmark reports.
 
 **We suggest using the c2001_case0_minimal input file for installation
 verification**. Algorithmically, there is little difference between the
@@ -621,7 +621,7 @@ Steady Anelastic MHD Benchmark: j2011_steady_mhd_minimal
 The anelastic MHD benchmark described in Jones et al. (2011) can be run
 with main input file **j2011_steady_mhd_minimal**. The Fortran namelists
 differing from the Jones et al. (2011) anelastic hydro benchmark
-(§`:ref:cookbookHydroAnelastic` above) are shown here.
+(§:ref:`cookbookHydroAnelastic` above) are shown here.
 
 ::
 
