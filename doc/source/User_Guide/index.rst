@@ -14,7 +14,7 @@ User Manual
    run_rayleigh
    run_at_scale
    analyze_output
-   contribute
+   ../../../CONTRIBUTING.md
    troubleshooting
    references
 
@@ -31,12 +31,9 @@ User Manual
    ../Model_Setup/index.rst
    checkpointing
    cookbooks
-   ../../../CONTRIBUTING.md
-   
-   
-   
    
    ..
+      ../../../CONTRIBUTING.md
       custom_reference_states
       diagnostics
       io_control

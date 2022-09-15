@@ -585,7 +585,8 @@ These flags can be used in tandem with the override flags to specify values via 
 
 
 Specifing an Entire Custom Reference State
------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 To specify a full set of custom equation coefficients, set reference_type to 4.  Constant coefficients
 may be overridden, if desired, and as described above.  Note that you must fully specify nonconstant coefficients :math:`f_1-f_7`.
 If desired, you may also specify their logarithmic derivatives on the fine mesh (see the anelastic notebooks below).  This is optional,
@@ -614,12 +615,12 @@ If you wish to specify a custom diffusivity profile, set the corresponding type 
 For diffusion types 2 and 3, if the reference_type is not 4, the value of {nu,kappa,eta}_top normally used by that reference_type will be invoked if the corresponding constant coefficient is not set.
 
 A Note on Volumetric Heating
----------------------------------
+~~~~~~~~~~~~~~~~~~~~~
 Finally, if specifying a custom form for the volumetric heating, please ensure that heating_type is set to a positive, nonzero value in the reference_namelist.  Otherwise, reference heating will be deactivated.  Any Rayleigh-initialization of the heating function that takes place initially will be overridden by the with_custom_reference or reference_type=4 flags. 
 
 
 Example Notebooks
-...................
+~~~~~~~~~~~~~~~~
 
 The notebooks below provide several examples of how to generate a custom-equation-coefficient file.
 These notebooks are located in the examples/custom_reference_states subdirectory of the main Rayleigh directory.
