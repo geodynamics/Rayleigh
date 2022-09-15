@@ -173,8 +173,7 @@ what physics you want to include will depend on the type of model you want
 to run. Be careful, however, that if you are adapting an input file from 
 the benchmark described in :ref:`benchmark` that you set 
 :code:`benchmark_mode` to 0 or omit it entirely, as this will override 
-other input flags in favor of running the specified benchmark. For more
-information on running benchmarks, see :ref:`cookbooks`.
+other input flags in favor of running the specified benchmark.
 
 A number of logical variables can be used to turn certain physics on
 (value = .true.) or off ( value = .false.). These variables are
@@ -609,17 +608,17 @@ however, as Rayleigh will compute those funtions if not provided.
 
 Behavior of Transport Coefficients
 ...........................................................
-Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`here <physics>`.
+Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`here <physics_math>`.
 If you wish to specify a custom diffusivity profile, set the corresponding type to 3.  In that case, the corresponding nonconstant coefficient MUST be set in the equation coefficients file.  Moreover, if reference_type=4, these corresponding constant must be set in either the coefficients file or in main_input (regardless of the diffusion type specified).  
 
 For diffusion types 2 and 3, if the reference_type is not 4, the value of {nu,kappa,eta}_top normally used by that reference_type will be invoked if the corresponding constant coefficient is not set.
 
 A Note on Volumetric Heating
-~~~~~~~~~~~~~~~~~~~~~
+......................
 Finally, if specifying a custom form for the volumetric heating, please ensure that heating_type is set to a positive, nonzero value in the reference_namelist.  Otherwise, reference heating will be deactivated.  Any Rayleigh-initialization of the heating function that takes place initially will be overridden by the with_custom_reference or reference_type=4 flags. 
 
 
-Example Notebooks
+Custom Reference State Examples
 ~~~~~~~~~~~~~~~~
 
 The notebooks below provide several examples of how to generate a custom-equation-coefficient file.
@@ -810,9 +809,12 @@ For example, if you wanted to output shell slice data for quantities 1, 2, 10, a
 
 Files output in this way will have the filename of their iteration.
 
+Transport coefficents
+---------------------
+
 .. _examples:
 
-Exampels from Recent Publications
+Examples from Recent Publications
 ---------------------------------
 
 *A Solar-like Case*
