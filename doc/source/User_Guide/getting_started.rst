@@ -363,6 +363,29 @@ After cloning a Rayleigh repository, rayleigh can be configured and compiled as:
 
 We suggest choosing 'AVX512' at the configure menu.  This vectorization is supported by both the Skylake and Ice Lake nodes available on Stampede2.  An example jobscript for Stampede2 may be found in *Rayleigh/job_scripts/TACC_Stampede2*.
 
+Using the Apptainer container system
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We provide a precompiled container that provides an alternative way to use Rayleigh on the  TACC computing systems Stampede3 and Frontera.
+
+To activate the container system and download the container:
+
+.. code-block:: bash
+
+   module load tacc-apptainer
+   apptainer pull docker://gassmoeller/rayleigh:tacc-latest
+
+This will create a file `rayleigh_tacc-latest.sif` that you can think of as a Rayleigh executable.
+To run Rayleigh models using the downloaded container run (on a compute node):
+
+.. code-block:: bash
+
+   ibrun -n N_CORES apptainer run rayleigh_tacc-latest.sif rayleigh.opt
+
+Make sure to replace N_CORES with the number of requested cores (or remove -n option to run with the
+total number of cores requested). Also make sure to provide the correct path to `rayleigh_tacc-latest.sif`
+if it is not in the current directory.
+
 .. _pleiades:
 
 NASA Pleiades
