@@ -1,4 +1,0 @@
-Grid Specification 
-==============================================
-
-Under construction

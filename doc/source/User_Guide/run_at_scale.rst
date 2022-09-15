@@ -129,7 +129,7 @@ three simulations, and so the relevant call to Rayleigh would be:
 
 **Closing Notes:** When running in ensemble mode, it is *strongly
 recommended* that you redirect standard output for each simulation to a
-text file (see §\ :ref:`io`). Otherwise, all simulations
+text file (see §\ :ref:`io_control`). Otherwise, all simulations
 write to the same default (machine-dependent) log file, making it
 difficult to read. Moreover, some machines such as NASA Pleiades will
 terminate a run if the log file becomes too long. This is easy to do
