@@ -176,19 +176,19 @@ Contains
         If (magnetism) Then
             n_equations = 6 + n_active_scalars + n_passive_scalars
             n_variables = 6 + n_active_scalars + n_passive_scalars
-            if (n_active_scalars>0) then
+            if (n_active_scalars.gt.0) then
                 chiaeq(1) = aeq+1
             end if
-            if (n_passive_scalars>0) then
+            if (n_passive_scalars.gt.0) then
                 chipeq(1) = aeq+n_active_scalars+1
             end if
         Else
             n_equations = 4 + n_active_scalars + n_passive_scalars
             n_variables = 4 + n_active_scalars + n_passive_scalars
-            if (n_active_scalars>0) then
+            if (n_active_scalars.gt.0) then
                 chiaeq(1) = zeq+1
             end if
-            if (n_passive_scalars>0) then
+            if (n_passive_scalars.gt.0) then
                 chipeq(1) = zeq+n_active_scalars+1
             end if
         Endif
