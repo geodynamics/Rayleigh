@@ -1,11 +1,11 @@
 .. _quantityCodes:
 
-Quantity Codes
-================
+Output Quantity Codes
+=====================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Below are tables enumerating the menu codes necessary to specify diagonstic outputs in Rayleigh. 
+   :caption: Below are tables enumerating the menu codes necessary to specify diagnostic outputs in Rayleigh.
 
    velocity_field
    mass_flux

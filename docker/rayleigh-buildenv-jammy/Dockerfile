@@ -1,24 +1,20 @@
-FROM ubuntu:bionic
+FROM ubuntu:jammy
 
-RUN apt update && \
+RUN apt-get update && \
   DEBIAN_FRONTEND='noninteractive' \
   DEBCONF_NONINTERACTIVE_SEEN='true' \
-  apt install --yes \
+  apt-get install --yes \
     g++ \
     gfortran \
     git \
-    libblas-dev \
-    libfftw3-dev \
-    liblapack-dev \
+    intel-mkl \
     libopenmpi-dev \
     make \
     nano \
     wget \
-    python-pip \
     python3-pip \
     sphinx-common \
     texlive-base \
-    texlive-generic-extra \
     texlive-latex-base \
     texlive-latex-recommended \
     texlive-latex-extra \
@@ -26,12 +22,18 @@ RUN apt update && \
     makedepf90 \
     latexmk \
     pandoc \
-    python-numpy \
-    python-scipy \
-    python-funcsigs
+    python3-numpy \
+    python3-scipy \
+    python3-funcsigs \
+    python3-sphinxcontrib.bibtex \
+    python3-sphinx-book-theme \
+    python3-recommonmark \
+    python3-nbsphinx \
+    python3-vtk7 \
+    jupyter \
+    && apt-get clean && rm -r /var/lib/apt/lists/*
 
-RUN pip3 install sphinx==4.0 sphinxcontrib-bibtex==1.0.0 nbstripout traitlets==4.3.3 nbsphinx==0.8.5 jupyter-client ipykernel recommonmark sphinx-book-theme
-RUN pip2 install vtk
+RUN pip3 install nbstripout
 
 # Export compilers
 ENV CC mpicc

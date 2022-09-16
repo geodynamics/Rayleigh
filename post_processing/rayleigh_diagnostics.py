@@ -853,8 +853,8 @@ class G_Avgs:
                 (writes all data contained in my_gavgs to my_file.dat, in standard G_Avgs format)
 
         """
-        one_rec = np.dtype([('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32)  ])
-        fstruct = np.dtype([ ('fdims', np.int32,4), ('qvals', np.int32,(self.nq)), ('fdata', one_rec, [self.niter,])  ])
+        one_rec = np.dtype([ ('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32) ])
+        fstruct = np.dtype([ ('fdims', np.int32, 4), ('qvals', np.int32, [self.nq,]), ('fdata', one_rec, [self.niter,]) ])
         
         odata = np.zeros((1,),dtype=fstruct)
         odata['fdims'][0,0]=314
@@ -929,8 +929,8 @@ class G_Avgs:
         self.time  = np.zeros(self.niter          ,dtype='float64')
 
         
-        one_rec = np.dtype([('vals', np.float64, [self.nq,]), ('times',np.float64), ('iters', np.int32)  ])
-        fstruct = np.dtype([ ('qvals', np.int32,(self.nq)), ('fdata', one_rec, [self.niter,])  ])
+        one_rec = np.dtype([ ('vals', np.float64, [self.nq,]), ('times', np.float64), ('iters', np.int32)  ])
+        fstruct = np.dtype([ ('qvals', np.int32, [self.nq,]), ('fdata', one_rec, [self.niter,]) ])
         
         if (self.byteswap):
                 fdata = np.fromfile(self.fd,dtype=fstruct,count=1).byteswap()
@@ -979,16 +979,16 @@ class G_Avgs:
 
         """
         self.fd = open(the_file,'rb')        
-        specs = np.fromfile(self.fd,dtype='int32',count=4)
+        specs = np.fromfile(self.fd,dtype='int32',count=1)
         bcheck = specs[0]       # If not 314, we need to swap the bytes
         self.byteswap = False
         if (bcheck != 314):
             specs.byteswap()
             self.byteswap = True
             
-        self.version = specs[1]
-        self.niter = specs[2]
-        self.nq = specs[3]
+        self.version = swapread(self.fd,dtype='int32',count=1,swap=self.byteswap)
+        self.niter = swapread(self.fd,dtype='int32',count=1,swap=self.byteswap)
+        self.nq = swapread(self.fd,dtype='int32',count=1,swap=self.byteswap)
         if (closefile):
             self.fd.close()
    
@@ -2457,9 +2457,9 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
 
     #plt.hold(True)
     if (len(underlay) == 1):
-        img = ax.pcolormesh(yr,xr,field,cmap=mycmap)
+        img = ax.pcolormesh(yr,xr,field,cmap=mycmap,shading='auto')
     else:
-        img = ax.pcolormesh(yr,xr,underlay,cmap=mycmap)
+        img = ax.pcolormesh(yr,xr,underlay,cmap=mycmap,shading='auto')
     #ax.plot(r_bcz*sintheta,r_bcz*costheta,'k--',[0,1],[0,0],'k--')
     ax.axis('equal')
     ax.axis('off')

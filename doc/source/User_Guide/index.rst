@@ -1,21 +1,40 @@
-Rayleigh User Manual
+User Manual
 ********************
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   overview
-   installation
-   devel_environment
-   running
-   benchmarking
-   physics
-   checkpointing
-   cookbooks
-   custom_reference_states
-   diagnostics
-   io_control
-   ensemble_mode
+   .. 
+      New User Guide
+      
+   getting_started
+   physics_math_overview
+   model_setup
+   run_rayleigh
+   run_at_scale
+   analyze_output
+   ../../../CONTRIBUTING.md
+   troubleshooting
    references
-   examples
+
+   ..
+      Old User Manual 
+
+      
+      overview
+      installation
+      devel_environment
+      running
+      benchmarking
+      ../Model_Setup/index.rst
+      checkpointing
+      physics
+      cookbooks
+      ../../../CONTRIBUTING.md
+      custom_reference_states
+      diagnostics
+      io_control
+      ensemble_mode
+      examples 
+      ../diagnostic_values/index

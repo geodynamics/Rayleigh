@@ -89,3 +89,4 @@ dimensional.dat
 Boussinesq.dat
 custom_ref_viscous.dat
 cref_from_MESA.dat
+.vscode/settings.json
