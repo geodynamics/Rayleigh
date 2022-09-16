@@ -236,7 +236,7 @@ Contains
                 Call add_implicit_term(peq, tvar, 0, amp,lp, static = .true.)            ! Gravity    --- Need LHS_Only Flag
 
                 do i = 1, n_active_scalars
-                  amp = ref%chi_buoyancy_coeff(i,:)
+                  amp = -ref%chi_buoyancy_coeff(i,:)
                   Call add_implicit_term(peq, chiavar(i), 0, amp,lp, static = .true.)    ! Gravity    --- Need LHS_Only Flag
                 end do
 
@@ -292,7 +292,7 @@ Contains
 
                 ! Chi
                 do i = 1, n_active_scalars
-                  amp = ref%chi_buoyancy_coeff(i,:)/H_Laplacian
+                  amp = -ref%chi_buoyancy_coeff(i,:)/H_Laplacian
                   Call add_implicit_term(weq, chiavar(i), 0, amp,lp)    ! Gravity
                 end do
 

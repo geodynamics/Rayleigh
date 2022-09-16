@@ -327,7 +327,7 @@ Contains
         Enddo
 
         do j = 1, n_active_scalars
-          amp = chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+          amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
 
           Do i = 1, N_R
               ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
@@ -436,7 +436,7 @@ Contains
         gravity = (rmax**2)*OneOverRSquared(:)
         ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
         do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = gravity*chi_a_modified_rayleigh_number(i)*ref%density
+          ref%chi_buoyancy_coeff(i,:) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
         enddo
 
         !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
@@ -594,7 +594,7 @@ Contains
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
         do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = gravity/pressure_specific_heat*ref%density
+          ref%chi_buoyancy_coeff(i,:) = -gravity/pressure_specific_heat*ref%density
         end do
 
         Deallocate(zeta, gravity)
