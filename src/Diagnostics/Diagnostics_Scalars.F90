@@ -29,10 +29,11 @@ Contains
     Subroutine Compute_Scalars(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Integer :: r,k, t, ii, ind, scoff
+        Integer :: r,k, t, ii, ind, scoff, n_scalars
         Integer :: chivar, dchidr, dchidt, dchidp, d2chidr2
         
-        Do ii = 1, n_active_scalars + n_passive_scalars
+        n_scalars = n_active_scalars + n_passive_scalars
+        Do ii = 1, n_scalars
             if (ii .le. n_active_scalars) then
                  ind   = ii
                  scoff = a_scalar_offset + (ind-1)*scalar_skip

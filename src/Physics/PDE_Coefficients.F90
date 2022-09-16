@@ -879,7 +879,7 @@ Contains
         Character*120, Intent(In) :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
-        Integer :: i, k, j
+        Integer :: i, k, j, n_scalars
         Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
         Real*8  :: input_constants(1:n_ra_constants)
         Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
@@ -1042,7 +1042,8 @@ Contains
             If ((fset(13) .eq. 0) .and. (fset(7) .eq. 1)) Then
                 Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
             Endif
-            do i = 0, n_active_scalars+n_passive_scalars-1
+            n_scalars = n_active_scalars + n_passive_scalars
+            do i = 0, (n_scalars - 1)
               If ((fset(16+i*2) .eq. 0) .and. (fset(15+i*2) .eq. 1)) Then
                   Call log_deriv(ra_functions(:,15+i*2), ra_functions(:,16+i*2)) !dlnkappa_chi
               Endif

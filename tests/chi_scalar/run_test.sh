@@ -19,5 +19,5 @@ mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # after both versions have run, we test the output for errors
-PYTHONPATH=../../post_processing:../../pre_processing:$PYTHONPATH python test_output.py
+PYTHONPATH=../../post_processing:../../pre_processing:$PYTHONPATH python3 test_output.py
 
