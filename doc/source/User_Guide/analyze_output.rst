@@ -159,7 +159,15 @@ Plotting Examples
 3-D Visualization with VAPOR
 ----------------------------
 
-Need text here.
+Rayleigh's Spherical_3D data can be visualized using volume rendering software such as `Paraview <https://www.paraview.org/>`_ or `VAPoR <https://www.vapor.ucar.edu/>`_ .
+
+The following video walks through the process of formatting Rayleigh data for VAPoR.
+
+
+.. |VAPoR_telecon| raw:: html
+
+    <iframe width="30%"  src="https://youtu.be/U-SgJYoX3q8" frameborder="0" allow="accelerometer;  encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 
 .. _commmon_diagnostics:
 
