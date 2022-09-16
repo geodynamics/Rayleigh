@@ -1,0 +1,84 @@
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.35d0
+ shell_depth = 1.0d0
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+ benchmark_mode = 0
+ rotation  = .True.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+ n_active_scalars = 2
+ n_passive_scalars = 2
+/
+&temporal_controls_namelist
+ max_time_step = 7.5e-5
+ max_iterations = 17
+ checkpoint_interval = 10000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+globalavg_values = 401,501,10001,10201,20001,20201
+globalavg_frequency = 17
+globalavg_nrec = 1
+/
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+chi_a_Top(1)    = 0.0d0
+chi_a_Bottom(1) = 1.0d0
+fix_chivar_a_top(1) = .true.
+fix_chivar_a_bottom(1) = .true.
+chi_a_Top(2)    = 0.0d0
+chi_a_Bottom(2) = 1.0d0
+fix_chivar_a_top(2) = .true.
+fix_chivar_a_bottom(2) = .true.
+chi_p_Top(1)    = 0.0d0
+chi_p_Bottom(1) = 1.0d0
+fix_chivar_p_top(1) = .true.
+fix_chivar_p_bottom(1) = .true.
+chi_p_Top(2)    = 0.0d0
+chi_p_Bottom(2) = 1.0d0
+fix_chivar_p_top(2) = .true.
+fix_chivar_p_bottom(2) = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 8
+t_init_file = '../bench_t_init'
+chi_a_init_file(1) = '../bench_t_init'
+chi_a_init_file(2) = '../bench_t_init'
+chi_p_init_file(1) = '../bench_t_init'
+chi_p_init_file(2) = '../bench_t_init'
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 1.0d5
+Prandtl_Number = 1.0d0
+chi_a_Rayleigh_Number(1) = 0.0
+chi_a_Prandtl_Number(1) = 1.0d0
+chi_a_Rayleigh_Number(2) = 0.0
+chi_a_Prandtl_Number(2) = 1.0d0
+chi_p_Prandtl_Number(1) = 1.0d0
+chi_p_Prandtl_Number(2) = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/

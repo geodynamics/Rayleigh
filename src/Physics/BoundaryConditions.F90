@@ -38,10 +38,15 @@ Module BoundaryConditions
     Logical :: Fix_dTdr_Top    = .False.
     Logical :: Fix_dTdr_Bottom = .False.
 
-    Logical :: Fix_chivar_Top    = .True.  ! PASSIVE
-    Logical :: Fix_chivar_Bottom = .True.
-    Logical :: Fix_dchidr_Top    = .False.
-    Logical :: Fix_dchidr_Bottom = .False.
+    Logical :: Fix_chivar_a_Top(1:n_scalar_max)    = .True.
+    Logical :: Fix_chivar_a_Bottom(1:n_scalar_max) = .True.
+    Logical :: Fix_dchidr_a_Top(1:n_scalar_max)    = .False.
+    Logical :: Fix_dchidr_a_Bottom(1:n_scalar_max) = .False.
+
+    Logical :: Fix_chivar_p_Top(1:n_scalar_max)    = .True.
+    Logical :: Fix_chivar_p_Bottom(1:n_scalar_max) = .True.
+    Logical :: Fix_dchidr_p_Top(1:n_scalar_max)    = .False.
+    Logical :: Fix_dchidr_p_Bottom(1:n_scalar_max) = .False.
 
     Logical :: Fix_divrt_top = .False.
     Logical :: Fix_divt_top = .False.
@@ -58,10 +63,15 @@ Module BoundaryConditions
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
 
-    Real*8  :: chi_Bottom     = 1.0d0  ! PASSIVE
-    Real*8  :: chi_Top        = 0.0d0
-    Real*8  :: dchidr_Top     = 0.0d0
-    Real*8  :: dchidr_Bottom  = 0.0d0
+    Real*8  :: chi_a_Bottom(1:n_scalar_max)     = 1.0d0
+    Real*8  :: chi_a_Top(1:n_scalar_max)        = 0.0d0
+    Real*8  :: dchidr_a_Top(1:n_scalar_max)     = 0.0d0
+    Real*8  :: dchidr_a_Bottom(1:n_scalar_max)  = 0.0d0
+
+    Real*8  :: chi_p_Bottom(1:n_scalar_max)     = 1.0d0
+    Real*8  :: chi_p_Top(1:n_scalar_max)        = 0.0d0
+    Real*8  :: dchidr_p_Top(1:n_scalar_max)     = 0.0d0
+    Real*8  :: dchidr_p_Bottom(1:n_scalar_max)  = 0.0d0
 
     Real*8  :: C10_bottom = 0.0d0
     Real*8  :: C10_top = 0.0d0
@@ -78,10 +88,16 @@ Module BoundaryConditions
     Character*120 :: dTdr_bottom_file   = '__nothing__'
     Character*120 :: C_top_file         = '__nothing__'
     Character*120 :: C_bottom_file      = '__nothing__'
-    Character*120 :: chi_top_file       = '__nothing__'
-    Character*120 :: chi_bottom_file    = '__nothing__'
-    Character*120 :: dchidr_top_file    = '__nothing__'
-    Character*120 :: dchidr_bottom_file = '__nothing__'
+
+    Character*120 :: chi_a_top_file(1:n_scalar_max)       = '__nothing__'
+    Character*120 :: chi_a_bottom_file(1:n_scalar_max)    = '__nothing__'
+    Character*120 :: dchidr_a_top_file(1:n_scalar_max)    = '__nothing__'
+    Character*120 :: dchidr_a_bottom_file(1:n_scalar_max) = '__nothing__'
+
+    Character*120 :: chi_p_top_file(1:n_scalar_max)       = '__nothing__'
+    Character*120 :: chi_p_bottom_file(1:n_scalar_max)    = '__nothing__'
+    Character*120 :: dchidr_p_top_file(1:n_scalar_max)    = '__nothing__'
+    Character*120 :: dchidr_p_bottom_file(1:n_scalar_max) = '__nothing__'
 
     Logical :: Strict_L_Conservation = .false.  ! Turn on to enforce angular momentum conservation 
                                                 ! about x,y, and z-axes via integral constraint on Z(ell=1)
@@ -99,9 +115,12 @@ Module BoundaryConditions
         dipole_tilt_degrees, impose_dipole_field, no_slip_top, no_slip_bottom, &
         stress_free_top, stress_free_bottom, T_top_file, T_bottom_file, dTdr_top_file, dTdr_bottom_file, &
         C_top_file, C_bottom_file, dipole_field_bottom, adjust_dTdr_top, &
-        chi_top_file, chi_bottom_file, dchidr_top_file, dchidr_bottom_file, &
-        fix_chivar_top, fix_chivar_bottom, chi_bottom, chi_top, &
-        fix_dchidr_bottom, fix_dchidr_top, dchidr_top, dchidr_bottom
+        chi_a_top_file, chi_a_bottom_file, dchidr_a_top_file, dchidr_a_bottom_file, &
+        fix_chivar_a_top, fix_chivar_a_bottom, chi_a_bottom, chi_a_top, &
+        fix_dchidr_a_bottom, fix_dchidr_a_top, dchidr_a_top, dchidr_a_bottom, &
+        chi_p_top_file, chi_p_bottom_file, dchidr_p_top_file, dchidr_p_bottom_file, &
+        fix_chivar_p_top, fix_chivar_p_bottom, chi_p_bottom, chi_p_top, &
+        fix_dchidr_p_bottom, fix_dchidr_p_top, dchidr_p_top, dchidr_p_bottom
 
 Contains
 
@@ -109,12 +128,20 @@ Contains
         Implicit None
         Real*8 :: tilt_angle_radians,a,b
         Real*8 :: Ftop, rhotk_top, Fbottom
+        Integer :: i
 
         fix_tvar_top = .not. fix_dtdr_top
         fix_tvar_bottom = .not. fix_dtdr_bottom
 
-        fix_chivar_top = .not. fix_dchidr_top  ! PASSIVE
-        fix_chivar_bottom = .not. fix_dchidr_bottom
+        do i = 1, n_active_scalars
+          fix_chivar_a_top(i) = .not. fix_dchidr_a_top(i)
+          fix_chivar_a_bottom(i) = .not. fix_dchidr_a_bottom(i)
+        end do
+
+        do i = 1, n_passive_scalars
+          fix_chivar_p_top(i) = .not. fix_dchidr_p_top(i)
+          fix_chivar_p_bottom(i) = .not. fix_dchidr_p_bottom(i)
+        end do
 
         If (no_slip_top .and. strict_L_Conservation) Then
             If (my_rank .eq. 0) Then
@@ -219,9 +246,10 @@ Contains
 
     Subroutine Generate_Boundary_Mask()
         Implicit None
-        Real*8 :: bc_val
+        Integer :: i
         Integer :: uind, lind
         Integer :: real_ind, imag_ind
+        Real*8 :: bc_val
 
 
         allocate(bc_values(2, 2, my_num_lm, n_equations))
@@ -273,42 +301,6 @@ Contains
                 end if
             Endif
 
-            If (fix_chivar_top) Then
-                if (trim(chi_top_file) .eq. '__nothing__') then
-                  bc_val= chi_Top*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, chieq,real_ind, uind)
-                else  
-                  Call Set_BC_from_file(chi_top_file, chieq, uind)
-                end if
-            Endif
-
-            If (fix_chivar_bottom) Then
-                if (trim(chi_bottom_file) .eq. '__nothing__') then
-                  bc_val= chi_bottom*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, chieq,real_ind, lind)
-                else
-                  Call Set_BC_from_file(chi_bottom_file, chieq, lind)
-                end if
-            Endif
-
-            If (Fix_dchidr_Top) Then
-                if (trim(dchidr_top_file) .eq. '__nothing__') then
-                  bc_val= dchidr_top*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, chieq,real_ind, uind)
-                else
-                  Call Set_BC_from_file(dchidr_top_file, chieq, uind)
-                end if
-            Endif
-
-            If (Fix_dchidr_Bottom) Then
-                if (trim(dchidr_bottom_file) .eq. '__nothing__') then
-                  bc_val= dchidr_bottom*sqrt(four_pi)
-                  Call Set_BC(bc_val,0,0, chieq,real_ind, lind)
-                else
-                  Call Set_BC_from_file(dchidr_bottom_file, chieq, lind)
-                end if
-            Endif
-
             If (fix_poloidalfield_top) Then
                 if (trim(C_top_file) .eq. '__nothing__') then
                   Call Set_BC(C10_top ,1,0,ceq,real_ind,uind)
@@ -328,6 +320,94 @@ Contains
                   Call Set_BC_from_file(C_bottom_file, ceq, lind)
                 end if
             Endif   
+
+            do i = 1, n_active_scalars
+              If (fix_chivar_a_top(i)) Then
+                  if (trim(chi_a_top_file(i)) .eq. '__nothing__') then
+                    bc_val= chi_a_Top(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, uind)
+                  else  
+                    Call Set_BC_from_file(chi_a_top_file(i), chiaeq(i), uind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_passive_scalars
+              If (fix_chivar_p_top(i)) Then
+                  if (trim(chi_p_top_file(i)) .eq. '__nothing__') then
+                    bc_val= chi_p_Top(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chipeq(i),real_ind, uind)
+                  else  
+                    Call Set_BC_from_file(chi_p_top_file(i), chipeq(i), uind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_active_scalars
+              If (fix_chivar_a_bottom(i)) Then
+                  if (trim(chi_a_bottom_file(i)) .eq. '__nothing__') then
+                    bc_val= chi_a_bottom(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, lind)
+                  else
+                    Call Set_BC_from_file(chi_a_bottom_file(i), chiaeq(i), lind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_passive_scalars
+              If (fix_chivar_p_bottom(i)) Then
+                  if (trim(chi_p_bottom_file(i)) .eq. '__nothing__') then
+                    bc_val= chi_p_bottom(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chipeq(i),real_ind, lind)
+                  else
+                    Call Set_BC_from_file(chi_p_bottom_file(i), chipeq(i), lind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_active_scalars
+              If (Fix_dchidr_a_Top(i)) Then
+                  if (trim(dchidr_a_top_file(i)) .eq. '__nothing__') then
+                    bc_val= dchidr_a_top(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, uind)
+                  else
+                    Call Set_BC_from_file(dchidr_a_top_file(i), chiaeq(i), uind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_passive_scalars
+              If (Fix_dchidr_p_Top(i)) Then
+                  if (trim(dchidr_p_top_file(i)) .eq. '__nothing__') then
+                    bc_val= dchidr_p_top(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chipeq(i),real_ind, uind)
+                  else
+                    Call Set_BC_from_file(dchidr_p_top_file(i), chipeq(i), uind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_active_scalars
+              If (Fix_dchidr_a_Bottom(i)) Then
+                  if (trim(dchidr_a_bottom_file(i)) .eq. '__nothing__') then
+                    bc_val= dchidr_a_bottom(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, lind)
+                  else
+                    Call Set_BC_from_file(dchidr_a_bottom_file(i), chiaeq(i), lind)
+                  end if
+              Endif
+            end do
+
+            do i = 1, n_passive_scalars
+              If (Fix_dchidr_p_Bottom(i)) Then
+                  if (trim(dchidr_p_bottom_file(i)) .eq. '__nothing__') then
+                    bc_val= dchidr_p_bottom(i)*sqrt(four_pi)
+                    Call Set_BC(bc_val,0,0, chipeq(i),real_ind, lind)
+                  else
+                    Call Set_BC_from_file(dchidr_p_bottom_file(i), chipeq(i), lind)
+                  end if
+              Endif
+            end do
 
         Endif
         Call Store_BC_Mask(bc_values)  ! to checkpointing

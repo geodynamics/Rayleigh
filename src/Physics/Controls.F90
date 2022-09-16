@@ -65,9 +65,9 @@ Module Controls
     Logical :: ohmic_heating = .true.
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
+                                                ! Generally only do this if reference state is nonadiabatic
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
-                                                ! Generally only do this if reference state is nonadiabatic
 
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)

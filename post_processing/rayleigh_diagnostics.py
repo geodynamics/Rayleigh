@@ -24,7 +24,7 @@ import os
 import glob
 from collections import OrderedDict
 
-maxq = 4000
+maxq = 30000
 
 def get_lut(quantities):
     """return the lookup table based on the quantity codes"""

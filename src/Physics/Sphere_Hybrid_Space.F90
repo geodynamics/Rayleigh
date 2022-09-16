@@ -57,7 +57,7 @@ Contains
 
     Subroutine rlm_spacea()
         Implicit None
-        Integer :: mp
+        Integer :: mp, i
         Call StopWatch(rlma_time)%startclock()
 
         ! Zero out l_max mode
@@ -75,7 +75,12 @@ Contains
         Call Velocity_Components()
         Call Velocity_Derivatives()
         Call d_by_dtheta(wsp%s2a,tvar,dtdt)
-        Call d_by_dtheta(wsp%s2a,chivar,dchidt)  ! PASSIVE -- need dchidtheta
+        do i = 1, n_active_scalars
+          Call d_by_dtheta(wsp%s2a,chiavar(i),dchiadt(i))
+        end do
+        do i = 1, n_passive_scalars
+          Call d_by_dtheta(wsp%s2a,chipvar(i),dchipdt(i))
+        end do
 
 
         If (magnetism) Call compute_BandCurlB()

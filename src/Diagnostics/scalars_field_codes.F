@@ -19,9 +19,14 @@
 !
 
     !//////////////////////////////////////////////////////////////////
-    !  Composition/Scalar
-    Integer, Parameter :: chi_off = axial_off+100 ! :OFFSET CODE:
+    !  Composition/Scalar (Active)
+    Integer, Parameter :: scalar_skip     = 200
+    Integer, Parameter :: a_scalar_offset = 10000 ! :OFFSET CODE:
+    Integer, Parameter :: p_scalar_offset = 20000 ! :OFFSET CODE:
 
-    !------------ Fields ---------------------!
-    ! Full
-    Integer, Parameter :: scalar     = chi_off+1  !  :tex:  $\chi$
+    !------------ Offset Fields --------------------
+    Integer, Parameter :: chi             = 1     ! :tex:  $\chi$
+    Integer, Parameter :: chi_dr          = 2     ! :tex:  $\frac{\partial \chi}{\partial r}$
+    Integer, Parameter :: chi_dtheta      = 3     ! :tex:  $\frac{\partial \chi}{\partial \theta}$
+    Integer, Parameter :: chi_dphi        = 4     ! :tex:  $\frac{\partial \chi}{\partial \phi}$
+

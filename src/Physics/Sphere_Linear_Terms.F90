@@ -75,7 +75,7 @@ Contains
 
     Subroutine Initialize_Linear_System
         Implicit None
-        Integer :: lp, l, nlinks
+        Integer :: lp, l, nlinks, i
         Integer, Allocatable :: eq_links(:), var_links(:)
         Type(Cheby_Grid), Pointer :: gridpointer
         nullify(gridpointer)
@@ -88,19 +88,23 @@ Contains
             l = my_lm_lval(lp)
             If (l .eq.0) Then
 
-                nlinks = 3+1
+                nlinks = 3+n_active_scalars
                 Allocate(eq_links(1:nlinks))
                 Allocate(var_links(1:nlinks))
 
                 eq_links(1) = weq
                 eq_links(2) = peq
                 eq_links(3) = teq
-                eq_links(4) = chieq
+                do i = 1, n_active_scalars
+                  eq_links(3+i) = chiaeq(i)
+                end do
 
                 var_links(1) = wvar
                 var_links(2) = pvar
                 var_links(3) = tvar
-                var_links(4) = chivar
+                do i = 1, n_active_scalars
+                  var_links(3+i) = chiavar(i)
+                end do
 
                 ! Not optimal (right now if variables are linked for one mode, they are linked for all).
                 Call link_equations(eq_links, var_links,nlinks,lp)
@@ -109,9 +113,14 @@ Contains
                 Call Initialize_Equation_Coefficients(weq, wvar, 0,lp)        ! identity matrix for W
                 Call Initialize_Equation_Coefficients(peq, pvar, 1,lp)
                 Call Initialize_Equation_Coefficients(peq, tvar, 0,lp)
-                Call Initialize_Equation_Coefficients(peq, chivar, 0,lp)
                 Call Initialize_Equation_Coefficients(teq, tvar, 2,lp)
-                Call Initialize_Equation_Coefficients(chieq, chivar, 2,lp)     ! PASSIVE:  highest derivaitve of chi is 2nd order in chieq
+                do i = 1, n_active_scalars
+                  Call Initialize_Equation_Coefficients(peq, chiavar(i), 0,lp)
+                  Call Initialize_Equation_Coefficients(chiaeq(i), chiavar(i), 2,lp)
+                end do
+                do i = 1, n_passive_scalars
+                  Call Initialize_Equation_Coefficients(chipeq(i), chipvar(i), 2,lp)
+                end do
 
                 DeAllocate(eq_links)
                 DeAllocate(var_links)
@@ -120,7 +129,6 @@ Contains
                 Call Initialize_Equation_Coefficients(weq,wvar,2,lp)
                 Call Initialize_Equation_Coefficients(weq,pvar,1,lp)
                 Call Initialize_Equation_Coefficients(weq,tvar,0,lp)
-                Call Initialize_Equation_Coefficients(weq,chivar,0,lp)
 
 
                 ! P equation
@@ -130,8 +138,14 @@ Contains
                 ! T equation
                 Call Initialize_Equation_Coefficients(teq,tvar, 2,lp)
 
-                ! chivar equation - same as above -- PASSIVE
-                Call Initialize_Equation_Coefficients(chieq,chivar, 2,lp)
+                do i = 1, n_active_scalars
+                  Call Initialize_Equation_Coefficients(weq,chiavar(i), 0,lp)
+                  Call Initialize_Equation_Coefficients(chiaeq(i),chiavar(i), 2,lp)
+                end do
+
+                do i = 1, n_passive_scalars
+                  Call Initialize_Equation_Coefficients(chipeq(i),chipvar(i), 2,lp)
+                end do
 
                 If (advect_reference_state) Then
                     Call Initialize_Equation_Coefficients(teq,wvar, 0,lp)
@@ -145,19 +159,23 @@ Contains
                     Call Initialize_Equation_Coefficients(aeq,avar, 2,lp)
                 Endif
 
-                nlinks = 3+1
+                nlinks = 3+n_active_scalars
                 Allocate(eq_links(1:nlinks))
                 Allocate(var_links(1:nlinks))
 
                 eq_links(1) = weq
                 eq_links(2) = peq
                 eq_links(3) = teq
-                eq_links(4) = chieq
+                do i = 1, n_active_scalars
+                  eq_links(3+i) = chiaeq(i)
+                end do
 
                 var_links(1) = wvar
                 var_links(2) = pvar
                 var_links(3) = tvar
-                var_links(4) = chivar
+                do i = 1, n_active_scalars
+                  var_links(3+i) = chiavar(i)
+                end do
                 Call link_equations(eq_links, var_links,nlinks,lp)
 
 
@@ -176,7 +194,7 @@ Contains
         Implicit None
 
         Real*8, Allocatable :: H_Laplacian(:), amp(:)
-        Integer :: l, lp
+        Integer :: l, lp, i
         Real*8 :: diff_factor,ell_term
         !rmin_norm
         diff_factor = 1.0d0 ! hyperdiffusion factor (if desired, 1.0d0 is equivalent to no hyperdiffusion)
@@ -217,8 +235,10 @@ Contains
                 amp = -ref%Buoyancy_Coeff
                 Call add_implicit_term(peq, tvar, 0, amp,lp, static = .true.)            ! Gravity    --- Need LHS_Only Flag
 
-                amp = -ref%chi_buoyancy_coeff
-                Call add_implicit_term(peq, chivar, 0, amp,lp, static = .true.)            ! Gravity    --- Need LHS_Only Flag
+                do i = 1, n_active_scalars
+                  amp = ref%chi_buoyancy_coeff(i,:)
+                  Call add_implicit_term(peq, chiavar(i), 0, amp,lp, static = .true.)    ! Gravity    --- Need LHS_Only Flag
+                end do
 
                 amp = ref%dpdr_W_term
                 Call add_implicit_term(peq, pvar, 1, amp,lp, static = .true.)            ! dPdr     --- Here too
@@ -230,18 +250,34 @@ Contains
 
                 !  If band solve, do redefinition here
 
-                ! chivar  -- ell = 0 (almost same as other ells) -- PASSIVE
-                amp = 1.0d0
-                Call add_implicit_term(chieq,chivar, 0, amp,lp, static = .true.)    ! Time independent part
+                ! chivar  -- ell = 0 (almost same as other ells)
+                do i = 1, n_active_scalars
+                  amp = 1.0d0
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 0, amp,lp, static = .true.)    ! Time independent part
 
-                amp = 2.0d0/radius*kappa_chi
-                Call add_implicit_term(chieq,chivar, 1, amp,lp)
+                  amp = 2.0d0/radius*kappa_chi_a(i,:)
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 1, amp,lp)
 
-                amp = 1.0d0*kappa_chi
-                Call add_implicit_term(chieq,chivar, 2, amp,lp)
+                  amp = 1.0d0*kappa_chi_a(i,:)
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 2, amp,lp)
 
-                amp = chi_Diffusion_Coefs_1  ! grad kappa_s term
-                Call add_implicit_term(chieq,chivar, 1, amp,lp)
+                  amp = chi_a_Diffusion_Coefs_1(i,:)  ! grad kappa_s term
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 1, amp,lp)
+                end do
+
+                do i = 1, n_passive_scalars
+                  amp = 1.0d0
+                  Call add_implicit_term(chipeq(i),chipvar(i), 0, amp,lp, static = .true.)    ! Time independent part
+
+                  amp = 2.0d0/radius*kappa_chi_p(i,:)
+                  Call add_implicit_term(chipeq(i),chipvar(i), 1, amp,lp)
+
+                  amp = 1.0d0*kappa_chi_p(i,:)
+                  Call add_implicit_term(chipeq(i),chipvar(i), 2, amp,lp)
+
+                  amp = chi_p_Diffusion_Coefs_1(i,:)  ! grad kappa_s term
+                  Call add_implicit_term(chipeq(i),chipvar(i), 1, amp,lp)
+                end do
 
             Else
 
@@ -255,8 +291,10 @@ Contains
                 Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
                 ! Chi
-                amp = -ref%chi_buoyancy_coeff/H_Laplacian
-                Call add_implicit_term(weq, chivar, 0, amp,lp)          ! Gravity
+                do i = 1, n_active_scalars
+                  amp = ref%chi_buoyancy_coeff(i,:)/H_Laplacian
+                  Call add_implicit_term(weq, chiavar(i), 0, amp,lp)    ! Gravity
+                end do
 
 
                 ! Pressure
@@ -350,21 +388,40 @@ Contains
                 Endif
 
 
-                !CHIVAR equation ---- PASSIVE  (no ell =0)
-                amp = 1.0d0
-                Call add_implicit_term(chieq,chivar, 0, amp,lp, static = .true.)    ! Time independent part
+                !CHIVAR equation ----  (no ell =0)
+                do i = 1, n_active_scalars
+                  amp = 1.0d0
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 0, amp,lp, static = .true.)    ! Time independent part
 
-                amp = 2.0d0/radius*kappa_chi*diff_factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
-                Call add_implicit_term(chieq,chivar, 1, amp,lp)
+                  amp = 2.0d0/radius*kappa_chi_a(i,:)*diff_factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 1, amp,lp)
 
-                amp = 1.0d0*kappa_chi*diff_factor
-                Call add_implicit_term(chieq,chivar, 2, amp,lp)
+                  amp = 1.0d0*kappa_chi_a(i,:)*diff_factor
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 2, amp,lp)
 
-                amp = chi_Diffusion_Coefs_1*diff_factor  ! grad kappa_s term
-                Call add_implicit_term(chieq,chivar,1,amp,lp)
+                  amp = chi_a_Diffusion_Coefs_1(i,:)*diff_factor  ! grad kappa_s term
+                  Call add_implicit_term(chiaeq(i),chiavar(i),1,amp,lp)
 
-                amp = H_Laplacian*kappa_chi*diff_factor
-                Call add_implicit_term(chieq,chivar, 0, amp,lp)
+                  amp = H_Laplacian*kappa_chi_a(i,:)*diff_factor
+                  Call add_implicit_term(chiaeq(i),chiavar(i), 0, amp,lp)
+                end do
+
+                do i = 1, n_passive_scalars
+                  amp = 1.0d0
+                  Call add_implicit_term(chipeq(i),chipvar(i), 0, amp,lp, static = .true.)    ! Time independent part
+
+                  amp = 2.0d0/radius*kappa_chi_p(i,:)*diff_factor        ! diff_Factor is l-dependent hyper diffusion (1 by default)
+                  Call add_implicit_term(chipeq(i),chipvar(i), 1, amp,lp)
+
+                  amp = 1.0d0*kappa_chi_p(i,:)*diff_factor
+                  Call add_implicit_term(chipeq(i),chipvar(i), 2, amp,lp)
+
+                  amp = chi_p_Diffusion_Coefs_1(i,:)*diff_factor  ! grad kappa_s term
+                  Call add_implicit_term(chipeq(i),chipvar(i),1,amp,lp)
+
+                  amp = H_Laplacian*kappa_chi_p(i,:)*diff_factor
+                  Call add_implicit_term(chipeq(i),chipvar(i), 0, amp,lp)
+                end do
 
                 !=====================================================
                 !    Z Equation
@@ -425,7 +482,9 @@ Contains
                 !Write(6,*)'matrix: ', zeq,lp,my_rank, l
                 Call Sparse_Load(zeq,lp)
 
-                Call Sparse_Load(chieq,lp)  ! PASSIVE
+                do i = 1, n_passive_scalars
+                  Call Sparse_Load(chipeq(i),lp)  ! PASSIVE
+                end do
 
                 If (magnetism) Then
                     Call Sparse_Load(aeq,lp)
@@ -437,7 +496,9 @@ Contains
             If (bandsolve) Then
                 Call Band_Arrange(weq,lp)
                 Call Band_Arrange(zeq,lp)
-                Call Band_Arrange(chieq, lp)   ! PASSIVe
+                do i = 1, n_passive_scalars
+                  Call Band_Arrange(chipeq(i), lp)   ! PASSIVe
+                end do
                 If (magnetism) Then
                     Call Band_Arrange(aeq,lp)
                     Call Band_Arrange(ceq,lp)
@@ -457,7 +518,7 @@ Contains
         Implicit None
         Real*8 :: samp,one
         Integer, Intent(In) :: mode_ind
-        Integer :: l, r,lp
+        Integer :: l, r,lp, i
         one = 1.0d0
         lp = mode_ind
 
@@ -468,8 +529,14 @@ Contains
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
 
-            Call Clear_Row(chieq,lp,1)            ! Need to clear matrix rows before adding boundary condition PASSIVE
-            Call Clear_Row(chieq,lp,N_R)
+            do i = 1, n_active_scalars
+              Call Clear_Row(chiaeq(i),lp,1)            ! Need to clear matrix rows before adding boundary condition
+              Call Clear_Row(chiaeq(i),lp,N_R)
+            end do
+            do i = 1, n_passive_scalars
+              Call Clear_Row(chipeq(i),lp,1)            ! Need to clear matrix rows before adding boundary condition
+              Call Clear_Row(chipeq(i),lp,N_R)
+            end do
 
             ! "1" denotes linking at index 1, starting in domain 2
             ! "2" denotes linking at index npoly, starting in domain 1
@@ -498,21 +565,41 @@ Contains
             Endif
 
             ! PASSIVE
-            r = 1
-            If (fix_chivar_top) Then
-                Call Load_BC(lp,r,chieq,chivar,one,0)    !upper boundary
-            Endif
-            If (fix_dchidr_top) Then
-                Call Load_BC(lp,r,chieq,chivar,one,1)
-            Endif
+            do i = 1, n_active_scalars
+              r = 1
+              If (fix_chivar_a_top(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,0)    !upper boundary
+              Endif
+              If (fix_dchidr_a_top(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
+              Endif
 
-            r = N_R
-            If (fix_chivar_bottom) Then
-                Call Load_BC(lp,r,chieq,chivar,one,0)    !lower boundary
-            Endif
-            If (fix_dchidr_bottom) Then
-                Call Load_BC(lp,r,chieq,chivar,one,1)
-            Endif
+              r = N_R
+              If (fix_chivar_a_bottom(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,0)    !lower boundary
+              Endif
+              If (fix_dchidr_a_bottom(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
+              Endif
+            end do
+
+            do i = 1, n_passive_scalars
+              r = 1
+              If (fix_chivar_p_top(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,0)    !upper boundary
+              Endif
+              If (fix_dchidr_p_top(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,1)
+              Endif
+
+              r = N_R
+              If (fix_chivar_p_bottom(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,0)    !lower boundary
+              Endif
+              If (fix_dchidr_p_bottom(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,1)
+              Endif
+            end do
 
 
             ! The ell=0 pressure is really a diagnostic of the system.
@@ -532,10 +619,17 @@ Contains
             Call Clear_Row(peq,lp,N_R)
             Call Clear_Row(teq,lp,1)
             Call Clear_Row(teq,lp,N_R)
-            Call Clear_Row(chieq,lp,1)   ! PASSIVE
-            Call Clear_Row(chieq,lp,N_R)
             Call Clear_Row(zeq,lp,1)
             Call Clear_Row(zeq,lp,N_R)
+
+            do i = 1, n_active_scalars
+              Call Clear_Row(chiaeq(i),lp,1)            ! Need to clear matrix rows before adding boundary condition
+              Call Clear_Row(chiaeq(i),lp,N_R)
+            end do
+            do i = 1, n_passive_scalars
+              Call Clear_Row(chipeq(i),lp,1)            ! Need to clear matrix rows before adding boundary condition
+              Call Clear_Row(chipeq(i),lp,N_R)
+            end do
 
             ! "1" denotes linking at index 1, starting in domain 2
             ! "2" denotes linking at index npoly, starting in domain 1
@@ -575,23 +669,42 @@ Contains
                 Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
 
-            ! chivar BC   PASSIVE
-            ! PASSIVE
-            r = 1
-            If (fix_chivar_top) Then
-                Call Load_BC(lp,r,chieq,chivar,one,0)    !upper boundary
-            Endif
-            If (fix_dchidr_top) Then
-                Call Load_BC(lp,r,chieq,chivar,one,1)
-            Endif
+            ! chivar BC
+            do i = 1, n_active_scalars
+              r = 1
+              If (fix_chivar_a_top(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,0)    !upper boundary
+              Endif
+              If (fix_dchidr_a_top(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
+              Endif
 
-            r = N_R
-            If (fix_chivar_bottom) Then
-                Call Load_BC(lp,r,chieq,chivar,one,0)    !lower boundary
-            Endif
-            If (fix_dchidr_bottom) Then
-                Call Load_BC(lp,r,chieq,chivar,one,1)
-            Endif
+              r = N_R
+              If (fix_chivar_a_bottom(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,0)    !lower boundary
+              Endif
+              If (fix_dchidr_a_bottom(i)) Then
+                  Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
+              Endif
+            end do
+
+            do i = 1, n_passive_scalars
+              r = 1
+              If (fix_chivar_p_top(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,0)    !upper boundary
+              Endif
+              If (fix_dchidr_p_top(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,1)
+              Endif
+
+              r = N_R
+              If (fix_chivar_p_bottom(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,0)    !lower boundary
+              Endif
+              If (fix_dchidr_p_bottom(i)) Then
+                  Call Load_BC(lp,r,chipeq(i),chipvar(i),one,1)
+              Endif
+            end do
 
             !///////////////////////////////////////////////////////////////////
             ! These four different boundary conditions are similar, though

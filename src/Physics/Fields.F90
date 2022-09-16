@@ -73,7 +73,8 @@ Module Fields
     ! PASSIVE
     ! Passive scalar variables.
     ! These are what we need to calculate advection
-    Integer, Allocatable :: chivar(:), dchidr(:), dchidt(:), dchidp(:), d2chidr2(:)
+    Integer, Allocatable :: chiavar(:), dchiadr(:), dchiadt(:), dchiadp(:), d2chiadr2(:)
+    Integer, Allocatable :: chipvar(:), dchipdr(:), dchipdt(:), dchipdp(:), d2chipdr2(:)
     !///////////////////////////////////////////////////////////////////////////
 
 
@@ -85,7 +86,7 @@ Module Fields
     Integer, parameter :: weq = 1,  peq = 2,  teq = 3
     Integer, parameter :: zeq = 4
     Integer, Parameter :: ceq = 5,  aeq = 6
-    Integer, Allocatable :: chieq(:)
+    Integer, Allocatable :: chiaeq(:), chipeq(:)
 
 
 
@@ -158,25 +159,46 @@ Contains
         Integer :: i
         Character*3 :: config
 
-        allocate(chieq(n_active_scalars+n_passive_scalars))
+        allocate(chiaeq(n_active_scalars))
+        allocate(chipeq(n_passive_scalars))
+        allocate(chiavar(n_active_scalars))
+        allocate(chipvar(n_passive_scalars))
+        allocate(dchiadr(n_active_scalars))
+        allocate(dchipdr(n_passive_scalars))
+        allocate(dchiadt(n_active_scalars))
+        allocate(dchipdt(n_passive_scalars))
+        allocate(dchiadp(n_active_scalars))
+        allocate(dchipdp(n_passive_scalars))
+        allocate(d2chiadr2(n_active_scalars))
+        allocate(d2chipdr2(n_passive_scalars))
 
         ! Starting out we record the number of variables and equations we are expecting.
         If (magnetism) Then
             n_equations = 6 + n_active_scalars + n_passive_scalars
             n_variables = 6 + n_active_scalars + n_passive_scalars
-            if (n_active_scalars+n_passive_scalars>0) then
-                chieq(1) = aeq+1
+            if (n_active_scalars>0) then
+                chiaeq(1) = aeq+1
+            end if
+            if (n_passive_scalars>0) then
+                chipeq(1) = aeq+n_active_scalars+1
             end if
         Else
             n_equations = 4 + n_active_scalars + n_passive_scalars
             n_variables = 4 + n_active_scalars + n_passive_scalars
-            if (n_active_scalars+n_passive_scalars>0) then
-                chieq(1) = zeq+1
+            if (n_active_scalars>0) then
+                chiaeq(1) = zeq+1
+            end if
+            if (n_passive_scalars>0) then
+                chipeq(1) = zeq+n_active_scalars+1
             end if
         Endif
 
-        do i = 2, n_active_scalar+n_passive_scalars
-            chieq(i) = chieq(i-1)+1
+        do i = 2, n_active_scalars
+            chiaeq(i) = chiaeq(i-1)+1
+        end do
+
+        do i = 2, n_passive_scalars
+            chipeq(i) = chipeq(i-1)+1
         end do
 
         !The remainder of this routine serves two purposes:
@@ -219,8 +241,11 @@ Contains
           Call wsp_indices%Add_Field(cvar , config)
           Call wsp_indices%Add_field(avar , config)
         Endif
-        do i = 1, n_active_scalars+n_passive_scalars
-          call wsp_indices%add_field(chivar(i) , config)
+        do i = 1, n_active_scalars
+          call wsp_indices%add_field(chiavar(i) , config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%add_field(chipvar(i) , config)
         end do
 
         Call wsp_indices%Add_Field(d3Wdr3 , config)
@@ -234,9 +259,13 @@ Contains
           Call wsp_indices%Add_field(d2adr2 , config)
         Endif
 
-        do i = 1, n_active_scalars+n_passive_scalars
-          call wsp_indices%Add_Field(dchidr(i), config)
-          call wsp_indices%Add_Field(d2chidr2(i), config)
+        do i = 1, n_active_scalars
+          call wsp_indices%Add_Field(dchiadr(i), config)
+          call wsp_indices%Add_Field(d2chiadr2(i), config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%Add_Field(dchipdr(i), config)
+          call wsp_indices%Add_Field(d2chipdr2(i), config)
         end do
 
         !//////////////////////////////////////////////////////////
@@ -253,8 +282,11 @@ Contains
 
         Endif
 
-        do i = 1, n_active_scalars+n_passive_scalars
-          call wsp_indices%Add_Field(dchidt(i), config)
+        do i = 1, n_active_scalars
+          call wsp_indices%Add_Field(dchiadt(i), config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%Add_Field(dchipdt(i), config)
         end do
 
         !///////////////////////////////////////////////////////
@@ -269,8 +301,11 @@ Contains
         Call wsp_indices%Add_field(dvpdt,config)
         Call wsp_indices%Add_field(dtdp,config)
 
-        do i = 1, n_active_scalars+n_passive_scalars
-          call wsp_indices%Add_Field(dchidp(i), config)
+        do i = 1, n_active_scalars
+          call wsp_indices%Add_Field(dchiadp(i), config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%Add_Field(dchipdp(i), config)
         end do
 
         !//////////////////////////////////////////////////////////
@@ -304,7 +339,7 @@ Contains
         ! we have a count of how large the buffer needs to be in each
         ! configuration
 
-        !PASSIVE:  (not just passive);  wsfcount = workspace field count
+        ! wsfcount = workspace field count
         !  wsfcount({1,2,3},1) is number of fields in configuration {1,2,3}
         !  during forward loop (spectral to physical).
         !  {1,2,3},2 refers to same configurations when going from physical to spectral for solve
@@ -320,7 +355,6 @@ Contains
         ! we need to send it back to spectral space.
 
         ! These following code should pretty much never be modified by the user.
-        ! PASSIVE:  we are going to increment all by 1 (though we should pretty much never do this)
         if (.not. magnetism) then
             wsfcount(1,2) = 4 + n_active_scalars + n_passive_scalars
             wsfcount(2,2) = 4 + n_active_scalars + n_passive_scalars

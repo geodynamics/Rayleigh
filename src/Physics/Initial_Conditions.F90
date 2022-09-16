@@ -31,7 +31,7 @@ Module Initial_Conditions
     Use Controls
     Use Timers
     Use General_MPI, Only : BCAST2D
-    Use PDE_Coefficients, Only : s_conductive, heating_type,ref, kappa, dlnkappa
+    Use PDE_Coefficients, Only : n_scalar_max, s_conductive, heating_type,ref, kappa, dlnkappa
     Use BoundaryConditions, Only : T_top, T_bottom, fix_tvar_Top, fix_tvar_bottom,&
          & fix_dtdr_top, fix_dtdr_bottom, dtdr_top, dtdr_bottom, &
          & C10_bottom, C11_bottom, C1m1_bottom
@@ -63,9 +63,10 @@ Module Initial_Conditions
     Character*120 :: w_init_file = '__nothing__'
     Character*120 :: p_init_file = '__nothing__'
     Character*120 :: z_init_file = '__nothing__'
-    Character*120 :: chi_init_file = '__nothing__'
     Character*120 :: c_init_file = '__nothing__'
     Character*120 :: a_init_file = '__nothing__'
+    Character*120 :: chi_a_init_file(1:n_scalar_max) = '__nothing__'
+    Character*120 :: chi_p_init_file(1:n_scalar_max) = '__nothing__'
     Character*120 :: custom_thermal_file = '__nothing__'
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
@@ -73,7 +74,7 @@ Module Initial_Conditions
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
             & rescale_pressure, tvar_scale, pressure_scale, mdelta, &
             & t_init_file, w_init_file, p_init_file, z_init_file, &
-            & chi_init_file, c_init_file, a_init_file, custom_thermal_file
+            & c_init_file, a_init_file, custom_thermal_file, chi_a_init_file, chi_p_init_file
 Contains
 
     Subroutine Initialize_Fields()
@@ -214,7 +215,7 @@ Contains
         Integer, Intent(In) :: iteration
         type(SphericalBuffer) :: tempfield
         Integer :: fcount(3,2), rpars(1:2),prod
-        Integer :: this_ell, lm
+        Integer :: this_ell, lm, numfields
         Character*14 :: scstr
         Character*8 ::  scfmt ='(ES10.4)'
         !rpars(1) = 1 if hydro variables are to be read (0 otherwise)
@@ -240,9 +241,13 @@ Contains
 
         ! This routine also reads in the relevant magnetic quantities
         ! They are overwritten later by whatever the magnetic initialization does
-        fcount(:,:) = 5
+        numfields = 4 + n_active_scalars + n_passive_scalars
+        if (magnetism) then
+          numfields = numfields + 2
+        end if
+        fcount(:,:) = numfields
         If (magnetism) Then
-            fcount(:,:) = 7
+            fcount(:,:) = numfields
         Endif
 
         Call tempfield%init(field_count = fcount, config = 'p1a')
@@ -547,6 +552,7 @@ Contains
     subroutine file_init()
         ! initialize hydrodynamic variables from generic input files
         implicit none
+        integer :: i
         integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
         fcount(:,:) = 1
@@ -573,10 +579,19 @@ Contains
             call set_rhs(zeq, tempfield%p1b(:,:,:,1))
         end if
 
-        if (trim(chi_init_file) .ne. '__nothing__') then
-            call read_input(chi_init_file, 1, tempfield)
-            call set_rhs(chieq, tempfield%p1b(:,:,:,1))
-        end if
+        do i = 1, n_active_scalars
+          if (trim(chi_a_init_file(i)) .ne. '__nothing__') then
+              call read_input(chi_a_init_file(i), 1, tempfield)
+              call set_rhs(chiaeq(i), tempfield%p1b(:,:,:,1))
+          end if
+        end do
+
+        do i = 1, n_passive_scalars
+          if (trim(chi_p_init_file(i)) .ne. '__nothing__') then
+              call read_input(chi_p_init_file(i), 1, tempfield)
+              call set_rhs(chipeq(i), tempfield%p1b(:,:,:,1))
+          end if
+        end do
 
         call tempfield%deconstruct('p1b')
 
