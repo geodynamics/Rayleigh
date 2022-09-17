@@ -14,7 +14,19 @@ cd T
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
+cp -r T/Checkpoints T.check/.
+
+cd T.check
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
 cd chi
+mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
+cd ..
+
+cp -r chi/Checkpoints chi.check/.
+
+cd chi.check
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 

@@ -40,7 +40,7 @@ Module Checkpointing
     Integer, private :: numfields
     Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
     Integer, private :: checkpoint_version = 2
-    Integer,private :: checkpoint_tag = 425, read_var(1:12)
+    Integer,private :: checkpoint_tag = 425
     Character*120 :: checkpoint_prefix ='nothing'
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
     Character*6, allocatable :: checkpoint_suffix(:)
@@ -71,7 +71,7 @@ Contains
         Implicit None
         Integer :: nfs(6), i, j
         Integer, Allocatable :: gpars(:,:)
-        Character*120 :: sstring
+        Character*4 :: sstring
 
         checkpoint_t0 = stopwatch(walltime)%elapsed
         If (check_frequency .gt. 0) Then
@@ -241,12 +241,12 @@ Contains
         Integer, Intent(In) :: iteration, read_pars(1:2)
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old
-        Integer :: i, ierr, mp, lb,ub
+        Integer :: i, ierr, mp, lb,ub, ab_offset
         Integer :: old_pars(7), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
         Integer :: read_magnetism = 0, read_hydro = 0
-        Integer, Allocatable :: rinds(:), gpars(:,:)
+        Integer, Allocatable :: rinds(:), gpars(:,:), read_var(:)
         Real*8 :: dt_pars(3),dt,new_dt
         Real*8, Allocatable :: old_radius(:), radius_old(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
@@ -265,13 +265,15 @@ Contains
         old_pars(6) = 1      ! 2 for legacy-format 
         legacy_format=.false.
 
+        allocate(read_var(numfields*2))
         read_var(:) = 0
         If (magnetism) Then
             ! hydro, magnetic, or both sets of field can be read
+            ab_offset = 7 + n_active_scalars + n_passive_scalars
             read_var(1:4)   = read_hydro
-            read_var(7:10)  = read_hydro
+            read_var(ab_offset:ab_offset+3)  = read_hydro
             read_var(5:6)   = read_magnetism
-            read_var(11:12) = read_magnetism
+            read_var(ab_offset+4:ab_offset+5) = read_magnetism
         Else
             read_var(:) = 1
         Endif
