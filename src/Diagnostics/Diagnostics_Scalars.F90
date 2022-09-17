@@ -51,31 +51,91 @@ Contains
                  dchidp   = dchipdp(ind)
                  d2chidr2 = d2chipdr2(ind)
             end if
-            ! compute the field
+
+            !  Chi: field
             If (compute_quantity(chi+scoff)) Then
                 DO_PSI
                     qty(PSI) = buffer(PSI,chivar)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
-            ! compute the dr gradient
+
+            If (compute_quantity(chi_p+scoff)) Then
+                DO_PSI
+                    qty(PSI) = fbuffer(PSI,chivar)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            If (compute_quantity(chi_m+scoff)) Then
+                DO_PSI
+                    qty(PSI) = m0_values(PSI2,chivar)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! Chi:  radial derivatives
             If (compute_quantity(chi_dr+scoff)) Then
                 DO_PSI
                     qty(PSI) = buffer(PSI,dchidr)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
-            ! compute the dtheta gradient
+
+            If (compute_quantity(chi_p_dr+scoff)) Then
+                DO_PSI
+                    qty(PSI) = fbuffer(PSI,dchidr)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            If (compute_quantity(chi_m_dr+scoff)) Then
+                DO_PSI
+                    qty(PSI) = m0_values(PSI2,dchidr)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! Chi:  theta derivatives
             If (compute_quantity(chi_dtheta+scoff)) Then
                 DO_PSI
                     qty(PSI) = buffer(PSI,dchidt)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
-            ! compute the dphi gradient
+
+            If (compute_quantity(chi_p_dtheta+scoff)) Then
+                DO_PSI
+                    qty(PSI) = fbuffer(PSI,dchidt)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            If (compute_quantity(chi_m_dtheta+scoff)) Then
+                DO_PSI
+                    qty(PSI) = m0_values(PSI2,dchidt)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! Chi:  phi derivatives
             If (compute_quantity(chi_dphi+scoff)) Then
                 DO_PSI
                     qty(PSI) = buffer(PSI,dchidp)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            If (compute_quantity(chi_p_dphi+scoff)) Then
+                DO_PSI
+                    qty(PSI) = fbuffer(PSI,dchidp)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            If (compute_quantity(chi_m_dphi+scoff)) Then
+                DO_PSI
+                    qty(PSI) = m0_values(PSI2,dchidp)
                 END_DO
                 Call Add_Quantity(qty)
             Endif

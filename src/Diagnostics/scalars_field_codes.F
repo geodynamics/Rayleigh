@@ -24,9 +24,33 @@
     Integer, Parameter :: a_scalar_offset = 10000 ! :OFFSET CODE:
     Integer, Parameter :: p_scalar_offset = 20000 ! :OFFSET CODE:
 
-    !------------ Offset Fields --------------------
-    Integer, Parameter :: chi             = 1     ! :tex:  $\chi$
-    Integer, Parameter :: chi_dr          = 2     ! :tex:  $\frac{\partial \chi}{\partial r}$
-    Integer, Parameter :: chi_dtheta      = 3     ! :tex:  $\frac{\partial \chi}{\partial \theta}$
-    Integer, Parameter :: chi_dphi        = 4     ! :tex:  $\frac{\partial \chi}{\partial \phi}$
+    !------------ Fields ---------------------!
+    ! Full
+    Integer, Parameter :: chi   = 1 !  :tex:  $\chi$
+    ! Fluctuating
+    Integer, Parameter :: chi_p = 2 !  :tex:  $\chi'$
+    ! Mean
+    Integer, Parameter :: chi_m = 3 !  :tex:  $\overline{\chi}$
+
+    !------------ Radial Derivatives --------------!
+    !  Full
+    Integer, Parameter :: chi_dr   = 4  ! :tex:  $\frac{\partial \chi}{\partial r}$
+    ! Fluctuating
+    Integer, Parameter :: chi_p_dr = 5  ! :tex:  $\frac{\partial \chi'}{\partial r}$
+    ! Mean
+    Integer, Parameter :: chi_m_dr = 6 ! :tex:  $\frac{\partial \overline{\chi}}{\partial r}$
+
+    !------------ Theta Derivatives ---------------!
+    Integer, Parameter :: chi_dtheta   = 7  ! :tex:  $\frac{\partial \chi}{\partial \theta}$
+
+    Integer, Parameter :: chi_p_dtheta = 8  ! :tex:  $\frac{\partial \chi'}{\partial \theta}$
+
+    Integer, Parameter :: chi_m_dtheta = 9  ! :tex:  $\frac{\partial \overline{\chi}}{\partial \theta}$
+
+    !------------ Phi Derivatives -----------------!
+    Integer, Parameter :: chi_dphi     = 10  ! :tex:  $\frac{\partial \chi}{\partial \phi}$
+
+    Integer, Parameter :: chi_p_dphi   = 11  ! :tex:  $\frac{\partial \chi'}{\partial \phi}$
+
+    Integer, Parameter :: chi_m_dphi   = 12  ! :tex:  $\frac{\partial \overline{\chi}}{\partial \phi}$
 
