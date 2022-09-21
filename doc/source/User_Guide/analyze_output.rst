@@ -164,9 +164,17 @@ Rayleigh's Spherical_3D data can be visualized using volume rendering software s
 The following video walks through the process of formatting Rayleigh data for VAPoR. You can do this with your own data or with the sample data referenced in the video. That data can now be found `here <https://physics.csuchico.edu/~njnelson/vapor/>`_ .
 
 
+
 .. |VAPoR_telecon| raw:: html
 
-    <iframe width="30%"  src="https://youtu.be/U-SgJYoX3q8" frameborder="0" allow="accelerometer;  encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+    <iframe width="30%" src="https://www.youtube.com/embed/U-SgJYoX3q8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+.. raw:: latex
+
+    \url{https://www.youtube.com/embed/U-SgJYoX3q8}
+
+|VAPoR_telecon|
 
 
 .. _commmon_diagnostics:
