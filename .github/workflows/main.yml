@@ -1,20 +1,25 @@
 name: continuous-integration
 
-on: [push, pull_request]
+on: pull_request
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.actor }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
+  OMPI_MCA_btl_base_warn_component_unused: 0
+  OMPI_MCA_mpi_yield_when_idle: 1
+  OMPI_MCA_rmaps_base_oversubscribe: 1
+  OMPI_ALLOW_RUN_AS_ROOT: 1
+  OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   # Fix OpenMPI issue in Docker : https://github.com/open-mpi/ompi/issues/4948
   OMPI_MCA_btl_vader_single_copy_mechanism: none
 
 jobs:
   test:
-    name: linux-bionic-container-build
+    name: linux-jammy-container-build
     runs-on: [ubuntu-latest]
-    container: gassmoeller/rayleigh-buildenv-bionic
+    container: geodynamics/rayleigh-buildenv-jammy
 
     steps:
     - uses: actions/checkout@v1
@@ -28,22 +33,17 @@ jobs:
         make clear_ipynb && git diff --exit-code --name-only
         make doc
     - name: Build Rayleigh
-      # First make sure notebooks do not contain output, then build doc
+      # Now build Rayleigh itself
       run: |
-        ./configure --with-blas='/usr' --with-fftw='/usr' --with-lapack='/usr' --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        ./configure -debian-mkl --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
 
         make fdeps && git diff --exit-code
         make -j
         make install
     - name: Test
       run: |
-        # Set some environment variables necessary for OpenMPI to run as root
-        # and on more MPI ranks than available cores
-        export RAYLEIGH_TEST_MPI_PARAMS="--oversubscribe --allow-run-as-root"
-
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
-
-        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../bin/rayleigh.dbg
+        mpirun -np 4 ../../bin/rayleigh.dbg
 
         # Generic input test
         cd "$GITHUB_WORKSPACE"
@@ -54,13 +54,8 @@ jobs:
 
     - name: Unit Tests
       run: |
-        # Set some environment variables necessary for OpenMPI to run as root
-        # and on more MPI ranks than available cores
-        export RAYLEIGH_TEST_MPI_PARAMS="--oversubscribe --allow-run-as-root"
-
         cd "$GITHUB_WORKSPACE"/tests/unit_tests/SHT
-
-        mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg > expected_output.out
+        mpirun -np 4 ../../../bin/rayleigh.dbg > expected_output.out
 
         git diff > changes.diff
         git diff --exit-code --name-only

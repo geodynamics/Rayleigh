@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from rayleigh_diagnostics import Spherical_3D_multi, Shell_Slices
 from rayleigh_spectral_input import SpectralInput, radial_extents

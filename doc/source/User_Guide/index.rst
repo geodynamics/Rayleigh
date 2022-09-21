@@ -14,27 +14,27 @@ User Manual
    run_rayleigh
    run_at_scale
    analyze_output
-   contribute
+   ../../../CONTRIBUTING.md
    troubleshooting
+   references
 
    ..
       Old User Manual 
 
-
-   overview
-   installation
-   devel_environment
-   running
-   benchmarking
-   physics
-   ../Model_Setup/index.rst
-   checkpointing
-   cookbooks
-   ../../../CONTRIBUTING.md
-   custom_reference_states
-   diagnostics
-   io_control
-   ensemble_mode
-   references
-   examples
-   ../diagnostic_values/index
+      
+      overview
+      installation
+      devel_environment
+      running
+      benchmarking
+      ../Model_Setup/index.rst
+      checkpointing
+      physics
+      cookbooks
+      ../../../CONTRIBUTING.md
+      custom_reference_states
+      diagnostics
+      io_control
+      ensemble_mode
+      examples 
+      ../diagnostic_values/index
