@@ -10,6 +10,178 @@ Getting Started
 Accessing Rayleigh
 ------------------
 
+You can download the Rayleigh source code from `Rayleigh's GitHub respository <https://github.com/geodynamics/Rayleigh>`_ .
+
+Setting up a Rayleigh Development Environment
+---------------------------------------------
+
+When running Rayleigh on HPC resources, always compile the software with the recommended compiler and link against
+libraries optimized for the architecture you are running on.
+
+When developing Rayleigh or editing its documentation, however, such optimizations are rarely necessary.  Instead, it is sufficient for the code and documentation to compile.  For this purpose, we recommend setting up a `conda environment`_ or using our `Docker container`_.  Instructions for setting up an environment on Linux and Mac OS are provided below.
+
+Conda Environment
+~~~~~~~~~~~~~~~~~
+
+First, if you don't have Conda, you should download and install the version appropriate for your architecture `here. <https://docs.conda.io/en/latest/miniconda.html>`_
+
+Once you have Conda installed, create a Conda environment using the environment files we provide in Rayleigh's main directory.
+
+.. code-block:: bash
+
+    conda env create -f environment.yml
+    conda activate radev
+
+This command will likely take a while (a few minutes) and will install all necessary packages to compile Rayleigh.
+
+MKL Setup: Linux and Mac
+^^^^^^^^^^^^^^^^^^^^^^^^
+Once your packages are installed, you will most likely want to have the ``MKLROOT`` environment variable set whenever you activate your Conda environment.  To do this we set ``MKLROOT`` to the location of the currently activated conda environment from the enviroment variable ``CONDA_PREFIX``.
+
+.. code-block:: bash
+
+    export MKLROOT="$CONDA_PREFIX"
+
+Note that this is Bash syntax (use setenv if running c-shell).  Note that there should be no spaces on either side of the "=" sign.
+If you stop here, you will have to do this every time you activate your development environment.   To have this happen automatically,
+you only need to add two small scripts to radev/etc/conda/activate.d and radev/etc/conda/deactivate.d directories.   Scripts in these
+directories are automatically executed when your conda environment is activated and deactivated, respectively.  
+
+Change to your activate.d directory (for me, this was /custom/software/miniconda3/envs/radev/etc/conda/activate.d) and create a file named
+activate_mkl.sh with the following three lines:
+
+.. code-block:: bash
+
+    #!/bin/bash
+    export MKLSAVE="$MKLROOT"
+    export MKLROOT="$CONDA_PREFIX"
+
+In the deactivate.d directory, create a file named deactivate_mkl.sh with the following two lines:
+
+.. code-block:: bash
+
+    #!/bin/bash
+    export MKLROOT="$MKLSAVE"
+
+Now, try it out.
+
+.. code-block:: bash
+
+    conda deactivate
+    echo $MKLROOT
+    conda activate radev
+    echo $MKLROOT
+
+The MKLSAVE variable is used so that a separate MKL installation on your machine, if one exists,
+is properly reset in your environment following deactivation.
+
+Configuration and Compilation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Building the documentation is the same on Linux and Mac.
+
+.. code-block:: bash
+
+    conda activate radev
+    cd /path/to/Rayleigh
+    make doc
+
+Once the documetation builds, you can access it by opening Rayleigh/doc/build/html/index.html in your web browser.
+
+Building the code is again the same on Linux and Mac. Execute the following:
+
+.. code-block:: bash
+
+    conda activate radev
+    cd /path/to/Rayleigh
+    ./configure -conda-mkl --FC=mpifort
+    make
+
+At this point, you can run "make install," and run the code using mpirun as you normally would (keep the radev environment active when doing this).
+
+
+
+Docker Container
+~~~~~~~~~~~~~~~
+
+Docker provides a standardized way to build, distribute and run containerized environments on Linux, macOS, and Windows. To get started you should install Docker on your system following the instructions from `here <https://www.docker.com/get-started>`_. On Linux you can likely also install it from a distribution package (e.g., ``docker-io`` on Debian/Ubuntu).
+
+Launching the container
+^^^^^^^^^^^^^^^^^^^^^^^
+You can download our pre-built container from Docker Hub and launch it using the command from the main Rayleigh directory. The following command is for GNU/Linux and macOS users.
+
+.. code-block:: bash
+
+   ./docker-devel
+   # This runs the following command:
+   # docker run -it --rm -v $HOME:/work -e HOSTUID=$UID -e HOSTGID=$GROUPS -e HOSTUSER=$USER geodynamics/rayleigh-devel-bionic:latest
+
+This will give you a shell inside the container and mount your home directory at ``/work``. You can clone, configure, build, and run the code and analyze the outputs using Python inside the container. Any changes below ``/work`` will be reflected in your home directory. Any other changes to the container will be deleted once you exit the shell.
+
+.. note:: Your user has ``sudo`` rights within the container. This allows to install packages using the ``apt`` command or modify the system in any other way.
+
+Windows users should run the script ``docker-devel.bat`` instead.
+
+Configuration and Compilation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note:: All these commands are run inside the Docker container and assume you have a copy of Rayleigh at ``$HOME/path/to/Rayleigh`` (which corresponds to ``/root/path/to/Rayleigh`` inside the container).
+
+Building the documentation
+
+.. code-block:: bash
+
+    cd /work/path/to/Rayleigh
+    make doc
+
+Building the code
+
+.. code-block:: bash
+
+    cd /work/path/to/Rayleigh
+    ./configure --with-fftw=/usr
+    make
+
+Updating the container
+^^^^^^^^^^^^^^^^^^^^^^
+On the first launch of the container, your local Docker engine will automatically download our pre-built container from Docker Hub. Subsequent launches will just use this container and will not check for updates. You can download a newer version of the container using the following command.
+
+.. code-block:: bash
+
+    docker pull geodynamics/rayleigh-devel-bionic:latest
+
+Building the container
+^^^^^^^^^^^^^^^^^^^^^^
+.. note:: This step purely optional. You only need to do this if you cannot pull the container from Docker Hub or you want to modify the Dockerfile.
+
+To build the container you have to run this command from your host system (i.e., not from inside the container).
+
+.. code-block:: bash
+
+   cd docker
+   docker build -t geodynamics/rayleigh-devel-bionic:latest rayleigh-devel-bionic
+
+You can check the newly built container is there using this command.
+
+.. code-block:: bash
+
+    docker images
+
+Spack Environment
+~~~~~~~~~~~~~~~~~
+
+`Spack <https://github.com/spack/spack>`_ can be used to create a development environment to build the code in a local directory. First set up Spack using the instructions in :ref:`spack-setup`
+
+Afterwards create a new environment, activate it and set the status of the Rayleigh package to development. We select ``$PWD`` as the path, so run this command from the base directory of your git clone.
+
+.. code-block:: bash
+
+    spack env create rayleigh
+    spack env activate rayleigh
+    spack add rayleigh@master
+    spack develop -p "$PWD" rayleigh@master
+
+A subsequent ``spack install`` will install necessary dependencies and build Rayleigh in the selected directory.
+
+.. _install_rayleigh:
 
 Installing Rayleigh
 -------------------
@@ -23,7 +195,7 @@ root directory of the code repository at:
 We provide an abbreviated version of those instructions here.
 
 Third-Party Dependencies
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to compile Rayleigh, you will need to have MPI (Message Passing
 Interface) installed along with a Fortran 2003-compliant compiler.
@@ -50,7 +222,7 @@ provided free of charge. You may find it
 `here <https://software.intel.com/en-us/mkl>`__.
 
 Compilation
------------
+~~~~~~~~~~~
 
 Rayleigh is compiled using the standard Linux installation scheme of
 configure/make/make-install. From within the Rayleigh directory, run
@@ -123,19 +295,10 @@ The **output** option is only respected when a particular **target** is specifie
 **make output=a.out install** will install all **rayleigh.*** executables, they will not
 be renamed.
 
-Verifying Your Installation
----------------------------
-
-Rayleigh comes with a benchmarking mode that helps you verify that the
-installation is performing correctly. If you are running Rayleigh for
-the first time, or running on a new machine, follow along with the
-example in §\ :ref:`benchmarking`, that you receive an accurate benchmark report before running a custom
-model.
-
 .. _spack-setup:
 
 Alternative: Installation using Spack
----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Spack is a package management tool designed to support multiple versions and
 configurations of software on a wide variety of platforms and environments. It can be used to build Rayleigh with different compilers and a custom set of libraries for MPI, LAPACK, and FFTW. It can automatically build dependencies itself or use those provided by the HPC environment.
@@ -176,7 +339,7 @@ To see the dependencies being installed you can use:
 
 .. _benchmark:
 
-Running a Benchmark
+Verifying Your Installation
 -------------------
 
 Rayleigh has been programmed with internal testing suite so that its
@@ -204,7 +367,15 @@ flag off if not running a benchmark.
 modify an existing benchmark-input file, delete the line containing the
 text “*benchmark_mode=X*.” When benchmark mode is active, custom inputs,
 such as Rayleigh number, are overridden and reset to their
-benchmark-appropriate values.
+benchmark-appropriate values. For example, setting ``benchmark_mode = 1`` defines the appropriate Case 0
+Christensen et al. (2001) :cite:`CHRISTENSEN200125` initial conditions. A benchmark report is
+written every 5000 time steps by setting
+``benchmark_report_interval = 5000``. The benchmark reports are text
+files found within directory **path_to_my_sim/Benchmark_Reports/** and
+numbered according to the appropriate time step. The
+| ``benchmark_integration_interval`` variable sets the interval at which
+measurements are taken to calculate the values reported in the
+benchmark reports.
 
 **We suggest using the c2001_case0_minimal input file for installation
 verification**. Algorithmically, there is little difference between the
@@ -251,31 +422,9 @@ to that presented in Tables table_benchmark_low_ or table_benchmark_high_ . Your
 slightly, but all values should have a % difference of less than 1. If
 this condition is satisfied, your installation is working correctly.
 
-.. _table_benchmark:
-
-.. centered:: **Table. Benchmark.**
-
-Benchmark-input examples useful for verifying Rayleigh’s installation.
-Those from Christensen et al. (2001) :cite:`CHRISTENSEN200125`
-are Boussinesq. Those from Jones et al. (2011) :cite:`JONES2011120` are anelastic. Examples are found
-in the directory: Rayleigh/input_examples/
-
-+-----------------------+-----------------+--------------------------------+--------------------------------+
-| Paper                 | Benchmark       | Input File                     | Specify in the main_input file |
-+=======================+=================+================================+================================+
-| Christensen et al.    | Case 0          | c2001_case0_minimal            | benchmark_mode = 1             |
-+-----------------------+-----------------+--------------------------------+--------------------------------+
-| Christensen et al.    | Case 1(MHD)     | c2001_case1_minimal            | benchmark_mode = 2             |
-+-----------------------+-----------------+--------------------------------+--------------------------------+
-| Jones et al. 2011     | Steady Hydro    | j2011_steady_hydro_minimal     | benchmark_mode = 3             |
-+-----------------------+-----------------+--------------------------------+--------------------------------+
-| Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       | benchmark_mode = 4             |
-+-----------------------+-----------------+--------------------------------+--------------------------------+
-
-
 .. _table_benchmark_low:
 
-.. centered:: **Table. Benchmark Low.**
+.. centered:: **Benchmark Low**
 
 Rayleigh benchmark report for Christensen
 et al. (2001) :cite:`CHRISTENSEN200125` case 0 when run with nr=48 and ntheta=64. Run time was
@@ -303,7 +452,7 @@ Run command:
 .. _table_benchmark_high:
 
 
-.. centered:: **Table. Benchmark High.**
+.. centered:: **Benchmark High**
 
 Rayleigh benchmark report for Christensen
 et al. (2001) :cite:`CHRISTENSEN200125` case 0 when run with nr=64 and ntheta=96. Run time was
@@ -327,3 +476,163 @@ Run command:
 | Drift Frequency | 0.182276   | 0.182400   | -0.067994    | 0.004877  |
 +-----------------+------------+------------+--------------+-----------+
 
+.. _available_benchmarks:
+
+Available Benchmarks
+------------------
+
+
+
+.. _table_benchmark:
+
+.. centered:: **Benchmark**
+
+Benchmark-input examples useful for verifying Rayleigh’s installation.
+Those from Christensen et al. (2001) :cite:`CHRISTENSEN200125`
+are Boussinesq. Those from Jones et al. (2011) :cite:`JONES2011120` are anelastic. Examples are found
+in the directory: Rayleigh/input_examples/
+
++-----------------------+-----------------+--------------------------------+--------------------------------+
+| Paper                 | Benchmark       | Input File                     | Specify in the main_input file |
++=======================+=================+================================+================================+
+| Christensen et al.    | Case 0          | c2001_case0_minimal            | benchmark_mode = 1             |
++-----------------------+-----------------+--------------------------------+--------------------------------+
+| Christensen et al.    | Case 1(MHD)     | c2001_case1_minimal            | benchmark_mode = 2             |
++-----------------------+-----------------+--------------------------------+--------------------------------+
+| Jones et al. 2011     | Steady Hydro    | j2011_steady_hydro_minimal     | benchmark_mode = 3             |
++-----------------------+-----------------+--------------------------------+--------------------------------+
+| Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       | benchmark_mode = 4             |
++-----------------------+-----------------+--------------------------------+--------------------------------+
+
+Standard benchmarks that generate minimal output files are discussed in the next four
+benchmarks:
+
+* :ref:`cookbookCase0Minimal`
+* :ref:`cookbookCase1Minimal`
+* :ref:`cookbookHydroAnelastic`
+* :ref:`cookbookMhdAnelastic`
+
+.. _cookbookCase0Minimal:
+
+Boussinesq non-MHD Benchmark: c2001_case0_minimal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is the standard benchmark test when running Rayleigh on a new
+machine.
+Christensen et al. (2001) :cite:`CHRISTENSEN200125` describes two Boussinesq tests that Rayleigh’s
+results may be compared against. Case 0 in Christensen et al. (2001) :cite:`CHRISTENSEN200125`
+solves for Boussinesq (non-dimensional) non-magnetic convection, and we
+will discuss the input parameters necessary to set up this benchmark in
+Rayleigh below. Rayleigh’s input parameters are grouped in so-called
+namelists, which are subcategories of related input parameters that will
+be read upon program start and assigned to Fortran variables with
+identical names. Below are the first four Fortran namelists in the input
+file **c2001_case0_minimal**.
+
+::
+
+   &problemsize_namelist
+    n_r = 64
+    n_theta = 96
+    nprow = 16
+    npcol = 32
+   /
+   &numerical_controls_namelist
+   /
+   &physical_controls_namelist
+    benchmark_mode = 1
+    benchmark_integration_interval = 100
+    benchmark_report_interval = 5000
+   /
+   &temporal_controls_namelist
+    max_iterations = 25000
+    checkpoint_interval = 100000
+    quicksave_interval = 10000
+    num_quicksaves = 2
+   /
+
+
+.. _cookbookCase1Minimal:
+
+Boussinesq MHD Benchmark: c2001_case1_minimal
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The MHD Boussinesq benchmark with an insulating inner core of
+Christensen et al. (2001) :cite:`CHRISTENSEN200125` is denoted as Case 1 and is specified with
+input file **c2001_case1_minimal**. Only the namelists modified compared
+to Case 0 (\ :ref:`cookbookCase0Minimal` above) are shown
+below.
+
+::
+
+   &physical_controls_namelist
+    benchmark_mode = 2
+    benchmark_integration_interval = 100
+    benchmark_report_interval = 10000
+   /
+   &temporal_controls_namelist
+    max_iterations = 150000
+    checkpoint_interval = 100000
+    quicksave_interval = 10000
+    num_quicksaves = 2
+   /
+
+
+
+.. _cookbookHydroAnelastic:
+
+Steady Anelastic non-MHD Benchmark: j2011_steady_hydro_minimal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Jones et al. (2011) describes a benchmark for an anelastic hydrodynamic
+solution that is steady in a drifting frame. This benchmark is specified
+for Rayleigh with input file **j2011_steady_hydro_minimal**. Below are
+the relevant Fortran namelists.
+
+::
+
+   &problemsize_namelist
+    n_r = 128
+    n_theta = 192
+    nprow = 32
+    npcol = 16
+   /
+   &numerical_controls_namelist
+   /
+   &physical_controls_namelist
+    benchmark_mode = 3
+    benchmark_integration_interval = 100
+    benchmark_report_interval = 10000
+   /
+   &temporal_controls_namelist
+    max_iterations = 200000
+    checkpoint_interval = 100000
+    quicksave_interval = 10000
+    num_quicksaves = 2
+   /
+
+
+
+.. _cookbookMhdAnelastic:
+
+Steady Anelastic MHD Benchmark: j2011_steady_mhd_minimal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The anelastic MHD benchmark described in Jones et al. (2011) can be run
+with main input file **j2011_steady_mhd_minimal**. The Fortran namelists
+differing from the Jones et al. (2011) anelastic hydro benchmark
+(§:ref:`cookbookHydroAnelastic` above) are shown here.
+
+::
+
+   &physical_controls_namelist
+    benchmark_mode = 4
+    benchmark_integration_interval = 100
+    benchmark_report_interval = 10000
+   /
+   &temporal_controls_namelist
+    max_iterations = 5000000
+    checkpoint_interval = 100000
+    quicksave_interval  = 25000
+    num_quicksaves = 2
+   /

@@ -1,4 +1,6 @@
-FROM geodynamics/rayleigh-buildenv-bionic:latest
+FROM geodynamics/rayleigh-buildenv-jammy:latest
+
+EXPOSE 8888
 
 RUN useradd \
   --create-home \
@@ -13,9 +15,7 @@ RUN git clone 'https://github.com/geodynamics/Rayleigh.git'
 WORKDIR /home/rayleigh_user/Rayleigh
 
 RUN ./configure \
-    --with-blas='/usr' \
-    --with-fftw='/usr' \
-    --with-lapack='/usr' \
+    -debian-mkl \
   && make \
   && make install \
   && make clean
@@ -23,3 +23,5 @@ RUN ./configure \
 ENV RAYLEIGH_DIR /home/rayleigh_user/Rayleigh
 
 ENV PATH="${RAYLEIGH_DIR}/bin:${PATH}"
+
+ENV PYTHONPATH="${RAYLEIGH_DIR}/post_processing${PYTHONPATH:+:$PYTHONPATH}"

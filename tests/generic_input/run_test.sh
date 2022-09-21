@@ -16,7 +16,7 @@ cd script
 ../../../pre_processing/rayleigh_spectral_input.py -ar 0.35 -sd 1.0 -nt 64 -nr 48 -o bench_t_init \
    -e 'import numpy as np; x = 2*radius - rmin - rmax; rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)'
 # then we use a custom python script using rayleigh_spectral_input.py as a module to write the magnetic initial conditions
-PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_magnetic_input.py
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python3 generate_magnetic_input.py
 # finally we run Rayleigh
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 ../../../post_processing/convert_full3d_to_vtu.py
@@ -46,16 +46,16 @@ cd ..
 
 # then a case that generates a sparse radial generic input file
 cd radial_sparse
-PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_input.py
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python3 generate_input.py
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # finally a version that generates a dense radial generic input file
 cd radial_dense
-PYTHONPATH=../../../pre_processing:$PYTHONPATH python generate_input.py
+PYTHONPATH=../../../pre_processing:$PYTHONPATH python3 generate_input.py
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # after both versions have run, we test the output for errors
-PYTHONPATH=../../post_processing:../../pre_processing:$PYTHONPATH python test_output.py
+PYTHONPATH=../../post_processing:../../pre_processing:$PYTHONPATH python3 test_output.py
 

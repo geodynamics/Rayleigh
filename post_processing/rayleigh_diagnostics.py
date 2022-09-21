@@ -2457,9 +2457,9 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
 
     #plt.hold(True)
     if (len(underlay) == 1):
-        img = ax.pcolormesh(yr,xr,field,cmap=mycmap)
+        img = ax.pcolormesh(yr,xr,field,cmap=mycmap,shading='auto')
     else:
-        img = ax.pcolormesh(yr,xr,underlay,cmap=mycmap)
+        img = ax.pcolormesh(yr,xr,underlay,cmap=mycmap,shading='auto')
     #ax.plot(r_bcz*sintheta,r_bcz*costheta,'k--',[0,1],[0,0],'k--')
     ax.axis('equal')
     ax.axis('off')

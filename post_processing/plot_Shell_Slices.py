@@ -65,7 +65,7 @@
 #####################################
 #  Shell Slice
 from rayleigh_diagnostics import Shell_Slices
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker, font_manager
 # Read the data
@@ -76,21 +76,29 @@ ss = Shell_Slices(istring)
 ntheta = ss.ntheta
 nphi = ss.nphi
 costheta = ss.costheta
-theta = numpy.arccos(costheta)
+theta = np.arccos(costheta) - np.pi/2.0
+phi = np.arange(nphi)*2.0*np.pi/nphi - np.pi
 
 
 tindex =1 # All example quantities were output with same cadence.  Grab second time-index from all.
 rindex = 0 # only output one radius
-sizetuple=(8,8)
+sizetuple=(12,5)
 
 vr = ss.vals[:,:,rindex,ss.lut[1],tindex]
-fig, ax = plt.subplots(figsize=sizetuple)
 
+fig = plt.figure(figsize=sizetuple)
+ax = fig.add_subplot(111, projection='mollweide')
 
-img = plt.imshow(numpy.transpose(vr), extent=[0,360,-90,90])
-ax.set_xlabel( 'Longitude')
-ax.set_ylabel( 'Latitude')
+plot1 = ax.pcolormesh(phi, theta, vr.transpose(), shading='auto', cmap='hot', rasterized=True)
+
+ax.set_xticklabels([])
+ax.set_yticklabels([])
+
+#ax.set_xlabel( 'Longitude')
+#ax.set_ylabel( 'Latitude')
 ax.set_title(  'Radial Velocity')
+
+plt.colorbar(plot1, label='cm/s')
 
 plt.tight_layout()
 savefile = 'Shell_Slices_LatLon.pdf'
