@@ -62,7 +62,7 @@ html_theme_options = {
     "navigation_depth": 3,
     "show_toc_level": 3,
     "repository_url": "https://github.com/geodynamics/rayleigh/",
-    "repository_branch": "master",
+    "repository_branch": "main",
     "path_to_docs":".",
     "icon_links": [
         {
