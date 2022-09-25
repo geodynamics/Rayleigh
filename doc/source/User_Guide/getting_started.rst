@@ -16,7 +16,8 @@ Setting up a Rayleigh Development Environment
 ---------------------------------------------
 
 When running Rayleigh on HPC resources, always compile the software with the recommended compiler and link against
-libraries optimized for the architecture you are running on.
+libraries optimized for the architecture you are running on. We provide example
+instructions for some common systems at `Installation Instructions for HPC systems`_.
 
 When developing Rayleigh or editing its documentation, however, such optimizations are rarely necessary.  Instead, it is sufficient for the code and documentation to compile.  For this purpose, we recommend setting up a `conda environment`_ or using our `Docker container`_.  Instructions for setting up an environment on Linux and Mac OS are provided below.
 
@@ -190,7 +191,7 @@ Installing Rayleigh
 A detailed explanation of the installation process may be found in the
 root directory of the code repository at:
 
-  Rayleigh/INSTALL.
+https://github.com/geodynamics/Rayleigh/blob/main/INSTALL.
 
 We provide an abbreviated version of those instructions here.
 
@@ -338,6 +339,64 @@ To see the dependencies being installed you can use:
     spack spec rayleigh ^intel-mkl
 
 .. _benchmark:
+
+
+.. _hpc_installation_instructions:
+
+Installation Instructions for HPC systems
+-----------------------------------------
+
+.. _stampede2:
+
+Stampede2
+~~~~~~~~~
+
+Installing Rayleigh on NSF's Stampede 2 system is straightforward. At the time
+this documentation is written (Sep 2022) the loaded default modules work out of
+the box for Rayleigh. In case the modules change in the future here is a listed
+for reference:
+
+.. code-block:: bash
+
+  1) intel/18.0.2      3) impi/18.0.2   5) autotools/1.1    7) cmake/3.20.2   9) TACC
+  2) libfabric/1.7.0   4) git/2.24.1    6) python2/2.7.15   8) xalt/2.10.37
+
+After cloning a Rayleigh repository, rayleigh can be configured and compiled as:
+
+.. code-block:: bash
+
+   FC=mpifc CC=mpicc ./configure
+   make -j
+   make install
+
+The architecture for most Stampede2 nodes is Skylake (AVX512), with a few
+Ice Lake nodes (also AVX512).
+
+A minimal job script for Rayleigh could look like this:
+
+.. code-block:: bash
+
+    #!/bin/bash
+    #SBATCH -J geodynamo-test           # Job name
+    #SBATCH -o log.o%j       # Name of stdout output file
+    #SBATCH -e error.e%j       # Name of stderr error file
+    #SBATCH -p skx-dev      # Queue (partition) name; skx-dev for testing; skx-normal for production.
+    #SBATCH -N 1               # Total # of nodes. 1-4 for skx-dev. >=4 for skx-normal
+    #SBATCH --ntasks-per-node 48
+    #SBATCH -t 00:10:00        # Run time (hh:mm:ss) max 2h on skx-dev, max 48h on skx-normal
+    #SBATCH --mail-user=
+    #SBATCH --mail-type=none    # Send no email
+
+    module list
+
+    # Launch MPI code...
+
+    export RAYLEIGH_PATH=...
+    # Replace -n X with correct number of MPI ranks, or remove to use all ranks
+    # requested on the nodes above.
+    ibrun -n 48 $RAYLEIGH_PATH
+
+
 
 Verifying Your Installation
 -------------------
