@@ -8,7 +8,7 @@ Rayleigh model configurations and checkpoint data of several publications can be
 
 - https://osf.io/j275z/
 - https://osf.io/qbt32/
-
+- https://doi.org/10.5281/zenodo.7117668
 
 Sharing Your Rayleigh Data
 --------------------------
