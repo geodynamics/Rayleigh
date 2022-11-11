@@ -17,6 +17,7 @@ User Manual
    ../../../CONTRIBUTING.md
    troubleshooting
    references
+   under_development
 
    ..
       Old User Manual 
