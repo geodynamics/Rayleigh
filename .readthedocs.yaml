@@ -5,6 +5,12 @@
 # Required
 version: 2
 
+#Use Mamba
+build:
+  os: "ubuntu-20.04"
+  tools:
+    python: "mambaforge-4.10"
+
 # Build documentation in the root directory with Sphinx
 sphinx:
   configuration: ./conf.py
