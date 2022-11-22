@@ -12,10 +12,6 @@ class equation_coefficients:
     f_dict    = {'density':1, 'buoy':2, 'nu':3, 'temperature':4, 'kappa':5, 'heating':6,
                  'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
                  'd_ln_eta':13, 'ds_dr':14}
-    c_chi_a_dict = {'diff_fact':1, 'source_fact':2, 'buoy_fact':3}
-    f_chi_a_dict = {'kappa':1, 'source':2, 'd_ln_kappa':3, 'buoy':4}
-    c_chi_p_dict = {'diff_fact':1, 'source_fact':2}
-    f_chi_p_dict = {'kappa':1, 'source':2, 'd_ln_kappa':3}
 
     def __init__(self,radius=[], file=None):
         if (len(radius) != 0):
