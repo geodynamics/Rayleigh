@@ -13,7 +13,8 @@ class Rayleigh(MakefilePackage):
     git = 'https://github.com/geodynamics/Rayleigh.git'
     maintainers = [
      'tukss']
-    version('master', branch='master')
+    version('main', branch='main')
+    version('1.1.0', sha256='93fbbdbde6088807638e4dcbd4d622203fd4753c1831bab2cb8eaeca5cba45c3')
     version('1.0.1', sha256='9c9e3b0b180f32a889f158e2ea2967f4ac2bb2124f5d264f230efb8c8f19ea36')
     version('1.0.0', sha256='4f2e8249256adff8c4b0bc377ceacf8a6441dcee54b7d36c784f05a454dc6dcf')
     version('0.9.1', sha256='ab96445fc61822fe2d2cba8729a85b36de6b541febf5759de6d614847844573f')
