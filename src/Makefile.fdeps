@@ -10,13 +10,13 @@ Controls.o : Controls.F90 BufferedOutput.o
 Diagnostics_ADotGradB.o : Diagnostics_ADotGradB.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Angular_Momentum.o : Diagnostics_Angular_Momentum.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Axial_Field.o : Diagnostics_Axial_Field.F90 indices.F Diagnostics_Base.o 
-Diagnostics_Base.o : Diagnostics_Base.F90 axial_field_codes.F turbKE_codes.F me_equation_codes.F ke_equation_codes.F amom_equation_codes.F induction_equation_codes.F thermal_equation_codes.F momentum_equation_codes.F magnetic_energy_codes.F current_density_codes.F magnetic_field_codes.F thermal_energy_codes.F thermal_field_codes.F kinetic_energy_codes.F vorticity_field_codes.F mass_flux_codes.F velocity_field_codes.F indices.F PDE_Coefficients.o Math_Constants.o Fields.o Spherical_IO.o ProblemSize.o 
+Diagnostics_Base.o : Diagnostics_Base.F90 scalars_field_codes.F axial_field_codes.F turbKE_codes.F me_equation_codes.F ke_equation_codes.F amom_equation_codes.F induction_equation_codes.F thermal_equation_codes.F momentum_equation_codes.F magnetic_energy_codes.F current_density_codes.F magnetic_field_codes.F thermal_energy_codes.F thermal_field_codes.F kinetic_energy_codes.F vorticity_field_codes.F mass_flux_codes.F velocity_field_codes.F indices.F PDE_Coefficients.o Math_Constants.o Fields.o Spherical_IO.o ProblemSize.o 
 Diagnostics_Current_Density.o : Diagnostics_Current_Density.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Custom.o : Diagnostics_Custom.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Energies.o : Diagnostics_Energies.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Induction.o : Diagnostics_Induction.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
 Diagnostics_Inertial_Forces.o : Diagnostics_Inertial_Forces.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
-Diagnostics_Interface.o : Diagnostics_Interface.F90 indices.F Diagnostics_Custom.o Diagnostics_Miscellaneous.o Diagnostics_Poynting_Flux.o Diagnostics_Induction.o Diagnostics_Axial_Field.o Diagnostics_TurbKE_Budget.o Diagnostics_KE_Flux.o Diagnostics_Lorentz_Forces.o Diagnostics_Angular_Momentum.o Diagnostics_Inertial_Forces.o Diagnostics_Linear_Forces.o Diagnostics_Current_Density.o Diagnostics_Vorticity_Field.o Diagnostics_Thermal_Equation.o Diagnostics_Thermal_Energies.o Diagnostics_Thermodynamic_Gradients.o Diagnostics_Energies.o Diagnostics_Magnetic_Field.o Diagnostics_Velocity_Field.o Diagnostics_Mean_Correction.o Diagnostics_Second_Derivatives.o Diagnostics_Base.o Math_Constants.o PDE_Coefficients.o Legendre_Polynomials.o Fields.o Spherical_IO.o Controls.o ProblemSize.o 
+Diagnostics_Interface.o : Diagnostics_Interface.F90 indices.F Diagnostics_Scalars.o Diagnostics_Custom.o Diagnostics_Miscellaneous.o Diagnostics_Poynting_Flux.o Diagnostics_Induction.o Diagnostics_Axial_Field.o Diagnostics_TurbKE_Budget.o Diagnostics_KE_Flux.o Diagnostics_Lorentz_Forces.o Diagnostics_Angular_Momentum.o Diagnostics_Inertial_Forces.o Diagnostics_Linear_Forces.o Diagnostics_Current_Density.o Diagnostics_Vorticity_Field.o Diagnostics_Thermal_Equation.o Diagnostics_Thermal_Energies.o Diagnostics_Thermodynamic_Gradients.o Diagnostics_Energies.o Diagnostics_Magnetic_Field.o Diagnostics_Velocity_Field.o Diagnostics_Mean_Correction.o Diagnostics_Second_Derivatives.o Diagnostics_Base.o Math_Constants.o PDE_Coefficients.o Legendre_Polynomials.o Fields.o Spherical_IO.o Controls.o ProblemSize.o 
 Diagnostics_KE_Flux.o : Diagnostics_KE_Flux.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Linear_Forces.o : Diagnostics_Linear_Forces.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Lorentz_Forces.o : Diagnostics_Lorentz_Forces.F90 indices.F Diagnostics_Base.o 
@@ -24,6 +24,7 @@ Diagnostics_Magnetic_Field.o : Diagnostics_Magnetic_Field.F90 indices.F Diagnost
 Diagnostics_Mean_Correction.o : Diagnostics_Mean_Correction.F90 indices.F Diagnostics_ADotGradB.o Spherical_IO.o Diagnostics_Base.o 
 Diagnostics_Miscellaneous.o : Diagnostics_Miscellaneous.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Poynting_Flux.o : Diagnostics_Poynting_Flux.F90 indices.F Diagnostics_Base.o 
+Diagnostics_Scalars.o : Diagnostics_Scalars.F90 indices.F Controls.o Diagnostics_Base.o 
 Diagnostics_Second_Derivatives.o : Diagnostics_Second_Derivatives.F90 indices.F Spectral_Derivatives.o Structures.o Diagnostics_Base.o 
 Diagnostics_Thermal_Energies.o : Diagnostics_Thermal_Energies.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
 Diagnostics_Thermal_Equation.o : Diagnostics_Thermal_Equation.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
@@ -89,6 +90,7 @@ magnetic_field_codes.o : magnetic_field_codes.F
 mass_flux_codes.o : mass_flux_codes.F 
 me_equation_codes.o : me_equation_codes.F 
 momentum_equation_codes.o : momentum_equation_codes.F 
+scalars_field_codes.o : scalars_field_codes.F 
 thermal_energy_codes.o : thermal_energy_codes.F 
 thermal_equation_codes.o : thermal_equation_codes.F 
 thermal_field_codes.o : thermal_field_codes.F 

@@ -49,7 +49,7 @@ Module Spherical_IO
 
 
     !////////////////////////////////////////////
-    Integer, Parameter :: nqmax=4000, nshellmax=2048, nmeridmax=8192, nmodemax=2048
+    Integer, Parameter :: nqmax=30000, nshellmax=2048, nmeridmax=8192, nmodemax=2048
     Integer, Parameter :: nprobemax=4096
     Integer, Parameter :: endian_tag = 314      ! first 4 bits of each diagnostic file - used for assessing endianness on read-in
     Integer, Parameter :: reallybig = 90000000

@@ -69,6 +69,12 @@ Module Fields
 
     Integer :: br,btheta,bphi, curlbr,curlbtheta,curlbphi
     Integer :: emfr,emftheta,emfphi
+
+    ! PASSIVE
+    ! Passive scalar variables.
+    ! These are what we need to calculate advection
+    Integer, Allocatable :: chiavar(:), dchiadr(:), dchiadt(:), dchiadp(:), d2chiadr2(:)
+    Integer, Allocatable :: chipvar(:), dchipdr(:), dchipdt(:), dchipdp(:), d2chipdr2(:)
     !///////////////////////////////////////////////////////////////////////////
 
 
@@ -78,7 +84,9 @@ Module Fields
     !                FOR LINEAR Solve
     !==============================================================================
     Integer, parameter :: weq = 1,  peq = 2,  teq = 3
-    Integer, parameter :: zeq = 4,  ceq = 5,  aeq = 6
+    Integer, parameter :: zeq = 4
+    Integer, Parameter :: ceq = 5,  aeq = 6
+    Integer, Allocatable :: chiaeq(:), chipeq(:)
 
 
 
@@ -148,16 +156,50 @@ Contains
 
     Subroutine Initialize_Field_Structure()
         Implicit None
+        Integer :: i
         Character*3 :: config
+
+        allocate(chiaeq(n_active_scalars))
+        allocate(chipeq(n_passive_scalars))
+        allocate(chiavar(n_active_scalars))
+        allocate(chipvar(n_passive_scalars))
+        allocate(dchiadr(n_active_scalars))
+        allocate(dchipdr(n_passive_scalars))
+        allocate(dchiadt(n_active_scalars))
+        allocate(dchipdt(n_passive_scalars))
+        allocate(dchiadp(n_active_scalars))
+        allocate(dchipdp(n_passive_scalars))
+        allocate(d2chiadr2(n_active_scalars))
+        allocate(d2chipdr2(n_passive_scalars))
 
         ! Starting out we record the number of variables and equations we are expecting.
         If (magnetism) Then
-            n_equations  = 6
-            n_variables = 6
+            n_equations = 6 + n_active_scalars + n_passive_scalars
+            n_variables = 6 + n_active_scalars + n_passive_scalars
+            if (n_active_scalars.gt.0) then
+                chiaeq(1) = aeq+1
+            end if
+            if (n_passive_scalars.gt.0) then
+                chipeq(1) = aeq+n_active_scalars+1
+            end if
         Else
-            n_equations  = 4
-            n_variables = 4
+            n_equations = 4 + n_active_scalars + n_passive_scalars
+            n_variables = 4 + n_active_scalars + n_passive_scalars
+            if (n_active_scalars.gt.0) then
+                chiaeq(1) = zeq+1
+            end if
+            if (n_passive_scalars.gt.0) then
+                chipeq(1) = zeq+n_active_scalars+1
+            end if
         Endif
+
+        do i = 2, n_active_scalars
+            chiaeq(i) = chiaeq(i-1)+1
+        end do
+
+        do i = 2, n_passive_scalars
+            chipeq(i) = chipeq(i-1)+1
+        end do
 
         !The remainder of this routine serves two purposes:
         ! 1 - It assigns values to each of our field reference integers
@@ -179,6 +221,8 @@ Contains
         !  First, we need an accounting of all fields that will be stored
         !  (even temporarily) in the p1a buffer.  We will assume that
         !  These fields persist out to p3a for now
+        !  This is where RADIAL Derivatives are computed & where the SOLVE
+        !  takes place
 
 
         config = 'p1a'
@@ -197,12 +241,17 @@ Contains
           Call wsp_indices%Add_Field(cvar , config)
           Call wsp_indices%Add_field(avar , config)
         Endif
+        do i = 1, n_active_scalars
+          call wsp_indices%add_field(chiavar(i) , config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%add_field(chipvar(i) , config)
+        end do
 
         Call wsp_indices%Add_Field(d3Wdr3 , config)
         Call wsp_indices%Add_Field(dPdr1  , config)
         Call wsp_indices%Add_field(d2Zdr2 , config)
         Call wsp_indices%Add_Field(d2Wdr2 , config)
-
 
         If (magnetism) Then
           Call wsp_indices%Add_field(dcdr   , config)
@@ -210,9 +259,18 @@ Contains
           Call wsp_indices%Add_field(d2adr2 , config)
         Endif
 
+        do i = 1, n_active_scalars
+          call wsp_indices%Add_Field(dchiadr(i), config)
+          call wsp_indices%Add_Field(d2chiadr2(i), config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%Add_Field(dchipdr(i), config)
+          call wsp_indices%Add_Field(d2chipdr2(i), config)
+        end do
 
         !//////////////////////////////////////////////////////////
         !  Next, we want to account for fields that we build in s2a/p2a (many are d by dtheta fields)
+        !  In configuration p2a, we are in r l/theta m space.  Take theta derivatives.
         config = 'p2a'
         Call wsp_indices%Add_Field(vtheta , config)
         Call wsp_indices%Add_Field(vphi   , config)
@@ -223,9 +281,18 @@ Contains
             Call wsp_indices%Add_Field(curlbr     ,config)
 
         Endif
+
+        do i = 1, n_active_scalars
+          call wsp_indices%Add_Field(dchiadt(i), config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%Add_Field(dchipdt(i), config)
+        end do
+
         !///////////////////////////////////////////////////////
         !  Next we have fields of the d_by_dphi variety
         !  that we add to the p3a buffer
+        !  This is r theta (phi,m) space
         config = 'p3a'
         Call wsp_indices%Add_Field(dvrdp,config)
         Call wsp_indices%Add_field(dvtdp,config)
@@ -234,6 +301,13 @@ Contains
         Call wsp_indices%Add_field(dvpdt,config)
         Call wsp_indices%Add_field(dtdp,config)
 
+        do i = 1, n_active_scalars
+          call wsp_indices%Add_Field(dchiadp(i), config)
+        end do
+        do i = 1, n_passive_scalars
+          call wsp_indices%Add_Field(dchipdp(i), config)
+        end do
+
         !//////////////////////////////////////////////////////////
         !   Throughout the forward loop, many variables are replaced
         !   with new variables (e.g., vr overwrites W to save memory).
@@ -241,6 +315,7 @@ Contains
         !   the buffer size.
 
         d2Tdr2 = dPdr1
+
         dWdr   = d3Wdr3
         dTdr   = dPdr1 !replaces d2tdr2, which replaced dpdr1
         dZdr   = d2Zdr2
@@ -264,6 +339,11 @@ Contains
         ! we have a count of how large the buffer needs to be in each
         ! configuration
 
+        ! wsfcount = workspace field count
+        !  wsfcount({1,2,3},1) is number of fields in configuration {1,2,3}
+        !  during forward loop (spectral to physical).
+        !  {1,2,3},2 refers to same configurations when going from physical to spectral for solve
+
         wsfcount(1,1) = wsp_indices%c1a_counter
         wsfcount(2,1) = wsp_indices%c2a_counter
         wsfcount(3,1) = wsp_indices%c3a_counter
@@ -276,16 +356,17 @@ Contains
 
         ! These following code should pretty much never be modified by the user.
         if (.not. magnetism) then
-            wsfcount(1,2) = 4        ! four RHS's go back for the solve
-            wsfcount(2,2) = 4
-            wsfcount(3,2) = 4
+            wsfcount(1,2) = 4 + n_active_scalars + n_passive_scalars
+            wsfcount(2,2) = 4 + n_active_scalars + n_passive_scalars
+            wsfcount(3,2) = 4 + n_active_scalars + n_passive_scalars
         else
             emfr     = avar
             emftheta = cvar
             emfphi   = avar+1
-            wsfcount(1,2) = 7        ! seven RHS's go back for the solve (1 field is differentiated and combined at the end)
-            wsfcount(2,2) = 7
-            wsfcount(3,2) = 7
+            ! seven RHS's (plus scalars) go back for the solve (1 field is differentiated and combined at the end)
+            wsfcount(1,2) = 7 + n_active_scalars + n_passive_scalars 
+            wsfcount(2,2) = 7 + n_active_scalars + n_passive_scalars 
+            wsfcount(3,2) = 7 + n_active_scalars + n_passive_scalars 
         endif
         !Write(6,*)'Fields initialized'
         !Write(6,*)'c1a_counter is: ', wsp_indices%c1a_counter

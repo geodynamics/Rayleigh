@@ -37,14 +37,13 @@ Module Checkpointing
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
     Implicit None
     Type(SphericalBuffer) :: chktmp, chktmp2, bctmp
-    Integer, private :: numfields = 4 ! 6 for MHD
+    Integer, private :: numfields
     Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
     Integer, private :: checkpoint_version = 2
-    Integer,private :: checkpoint_tag = 425, read_var(1:12)
-    Character*3 :: wchar = 'W', pchar = 'P', tchar = 'T', zchar = 'Z', achar = 'A', cchar = 'C'
+    Integer,private :: checkpoint_tag = 425
     Character*120 :: checkpoint_prefix ='nothing'
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
-    Character*3 :: checkpoint_suffix(12)
+    Character*6, allocatable :: checkpoint_suffix(:)
     Integer :: checkpoint_iter = 0
     Real*8  :: checkpoint_dt, checkpoint_newdt
     Real*8  :: checkpoint_time
@@ -70,8 +69,9 @@ Contains
     ! Modifications related to the new Memory-Friendly Checkpointing Style
     Subroutine Initialize_Checkpointing()
         Implicit None
-        Integer :: nfs(6)
+        Integer :: nfs(6), i, j
         Integer, Allocatable :: gpars(:,:)
+        Character*4 :: sstring
 
         checkpoint_t0 = stopwatch(walltime)%elapsed
         If (check_frequency .gt. 0) Then
@@ -90,14 +90,33 @@ Contains
             quicksave_interval = -1
         Endif
 
-        if (magnetism) Then
-            numfields = 6
-            checkpoint_suffix(1:12) = &
-                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'C  ', 'A  ', 'WAB', 'PAB', 'TAB', 'ZAB', 'CAB', 'AAB' /)
-        Else
-            checkpoint_suffix(1:8) = &
-                (/ 'W  ', 'P  ', 'T  ', 'Z  ', 'WAB', 'PAB', 'TAB', 'ZAB' /)
-        Endif
+        numfields = 4 + n_active_scalars + n_passive_scalars
+        if (magnetism) then
+          numfields = numfields + 2
+        end if
+        allocate(checkpoint_suffix(numfields*2))
+
+        checkpoint_suffix(1:4) = (/ 'W     ', 'P     ', 'T     ', 'Z     '/)
+        i = 4
+        if (magnetism) then
+           checkpoint_suffix(5:6) = (/'C     ', 'A     '/)
+           i = 6
+        end if
+        do j = 1, n_active_scalars
+          write(sstring,auto_fmt) (j)
+          checkpoint_suffix(i+j) = 'Xa'//sstring
+        end do
+        i = i + n_active_scalars
+        do j = 1, n_passive_scalars
+          write(sstring,auto_fmt) (j)
+          checkpoint_suffix(i+j) = 'Xp'//sstring
+        end do
+        i = i + n_passive_scalars
+
+        do j = 1, i
+          checkpoint_suffix(i+j) = trim(checkpoint_suffix(j))//'AB'
+        end do
+
         nfs(:) = numfields*2
         Call chktmp%init(field_count = nfs, config = 'p1a') ! Persistent throughout run
 
@@ -222,12 +241,12 @@ Contains
         Integer, Intent(In) :: iteration, read_pars(1:2)
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old
-        Integer :: i, ierr, mp, lb,ub
+        Integer :: i, ierr, mp, lb,ub, ab_offset
         Integer :: old_pars(7), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
         Integer :: read_magnetism = 0, read_hydro = 0
-        Integer, Allocatable :: rinds(:), gpars(:,:)
+        Integer, Allocatable :: rinds(:), gpars(:,:), read_var(:)
         Real*8 :: dt_pars(3),dt,new_dt
         Real*8, Allocatable :: old_radius(:), radius_old(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
@@ -246,13 +265,15 @@ Contains
         old_pars(6) = 1      ! 2 for legacy-format 
         legacy_format=.false.
 
+        allocate(read_var(numfields*2))
         read_var(:) = 0
         If (magnetism) Then
             ! hydro, magnetic, or both sets of field can be read
+            ab_offset = 7 + n_active_scalars + n_passive_scalars
             read_var(1:4)   = read_hydro
-            read_var(7:10)  = read_hydro
+            read_var(ab_offset:ab_offset+3)  = read_hydro
             read_var(5:6)   = read_magnetism
-            read_var(11:12) = read_magnetism
+            read_var(ab_offset+4:ab_offset+5) = read_magnetism
         Else
             read_var(:) = 1
         Endif

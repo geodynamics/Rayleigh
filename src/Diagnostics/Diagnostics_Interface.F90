@@ -61,6 +61,8 @@ Module Diagnostics_Interface
 
     Use Diagnostics_Custom
 
+    Use Diagnostics_Scalars
+
     Implicit None
 
 
@@ -227,6 +229,8 @@ Contains
 
                 Call Compute_Misc_Diagnostics(buffer)
                 Call Custom_Hydro_Diagnostics(buffer)
+
+                Call Compute_Scalars(buffer)
 
                 !////// Magnetic Quantities
                 If (magnetism) Then

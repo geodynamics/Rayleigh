@@ -93,6 +93,21 @@ Contains
             ctemp%nf1b = 5
         Endif
         Call ctemp%construct('p1a')
+        !chivar (need 1st and 2nd radial derivatives)
+        ! Take first derivative of field in index chivar in p1a
+        ! store result in field in index dchidr
+        ! Everything HERE is in n-cheby space.
+        ! BUT RHS is in RADIAL space due to collocation scheme
+        ! further down, we tranform and add to the RHS
+        do i = 1, n_active_scalars
+          Call gridcp%d_by_dr_cp(chiavar(i),dchiadr(i),wsp%p1a,1)
+          Call gridcp%d_by_dr_cp(chiavar(i),d2chiadr2(i),wsp%p1a,2)
+        end do
+        do i = 1, n_passive_scalars
+          Call gridcp%d_by_dr_cp(chipvar(i),dchipdr(i),wsp%p1a,1)
+          Call gridcp%d_by_dr_cp(chipvar(i),d2chipdr2(i),wsp%p1a,2)
+        end do
+
         ! W..
         Call gridcp%d_by_dr_cp(wvar,d3wdr3,wsp%p1a,3)
         ctemp%p1a(:,:,:,1) = wsp%p1a(:,:,:,d3wdr3)
@@ -185,14 +200,25 @@ Contains
         Call Add_Derivative(teq,tvar,0, wsp%p1b,wsp%p1a,tvar)
         Call Add_Derivative(weq,tvar,0, wsp%p1b,wsp%p1a,tvar)    ! gravity
 
-        ! Convert temperature to temperature/r (will take derivatives of this for advection)
-        ! As of April 30, 2017, we multiply by 1/r in physical space instead
-        !Do m = 1, my_num_lm
-        !    Do i = 1, 2
-        !        wsp%p1a(:,i,m,tvar) = wsp%p1a(:,i,m,tvar)/radius(:)
-        !    Enddo
-        !Enddo
+        !////////////////////////////////////
+        ! chivar
+        ! Need to add '0th', 1st and 2nd derivatives of chivar to RHS
+        ! How to read this:
+        !   To chieq, and its chivar block, add 0th derivative coefficient
+        !   from chivar field index of p1a -- store in p1b
+        ! p1b contains the RHS that will be loaded into RHS solve config
+        do i = 1, n_active_scalars
+          Call Add_Derivative(chiaeq(i),chiavar(i),0,wsp%p1b,wsp%p1a,chiavar(i))       
+          Call Add_Derivative(chiaeq(i),chiavar(i),1,wsp%p1b,wsp%p1a,dchiadr(i))   
+          Call Add_Derivative(chiaeq(i),chiavar(i),2,wsp%p1b,wsp%p1a,d2chiadr2(i))   
 
+          Call Add_Derivative(weq,chiavar(i),0, wsp%p1b,wsp%p1a,chiavar(i))    ! gravity
+        end do
+        do i = 1, n_passive_scalars
+          Call Add_Derivative(chipeq(i),chipvar(i),0,wsp%p1b,wsp%p1a,chipvar(i))       
+          Call Add_Derivative(chipeq(i),chipvar(i),1,wsp%p1b,wsp%p1a,dchipdr(i))   
+          Call Add_Derivative(chipeq(i),chipvar(i),2,wsp%p1b,wsp%p1a,d2chipdr2(i))   
+        end do
 
         !///////////////////////////////
         !  Z Terms

@@ -39,6 +39,7 @@ Module PDE_Coefficients
     Use General_MPI, Only : BCAST2D
     Implicit None
 
+    Integer, Parameter :: n_scalar_max = 50
     !///////////////////////////////////////////////////////////
     ! I.  Variables describing the background reference state
 
@@ -57,6 +58,7 @@ Module PDE_Coefficients
         Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
         Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
         Real*8, Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
+        Real*8, Allocatable :: chi_buoyancy_coeff(:,:)    ! Multiplies Chis in momentum eq.
         Real*8, Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
         Real*8, Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
 
@@ -69,21 +71,23 @@ Module PDE_Coefficients
     Integer, Parameter  :: eqn_coeff_version = 1
 
     ! Custom reference state variables
-    Integer, Parameter  :: n_ra_constants = 10
-    Integer, Parameter  :: n_ra_functions = 14
-    Logical             :: with_custom_reference = .false.
-    Logical             :: override_constants = .false.
-    Logical             :: override_constant(1:n_ra_constants) = .false.
-    Integer             :: ra_constant_set(1:n_ra_constants) = 0
-    Integer             :: ra_function_set(1:n_ra_functions) = 0
-    Logical             :: use_custom_constant(1:n_ra_constants) = .false.
-    Logical             :: use_custom_function(1:n_ra_functions) = .false.
-    Integer             :: with_custom_constants(1:n_ra_constants) = 0
-    Integer             :: with_custom_functions(1:n_ra_functions) = 0
-    Real*8              :: ra_constants(1:n_ra_constants) = 0.0d0
-    Real*8, Allocatable :: ra_functions(:,:)
-    Logical             :: custom_reference_read = .false.
-    Character*120 :: custom_reference_file ='nothing'    
+    Integer, Parameter   :: max_ra_constants = 10 + 2*n_scalar_max
+    Integer, Parameter   :: max_ra_functions = 14 + 2*n_scalar_max
+    Integer              :: n_ra_constants
+    Integer              :: n_ra_functions
+    Logical              :: with_custom_reference = .false.
+    Logical              :: override_constants = .false.
+    Logical              :: override_constant(1:max_ra_constants) = .false. ! in namelist
+    Integer              :: with_custom_constants(1:max_ra_constants) = 0   ! in namelist
+    Integer              :: with_custom_functions(1:max_ra_functions) = 0   ! in namelist
+    Real*8               :: ra_constants(1:max_ra_constants) = 0.0d0        ! in namelist
+    Integer, Allocatable :: ra_constant_set(:)
+    Integer, Allocatable :: ra_function_set(:)
+    Logical, Allocatable :: use_custom_constant(:)
+    Logical, Allocatable :: use_custom_function(:)
+    Real*8, Allocatable  :: ra_functions(:,:)
+    Logical              :: custom_reference_read = .false.
+    Character*120        :: custom_reference_file ='nothing'    
 
     Real*8, Allocatable :: s_conductive(:)
 
@@ -112,6 +116,11 @@ Module PDE_Coefficients
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
     Real*8 :: Modified_Rayleigh_Number = 0.0d0
+
+    Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
+    Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
+    Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+    Real*8 :: chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
     
     !///////////////////////////////////////////////
     ! Minimum time step based on rotation rate
@@ -124,9 +133,11 @@ Module PDE_Coefficients
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
             & gravity_power, custom_reference_file,       &
-            & Dissipation_Number, Modified_Rayleigh_Number, Heating_Integral,         &
-            & override_constants, override_constant, ra_constants, with_custom_constants, &
-            & with_custom_functions, with_custom_reference
+            & Dissipation_Number, Modified_Rayleigh_Number, &
+            & Heating_Integral, override_constants, override_constant, ra_constants, with_custom_constants, &
+            & with_custom_functions, with_custom_reference, &
+            & chi_a_rayleigh_number, chi_a_prandtl_number, &
+            & chi_a_modified_rayleigh_number, chi_p_prandtl_number
 
 
     !///////////////////////////////////////////////////////////////////////////////////////
@@ -134,6 +145,8 @@ Module PDE_Coefficients
 
     Real*8, Allocatable :: nu(:), kappa(:), eta(:)
     Real*8, Allocatable :: dlnu(:), dlnkappa(:), dlneta(:)
+    real*8, allocatable :: kappa_chi_a(:,:), kappa_chi_p(:,:)
+    real*8, allocatable :: dlnkappa_chi_a(:,:), dlnkappa_chi_p(:,:)
 
     Real*8, Allocatable :: ohmic_heating_coeff(:)
     Real*8, Allocatable :: viscous_heating_coeff(:)
@@ -142,17 +155,28 @@ Module PDE_Coefficients
     Real*8, Allocatable :: dW_Diffusion_Coefs_0(:), dW_Diffusion_Coefs_1(:), dW_Diffusion_Coefs_2(:)
     Real*8, Allocatable :: S_Diffusion_Coefs_1(:), Z_Diffusion_Coefs_0(:), Z_Diffusion_Coefs_1(:)
     Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
+    real*8, allocatable :: chi_a_diffusion_coefs_1(:,:), chi_p_diffusion_coefs_1(:,:)
 
     Integer :: kappa_type =1, nu_type = 1, eta_type = 1
-    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0, eta_top = -1.0d0
+    Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0,  eta_top = -1.0d0
     Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0
+    Integer :: kappa_chi_a_type(1:n_scalar_max) = 1
+    Real*8  :: kappa_chi_a_top(1:n_scalar_max) = -1.0d0
+    Real*8  :: kappa_chi_a_power(1:n_scalar_max) = 0
+    Integer :: kappa_chi_p_type(1:n_scalar_max) = 1
+    Real*8  :: kappa_chi_p_top(1:n_scalar_max) = -1.0d0
+    Real*8  :: kappa_chi_p_power(1:n_scalar_max) = 0
 
     Logical :: hyperdiffusion = .false.
     Real*8  :: hyperdiffusion_beta = 0.0d0
     Real*8  :: hyperdiffusion_alpha = 1.0d0
 
-    Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, nu_power, kappa_power, eta_power, &
-            & nu_top, kappa_top, eta_top, hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha
+    Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, &
+            & nu_power, kappa_power, eta_power, &
+            & nu_top, kappa_top, eta_top, &
+            & hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha, &
+            & kappa_chi_a_type, kappa_chi_a_top, kappa_chi_a_power, &
+            & kappa_chi_p_type, kappa_chi_p_top, kappa_chi_p_power
 
 
 Contains
@@ -199,6 +223,10 @@ Contains
 
     Subroutine Allocate_Reference_State
         Implicit None
+
+        n_ra_constants = 10 + 2*(n_active_scalars + n_passive_scalars)
+        n_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
+
         Allocate(ref%density(1:N_R))
         Allocate(ref%temperature(1:N_R))
         Allocate(ref%dlnrho(1:N_R))
@@ -211,7 +239,16 @@ Contains
         Allocate(ref%ohmic_amp(1:N_R))
         Allocate(ref%viscous_amp(1:N_R))
         Allocate(ref%heating(1:N_R))
+        Allocate(ref%chi_buoyancy_coeff(n_active_scalars,1:N_R))
 
+        Allocate(ra_constant_set(1:n_ra_constants))
+        ra_constant_set = 0
+        Allocate(ra_function_set(1:n_ra_functions))
+        ra_function_set = 0
+        Allocate(use_custom_constant(1:n_ra_constants))
+        use_custom_constant = .false.
+        Allocate(use_custom_function(1:n_ra_functions))
+        use_custom_function = .false.
         Allocate(ra_functions(1:N_R, 1:n_ra_functions))
         ra_functions(:,:) = Zero
 
@@ -227,6 +264,7 @@ Contains
         ref%ohmic_amp(:)          = Zero
         ref%viscous_amp(:)        = Zero
         ref%heating(:)            = Zero
+        ref%chi_buoyancy_coeff(:,:) = Zero
 
         ref%Coriolis_Coeff = Zero
         ref%Lorentz_Coeff  = Zero
@@ -253,7 +291,7 @@ Contains
 
     Subroutine Constant_Reference()
         Implicit None
-        Integer :: i
+        Integer :: i,j
         Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
@@ -288,6 +326,14 @@ Contains
             ref%Buoyancy_Coeff(i) = amp*(radius(i)/radius(1))**gravity_power
         Enddo
 
+        do j = 1, n_active_scalars
+          amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+
+          Do i = 1, N_R
+              ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
+          Enddo
+        enddo
+
         pressure_specific_heat = 1.0d0
         Call initialize_reference_heating()
         If (heating_type .eq. 0) Then
@@ -315,6 +361,12 @@ Contains
         nu_top       = 1.0d0
         kappa_top       = 1.0d0/Prandtl_Number
         ref%viscous_amp(1:N_R) = 2.0d0
+        do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
+        enddo
+        do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
+        enddo
 
         If (magnetism) Then
             ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
@@ -347,6 +399,7 @@ Contains
 
     Subroutine Polytropic_ReferenceND()
         Implicit None
+        Integer :: i
         Real*8 :: dtmp, otmp
         Real*8, Allocatable :: dtmparr(:), gravity(:)
         Character*12 :: dstring
@@ -382,6 +435,9 @@ Contains
         ref%density(:) = ref%temperature(:)**poly_n
         gravity = (rmax**2)*OneOverRSquared(:)
         ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
+        do i = 1, n_active_scalars
+          ref%chi_buoyancy_coeff(i,:) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
+        enddo
 
         !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
         dtmparr = -Dissipation_Number*gravity
@@ -405,7 +461,13 @@ Contains
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
 
         nu_top   = Ekman_Number
-        kappa_top   = Ekman_Number/Prandtl_Number
+        kappa_top     = Ekman_Number/Prandtl_Number
+        do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = Ekman_Number/chi_a_prandtl_number(i)
+        enddo
+        do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = Ekman_Number/chi_p_prandtl_number(i)
+        enddo
         ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
                                  & Dissipation_Number/Modified_Rayleigh_Number
 
@@ -443,6 +505,8 @@ Contains
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
+        Implicit None
+        Integer :: i
         Real*8 :: zeta_0,  c0, c1, d
         Real*8 :: rho_c, P_c, T_c,denom
         Real*8 :: thermo_gamma, volume_specific_heat
@@ -528,6 +592,10 @@ Contains
         Ref%dsdr = volume_specific_heat * (Ref%dlnT - (thermo_gamma - 1.0d0) * Ref%dlnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
+
+        do i = 1, n_active_scalars
+          ref%chi_buoyancy_coeff(i,:) = -gravity/pressure_specific_heat*ref%density
+        end do
 
         Deallocate(zeta, gravity)
 
@@ -742,6 +810,9 @@ Contains
         ref%dlnrho(:)  = ra_functions(:,8)
         ref%d2lnrho(:) = ra_functions(:,9)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+        do i = 0, n_active_scalars-1
+            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+i*2)*ra_functions(:,2)
+        end do
 
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
@@ -808,7 +879,7 @@ Contains
         Character*120, Intent(In) :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
-        Integer :: i, k, j
+        Integer :: i, k, j, n_scalars
         Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
         Real*8  :: input_constants(1:n_ra_constants)
         Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
@@ -949,7 +1020,7 @@ Contains
             Endif
             DeAllocate(ref_arr_old,old_radius)
             
-            ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, and eta were
+            ! Finally, if the logarithmic derivatives of rho, T, nu, kappa, kappa_chi and eta were
             ! not specified, then we compute them here.
             ! only calculate the log derivative if the function was set, otherwise there
             ! are divide by zero issues
@@ -971,6 +1042,12 @@ Contains
             If ((fset(13) .eq. 0) .and. (fset(7) .eq. 1)) Then
                 Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
             Endif
+            n_scalars = n_active_scalars + n_passive_scalars
+            do i = 0, (n_scalars - 1)
+              If ((fset(16+i*2) .eq. 0) .and. (fset(15+i*2) .eq. 1)) Then
+                  Call log_deriv(ra_functions(:,15+i*2), ra_functions(:,16+i*2)) !dlnkappa_chi
+              Endif
+            end do
         Else
             Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
             Write(6,*)'Pi integer: ', pi_integer
@@ -1088,6 +1165,7 @@ Contains
         If (allocated(ref%dlnT)) DeAllocate(ref%dlnT)
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
+        If (allocated(ref%chi_buoyancy_coeff)) DeAllocate(ref%chi_buoyancy_coeff)
         If (allocated(ref%Heating)) DeAllocate(ref%Heating)
 
     End Subroutine Restore_Reference_Defaults
@@ -1098,6 +1176,7 @@ Contains
 
     Subroutine Initialize_Transport_Coefficients()
         Implicit None
+        Integer :: i
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
         Logical :: restore
 
@@ -1117,6 +1196,16 @@ Contains
 
         Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
         Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
+        do i = 1, n_active_scalars
+          Call Initialize_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
+                                      kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
+                                      11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
+        end do
+        do i = 1, n_passive_scalars
+          Call Initialize_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
+                                      kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
+                                      11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
+        end do
 
         If (viscous_heating) Then
             Allocate(viscous_heating_coeff(1:N_R))
@@ -1149,6 +1238,22 @@ Contains
                 temp_constants(6)    = ra_constants(6)
             Endif
 
+            do i = 0, n_active_scalars-1
+              If (kappa_chi_a_type(i+1) .eq. 3) Then
+                  temp_functions(:,15+i*2) = ra_functions(:,15+i*2)
+                  temp_functions(:,16+i*2) = ra_functions(:,16+i*2)
+                  temp_constants(11+i*2)   = ra_constants(11+i*2)
+              Endif
+            end do
+
+            do i = 0, n_passive_scalars-1
+              If (kappa_chi_p_type(i+1) .eq. 3) Then
+                  temp_functions(:,15+(n_active_scalars+i)*2) = ra_functions(:,15+(n_active_scalars+i)*2)
+                  temp_functions(:,16+(n_active_scalars+i)*2) = ra_functions(:,16+(n_active_scalars+i)*2)
+                  temp_constants(11+(n_active_scalars+i)*2)   = ra_constants(11+(n_active_scalars+i)*2)
+              Endif
+            end do
+
             If (nu_type .eq. 3) Then
                 temp_functions(:,3)  = ra_functions(:,3)
                 temp_functions(:,11) = ra_functions(:,11)
@@ -1173,6 +1278,10 @@ Contains
         Allocate(dlnu(1:N_r))
         Allocate(kappa(1:N_r))
         Allocate(dlnkappa(1:N_r))
+        Allocate(kappa_chi_a(n_active_scalars,1:N_r))
+        Allocate(dlnkappa_chi_a(n_active_scalars,1:N_r))
+        Allocate(kappa_chi_p(n_passive_scalars,1:N_r))
+        Allocate(dlnkappa_chi_p(n_passive_scalars,1:N_r))
         Allocate(eta(1:N_R))
         Allocate(dlneta(1:N_R))
 
@@ -1249,12 +1358,16 @@ Contains
     Subroutine Restore_Transport_Defaults
         Implicit None
 
-        If (Allocated(nu))       DeAllocate(nu)
-        If (Allocated(kappa))    DeAllocate(kappa)
-        If (Allocated(eta))      DeAllocate(eta)
-        If (Allocated(dlnu))     DeAllocate(dlnu)
-        If (Allocated(dlnkappa)) DeAllocate(dlnkappa)
-        If (Allocated(dlneta))   DeAllocate(dlneta)
+        If (Allocated(nu))           DeAllocate(nu)
+        If (Allocated(kappa))        DeAllocate(kappa)
+        If (Allocated(kappa_chi_a))  DeAllocate(kappa_chi_a)
+        If (Allocated(kappa_chi_p))  DeAllocate(kappa_chi_p)
+        If (Allocated(eta))          DeAllocate(eta)
+        If (Allocated(dlnu))         DeAllocate(dlnu)
+        If (Allocated(dlnkappa))     DeAllocate(dlnkappa)
+        If (Allocated(dlnkappa_chi_a)) DeAllocate(dlnkappa_chi_a)
+        If (Allocated(dlnkappa_chi_p)) DeAllocate(dlnkappa_chi_p)
+        If (Allocated(dlneta))       DeAllocate(dlneta)
 
         If (allocated(W_Diffusion_Coefs_0) ) DeAllocate( W_Diffusion_Coefs_0)
         If (allocated(W_Diffusion_Coefs_1) ) DeAllocate( W_Diffusion_Coefs_1)
@@ -1281,6 +1394,13 @@ Contains
         nu_power = 0
         eta_power = 0
         kappa_power = 0
+
+        kappa_chi_a_type = 1
+        kappa_chi_a_top = 1.0d0
+        kappa_chi_a_power = 1.0d0
+        kappa_chi_p_type = 1
+        kappa_chi_p_top = 1.0d0
+        kappa_chi_p_power = 1.0d0
 
     End Subroutine Restore_Transport_Defaults
 
@@ -1313,6 +1433,12 @@ Contains
         ! S Coefficients for S Equation
         Allocate(S_Diffusion_Coefs_1(1:N_R))
         S_diffusion_Coefs_1 = kappa*(dlnkappa+ref%dlnrho+ref%dlnT)
+        !//////////////////////////////////////// +
+        ! chi Coefficients for chi Equation
+        Allocate(chi_a_Diffusion_Coefs_1(n_active_scalars,1:N_R))
+        chi_a_diffusion_Coefs_1 = kappa_chi_a*dlnkappa_chi_a
+        Allocate(chi_p_Diffusion_Coefs_1(n_passive_scalars,1:N_R))
+        chi_p_diffusion_Coefs_1 = kappa_chi_p*dlnkappa_chi_p
         !//////////////////////////////////////// +
         ! Z Coefficients for the Z Equation
         Allocate(Z_Diffusion_Coefs_0(1:N_R))
