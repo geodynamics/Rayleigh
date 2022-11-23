@@ -77,6 +77,7 @@ Module ProblemSize
     Integer :: ndomains = 1
     Integer :: n_uniform_domains =1
     Real*8  :: domain_bounds(1:nsubmax+1)=-1.0d0
+    Real*8  :: dr_input(4096) = 1.0d0
     Logical :: uniform_bounds = .false.
     Type(Cheby_Grid), Target :: gridcp
 
@@ -88,7 +89,7 @@ Module ProblemSize
     Logical :: grid_error = .false.
 
 
-    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, &
+    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, dr_input, &
             &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
             &  n_uniform_domains, uniform_bounds, stretch_factor
@@ -397,6 +398,9 @@ Contains
         Endif
         ndomains = cheby_count
 
+        rmin = domain_bounds(1)
+        rmax = domain_bounds(bounds_count)
+
         shell_volume = four_pi*one_third*(rmax**3-rmin**3)
 
         If ( (l_max .le. 0) .and. (n_l .le. 0) ) Then
@@ -518,15 +522,16 @@ Contains
             grid_type = 1
             !print*,"FINITE DIFF"
             Radius(N_R) = rmin ! Follow ASH convention of reversed radius
-            uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
-            Do r=N_R,1,-1
-                    Delta_r(r) = uniform_dr
-                    Radius(r) = (N_R-r)*uniform_dr + rmin
+            Delta_R(N_R) = dr_input(N_R)
+            !uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
+            Do r=N_R-1,1,-1
+                    Delta_r(r) = dr_input(r)!uniform_dr
+                    Radius(r) = dr_input(r) + Radius(r+1)
             Enddo
         Endif
 
         Allocate(OneOverRSquared(1:N_R),r_squared(1:N_R),One_Over_r(1:N_R),Two_Over_r(1:N_R))
-        R_squared     = Radius**2
+        R_squared       = Radius**2
         One_Over_R      = (1.0d0)/Radius
         Two_Over_R      = (2.0d0)/Radius
         OneOverRSquared = (1.0d0)/r_Squared
