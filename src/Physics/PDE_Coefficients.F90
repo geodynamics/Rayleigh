@@ -689,9 +689,10 @@ Contains
 
         If (my_rank .eq. 0) Then
             Call stdout%print('Reference state will be augmented.')
-            Call stdout%print('Only heating and buoyancy may be modified.')
+            Call stdout%print('Only heating, buoyancy, or background dTdr/dSdr may be modified.')
             Call stdout%print('Heating requires both c_10 and f_6 to be set.')
             Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
+            Call stdout%print('dTdr/dSdr requires f_14 to be set.')            
             Call stdout%print('Reading from: '//Trim(custom_reference_file))
         Endif
 
@@ -728,6 +729,17 @@ Contains
             temp_functions(:,2) = ra_functions(:,2)
             temp_constants(2) = ra_constants(2)
         Endif
+
+        If (use_custom_function(14)) Then
+            If (my_rank .eq. 0) Then
+                Call stdout%print('Background temperature/entropy gradient is set to:')
+                Call stdout%print('f_14')
+                Call stdout%print(' ')
+            Endif        
+            ref%dsdr(:) = ra_functions(:,14)
+            temp_functions(:,14) = ra_functions(:,14)
+        Endif
+
 
         ra_constants(:) = temp_constants(:)
         ra_functions(:,:) = temp_functions(:,:)
