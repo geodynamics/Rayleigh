@@ -703,7 +703,10 @@ Contains
         Allocate(temp_functions(1:n_r, 1:n_ra_functions))
         Allocate(temp_constants(1:n_ra_constants))
         temp_functions(:,:) = ra_functions(:,:)
-        temp_constants(:) = ra_constants(:)
+
+        ! Note that ra_constants is allocated up to max_ra_constants
+        temp_constants(:) = ra_constants(1:n_ra_constants)
+
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
@@ -729,7 +732,7 @@ Contains
             temp_constants(2) = ra_constants(2)
         Endif
 
-        ra_constants(:) = temp_constants(:)
+        ra_constants(1:n_ra_constants) = temp_constants(:)
         ra_functions(:,:) = temp_functions(:,:)
         DeAllocate(temp_functions, temp_constants)
 
