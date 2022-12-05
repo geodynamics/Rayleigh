@@ -743,7 +743,6 @@ Contains
             temp_functions(:,14) = ra_functions(:,14)
         Endif
 
-
         ra_constants(1:n_ra_constants) = temp_constants(:)
         ra_functions(:,:) = temp_functions(:,:)
         DeAllocate(temp_functions, temp_constants)

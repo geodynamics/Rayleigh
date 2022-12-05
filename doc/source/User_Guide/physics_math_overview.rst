@@ -88,7 +88,7 @@ that
 
 
 
-The Equation Sets Solved by Rayleigh
+The System of Equations Solved in Rayleigh
 ------------------------------------
 
 Rayleigh solves the Boussinesq or anelastic MHD equations in spherical
