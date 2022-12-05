@@ -686,7 +686,6 @@ Contains
     Subroutine Augment_Reference()
         Implicit None
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
-        Integer :: n_func_copy, n_const_copy
 
         If (my_rank .eq. 0) Then
             Call stdout%print('Reference state will be augmented.')
@@ -735,7 +734,7 @@ Contains
 
         If (use_custom_function(14)) Then
             If (my_rank .eq. 0) Then
-                Call stdout%print('Background temperature/entropy gradient is set to:')
+                Call stdout%print('Background thermal gradient is set to:')
                 Call stdout%print('f_14')
                 Call stdout%print(' ')
             Endif        
