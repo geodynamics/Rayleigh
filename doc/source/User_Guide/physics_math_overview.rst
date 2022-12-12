@@ -454,7 +454,88 @@ We thus arrive at the following nondimensionalized equations:
 The Streamfunction Formulation
 ------------------------------
 
-Section needed.
+The velocity field in Rayleigh is evolved subject to the solenoidal constraint
+
+.. math::
+   :label: solenoidal
+
+       \boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\boldsymbol{v}\right] = 0.
+
+This is accomplished by casting :math:`\mathrm{f}_1\boldsymbol{v}` in terms of streamfunctions such that
+
+.. math::
+   :label: streamdecomp
+
+       \mathrm{f_1}\,\boldsymbol{v} = \boldsymbol{\nabla}\times\boldsymbol{\nabla}\times\left( W\,\boldsymbol{\hat{r}}\right)+\boldsymbol{\nabla}\times\left( Z\,\boldsymbol{\hat{r}}\right),  
+       
+where *W* and *Z* are referred to as the poloidal and toroidal stream functions respectively.  Rather than evolving the three components of :math:`\boldsymbol{v}` directly, the momentum equations are cast in terms of these variables before advancing the timestep.  The velocity components are related to the streamfunctions via the relations:
+
+.. math::
+   :label: vrstream
+   
+       \mathrm{f_1}v_r = - \frac{1}{r\mathrm{sin}\theta}\frac{\partial}{\partial\theta}\left(\mathrm{sin}\theta\frac{\partial W}{\partial\theta} \right)-\frac{1}{r^2\mathrm{sin}^2\theta}\frac{\partial^2 Z}{\partial\phi^2},   
+
+.. math::
+   :label: vtstream
+   
+        \mathrm{f_1}\,v_{\theta} = \frac{1}{r}\frac{\partial^2 W}{\partial r\partial\theta}+ \frac{1}{r\mathrm{sin}\theta}\frac{\partial Z}{\partial\phi},
+    
+and
+
+.. math::
+   :label: vpstream
+
+       \mathrm{f_1}v_{\phi} = \frac{1}{r\mathrm{sin}\theta}\frac{\partial^2 W}{\partial r\partial\phi} - \frac{1}{r}\frac{\partial Z}{\partial\theta}.
+       
+When the velocity field and streamfunctions are projected onto a spherical harmonic basis, two additional useful relations are given by
+
+.. math::
+   :label: vrWstream
+   
+       \left[\mathrm{f_1}\,v_r\right]_\ell^m = \frac{\ell(\ell+1)}{r^2}W_\ell^m
+       
+and
+
+.. math::
+   :label: curlstream
+   
+       \left[ \left\{\boldsymbol{\nabla}\times\left(\mathrm{f_1}\,\boldsymbol{v}\right)\right\}_r \right]_\ell^m = \frac{\ell(\ell+1)}{r^2}Z_\ell^m.
+       
+A similar decomposition is performed on the magnetic field to ensure it remains divergence free.  In that case, the magnetic field is projected onto flux functions such that
+
+.. math::
+   :label: fluxdecomp
+
+       \boldsymbol{B} = \boldsymbol{\nabla}\times\boldsymbol{\nabla}\times\left( C\,\boldsymbol{\hat{r}}\right)+\boldsymbol{\nabla}\times\left( A\,\boldsymbol{\hat{r}}\right),   
+       
+where *C* and *A* are the poloidal and toroidal flux functions respectively.  Similar to the velocity field, the components of :math:`\boldsymbol{B}` satisfy
+
+.. math::
+   :label: Brstream
+   
+       B_r = - \frac{1}{r\mathrm{sin}\theta}\frac{\partial}{\partial\theta}\left(\mathrm{sin}\theta\frac{\partial C}{\partial\theta} \right)-\frac{1}{r^2\mathrm{sin}^2\theta}\frac{\partial^2 A}{\partial\phi^2},   
+
+.. math::
+   :label: Btstream
+   
+        B_{\theta} = \frac{1}{r}\frac{\partial^2 C}{\partial r\partial\theta}+ \frac{1}{r\mathrm{sin}\theta}\frac{\partial A}{\partial\phi},
+    
+.. math::
+   :label: Bpstream
+
+       B_{\phi} = \frac{1}{r\mathrm{sin}\theta}\frac{\partial^2 C}{\partial r\partial\phi} - \frac{1}{r}\frac{\partial A}{\partial\theta},
+
+.. math::
+   :label: BrCflux
+   
+       \left[B_r\right]_\ell^m = \frac{\ell(\ell+1)}{r^2}C_\ell^m,
+       
+and
+
+.. math::
+   :label: curlflux
+   
+       \left[ \left\{\boldsymbol{\nabla}\times\boldsymbol{B}\right\}_r \right]_\ell^m = \frac{\ell(\ell+1)}{r^2}A_\ell^m.
 
 
 .. _pseudospectral:
