@@ -1,12 +1,13 @@
 #PBS -S /bin/bash
 #PBS -q long                # 'long' queue allows jobs up to 5 days (use 'normal' for 8 hours or less).
 #PBS -j oe
-#PBS -W group_list=s2100    # account number
+#PBS -W group_list=s1234    # account number
 #PBS -m e
 #PBS -N nrho5_ff_5          # job name
 #PBS -l walltime=120:00:00  # run for 120 hours
 #PBS -l select=74:ncpus=28:mpiprocs=28:model=bro  # Request Broadwell nodes.  28 MPI ranks per node.
 
+module purge
 module load comp-intel
 module load mpi-hpe
 export OMP_NUM_THREADS=1
@@ -17,6 +18,18 @@ sleep 10
 
 # Run the code
 mpiexec -np 2048 ./rayleigh.avx2 -nprow 64 -npcol 32
+
+
+# Compilation Notes
+#
+# To configure and build Rayleigh, the following commands should suffice:
+#
+# module purge
+# module load comp-intel
+# module load mpi-hpe
+# ./configure --FC=mpif90 --CC=icc  (select 'ALL')
+# make -j
+# make install
 
 # Additional notes
 # (1) Pleiades is a hetergenous cluster, composed of many (primarily Intel) processor types.
