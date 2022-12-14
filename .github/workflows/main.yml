@@ -52,6 +52,10 @@ jobs:
         # chi scalar test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/chi_scalar/run_test.sh
+        
+        # custom reference state test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/custom_reference/run_test.sh
 
         git diff > changes.diff
         git diff --exit-code --name-only
