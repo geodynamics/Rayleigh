@@ -62,6 +62,6 @@ my_ref.set_constant(c3[0],3)  # multiplies the pressure gradient
 my_ref.set_constant(1 ,5)     # multiplies the viscosity
 my_ref.set_constant(c6[0],6)  # multiplies kappa, here it is: E/Pr
 my_ref.set_constant(0,10)     # multiplies the heating, here it is 0, since we have assumed that there is no heating function!
-my_ref.write('case0.dat')     # Here we write our data file to be used to run our simulation with Rayleigh!
+my_ref.write('case0.dat')     # Here we write our data file to be used to run our simulation
 
 
