@@ -1150,7 +1150,7 @@ Contains
         poly_mass = 0.0d0
         poly_rho_i = 0.0d0
 
-        Angular_Velocity = 1.0d0
+        Angular_Velocity = -1.0d0
 
         Rayleigh_Number         = 1.0d0
         Ekman_Number            = 1.0d0
