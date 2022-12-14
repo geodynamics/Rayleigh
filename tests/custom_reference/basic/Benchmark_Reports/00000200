@@ -1,0 +1,20 @@
+ ///////////////////////////////////////////////////////////////////////////
+               RAYLEIGH ACCURACY BENCHMARK SUMMARY               
+  
+   Benchmark:  Christensen et al. 2001  (Non-MHD, Case 0)
+  
+   Radial Resolution      N_R =           48
+   Angular Resolution N_theta =           64
+  
+   Averaging Interval (Viscous Diffusion Times) :       0.010000
+  
+   Beginning Iteration :          100
+   Ending Iteration    :          200
+   Number of Samples   :            2
+ ----------------------------------------------------------------------------
+   Observable      |    Measured    | Suggested   | % Difference |  Std. Dev.
+ ----------------------------------------------------------------------------
+   Kinetic Energy  :     16.064123     58.348000    -72.468425      4.513346
+   Temperature     :      0.316280      0.428120    -26.123436      0.016443
+   Vphi            :     -4.121698    -10.157100    -59.420519      1.295427
+   Drift Frequency :     14.628113      0.182400   7919.799059      0.000000
