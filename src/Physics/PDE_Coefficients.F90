@@ -1280,21 +1280,51 @@ Contains
         Implicit None
         Integer :: i
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
-        Logical :: restore
+        Logical :: restore, need_custom
 
         restore = .false.
 
         Call Allocate_Transport_Coefficients
 
-        If ((.not. custom_reference_read) .and. &
-            ((nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3))) Then
+        ! Figure out if we need to read anything from the custom file 
+        ! (many "types" to check now because of the new scalar diffusion coefficients)
+        need_custom = .false. 
+        If ( (nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3) ) Then
+            need_custom = .true.
+        EndIf
+
+        Do i = 1, n_active_scalars
+            If (kappa_chi_a_type(i) .eq. 3) Then
+                need_custom = .true.
+            Endif
+        Enddo
+
+        Do i = 1, n_passive_scalars
+            If (kappa_chi_p_type(i) .eq. 3) Then
+                need_custom = .true.
+            Endif
+        Enddo
+
+        If ((.not. custom_reference_read) .and. need_custom) Then
             Allocate(temp_functions(1:n_r, 1:n_ra_functions))
             Allocate(temp_constants(1:n_ra_constants))
             temp_functions(:,:) = ra_functions(:,:)
-            temp_constants(:) = ra_constants(:)
+            ! Note that ra_constants is allocated up to max_ra_constants,
+            ! which could be more than n_ra_constants
+            temp_constants(:) = ra_constants(1:n_ra_constants)
             restore = .true.
+            ! If we read the custom file, we may overwrite things besides the diffusion coefficients
+            ! We "back up" the current reference state in temp_constants and temp_functions
+            ! Below, we modify only the "temp" equation coefficients associated with custom diffusions
+            ! Then we restore ra_constants and ra_functions from the "temp" arrays
+            ! BUG IN OUTPUT (Loren, 12/24/22, Merry Christmas!): If one diffusion type is custom
+            ! but another isn't, then the ra_constants/ra_functions associated with the non-custom diffusion
+            ! will be set correctly by the Initialize_Diffusivity routine, but then overwritten,
+            ! likely with erroneous values, in the "restore" process below. 
+            ! Will fix this issue in a later pull request. 
             Call Read_Custom_Reference_File(custom_reference_file)
         EndIf
+
 
         Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
         Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
@@ -1362,7 +1392,7 @@ Contains
                 temp_constants(5)    = ra_constants(5)
             Endif
 
-            ra_constants(:) = temp_constants(:)
+            ra_constants(1:n_ra_constants) = temp_constants(:)
             ra_functions(:,:) = temp_functions(:,:)
             DeAllocate(temp_functions, temp_constants)
 
