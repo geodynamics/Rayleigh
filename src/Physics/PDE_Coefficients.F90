@@ -280,7 +280,7 @@ Contains
         Real*8 :: rotational_timescale
         !Adjust the maximum timestep to account for rotation rate, if necessary.
         
-        rotational_timescale = 1.0d0/ref%Coriolis_Coeff
+        rotational_timescale = 1.0d0/ra_constants(1)
         
         ! Minimum sampling would require two time samples per rotational timescale.
         ! We specify 4 samples and further adjust by the CFL safety factor.
@@ -300,7 +300,6 @@ Contains
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
 
-
         viscous_heating = .false.  ! Turn this off for Boussinesq runs
         ohmic_heating = .false.
         If (my_rank .eq. 0) Then
@@ -317,29 +316,54 @@ Contains
             Endif
         Endif
 
-        ref%density      = 1.0d0
-        ref%dlnrho       = 0.0d0
-        ref%d2lnrho      = 0.0d0
-        ref%temperature  = 1.0d0
-        ref%dlnT         = 0.0d0
-        ref%dsdr         = 0.0d0
+        ! Set the equation coefficients (except mostly the ones having to do with diffusivities)
+        ! Do this by constants first, then functions (more or less by ascending index)
 
-        amp = Rayleigh_Number/Prandtl_Number
+        ! Constants
+        ra_constants(1) = 2.0d0/Ekman_Number
+        ra_constants(2) = Rayleigh_Number/Prandtl_Number 
+        If (rotation) Then
+            ra_constants(3) = 1.0d0/Ekman_Number            
+        Else
+            ra_constants(3) = 1.0d0            
+        Endif
 
-        Do i = 1, N_R
-            ref%Buoyancy_Coeff(i) = amp*(radius(i)/radius(1))**gravity_power
+        If (magnetism) Then
+            ra_constants(4) = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
+            eta_top     = 1.0d0/Magnetic_Prandtl_Number
+        Else
+            ra_constants(4) = 0.0d0
+            eta_top     = 0.0d0
+        Endif
+
+        nu_top = 1.0d0
+        kappa_top = 1.0d0/Prandtl_Number
+        Do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = 1.0d0/Chi_A_Prandtl_Number(i)
         Enddo
+        Do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = 1.0d0/Chi_P_Prandtl_Number(i)
+        Enddo
+ 
+        ! Though it has no effect (viscous_heating = ohmic_heating = .false.), 
+        ! turn off the viscous/ohmic dissipation terms (again) for logical consistency
+        ra_constants(8) = 0.0d0
+        ra_constants(9) = 0.0d0
 
-        do j = 1, n_active_scalars
-          amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+        ! Functions
+        ra_functions(:,1) = 1.0d0
+        ra_functions(:,8) = 0.0d0
+        ra_functions(:,9) = 0.0d0 
 
-          Do i = 1, N_R
-              ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
-          Enddo
-        enddo
+        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
 
-        pressure_specific_heat = 1.0d0
-        Call initialize_reference_heating()
+        ra_functions(:,4) = 1.0d0
+        ra_functions(:,10) = 0.0d0      
+
+        ra_functions(:,14) = 0.0d0      
+
+        ! Heating
+        Call Initialize_Reference_Heating()
         If (heating_type .eq. 0) Then
             !Otherwise, s_conductive will be calculated in initial_conditions
             Allocate(s_conductive(1:N_R))
@@ -350,54 +374,6 @@ Contains
                 s_conductive(i) = prefactor*(1.0d0/r_outer-1.0d0/radius(i))
             Enddo
         Endif
-
-        If (.not. rotation) Then
-            pscaling = 1.0d0
-        Else
-            pscaling = 1.0d0/Ekman_Number
-        Endif
-
-        !Define the various equation coefficients
-        ref%dpdr_w_term(:)        =  ref%density*pscaling
-        ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
-        ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
-
-        nu_top       = 1.0d0
-        kappa_top       = 1.0d0/Prandtl_Number
-        ref%viscous_amp(1:N_R) = 2.0d0
-        do i = 1, n_active_scalars
-            kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
-        enddo
-        do i = 1, n_passive_scalars
-            kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
-        enddo
-
-        If (magnetism) Then
-            ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
-            eta_Top     = 1.0d0/Magnetic_Prandtl_Number
-            ref%ohmic_amp(1:N_R) = ref%lorentz_coeff
-        Else
-            ref%Lorentz_Coeff    = 0.0d0
-            eta_Top     = 0.0d0
-            ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif
-        
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Rayleigh_Number/Prandtl_Number
-        ra_constants(3) = pscaling
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = 0.0d0
-        ra_constants(9) = 0.0d0
 
     End Subroutine Constant_Reference
 
@@ -636,18 +612,13 @@ Contains
 
     End Subroutine Polytropic_Reference
 
-    Subroutine Initialize_Reference_Heating()
+     Subroutine Initialize_Reference_Heating()
         Implicit None
-        ! This is where a volumetric heating function Phi(r) is computed
+        ! This is where a volumetric heating function Phi(r) = Q(r)/(rho(r)*T(r)) is computed
         ! This function appears in the entropy equation as
         ! dSdt = Phi(r)
         ! Phi(r) may represent internal heating of any type.  For stars, this heating would be
-        ! associated with temperature diffusion of the reference state and/or nuclear burning.
-
-        If ( heating_type .gt. 0)Then
-            If (.not. Allocated(ref%heating)) Allocate(ref%heating(1:N_R))
-            ref%heating(:) = 0.0d0
-        Endif
+        ! associated with radiative diffusion of the background state and/or nuclear burning.
 
         If (heating_type .eq. 1) Then
             Call Constant_Entropy_Heating()
@@ -657,32 +628,27 @@ Contains
             Call  Constant_Energy_Heating()
         Endif
 
-
-        ! Heating Q_H is normalized so that:
-        ! Int_volume rho T Q_H dV = 1 
-
-        ! Here is a good time set f_6
-        ra_functions(:, 6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
+        ! Volumetric heating (Q ~ f_6) is normalized so that:
+        ! Int_volume rho T f_6 dV = 1 
 
         !If luminosity or heating_integral has been set,
-        !we set the integral of ref%heating using that.
+        !we set the integral of f_6 (i.e., c_10) using that
 
         !Otherwise, we will use the boundary thermal flux
         !To establish the integral
-        If (heating_type .gt. 0)Then
-            adjust_reference_heating = .true.
-            If (abs(Luminosity) .gt. heating_eps) Then
-                adjust_reference_heating = .false.
-                ref%heating = ref%heating*Luminosity
-                ! and here is a good time to set c_10
-                ra_constants(10) = Luminosity
-            Endif
+        If (heating_type .gt. 0) Then
+            If (abs(luminosity) .gt. heating_eps) Then
+                ra_constants(10) = luminosity
+                adjust_reference_heating = .false.                
 
-            If (abs(Heating_Integral) .gt. heating_eps) Then
+            Elseif (abs(Heating_Integral) .gt. heating_eps) Then
+                ra_constants(10) = heating_integral
                 adjust_reference_heating = .false.
-                ref%heating = ref%heating*Heating_Integral
-                ! ... or set c_10 here
-                ra_constants(10) = Heating_Integral              
+            Else
+                ! c_10 will be set later in BoundaryConditions.F90. For now, make sure it is 1
+                ! so ref%heating = c_10*f_6/(rho*T) will integrate properly under renormalization
+                ra_constants(10) = 1.0d0
+                adjust_reference_heating = .true.
             Endif
         Endif
     End Subroutine Initialize_Reference_Heating
@@ -744,34 +710,24 @@ Contains
 
     Subroutine Constant_Energy_Heating()
         Implicit None
-        ! rho T dSdt = alpha : energy deposition per unit volume is constant
+        ! rho T dSdt = alpha : energy deposition per unit volume (Q ~ f_6) is constant
         ! dSdt = alpha/rhoT : entropy deposition per unit volume is ~ 1/Pressure
-        ref%heating(:) = 1.0d0/shell_volume
-        ref%heating = ref%heating/(ref%density*ref%temperature)
+        ra_functions(:,6) = 1.0d0/shell_volume
     End Subroutine Constant_Energy_Heating
 
     Subroutine Constant_Entropy_Heating()
         Implicit None
         Real*8 :: integral, alpha
-        Real*8, Allocatable :: temp(:)
 
         ! dSdt = alpha : Entropy deposition per unit volume is constant
-        ! rho T dSdt = rho T alpha : Energy deposition per unit volume is ~ Pressure
+        ! rho T dSdt = rho T alpha : Energy deposition per unit volume (Q ~ f_6) is ~ Pressure
 
-        ! Luminosity is specified as an input
-        ! Phi(r) is set to alpha such that
-        ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
-        Allocate(temp(1:N_R))
-
-        temp = ref%density*ref%temperature
-        Call Integrate_in_radius(temp,integral) !Int_rmin_rmax rho T r^2 dr
+        ! Luminosity (c_10) is specified as an input
+        ra_functions(:,6) = ra_functions(:,1)*ra_functions(:,4)
+        Call Integrate_in_radius(ra_functions(:,6),integral) !Int_rmin_rmax rho T r^2 dr
         integral = integral*4.0d0*pi  ! Int_V temp dV
 
-        alpha = 1.0d0/integral
-
-        ref%heating(:) = alpha
-        DeAllocate(temp)
-        !Note that in the boussinesq limit, alpha = Luminosity/Volume
+        ra_functions(:,6)= ra_functions(:,6)/integral
     End Subroutine Constant_Entropy_Heating
 
     Subroutine Integrate_in_radius(func,int_func)
@@ -1285,12 +1241,19 @@ Contains
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
         Logical :: restore, need_custom
 
-        restore = .false.
-
-        Call Allocate_Transport_Coefficients
+        ! In this routine, we may need to read in the custom file, which will overwrite
+        ! ra_constants and ra_functions
+        ! To be safe, we save the original ra_constants and ra_functions in temporary arrays
+        ! We only modify the diffusion-related parts of the temporary arrays, then copy 
+        ! everything over to ra_constants and ra_functions at the end
+        Allocate(temp_functions(1:n_r, 1:n_ra_functions))
+        Allocate(temp_constants(1:n_ra_constants))
+        temp_functions(:,:) = ra_functions(:,:)
+        ! Note that ra_constants is allocated up to max_ra_constants
+        temp_constants(:) = ra_constants(1:n_ra_constants)      
 
         ! Figure out if we need to read anything from the custom file 
-        ! (many "types" to check now because of the new scalar diffusion coefficients)
+        ! (more complicated than it used to be because of the new scalar field coefficients)
         need_custom = .false. 
         If ( (nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3) ) Then
             need_custom = .true.
@@ -1309,100 +1272,34 @@ Contains
         Enddo
 
         If ((.not. custom_reference_read) .and. need_custom) Then
-            Allocate(temp_functions(1:n_r, 1:n_ra_functions))
-            Allocate(temp_constants(1:n_ra_constants))
-            temp_functions(:,:) = ra_functions(:,:)
-            ! Note that ra_constants is allocated up to max_ra_constants,
-            ! which could be more than n_ra_constants
-            temp_constants(:) = ra_constants(1:n_ra_constants)
-            restore = .true.
-            ! If we read the custom file, we may overwrite things besides the diffusion coefficients
-            ! We "back up" the current reference state in temp_constants and temp_functions
-            ! Below, we modify only the "temp" equation coefficients associated with custom diffusions
-            ! Then we restore ra_constants and ra_functions from the "temp" arrays
-            ! BUG IN OUTPUT (Loren, 12/24/22, Merry Christmas!): If one diffusion type is custom
-            ! but another isn't, then the ra_constants/ra_functions associated with the non-custom diffusion
-            ! will be set correctly by the Initialize_Diffusivity routine, but then overwritten,
-            ! likely with erroneous values, in the "restore" process below. 
-            ! Will fix this issue in a later pull request. 
             Call Read_Custom_Reference_File(custom_reference_file)
         EndIf
 
-
-        Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
-        Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
-        do i = 1, n_active_scalars
-          Call Initialize_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
-                                      kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
-                                      11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
-        end do
-        do i = 1, n_passive_scalars
-          Call Initialize_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
-                                      kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
-                                      11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
-        end do
-
-        If (viscous_heating) Then
-            Allocate(viscous_heating_coeff(1:N_R))
-            viscous_heating_coeff(1:N_R) = ref%viscous_amp(1:N_R)*nu(1:N_R)
-        Endif
-
+        Call Initialize_Diffusivity(temp_constants,temp_functions,nu_top,nu_type,nu_power,5,3,11)
+        Call Initialize_Diffusivity(temp_constants,temp_functions,kappa_top,kappa_type,kappa_power,6,5,12)
         If (magnetism) Then
-
-            Call Initialize_Diffusivity(eta,dlneta,eta_top,eta_type,eta_power,7,7,13)
-            If (ohmic_heating) Then
-                Allocate(ohmic_heating_coeff(1:N_R))
-                ohmic_heating_coeff(1:N_R) = ref%ohmic_amp(1:N_R)*eta(1:N_R)
-            Endif
+            Call Initialize_Diffusivity(temp_constants,temp_functions,eta_top,eta_type,eta_power,7,7,13)
         Else
-            eta(:)    = 0.0d0 ! eta was already allocated, but never initialized since this
-            dlneta(:) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
+            temp_functions(:,7) = 0.0d0 ! eta was already allocated, but never initialized since this
+            temp_functions(:,13) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
         Endif
 
-        If (restore) Then
+        Do i = 1, n_active_scalars
+            Call Initialize_Diffusivity(temp_constants,temp_functions,&
+                kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
+                11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
+        Enddo
 
-            If (eta_type .eq. 3) Then
-                temp_functions(:,7)  = ra_functions(:,7)
-                temp_functions(:,13) = ra_functions(:,13)
-                temp_constants(7)    = ra_constants(7)
-            Endif
+        Do i = 1, n_passive_scalars
+            Call Initialize_Diffusivity(temp_constants,temp_functions,&
+                kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
+                11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
+        Enddo
 
-            If (kappa_type .eq. 3) Then
-                temp_functions(:,5)  = ra_functions(:,5)
-                temp_functions(:,12) = ra_functions(:,12)
-                temp_constants(6)    = ra_constants(6)
-            Endif
-
-            do i = 0, n_active_scalars-1
-              If (kappa_chi_a_type(i+1) .eq. 3) Then
-                  temp_functions(:,15+i*2) = ra_functions(:,15+i*2)
-                  temp_functions(:,16+i*2) = ra_functions(:,16+i*2)
-                  temp_constants(11+i*2)   = ra_constants(11+i*2)
-              Endif
-            end do
-
-            do i = 0, n_passive_scalars-1
-              If (kappa_chi_p_type(i+1) .eq. 3) Then
-                  temp_functions(:,15+(n_active_scalars+i)*2) = ra_functions(:,15+(n_active_scalars+i)*2)
-                  temp_functions(:,16+(n_active_scalars+i)*2) = ra_functions(:,16+(n_active_scalars+i)*2)
-                  temp_constants(11+(n_active_scalars+i)*2)   = ra_constants(11+(n_active_scalars+i)*2)
-              Endif
-            end do
-
-            If (nu_type .eq. 3) Then
-                temp_functions(:,3)  = ra_functions(:,3)
-                temp_functions(:,11) = ra_functions(:,11)
-                temp_constants(5)    = ra_constants(5)
-            Endif
-
-            ra_constants(1:n_ra_constants) = temp_constants(:)
-            ra_functions(:,:) = temp_functions(:,:)
-            DeAllocate(temp_functions, temp_constants)
-
-
-        Endif
-
-        Call Compute_Diffusion_Coefs()
+        ! copy temporary arrays to ra_constants and ra_functions
+        ra_constants(1:n_ra_constants) = temp_constants(:)
+        ra_functions(:,:) = temp_functions(:,:)
+        DeAllocate(temp_functions, temp_constants)
 
     End Subroutine Initialize_Transport_Coefficients
 
@@ -1422,14 +1319,15 @@ Contains
 
     End Subroutine Allocate_Transport_Coefficients
 
-    Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
+    Subroutine Initialize_Diffusivity(temp_constants,temp_functions,xtop,xtype,xpower,ci,fi,dlnfi)
         Implicit None
-        Real*8, Intent(InOut) :: x(:), dlnx(:)
-        Real*8, Intent(InOut) :: xtop
-        Integer, Intent(In) :: ci, fi, dlnfi, xtype
+        Real*8, Intent(InOut) :: xtop, temp_constants(:), temp_functions(:,:)
+        Integer, Intent(In) :: xtype, ci, fi, dlnfi
         Real*8, Intent(In) :: xpower
         Character(len=2) :: ind
 
+        ! This probably shouldn't be here anymore, since the diffusivity_types are independent
+        ! of "reference_type .eq. 4". But leave on first pass (Loren, 12/22/2022)
         If (reference_type .eq. 4) Then
             If (xtop .le. 0) Then
                 If (ra_constant_set(ci) .eq. 0) Then
@@ -1445,28 +1343,27 @@ Contains
 
         Select Case(xtype)
             Case(1)
-                x(:) = xtop
-                dlnx(:) = 0.0d0
-                ra_constants(ci) = xtop
-                ra_functions(:,fi) = 1.0d0
-                ra_functions(:,dlnfi) = 0.0d0
+                temp_constants(ci) = xtop
+                temp_functions(:,fi) = 1.0d0
+                temp_functions(:,dlnfi) = 0.0d0
             Case(2)
-                Call vary_with_density(x,dlnx,xtop, xpower)
-                ra_constants(ci) = xtop
-                ra_functions(:,fi) = x(:)/xtop
-                ra_functions(:,dlnfi) = dlnx
+                temp_constants(ci) = xtop
+                temp_functions(:,fi) = (temp_functions(:,1)/temp_functions(1,1))**xpower
+                temp_functions(:,dlnfi) = xpower*temp_functions(:,8)
             Case(3)
                 If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
-                    x(:) = ra_constants(ci)*ra_functions(:,fi)
-                    dlnx(:) = ra_functions(:,dlnfi)
-                    xtop = x(1)
-                    ! Nothing to be done here for functions and constants -- completely set
+                    ! user specified both the constant and the function in the custom file
+                    temp_constants(ci) = ra_constants(ci)                    
+                    temp_functions(:,fi) = ra_functions(:,fi)
+                    temp_functions(:,dlnfi) = ra_functions(:,dlnfi)
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
-                    ra_constants(ci) = xtop
-                    x(:) = xtop*ra_functions(:,fi)/ra_functions(1,fi)
-                    dlnx(:) = ra_functions(:,dlnfi)
-                    xtop = x(1)
+                    ! User specified the function in the custom file, but not the constant
+                    ! Get the constant from main_input (and normalize the function to its top value)
+                    temp_constants(ci) = xtop
+                    temp_functions(:,fi) = ra_functions(:,fi)/ra_functions(1,fi)
+                    temp_functions(:,dlnfi) = ra_functions(:,dlnfi)
                 Else
+                    ! No function specified...user has messed up
                     If (my_rank .eq. 0) Then
                         Write(ind, '(I2)') fi
                         Call stdout%print('ERROR: function f_'//Adjustl(ind)//' must be set in the custom reference file')
@@ -1476,19 +1373,6 @@ Contains
         End Select
 
     End Subroutine Initialize_Diffusivity
-
-    Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
-        Implicit None
-        Real*8, Intent(InOut) :: coeff(:), dln(:)
-        Real*8, Intent(In) :: coeff_top, coeff_power
-
-        ! Computes a transport coefficient and its logarithmic derivative
-        ! using a density-dependent form for the coefficient:
-        !        coeff = coeff_top*(rho/rho_top)**coeff_power
-        coeff = coeff_top*(ref%density/ref%density(1))**coeff_power
-        dln = coeff_power*ref%dlnrho
-
-    End Subroutine Vary_With_Density
 
     Subroutine Restore_Transport_Defaults
         Implicit None
@@ -1590,5 +1474,99 @@ Contains
         Endif
 
     End Subroutine Compute_Diffusion_Coefs
+
+    Subroutine Initialize_PDE_Coefficients()
+        ! Sets Rayleigh's internal ReferenceInfo ("ref") structure from 
+        ! ra_constants and ra_functions (i.e., the arrays more familiar to the user/coder)
+        ! This routine is called at the end of everything the user/coder does to specify 
+        ! ra_constants and ra_functions
+
+        Implicit None
+        Integer :: i
+      
+        ! Thermodynamic (historical "reference-state") variables
+        ref%density(:) = ra_functions(:,1)
+        ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+        ref%temperature(:) = ra_functions(:,4)
+
+        ref%dlnrho(:)  = ra_functions(:,8)
+        ref%d2lnrho(:) = ra_functions(:,9)
+        ref%dlnt(:) = ra_functions(:,10)
+        ref%dsdr(:)     = ra_functions(:,14)
+
+        ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
+        ref%pressure_dwdr_term(:)= -ref%dpdr_w_term(:) 
+        ref%viscous_amp(:) = 2.0*ra_constants(8)/ref%temperature(:)
+        ref%lorentz_coeff = ra_constants(4)
+        ref%ohmic_amp(:) = ra_constants(9)/(ref%density(:)*ref%temperature(:))
+
+        Do i = 1, n_active_scalars
+            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+(i-1)*2)*ra_functions(:,2)
+        Enddo
+
+        ! Heating 
+        ref%heating(:) = ra_constants(10)*ra_functions(:,6)/(ra_functions(:,1)*ra_functions(:,4))
+        
+        ! Coriolis coefficient 
+        ! Before setting, allow angular_velocity to overwrite c_1
+        If (angular_velocity .gt. 0) Then
+            ra_constants(1) = 2.0d0*angular_velocity 
+        Endif
+        ref%coriolis_coeff = ra_constants(1)
+
+        ! Diffusion coefficients
+        ! Before setting, allow nu_top (and so on) to overwrite c_5 (and so on)
+        ! NOTE: User should NOT set (e.g.) nu_top > 0 if f_3 (e.g.) has somehow been set to zero,
+        ! since division by zero would then ensue here...
+        Call Allocate_Transport_Coefficients
+
+        If (nu_top .gt. 0.0d0) Then
+            ra_constants(5) = nu_top/ra_functions(1,3)
+        Endif
+        nu(:) = ra_constants(5)*ra_functions(:,3)
+        dlnu(:) = ra_functions(:,11)
+        If (viscous_heating) Then
+            Allocate(viscous_heating_coeff(1:N_R))
+            viscous_heating_coeff(:) = ref%viscous_amp(:)*nu(:)
+        Endif
+
+        If (kappa_top .gt. 0.0d0) Then
+            ra_constants(6) = kappa_top/ra_functions(1,5)
+        Endif
+        kappa(:) = ra_constants(6)*ra_functions(:,5)
+        dlnkappa(:) = ra_functions(:,12)
+
+        If (magnetism) Then
+            If (eta_top .gt. 0.0d0) Then
+                ra_constants(7) = eta_top/ra_functions(1,7)
+            Endif
+            eta(:) = ra_constants(7)*ra_functions(:,7)
+            dlneta(:) = ra_functions(:,13)
+            If (ohmic_heating) Then
+                Allocate(ohmic_heating_coeff(1:N_R))
+                ohmic_heating_coeff(:) = ref%ohmic_amp(:)*eta(:)
+            Endif
+        Endif
+
+        Do i = 1, n_active_scalars
+            If (kappa_chi_a_top(i) .gt. 0.0d0) Then
+                ra_constants(11+(i-1)*2) = kappa_chi_a_top(i)/ra_functions(1,15+(i-1)*2)
+            Endif
+            kappa_chi_a(i,:) = ra_constants(11+(i-1)*2)*ra_functions(:,15+(i-1)*2)
+            dlnkappa_chi_a(i,:) = ra_functions(:,16+(i-1)*2)
+        Enddo
+
+        Do i = 1, n_passive_scalars
+            If (kappa_chi_p_top(i) .gt. 0.0d0) Then
+                ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_top(i)/ra_functions(1,15+(n_active_scalars+i-1)*2)
+            Endif
+            kappa_chi_p(i,:) = ra_constants(11+(n_active_scalars+i-1)*2)*ra_functions(:,15+(n_active_scalars+i-1)*2)
+            dlnkappa_chi_p(i,:) = ra_functions(:,16+(n_active_scalars+i-1)*2)
+        Enddo
+
+        ! Finally, get the other "internal" diffusion coefficients
+        Call Compute_Diffusion_Coefs()
+
+    End Subroutine Initialize_PDE_Coefficients
 
 End Module PDE_Coefficients

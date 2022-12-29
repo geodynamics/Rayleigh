@@ -82,13 +82,14 @@ Contains
         Call Initialize_Benchmarking()
 
         Call Initialize_FFts()
+
         Call Initialize_Reference()
+        Call Initialize_Transport_Coefficients()
+        Call Initialize_PDE_Coefficients()
 
         Call Initialize_Field_Structure()
         Call Initialize_Checkpointing()
-        Call Initialize_Transport_Coefficients()
         Call Initialize_Boundary_Conditions()
-
 
         Call Write_Equation_Coefficients_File()
 
