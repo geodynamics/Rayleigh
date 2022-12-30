@@ -731,8 +731,12 @@ Contains
             Write(6,*)'Reading from: ', custom_reference_file
         Endif
 
+        ! All we have to do for this type is read the custom_reference_file
         Call Read_Custom_Reference_File(custom_reference_file)
 
+        ! Consistency check
+        ! Issue: if it's an "error", the code should exit below; 
+        ! if not, then ERROR --> WARNING
         Do i=1,4
             fi = fi_to_check(i)
             If (ra_function_set(fi) .eq. 0) Then
@@ -742,40 +746,6 @@ Contains
                 Endif
             Endif
         Enddo
-
-        ref%density(:) = ra_functions(:,1)
-        ref%dlnrho(:)  = ra_functions(:,8)
-        ref%d2lnrho(:) = ra_functions(:,9)
-        ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
-        do i = 0, n_active_scalars-1
-            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+i*2)*ra_functions(:,2)
-        end do
-
-        ref%temperature(:) = ra_functions(:,4)
-        ref%dlnT(:) = ra_functions(:,10)
-
-        If (abs(Luminosity) .gt. heating_eps) Then
-            ra_constants(10) = Luminosity
-        Endif
-
-        If (abs(Heating_Integral) .gt. heating_eps) Then
-            ra_constants(10) = Heating_Integral
-        Endif
-
-        ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
-        
-        ref%Coriolis_Coeff = ra_constants(1)
-        If (Angular_Velocity .gt. 0) Then
-            ref%Coriolis_Coeff  = 2.0d0*Angular_velocity
-            ra_constants(1) = ref%Coriolis_Coeff
-        Endif
-        ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
-        ref%pressure_dwdr_term(:)= - ref%dpdr_w_term(:) 
-        ref%viscous_amp(:) = 2.0/ref%temperature(:)*ra_constants(8)
-        ref%Lorentz_Coeff = ra_constants(4)
-        ref%ohmic_amp(:) = ra_constants(9)/(ref%density(:)*ref%temperature(:))
-
-        ref%dsdr(:)     = ra_functions(:,14)
 
     End Subroutine Get_Custom_Reference
 
