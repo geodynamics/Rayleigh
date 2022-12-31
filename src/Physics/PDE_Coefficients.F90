@@ -339,17 +339,6 @@ Contains
         Enddo
 
         pressure_specific_heat = 1.0d0
-        Call initialize_reference_heating()
-        If (heating_type .eq. 0) Then
-            !Otherwise, s_conductive will be calculated in initial_conditions
-            Allocate(s_conductive(1:N_R))
-            r_outer = radius(1)
-            r_inner = radius(N_R)
-            prefactor = r_outer*r_inner/(r_inner-r_outer)
-            Do i = 1, N_R
-                s_conductive(i) = prefactor*(1.0d0/r_outer-1.0d0/radius(i))
-            Enddo
-        Endif
 
         If (.not. rotation) Then
             pscaling = 1.0d0
@@ -399,12 +388,28 @@ Contains
         ra_constants(8) = 0.0d0
         ra_constants(9) = 0.0d0
 
-        ! c_10 is managed by Initialize_Reference_Heating() here
+        ! c_10 is managed by Initialize_Reference_Heating() in this file
         ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
         ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
         Do j = 1, n_active_scalars
             ra_constants(12+(j-1)*2) = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
-        Enddo        
+        Enddo
+        
+        ! Compute background conductive profile (which could transport all the energy 
+        ! through the layer in the absence of convection and internal heating)
+        If (heating_type .eq. 0) Then
+            !Otherwise, s_conductive will be calculated in initial_conditions
+            Allocate(s_conductive(1:N_R))
+            r_outer = radius(1)
+            r_inner = radius(N_R)
+            prefactor = r_outer*r_inner/(r_inner-r_outer)
+            Do i = 1, N_R
+                s_conductive(i) = prefactor*(1.0d0/r_outer-1.0d0/radius(i))
+            Enddo
+        Endif
+
+        ! Get possible internal heating
+        Call Initialize_Reference_Heating()
 
     End Subroutine Constant_Reference
 
@@ -465,7 +470,6 @@ Contains
         ref%d2lnrho = ref%d2lnrho+dtmparr
 
         ref%dsdr(:) = 0.0d0
-        Call Initialize_Reference_Heating()
 
         ref%Coriolis_Coeff = 2.0d0
         ref%dpdr_w_term(:) = ref%density
@@ -514,12 +518,15 @@ Contains
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
         DeAllocate(dtmparr, gravity)
 
-        ! c_10 is managed by Initialize_Reference_Heating() here
+        ! c_10 is managed by Initialize_Reference_Heating() in this file
         ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
         ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
         Do i = 1, n_active_scalars
             ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
         Enddo 
+
+        ! Get possible internal heating
+        Call Initialize_Reference_Heating()
 
     End Subroutine Polytropic_ReferenceND
 
@@ -618,8 +625,6 @@ Contains
 
         Deallocate(zeta, gravity)
 
-        Call Initialize_Reference_Heating()
-
         ref%Coriolis_Coeff        = 2.0d0*Angular_velocity
         ref%dpdr_w_term(:)        = ref%density
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
@@ -649,12 +654,15 @@ Contains
         ra_constants(8) = 1.0d0
         ra_constants(9) = ref%Lorentz_Coeff 
       
-        ! c_10 is managed by Initialize_Reference_Heating() here
+        ! c_10 is managed by Initialize_Reference_Heating() in this file
         ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
         ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
         Do i = 1, n_active_scalars
             ra_constants(12+(i-1)*2) = -1.0d0
         Enddo 
+
+        ! Get possible internal heating
+        Call Initialize_Reference_Heating()
 
     End Subroutine Polytropic_Reference
 
