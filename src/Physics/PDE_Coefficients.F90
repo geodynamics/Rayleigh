@@ -1286,11 +1286,18 @@ Contains
         Implicit None
         Integer :: i
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
-        Logical :: restore, need_custom
+        Logical :: need_custom
 
-        restore = .false.
-
-        Call Allocate_Transport_Coefficients
+        ! In this routine, we may need to read in the custom file, which will overwrite
+        ! ra_constants and ra_functions
+        ! To be safe, we save the original ra_constants and ra_functions in temporary arrays
+        ! Below, we only modify the diffusion-related parts of the temporary arrays, then copy 
+        ! everything over to ra_constants and ra_functions at the end
+        Allocate(temp_functions(1:n_r, 1:n_ra_functions))
+        Allocate(temp_constants(1:n_ra_constants))
+        temp_functions(:,:) = ra_functions(:,:)
+        ! Note that ra_constants is allocated up to max_ra_constants
+        temp_constants(:) = ra_constants(1:n_ra_constants)   
 
         ! Figure out if we need to read anything from the custom file 
         ! (many "types" to check now because of the new scalar diffusion coefficients)
@@ -1312,100 +1319,34 @@ Contains
         Enddo
 
         If ((.not. custom_reference_read) .and. need_custom) Then
-            Allocate(temp_functions(1:n_r, 1:n_ra_functions))
-            Allocate(temp_constants(1:n_ra_constants))
-            temp_functions(:,:) = ra_functions(:,:)
-            ! Note that ra_constants is allocated up to max_ra_constants,
-            ! which could be more than n_ra_constants
-            temp_constants(:) = ra_constants(1:n_ra_constants)
-            restore = .true.
-            ! If we read the custom file, we may overwrite things besides the diffusion coefficients
-            ! We "back up" the current reference state in temp_constants and temp_functions
-            ! Below, we modify only the "temp" equation coefficients associated with custom diffusions
-            ! Then we restore ra_constants and ra_functions from the "temp" arrays
-            ! BUG IN OUTPUT (Loren, 12/24/22, Merry Christmas!): If one diffusion type is custom
-            ! but another isn't, then the ra_constants/ra_functions associated with the non-custom diffusion
-            ! will be set correctly by the Initialize_Diffusivity routine, but then overwritten,
-            ! likely with erroneous values, in the "restore" process below. 
-            ! Will fix this issue in a later pull request. 
             Call Read_Custom_Reference_File(custom_reference_file)
         EndIf
 
-
-        Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
-        Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
-        do i = 1, n_active_scalars
-          Call Initialize_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
-                                      kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
-                                      11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
-        end do
-        do i = 1, n_passive_scalars
-          Call Initialize_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
-                                      kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
-                                      11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
-        end do
-
-        If (viscous_heating) Then
-            Allocate(viscous_heating_coeff(1:N_R))
-            viscous_heating_coeff(1:N_R) = ref%viscous_amp(1:N_R)*nu(1:N_R)
-        Endif
-
+        Call Initialize_Diffusivity(temp_constants,temp_functions,nu_top,nu_type,nu_power,5,3,11)
+        Call Initialize_Diffusivity(temp_constants,temp_functions,kappa_top,kappa_type,kappa_power,6,5,12)
         If (magnetism) Then
-
-            Call Initialize_Diffusivity(eta,dlneta,eta_top,eta_type,eta_power,7,7,13)
-            If (ohmic_heating) Then
-                Allocate(ohmic_heating_coeff(1:N_R))
-                ohmic_heating_coeff(1:N_R) = ref%ohmic_amp(1:N_R)*eta(1:N_R)
-            Endif
+            Call Initialize_Diffusivity(temp_constants,temp_functions,eta_top,eta_type,eta_power,7,7,13)
         Else
-            eta(:)    = 0.0d0 ! eta was already allocated, but never initialized since this
-            dlneta(:) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
+            temp_functions(:,7) = 0.0d0 ! eta was already allocated, but never initialized since this
+            temp_functions(:,13) = 0.0d0 ! run has magnetism = False. Explicitly set eta to zero
         Endif
 
-        If (restore) Then
+        Do i = 1, n_active_scalars
+            Call Initialize_Diffusivity(temp_constants,temp_functions,&
+                kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
+                11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
+        Enddo
 
-            If (eta_type .eq. 3) Then
-                temp_functions(:,7)  = ra_functions(:,7)
-                temp_functions(:,13) = ra_functions(:,13)
-                temp_constants(7)    = ra_constants(7)
-            Endif
+        Do i = 1, n_passive_scalars
+            Call Initialize_Diffusivity(temp_constants,temp_functions,&
+                kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
+                11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
+        Enddo
 
-            If (kappa_type .eq. 3) Then
-                temp_functions(:,5)  = ra_functions(:,5)
-                temp_functions(:,12) = ra_functions(:,12)
-                temp_constants(6)    = ra_constants(6)
-            Endif
-
-            do i = 0, n_active_scalars-1
-              If (kappa_chi_a_type(i+1) .eq. 3) Then
-                  temp_functions(:,15+i*2) = ra_functions(:,15+i*2)
-                  temp_functions(:,16+i*2) = ra_functions(:,16+i*2)
-                  temp_constants(11+i*2)   = ra_constants(11+i*2)
-              Endif
-            end do
-
-            do i = 0, n_passive_scalars-1
-              If (kappa_chi_p_type(i+1) .eq. 3) Then
-                  temp_functions(:,15+(n_active_scalars+i)*2) = ra_functions(:,15+(n_active_scalars+i)*2)
-                  temp_functions(:,16+(n_active_scalars+i)*2) = ra_functions(:,16+(n_active_scalars+i)*2)
-                  temp_constants(11+(n_active_scalars+i)*2)   = ra_constants(11+(n_active_scalars+i)*2)
-              Endif
-            end do
-
-            If (nu_type .eq. 3) Then
-                temp_functions(:,3)  = ra_functions(:,3)
-                temp_functions(:,11) = ra_functions(:,11)
-                temp_constants(5)    = ra_constants(5)
-            Endif
-
-            ra_constants(1:n_ra_constants) = temp_constants(:)
-            ra_functions(:,:) = temp_functions(:,:)
-            DeAllocate(temp_functions, temp_constants)
-
-
-        Endif
-
-        Call Compute_Diffusion_Coefs()
+        ! copy temporary arrays to ra_constants and ra_functions
+        ra_constants(1:n_ra_constants) = temp_constants(:)
+        ra_functions(:,:) = temp_functions(:,:)
+        DeAllocate(temp_functions, temp_constants)
 
     End Subroutine Initialize_Transport_Coefficients
 
@@ -1425,14 +1366,15 @@ Contains
 
     End Subroutine Allocate_Transport_Coefficients
 
-    Subroutine Initialize_Diffusivity(x,dlnx,xtop,xtype,xpower,ci,fi,dlnfi)
+    Subroutine Initialize_Diffusivity(temp_constants,temp_functions,xtop,xtype,xpower,ci,fi,dlnfi)
         Implicit None
-        Real*8, Intent(InOut) :: x(:), dlnx(:)
-        Real*8, Intent(InOut) :: xtop
-        Integer, Intent(In) :: ci, fi, dlnfi, xtype
+        Real*8, Intent(InOut) :: xtop, temp_constants(:), temp_functions(:,:)
+        Integer, Intent(In) :: xtype, ci, fi, dlnfi
         Real*8, Intent(In) :: xpower
         Character(len=2) :: ind
 
+        ! This probably shouldn't be here anymore, since the diffusivity_types are independent
+        ! of "reference_type .eq. 4". But leave on first pass (Loren, 12/22/2022)
         If (reference_type .eq. 4) Then
             If (xtop .le. 0) Then
                 If (ra_constant_set(ci) .eq. 0) Then
@@ -1448,28 +1390,27 @@ Contains
 
         Select Case(xtype)
             Case(1)
-                x(:) = xtop
-                dlnx(:) = 0.0d0
-                ra_constants(ci) = xtop
-                ra_functions(:,fi) = 1.0d0
-                ra_functions(:,dlnfi) = 0.0d0
+                temp_constants(ci) = xtop
+                temp_functions(:,fi) = 1.0d0
+                temp_functions(:,dlnfi) = 0.0d0
             Case(2)
-                Call vary_with_density(x,dlnx,xtop, xpower)
-                ra_constants(ci) = xtop
-                ra_functions(:,fi) = x(:)/xtop
-                ra_functions(:,dlnfi) = dlnx
+                temp_constants(ci) = xtop
+                temp_functions(:,fi) = (temp_functions(:,1)/temp_functions(1,1))**xpower
+                temp_functions(:,dlnfi) = xpower*temp_functions(:,8)
             Case(3)
                 If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
-                    x(:) = ra_constants(ci)*ra_functions(:,fi)
-                    dlnx(:) = ra_functions(:,dlnfi)
-                    xtop = x(1)
-                    ! Nothing to be done here for functions and constants -- completely set
+                    ! user specified both the constant and the function in the custom file
+                    temp_constants(ci) = ra_constants(ci)                    
+                    temp_functions(:,fi) = ra_functions(:,fi)
+                    temp_functions(:,dlnfi) = ra_functions(:,dlnfi)
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
-                    ra_constants(ci) = xtop
-                    x(:) = xtop*ra_functions(:,fi)/ra_functions(1,fi)
-                    dlnx(:) = ra_functions(:,dlnfi)
-                    xtop = x(1)
+                    ! User specified the function in the custom file, but not the constant
+                    ! Get the constant from main_input (and normalize the function to its top value)
+                    temp_constants(ci) = xtop
+                    temp_functions(:,fi) = ra_functions(:,fi)/ra_functions(1,fi)
+                    temp_functions(:,dlnfi) = ra_functions(:,dlnfi)
                 Else
+                    ! No function specified...user has messed up
                     If (my_rank .eq. 0) Then
                         Write(ind, '(I2)') fi
                         Call stdout%print('ERROR: function f_'//Adjustl(ind)//' must be set in the custom reference file')
@@ -1479,19 +1420,6 @@ Contains
         End Select
 
     End Subroutine Initialize_Diffusivity
-
-    Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
-        Implicit None
-        Real*8, Intent(InOut) :: coeff(:), dln(:)
-        Real*8, Intent(In) :: coeff_top, coeff_power
-
-        ! Computes a transport coefficient and its logarithmic derivative
-        ! using a density-dependent form for the coefficient:
-        !        coeff = coeff_top*(rho/rho_top)**coeff_power
-        coeff = coeff_top*(ref%density/ref%density(1))**coeff_power
-        dln = coeff_power*ref%dlnrho
-
-    End Subroutine Vary_With_Density
 
     Subroutine Restore_Transport_Defaults
         Implicit None
@@ -1643,7 +1571,7 @@ Contains
         ! Before setting, allow nu_top (and so on) to overwrite c_5 (and so on)
         ! NOTE: User should NOT set (e.g.) nu_top > 0 if f_3 (e.g.) has somehow been set to zero,
         ! since division by zero would then ensue here...
-        !Call Allocate_Transport_Coefficients
+        Call Allocate_Transport_Coefficients
 
         If (nu_top .gt. 0.0d0) Then
             ra_constants(5) = nu_top/ra_functions(1,3)
@@ -1651,7 +1579,7 @@ Contains
         nu(:) = ra_constants(5)*ra_functions(:,3)
         dlnu(:) = ra_functions(:,11)
         If (viscous_heating) Then
-            !Allocate(viscous_heating_coeff(1:N_R))
+            Allocate(viscous_heating_coeff(1:N_R))
             viscous_heating_coeff(:) = ref%viscous_amp(:)*nu(:)
         Endif
 
@@ -1668,7 +1596,7 @@ Contains
             eta(:) = ra_constants(7)*ra_functions(:,7)
             dlneta(:) = ra_functions(:,13)
             If (ohmic_heating) Then
-                !Allocate(ohmic_heating_coeff(1:N_R))
+                Allocate(ohmic_heating_coeff(1:N_R))
                 ohmic_heating_coeff(:) = ref%ohmic_amp(:)*eta(:)
             Endif
         Endif
@@ -1690,7 +1618,7 @@ Contains
         Enddo
 
         ! Finally, get the other "internal" diffusion coefficients
-        !Call Compute_Diffusion_Coefs()
+        Call Compute_Diffusion_Coefs()
 
     End Subroutine Initialize_PDE_Coefficients
 
