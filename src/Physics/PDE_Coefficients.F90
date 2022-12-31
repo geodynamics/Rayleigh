@@ -817,9 +817,9 @@ Contains
         ref%dlnrho(:)  = ra_functions(:,8)
         ref%d2lnrho(:) = ra_functions(:,9)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
-        do i = 0, n_active_scalars-1
-            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+i*2)*ra_functions(:,2)
-        end do
+        Do i = 1, n_active_scalars
+            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+(i-1)*2)*ra_functions(:,2)
+        Enddo
 
         ref%temperature(:) = ra_functions(:,4)
         ref%dlnT(:) = ra_functions(:,10)
