@@ -330,13 +330,13 @@ Contains
             ref%Buoyancy_Coeff(i) = amp*(radius(i)/radius(1))**gravity_power
         Enddo
 
-        do j = 1, n_active_scalars
-          amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+        Do j = 1, n_active_scalars
+            amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
 
-          Do i = 1, N_R
-              ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
-          Enddo
-        enddo
+            Do i = 1, N_R
+                ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
+            Enddo
+        Enddo
 
         pressure_specific_heat = 1.0d0
         Call initialize_reference_heating()
@@ -398,6 +398,13 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 0.0d0
         ra_constants(9) = 0.0d0
+
+        ! c_10 is managed by Initialize_Reference_Heating() here
+        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
+        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
+        Do j = 1, n_active_scalars
+            ra_constants(12+(j-1)*2) = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+        Enddo        
 
     End Subroutine Constant_Reference
 
@@ -506,6 +513,14 @@ Contains
             ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
         DeAllocate(dtmparr, gravity)
+
+        ! c_10 is managed by Initialize_Reference_Heating() here
+        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
+        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+        Enddo 
+
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
@@ -632,7 +647,14 @@ Contains
         ra_constants(3) = 1.0d0
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 1.0d0
-        ra_constants(9) = ref%Lorentz_Coeff       
+        ra_constants(9) = ref%Lorentz_Coeff 
+      
+        ! c_10 is managed by Initialize_Reference_Heating() here
+        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
+        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -1.0d0
+        Enddo 
 
     End Subroutine Polytropic_Reference
 
