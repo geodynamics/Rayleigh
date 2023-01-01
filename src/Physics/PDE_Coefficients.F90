@@ -317,83 +317,57 @@ Contains
             Endif
         Endif
 
-        ref%density      = 1.0d0
-        ref%dlnrho       = 0.0d0
-        ref%d2lnrho      = 0.0d0
-        ref%temperature  = 1.0d0
-        ref%dlnT         = 0.0d0
-        ref%dsdr         = 0.0d0
+        ! Set the equation coefficients (except mostly the ones having to do with diffusivities)
+        ! Do this by constants first, then functions (more or less by ascending index)
 
-        amp = Rayleigh_Number/Prandtl_Number
-
-        Do i = 1, N_R
-            ref%Buoyancy_Coeff(i) = amp*(radius(i)/radius(1))**gravity_power
-        Enddo
-
-        Do j = 1, n_active_scalars
-            amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
-
-            Do i = 1, N_R
-                ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
-            Enddo
-        Enddo
-
-        pressure_specific_heat = 1.0d0
-
-        If (.not. rotation) Then
-            pscaling = 1.0d0
+        ! Constants
+        ra_constants(1) = 2.0d0/Ekman_Number
+        ra_constants(2) = Rayleigh_Number/Prandtl_Number 
+        If (rotation) Then
+            ra_constants(3) = 1.0d0/Ekman_Number            
         Else
-            pscaling = 1.0d0/Ekman_Number
+            ra_constants(3) = 1.0d0            
         Endif
-
-        !Define the various equation coefficients
-        ref%dpdr_w_term(:)        =  ref%density*pscaling
-        ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
-        ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
-
-        nu_top       = 1.0d0
-        kappa_top       = 1.0d0/Prandtl_Number
-        ref%viscous_amp(1:N_R) = 2.0d0
-        do i = 1, n_active_scalars
-            kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
-        enddo
-        do i = 1, n_passive_scalars
-            kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
-        enddo
 
         If (magnetism) Then
-            ref%Lorentz_Coeff    = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
-            eta_Top     = 1.0d0/Magnetic_Prandtl_Number
-            ref%ohmic_amp(1:N_R) = ref%lorentz_coeff
+            ra_constants(4) = 1.0d0/(Magnetic_Prandtl_Number*Ekman_Number)
+            eta_top     = 1.0d0/Magnetic_Prandtl_Number
         Else
-            ref%Lorentz_Coeff    = 0.0d0
-            eta_Top     = 0.0d0
-            ref%ohmic_amp(1:N_R) = 0.0d0
+            ra_constants(4) = 0.0d0
+            eta_top     = 0.0d0
         Endif
-        
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Rayleigh_Number/Prandtl_Number
-        ra_constants(3) = pscaling
-        ra_constants(4) = ref%Lorentz_Coeff
+
+        ! In non-dimensional Boussinesq, the diffusion coefficients are not (by default)
+        ! independent parameters, except for their radial shapes
+        nu_top = 1.0d0
+        kappa_top = 1.0d0/Prandtl_Number
+        Do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = 1.0d0/Chi_A_Prandtl_Number(i)
+            ! Set the active-scalar buoyancy coefficients, c_[12 + (i-1)*2], here:
+            ra_constants(12+(i-1)*2) = -Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i)
+        Enddo
+        Do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = 1.0d0/Chi_P_Prandtl_Number(i)
+        Enddo
+ 
+        ! Though it has no effect (viscous_heating = ohmic_heating = .false.), 
+        ! turn off the viscous/ohmic dissipation terms (again) for logical consistency
         ra_constants(8) = 0.0d0
         ra_constants(9) = 0.0d0
-
         ! c_10 is managed by Initialize_Reference_Heating() in this file
         ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
-        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
-        Do j = 1, n_active_scalars
-            ra_constants(12+(j-1)*2) = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
-        Enddo
+
+        ! Functions
+        ra_functions(:,1) = 1.0d0
+        ra_functions(:,8) = 0.0d0
+        ra_functions(:,9) = 0.0d0 
+
+        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
+
+        ra_functions(:,4) = 1.0d0
+        ra_functions(:,10) = 0.0d0      
+
+        ra_functions(:,14) = 0.0d0      
         
         ! Compute background conductive profile (which could transport all the energy 
         ! through the layer in the absence of convection and internal heating)
@@ -408,7 +382,7 @@ Contains
             Enddo
         Endif
 
-        ! Get possible internal heating
+        ! Heating
         Call Initialize_Reference_Heating()
 
     End Subroutine Constant_Reference
