@@ -280,7 +280,7 @@ Contains
         Real*8 :: rotational_timescale
         !Adjust the maximum timestep to account for rotation rate, if necessary.
         
-        rotational_timescale = 1.0d0/ref%Coriolis_Coeff
+        rotational_timescale = 1.0d0/ra_constants(1)
         
         ! Minimum sampling would require two time samples per rotational timescale.
         ! We specify 4 samples and further adjust by the CFL safety factor.
