@@ -66,7 +66,7 @@ Contains
         Implicit None
         Integer :: mode_remember, integration_remember, report_remember
         Integer :: init_remember, restart_remember, minit_remember
-        Integer :: ref_remember
+        Integer :: ref_remember, type_remember
         Character*120 :: file_remember
         ! This routine re-initializes input values to their benchmark values
 
@@ -81,6 +81,8 @@ Contains
             minit_remember = magnetic_init_type
             ref_remember = reference_type
             file_remember = custom_reference_file
+            type_remember = heating_type
+            
             Call Restore_Transport_Defaults()
             Call Restore_InitialCondition_Defaults()
             Call Restore_BoundaryCondition_Defaults()
@@ -308,9 +310,17 @@ Contains
         If (ref_remember .eq. 4) Then
             reference_type = 4
             custom_reference_file = file_remember
+            heating_type = type_remember
             If (global_rank .eq. 0) Then
                 Write(6,*)'Reference Type 4 set for Benchmark Mode.'
             Endif
+        Endif
+        
+        If (with_custom_reference) Then
+            !For testing purposes, we may want to modify
+            !the buoyancy term and the heating
+            custom_reference_file = file_remember
+            heating_type = type_remember
         Endif
 
     End Subroutine Benchmark_Input_Reset
