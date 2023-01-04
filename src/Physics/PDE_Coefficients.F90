@@ -1173,13 +1173,13 @@ Contains
 
         ! Custom reference-state variables (reference_type = 4)
         !       NOTE: n_ra_constants / n_ra_functions do not have default values (but maybe do, if you consider the Allocate_Reference_State() routine)
-        with_custom_reference = .false.
-        override_constants = .false.
-        override_constant(1:max_ra_constants) = .false. ! in namelist
-        with_custom_constants(1:max_ra_constants) = 0   ! in namelist
-        with_custom_functions(1:max_ra_functions) = 0   ! in namelist
-        ra_constants(1:max_ra_constants) = 0.0d0        ! in namelist
-        custom_reference_read = .false.
+        !with_custom_reference = .false.
+        !override_constants = .false.
+        !override_constant(1:max_ra_constants) = .false. ! in namelist
+        !with_custom_constants(1:max_ra_constants) = 0   ! in namelist
+        !with_custom_functions(1:max_ra_functions) = 0   ! in namelist
+        !ra_constants(1:max_ra_constants) = 0.0d0        ! in namelist
+        !custom_reference_read = .false.
         custom_reference_file ='nothing'  
 
         ! Internal heating variables
@@ -1240,11 +1240,11 @@ Contains
         If (allocated(s_conductive)) DeAllocate(s_conductive)
     
         ! Deallocate custom-reference stuff
-        If (allocated(ra_constant_set)) DeAllocate(ra_constant_set)
-        If (allocated(ra_function_set)) DeAllocate(ra_function_set)
-        If (allocated(use_custom_constant)) DeAllocate(use_custom_constant)
-        If (allocated(use_custom_function)) DeAllocate(use_custom_function)
-        If (allocated(ra_functions)) DeAllocate(ra_functions)
+        !If (allocated(ra_constant_set)) DeAllocate(ra_constant_set)
+        !If (allocated(ra_function_set)) DeAllocate(ra_function_set)
+        !If (allocated(use_custom_constant)) DeAllocate(use_custom_constant)
+        !If (allocated(use_custom_function)) DeAllocate(use_custom_function)
+        !If (allocated(ra_functions)) DeAllocate(ra_functions)
 
         ! Deallocate transport-coefficient stuff
         If (allocated(nu)) DeAllocate(nu)
