@@ -522,6 +522,35 @@ Contains
         ! poly_rho_i
 
         ! Note that cp must also be specified.
+
+        ! Set the equation coefficients (except mostly the ones having to do with diffusivities)
+        ! Do this by constants first, then functions (more or less by ascending index)
+
+        ! Constants
+        ra_constants(1) = 2.0d0*Angular_Velocity
+        ra_constants(2) = 1.0d0 
+        ra_constants(3) = 1.0d0
+
+        If (magnetism) Then
+            ra_constants(4) = 1.0d0/four_pi
+        Endif ! if not magnetism, ra_constants(4) was initialized to zero
+ 
+        ra_constants(8) = 1.0d0
+        If (magnetism) Then
+            ra_constants(9) = 1.0d0/four_pi
+        Endif ! if not magnetism, ra_constants(9) was initialized to zero
+
+        ! c_10 is managed by Initialize_Reference_Heating() in this file
+        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
+
+        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -1.0d0
+        Enddo 
+
+        ! Functions
+
+        ! Compute dimensional polytrope
         InnerRadius = Radius(N_r)
         OuterRadius = Radius(1)
 
@@ -556,69 +585,27 @@ Contains
 
         !-----------------------------------------------------------
         ! Initialize reference structure
-        Gravity = Gravitational_Constant * poly_mass / Radius**2
+        gravity = Gravitational_Constant * poly_mass / Radius**2
 
         ! The following is needed to calculate the entropy gradient
         thermo_gamma = 5.0d0/3.0d0
         volume_specific_heat = pressure_specific_heat / thermo_gamma
 
-        Ref%Density = rho_c * zeta**poly_n
+        ra_functions(:,1) = rho_c * zeta**poly_n
+        ra_functions(:,8) = - poly_n * c1 * d / (zeta * Radius**2)
+        ra_functions(:,9) = - ra_functions(:,8)*(2.0d0/Radius-c1*d/zeta/Radius**2)
 
-        Ref%dlnrho = - poly_n * c1 * d / (zeta * Radius**2)
-        Ref%d2lnrho = - Ref%dlnrho*(2.0d0/Radius-c1*d/zeta/Radius**2)
+        ra_functions(:,2) = ra_functions(:,1)*gravity/Pressure_Specific_Heat
 
-        Ref%Temperature = T_c * zeta
-        Ref%dlnT = -(c1*d/Radius**2)/zeta
+        ra_functions(:,4) = T_c * zeta
+        ra_functions(:,10) = -(c1*d/Radius**2)/zeta
 
-        Ref%dsdr = volume_specific_heat * (Ref%dlnT - (thermo_gamma - 1.0d0) * Ref%dlnrho)
-
-        Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
-
-        do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = -gravity/pressure_specific_heat*ref%density
-        end do
+        ra_functions(:,14) = volume_specific_heat * (ra_functions(:,10) - (thermo_gamma - 1.0d0) * ra_functions(:,8))
 
         Deallocate(zeta, gravity)
 
-        ref%Coriolis_Coeff        = 2.0d0*Angular_velocity
-        ref%dpdr_w_term(:)        = ref%density
-        ref%pressure_dwdr_term(:) = -1.0d0*ref%density
-        ref%viscous_amp(1:N_R)    = 2.0d0/ref%temperature(1:N_R)
-        If (magnetism) Then
-            ref%Lorentz_Coeff = 1.0d0/four_pi
-            ref%ohmic_amp(1:N_R) = ref%lorentz_coeff/ref%density(1:N_R)/ref%temperature(1:N_R)
-        Else
-            ref%Lorentz_Coeff = 0.0d0
-            ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif
-
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = ref%Buoyancy_Coeff
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = 1.0d0
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = 1.0d0
-        ra_constants(9) = ref%Lorentz_Coeff 
-      
-        ! c_10 is managed by Initialize_Reference_Heating() in this file
-        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
-        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
-        Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -1.0d0
-        Enddo 
-
-        ! Get possible internal heating
-        Call Initialize_Reference_Heating()
-
+        ! Heating
+        Call Initialize_Reference_Heating()     
     End Subroutine Polytropic_Reference
 
     Subroutine Initialize_Reference_Heating()
