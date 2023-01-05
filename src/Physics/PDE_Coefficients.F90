@@ -42,6 +42,7 @@ Module PDE_Coefficients
     !///////////////////////////////////////////////////////////
     ! I.  Variables describing the background reference state
 
+
     ! The following derived type (the lone instance of which is "ref") is used by the code to access the PDE coefficients
     Type ReferenceInfo
         Real*8, Allocatable :: Density(:)
@@ -1152,38 +1153,122 @@ Contains
 
     Subroutine Restore_Reference_Defaults
         Implicit None
-        !Restore all values in this module to their default state.
-        !Deallocates all allocatable module variables.
-        reference_type =1
-        heating_type = 0
-        Luminosity =0.0d0
+        ! Restore all variables in this module to their default state.
+        ! Deallocates all allocatable module variables.
 
-        pressure_specific_heat = 0.0d0 ! CP (not CV)
-        poly_n = 0.0d0
-        poly_Nrho = 0.0d0
-        poly_mass = 0.0d0
-        poly_rho_i = 0.0d0
+        ! Which background state to use; default 1 (non-dimensional Boussinesq)
+        reference_type = 1 
 
-        Angular_Velocity = -1.0d0
-
+        ! Nondimensional variables (reference_type = 1,3)
         Rayleigh_Number         = 1.0d0
         Ekman_Number            = 1.0d0
         Prandtl_Number          = 1.0d0
         Magnetic_Prandtl_Number = 1.0d0
         gravity_power           = 0.0d0
+        Dissipation_Number      = 0.0d0
+        Modified_Rayleigh_Number = 0.0d0
 
-        custom_reference_file ='nothing'
+        ! Nondimensional variables for the active/passive scalar fields
+        chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
+        chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
+        chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+        chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
 
-        If (allocated(s_conductive)) DeAllocate(s_conductive)
+        ! Dimensional anelastic variables (reference_type = 2)
+        pressure_specific_heat  = 1.0d0 ! CP (not CV)
+        poly_n = 0.0d0 ! Polytropic index
+        poly_Nrho = 0.0d0 ! Number of density scale heights across domain
+        poly_mass = 0.0d0 ! Stellar mass; g(r) = G*poly_mass/r^2
+        poly_rho_i = 0.0d0 ! Density (g/cm^3) at the inner radius rmin
+        Angular_Velocity = -1.0d0 ! Frame rotation rate (sets Coriolis force)
+
+        ! Custom reference-state variables (reference_type = 4)
+        !       NOTE: n_ra_constants / n_ra_functions do not have default values (but maybe do, if you consider the Allocate_Reference_State() routine)
+        custom_reference_file ='nothing'  
+
+        ! Internal heating variables
+        heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
+        Luminosity = 0.0d0 ! Specifies the integral of the heating function
+        Heating_Integral = 0.0d0  ! Same as luminosity (for non-star watchers)
+        Heating_EPS = 1.0d-12  ! Small number to test whether luminosity was specified
+        adjust_reference_heating = .false. ! Flag used to decide if luminosity determined via boundary conditions
+
+        ! Minimum time step based on rotation rate
+        ! (determined by the reference state)
+        max_dt_rotation = 0.0d0
+
+        ! Diffusion-coefficient (transport-namelist) variables
+        kappa_type = 1
+        nu_type = 1
+        eta_type = 1
+        nu_top = -1.0d0
+        kappa_top = -1.0d0
+        eta_top = -1.0d0
+        nu_power = 0
+        eta_power = 0
+        kappa_power = 0
+
+        kappa_chi_a_type(1:n_scalar_max) = 1
+        kappa_chi_a_top(1:n_scalar_max) = -1.0d0
+        kappa_chi_a_power(1:n_scalar_max) = 0
+        kappa_chi_p_type(1:n_scalar_max) = 1
+        kappa_chi_p_top(1:n_scalar_max) = -1.0d0
+        kappa_chi_p_power(1:n_scalar_max) = 0
+
+        hyperdiffusion = .false.
+        hyperdiffusion_beta = 0.0d0
+        hyperdiffusion_alpha = 1.0d0
+
+        ! Deallocate "ref" object
         If (allocated(ref%Density)) DeAllocate(ref%density)
         If (allocated(ref%dlnrho)) DeAllocate(ref%dlnrho)
         If (allocated(ref%d2lnrho)) DeAllocate(ref%d2lnrho)
+
         If (allocated(ref%Temperature)) DeAllocate(ref%Temperature)
         If (allocated(ref%dlnT)) DeAllocate(ref%dlnT)
+
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
+
+        If (allocated(ref%heating)) DeAllocate(ref%heating)
+
+        !       NOTE: ref%Coriolis_Coeff and ref%Lorentz_Coeff have no default values (but maybe do, if you consider the Allocate_Reference_State() routine)
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
         If (allocated(ref%chi_buoyancy_coeff)) DeAllocate(ref%chi_buoyancy_coeff)
-        If (allocated(ref%Heating)) DeAllocate(ref%Heating)
+        If (allocated(ref%dpdr_w_term)) DeAllocate(ref%dpdr_w_term)
+        If (allocated(ref%pressure_dwdr_term)) DeAllocate(ref%pressure_dwdr_term)
+
+        If (allocated(ref%ohmic_amp)) DeAllocate(ref%ohmic_amp)
+        If (allocated(ref%viscous_amp)) DeAllocate(ref%viscous_amp)
+
+        ! Deallocate s_conductive
+        If (allocated(s_conductive)) DeAllocate(s_conductive)
+
+        ! Deallocate transport-coefficient stuff
+        If (allocated(nu)) DeAllocate(nu)
+        If (allocated(kappa)) DeAllocate(kappa)
+        If (allocated(eta)) DeAllocate(eta)
+        If (allocated(dlnu)) DeAllocate(dlnu)
+        If (allocated(dlnkappa)) DeAllocate(dlnkappa)
+        If (allocated(dlneta)) DeAllocate(dlneta)
+        If (allocated(kappa_chi_a)) DeAllocate(kappa_chi_a)
+        If (allocated(kappa_chi_p)) DeAllocate(kappa_chi_p)
+        If (allocated(dlnkappa_chi_a)) DeAllocate(dlnkappa_chi_a)
+        If (allocated(dlnkappa_chi_p)) DeAllocate(dlnkappa_chi_p)
+
+        If (allocated(ohmic_heating_coeff)) DeAllocate(ohmic_heating_coeff)
+        If (allocated(viscous_heating_coeff)) DeAllocate(viscous_heating_coeff)
+
+        If (allocated(W_Diffusion_Coefs_0)) DeAllocate(W_Diffusion_Coefs_0)
+        If (allocated(W_Diffusion_Coefs_1)) DeAllocate(W_Diffusion_Coefs_1)
+        If (allocated(dW_Diffusion_Coefs_0)) DeAllocate(dW_Diffusion_Coefs_0)
+        If (allocated(dW_Diffusion_Coefs_1)) DeAllocate(dW_Diffusion_Coefs_1)
+        If (allocated(dW_Diffusion_Coefs_2)) DeAllocate(dW_Diffusion_Coefs_2)
+        If (allocated(S_Diffusion_Coefs_1)) DeAllocate(S_Diffusion_Coefs_1)
+        If (allocated(Z_Diffusion_Coefs_0)) DeAllocate(Z_Diffusion_Coefs_0)
+        If (allocated(Z_Diffusion_Coefs_1)) DeAllocate(Z_Diffusion_Coefs_1)
+        If (allocated(A_Diffusion_Coefs_1)) DeAllocate(A_Diffusion_Coefs_1)
+        If (allocated(chi_a_diffusion_coefs_1)) DeAllocate(chi_a_diffusion_coefs_1)
+        If (allocated(chi_p_diffusion_coefs_1)) DeAllocate(chi_p_diffusion_coefs_1)
 
     End Subroutine Restore_Reference_Defaults
 
