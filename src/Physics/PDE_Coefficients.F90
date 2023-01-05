@@ -39,10 +39,10 @@ Module PDE_Coefficients
     Use General_MPI, Only : BCAST2D
     Implicit None
 
-    Integer, Parameter :: n_scalar_max = 50
     !///////////////////////////////////////////////////////////
     ! I.  Variables describing the background reference state
 
+    ! The following derived type (the lone instance of which is "ref") is used by the code to access the PDE coefficients
     Type ReferenceInfo
         Real*8, Allocatable :: Density(:)
         Real*8, Allocatable :: dlnrho(:)
@@ -57,20 +57,52 @@ Module PDE_Coefficients
 
         Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
         Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
-        Real*8, Allocatable :: Buoyancy_Coeff(:)    ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
-        Real*8, Allocatable :: chi_buoyancy_coeff(:,:)    ! Multiplies Chis in momentum eq.
-        Real*8, Allocatable :: dpdr_w_term(:)  ! multiplies d_by_dr{P/rho} in momentum eq.
-        Real*8, Allocatable :: pressure_dwdr_term(:) !multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
+        Real*8, Allocatable :: Buoyancy_Coeff(:) ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
+        Real*8, Allocatable :: chi_buoyancy_coeff(:,:) ! Multiplies Chis in momentum eq.
+        Real*8, Allocatable :: dpdr_w_term(:) ! Multiplies d_by_dr{P/rho} in momentum eq.
+        Real*8, Allocatable :: pressure_dwdr_term(:) ! Multiplies l(l+1)/r^2 (P/rho) in Div dot momentum eq.
 
         ! The following two terms are used to compute the ohmic and viscous heating
-        Real*8, Allocatable :: ohmic_amp(:) !multiplied by {eta(r),H(r)}J^2 in dSdt eq.
-        Real*8, Allocatable :: viscous_amp(:) !multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
+        Real*8, Allocatable :: ohmic_amp(:) ! Multiplied by {eta(r),H(r)}J^2 in dSdt eq.
+        Real*8, Allocatable :: viscous_amp(:) ! Multiplied by {nu(r),N(r)}{e_ij terms) in dSdt eq.
 
     End Type ReferenceInfo
 
+    Type(ReferenceInfo) :: ref
+    ! Allow up to 50 active/passive scalar fields
+    Integer, Parameter :: n_scalar_max = 50
+
+    ! Version number for the "equation_coefficients" container that is output to the simulation directory
+    ! (i.e., the human-obtainable version of "ref")
     Integer, Parameter  :: eqn_coeff_version = 1
 
-    ! Custom reference state variables
+    ! Which background state to use; default 1 (non-dimensional Boussinesq)
+    Integer :: reference_type = 1 
+
+    ! Nondimensional variables (reference_type = 1,3)
+    Real*8 :: Rayleigh_Number         = 1.0d0
+    Real*8 :: Ekman_Number            = 1.0d0
+    Real*8 :: Prandtl_Number          = 1.0d0
+    Real*8 :: Magnetic_Prandtl_Number = 1.0d0
+    Real*8 :: gravity_power           = 0.0d0
+    Real*8 :: Dissipation_Number      = 0.0d0
+    Real*8 :: Modified_Rayleigh_Number = 0.0d0
+
+    ! Nondimensional variables for the active/passive scalar fields
+    Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
+    Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
+    Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+    Real*8 :: chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
+
+    ! Dimensional anelastic variables (reference_type = 2)
+    Real*8 :: pressure_specific_heat  = 1.0d0 ! CP (not CV)
+    Real*8 :: poly_n = 0.0d0 ! Polytropic index
+    Real*8 :: poly_Nrho = 0.0d0 ! Number of density scale heights across domain
+    Real*8 :: poly_mass = 0.0d0 ! Stellar mass; g(r) = G*poly_mass/r^2
+    Real*8 :: poly_rho_i = 0.0d0 ! Density (g/cm^3) at the inner radius rmin
+    Real*8 :: Angular_Velocity = -1.0d0 ! Frame rotation rate (sets Coriolis force)
+
+    ! Custom reference-state variables (reference_type = 4)
     Integer, Parameter   :: max_ra_constants = 10 + 2*n_scalar_max
     Integer, Parameter   :: max_ra_functions = 14 + 2*n_scalar_max
     Integer              :: n_ra_constants
@@ -89,56 +121,28 @@ Module PDE_Coefficients
     Logical              :: custom_reference_read = .false.
     Character*120        :: custom_reference_file ='nothing'    
 
-    Real*8, Allocatable :: s_conductive(:)
-
-    Integer :: reference_type =1
+    ! Internal heating variables
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
-    Real*8  :: Luminosity = 0.0d0 ! specifies the integral of the heating function
-    Real*8  :: Heating_Integral = 0.0d0  !same as luminosity (for non-star watchers)
-    Real*8  :: Heating_EPS = 1.0D-12  !Small number to test whether luminosity specified
-    Logical :: adjust_reference_heating = .false.  ! Flag used to decide if luminosity determined via boundary conditions
-
-    Type(ReferenceInfo) :: ref
-
-    Real*8 :: pressure_specific_heat  = 1.0d0 ! CP (not CV)
-    Real*8 :: poly_n = 0.0d0    !polytropic index
-    Real*8 :: poly_Nrho = 0.0d0
-    Real*8 :: poly_mass = 0.0d0
-    Real*8 :: poly_rho_i =0.0d0
-    Real*8 :: Angular_Velocity = -1.0d0
-
-    !/////////////////////////////////////////////////////////////////////////////////////
-    ! Nondimensional Parameters
-    Real*8 :: Rayleigh_Number         = 1.0d0
-    Real*8 :: Ekman_Number            = 1.0d0
-    Real*8 :: Prandtl_Number          = 1.0d0
-    Real*8 :: Magnetic_Prandtl_Number = 1.0d0
-    Real*8 :: gravity_power           = 0.0d0
-    Real*8 :: Dissipation_Number      = 0.0d0
-    Real*8 :: Modified_Rayleigh_Number = 0.0d0
-
-    Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
-    Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
-    Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
-    Real*8 :: chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
+    Real*8  :: Luminosity = 0.0d0 ! Specifies the integral of the heating function
+    Real*8  :: Heating_Integral = 0.0d0  ! Same as luminosity (for non-star watchers)
+    Real*8  :: Heating_EPS = 1.0d-12  ! Small number to test whether luminosity was specified
+    Logical :: adjust_reference_heating = .false. ! Flag used to decide if luminosity determined via boundary conditions
+    Real*8, Allocatable :: s_conductive(:)
     
-    !///////////////////////////////////////////////
     ! Minimum time step based on rotation rate
     ! (determined by the reference state)
     Real*8 :: max_dt_rotation = 0.0d0
 
-
-
-    Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass,poly_rho_i, &
-            & pressure_specific_heat, heating_type, luminosity, Angular_Velocity,     &
+    ! Alter some of the above (I) by reading the main_input file
+    Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass, poly_rho_i, &
+            & pressure_specific_heat, heating_type, luminosity, Angular_Velocity, &
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
-            & gravity_power, custom_reference_file,       &
+            & gravity_power, custom_reference_file, &
             & Dissipation_Number, Modified_Rayleigh_Number, &
             & Heating_Integral, override_constants, override_constant, ra_constants, with_custom_constants, &
             & with_custom_functions, with_custom_reference, &
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
             & chi_a_modified_rayleigh_number, chi_p_prandtl_number
-
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -157,7 +161,7 @@ Module PDE_Coefficients
     Real*8, Allocatable :: A_Diffusion_Coefs_1(:)
     real*8, allocatable :: chi_a_diffusion_coefs_1(:,:), chi_p_diffusion_coefs_1(:,:)
 
-    Integer :: kappa_type =1, nu_type = 1, eta_type = 1
+    Integer :: kappa_type = 1, nu_type = 1, eta_type = 1
     Real*8  :: nu_top = -1.0d0, kappa_top = -1.0d0,  eta_top = -1.0d0
     Real*8  :: nu_power = 0, eta_power = 0, kappa_power = 0
     Integer :: kappa_chi_a_type(1:n_scalar_max) = 1
@@ -171,13 +175,13 @@ Module PDE_Coefficients
     Real*8  :: hyperdiffusion_beta = 0.0d0
     Real*8  :: hyperdiffusion_alpha = 1.0d0
 
+    ! Alter some of the above (II) by reading the main_input file
     Namelist /Transport_Namelist/ nu_type, kappa_type, eta_type, &
             & nu_power, kappa_power, eta_power, &
             & nu_top, kappa_top, eta_top, &
             & hyperdiffusion, hyperdiffusion_beta, hyperdiffusion_alpha, &
             & kappa_chi_a_type, kappa_chi_a_top, kappa_chi_a_power, &
             & kappa_chi_p_type, kappa_chi_p_top, kappa_chi_p_power
-
 
 Contains
 
