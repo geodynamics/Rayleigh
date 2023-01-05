@@ -42,7 +42,8 @@ Module PDE_Coefficients
     !///////////////////////////////////////////////////////////
     ! I.  Variables describing the background reference state
 
-    ! The following object (handle for which is "ref") is used by the code to access the PDE coefficients
+
+    ! The following derived type (the lone instance of which is "ref") is used by the code to access the PDE coefficients
     Type ReferenceInfo
         Real*8, Allocatable :: Density(:)
         Real*8, Allocatable :: dlnrho(:)
@@ -693,9 +694,10 @@ Contains
 
         If (my_rank .eq. 0) Then
             Call stdout%print('Reference state will be augmented.')
-            Call stdout%print('Only heating and buoyancy may be modified.')
+            Call stdout%print('Only heating, buoyancy, or background dTdr/dSdr may be modified.')
             Call stdout%print('Heating requires both c_10 and f_6 to be set.')
             Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
+            Call stdout%print('dTdr/dSdr requires f_14 to be set.')            
             Call stdout%print('Reading from: '//Trim(custom_reference_file))
         Endif
 
@@ -707,10 +709,9 @@ Contains
         Allocate(temp_functions(1:n_r, 1:n_ra_functions))
         Allocate(temp_constants(1:n_ra_constants))
         temp_functions(:,:) = ra_functions(:,:)
-
+        
         ! Note that ra_constants is allocated up to max_ra_constants
         temp_constants(:) = ra_constants(1:n_ra_constants)
-
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
@@ -734,6 +735,16 @@ Contains
             ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
             temp_functions(:,2) = ra_functions(:,2)
             temp_constants(2) = ra_constants(2)
+        Endif
+
+        If (use_custom_function(14)) Then
+            If (my_rank .eq. 0) Then
+                Call stdout%print('Background thermal gradient is set to:')
+                Call stdout%print('f_14')
+                Call stdout%print(' ')
+            Endif        
+            ref%dsdr(:) = ra_functions(:,14)
+            temp_functions(:,14) = ra_functions(:,14)
         Endif
 
         ra_constants(1:n_ra_constants) = temp_constants(:)
