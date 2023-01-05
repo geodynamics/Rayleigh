@@ -421,87 +421,68 @@ Contains
 
         Dissipation_Number = aspect_ratio*(exp(poly_Nrho/poly_n)-1.0D0)
         dtmp = 1.0D0/(1.0D0-aspect_ratio)
-        ref%temperature(:) = dtmp*Dissipation_Number*(dtmp*One_Over_R(:)-1.0D0)+1.0D0
-        ref%density(:) = ref%temperature(:)**poly_n
+
+        ! Set the equation coefficients (except mostly the ones having to do with diffusivities)
+        ! Do this by constants first, then functions (more or less by ascending index)
+
+        ! Constants
+        ra_constants(1) = 2.0d0
+        ra_constants(2) = Modified_Rayleigh_Number 
+        ra_constants(3) = 1.0d0
+
+        nu_top = Ekman_Number
+        kappa_top = Ekman_Number/Prandtl_Number
+        If (magnetism) Then
+            ra_constants(4) = Ekman_Number/Magnetic_Prandtl_Number
+            eta_top = Ekman_Number/Magnetic_Prandtl_Number
+        Else
+            ra_constants(4) = 0.0d0
+            eta_top     = 0.0d0
+        Endif
+
+        Do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = Ekman_Number/Chi_A_Prandtl_Number(i)
+            ! Set the active-scalar buoyancy coefficients, c_[12 + (i-1)*2], here:
+            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+        Enddo
+        Do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = Ekman_Number/Chi_P_Prandtl_Number(i)
+        Enddo
+ 
+        ra_constants(8) = Dissipation_Number*Ekman_Number/Modified_Rayleigh_Number
+        If (magnetism) Then
+            ra_constants(9) = Dissipation_Number*Ekman_Number**2/ & 
+                (Modified_Rayleigh_Number*Magnetic_Prandtl_Number**2)
+        Endif ! if not magnetism, ra_constants(9) was initialized to zero
+        ! c_10 is managed by Initialize_Reference_Heating() in this file
+        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
+
+        ! Functions
         gravity = (rmax**2)*OneOverRSquared(:)
-        ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
-        do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
-        enddo
+        ra_functions(:,4) = dtmp*Dissipation_Number*(dtmp*One_Over_R(:)-1.0D0)+1.0D0
+        ra_functions(:,1) = ra_functions(:,4)**poly_n
+        ra_functions(:,2) = ra_functions(:,1)*gravity
 
         !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
         dtmparr = -Dissipation_Number*gravity
         !Now, the logarithmic derivative of temperature
-        ref%dlnt = dtmparr/ref%temperature
+        ra_functions(:,10) = dtmparr/ra_functions(:,4)
 
         !And then logarithmic derivative of rho : dlnrho = n dlnT
-        ref%dlnrho = poly_n*ref%dlnt
+        ra_functions(:,8) = poly_n*ra_functions(:,10)
 
         !Now, the second logarithmic derivative of rho :  d2lnrho = (n/T)*d2Tdr2 - n*(dlnT^2)
-        ref%d2lnrho = -poly_n*(ref%dlnT**2)
+        ra_functions(:,9) = -poly_n*(ra_functions(:,10)**2)
+        dtmparr = (poly_n/ra_functions(:,4))*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
+        ra_functions(:,9) = ra_functions(:,9)+dtmparr
 
-        dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
-        ref%d2lnrho = ref%d2lnrho+dtmparr
+        ! Loren, 12/22/2022: This is probably a bug...are stable layers disallowed under non-D anelastic?
+        ra_functions(:,14) = 0.0d0
 
-        ref%dsdr(:) = 0.0d0
-
-        ref%Coriolis_Coeff = 2.0d0
-        ref%dpdr_w_term(:) = ref%density
-        ref%pressure_dwdr_term(:) = -1.0d0*ref%density
-
-        nu_top   = Ekman_Number
-        kappa_top     = Ekman_Number/Prandtl_Number
-        do i = 1, n_active_scalars
-            kappa_chi_a_top(i)   = Ekman_Number/chi_a_prandtl_number(i)
-        enddo
-        do i = 1, n_passive_scalars
-            kappa_chi_p_top(i)   = Ekman_Number/chi_p_prandtl_number(i)
-        enddo
-        ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
-                                 & Dissipation_Number/Modified_Rayleigh_Number
-
-        If (magnetism) Then
-            ref%Lorentz_Coeff    = Ekman_Number/(Magnetic_Prandtl_Number)
-            eta_top     = Ekman_Number/Magnetic_Prandtl_Number
-
-            otmp = (Dissipation_Number*Ekman_Number**2)/(Modified_Rayleigh_Number*Magnetic_Prandtl_Number**2)
-            ref%ohmic_amp(1:N_R) = otmp/ref%density(1:N_R)/ref%temperature(1:N_R)
-        Else
-            ref%Lorentz_Coeff    = 0.0d0
-            eta_Top     = 0.0d0
-            ref%ohmic_amp(1:N_R) = 0.0d0
-        Endif
-
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = gravity*ref%density
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Modified_Rayleigh_Number
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
-        If (magnetism) Then
-            ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
-        Endif ! if not magnetism, ra_constants(9) was initialized to zero
         DeAllocate(dtmparr, gravity)
 
-        ! c_10 is managed by Initialize_Reference_Heating() in this file
-        ! and Initialize_Boundary_Conditions/Transport_Dependencies() in BoundaryConditions.F90
-        ! Set the active-scalar buoyancy coefficients, c_[12 + (j-1)*2], here:
-        Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
-        Enddo 
-
-        ! Get possible internal heating
+        ! Heating
         Call Initialize_Reference_Heating()
-
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
