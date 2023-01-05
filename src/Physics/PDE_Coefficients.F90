@@ -42,7 +42,7 @@ Module PDE_Coefficients
     !///////////////////////////////////////////////////////////
     ! I.  Variables describing the background reference state
 
-    ! The following object (handle for which is "ref") is used by the code to access the PDE coefficients
+    ! The following derived type (the lone instance of which is "ref") is used by the code to access the PDE coefficients
     Type ReferenceInfo
         Real*8, Allocatable :: Density(:)
         Real*8, Allocatable :: dlnrho(:)
