@@ -1317,11 +1317,6 @@ Contains
             ! We "back up" the current reference state in temp_constants and temp_functions
             ! Below, we modify only the "temp" equation coefficients associated with custom diffusions
             ! Then we restore ra_constants and ra_functions from the "temp" arrays
-            ! BUG IN OUTPUT (Loren, 12/24/22, Merry Christmas!): If one diffusion type is custom
-            ! but another isn't, then the ra_constants/ra_functions associated with the non-custom diffusion
-            ! will be set correctly by the Initialize_Diffusivity routine, but then overwritten,
-            ! likely with erroneous values, in the "restore" process below. 
-            ! Will fix this issue in a later pull request. 
             Call Read_Custom_Reference_File(custom_reference_file)
         EndIf
 
