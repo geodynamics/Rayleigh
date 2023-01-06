@@ -1525,7 +1525,7 @@ Contains
 
         Implicit None
         Integer :: i
-		      
+
         ! Thermodynamic (historical "reference-state") variables
         !Call Allocate_Reference_State()
         
@@ -1576,7 +1576,7 @@ Contains
         nu(:) = ra_constants(5)*ra_functions(:,3)
         dlnu(:) = ra_functions(:,11)
         If (viscous_heating) Then
-            !Allocate(viscous_heating_coeff(1:N_R))
+            Allocate(viscous_heating_coeff(1:N_R))
             viscous_heating_coeff(:) = ref%viscous_amp(:)*nu(:)
         Endif
 
@@ -1593,7 +1593,7 @@ Contains
             eta(:) = ra_constants(7)*ra_functions(:,7)
             dlneta(:) = ra_functions(:,13)
             If (ohmic_heating) Then
-                !Allocate(ohmic_heating_coeff(1:N_R))
+                Allocate(ohmic_heating_coeff(1:N_R))
                 ohmic_heating_coeff(:) = ref%ohmic_amp(:)*eta(:)
             Endif
         Endif
