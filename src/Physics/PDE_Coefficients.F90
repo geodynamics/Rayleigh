@@ -340,7 +340,7 @@ Contains
         enddo
 
         pressure_specific_heat = 1.0d0
-        Call initialize_reference_heating()
+        
         If (heating_type .eq. 0) Then
             !Otherwise, s_conductive will be calculated in initial_conditions
             Allocate(s_conductive(1:N_R))
@@ -400,7 +400,10 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 0.0d0
         ra_constants(9) = 0.0d0
-
+        
+        ! Heating
+        Call Initialize_Reference_Heating()
+        
     End Subroutine Constant_Reference
 
     Subroutine Polytropic_ReferenceND()
@@ -460,7 +463,6 @@ Contains
         ref%d2lnrho = ref%d2lnrho+dtmparr
 
         ref%dsdr(:) = 0.0d0
-        Call Initialize_Reference_Heating()
 
         ref%Coriolis_Coeff = 2.0d0
         ref%dpdr_w_term(:) = ref%density
@@ -606,8 +608,6 @@ Contains
 
         Deallocate(zeta, gravity)
 
-        Call Initialize_Reference_Heating()
-
         ref%Coriolis_Coeff        = 2.0d0*Angular_velocity
         ref%dpdr_w_term(:)        = ref%density
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density
@@ -640,21 +640,19 @@ Contains
         Do i = 1, n_active_scalars
             ra_constants(12+(i-1)*2) = -1.0d0
         Enddo 
-
+        
+        ! Heating
+        Call Initialize_Reference_Heating()
+        
     End Subroutine Polytropic_Reference
 
     Subroutine Initialize_Reference_Heating()
         Implicit None
-        ! This is where a volumetric heating function Phi(r) is computed
+        ! This is where a volumetric heating function Phi(r) = Q(r)/(rho(r)*T(r)) is computed
         ! This function appears in the entropy equation as
         ! dSdt = Phi(r)
         ! Phi(r) may represent internal heating of any type.  For stars, this heating would be
-        ! associated with temperature diffusion of the reference state and/or nuclear burning.
-
-        If ( heating_type .gt. 0)Then
-            If (.not. Allocated(ref%heating)) Allocate(ref%heating(1:N_R))
-            ref%heating(:) = 0.0d0
-        Endif
+        ! associated with radiative diffusion of the background state and/or nuclear burning.
 
         If (heating_type .eq. 1) Then
             Call Constant_Entropy_Heating()
@@ -664,32 +662,24 @@ Contains
             Call  Constant_Energy_Heating()
         Endif
 
-
-        ! Heating Q_H is normalized so that:
-        ! Int_volume rho T Q_H dV = 1 
-
-        ! Here is a good time set f_6
-        ra_functions(:, 6) = ref%heating(:)*ref%density(:)*ref%temperature(:)
+        ! Volumetric heating (Q ~ f_6) is normalized so that:
+        ! Int_volume rho T f_6 dV = 1 
 
         !If luminosity or heating_integral has been set,
-        !we set the integral of ref%heating using that.
+        !we set the integral of f_6 (i.e., c_10) using that
 
         !Otherwise, we will use the boundary thermal flux
         !To establish the integral
-        If (heating_type .gt. 0)Then
-            adjust_reference_heating = .true.
-            If (abs(Luminosity) .gt. heating_eps) Then
+        If (heating_type .gt. 0) Then
+            If (abs(luminosity) .gt. heating_eps) Then
+                ra_constants(10) = luminosity
+                adjust_reference_heating = .false.                
+            Elseif (abs(Heating_Integral) .gt. heating_eps) Then
+                ra_constants(10) = heating_integral
                 adjust_reference_heating = .false.
-                ref%heating = ref%heating*Luminosity
-                ! and here is a good time to set c_10
-                ra_constants(10) = Luminosity
-            Endif
-
-            If (abs(Heating_Integral) .gt. heating_eps) Then
-                adjust_reference_heating = .false.
-                ref%heating = ref%heating*Heating_Integral
-                ! ... or set c_10 here
-                ra_constants(10) = Heating_Integral              
+            Else
+                ! c_10 will be set later in BoundaryConditions.F90 (and f_6 rescaled)
+                adjust_reference_heating = .true.
             Endif
         Endif
     End Subroutine Initialize_Reference_Heating
@@ -758,34 +748,20 @@ Contains
 
     Subroutine Constant_Energy_Heating()
         Implicit None
-        ! rho T dSdt = alpha : energy deposition per unit volume is constant
+        ! rho T dSdt = alpha : energy deposition per unit volume (Q ~ f_6) is constant
         ! dSdt = alpha/rhoT : entropy deposition per unit volume is ~ 1/Pressure
-        ref%heating(:) = 1.0d0/shell_volume
-        ref%heating = ref%heating/(ref%density*ref%temperature)
+        ra_functions(:,6) = 1.0d0/shell_volume
     End Subroutine Constant_Energy_Heating
 
     Subroutine Constant_Entropy_Heating()
         Implicit None
         Real*8 :: integral, alpha
-        Real*8, Allocatable :: temp(:)
-
         ! dSdt = alpha : Entropy deposition per unit volume is constant
-        ! rho T dSdt = rho T alpha : Energy deposition per unit volume is ~ Pressure
-
-        ! Luminosity is specified as an input
-        ! Phi(r) is set to alpha such that
-        ! Integral_r=rinner_r=router (4*pi*alpha*rho(r)*T(r)*r^2 dr) = Luminosity
-        Allocate(temp(1:N_R))
-
-        temp = ref%density*ref%temperature
-        Call Integrate_in_radius(temp,integral) !Int_rmin_rmax rho T r^2 dr
-        integral = integral*4.0d0*pi  ! Int_V temp dV
-
-        alpha = 1.0d0/integral
-
-        ref%heating(:) = alpha
-        DeAllocate(temp)
-        !Note that in the boussinesq limit, alpha = Luminosity/Volume
+        ! rho T dSdt = rho T alpha : Energy deposition per unit volume (Q ~ f_6) is ~ Pressure
+        ra_functions(:,6) = ra_functions(:,1)*ra_functions(:,4)
+        Call Integrate_in_radius(ra_functions(:,6),integral) !Int_rmin_rmax rho T r^2 dr
+        integral = integral*4.0d0*pi  ! Int_V rho T dV
+        ra_functions(:,6)= ra_functions(:,6)/integral
     End Subroutine Constant_Entropy_Heating
 
     Subroutine Integrate_in_radius(func,int_func)
