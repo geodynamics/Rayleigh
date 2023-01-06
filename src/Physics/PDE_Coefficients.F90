@@ -1589,4 +1589,106 @@ Contains
 
     End Subroutine Compute_Diffusion_Coefs
 
+    Subroutine Initialize_PDE_Coefficients()
+        ! Sets Rayleigh's internal ReferenceInfo ("ref") structure from 
+        ! ra_constants and ra_functions (i.e., the arrays more familiar to the user/coder)
+        ! This routine is called at the end of everything the user/coder does to specify 
+        ! ra_constants and ra_functions
+
+        Implicit None
+        Integer :: i
+		      
+        ! Thermodynamic (historical "reference-state") variables
+        !Call Allocate_Reference_State()
+        
+        ref%density(:) = ra_functions(:,1)
+        ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
+        ref%temperature(:) = ra_functions(:,4)
+
+        ref%dlnrho(:)  = ra_functions(:,8)
+        ref%d2lnrho(:) = ra_functions(:,9)
+        ref%dlnt(:) = ra_functions(:,10)
+        ref%dsdr(:)     = ra_functions(:,14)
+
+        ref%dpdr_w_term(:) = ra_constants(3)*ra_functions(:,1)
+        ref%pressure_dwdr_term(:)= -ref%dpdr_w_term(:) 
+        ref%viscous_amp(:) = 2.0*ra_constants(8)/ref%temperature(:)
+        ref%lorentz_coeff = ra_constants(4)
+        ref%ohmic_amp(:) = ra_constants(9)/(ref%density(:)*ref%temperature(:))
+
+        Do i = 1, n_active_scalars
+            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+(i-1)*2)*ra_functions(:,2)
+        Enddo
+
+        ! Heating 
+        ref%heating(:) = ra_functions(:,6)/(ra_functions(:,1)*ra_functions(:,4))
+        ! Here we may rescale ref%heating to yield c_10 under integration. But if
+        ! adjust_reference_heating is .True., then c_10 hasn't been set yet and will be
+        ! (and ref%heating rescaled) in the BoundaryConditions.F90 file. 
+        If (.not. adjust_reference_heating) Then
+            ref%heating(:) = ra_constants(10)*ref%heating(:)
+        Endif
+
+        ! Coriolis coefficient 
+        ! Before setting, allow angular_velocity to overwrite c_1
+        If (angular_velocity .gt. 0) Then
+            ra_constants(1) = 2.0d0*angular_velocity 
+        Endif
+        ref%coriolis_coeff = ra_constants(1)
+
+        ! Diffusion coefficients
+        ! Before setting, allow nu_top (and so on) to overwrite c_5 (and so on)
+        ! NOTE: User should NOT set (e.g.) nu_top > 0 if f_3 (e.g.) has somehow been set to zero,
+        ! since division by zero would then ensue here...
+        !Call Allocate_Transport_Coefficients
+
+        If (nu_top .gt. 0.0d0) Then
+            ra_constants(5) = nu_top/ra_functions(1,3)
+        Endif
+        nu(:) = ra_constants(5)*ra_functions(:,3)
+        dlnu(:) = ra_functions(:,11)
+        If (viscous_heating) Then
+            !Allocate(viscous_heating_coeff(1:N_R))
+            viscous_heating_coeff(:) = ref%viscous_amp(:)*nu(:)
+        Endif
+
+        If (kappa_top .gt. 0.0d0) Then
+            ra_constants(6) = kappa_top/ra_functions(1,5)
+        Endif
+        kappa(:) = ra_constants(6)*ra_functions(:,5)
+        dlnkappa(:) = ra_functions(:,12)
+
+        If (magnetism) Then
+            If (eta_top .gt. 0.0d0) Then
+                ra_constants(7) = eta_top/ra_functions(1,7)
+            Endif
+            eta(:) = ra_constants(7)*ra_functions(:,7)
+            dlneta(:) = ra_functions(:,13)
+            If (ohmic_heating) Then
+                !Allocate(ohmic_heating_coeff(1:N_R))
+                ohmic_heating_coeff(:) = ref%ohmic_amp(:)*eta(:)
+            Endif
+        Endif
+
+        Do i = 1, n_active_scalars
+            If (kappa_chi_a_top(i) .gt. 0.0d0) Then
+                ra_constants(11+(i-1)*2) = kappa_chi_a_top(i)/ra_functions(1,15+(i-1)*2)
+            Endif
+            kappa_chi_a(i,:) = ra_constants(11+(i-1)*2)*ra_functions(:,15+(i-1)*2)
+            dlnkappa_chi_a(i,:) = ra_functions(:,16+(i-1)*2)
+        Enddo
+
+        Do i = 1, n_passive_scalars
+            If (kappa_chi_p_top(i) .gt. 0.0d0) Then
+                ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_top(i)/ra_functions(1,15+(n_active_scalars+i-1)*2)
+            Endif
+            kappa_chi_p(i,:) = ra_constants(11+(n_active_scalars+i-1)*2)*ra_functions(:,15+(n_active_scalars+i-1)*2)
+            dlnkappa_chi_p(i,:) = ra_functions(:,16+(n_active_scalars+i-1)*2)
+        Enddo
+
+        ! Finally, get the other "internal" diffusion coefficients
+        !Call Compute_Diffusion_Coefs()
+
+    End Subroutine Initialize_PDE_Coefficients
+
 End Module PDE_Coefficients

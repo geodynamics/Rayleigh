@@ -85,6 +85,7 @@ Contains
 
         Call Initialize_Reference()
         Call Initialize_Transport_Coefficients()
+        Call Initialize_PDE_Coefficients()
 
         Call Initialize_Field_Structure()
         Call Initialize_Checkpointing()
