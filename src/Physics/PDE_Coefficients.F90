@@ -368,7 +368,7 @@ Contains
         ref%viscous_amp(1:N_R) = 2.0d0
         do i = 1, n_active_scalars
             kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
-            ra_constants(12+(j-1)*2) = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+            ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
         enddo
         do i = 1, n_passive_scalars
             kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
