@@ -281,7 +281,7 @@ Contains
         Real*8 :: rotational_timescale
         !Adjust the maximum timestep to account for rotation rate, if necessary.
         
-        rotational_timescale = 1.0d0/ref%Coriolis_Coeff
+        rotational_timescale = 1.0d0/ra_constants(1)
         
         ! Minimum sampling would require two time samples per rotational timescale.
         ! We specify 4 samples and further adjust by the CFL safety factor.
@@ -727,7 +727,6 @@ Contains
                 Call stdout%print('f_6*c_10')
                 Call stdout%print(' ')
             Endif
-            ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
             temp_functions(:,6) = ra_functions(:,6)
             temp_constants(10)  = ra_constants(10)
         Endif
@@ -738,7 +737,6 @@ Contains
                 Call stdout%print('f_2*c_2')
                 Call stdout%print(' ')
             Endif
-            ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
             temp_functions(:,2) = ra_functions(:,2)
             temp_constants(2) = ra_constants(2)
         Endif
@@ -749,7 +747,6 @@ Contains
                 Call stdout%print('f_14')
                 Call stdout%print(' ')
             Endif        
-            ref%dsdr(:) = ra_functions(:,14)
             temp_functions(:,14) = ra_functions(:,14)
         Endif
 
