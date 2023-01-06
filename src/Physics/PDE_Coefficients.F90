@@ -368,6 +368,7 @@ Contains
         ref%viscous_amp(1:N_R) = 2.0d0
         do i = 1, n_active_scalars
             kappa_chi_a_top(i)   = 1.0d0/chi_a_prandtl_number(i)
+            ra_constants(12+(j-1)*2) = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
         enddo
         do i = 1, n_passive_scalars
             kappa_chi_p_top(i)   = 1.0d0/chi_p_prandtl_number(i)
@@ -469,6 +470,7 @@ Contains
         kappa_top     = Ekman_Number/Prandtl_Number
         do i = 1, n_active_scalars
             kappa_chi_a_top(i)   = Ekman_Number/chi_a_prandtl_number(i)
+            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
         enddo
         do i = 1, n_passive_scalars
             kappa_chi_p_top(i)   = Ekman_Number/chi_p_prandtl_number(i)
@@ -634,6 +636,10 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 1.0d0
         ra_constants(9) = ref%Lorentz_Coeff       
+
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -1.0d0
+        Enddo 
 
     End Subroutine Polytropic_Reference
 
