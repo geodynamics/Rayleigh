@@ -197,7 +197,19 @@ Contains
             Call stdout%print(" ---- Specified parameters:")
         Endif
 
-        Call Allocate_Reference_State()
+        n_ra_constants = 10 + 2*(n_active_scalars + n_passive_scalars)
+        e_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
+
+        Allocate(ra_constant_set(1:n_ra_constants))
+        ra_constant_set = 0
+        Allocate(ra_function_set(1:n_ra_functions))
+        ra_function_set = 0
+        Allocate(use_custom_constant(1:n_ra_constants))
+        use_custom_constant = .false.
+        Allocate(use_custom_function(1:n_ra_functions))
+        use_custom_function = .false.
+        Allocate(ra_functions(1:N_R, 1:n_ra_functions))
+        ra_functions(:,:) = Zero
 
         If (reference_type .eq. 1) Then
             Call Constant_Reference()
@@ -229,9 +241,6 @@ Contains
     Subroutine Allocate_Reference_State
         Implicit None
 
-        n_ra_constants = 10 + 2*(n_active_scalars + n_passive_scalars)
-        n_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
-
         Allocate(ref%density(1:N_R))
         Allocate(ref%temperature(1:N_R))
         Allocate(ref%dlnrho(1:N_R))
@@ -245,17 +254,6 @@ Contains
         Allocate(ref%viscous_amp(1:N_R))
         Allocate(ref%heating(1:N_R))
         Allocate(ref%chi_buoyancy_coeff(n_active_scalars,1:N_R))
-
-        Allocate(ra_constant_set(1:n_ra_constants))
-        ra_constant_set = 0
-        Allocate(ra_function_set(1:n_ra_functions))
-        ra_function_set = 0
-        Allocate(use_custom_constant(1:n_ra_constants))
-        use_custom_constant = .false.
-        Allocate(use_custom_function(1:n_ra_functions))
-        use_custom_function = .false.
-        Allocate(ra_functions(1:N_R, 1:n_ra_functions))
-        ra_functions(:,:) = Zero
 
         ref%density(:)            = Zero
         ref%temperature(:)        = Zero
@@ -1435,7 +1433,7 @@ Contains
         Integer :: i
 
         ! Thermodynamic (historical "reference-state") variables
-        !Call Allocate_Reference_State()
+        Call Allocate_Reference_State()
         
         ref%density(:) = ra_functions(:,1)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
