@@ -198,7 +198,7 @@ Contains
         Endif
 
         n_ra_constants = 10 + 2*(n_active_scalars + n_passive_scalars)
-        e_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
+        n_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
 
         Allocate(ra_constant_set(1:n_ra_constants))
         ra_constant_set = 0
