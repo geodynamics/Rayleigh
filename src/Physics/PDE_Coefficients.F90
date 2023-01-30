@@ -1592,9 +1592,11 @@ Contains
         ra_functions(:,5) = kappa(:)/kappa_top
         ra_functions(:,12) = dlnkappa(:)
 
-        ra_constants(7) = eta_top
-        ra_functions(:,7) = eta(:)/eta_top
-        ra_functions(:,13) = dlneta(:)
+        If (magnetism) Then 
+            ra_constants(7) = eta_top
+            ra_functions(:,7) = eta(:)/eta_top
+            ra_functions(:,13) = dlneta(:)
+        Endif ! if no magnetism, all of the above are already zero
 
         Do i = 1, n_active_scalars
             ra_constants(11+(i-1)*2) = kappa_chi_a_top(i)
