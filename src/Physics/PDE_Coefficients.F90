@@ -1396,6 +1396,8 @@ Contains
 
         Call Compute_Diffusion_Coefs()
 
+        Call Set_Diffusivity_Equation_Coefficients()
+
     End Subroutine Initialize_Transport_Coefficients
 
     Subroutine Allocate_Transport_Coefficients()
@@ -1458,8 +1460,6 @@ Contains
                 EndIf
 
         End Select
-
-        Call Set_Diffusivity_Equation_Coefficients()
 
     End Subroutine Initialize_Diffusivity
 
