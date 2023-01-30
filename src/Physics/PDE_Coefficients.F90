@@ -1439,14 +1439,8 @@ Contains
             Case(1)
                 x(:) = xtop
                 dlnx(:) = 0.0d0
-                ra_constants(ci) = xtop
-                ra_functions(:,fi) = 1.0d0
-                ra_functions(:,dlnfi) = 0.0d0
             Case(2)
                 Call vary_with_density(x,dlnx,xtop, xpower)
-                ra_constants(ci) = xtop
-                ra_functions(:,fi) = x(:)/xtop
-                ra_functions(:,dlnfi) = dlnx
             Case(3)
                 If ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 1)) Then
                     x(:) = ra_constants(ci)*ra_functions(:,fi)
@@ -1454,10 +1448,8 @@ Contains
                     xtop = x(1)
                     ! Nothing to be done here for functions and constants -- completely set
                 ElseIf ((ra_function_set(fi) .eq. 1) .and. (ra_constant_set(ci) .eq. 0)) Then
-                    ra_constants(ci) = xtop
                     x(:) = xtop*ra_functions(:,fi)/ra_functions(1,fi)
                     dlnx(:) = ra_functions(:,dlnfi)
-                    xtop = x(1)
                 Else
                     If (my_rank .eq. 0) Then
                         Write(ind, '(I2)') fi
@@ -1466,6 +1458,8 @@ Contains
                 EndIf
 
         End Select
+
+        Call Set_Diffusivity_Equation_Coefficients()
 
     End Subroutine Initialize_Diffusivity
 
@@ -1582,5 +1576,38 @@ Contains
         Endif
 
     End Subroutine Compute_Diffusion_Coefs
+
+    Subroutine Set_Diffusivity_Equation_Coefficients
+        ! Sets the equation coefficients (c's and f's) associated with 
+        ! nu, kappa, eta, etc.
+
+        Implicit None
+        Integer :: i
+
+        ra_constants(5) = nu_top
+        ra_functions(:,3) = nu(:)/nu_top
+        ra_functions(:,11) = dlnu(:)
+
+        ra_constants(6) = kappa_top
+        ra_functions(:,5) = kappa(:)/kappa_top
+        ra_functions(:,12) = dlnkappa(:)
+
+        ra_constants(7) = eta_top
+        ra_functions(:,7) = eta(:)/eta_top
+        ra_functions(:,13) = dlneta(:)
+
+        Do i = 1, n_active_scalars
+            ra_constants(11+(i-1)*2) = kappa_chi_a_top(i)
+            ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_top(i)
+            ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
+        Enddo
+
+        Do i = 1, n_passive_scalars
+            ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_top(i)
+            ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_top(i)
+            ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
+        Enddo
+
+    End Subroutine Set_Diffusivity_Equation_Coefficients
 
 End Module PDE_Coefficients
