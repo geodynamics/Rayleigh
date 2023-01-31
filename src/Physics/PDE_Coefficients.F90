@@ -399,6 +399,9 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 0.0d0
         ra_constants(9) = 0.0d0
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
+        Enddo
 
     End Subroutine Constant_Reference
 
@@ -506,6 +509,10 @@ Contains
         If (magnetism) Then
             ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
+
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+        Enddo
         DeAllocate(dtmparr, gravity)
     End Subroutine Polytropic_ReferenceND
 
@@ -634,6 +641,10 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = 1.0d0
         ra_constants(9) = ref%Lorentz_Coeff       
+
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -1.0d0
+        Enddo 
 
     End Subroutine Polytropic_Reference
 
