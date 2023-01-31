@@ -158,8 +158,8 @@ where the viscous heating :math:`\Phi` is given by
 .. math::
    :label: vischeat
 
-       \Phi(r,\theta,\phi) = \mathcal{D}_{ij}e_{ij} &= 2\,\mathrm{f}_1(r)\mathrm{f}_3(r)\left[e_{ij}e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] \\
-       &= 2\,\mathrm{f}_1(r)\mathrm{f}_3(r)\left[e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)\delta_{ij}\right]^2.
+       \Phi(r,\theta,\phi) = c_5\,\mathcal{D}_{ij}e_{ij} &= 2\,c_5\,\mathrm{f}_1(r)\mathrm{f}_3(r)\left[e_{ij}e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] \\
+       &= 2\,c_5\,\mathrm{f}_1(r)\mathrm{f}_3(r)\left[e_{ij} - \frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)\delta_{ij}\right]^2.
 
 Finally, the evolution of :math:`\boldsymbol{B}` is described by the
 induction equation
