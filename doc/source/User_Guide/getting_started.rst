@@ -343,13 +343,17 @@ To see the dependencies being installed you can use:
 
 .. _hpc_installation_instructions:
 
-Installation Instructions for HPC systems
+Installation on HPC systems
 -----------------------------------------
+
+Given the amount of computational resources required to simulate convection in highly turbulent parameter regimes, many users will want to run Rayleigh in a HPC environment.  Here we provide instructions for compilation on two widely-used, national-scale supercomputing systems:  TACC Stampede2 and NASA Pleiades.   
+
+Example jobscripts containing the necessary commands to compile and run Rayleigh on various systems may be found in *Rayleigh/job_scripts/*.
 
 .. _stampede2:
 
-Stampede2
-~~~~~~~~~
+TACC Stampede2
+~~~~~~~~~~~~~~
 
 Installing Rayleigh on NSF's Stampede 2 system is straightforward. At the time
 this documentation is written (Sep 2022) the loaded default modules work out of
@@ -365,36 +369,35 @@ After cloning a Rayleigh repository, rayleigh can be configured and compiled as:
 
 .. code-block:: bash
 
-   FC=mpifc CC=mpicc ./configure
+   FC=mpifc CC=mpicc ./configure  # select 'AVX512'
    make -j
    make install
 
-The architecture for most Stampede2 nodes is Skylake (AVX512), with a few
-Ice Lake nodes (also AVX512).
+We suggest choosing 'AVX512' at the configure menu.  This vectorization is supported by both the Skylake and Ice Lake nodes available on Stampede2.  An example jobscript for Stampede2 may be found in *Rayleigh/job_scripts/TACC_Stampede2*.
 
-A minimal job script for Rayleigh could look like this:
+.. _pleiades:
+
+NASA Pleiades
+~~~~~~~~~~~~~
+
+Installation on NASA's Pleiades cluster is similarly straightforward.  After cloning the repository, Rayleigh can be configured and compiled via the following commands:
 
 .. code-block:: bash
 
-    #!/bin/bash
-    #SBATCH -J geodynamo-test           # Job name
-    #SBATCH -o log.o%j       # Name of stdout output file
-    #SBATCH -e error.e%j       # Name of stderr error file
-    #SBATCH -p skx-dev      # Queue (partition) name; skx-dev for testing; skx-normal for production.
-    #SBATCH -N 1               # Total # of nodes. 1-4 for skx-dev. >=4 for skx-normal
-    #SBATCH --ntasks-per-node 48
-    #SBATCH -t 00:10:00        # Run time (hh:mm:ss) max 2h on skx-dev, max 48h on skx-normal
-    #SBATCH --mail-user=
-    #SBATCH --mail-type=none    # Send no email
+   module purge
+   module load comp-intel
+   module load mpi-hpe
+   ./configure --FC=mpif90 --CC=icc  # select 'ALL'
+   make -j
+   make install
+   
+We suggest using the default Intel and MPI compilers provided by Pleiades as in the example above.  As of December, 2022, this corresponded to the following version combination:
 
-    module list
+.. code-block:: bash
 
-    # Launch MPI code...
+   1) comp-intel/2020.4.304   2) mpi-hpe/mpt.2.25
 
-    export RAYLEIGH_PATH=...
-    # Replace -n X with correct number of MPI ranks, or remove to use all ranks
-    # requested on the nodes above.
-    ibrun -n 48 $RAYLEIGH_PATH
+Note that Pleiades is a heterogeneous cluster, composed of many (primarily Intel) processor types. We suggest selecting the 'ALL' option when configuring Rayleigh to ensure that a unique executable is created for each of the possible vectorization options.  An example jobscript for Pleiades may be found in *Rayleigh/job_scripts/NASA_Pleiades*.
 
 
 
