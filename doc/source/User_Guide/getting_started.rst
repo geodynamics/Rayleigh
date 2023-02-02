@@ -397,7 +397,7 @@ We suggest using the default Intel and MPI compilers provided by Pleiades as in 
 
    1) comp-intel/2020.4.304   2) mpi-hpe/mpt.2.25
 
-Note that Pleiades is a hetergenous cluster, composed of many (primarily Intel) processor types. We suggest selecting the 'ALL' option when configuring Rayleigh to ensure that a unique executable is created for each of the possible vectorization options.  An example jobscript for Pleiades may be found in *Rayleigh/job_scripts/NASA_Pleiades*.
+Note that Pleiades is a heterogeneous cluster, composed of many (primarily Intel) processor types. We suggest selecting the 'ALL' option when configuring Rayleigh to ensure that a unique executable is created for each of the possible vectorization options.  An example jobscript for Pleiades may be found in *Rayleigh/job_scripts/NASA_Pleiades*.
 
 
 
