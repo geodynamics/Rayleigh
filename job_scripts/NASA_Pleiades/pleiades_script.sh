@@ -5,7 +5,7 @@
 #PBS -m e
 #PBS -N nrho5_ff_5          # job name
 #PBS -l walltime=120:00:00  # run for 120 hours
-#PBS -l select=74:ncpus=28:mpiprocs=28:model=bro  # Request Broadwell nodes.  28 MPI ranks per node.
+#PBS -l select=74:ncpus=28:mpiprocs=28:model=bro  # Request 74 Broadwell nodes.  28 MPI ranks per node.
 
 module purge
 module load comp-intel
@@ -17,6 +17,7 @@ ln -s /home4/nfeather/Ra_share/Rayleigh/bin/* .
 sleep 10
 
 # Run the code
+# Make sure that the number of cores is <= select*mpiprocs
 mpiexec -np 2048 ./rayleigh.avx2 -nprow 64 -npcol 32
 
 
