@@ -224,6 +224,8 @@ Contains
 
         If (rotation) Call Set_Rotation_dt()
 
+        Call Set_Reference_Equation_Coefficients()
+
     End Subroutine Initialize_Reference
 
     Subroutine Allocate_Reference_State
@@ -382,26 +384,6 @@ Contains
             eta_Top     = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
-        
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Rayleigh_Number/Prandtl_Number
-        ra_constants(3) = pscaling
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = 0.0d0
-        ra_constants(9) = 0.0d0
-        Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
-        Enddo
 
     End Subroutine Constant_Reference
 
@@ -491,28 +473,6 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = gravity*ref%density
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Modified_Rayleigh_Number
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
-        If (magnetism) Then
-            ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
-        Endif ! if not magnetism, ra_constants(9) was initialized to zero
-
-        Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
-        Enddo
         DeAllocate(dtmparr, gravity)
     End Subroutine Polytropic_ReferenceND
 
@@ -624,27 +584,6 @@ Contains
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
-
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
-        ra_functions(:,2) = ref%Buoyancy_Coeff
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = 1.0d0
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = 1.0d0
-        ra_constants(9) = ref%Lorentz_Coeff       
-
-        Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -1.0d0
-        Enddo 
 
     End Subroutine Polytropic_Reference
 
@@ -1587,6 +1526,52 @@ Contains
         Endif
 
     End Subroutine Compute_Diffusion_Coefs
+
+    Subroutine Set_Reference_Equation_Coefficients
+        ! Sets the equation coefficients (c's and f's) associated with 
+        ! rho, T, dsdr, etc.
+
+        Implicit None
+        Integer :: i
+
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities / heating)
+        ! for proper output to the equation_coefficients file    
+        
+        ! All of these have a reference-type-independent correspondence to the "ref" object
+        ! except for the following buoyancy constants
+        If (reference_type .eq. 1) Then
+            ra_constants(2) = Rayleigh_Number/Prandtl_Number
+            Do i = 1, n_active_scalars
+                ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
+            Enddo
+        ElseIf (reference_type .eq. 2) Then
+            ra_constants(2) = 1.0d0
+            Do i = 1, n_active_scalars
+                ra_constants(12+(i-1)*2) = -1.0d0
+            Enddo
+        ElseIf (reference_type .eq. 3) Then
+            ra_constants(2) = Modified_Rayleigh_Number
+            Do i = 1, n_active_scalars
+                ra_constants(12+(i-1)*2) = -chi_a_Modified_Rayleigh_Number(i)
+            Enddo
+        Endif ! if reference_type .eq. 4, the buoyancy constants "are what they are"
+
+        ! All the following have universal correspondence to the "ref" object  
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(3) = ref%dpdr_w_term(1)/ref%density(1)
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = ref%viscous_amp(1)*ref%temperature(1)/2.0d0
+        ra_constants(9) = ref%ohmic_amp(1)*ref%density(1)*ref%temperature(1)
+
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = ref%buoyancy_coeff/ra_constants(2)
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr 
+
+    End Subroutine Set_Reference_Equation_Coefficients
 
     Subroutine Set_Diffusivity_Equation_Coefficients
         ! Sets the equation coefficients (c's and f's) associated with 
