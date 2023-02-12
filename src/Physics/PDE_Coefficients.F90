@@ -432,7 +432,7 @@ Contains
         Endif
 
         If (aspect_ratio .lt. 0) Then
-            aspect_ratio = rmax/rmin
+            aspect_ratio = rmin/rmax
         Endif
         Allocate(dtmparr(1:N_R), gravity(1:N_R))
         dtmparr(:) = 0.0d0
