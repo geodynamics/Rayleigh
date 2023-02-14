@@ -1537,8 +1537,7 @@ Contains
         ! Set the equation coefficients (apart from the ones having to do with diffusivities / heating)
         ! for proper output to the equation_coefficients file    
         
-        ! All of these have a reference-type-independent correspondence to the "ref" object
-        ! except for the following buoyancy constants
+        ! The buoyancy constants are set dependent on each reference type
         If (reference_type .eq. 1) Then
             ra_constants(2) = Rayleigh_Number/Prandtl_Number
             Do i = 1, n_active_scalars
@@ -1554,9 +1553,9 @@ Contains
             Do i = 1, n_active_scalars
                 ra_constants(12+(i-1)*2) = -chi_a_Modified_Rayleigh_Number(i)
             Enddo
-        Endif ! if reference_type .eq. 4, the buoyancy constants "are what they are"
+        Endif ! if reference_type .eq. 4, the buoyancy constants have been set directly already
 
-        ! All the following have universal correspondence to the "ref" object  
+        ! All other constants have universal correspondence to the "ref" object  
         ra_constants(1) = ref%Coriolis_Coeff
         ra_constants(3) = ref%dpdr_w_term(1)/ref%density(1)
         ra_constants(4) = ref%Lorentz_Coeff
