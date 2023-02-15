@@ -385,6 +385,13 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
+        ! Set the buoyancy constants / functions
+        ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
+        ra_constants(2) = Rayleigh_Number/Prandtl_Number
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
+        Enddo
+
     End Subroutine Constant_Reference
 
     Subroutine Polytropic_ReferenceND()
@@ -473,7 +480,15 @@ Contains
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
+        ! Set the buoyancy constants / functions
+        ra_functions(:,2) = gravity*ref%density
+        ra_constants(2) = Modified_Rayleigh_Number
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+        Enddo
+
         DeAllocate(dtmparr, gravity)
+
     End Subroutine Polytropic_ReferenceND
 
     Subroutine Polytropic_Reference()
@@ -584,6 +599,13 @@ Contains
             ref%Lorentz_Coeff = 0.0d0
             ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
+
+        ! Set the buoyancy constants / functions
+        ra_functions(:,2) = ref%Buoyancy_Coeff
+        ra_constants(2) = 1.0d0
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -1.0d0
+        Enddo 
 
     End Subroutine Polytropic_Reference
 
@@ -1534,28 +1556,10 @@ Contains
         Implicit None
         Integer :: i
 
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities / heating)
-        ! for proper output to the equation_coefficients file    
-        
-        ! The buoyancy constants are set dependent on each reference type
-        If (reference_type .eq. 1) Then
-            ra_constants(2) = Rayleigh_Number/Prandtl_Number
-            Do i = 1, n_active_scalars
-                ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
-            Enddo
-        ElseIf (reference_type .eq. 2) Then
-            ra_constants(2) = 1.0d0
-            Do i = 1, n_active_scalars
-                ra_constants(12+(i-1)*2) = -1.0d0
-            Enddo
-        ElseIf (reference_type .eq. 3) Then
-            ra_constants(2) = Modified_Rayleigh_Number
-            Do i = 1, n_active_scalars
-                ra_constants(12+(i-1)*2) = -chi_a_Modified_Rayleigh_Number(i)
-            Enddo
-        Endif ! if reference_type .eq. 4, the buoyancy constants have been set directly already
+        ! Set the equation coefficients for proper output to the equation_coefficients file 
+        ! Don't set the ones having to do with diffusivities / heating (which will be set elsewhere)
+        ! or buoyancy (which has already been set in each subroutine)
 
-        ! All other constants have universal correspondence to the "ref" object  
         ra_constants(1) = ref%Coriolis_Coeff
         ra_constants(3) = ref%dpdr_w_term(1)/ref%density(1)
         ra_constants(4) = ref%Lorentz_Coeff
@@ -1563,7 +1567,6 @@ Contains
         ra_constants(9) = ref%ohmic_amp(1)*ref%density(1)*ref%temperature(1)
 
         ra_functions(:,1) = ref%density
-        ra_functions(:,2) = ref%buoyancy_coeff/ra_constants(2)
         ra_functions(:,4) = ref%temperature
         ra_functions(:,8) = ref%dlnrho
         ra_functions(:,9) = ref%d2lnrho        
