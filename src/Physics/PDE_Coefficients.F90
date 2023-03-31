@@ -126,8 +126,6 @@ Module PDE_Coefficients
     Logical :: ND_Volume_Average = .true.
     Logical :: ND_Inner_Radius = .false. 
     Logical :: ND_Outer_Radius = .false.
-    Logical :: ND_Time_Visc = .true.
-    Logical :: ND_Time_Rot = .false.
     Logical :: Assume_Flux_Ra = .true.
 
     Real*8  :: Specific_Heat_Ratio = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
@@ -157,7 +155,7 @@ Module PDE_Coefficients
             & with_custom_functions, with_custom_reference, &
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
             & chi_a_modified_rayleigh_number, chi_p_prandtl_number, &
-            & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, ND_Time_Visc, ND_Time_Rot, &
+            & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, &
             & Assume_Flux_Ra, Specific_Heat_Ratio, Buoyancy_Number_Visc, Buoyancy_Number_Rot, Length_Scale
 
     !///////////////////////////////////////////////////////////////////////////////////////
@@ -538,9 +536,6 @@ Contains
             ND_Length_Shell_Depth = .true.
         Endif
 
-        ! Determine desired time-scale
-        If (ND_Time_Rot) ND_Time_Visc = .false.
-
         ! Determine how user wants to specify Ra, Chi_A_Ra, and B_visc.
         ! (The modified versions or not).
         If (rotation) Then
@@ -617,11 +612,8 @@ Contains
             Else
                 Call stdout%print("          (Length-Scale != Shell Depth)")
             Endif
-            If (ND_Time_Visc) Then
-                Call stdout%print(" ---- Typical Time-Scale       : "//trim(" Viscous Diffusion Time"))
-            Elseif (ND_Time_Rot) Then
-                Call stdout%print(" ---- Typical Time-Scale       : "//trim(" 1/(Rotation Rate)"))
-            Endif
+
+            Call stdout%print(" ---- Typical Time-Scale       : "//trim(" Viscous Diffusion Time"))
 
             Write(dstring,dofmt)Specific_Heat_Ratio
             Call stdout%print(" ---- Specific-Heat Ratio      : "//trim(dstring))
@@ -751,73 +743,38 @@ Contains
         ref%dpdr_w_term(:) = ref%density(:)
         ref%pressure_dwdr_term(:) = -ref%density(:)
 
-        ! Now non-dimensionalize the time either by the viscous diffusion time or rotation rate
-        If (ND_Time_Rot) ND_Time_Visc = .false. ! ND_Time_Rot takes precedence if specified
+        ! Now non-dimensionalize the time by the viscous diffusion time 
 
-        If (ND_Time_Visc) Then
-            ref%Coriolis_Coeff = 2.0d0/Ekman_Number
+        ref%Coriolis_Coeff = 2.0d0/Ekman_Number
 
-            ref%Buoyancy_Coeff(:) = (Rayleigh_Number/Prandtl_Number)*ref%density(:)*gravity(:)
-            Do i = 1, n_active_scalars
-                ref%Chi_Buoyancy_Coeff(i,:) = -(Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i))*&
-                    & ref%density(:)*gravity(:)
-            Enddo
+        ref%Buoyancy_Coeff(:) = (Rayleigh_Number/Prandtl_Number)*ref%density(:)*gravity(:)
+        Do i = 1, n_active_scalars
+            ref%Chi_Buoyancy_Coeff(i,:) = -(Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i))*&
+                & ref%density(:)*gravity(:)
+        Enddo
 
-            ! The following will only be valid If (ND_Outer_Radius)
-            ! We will renormalize (in Initialize_Diffusivity()) for other choices
-            nu_top = 1.0d0
-            kappa_top = 1.0d0/Prandtl_Number
-            Do i = 1, n_active_scalars
-                kappa_chi_a_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
-            Enddo
-            Do i = 1, n_passive_scalars
-                kappa_chi_p_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
-            Enddo
-            ref%viscous_amp = (2.0d0/ref%temperature) * Prandtl_Number*Dissipation_Number/Rayleigh_Number
+        ! The following will only be valid If (ND_Outer_Radius)
+        ! We will renormalize (in Initialize_Diffusivity()) for other choices
+        nu_top = 1.0d0
+        kappa_top = 1.0d0/Prandtl_Number
+        Do i = 1, n_active_scalars
+            kappa_chi_a_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
+        Enddo
+        Do i = 1, n_passive_scalars
+            kappa_chi_p_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
+        Enddo
+        ref%viscous_amp = (2.0d0/ref%temperature) * Prandtl_Number*Dissipation_Number/Rayleigh_Number
 
 
-            If (magnetism) Then
-                ref%Lorentz_Coeff = 1.0d0
-                eta_top = 1.0d0/Magnetic_Prandtl_Number
-                ref%ohmic_amp(:) = (Prandtl_Number*Dissipation_Number/Rayleigh_Number) / &
-                    & (ref%density(:)*ref%temperature(:))
-            Else
-                ref%Lorentz_Coeff    = 0.0d0
-                eta_Top     = 0.0d0
-                ref%ohmic_amp(1:N_R) = 0.0d0
-            Endif
-
-        Elseif (ND_Time_Rot) Then
-
-            ref%Coriolis_Coeff = 2.0d0
-
-            ref%Buoyancy_Coeff(:) = Modified_Rayleigh_Number*ref%density(:)*gravity(:)
-            Do i = 1, n_active_scalars
-                ref%Chi_Buoyancy_Coeff(i,:) = -Chi_A_Modified_Rayleigh_Number(i)*ref%density(:)*gravity(:)
-            Enddo
-
-            nu_top = Ekman_Number
-            kappa_top = Ekman_Number/Prandtl_Number
-            Do i = 1, n_active_scalars
-                kappa_chi_a_top(i) = Ekman_Number/Chi_A_Prandtl_Number(i)
-            Enddo
-            Do i = 1, n_passive_scalars
-                kappa_chi_p_top(i) = Ekman_Number/Chi_A_Prandtl_Number(i)
-            Enddo
-            ref%viscous_amp = (2.0d0/ref%temperature) * Dissipation_Number/Modified_Rayleigh_Number
-
-            If (magnetism) Then
-                ref%Lorentz_Coeff = 1.0d0
-                eta_top = Ekman_Number/Magnetic_Prandtl_Number
-
-                ref%ohmic_amp(:) = (Dissipation_Number/Modified_Rayleigh_Number) / &
-                    & (ref%density(:)*ref%temperature(:))
-            Else
-                ref%Lorentz_Coeff    = 0.0d0
-                eta_Top     = 0.0d0
-                ref%ohmic_amp(1:N_R) = 0.0d0
-            Endif
-
+        If (magnetism) Then
+            ref%Lorentz_Coeff = 1.0d0
+            eta_top = 1.0d0/Magnetic_Prandtl_Number
+            ref%ohmic_amp(:) = (Prandtl_Number*Dissipation_Number/Rayleigh_Number) / &
+                & (ref%density(:)*ref%temperature(:))
+        Else
+            ref%Lorentz_Coeff    = 0.0d0
+            eta_Top     = 0.0d0
+            ref%ohmic_amp(1:N_R) = 0.0d0
         Endif
 
         ! Initialize heating here, then renormalize it (if Assume_Flux_Ra)
@@ -844,11 +801,7 @@ Contains
             
             ! normalize the heating
             ref%heating = (Length_Scale/norm) * ref%heating
-            If (ND_Time_Visc) Then
-                ref%heating = (1.0d0/Prandtl_Number) * ref%heating
-            Elseif (ND_Time_Rot) Then
-                 ref%heating = (Ekman_Number/Prandtl_Number) * ref%heating
-            Endif           
+            ref%heating = (1.0d0/Prandtl_Number) * ref%heating
 
             ! reset c_10 and f_6 (so f_6 integrates over full volume to one)
             Call Integrate_in_radius(ref%heating, norm)
@@ -863,18 +816,10 @@ Contains
 
         ! Set the buoyancy constants / functions
         ra_functions(:,2) = gravity*ref%density
-        If (ND_Time_Visc) Then
-            ra_constants(2) = Rayleigh_Number/Prandtl_Number
-        Elseif (ND_Time_Rot) Then
-            ra_constants(2) = Modified_Rayleigh_Number
-        Endif
+        ra_constants(2) = Rayleigh_Number/Prandtl_Number
 
         Do i = 1, n_active_scalars
-            If (ND_Time_Visc) Then
-                ra_constants(12+(i-1)*2) = -Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i)
-            Elseif (ND_Time_Rot) Then
-                ra_constants(12+(i-1)*2) = -Chi_A_Modified_Rayleigh_Number(i)
-            Endif
+            ra_constants(12+(i-1)*2) = -Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i)
         Enddo
 
         DeAllocate(gravity, zeta, dzeta, d2zeta, dlnzeta, d2lnzeta, flux_nonrad, partial_heating)
@@ -1557,8 +1502,6 @@ Contains
         ND_Volume_Average = .true.
         ND_Inner_Radius = .false. 
         ND_Outer_Radius = .false.
-        ND_Time_Visc = .true.
-        ND_Time_Rot = .false.
         Assume_Flux_Ra = .true.
 
         Specific_Heat_Ratio = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
