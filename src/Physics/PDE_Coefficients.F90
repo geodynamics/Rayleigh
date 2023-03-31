@@ -745,7 +745,7 @@ Contains
 
         ! Now non-dimensionalize the time by the viscous diffusion time 
 
-        ref%Coriolis_Coeff = 2.0d0/Ekman_Number
+        ref%Coriolis_Coeff = 1.0d0/Ekman_Number
 
         ref%Buoyancy_Coeff(:) = (Rayleigh_Number/Prandtl_Number)*ref%density(:)*gravity(:)
         Do i = 1, n_active_scalars
