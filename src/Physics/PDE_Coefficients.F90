@@ -541,18 +541,28 @@ Contains
         ! Determine desired time-scale
         If (ND_Time_Rot) ND_Time_Visc = .false.
 
-        ! Determine how user wants to specify Ra and B_visc.
+        ! Determine how user wants to specify Ra, Chi_A_Ra, and B_visc.
         ! (The modified versions or not).
         If (rotation) Then
             If (Modified_Rayleigh_Number .lt. 0) Then !User set Ra, not Ra*
                 Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
-            Else ! User specified Ra*; that takes precedence over Ra
+            Else ! User set Ra*; that takes precedence over Ra
                 Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
             Endif
 
+            Do i = 1, n_active_scalars
+                If (Chi_A_Modified_Rayleigh_Number(i) .lt. 0) Then
+                    !User set Chi_A_Ra(i), not Chi_A_Ra(i)*
+                    Chi_A_Modified_Rayleigh_Number(i) = Chi_A_Rayleigh_Number(i)*Ekman_Number**2/Prandtl_Number
+                Else 
+                    ! User set Chi_A_Ra(i)*; that takes precedence over Chi_A_Ra(i)
+                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Prandtl_Number/Ekman_Number**2
+                Endif
+            Enddo
+
             If (Buoyancy_Number_Rot .lt. 0) Then !User set B_visc, not B_rot
                 Buoyancy_Number_Rot = Buoyancy_Number_Visc*Ekman_Number**2
-            Else ! User B_rot; that takes precedence over B_visc
+            Else ! User set B_rot; that takes precedence over B_visc
                 Buoyancy_Number_Visc = Buoyancy_Number_Rot/Ekman_Number**2
             Endif
         Endif
