@@ -111,7 +111,6 @@ class BaseFile(object):
             raise IOError(f"could not determine endianness in file '{filename}'")
 
     def __init__(self, filename: str, endian=None, memmap=use_mmap):
-
         self.fh = open(filename, "rb")
         self._memmap = memmap
 
@@ -1092,7 +1091,6 @@ class PDE_Coefficients(BaseFile):
             super().__setattr__(name, value)
 
     def set_function(self, y, f_name):
-
         if isinstance(f_name, str):
             fi = self.f_dict[f_name]
         else:
