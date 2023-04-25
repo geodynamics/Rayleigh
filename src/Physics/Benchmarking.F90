@@ -69,6 +69,14 @@ Contains
         Integer :: ref_remember, type_remember
         Character*120 :: file_remember
         ! This routine re-initializes input values to their benchmark values
+        ! Since we restore reference defaults as part of this process, there 
+        ! is some logic in-place here to ensure we don't lose some important 
+        ! values.
+        If (with_custom_reference) Then
+            file_remember = custom_reference_file
+            type_remember = heating_type
+        Endif     
+
 
         ref_remember = 1
         If (benchmark_mode .gt. 0) Then
@@ -317,8 +325,6 @@ Contains
         Endif
         
         If (with_custom_reference) Then
-            !For testing purposes, we may want to modify
-            !the buoyancy term and the heating
             custom_reference_file = file_remember
             heating_type = type_remember
         Endif
