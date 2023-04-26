@@ -74,7 +74,7 @@ Please acknowledge CIG support in your work as follows:
 
     Rayleigh is hosted and receives support from the Computational
     Infrastructure for Geodynamics (CIG) which is supported by the
-    National Science Foundation awards NSF-0949446 and NSF-1550901.
+    National Science Foundation awards NSF-0949446, NSF-1550901 and NSF-2149126.
 
 Acknowledging
 -------------
