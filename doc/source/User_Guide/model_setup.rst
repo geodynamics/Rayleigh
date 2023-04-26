@@ -767,7 +767,7 @@ roughly 17,000 lines of code (about half of the Rayleigh code base). Here we wil
 focus on generating basic output, but we refer the user to the section 
 :ref:`plotting` and :ref:`quantityCodes` for more information.
 
-Rayleigh can compute the quanties listed in :ref:`quantityCodes` in a variety of
+Rayleigh can compute the quantities listed in :ref:`quantityCodes` in a variety of
 averages, slices, and spectra, which are collectively called data products. These 
 are sorted by Rayleigh into directories as 
 follows:
@@ -794,9 +794,9 @@ products listed, the output is specified using the following pattern:
 * \_frequency: The frequency in iterations those quantities will be output.
 * \_nrec: Number of records to be combined into a single file.
 * \_levels: Radial indicies at which the quantities will be output.
-* \_indices: Latitudinal indicies at which the quanties will be output.
+* \_indices: Latitudinal indicies at which the quantities will be output.
 * \_ell: The spherical harmonic degree at which the quantities will be output.
-* \_r, \_theta, \_phi: The radial, latitudinal, and longitudinal indicies at which the quanties will be output.
+* \_r, \_theta, \_phi: The radial, latitudinal, and longitudinal indicies at which the quantities will be output.
 
 For example, if you wanted to output shell slice data for quantities 1, 2, 10, and 2711 at radial indicices 2 and 54 every 100 iterations and have 4 records per file, you would set
 
