@@ -158,6 +158,7 @@ frke = lut[410]  # KE associated with mean radial motion
 ftke = lut[411]  #KE associated with mean theta motion
 fpke = lut[412]  # KE associated with mean azimuthal motion
 
+entropy = lut[501]
 
 # To begin with, let's plot the total, mean, and fluctuating kinetic energy density during the initial transient phase, and then during the equilibrated phase.
 
