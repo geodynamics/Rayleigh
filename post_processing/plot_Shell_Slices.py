@@ -35,7 +35,7 @@
 # 
 # * shellslice_levels_nrm (normalized) : normalized radial grid coordinates at which to output spherical surfaces.
 # 
-# 
+#Test commit 
 # The shell-slice output type allows us to examine how the fluid properties vary on spherical surfaces.
 # 
 # Examining the *main_input* file, we see that the following output values have been denoted for the Shell Slices (see *rayleigh_output_variables.pdf* for mathematical formulae):
