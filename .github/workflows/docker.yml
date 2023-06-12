@@ -3,7 +3,7 @@ name: github-docker
 on: 
   push: 
     branches:
-      - 'master'
+      - 'main'
   release:
     types: [created]
 
@@ -19,7 +19,7 @@ jobs:
   build-docker:
     runs-on: ubuntu-latest
     if: github.repository == 'geodynamics/rayleigh'
-    steps:    
+    steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
