@@ -651,6 +651,8 @@ Contains
             Write(dstring,dofmt)Rayleigh_Number
             Call stdout%print(" ---- Rayleigh Number          : "//trim(dstring))
             If (rotation) Then
+                Write(dstring,dofmt)Convective_Rossby_Number
+                Call stdout%print("          (Conv. Rossby Number : "//trim(dstring)//")")
                 Write(dstring,dofmt)Modified_Rayleigh_Number
                 Call stdout%print("          (Mod. Rayleigh Number: "//trim(dstring)//")")
             Endif
@@ -665,6 +667,8 @@ Contains
                 Write(dstring,dofmt)Buoyancy_Number_Visc
                 Call stdout%print(" ---- Visc. Buoyancy Number    : "//trim(dstring))
                 If (rotation) Then
+                    Write(dstring,dofmt)Sigma_Parameter
+                    Call stdout%print("          (Sigma               : "//trim(dstring)//")")
                     Write(dstring,dofmt)Buoyancy_Number_Rot
                     Call stdout%print("          (Rot. Buoyancy Number: "//trim(dstring)//")")
                 Endif
