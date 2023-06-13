@@ -1504,11 +1504,13 @@ Contains
         gravity_power           = 0.0d0
         Dissipation_Number      = 0.0d0
         Modified_Rayleigh_Number = 0.0d0
+        Convective_Rossby_Number = -1.0d0
 
         ! Nondimensional variables for the active/passive scalar fields
         chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
         chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
         chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+        chi_a_convective_rossby_number(1:n_scalar_max) = -1.0d0
         chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
 
         ! Dimensional anelastic variables (reference_type = 2)
@@ -1538,7 +1540,8 @@ Contains
 
         Specific_Heat_Ratio = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
         Buoyancy_Number_Visc = 0.0d0
-        Buoyancy_Number_Rot = 0.0d0
+        Buoyancy_Number_Rot = -1.0d0
+        Sigma_Parameter = -1.0d0
         Length_Scale = -1.0d0
 
         ! Minimum time step based on rotation rate
