@@ -582,14 +582,16 @@ Contains
         ! / advect_reference_state
         If ((.not. Adiabatic_Polytrope) .and. (.not. advect_reference_state) ) Then
             If (my_rank .eq. 0) Then
-                Call stdout%print("WARNING: You specified a non-adiabatic polytrope but did not set advect_reference_state = .true.")
+                Call stdout%print("WARNING: You specified a non-adiabatic polytrope,")
+                Call stdout%print("but did not set advect_reference_state = .true.")
                 Call stdout%print("These choices may be physically inconsistent.")
             Endif
         Endif
  
         If (Adiabatic_Polytrope .and. (Buoyancy_Number_Visc .gt. tol) ) Then
             If (my_rank .eq. 0) Then
-                Call stdout%print("WARNING: You specified an adiabatic polytrope but a nonzero Buoyancy Number")
+                Call stdout%print("WARNING: You specified an adiabatic polytrope,")
+                Call stdout%print("but a nonzero Buoyancy Number.")
                 Call stdout%print("Rayleigh is setting the Buoyancy Number to zero.")
             Endif
             Buoyancy_Number_Visc = 0.0d0
@@ -597,7 +599,8 @@ Contains
 
         If ((.not. Adiabatic_Polytrope) .and. (Buoyancy_Number_Visc .lt. tol) ) Then
             If (my_rank .eq. 0) Then
-                Call stdout%print("WARNING: You specified a non-adiabatic polytrope but a Buoyancy Number of zero")
+                Call stdout%print("WARNING: You specified a non-adiabatic polytrope,")
+                Call stdout%print("but a Buoyancy Number of zero.")
                 Call stdout%print("These choices may be physically inconsistent.")
             Endif
             Buoyancy_Number_Visc = 0.0d0
