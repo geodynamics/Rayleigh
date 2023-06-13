@@ -7,4 +7,4 @@
 # Note: This container is build from the developer version on Github, it does not use
 # the local Rayleigh folder. Therefore local changes are not included in the container.
 
-docker build --no-cache -t gassmoeller/rayleigh-tacc .
+docker build --no-cache -t gassmoeller/rayleigh-tacc . 2>&1 | tee build.log
