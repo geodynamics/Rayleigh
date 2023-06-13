@@ -88,11 +88,13 @@ Module PDE_Coefficients
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
     Real*8 :: Modified_Rayleigh_Number = -1.0d0
+    Real*8 :: Convective_Rossby_Number = -1.0d0
 
     ! Nondimensional variables for the active/passive scalar fields
     Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
     Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
     Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = -1.0d0
+    Real*8 :: chi_a_convective_rossby_number(1:n_scalar_max) = -1.0d0
     Real*8 :: chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
 
     ! Dimensional anelastic variables (reference_type = 2)
@@ -131,6 +133,7 @@ Module PDE_Coefficients
     Real*8  :: Specific_Heat_Ratio = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
     Real*8  :: Buoyancy_Number_Visc = 0.0d0
     Real*8  :: Buoyancy_Number_Rot = -1.0d0
+    Real*8  :: Sigma_Parameter = -1.0d0
     Real*8  :: Length_Scale = -1.0d0
 
     ! Internal heating variables
@@ -539,26 +542,39 @@ Contains
         ! Determine how user wants to specify Ra, Chi_A_Ra, and B_visc.
         ! (The modified versions or not).
         If (rotation) Then
-            If (Modified_Rayleigh_Number .lt. 0) Then !User set Ra, not Ra*
-                Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
-            Else ! User set Ra*; that takes precedence over Ra
+            If (Convective_Rossby_Number .gt. 0) Then !User set Ro_c, not Ra
+                Modified_Rayleigh_Number = Convective_Rossby_Number**2
                 Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
+            Elseif (Modified_Rayleigh_Number .gt. 0) Then !User set Ra*, not Ra
+                Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
+                Convective_Rossby_Number = sqrt(Modified_Rayleigh_Number)
+            Else !User set Ra, not something else
+                Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
+                Convective_Rossby_Number = sqrt(Modified_Rayleigh_Number)
             Endif
 
             Do i = 1, n_active_scalars
-                If (Chi_A_Modified_Rayleigh_Number(i) .lt. 0) Then
-                    !User set Chi_A_Ra(i), not Chi_A_Ra(i)*
-                    Chi_A_Modified_Rayleigh_Number(i) = Chi_A_Rayleigh_Number(i)*Ekman_Number**2/Prandtl_Number
-                Else 
-                    ! User set Chi_A_Ra(i)*; that takes precedence over Chi_A_Ra(i)
-                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Prandtl_Number/Ekman_Number**2
+                If (Chi_A_Convective_Rossby_Number(i) .gt. 0) Then !User set Ro_c, not Ra
+                    Chi_A_Modified_Rayleigh_Number(i) = Chi_A_Convective_Rossby_Number(i)**2
+                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Chi_A_Prandtl_Number(i)/Ekman_Number**2
+                Elseif (Chi_A_Modified_Rayleigh_Number(i) .gt. 0) Then !User set Ra*, not Ra
+                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Chi_A_Prandtl_Number(i)/Ekman_Number**2
+                    Chi_A_Convective_Rossby_Number(i) = sqrt(Chi_A_Modified_Rayleigh_Number(i))
+                Else !User set Ra, not something else
+                    Chi_A_Modified_Rayleigh_Number(i) = Chi_A_Rayleigh_Number(i)*Ekman_Number**2/Chi_A_Prandtl_Number(i)
+                    Chi_A_Convective_Rossby_Number(i) = sqrt(Chi_A_Modified_Rayleigh_Number(i))
                 Endif
             Enddo
 
-            If (Buoyancy_Number_Rot .lt. 0) Then !User set B_visc, not B_rot
-                Buoyancy_Number_Rot = Buoyancy_Number_Visc*Ekman_Number**2
-            Else ! User set B_rot; that takes precedence over B_visc
+            If (Sigma_Parameter .gt. 0) Then ! User set sigma, not B_visc
+                Buoyancy_Number_Rot = Sigma_Parameter**2/Prandtl_Number
                 Buoyancy_Number_Visc = Buoyancy_Number_Rot/Ekman_Number**2
+            Elseif (Buoyancy_Number_Rot .gt. 0) Then ! User set B_rot, not B_visc
+                Buoyancy_Number_Visc = Buoyancy_Number_Rot/Ekman_Number**2
+                Sigma_Parameter = sqrt(Buoyancy_Number_Rot*Prandtl_Number)
+            Else !User set B_visc, not something else
+                Buoyancy_Number_Rot = Buoyancy_Number_Visc*Ekman_Number**2
+                Sigma_Parameter = sqrt(Buoyancy_Number_Rot*Prandtl_Number)
             Endif
         Endif
 
