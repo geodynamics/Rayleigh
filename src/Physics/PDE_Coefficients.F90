@@ -608,9 +608,8 @@ Contains
             If (my_rank .eq. 0) Then
                 Call stdout%print("WARNING: You specified an adiabatic polytrope,")
                 Call stdout%print("but a nonzero Buoyancy Number.")
-                Call stdout%print("Rayleigh is setting the Buoyancy Number to zero.")
+                Call stdout%print("These choices may be physically inconsistent.")
             Endif
-            Buoyancy_Number_Visc = 0.0d0
         Endif
 
         If ((.not. Adiabatic_Polytrope) .and. (Buoyancy_Number_Visc .lt. tol) ) Then
@@ -619,7 +618,6 @@ Contains
                 Call stdout%print("but a Buoyancy Number of zero.")
                 Call stdout%print("These choices may be physically inconsistent.")
             Endif
-            Buoyancy_Number_Visc = 0.0d0
         Endif
 
         ! Print rest of information about the reference state
