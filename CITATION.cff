@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+# This file is being used to customize the GitHub "Cite this repository" dropdown.
+# If you the Zenodo Github integration to automatically generate a doi upon release,
+# this file MUST BE MODIFIED.  citation.cff overrides default metadata and .zenodo.json files.
+
+cff-version: 1.2.0
+title: Rayleigh
+message: >-
+  For any work that uses Rayleigh, or work that uses
+  software which incorporates Rayleigh source code, please
+  acknowledge the authors and funding agencies as indicated
+  in our online documentation: 
+  https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/citing_rayleigh.html 
+  If you have no access to the online documentation, please
+  refer to the following file in the Rayleigh repository: 
+  doc/source/citing_rayleigh.rst
+
