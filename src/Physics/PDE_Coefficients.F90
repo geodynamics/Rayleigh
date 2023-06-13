@@ -514,7 +514,7 @@ Contains
     Subroutine Polytropic_ReferenceND_General()
         Implicit None
         Integer :: i
-        Real*8 :: c0, c1, poly_n_ad, numer, denom1, denom2, norm, tol
+        Real*8 :: c0, c1, poly_n_ad, norm, tol
         Real*8, Allocatable :: gravity(:), flux_nonrad(:), partial_heating(:), nsquared(:), &
             & zeta(:), dzeta(:), d2zeta(:), dlnzeta(:), d2lnzeta(:)
         Character*12 :: dstring
@@ -748,11 +748,12 @@ Contains
             norm = four_pi*norm/shell_volume
             nsquared = nsquared/norm
 
-            Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0)
-            numer = 3.0d0*aspect_ratio*(1.0d0 - aspect_ratio)**2 * (1 - exp(-poly_Nrho/poly_n))
-            denom1 = (3.0d0*aspect_ratio/2.0d0) * (1.0 - aspect_ratio**2) * (1.0d0 - exp(-poly_Nrho/poly_n))
-            denom2 = -(1.0d0 - aspect_ratio**3)*(aspect_ratio - exp(-poly_Nrho/poly_n))
-            Dissipation_Number = Dissipation_Number * numer / (denom1 + denom2)
+            Call Integrate_in_radius(nsquared,norm)
+            norm = four_pi*norm/shell_volume
+            nsquared = nsquared/norm
+
+            ! ref%temperature(N_R) is now T_inner/volav(T); gravity(N_R) = g_inner/volav(g)
+            Dissipation_Number = Dissipation_Number*ref%temperature(N_R)/gravity(N_R)
         Endif 
 
         ! This was all assuming the H in Dissipation_Number was the shell_depth. 
