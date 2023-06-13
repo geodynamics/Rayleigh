@@ -702,10 +702,14 @@ Contains
 
         gravity = (rmin**2)*OneOverRSquared
 
-        denom1 = (1.0d0 - exp(-poly_Nrho/poly_n))/(1.d0 - Aspect_Ratio)
-        denom2 = -(Aspect_Ratio - exp(-poly_Nrho/poly_n))/(Aspect_Ratio*Shell_Depth)
-        nsquared = (rmin/radius)**3 / (denom1 + denom2*radius)
+        ref%dsdr = (1.0d0/Specific_Heat_Ratio)*(ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * ref%dlnrho)
+        ! This is (1/c_p) dS/dr (where "S" is dimensional background S)
+        ! That's fine up to a multiplicative constant which we determine below
 
+        nsquared = gravity*ref%dsdr ! N^2 (non-dimensional) up to multiplicative constant
+        nsquared = nsquared/nsquared(N_R) ! N^2 (non-dimensional) now correct if ND_Inner_Radius .eq. .True.
+
+        ! calculate "basal" dissipation number explicitly
         Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0) * (1.0d0/aspect_ratio) * &
             & (1.0d0 - exp(-poly_Nrho/poly_n) )
      
@@ -720,7 +724,7 @@ Contains
             ND_Volume_Average = .false.
         Endif
 
-        ! Now possibly adjust rho, T, and g to account for where non-dimensionalization occurs
+        ! Now possibly adjust profiles to account for where non-dimensionalization occurs
         If (ND_Outer_Radius) Then
             Dissipation_Number = Dissipation_Number * gravity(1) / ref%temperature(1)
             ref%density = ref%density/ref%density(1)
