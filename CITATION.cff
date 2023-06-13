@@ -7,13 +7,13 @@
 
 cff-version: 1.2.0
 title: Rayleigh
-message: >-
-  For any work that uses Rayleigh, or work that uses
+message:
+  "For any work that uses Rayleigh, or work that uses
   software which incorporates Rayleigh source code, please
   acknowledge the authors and funding agencies as indicated
   in our online documentation: 
   https://rayleigh-documentation.readthedocs.io/en/latest/doc/source/citing_rayleigh.html 
   If you have no access to the online documentation, please
   refer to the following file in the Rayleigh repository: 
-  doc/source/citing_rayleigh.rst
+  doc/source/citing_rayleigh.rst"
 
