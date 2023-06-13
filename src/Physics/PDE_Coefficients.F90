@@ -604,7 +604,7 @@ Contains
             Endif
         Endif
  
-        If (Adiabatic_Polytrope .and. (abs(Buoyancy_Number_Visc) .gt. tol) ) Then
+        If (Adiabatic_Polytrope .and. (abs(Buoyancy_Number_Visc/Rayleigh_Number) .gt. tol) ) Then
             If (my_rank .eq. 0) Then
                 Call stdout%print("WARNING: You specified an adiabatic polytrope,")
                 Call stdout%print("but a nonzero Buoyancy Number.")
@@ -612,7 +612,7 @@ Contains
             Endif
         Endif
 
-        If ((.not. Adiabatic_Polytrope) .and. (abs(Buoyancy_Number_Visc) .lt. tol) ) Then
+        If ((.not. Adiabatic_Polytrope) .and. (abs(Buoyancy_Number_Visc/Rayleigh_Number) .lt. tol) ) Then
             If (my_rank .eq. 0) Then
                 Call stdout%print("WARNING: You specified a non-adiabatic polytrope,")
                 Call stdout%print("but a Buoyancy Number of zero.")
