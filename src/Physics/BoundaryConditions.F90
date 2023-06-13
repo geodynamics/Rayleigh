@@ -38,10 +38,20 @@ Module BoundaryConditions
     Logical :: Fix_dTdr_Top    = .False.
     Logical :: Fix_dTdr_Bottom = .False.
 
+    Logical :: Couple_Tvar_Top    = .False.
+    Logical :: Couple_Tvar_Bottom = .False.
+    Logical :: Couple_dTdr_Top    = .False.
+    Logical :: Couple_dTdr_Bottom = .False.
+
     Logical :: Fix_chivar_a_Top(1:n_scalar_max)    = .True.
     Logical :: Fix_chivar_a_Bottom(1:n_scalar_max) = .True.
     Logical :: Fix_dchidr_a_Top(1:n_scalar_max)    = .False.
     Logical :: Fix_dchidr_a_Bottom(1:n_scalar_max) = .False.
+
+    Logical :: Couple_chivar_a_Top(1:n_scalar_max)    = .False.
+    Logical :: Couple_chivar_a_Bottom(1:n_scalar_max) = .False.
+    Logical :: Couple_dchidr_a_Top(1:n_scalar_max)    = .False.
+    Logical :: Couple_dchidr_a_Bottom(1:n_scalar_max) = .False.
 
     Logical :: Fix_chivar_p_Top(1:n_scalar_max)    = .True.
     Logical :: Fix_chivar_p_Bottom(1:n_scalar_max) = .True.
@@ -63,10 +73,40 @@ Module BoundaryConditions
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
 
+    Real*8  :: T_chi_coeff_top(1:n_scalar_max)     = 0.0d0
+    Real*8  :: T_dchidr_coeff_top(1:n_scalar_max)  = 0.0d0
+    Real*8  :: T_dTdr_coeff_top                    = 0.0d0
+    Real*8  :: T_chi_coeff_bottom(1:n_scalar_max)     = 0.0d0
+    Real*8  :: T_dchidr_coeff_bottom(1:n_scalar_max)  = 0.0d0
+    Real*8  :: T_dTdr_coeff_bottom                    = 0.0d0
+    Real*8  :: dTdr_chi_coeff_top(1:n_scalar_max)     = 0.0d0
+    Real*8  :: dTdr_dchidr_coeff_top(1:n_scalar_max)  = 0.0d0
+    Real*8  :: dTdr_T_coeff_top                       = 0.0d0
+    Real*8  :: dTdr_chi_coeff_bottom(1:n_scalar_max)     = 0.0d0
+    Real*8  :: dTdr_dchidr_coeff_bottom(1:n_scalar_max)  = 0.0d0
+    Real*8  :: dTdr_T_coeff_bottom                       = 0.0d0
+
     Real*8  :: chi_a_Bottom(1:n_scalar_max)     = 1.0d0
     Real*8  :: chi_a_Top(1:n_scalar_max)        = 0.0d0
     Real*8  :: dchidr_a_Top(1:n_scalar_max)     = 0.0d0
     Real*8  :: dchidr_a_Bottom(1:n_scalar_max)  = 0.0d0
+
+    Real*8  :: chi_chi_coeff_top(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: chi_dchidr_coeff_top(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: chi_T_coeff_top(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: chi_dTdr_coeff_top(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: chi_chi_coeff_bottom(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: chi_dchidr_coeff_bottom(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: chi_T_coeff_bottom(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: chi_dTdr_coeff_bottom(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: dchidr_chi_coeff_top(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: dchidr_dchidr_coeff_top(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: dchidr_T_coeff_top(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: dchidr_dTdr_coeff_top(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: dchidr_chi_coeff_bottom(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: dchidr_dchidr_coeff_bottom(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: dchidr_T_coeff_bottom(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: dchidr_dTdr_coeff_bottom(1:n_scalar_max)                   = 0.0d0
 
     Real*8  :: chi_p_Bottom(1:n_scalar_max)     = 1.0d0
     Real*8  :: chi_p_Top(1:n_scalar_max)        = 0.0d0
@@ -120,7 +160,17 @@ Module BoundaryConditions
         fix_dchidr_a_bottom, fix_dchidr_a_top, dchidr_a_top, dchidr_a_bottom, &
         chi_p_top_file, chi_p_bottom_file, dchidr_p_top_file, dchidr_p_bottom_file, &
         fix_chivar_p_top, fix_chivar_p_bottom, chi_p_bottom, chi_p_top, &
-        fix_dchidr_p_bottom, fix_dchidr_p_top, dchidr_p_top, dchidr_p_bottom
+        fix_dchidr_p_bottom, fix_dchidr_p_top, dchidr_p_top, dchidr_p_bottom, &
+        couple_Tvar_top, couple_Tvar_bottom, couple_dtdr_top, couple_dtdr_bottom, &
+        T_chi_coeff_top, T_dchidr_coeff_top, T_dTdr_coeff_top, &
+        T_chi_coeff_bottom, T_dchidr_coeff_bottom, T_dTdr_coeff_bottom, &
+        dTdr_chi_coeff_top, dTdr_dchidr_coeff_top, dTdr_T_coeff_top, &
+        dTdr_chi_coeff_bottom, dTdr_dchidr_coeff_bottom, dTdr_T_coeff_bottom, &
+        couple_chivar_a_top, couple_chivar_a_bottom, couple_dchidr_a_top, couple_dchidr_a_bottom, &
+        chi_chi_coeff_top, chi_dchidr_coeff_top, chi_T_coeff_top, chi_dTdr_coeff_top, &
+        chi_chi_coeff_bottom, chi_dchidr_coeff_bottom, chi_T_coeff_bottom, chi_dTdr_coeff_bottom, &
+        dchidr_chi_coeff_top, dchidr_dchidr_coeff_top, dchidr_T_coeff_top, dchidr_dTdr_coeff_top, &
+        dchidr_chi_coeff_bottom, dchidr_dchidr_coeff_bottom, dchidr_T_coeff_bottom, dchidr_dTdr_coeff_bottom
 
 Contains
 
@@ -129,18 +179,43 @@ Contains
         Real*8 :: tilt_angle_radians,a,b
         Real*8 :: Ftop, rhotk_top, Fbottom
         Integer :: i
+        Integer :: n_active_bcs
 
-        fix_tvar_top = .not. fix_dtdr_top
-        fix_tvar_bottom = .not. fix_dtdr_bottom
+        n_active_bcs = count( (/ fix_tvar_top, fix_dtdr_top, couple_tvar_top, couple_dtdr_top /) )
+        if (n_active_bcs /= 1) then
+           call stdout%print(" -- Error: Incompatible boundary conditions for tvar on top boundary.")
+        endif
+
+        n_active_bcs = count( (/ fix_tvar_bottom, fix_dtdr_bottom, couple_tvar_bottom, couple_dtdr_bottom /) )
+        if (n_active_bcs /= 1) then
+           call stdout%print(" -- Error: Incompatible boundary conditions for tvar on bottom boundary.")
+        endif
 
         do i = 1, n_active_scalars
-          fix_chivar_a_top(i) = .not. fix_dchidr_a_top(i)
-          fix_chivar_a_bottom(i) = .not. fix_dchidr_a_bottom(i)
+          n_active_bcs = count( (/ fix_chivar_a_top(i), fix_dchidr_a_top(i), couple_chivar_a_top(i), couple_dchidr_a_top(i) /) )
+          if (n_active_bcs /= 1) then
+             call stdout%print(" -- Error: Incompatible boundary conditions for chivar_a on top boundary.")
+          endif
+
+          n_active_bcs = count( (/ fix_chivar_a_bottom(i), fix_dchidr_a_bottom(i), &
+                                   couple_chivar_a_bottom(i), couple_dchidr_a_bottom(i) /) )
+          if (n_active_bcs /= 1) then
+             call stdout%print(" -- Error: Incompatible boundary conditions for chivar_a on bottom boundary.")
+          endif
         end do
 
         do i = 1, n_passive_scalars
-          fix_chivar_p_top(i) = .not. fix_dchidr_p_top(i)
-          fix_chivar_p_bottom(i) = .not. fix_dchidr_p_bottom(i)
+          n_active_bcs = count( (/ fix_chivar_p_top(i), fix_dchidr_p_top(i) /) )
+          if (n_active_bcs /= 1) then
+             call stdout%print(" -- Error: Incompatible boundary conditions for chivar_p on top boundary.")
+             call stdout%print("        ")      
+          endif
+
+          n_active_bcs = count( (/ fix_chivar_p_bottom(i), fix_dchidr_p_bottom(i) /) )
+          if (n_active_bcs /= 1) then
+             call stdout%print(" -- Error: Incompatible boundary conditions for chivar_p on bottom boundary.")
+             call stdout%print("        ")      
+          endif
         end do
 
         If (no_slip_top .and. strict_L_Conservation) Then
