@@ -571,10 +571,14 @@ Contains
                 Buoyancy_Number_Visc = Buoyancy_Number_Rot/Ekman_Number**2
             Elseif (Buoyancy_Number_Rot .gt. 0) Then ! User set B_rot, not B_visc
                 Buoyancy_Number_Visc = Buoyancy_Number_Rot/Ekman_Number**2
-                Sigma_Parameter = sqrt(Buoyancy_Number_Rot*Prandtl_Number)
+                If (Buoyancy_Number_Visc .ge. 0) Then ! don't take square roots of negative numbers
+                    Sigma_Parameter = sqrt(Buoyancy_Number_Rot*Prandtl_Number)
+                Endif
             Else !User set B_visc, not something else
                 Buoyancy_Number_Rot = Buoyancy_Number_Visc*Ekman_Number**2
-                Sigma_Parameter = sqrt(Buoyancy_Number_Rot*Prandtl_Number)
+                If (Buoyancy_Number_Visc .ge. 0) Then ! don't take square roots of negative numbers
+                    Sigma_Parameter = sqrt(Buoyancy_Number_Rot*Prandtl_Number)
+                Endif
             Endif
         Endif
 
@@ -667,8 +671,10 @@ Contains
                 Write(dstring,dofmt)Buoyancy_Number_Visc
                 Call stdout%print(" ---- Visc. Buoyancy Number    : "//trim(dstring))
                 If (rotation) Then
-                    Write(dstring,dofmt)Sigma_Parameter
-                    Call stdout%print("          (Sigma               : "//trim(dstring)//")")
+                    If (Buoyancy_Number_Visc .ge. 0) Then ! don't take square roots of negative numbers
+                        Write(dstring,dofmt)Sigma_Parameter
+                        Call stdout%print("          (Sigma               : "//trim(dstring)//")")
+                    Endif
                     Write(dstring,dofmt)Buoyancy_Number_Rot
                     Call stdout%print("          (Rot. Buoyancy Number: "//trim(dstring)//")")
                 Endif
