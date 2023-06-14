@@ -45,7 +45,7 @@ Initial_Conditions.o : Initial_Conditions.F90 Load_Balance.o BufferedOutput.o Ma
 Input.o : Input.F90 MPI_LAYER.o Ra_MPI_Base.o Checkpointing.o Parallel_Framework.o PDE_Coefficients.o TestSuite.o Initial_Conditions.o BoundaryConditions.o Spherical_IO.o Controls.o ProblemSize.o 
 Legendre_Polynomials.o : Legendre_Polynomials.F90 
 Legendre_Transforms.o : Legendre_Transforms.F90 Structures.o Legendre_Polynomials.o 
-Linear_Solve.o : Linear_Solve.F90 Chebyshev_Polynomials.o Finite_Difference.o 
+Linear_Solve.o : Linear_Solve.F90 ProblemSize.o Chebyshev_Polynomials.o Finite_Difference.o 
 Linear_Terms_Cart.o : Linear_Terms_Cart.F90 ClockInfo.o Timers.o BoundaryConditions.o Fields.o Linear_Solve.o ProblemSize.o Controls.o Load_Balance.o 
 Load_Balance.o : Load_Balance.F90 MPI_LAYER.o 
 MPI_LAYER.o : MPI_LAYER.F90 All_to_All.o Ra_MPI_Base.o 
@@ -56,7 +56,7 @@ Math_Utility.o : Math_Utility.F90
 PDE_Coefficients.o : PDE_Coefficients.F90 General_MPI.o Math_Utility.o Math_Constants.o Controls.o ProblemSize.o 
 Parallel_Framework.o : Parallel_Framework.F90 BufferedOutput.o Structures.o Load_Balance.o General_MPI.o MPI_LAYER.o 
 Parallel_IO.o : Parallel_IO.F90 General_MPI.o Spherical_Buffer.o Legendre_Transforms.o Fourier_Transform.o MPI_LAYER.o ISendReceive.o Structures.o Parallel_Framework.o Ra_MPI_Base.o 
-ProblemSize.o : ProblemSize.F90 Timers.o BufferedOutput.o Math_Constants.o Chebyshev_Polynomials.o Controls.o Spectral_Derivatives.o Legendre_Polynomials.o Parallel_Framework.o 
+ProblemSize.o : ProblemSize.F90 Timers.o BufferedOutput.o Math_Constants.o Finite_Difference.o Chebyshev_Polynomials.o Controls.o Spectral_Derivatives.o Legendre_Polynomials.o Parallel_Framework.o 
 Ra_MPI_Base.o : Ra_MPI_Base.F90 
 Ra_Precision.o : Ra_Precision.F90 
 Run_Param_Header.dbg.o : Run_Param_Header.dbg.F 

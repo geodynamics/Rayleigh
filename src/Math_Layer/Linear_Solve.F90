@@ -21,6 +21,7 @@
 Module Linear_Solve
     Use Finite_Difference
     Use Chebyshev_Polynomials, Only : Cheby_Grid
+    Use ProblemSize, Only : my_rank
     !==========================================================================
     ! Generalized Implicit Time-stepping
     ! Currently assumes that implicit time stepping can be done with 1 dimension (only)
@@ -442,6 +443,14 @@ Module Linear_Solve
                         !Call LU_Solve_Sparse(j,k)
                         Call Equation_set(j,k)%LU_Solve_Sparse()
                     Else
+                        if (my_rank .eq. 0) Then
+                        print*,k,j, n_equations, n_modes
+                        if (k .eq. 4 .and. j .eq. 2) then
+                        open(1, file = 'data1.dat', status = 'new')
+                        write(1,*) Equation_set(j,k)%LHS(size(Equation_set(j,k)%LHS,1),:)
+                        close(1)
+                        endif
+                        endif
                         Call lu_solve_full(Equation_set(j,k)%LHS , Equation_Set(j,k)%rhs_pointer , Equation_Set(j,k)%Pivot)
                     Endif
                 Endif
@@ -1035,7 +1044,7 @@ Module Linear_Solve
           Real*8,Intent(inout) :: rhs(:,:,:)
           Integer, Intent(in) :: pvt(:)
           Integer, Optional :: na, nb
-          Integer :: ma, mb, lda, ku, kl,info
+          Integer :: ma, mb, lda, ku, kl,info, i, j
 
           If (Present(na)) Then
              ma = na
@@ -1057,17 +1066,29 @@ Module Linear_Solve
           ku = kl
         !  Call dgbtrs('N', ma, kl, ku, mb, mat, lda, pvt, rhs, Size(rhs,3), info)
 
+          If (my_rank .eq. 0) Then
+          open(1, file = 'data1.dat', status = 'new') 
+          print*,lda,ma 
+          do, i=1,lda
+          write(1,*) mat(i,:)
+          enddo
+          !do i=1,100  
+          !write(1,*) mat   
+          !end do  
+          close(1) 
+          endif
           Call dgbtrs('N', ma, kl, ku, mb, mat, lda, pvt, rhs, Size(rhs,1), info)
 
 
     End Subroutine LU_Solve_Band
 
     Subroutine LU_Solve_full(mat, rhs, pvt, na, nb)
-        Real*8,intent(in) :: mat(:,:)
+        Real*8,intent(inout) :: mat(:,:)
         Real*8,Intent(inout) :: rhs(:,:,:)
+        Real*8 :: diag
         Integer, Intent(in) :: pvt(:)
         Integer, Optional :: na, nb
-        Integer :: ma, mb, info
+        Integer :: ma, mb, info,i,j
 
         If (Present(na)) Then
             Write(6,*)'na specified: ', na, Size(rhs,1)
@@ -1082,10 +1103,44 @@ Module Linear_Solve
         Else
             mb = Size(rhs)/Size(rhs,1)
         End If
-
+          !If (magnetism) Then
+         !precond = mat
+          Do i = 1, ma
+             diag = mat(i,i)
+             if (my_rank .eq. 0) then
+             print*,i,ma,diag
+             !if (diag .eq. 0.0) then
+             !open(1, file = 'data1.dat', status = 'new')
+             !print*,size(mat,1),size(mat,2)
+             !do, j=1,ma
+             !write(1,*) mat(j,:)
+             !enddo
+             !close(1)
+             !endif
+             if (i .eq. ma) Then
+             print*,"End"
+             endif
+             endif
+             mat(i,:)=mat(i,:)/diag
+             rhs(i,:,:) = rhs(i,:,:)/diag
+          enddo
+          
+          !EndIf
+          !If (my_rank .eq. 0) Then
+          !open(1, file = 'data1.dat', status = 'new')
+          !print*,size(mat,1),size(mat,2)
+          !do, i=1,ma
+          !write(1,*) mat(i,:)
+          !enddo
+          !do i=1,100  
+          !write(1,*) mat   
+          !end do  
+          !close(1)
+          !endif
         Call dgetrs('N', ma, mb, mat, Size(mat,1), pvt, rhs, Size(rhs,1), info)
-
-
+     
+         
+      
         !If(Present(nb)) Then
         If (info .ne. 0) Then
             Write(6,*)'Problem is solve!  info is ', info
@@ -1098,12 +1153,12 @@ Module Linear_Solve
             Integer :: link,i,nupper
             If (equation_set(mode,equ)%solvefor) Then
                 If (equ .eq. 1) Then
-                    nupper = 3*cpgrid%max_npoly
+                    nupper = 3*ndim1!cpgrid%max_npoly
                     !Call Band_Load_Single(mode,equ,11)
                      Call Band_Load_Single(mode,equ,nupper)
 
                 Else
-                    nupper = cpgrid%max_npoly
+                    nupper = ndim1!cpgrid%max_npoly
                     Call Band_Load_Single(mode,equ,nupper) ! 3
                 Endif
 

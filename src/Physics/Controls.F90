@@ -36,7 +36,7 @@ Module Controls
     ! Numerical Controls
     ! Flats that control details of the parallelization/data layout and
     ! how the equations are solved (not what equations are solved).
-    Logical :: chebyshev = .false.           ! Set to false to use finite-differences (chebyshev polynomials are used by default)
+    Logical :: chebyshev = .true.           ! Set to false to use finite-differences (chebyshev polynomials are used by default)
     Logical :: bandsolve = .false.          ! Set to true to use band solves with the finite-differences
     Logical :: static_transpose = .false.   ! When true, transpose buffers for sending/receiving are never de-allocated for spherical buffer objects
     Logical :: static_config = .false.      ! When true, configuration buffers (p3a, s1b, etc.) ar enever de-allocated for spherical buffer objects
