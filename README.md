@@ -49,7 +49,7 @@ More information
 
 Authors
 --------
-Rayleigh was originally written by Nicholas Featherstone with NSF support through [CIG](https://geodynamics.org).  Please see the [ACKNOWLEDGE](ACKNOWLEDGE) file for citation information.
+Rayleigh was originally written by Nicholas Featherstone with NSF support through [CIG](https://geodynamics.org).  Please see the [ACKNOWLEDGE](ACKNOWLEDGE) and [CITATION](CITATION) for information on how to properly acknowledge and cite the code.
 
 License
 -------
