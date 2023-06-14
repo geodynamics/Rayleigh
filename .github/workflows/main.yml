@@ -88,6 +88,7 @@ jobs:
       with:
         activate-environment: radev
         environment-file: environment.yml
+        channel-priority: strict
     - name: Build documentation
       continue-on-error: true
       run: |
