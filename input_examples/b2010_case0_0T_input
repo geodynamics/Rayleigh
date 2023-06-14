@@ -1,3 +1,4 @@
+! The Breuer_2010 Benchmark for thermal-chemical buoyancy systems.
 &problemsize_namelist
  n_r = 48
  n_theta = 96
