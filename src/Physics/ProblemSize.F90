@@ -520,13 +520,15 @@ Contains
             Enddo
         Else
             grid_type = 1
+            !if (my_rank .eq. 0) Then
             !print*,"FINITE DIFF"
+            !endif
             Radius(N_R) = rmin ! Follow ASH convention of reversed radius
             Delta_R(N_R) = dr_input(N_R)
             uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
             Do r=N_R-1,1,-1
                     Delta_r(r) = uniform_dr!dr_input(r)!uniform_dr
-                    Radius(r) = dr_input(r) + Radius(r+1)
+                    Radius(r) = Delta_r(r) + Radius(r+1)
             Enddo
         Endif
 

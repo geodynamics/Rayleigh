@@ -470,7 +470,6 @@ Subroutine Post_Solve_FD()
         Else
             ctemp%nf1a = 1
             Call ctemp%construct('p1a')
-            Call ctemp%construct('p1b')
             ctemp%p1a(:,:,:,:) = 0.0d0
             Do m = 1, my_num_lm
                 Do i = 1, 2
@@ -485,7 +484,6 @@ Subroutine Post_Solve_FD()
                 Enddo
             Enddo
             Call ctemp%deconstruct('p1a')
-            Call ctemp%deconstruct('p1b')
         Endif
 
     End Subroutine Finalize_EMF
