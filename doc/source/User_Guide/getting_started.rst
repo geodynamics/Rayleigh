@@ -126,7 +126,7 @@ You can download our pre-built container from Docker Hub and launch it using the
 
    ./docker-devel
    # This runs the following command:
-   # docker run -it --rm -v $HOME:/work -e HOSTUID=$UID -e HOSTGID=$GROUPS -e HOSTUSER=$USER geodynamics/rayleigh-devel-bionic:latest
+   # docker run -it --rm -v $HOME:/work -e HOSTUID=$UID -e HOSTGID=$GROUPS -e HOSTUSER=$USER geodynamics/rayleigh-devel-jammy:latest
 
 This will give you a shell inside the container and mount your home directory at ``/work``. You can clone, configure, build, and run the code and analyze the outputs using Python inside the container. Any changes below ``/work`` will be reflected in your home directory. Any other changes to the container will be deleted once you exit the shell.
 
@@ -159,7 +159,7 @@ On the first launch of the container, your local Docker engine will automaticall
 
 .. code-block:: bash
 
-    docker pull geodynamics/rayleigh-devel-bionic:latest
+    docker pull geodynamics/rayleigh-devel-jammy:latest
 
 Building the container
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -170,7 +170,7 @@ To build the container you have to run this command from your host system (i.e.,
 .. code-block:: bash
 
    cd docker
-   docker build -t geodynamics/rayleigh-devel-bionic:latest rayleigh-devel-bionic
+   docker build -t geodynamics/rayleigh-devel-jammy:latest rayleigh-devel-jammy
 
 You can check the newly built container is there using this command.
 

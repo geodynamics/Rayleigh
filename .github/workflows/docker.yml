@@ -37,7 +37,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/rayleigh/
-          cache-from: type=registry,ref=geodynamics/rayleigh-buildenv-bionic
+          cache-from: type=registry,ref=geodynamics/rayleigh-buildenv-jammy
           cache-to: type=inline
           push: true
           tags: geodynamics/rayleigh:latest
@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/rayleigh/
-          cache-from: type=registry,ref=geodynamics/rayleigh-buildenv-bionic
+          cache-from: type=registry,ref=geodynamics/rayleigh-buildenv-jammy
           cache-to: type=inline
           push: true
           tags: geodynamics/rayleigh:${{github.ref_name}}
