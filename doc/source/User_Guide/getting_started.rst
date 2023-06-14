@@ -30,10 +30,22 @@ Once you have Conda installed, create a Conda environment using the environment 
 
 .. code-block:: bash
 
+    conda config --set channel_priority strict
     conda env create -f environment.yml
     conda activate radev
 
-This command will likely take a while (a few minutes) and will install all necessary packages to compile Rayleigh.
+Because Rayleigh installs a number of different packages the first of these lines simplifies the
+search for a compatible selection of package versions. The second line creates a new environment
+named "radev" and installs all necessary packages.  The third line activates the environment.
+This command will likely take a while (a few minutes).
+
+If you want to undo the change to the channel priority setting afterwards, you can run
+.. code-block:: bash
+
+    conda config --set channel_priority flexible
+
+after installing the environment (only necessary if you depend on the more flexible conda
+solver).
 
 MKL Setup: Linux and Mac
 ^^^^^^^^^^^^^^^^^^^^^^^^
