@@ -120,7 +120,20 @@ Docker provides a standardized way to build, distribute and run containerized en
 
 Launching the container
 ^^^^^^^^^^^^^^^^^^^^^^^
-You can download our pre-built container from Docker Hub and launch it using the command from the main Rayleigh directory. The following command is for GNU/Linux and macOS users.
+You can launch our pre-built container that is hosted on Docker Hub from a terminal.
+This container is set up to get used to Rayleigh not to run productive models with it.
+
+.. code-block:: bash
+    docker run -it --rm geodynamics/rayleigh:latest bash
+
+This command will create a terminal inside the container and drop you in a directory
+that contains a pre-compiled version of Rayleigh. You can run input examples or
+tests by executing `rayleigh.opt` or `rayleigh.dbg` and look at the output files, but
+all files will be deleted when you `exit` the container.
+
+We also provide a container with a development environment for Rayleigh that allows you to change the code, build the
+documentation and the code, and to keep model outputs.
+The following command is for GNU/Linux and macOS users.
 
 .. code-block:: bash
 
@@ -136,7 +149,7 @@ Windows users should run the script ``docker-devel.bat`` instead.
 
 Configuration and Compilation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. note:: All these commands are run inside the Docker container and assume you have a copy of Rayleigh at ``$HOME/path/to/Rayleigh`` (which corresponds to ``/root/path/to/Rayleigh`` inside the container).
+.. note:: All these commands are run inside the Docker container and assume you have a copy of Rayleigh at ``$HOME/path/to/Rayleigh`` (which corresponds to ``/work/path/to/Rayleigh`` inside the container).
 
 Building the documentation
 
