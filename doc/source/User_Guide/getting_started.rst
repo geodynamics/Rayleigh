@@ -565,6 +565,8 @@ in the directory: Rayleigh/input_examples/
 +-----------------------+-----------------+--------------------------------+--------------------------------+
 | Jones et al. 2011     | Steady MHD      | j2011_steady_MHD_minimal       | benchmark_mode = 4             |
 +-----------------------+-----------------+--------------------------------+--------------------------------+
+| Breuer et al. 2010    | Case 0          | b2010_case0_*T_input           |                                |
++-----------------------+-----------------+--------------------------------+--------------------------------+
 
 Standard benchmarks that generate minimal output files are discussed in the next four
 benchmarks:
@@ -573,7 +575,7 @@ benchmarks:
 * :ref:`cookbookCase1Minimal`
 * :ref:`cookbookHydroAnelastic`
 * :ref:`cookbookMhdAnelastic`
-
+* :ref:`cookbookDDCBreuer` 
 .. _cookbookCase0Minimal:
 
 Boussinesq non-MHD Benchmark: c2001_case0_minimal
@@ -698,3 +700,30 @@ differing from the Jones et al. (2011) anelastic hydro benchmark
     quicksave_interval  = 25000
     num_quicksaves = 2
    /
+
+.. _cookbookDDCBreuer:
+
+Steady Thermal-Chemical Boussinesq Convection Benchmark: b2010_case0_*T_input
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is a Boussinesq convection benchmark described in Breuer et al. (2010) :cite:`Breuer2010`
+in a dual buoyancy system that allows both thermal and chemical buoyancy sources. 
+The case 0 contains three input lists that describes varying contributions of 
+thermal vs chemical Rayleigh numbers whereas the total Rayleigh number stays the same. 
+This benchmark is specified for Rayleigh with input file b2010_case0_*T_input. 
+Below is an example for 80% thermal and 20% chemical convection scene for the 
+relevant Fortran namelists:
+
+::
+
+   &problemsize_namelist
+    n_r = 128
+    n_theta = 192
+    nprow = 32
+    npcol = 16 
+   &Reference_Namelist
+    Ekman_Number = 1.0d-3
+    Rayleigh_Number = 4.8d4
+    Prandtl_Number = 3.0d-1
+    chi_a_Rayleigh_Number = -1.2d5
+    chi_a_Prandtl_Number = 3.0d0
