@@ -33,8 +33,8 @@ Module BoundaryConditions
 
     Implicit None
 
-    Logical :: Fix_Tvar_Top    = .True.
-    Logical :: Fix_Tvar_Bottom = .True.
+    Logical :: Fix_Tvar_Top    = .False.
+    Logical :: Fix_Tvar_Bottom = .False.
     Logical :: Fix_dTdr_Top    = .False.
     Logical :: Fix_dTdr_Bottom = .False.
 
@@ -43,8 +43,8 @@ Module BoundaryConditions
     Logical :: Couple_dTdr_Top    = .False.
     Logical :: Couple_dTdr_Bottom = .False.
 
-    Logical :: Fix_chivar_a_Top(1:n_scalar_max)    = .True.
-    Logical :: Fix_chivar_a_Bottom(1:n_scalar_max) = .True.
+    Logical :: Fix_chivar_a_Top(1:n_scalar_max)    = .False.
+    Logical :: Fix_chivar_a_Bottom(1:n_scalar_max) = .False.
     Logical :: Fix_dchidr_a_Top(1:n_scalar_max)    = .False.
     Logical :: Fix_dchidr_a_Bottom(1:n_scalar_max) = .False.
 
@@ -53,8 +53,8 @@ Module BoundaryConditions
     Logical :: Couple_dchidr_a_Top(1:n_scalar_max)    = .False.
     Logical :: Couple_dchidr_a_Bottom(1:n_scalar_max) = .False.
 
-    Logical :: Fix_chivar_p_Top(1:n_scalar_max)    = .True.
-    Logical :: Fix_chivar_p_Bottom(1:n_scalar_max) = .True.
+    Logical :: Fix_chivar_p_Top(1:n_scalar_max)    = .False.
+    Logical :: Fix_chivar_p_Bottom(1:n_scalar_max) = .False.
     Logical :: Fix_dchidr_p_Top(1:n_scalar_max)    = .False.
     Logical :: Fix_dchidr_p_Bottom(1:n_scalar_max) = .False.
 
@@ -340,7 +340,7 @@ Contains
 
         If (.not. full_restart) Then
 
-            If (fix_tvar_top) Then
+            If (fix_tvar_top .or. couple_tvar_top) Then
                 if (trim(T_top_file) .eq. '__nothing__') then
                   bc_val= T_Top*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, teq,real_ind, uind)
@@ -349,7 +349,7 @@ Contains
                 end if
             Endif
 
-            If (fix_tvar_bottom) Then
+            If (fix_tvar_bottom .or. couple_tvar_bottom) Then
                 if (trim(T_bottom_file) .eq. '__nothing__') then
                   bc_val= T_bottom*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, teq,real_ind, lind)
@@ -358,7 +358,7 @@ Contains
                 end if
             Endif
 
-            If (fix_dtdr_top) Then
+            If (fix_dtdr_top .or. couple_dtdr_top) Then
                 if (trim(dTdr_top_file) .eq. '__nothing__') then
                   bc_val= dtdr_top*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, teq,real_ind, uind)
@@ -367,7 +367,7 @@ Contains
                 end if
             Endif
 
-            If (fix_dtdr_bottom) Then
+            If (fix_dtdr_bottom .or. couple_dtdr_bottom) Then
                 if (trim(dTdr_bottom_file) .eq. '__nothing__') then
                   bc_val= dtdr_bottom*sqrt(four_pi)
                   Call Set_BC(bc_val,0,0, teq,real_ind, lind)
@@ -397,7 +397,7 @@ Contains
             Endif   
 
             do i = 1, n_active_scalars
-              If (fix_chivar_a_top(i)) Then
+              If (fix_chivar_a_top(i) .or. couple_chivar_a_top(i)) Then
                   if (trim(chi_a_top_file(i)) .eq. '__nothing__') then
                     bc_val= chi_a_Top(i)*sqrt(four_pi)
                     Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, uind)
@@ -419,7 +419,7 @@ Contains
             end do
 
             do i = 1, n_active_scalars
-              If (fix_chivar_a_bottom(i)) Then
+              If (fix_chivar_a_bottom(i) .or. couple_chivar_a_bottom(i)) Then
                   if (trim(chi_a_bottom_file(i)) .eq. '__nothing__') then
                     bc_val= chi_a_bottom(i)*sqrt(four_pi)
                     Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, lind)
@@ -441,7 +441,7 @@ Contains
             end do
 
             do i = 1, n_active_scalars
-              If (Fix_dchidr_a_Top(i)) Then
+              If (Fix_dchidr_a_Top(i) .or. couple_dchidr_a_top(i)) Then
                   if (trim(dchidr_a_top_file(i)) .eq. '__nothing__') then
                     bc_val= dchidr_a_top(i)*sqrt(four_pi)
                     Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, uind)
@@ -463,7 +463,7 @@ Contains
             end do
 
             do i = 1, n_active_scalars
-              If (Fix_dchidr_a_Bottom(i)) Then
+              If (Fix_dchidr_a_Bottom(i) .or. couple_dchidr_a_bottom(i)) Then
                   if (trim(dchidr_a_bottom_file(i)) .eq. '__nothing__') then
                     bc_val= dchidr_a_bottom(i)*sqrt(four_pi)
                     Call Set_BC(bc_val,0,0, chiaeq(i),real_ind, lind)
@@ -571,8 +571,8 @@ Contains
 
     Subroutine Restore_BoundaryCondition_Defaults()
         Implicit None
-        Fix_Tvar_Top    = .True.
-        Fix_Tvar_Bottom = .True.
+        Fix_Tvar_Top    = .False.
+        Fix_Tvar_Bottom = .False.
         Fix_dTdr_Top    = .False.
         Fix_dTdr_Bottom = .False.
         Fix_divrt_top   = .False.
@@ -583,7 +583,7 @@ Contains
         Fix_poloidalfield_bottom = .False.
         Impose_Dipole_Field      = .False.
 
-        T_Bottom     = 1.0d0
+        T_Bottom     = 0.0d0
         T_Top        = 0.0d0
         dTdr_Top     = 0.0d0
         dTdr_Bottom  = 0.0d0
