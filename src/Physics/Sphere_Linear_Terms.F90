@@ -640,9 +640,9 @@ Contains
               If (couple_dchidr_a_top(i)) Then
                   do j = 1, n_active_scalars
                       samp = -dchidr_chi_coeff_top(i,j)
-                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
                       samp = -dchidr_dchidr_coeff_top(i,j)
+                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
                   end do
                   samp = -dchidr_T_coeff_top(i)
@@ -674,9 +674,9 @@ Contains
               If (couple_dchidr_a_bottom(i)) Then
                   do j = 1, n_active_scalars
                       samp = -dchidr_chi_coeff_bottom(i,j)
-                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
                       samp = -dchidr_dchidr_coeff_bottom(i,j)
+                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
                   end do
                   samp = -dchidr_T_coeff_bottom(i)
@@ -846,9 +846,9 @@ Contains
               If (couple_dchidr_a_top(i)) Then
                   do j = 1, n_active_scalars
                       samp = -dchidr_chi_coeff_top(i,j)
-                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
                       samp = -dchidr_dchidr_coeff_top(i,j)
+                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
                   end do
                   samp = -dchidr_T_coeff_top(i)
@@ -880,9 +880,9 @@ Contains
               If (couple_dchidr_a_bottom(i)) Then
                   do j = 1, n_active_scalars
                       samp = -dchidr_chi_coeff_bottom(i,j)
-                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
                       samp = -dchidr_dchidr_coeff_bottom(i,j)
+                      if (i==j) samp = 1.0
                       Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
                   end do
                   samp = -dchidr_T_coeff_bottom(i)
