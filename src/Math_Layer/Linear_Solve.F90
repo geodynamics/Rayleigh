@@ -443,14 +443,6 @@ Module Linear_Solve
                         !Call LU_Solve_Sparse(j,k)
                         Call Equation_set(j,k)%LU_Solve_Sparse()
                     Else
-                        !if (my_rank .eq. 0) Then
-                        !print*,k,j, n_equations, n_modes
-                        !if (k .eq. 4 .and. j .eq. 2) then
-                        !open(1, file = 'data1.dat', status = 'new')
-                        !write(1,*) Equation_set(j,k)%LHS(size(Equation_set(j,k)%LHS,1),:)
-                        !close(1)
-                        !endif
-                        !endif
                         Call lu_solve_full(Equation_set(j,k)%LHS , Equation_Set(j,k)%rhs_pointer , Equation_Set(j,k)%Pivot)
                     Endif
                 Endif
@@ -1044,7 +1036,7 @@ Module Linear_Solve
           Real*8,Intent(inout) :: rhs(:,:,:)
           Integer, Intent(in) :: pvt(:)
           Integer, Optional :: na, nb
-          Integer :: ma, mb, lda, ku, kl,info, i, j
+          Integer :: ma, mb, lda, ku, kl,info
 
           If (Present(na)) Then
              ma = na
@@ -1066,17 +1058,6 @@ Module Linear_Solve
           ku = kl
         !  Call dgbtrs('N', ma, kl, ku, mb, mat, lda, pvt, rhs, Size(rhs,3), info)
 
-          !If (my_rank .eq. 0) Then
-          !open(1, file = 'data1.dat', status = 'new') 
-          !print*,lda,ma 
-          !do, i=1,lda
-          !write(1,*) mat(i,:)
-          !enddo
-          !do i=1,100  
-          !write(1,*) mat   
-          !end do  
-          !close(1) 
-          !endif
           Call dgbtrs('N', ma, kl, ku, mb, mat, lda, pvt, rhs, Size(rhs,1), info)
 
 

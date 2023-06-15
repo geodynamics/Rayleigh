@@ -77,7 +77,7 @@ Module ProblemSize
     Integer :: ndomains = 1
     Integer :: n_uniform_domains =1
     Real*8  :: domain_bounds(1:nsubmax+1)=-1.0d0
-    Real*8  :: dr_input(4096) = 1.0d0
+    Real*8  :: dr_input(4096) = 0.0d0
     Logical :: uniform_bounds = .false.
     Type(Cheby_Grid), Target :: gridcp
 
@@ -520,14 +520,20 @@ Contains
             Enddo
         Else
             grid_type = 1
-            !if (my_rank .eq. 0) Then
-            !print*,"FINITE DIFF"
-            !endif
             Radius(N_R) = rmin ! Follow ASH convention of reversed radius
-            Delta_R(N_R) = dr_input(N_R)
             uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
+            If (dr_input(N_R) .eq. 0.0) Then
+                Delta_r(N_R) = uniform_dr
+            Else If (dr_input(N_R) .gt. 0.0) Then
+                Delta_r(N_R) = dr_input(N_R)
+            Endif 
+
             Do r=N_R-1,1,-1
-                    Delta_r(r) = uniform_dr!dr_input(r)!uniform_dr
+                    If (dr_input(r) .eq. 0.0) Then
+                        Delta_r(r) = uniform_dr
+                    Else If (dr_input(r) .gt. 0.0) Then
+                        Delta_r(r) = dr_input(r)
+                    Endif 
                     Radius(r) = Delta_r(r) + Radius(r+1)
             Enddo
         Endif
