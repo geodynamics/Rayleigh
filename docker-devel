@@ -1,3 +1,37 @@
 #!/bin/sh
 
-docker run -it --rm -v $HOME:/work -e HOSTUID=$(id -u) -e HOSTGID=$(id -g) -e HOSTUSER=$(id -n -u) geodynamics/rayleigh-devel-jammy:latest
+USE_PODMAN=0
+
+USAGE="Launches a Rayleigh development container\n
+Options:\n
+  -p   Use podman instead of docker to run the container.
+"
+
+while getopts ph o
+do
+  case $o in
+    p) USE_PODMAN=1;;
+    h) echo "$USAGE"; exit 1;;
+  esac
+done
+shift `expr $OPTIND - 1`
+
+HAS_DOCKER=$(command -v docker > /dev/null && echo 1 || echo 0)
+HAS_PODMAN=$(command -v podman > /dev/null && echo 1 || echo 0)
+
+if [ $HAS_DOCKER -eq 0 -a $HAS_PODMAN -ne 0 ]
+then
+  echo "docker not installed. Falling back to podman."
+  USE_PODMAN=1
+fi
+
+if [ $USE_PODMAN -ne 0 ]
+then
+  CMD=podman
+  prefix=docker://
+else
+  CMD=docker
+  prefix=
+fi
+
+"$CMD" run -it --rm -v "$HOME":/work -e HOSTUID="$(id -u)" -e HOSTGID="$(id -g)" -e HOSTUSER="$(id -n -u)" "$prefix"geodynamics/rayleigh-devel-jammy:latest
