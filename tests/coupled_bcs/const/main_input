@@ -1,0 +1,88 @@
+! This is a smaller version of the input_examples/benchmark_diagnostics_input 
+! model that only runs for two time-steps so that we can check the boundary conditions.
+
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ rmin = 0.5
+ rmax = 1.0
+/
+&numerical_controls_namelist
+ chebyshev = .true.
+/
+&physical_controls_namelist
+ rotation  = .True.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+ n_active_scalars = 2
+/
+&temporal_controls_namelist
+ max_time_step = 1.0d-4
+ max_iterations = 2
+ alpha_implicit = 0.50001d0
+ checkpoint_interval = 500000
+ quicksave_interval = 1000000
+ num_quicksaves = -1
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+full3d_values = 501 507 10001 10004 10201 10204
+full3d_frequency = 2
+
+shellavg_values    = 501 507 10001 10004 10201 10204
+shellavg_frequency = 2
+shellavg_nrec = 1
+
+shellslice_levels    = 1,48
+shellslice_values    = 501 507 10001 10004 10201 10204 ! T dTdr chi1 dchi1dr chi2 dchi2dr
+shellslice_frequency = 2
+shellslice_nrec      = 1
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+dTdr_Top = 10.0d0
+T_Bottom = 10.0d0
+couple_dtdr_top = .true.
+dTdr_chi_coeff_top(1) = 1.0
+couple_tvar_bottom = .true.
+T_chi_coeff_bottom(1) = 10.0
+T_dchidr_coeff_bottom(1) = -5.0
+chi_a_Top(1)    = 1.0d0
+chi_a_Bottom(1) = 2.0d0
+fix_chivar_a_top(1) = .true.
+fix_chivar_a_bottom(1) = .true.
+chi_a_Top(2)    = 1.0d0
+dchidr_a_Bottom(2) = 20.0d0
+couple_chivar_a_top(2) = .true.
+chi_chi_coeff_top(2,1) = 10.0
+chi_dchidr_coeff_top(2,1) = 5.0
+couple_dchidr_a_bottom(2) = .true.
+dchidr_chi_coeff_bottom(2,1) = 1.0
+/
+&Initial_Conditions_Namelist
+init_type = 8 ! File init
+t_init_file = 'constant_init'
+chi_a_init_file(1) = 'radial_prof_init'
+chi_a_init_file(2) = 'constant_init'
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 0.0
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/
