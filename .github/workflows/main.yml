@@ -74,6 +74,10 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         sh ./tests/custom_reference/run_test.sh
 
+        # coupled bc test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/coupled_bcs/run_test.sh
+        
         git diff > changes.diff
         git diff --exit-code --name-only
 
