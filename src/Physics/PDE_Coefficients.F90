@@ -154,12 +154,15 @@ Module PDE_Coefficients
             & Rayleigh_Number, Ekman_Number, Prandtl_Number, Magnetic_Prandtl_Number, &
             & gravity_power, custom_reference_file, &
             & Dissipation_Number, Modified_Rayleigh_Number, &
+            & Convective_Rossby_Number, &
             & Heating_Integral, override_constants, override_constant, ra_constants, with_custom_constants, &
             & with_custom_functions, with_custom_reference, &
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
-            & chi_a_modified_rayleigh_number, chi_p_prandtl_number, &
+            & chi_a_modified_rayleigh_number, &
+            & chi_a_convective_rossby_number, chi_p_prandtl_number, &
             & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, &
-            & Assume_Flux_Ra, Specific_Heat_Ratio, Buoyancy_Number_Visc, Buoyancy_Number_Rot, Length_Scale
+            & Assume_Flux_Ra, Specific_Heat_Ratio, Buoyancy_Number_Visc,&
+            & Buoyancy_Number_Rot, Sigma_Parameter, Length_Scale
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
