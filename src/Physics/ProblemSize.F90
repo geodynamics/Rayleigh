@@ -106,7 +106,11 @@ Contains
 
         If (my_rank .eq. 0) Then
             call stdout%print(" ")
-            call stdout%print(" -- Initalizing Grid...")
+            If (chebyshev) Then
+                call stdout%print(" -- Initializing Chebyshev Grid...")
+            Else
+                call stdout%print(" -- Initializing Finite-Difference Grid...")
+            EndIf
         Endif
 
         Call Report_Grid_Parameters()     ! Print some grid-related info to the screen
@@ -569,7 +573,11 @@ Contains
             Write(dstring,dofmt)rmax
             Call stdout%print(" ---- R_MAX               : "//trim(dstring))
             Write(istr,'(i6)')ndomains
-            call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
+            If (chebyshev) Then
+                call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
+            Else
+                call stdout%print(" ---- Finite Difference Domains   : "//trim(istr))
+            Endif
 
             Do i = 1, ndomains
                 call stdout%print(" ")
