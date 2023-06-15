@@ -116,7 +116,7 @@ At this point, you can run "make install," and run the code using mpirun as you 
 Docker Container
 ~~~~~~~~~~~~~~~
 
-Docker provides a standardized way to build, distribute and run containerized environments on Linux, macOS, and Windows. To get started you should install Docker on your system following the instructions from `here <https://www.docker.com/get-started>`_. On Linux you can likely also install it from a distribution package (e.g., ``docker-io`` on Debian/Ubuntu).
+Docker provides a standardized way to build, distribute and run containerized environments on Linux, macOS, and Windows. To get started you should install Docker on your system following the instructions from `here <https://www.docker.com/get-started>`_. On Linux you can likely also install it from a distribution package (e.g., ``docker-io`` on Debian/Ubuntu). `Podman <https://podman.io/>`_ is an alternative runtime that can run Docker containers and can be used as a drop-in replacement for Docker.
 
 Launching the container
 ^^^^^^^^^^^^^^^^^^^^^^^
