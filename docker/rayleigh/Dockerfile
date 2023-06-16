@@ -20,6 +20,7 @@ RUN ./configure \
 ENV PATH="${RAYLEIGH_DIR}/bin:${PATH}"
 ENV PYTHONPATH="${RAYLEIGH_DIR}/post_processing${PYTHONPATH:+:$PYTHONPATH}"
 
-# Allow running OpenMPI as root
+# Allow running OpenMPI as root and avoid warning messages
 ENV OMPI_ALLOW_RUN_AS_ROOT=1
 ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+ENV OMPI_MCA_btl_vader_single_copy_mechanism=none
