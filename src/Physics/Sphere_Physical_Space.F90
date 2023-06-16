@@ -52,6 +52,7 @@ Contains
         Call StopWatch(dphi_time)%increment()
 
 
+
         ! Next perform the FFT
         Call StopWatch(fft_time)%startclock()
         Call fft_to_physical(wsp%p3a,rsc = .true.)
@@ -137,6 +138,7 @@ Contains
         Call Momentum_Advection_Radial()
         Call Momentum_Advection_Theta()
         Call Momentum_Advection_Phi()
+
 
         If (magnetism) Then
             Call Compute_Ohmic_Heating()

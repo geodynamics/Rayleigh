@@ -495,6 +495,7 @@ Contains
                 Endif
             Endif
 
+
             If (bandsolve) Then
                 Call Band_Arrange(weq,lp)
                 Call Band_Arrange(zeq,lp)

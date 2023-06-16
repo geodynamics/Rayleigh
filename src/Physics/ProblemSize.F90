@@ -377,7 +377,7 @@ Contains
             Do i = 2,bounds_count
                 domain_bounds(i) = domain_bounds(i-1)+rdelta
             Enddo
-         Else
+        Else
             ! Case (c)
             n_r = 0
             Do i = 1, cheby_count
