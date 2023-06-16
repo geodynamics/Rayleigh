@@ -473,7 +473,7 @@ where *W* and *Z* are referred to as the poloidal and toroidal stream functions 
 .. math::
    :label: vrstream
    
-       \mathrm{f_1}v_r = - \frac{1}{r\mathrm{sin}\theta}\frac{\partial}{\partial\theta}\left(\mathrm{sin}\theta\frac{\partial W}{\partial\theta} \right)-\frac{1}{r^2\mathrm{sin}^2\theta}\frac{\partial^2 Z}{\partial\phi^2},   
+       \mathrm{f_1}v_r = - \frac{1}{r^2\mathrm{sin}\theta}\frac{\partial}{\partial\theta}\left(\mathrm{sin}\theta\frac{\partial W}{\partial\theta} \right)-\frac{1}{r^2\mathrm{sin}^2\theta}\frac{\partial^2 W}{\partial\phi^2},   
 
 .. math::
    :label: vtstream
@@ -513,7 +513,7 @@ where *C* and *A* are the poloidal and toroidal flux functions respectively.  Si
 .. math::
    :label: Brstream
    
-       B_r = - \frac{1}{r\mathrm{sin}\theta}\frac{\partial}{\partial\theta}\left(\mathrm{sin}\theta\frac{\partial C}{\partial\theta} \right)-\frac{1}{r^2\mathrm{sin}^2\theta}\frac{\partial^2 A}{\partial\phi^2},   
+       B_r = - \frac{1}{r^2\mathrm{sin}\theta}\frac{\partial}{\partial\theta}\left(\mathrm{sin}\theta\frac{\partial C}{\partial\theta} \right)-\frac{1}{r^2\mathrm{sin}^2\theta}\frac{\partial^2 C}{\partial\phi^2},   
 
 .. math::
    :label: Btstream
