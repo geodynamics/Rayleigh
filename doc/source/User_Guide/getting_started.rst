@@ -117,6 +117,7 @@ Docker Container
 ~~~~~~~~~~~~~~~
 
 Docker provides a standardized way to build, distribute and run containerized environments on Linux, macOS, and Windows. To get started you should install Docker on your system following the instructions from `here <https://www.docker.com/get-started>`_. On Linux you can likely also install it from a distribution package (e.g., ``docker-io`` on Debian/Ubuntu). `Podman <https://podman.io/>`_ is an alternative runtime that can run Docker containers and can be used as a drop-in replacement for Docker.
+Singularity/Apptainer are other available alternatives that are more commonly used on HPC systems.
 
 Launching the container
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -130,6 +131,8 @@ This command will create a terminal inside the container and drop you in a direc
 that contains a pre-compiled version of Rayleigh. You can run input examples or
 tests by executing `rayleigh.opt` or `rayleigh.dbg` and look at the output files, but
 all files will be deleted when you `exit` the container.
+
+.. note:: If you use Apptainer/Singularity instead of docker you can keep the model output files, because Apptainer by default mounts the current directory into the container. The command to run Rayleigh inside the container is ``mpirun -np X apptainer exec geodynamics/rayleigh:latest rayleigh.opt``` (assuming you have a Rayleigh input file in the current directory).
 
 We also provide a container with a development environment for Rayleigh that allows you to change the code, build the
 documentation and the code, and to keep model outputs.
