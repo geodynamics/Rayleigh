@@ -530,14 +530,14 @@ Contains
                 Delta_r(N_R) = uniform_dr
             Else If (dr_input(N_R) .gt. 0.0) Then
                 Delta_r(N_R) = dr_input(N_R)
-            Endif 
+            Endif
 
             Do r=N_R-1,1,-1
                     If (dr_input(r) .eq. 0.0) Then
                         Delta_r(r) = uniform_dr
                     Else If (dr_input(r) .gt. 0.0) Then
                         Delta_r(r) = dr_input(r)
-                    Endif 
+                    Endif
                     Radius(r) = Delta_r(r) + Radius(r+1)
             Enddo
         Endif

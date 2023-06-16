@@ -879,7 +879,7 @@ Module Linear_Solve
                 mpointer => equation_set(mode,eqind)%mpointer
                 colblock = equation_set(mode,eqind)%colblock(varind)
                 rowblock = equation_set(mode,eqind)%rowblock
-        
+
                 Call Cheby_Continuity(row,rowblock,colblock,dorder,mpointer)
         Endif
 
@@ -1082,8 +1082,10 @@ Module Linear_Solve
         Else
             mb = Size(rhs)/Size(rhs,1)
         End If
-       Call dgetrs('N', ma, mb, mat, Size(mat,1), pvt, rhs, Size(rhs,1), info)
-      
+
+        Call dgetrs('N', ma, mb, mat, Size(mat,1), pvt, rhs, Size(rhs,1), info)
+
+
         !If(Present(nb)) Then
         If (info .ne. 0) Then
             Write(6,*)'Problem is solve!  info is ', info

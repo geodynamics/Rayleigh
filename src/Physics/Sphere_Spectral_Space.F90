@@ -34,72 +34,72 @@ Module Sphere_Spectral_Space
     Type(SphericalBuffer) :: ctemp ! workspace
 Contains
 
-Subroutine Post_Solve_FD()	
-		Implicit None
-		Integer :: m, i
-		Character*12 :: tstring, otstring
-		! wsp%p1b is assumed to be allocated
-		Call StopWatch(psolve_time)%startclock()
-		Call wsp%construct('p1a')
-		wsp%config = 'p1a'
+    Subroutine Post_Solve_FD()
+        Implicit None
+        Integer :: m, i
+        Character*12 :: tstring, otstring
+        ! wsp%p1b is assumed to be allocated
+        Call StopWatch(psolve_time)%startclock()
+        Call wsp%construct('p1a')
+        wsp%config = 'p1a'
 
-		old_deltat = deltat
-		If (new_timestep) Then
-			deltat = new_deltat
-			new_timestep = .false.
-			If (my_rank .eq. 0) Then
-				Write(otstring,t_ofmt)old_deltat
-				Write(tstring,t_ofmt)deltat
-				Call stdout%print(' Timestep has changed from '//Trim(otstring)//' to '//Trim(tstring)//'.')
-                Call stdout%partial_flush()  ! Make SURE that a changing timestep is recorded ...
-                                             ! ... even at the expense of additional file I/O for redirected stdout
-			Endif
-			Call StopWatch(seteq_time)%startclock()
-			Call Reset_Linear_Equations()
-			Call StopWatch(seteq_time)%increment()
-		Endif
-		if (euler_step) then
-				!Euler Step
-				new_ab_factor = deltat
-				old_ab_factor = 0.0d0
-                euler_step = .false.
-		else
-				new_ab_factor = 0.5d0*deltat*(2 + deltat/old_deltat)
-				old_ab_factor = -0.5d0*deltat**2/old_deltat
-		endif
-		wsp%p1b = wsp%p1b*old_ab_factor	
+        old_deltat = deltat
+        If (new_timestep) Then
+            deltat = new_deltat
+            new_timestep = .false.
+            If (my_rank .eq. 0) Then
+                Write(otstring,t_ofmt)old_deltat
+                Write(tstring,t_ofmt)deltat
+                Call stdout%print(' Timestep has changed from '//Trim(otstring)//' to '//Trim(tstring)//'.')
+        Call stdout%partial_flush()  ! Make SURE that a changing timestep is recorded ...
+                         ! ... even at the expense of additional file I/O for redirected stdout
+            Endif
+            Call StopWatch(seteq_time)%startclock()
+            Call Reset_Linear_Equations()
+            Call StopWatch(seteq_time)%increment()
+        Endif
+        if (euler_step) then
+                !Euler Step
+                new_ab_factor = deltat
+                old_ab_factor = 0.0d0
+        euler_step = .false.
+        else
+                new_ab_factor = 0.5d0*deltat*(2 + deltat/old_deltat)
+                old_ab_factor = -0.5d0*deltat**2/old_deltat
+        endif
+        wsp%p1b = wsp%p1b*old_ab_factor
 
-		!Copy each variable out of the RHS into the top part of the buffer
+        !Copy each variable out of the RHS into the top part of the buffer
 
-		Call Get_All_RHS(wsp%p1a)
-
-
-		! Now take radial derivatives.  We can automate this further later.
+        Call Get_All_RHS(wsp%p1a)
 
 
-		!///////////////////////////////////////////////////////////////////////////	
-		!Load the W derivatives into the appropriate RHS's
-		Call d_by_dx(wvar,d3wdr3,wsp%p1a,3)		! d3wdr3 will be overwritten by dwdr shortly
-		Call Add_Derivative(peq,wvar,3,wsp%p1b,wsp%p1a,d3wdr3)
+        ! Now take radial derivatives.  We can automate this further later.
 
-		Call d_by_dx(wvar,dwdr   ,wsp%p1a,1)		
-		Call d_by_dx(wvar,d2wdr2 ,wsp%p1a,2)    
 
-		Call Add_Derivative(peq,wvar,0,wsp%p1b,wsp%p1a,wvar)	
-		Call Add_Derivative(peq,wvar,1,wsp%p1b,wsp%p1a,dwdr)
+        !///////////////////////////////////////////////////////////////////////////
+        !Load the W derivatives into the appropriate RHS's
+        Call d_by_dx(wvar,d3wdr3,wsp%p1a,3)! d3wdr3 will be overwritten by dwdr shortly
+        Call Add_Derivative(peq,wvar,3,wsp%p1b,wsp%p1a,d3wdr3)
+
+        Call d_by_dx(wvar,dwdr   ,wsp%p1a,1)
+        Call d_by_dx(wvar,d2wdr2 ,wsp%p1a,2)
+
+        Call Add_Derivative(peq,wvar,0,wsp%p1b,wsp%p1a,wvar)
+        Call Add_Derivative(peq,wvar,1,wsp%p1b,wsp%p1a,dwdr)
         Call Add_Derivative(peq,wvar,2,wsp%p1b,wsp%p1a,d2wdr2)
 
-		Call Add_Derivative(weq,wvar,0,wsp%p1b,wsp%p1a,wvar)
-	    Call Add_Derivative(weq,wvar,1,wsp%p1b,wsp%p1a,dwdr)
-		Call Add_Derivative(weq,wvar,2,wsp%p1b,wsp%p1a,d2wdr2)
+        Call Add_Derivative(weq,wvar,0,wsp%p1b,wsp%p1a,wvar)
+        Call Add_Derivative(weq,wvar,1,wsp%p1b,wsp%p1a,dwdr)
+        Call Add_Derivative(weq,wvar,2,wsp%p1b,wsp%p1a,d2wdr2)
 
-		If (deriv_cluge) Then
-			Call d_by_dx(dwdr,d2wdr2,wsp%p1a,1)	! cluge like in ASH  --- seems unnecessary though.  take out once all else works
-		Endif
-		!//////////////////////////////
-		!  P Terms
-		Call d_by_dx(pvar,dpdr1,wsp%p1a,1)	! dpdr will be overwritten by d2tdr2 shortly
-		Call Add_Derivative(weq,pvar,1,wsp%p1b,wsp%p1a,dpdr1)
+        If (deriv_cluge) Then
+            Call d_by_dx(dwdr,d2wdr2,wsp%p1a,1)! cluge like in ASH  --- seems unnecessary though.  take out once all else works
+        Endif
+        !//////////////////////////////
+        !  P Terms
+        Call d_by_dx(pvar,dpdr1,wsp%p1a,1)! dpdr will be overwritten by d2tdr2 shortly
+        Call Add_Derivative(weq,pvar,1,wsp%p1b,wsp%p1a,dpdr1)
 
         If (output_iteration) Then
             ! Grab dpdr
@@ -107,73 +107,73 @@ Subroutine Post_Solve_FD()
             cobuffer%p1a(:,:,:,dpdr_cb) = wsp%p1a(:,:,:,dpdr1)
         Endif
 
-		Call Add_Derivative(peq,pvar,0,wsp%p1b,wsp%p1a,pvar)
+        Call Add_Derivative(peq,pvar,0,wsp%p1b,wsp%p1a,pvar)
 
-		!///////////////////////////////
-		! T Terms
-		Call d_by_dx(tvar,d2tdr2,wsp%p1a,2)	! d2tdr2 will be overwritten by dtdr shortly
-		Call Add_Derivative(teq,tvar,2,wsp%p1b,wsp%p1a,d2tdr2)
+        !///////////////////////////////
+        ! T Terms
+        Call d_by_dx(tvar,d2tdr2,wsp%p1a,2)! d2tdr2 will be overwritten by dtdr shortly
+        Call Add_Derivative(teq,tvar,2,wsp%p1b,wsp%p1a,d2tdr2)
 
-		Call d_by_dx(tvar,dtdr,wsp%p1a,1)
-		Call Add_Derivative(teq,tvar,1,wsp%p1b,wsp%p1a,dtdr)	
+        Call d_by_dx(tvar,dtdr,wsp%p1a,1)
+        Call Add_Derivative(teq,tvar,1,wsp%p1b,wsp%p1a,dtdr)
 
-		Call Add_Derivative(teq,tvar,0, wsp%p1b,wsp%p1a,tvar)	
-		Call Add_Derivative(weq,tvar,0, wsp%p1b,wsp%p1a,tvar)	! gravity
-
-
+        Call Add_Derivative(teq,tvar,0, wsp%p1b,wsp%p1a,tvar)
+        Call Add_Derivative(weq,tvar,0, wsp%p1b,wsp%p1a,tvar)! gravity
 
 
-		!///////////////////////////////
-		!  Z Terms
-		Call d_by_dx(zvar,d2zdr2,wsp%p1a,2)		! 2nd derivative will be overwritten with dzdr
-		Call Add_Derivative(zeq,zvar,2,wsp%p1b,wsp%p1a,d2zdr2)	
 
-		Call d_by_dx(zvar,dzdr,wsp%p1a,1)	
 
-		Call Add_Derivative(zeq,zvar,0,wsp%p1b,wsp%p1a,zvar)	
+        !///////////////////////////////
+        !  Z Terms
+        Call d_by_dx(zvar,d2zdr2,wsp%p1a,2)! 2nd derivative will be overwritten with dzdr
+        Call Add_Derivative(zeq,zvar,2,wsp%p1b,wsp%p1a,d2zdr2)
+
+        Call d_by_dx(zvar,dzdr,wsp%p1a,1)
+
+        Call Add_Derivative(zeq,zvar,0,wsp%p1b,wsp%p1a,zvar)
         Call Add_Derivative(zeq,zvar,1,wsp%p1b,wsp%p1a,dzdr)
 
-		If (magnetism) Then
-			!//////////////
-			! A-terms (Toroidal magnetic field)
-			Call d_by_dx(avar,d2adr2,wsp%p1a,2)		! 2nd derivative will be overwritten with dadr
-			Call Add_Derivative(aeq,avar,2,wsp%p1b,wsp%p1a,d2adr2)
-			Call d_by_dx(avar,dadr,wsp%p1a,1)	
+        If (magnetism) Then
+            !//////////////
+            ! A-terms (Toroidal magnetic field)
+            Call d_by_dx(avar,d2adr2,wsp%p1a,2)! 2nd derivative will be overwritten with dadr
+            Call Add_Derivative(aeq,avar,2,wsp%p1b,wsp%p1a,d2adr2)
+            Call d_by_dx(avar,dadr,wsp%p1a,1)
 
-			Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
+            Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
 
-			!///////////////////
-			! C-terms (Poloidal magnetic field)
-			Call d_by_dx(cvar,d2cdr2,wsp%p1a,2)		
-			Call Add_Derivative(ceq,cvar,2,wsp%p1b,wsp%p1a,d2cdr2)
-			Call d_by_dx(cvar,dcdr,wsp%p1a,1)	
-			Call Add_Derivative(ceq,cvar,0,wsp%p1b,wsp%p1a,cvar)
+            !///////////////////
+            ! C-terms (Poloidal magnetic field)
+            Call d_by_dx(cvar,d2cdr2,wsp%p1a,2)
+            Call Add_Derivative(ceq,cvar,2,wsp%p1b,wsp%p1a,d2cdr2)
+            Call d_by_dx(cvar,dcdr,wsp%p1a,1)
+            Call Add_Derivative(ceq,cvar,0,wsp%p1b,wsp%p1a,cvar)
 
-		Endif
+        Endif
 
-		!Load the old ab array into the RHS
+        !Load the old ab array into the RHS
 
-		Call Set_All_RHS(wsp%p1b)	! RHS now holds old_AB+CN factors
+        Call Set_All_RHS(wsp%p1b)! RHS now holds old_AB+CN factors
 
-		Call wsp%deconstruct('p1b')
-		Call StopWatch(psolve_time)%increment()
+        Call wsp%deconstruct('p1b')
+        Call StopWatch(psolve_time)%increment()
 
-		Call StopWatch(ctranspose_time)%startclock()
+        Call StopWatch(ctranspose_time)%startclock()
 
 
         If (output_iteration) Then
             !Convert p/rho to p
             ! We already took d/dr(p/rho), so we'll fix that later
-		    Do m = 1, my_num_lm
-			    Do i = 1, 2
-				    wsp%p1a(:,i,m,pvar) = wsp%p1a(:,i,m,pvar)*ref%density(:)
-			    Enddo
-		    Enddo
+            Do m = 1, my_num_lm
+                Do i = 1, 2
+                    wsp%p1a(:,i,m,pvar) = wsp%p1a(:,i,m,pvar)*ref%density(:)
+                Enddo
+            Enddo
             Call cobuffer%reform()
         Endif
         Call wsp%reform()
-		Call StopWatch(ctranspose_time)%increment()
-	End Subroutine Post_Solve_FD
+        Call StopWatch(ctranspose_time)%increment()
+    End Subroutine Post_Solve_FD
 
     Subroutine Post_Solve()
         Implicit None

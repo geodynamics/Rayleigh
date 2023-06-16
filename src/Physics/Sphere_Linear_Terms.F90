@@ -57,7 +57,7 @@ Contains
                         Lconservation_weights( nm+(2*gridcp%npoly(m))/3+1:nm+gridcp%npoly(m) ) = 0.0d0  ! De-Alias
                         nm = nm + gridcp%npoly(m)
                     Enddo
-                Else 
+                Else
                     Lconservation_weights = radial_integral_weights
                 Endif
             Endif

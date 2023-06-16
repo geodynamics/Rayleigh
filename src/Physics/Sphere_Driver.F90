@@ -163,7 +163,7 @@ Contains
             Else
                 Call Post_Solve_FD()
             Endif
-           
+
             If (my_rank .eq. 0 .and. mod(iteration,statusline_interval) .eq. 0) Then
                 Write(istr,int_out_fmt)iteration
                 Write(dtstr,sci_note_fmt)deltat
