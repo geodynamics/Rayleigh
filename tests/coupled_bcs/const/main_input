@@ -48,24 +48,24 @@ shellslice_nrec      = 1
 &Boundary_Conditions_Namelist
 no_slip_boundaries = .true.
 strict_L_Conservation = .false.
-dTdr_Top = 10.0d0
-T_Bottom = 10.0d0
+dTdr_Top = 32.31
+T_Bottom = 17.865
 couple_dtdr_top = .true.
-dTdr_chi_coeff_top(1) = 1.0
+dTdr_chi_coeff_top(1) = 70.2
 couple_tvar_bottom = .true.
-T_chi_coeff_bottom(1) = 10.0
-T_dchidr_coeff_bottom(1) = -5.0
+T_chi_coeff_bottom(1) = 34.1
+T_dchidr_coeff_bottom(1) = -51.87
 chi_a_Top(1)    = 1.0d0
 chi_a_Bottom(1) = 2.0d0
 fix_chivar_a_top(1) = .true.
 fix_chivar_a_bottom(1) = .true.
-chi_a_Top(2)    = 1.0d0
-dchidr_a_Bottom(2) = 20.0d0
+chi_a_Top(2)    = 1.0342d0
+dchidr_a_Bottom(2) = -27.6d0
 couple_chivar_a_top(2) = .true.
-chi_chi_coeff_top(2,1) = 10.0
-chi_dchidr_coeff_top(2,1) = 5.0
+chi_chi_coeff_top(2,1) = 107.01
+chi_dchidr_coeff_top(2,1) = 7.064
 couple_dchidr_a_bottom(2) = .true.
-dchidr_chi_coeff_bottom(2,1) = 1.0
+dchidr_chi_coeff_bottom(2,1) = 9.872
 /
 &Initial_Conditions_Namelist
 init_type = 8 ! File init
