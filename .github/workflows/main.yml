@@ -78,7 +78,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
           name: changes-unit-tests.diff
-          path: $GITHUB_WORKSPACE/tests/unit_tests/SHT/changes.diff
+          path: tests/unit_tests/SHT/changes.diff
 
   conda:
     name: conda-build
@@ -95,7 +95,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: radev
