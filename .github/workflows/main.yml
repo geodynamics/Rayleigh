@@ -60,6 +60,12 @@ jobs:
         git diff > changes.diff
         git diff --exit-code --name-only
 
+    - name: archive results
+      uses: actions/upload-artifact@v2
+      with:
+          name: changes-tests.diff
+          path: changes.diff
+
     - name: Unit Tests
       run: |
         cd "$GITHUB_WORKSPACE"/tests/unit_tests/SHT
@@ -67,6 +73,12 @@ jobs:
 
         git diff > changes.diff
         git diff --exit-code --name-only
+
+    - name: archive results
+      uses: actions/upload-artifact@v2
+      with:
+          name: changes-unit-tests.diff
+          path: $GITHUB_WORKSPACE/tests/unit_tests/SHT/changes.diff
 
   conda:
     name: conda-build
