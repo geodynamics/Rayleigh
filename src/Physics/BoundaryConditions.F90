@@ -68,7 +68,7 @@ Module BoundaryConditions
     Logical :: Dipole_Field_Bottom = .False.
     Logical :: adjust_dTdr_Top = .True.
 
-    Real*8  :: T_Bottom     = 1.0d0
+    Real*8  :: T_Bottom     = 0.0d0
     Real*8  :: T_Top        = 0.0d0
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
@@ -86,7 +86,7 @@ Module BoundaryConditions
     Real*8  :: dTdr_dchidr_coeff_bottom(1:n_scalar_max)  = 0.0d0
     Real*8  :: dTdr_T_coeff_bottom                       = 0.0d0
 
-    Real*8  :: chi_a_Bottom(1:n_scalar_max)     = 1.0d0
+    Real*8  :: chi_a_Bottom(1:n_scalar_max)     = 0.0d0
     Real*8  :: chi_a_Top(1:n_scalar_max)        = 0.0d0
     Real*8  :: dchidr_a_Top(1:n_scalar_max)     = 0.0d0
     Real*8  :: dchidr_a_Bottom(1:n_scalar_max)  = 0.0d0
@@ -182,39 +182,79 @@ Contains
         Integer :: n_active_bcs
 
         n_active_bcs = count( (/ fix_tvar_top, fix_dtdr_top, couple_tvar_top, couple_dtdr_top /) )
-        if (n_active_bcs /= 1) then
+        if (n_active_bcs > 1) then
            call stdout%print(" -- Error: Incompatible boundary conditions for tvar on top boundary.")
+           call stdout%print("        ")      
+           call pfi%exit(1)
+        else if (n_active_bcs == 0) then
+           call stdout%print(" -- Warning: no boundary conditions set for tvar on top boundary.")
+           call stdout%print("        Defaulting to fix_tvar_top.")
+           call stdout%print("        ")      
+           fix_tvar_top = .true.
         endif
 
         n_active_bcs = count( (/ fix_tvar_bottom, fix_dtdr_bottom, couple_tvar_bottom, couple_dtdr_bottom /) )
-        if (n_active_bcs /= 1) then
+        if (n_active_bcs > 1) then
            call stdout%print(" -- Error: Incompatible boundary conditions for tvar on bottom boundary.")
+           call stdout%print("        ")      
+           call pfi%exit(1)
+        else if (n_active_bcs == 0) then
+           call stdout%print(" -- Warning: no boundary conditions set for tvar on bottom boundary.")
+           call stdout%print("        Defaulting to fix_tvar_bottom.")
+           call stdout%print("        ")      
+           fix_tvar_bottom = .true.
         endif
 
         do i = 1, n_active_scalars
           n_active_bcs = count( (/ fix_chivar_a_top(i), fix_dchidr_a_top(i), couple_chivar_a_top(i), couple_dchidr_a_top(i) /) )
-          if (n_active_bcs /= 1) then
+          if (n_active_bcs > 1) then
              call stdout%print(" -- Error: Incompatible boundary conditions for chivar_a on top boundary.")
+             call stdout%print("        ")      
+             call pfi%exit(1)
+          else if (n_active_bcs == 0) then
+             call stdout%print(" -- Warning: no boundary conditions set for chivar_a on top boundary.")
+             call stdout%print("        Defaulting to fix_chivar_a_top.")
+             call stdout%print("        ")      
+             fix_chivar_a_top(i) = .true.
           endif
 
           n_active_bcs = count( (/ fix_chivar_a_bottom(i), fix_dchidr_a_bottom(i), &
                                    couple_chivar_a_bottom(i), couple_dchidr_a_bottom(i) /) )
-          if (n_active_bcs /= 1) then
+          if (n_active_bcs > 1) then
              call stdout%print(" -- Error: Incompatible boundary conditions for chivar_a on bottom boundary.")
+             call stdout%print("        ")      
+             call pfi%exit(1)
+          else if (n_active_bcs == 0) then
+             call stdout%print(" -- Warning: no boundary conditions set for chivar_a on bottom boundary.")
+             call stdout%print("        Defaulting to fix_chivar_a_bottom.")
+             call stdout%print("        ")      
+             fix_chivar_a_bottom(i) = .true.
           endif
         end do
 
         do i = 1, n_passive_scalars
           n_active_bcs = count( (/ fix_chivar_p_top(i), fix_dchidr_p_top(i) /) )
-          if (n_active_bcs /= 1) then
+          if (n_active_bcs > 1) then
              call stdout%print(" -- Error: Incompatible boundary conditions for chivar_p on top boundary.")
              call stdout%print("        ")      
+             call pfi%exit(1)
+          else if (n_active_bcs == 0) then
+             call stdout%print(" -- Warning: no boundary conditions set for chivar_a on top boundary.")
+             call stdout%print("        Defaulting to fix_chivar_p_top.")
+             call stdout%print("        ")      
+             fix_chivar_p_top(i) = .true.
           endif
 
           n_active_bcs = count( (/ fix_chivar_p_bottom(i), fix_dchidr_p_bottom(i) /) )
-          if (n_active_bcs /= 1) then
+          if (n_active_bcs > 1) then
              call stdout%print(" -- Error: Incompatible boundary conditions for chivar_p on bottom boundary.")
              call stdout%print("        ")      
+             call pfi%exit(1)
+          else if (n_active_bcs == 0) then
+             call stdout%print(" -- Warning: no boundary conditions set for chivar_a on bottom boundary.")
+             call stdout%print("        Defaulting to fix_chivar_p_bottom.")
+             call stdout%print("        ")      
+             fix_chivar_p_bottom(i) = .true.
           endif
         end do
 
