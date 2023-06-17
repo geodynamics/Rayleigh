@@ -13,7 +13,7 @@ dependencies:
   - git=2.30
   - matplotlib=3.4
   - jupyter=1.0
-  - scipy=1.6
+  - scipy=1.10
   - sphinx=4.0
   - sphinxcontrib-bibtex=2.2
   - nbsphinx=0.8
