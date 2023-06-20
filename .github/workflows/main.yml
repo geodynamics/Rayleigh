@@ -22,7 +22,7 @@ jobs:
     container: geodynamics/rayleigh-buildenv-jammy
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Build documentation
       # First make sure notebooks do not contain output, then build doc
       run: |
@@ -60,6 +60,12 @@ jobs:
         git diff > changes.diff
         git diff --exit-code --name-only
 
+    - name: archive results
+      uses: actions/upload-artifact@v2
+      with:
+          name: changes-tests.diff
+          path: changes.diff
+
     - name: Unit Tests
       run: |
         cd "$GITHUB_WORKSPACE"/tests/unit_tests/SHT
@@ -67,6 +73,12 @@ jobs:
 
         git diff > changes.diff
         git diff --exit-code --name-only
+
+    - name: archive results
+      uses: actions/upload-artifact@v2
+      with:
+          name: changes-unit-tests.diff
+          path: tests/unit_tests/SHT/changes.diff
 
   conda:
     name: conda-build
@@ -83,7 +95,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: radev
