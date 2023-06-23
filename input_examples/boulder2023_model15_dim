@@ -1,0 +1,85 @@
+! This initializes a DIMENSIONAL anelastic reference state (reference_type = 2)
+! that represents a rotating, solar-like case, spanning the innermost
+! 3 density scaleheights of the convection zone.
+! This is "model 15" (Ro_c = 0.5, Ra = 10^4, Pr = 1) 
+! from the Boulder Stellar Convection Team's large parameter survey
+!
+&problemsize_namelist
+n_r = 128
+n_theta = 192
+rmin = 5.0d10
+rmax = 6.83177d10
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+rotation = .true.
+/
+&temporal_controls_namelist
+max_time_step = 1000.0d0
+max_iterations = 90000000
+check_frequency = 250000
+cflmin = 0.4d0
+cflmax = 0.6d0
+quicksave_interval = 10000
+num_quicksaves = 5
+/
+&io_controls_namelist
+statusline_interval = 10
+/
+&output_namelist
+shellslice_levels_nrm = 0.05, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95
+shellslice_values = 1,2,3, 301,302,303, 501,502, 2807
+shellslice_frequency = 100000
+shellslice_nrec = 1
+shellspectra_levels_nrm = 0.05, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95
+shellspectra_values = 1,2,3, 301,302,303, 501,502, 2807
+shellspectra_frequency = 10000
+shellspectra_nrec = 5
+azavg_values = 1,2,3,201,202,301,302,303, 401,402,403,404,405,406,407,408,409,410,411,412, 501,502, 507,508,513,514,701,1236,1440,1433,1441,1444,1445,1446, 1449, 1455, 1456, 1458, 1459, 1467, 1468, 1470, 1471,1801, 1802, 1803, 1804, 1807, 1808, 1809,1810,1811,1812,1813,1814,1819, 1820, 1821, 1923,1924,1935,1936, 2807
+azavg_frequency = 5000
+azavg_nrec = 10
+shellavg_values = 1,2,3,201,202,301,302,303, 401,402,403,404,405,406,407,408,409,410,411,412, 501,502, 507,508,513,514,701,1236,1440,1433,1441,1444,1445,1446, 1449, 1455, 1456, 1458, 1459, 1467, 1468, 1470, 1471,1801, 1802, 1803, 1804, 1807, 1808, 1809,1810,1811,1812,1813,1814,1819, 1820, 1821, 1923,1924,1935,1936, 2807
+shellavg_frequency = 100
+shellavg_nrec = 100
+globalavg_values = 1,2,3,201,202,301,302,303, 401,402,403,404,405,406,407,408,409,410,411,412, 501,502, 507,508,513,514,701,1236,1440,1433,1441,1444,1445,1446, 1449, 1455, 1456, 1458, 1459, 1467, 1468, 1470, 1471,1801, 1802, 1803, 1804, 1807, 1808, 1809,1810,1811,1812,1813,1814,1819, 1820, 1821, 1923,1924,1935,1936, 2807
+globalavg_frequency = 100
+globalavg_nrec = 1000
+equatorial_values = 1,2,3,301,302,303,501,502,2807
+equatorial_frequency = 100000
+equatorial_nrec = 1
+meridional_values = 1,2,3,301,302,303,501,502,2807
+meridional_frequency = 100000
+meridional_nrec = 1
+meridional_indices_nrm = 0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875
+/
+&boundary_conditions_namelist
+dtdr_bottom = 0.0d0
+t_top = 0.0d0
+fix_dtdr_top = .true.
+fix_dtdr_bottom = .true.
+adjust_dtdr_top = .True.
+/
+&initial_conditions_namelist
+init_type = -1
+temp_amp = 1.0d1
+temp_w = 0.01d4
+restart_iter = 0
+/
+&test_namelist
+/
+&reference_namelist
+reference_type = 2
+heating_type = 1
+luminosity = 3.846d33
+poly_n = 1.5d0
+poly_nrho = 5.0d0
+poly_mass = 1.98891D33
+poly_rho_i = 0.18053428d0
+pressure_specific_heat = 3.5d8
+angular_velocity = 7.000877049747579e-06
+/
+&transport_namelist
+nu_top = 11745306083325.525
+kappa_top = 11745306083325.525
+/
