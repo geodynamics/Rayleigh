@@ -641,7 +641,7 @@ Contains
             Do t = my_theta%min, my_theta%max
                 Do r = my_r%min, my_r%max
                     dt_by_ds = ref%temperature(r)/pressure_specific_heat
-                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)
+                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)*ra_constants(8)
                     Do k = 1, n_phi
                         tmp1(PSI) = pressure_specific_heat*ref%density(r) * &
                             (dt_by_ds*fbuffer(PSI,tvar) + dt_by_dp*fbuffer(PSI,pvar))
@@ -677,7 +677,7 @@ Contains
             Do t = my_theta%min, my_theta%max
                 Do r = my_r%min, my_r%max
                     dt_by_ds = ref%temperature(r)/pressure_specific_heat
-                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)
+                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)*ra_constants(8)
                     Do k = 1, n_phi
                         tmp1(PSI) = pressure_specific_heat*ref%density(r) * &
                             (dt_by_ds*m0_values(PSI2,tvar) + dt_by_dp*m0_values(PSI2,pvar))
@@ -713,7 +713,7 @@ Contains
             Do t = my_theta%min, my_theta%max
                 Do r = my_r%min, my_r%max
                     dt_by_ds = ref%temperature(r)/pressure_specific_heat
-                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)
+                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)*ra_constants(8)
                     Do k = 1, n_phi
                         tmp1(PSI) = pressure_specific_heat*ref%density(r) * &
                             (dt_by_ds*fbuffer(PSI,tvar) + dt_by_dp*fbuffer(PSI,pvar))
@@ -749,7 +749,7 @@ Contains
             Do t = my_theta%min, my_theta%max
                 Do r = my_r%min, my_r%max
                     dt_by_ds = ref%temperature(r)/pressure_specific_heat
-                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)
+                    dt_by_dp = 1.0d0/pressure_specific_heat/ref%density(r)*ra_constants(8)
                     Do k = 1, n_phi
                         tmp1(PSI) = pressure_specific_heat*ref%density(r) * &
                             (dt_by_ds*m0_values(PSI2,tvar) + dt_by_dp*m0_values(PSI2,pvar))
