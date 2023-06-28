@@ -24,6 +24,7 @@ Module ProblemSize
     Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
     Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row, m_balance_contiguous
     Use Chebyshev_Polynomials, Only : Cheby_Grid
+    Use Finite_Difference, Only  : Initialize_Derivatives, Rescale_Grid_FD
     Use Math_Constants
     Use BufferedOutput
     Use Timers
@@ -60,6 +61,7 @@ Module ProblemSize
     Real*8              :: aspect_ratio = -1.0d0
     Real*8              :: shell_depth = -1.0d0
     Real*8              :: shell_volume
+    Real*8              :: stretch_factor = 0.0d0
     Real*8, Allocatable :: Radius(:), R_squared(:), One_Over_R(:)
     Real*8, Allocatable :: Two_Over_R(:), OneOverRSquared(:), Delta_R(:)
     Real*8, Allocatable :: radial_integral_weights(:)
@@ -75,6 +77,7 @@ Module ProblemSize
     Integer :: ndomains = 1
     Integer :: n_uniform_domains =1
     Real*8  :: domain_bounds(1:nsubmax+1)=-1.0d0
+    Real*8  :: dr_input(4096) = 0.0d0
     Logical :: uniform_bounds = .false.
     Type(Cheby_Grid), Target :: gridcp
 
@@ -86,10 +89,10 @@ Module ProblemSize
     Logical :: grid_error = .false.
 
 
-    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, &
+    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, dr_input, &
             &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
-            &  n_uniform_domains, uniform_bounds
+            &  n_uniform_domains, uniform_bounds, stretch_factor
 Contains
 
     Subroutine Init_ProblemSize()
@@ -103,7 +106,11 @@ Contains
 
         If (my_rank .eq. 0) Then
             call stdout%print(" ")
-            call stdout%print(" -- Initalizing Grid...")
+            If (chebyshev) Then
+                call stdout%print(" -- Initializing Chebyshev Grid...")
+            Else
+                call stdout%print(" -- Initializing Finite-Difference Grid...")
+            EndIf
         Endif
 
         Call Report_Grid_Parameters()     ! Print some grid-related info to the screen
@@ -490,6 +497,9 @@ Contains
         Implicit None
         Integer :: r, nthr,i ,n
 
+        real*8 :: uniform_dr, arg, pi_over_N, rmn, rmx, delta, scaling
+        real*8 :: delr0
+
         nthr = pfi%nthreads
         Allocate(Delta_r(1:N_R))
         Allocate( Radius(1:N_R))
@@ -512,15 +522,34 @@ Contains
                     r = r+1
                 Enddo
             Enddo
+        Else
+            grid_type = 1
+            Radius(N_R) = rmin ! Follow ASH convention of reversed radius
+            uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
+            If (dr_input(N_R) .eq. 0.0) Then
+                Delta_r(N_R) = uniform_dr
+            Else If (dr_input(N_R) .gt. 0.0) Then
+                Delta_r(N_R) = dr_input(N_R)
+            Endif
+
+            Do r=N_R-1,1,-1
+                    If (dr_input(r) .eq. 0.0) Then
+                        Delta_r(r) = uniform_dr
+                    Else If (dr_input(r) .gt. 0.0) Then
+                        Delta_r(r) = dr_input(r)
+                    Endif
+                    Radius(r) = Delta_r(r) + Radius(r+1)
+            Enddo
         Endif
 
         Allocate(OneOverRSquared(1:N_R),r_squared(1:N_R),One_Over_r(1:N_R),Two_Over_r(1:N_R))
-        R_squared     = Radius**2
+        R_squared       = Radius**2
         One_Over_R      = (1.0d0)/Radius
         Two_Over_R      = (2.0d0)/Radius
         OneOverRSquared = (1.0d0)/r_Squared
         r_inner = rmin
         r_outer = rmax
+        If (.not. chebyshev) Call Initialize_Derivatives(Radius,radial_integral_weights)
     End Subroutine Initialize_Radial_Grid
 
     Subroutine Report_Grid_Parameters()
@@ -544,7 +573,11 @@ Contains
             Write(dstring,dofmt)rmax
             Call stdout%print(" ---- R_MAX               : "//trim(dstring))
             Write(istr,'(i6)')ndomains
-            call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
+            If (chebyshev) Then
+                call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
+            Else
+                call stdout%print(" ---- Finite Difference Domains   : "//trim(istr))
+            Endif
 
             Do i = 1, ndomains
                 call stdout%print(" ")

@@ -9,7 +9,7 @@
  -- MPI initialized.
 
 
- -- Initalizing Grid...
+ -- Initializing Chebyshev Grid...
  ---- Specified parameters ----
  ---- N_R                 :     48
  ---- N_THETA             :     64

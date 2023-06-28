@@ -36,7 +36,7 @@ Contains
                            temporal_controls_namelist, io_controls_namelist
         Use Parallel_Framework, Only: pfi
         Use ProblemSize, Only : my_rank, problemsize_namelist, nprow, npcol, &
-                              n_r, n_theta, l_max, rmin, rmax, &
+                              n_r, n_theta, l_max, dr_input, rmin, rmax, &
                               ndomains, ncheby, dealias_by, domain_bounds
         Use Spherical_IO, Only : output_namelist
         Use BoundaryConditions, Only : boundary_conditions_namelist

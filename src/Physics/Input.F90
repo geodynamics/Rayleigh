@@ -20,7 +20,7 @@
 
 Module Input
     Use ProblemSize,  Only : problemsize_namelist, nprow, npcol, n_r,n_theta, npout, global_rank, &
-                             ncpu_global, aspect_ratio, l_max
+                             ncpu_global, aspect_ratio, l_max, dr_input
     Use Controls,     Only : temporal_controls_namelist, numerical_controls_namelist, &
                              physical_controls_namelist, max_iterations, pad_alltoall, &
                              multi_run_mode, nruns, rundirs, my_path, run_cpus, &
