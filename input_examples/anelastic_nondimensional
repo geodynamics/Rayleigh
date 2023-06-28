@@ -1,14 +1,14 @@
 ! This initializes a NONDIMENSIONAL anelastic reference state (reference_type = 5)
 ! that represents a rotating, solar-like case, spanning the innermost
 ! 3 density scaleheights of the convection zone.
-! This is "model 15" (Ro_c = 0.5, Ra = 10^4, Pr = 1) 
-! from the Boulder Stellar Convection Team's large parameter survey, 
-! but run non-dimensionally
-! NOTE: the dimensional parameter survey's convention has
+! This model has Ro_c = 0.25, Ra = 10^4, Pr = 1) 
+! and is the nondimensional equivalent of "anelastic_dimensional"
+! (run using reference_type = 5)
+! NOTE: many nondimensional conventions hav
 ! 1/Omega_0 as the representative time-scale instead of 
 ! reference_type 5's convention, which is 1/(2*Omega_0)
-! Thus the Convective_Rossby_Number = 0.25 below
-! is equivalent to the dimensional model 15's Ro_c = 0.5
+! Thus parameters like Ek and Ro_c may differ by a factor of 
+! from identical simulations reported elsewhere
 !
 &problemsize_namelist
 n_r = 128
