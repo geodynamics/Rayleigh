@@ -1,8 +1,8 @@
 ! This initializes a DIMENSIONAL anelastic reference state (reference_type = 2)
 ! that represents a rotating, solar-like case, spanning the innermost
 ! 3 density scaleheights of the convection zone.
-! This is "model 15" (Ro_c = 0.5, Ra = 10^4, Pr = 1) 
-! from the Boulder Stellar Convection Team's large parameter survey
+! This model has Ro_c = 0.25, Ra = 10^4, Pr = 1
+! and is the dimensional equivalent of "anelastic_nondimensional"
 !
 &problemsize_namelist
 n_r = 128
