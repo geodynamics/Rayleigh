@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
-- None yet
+- An optional finite-difference scheme in radius is now available.  Updated documentation is provided in the 'Setting Up A Model' section of the User Guide.   An example input file may be found in Rayleigh/input_examples/j2011_steady_mhd_input_FD. \[Rathish Ratnasingam, Philipp Edelmann, Nick Featherstone; 6-29-2023; [474](https://github.com/geodynamics/Rayleigh/pull/474)\]
 ### Changed
 - None yet
 ### Fixed

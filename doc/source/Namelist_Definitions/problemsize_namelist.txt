@@ -28,3 +28,6 @@
   Number of uniformly-sized Chebyshev domains spanning the depth of the shell.  Default: 1 
 **uniform_bounds**
   When set to .true., each chebyshev subdomain will possess the same radial extent.  Default:  .false.
+**dr_input**
+  Comma-separated list of of real-valued numbers that defines the spacing between adjacent radial grid points if finite-differences and a nonuniform mesh are desired.  If left unspecified, a uniform grid spanning from rmin to rmax will be employed.  dr_input should contain n_r-1 elements, with dr_input(1) corresponding to the spacing between r=rmin and the first interior gridpoint.  Similarly, dr_input(nr-1) corresponds to the spacing between the last interior gridpoint and the outer boundary. Note that rmax and dr_input should be specified consistently, such that rmax = rmin + sum(dr_input).
+

@@ -154,13 +154,32 @@ Radial values in the diagnostic output will be repeated at the inner
 domain boundaries. Most quantities are forced to be continuous at these
 points.
 
+Alternative Radial Discretization Using a Finite-Difference Approach
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rayleigh's default behavior is to employ a Chebyshev collocation scheme in radius.   If desired, a finite-difference method can be applied instead.  Finite-difference mode is activated via the numerical_controls namelist as discussed in the next section.   At present, Rayleigh's finite-difference scheme employs a five-point stencil with 4th-order accuracy in the interior points.  Boundary derivatives are taken with second-order accuracy.   By default, a uniform radial grid is assumed.  If desired, a nonuniform grid can instead be specified using the ``dr_input`` parameter. Consider the following example:
+   
+::
+
+   &problemsize_namelist
+    rmin = 1.0
+    rmax = 2.0
+    n_r = 4
+    dr_input = 0.1,0.4,0.5
+   /
+
+The list of real values contained in dr_input is used to determine the spacing between adjacent gridpoints.  The convention is that dr_input(1) defines the spacing between rmin and the first interior gridpoint, whereas dr_input(n_r-1) defines the spacing between the last interior gridpoint and the outer boundary.  The example above defines a grid with radial points r = 1, r =1.1, r=1.5, r=2.  The finite-difference scheme is a new addition to Rayleigh, and we expect streamline the procedure for defining a nonuniform grid in the near future.  Moreover, at the moment, it is left to the user to ensure that rmax and dr_input are consistent, so that rmax = rmin+sum(dr_input).  Note also that dr_input must have n_r-1 values in order to fully specify the grid.  Leave this parameter unset in your ``main_input`` if you wish to use a uniform grid in radius.  An example input file using a uniform radial grid and a finite-difference scheme is provided in ``input_examples\j2011_steady_mhd_input_FD``.
+
 .. _numerical_controls:
 
 Numerical Controls 
 ------------------
 
-Rayleigh has several options that control aspects of the numerical method
-used. For begining users these can generallly be left to default values.
+The Numerical_Controls namelist was added primarily to facilitate fine-control over some aspects of Rayleigh's parallelization and is documented in :ref:`namelists`.  Two numerical_controls parameters that are important for setting up a new model are the ``chebyshev`` and ``bandsolve`` keywords.   
+
+The value of ``chebyshev`` is set to ``.true.`` by default.  When set to ``.false.``, a finite-difference scheme will be employed in radius rather than a Chebyshev collocation scheme.
+
+The value of the ``bandsolve`` keyword is also set to ``.false.`` by default.  When set to ``.true.``, the otherwise dense matrices used in the implicit timestepping scheme will be recast in banded or block-banded form for the finite-difference and Chebyshev schemes respectively.  This can save memory and may offer performance gains.   Note that this mode has no effect for models run in Chebyshev mode with only 1 or 2 Chebyshev domains in radius.  A minimum of three Chebyshev domains is required before any memory savings is possible.
 
 
 .. _physics_controls:
