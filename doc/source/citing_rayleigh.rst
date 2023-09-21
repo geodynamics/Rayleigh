@@ -76,6 +76,76 @@ Please acknowledge CIG support in your work as follows:
     Infrastructure for Geodynamics (CIG) which is supported by the
     National Science Foundation awards NSF-0949446, NSF-1550901 and NSF-2149126.
 
+Publishing
+----------
+
+Open research statements are now a common requirement when publishing research. 
+These support reuse, validation, and citation and often take the form of *Data availability, Data access, 
+Code availability, Open Research*, and *Software availability* statements.
+We recommend depositing input files that allow your published research to be reproduced and 
+output model data in support of your research outcomes and figures. 
+In addition, consider depositing model files that may be reused by others.
+
+Remember to cite software and data in your text as well as in your Data Availability or similar statement.
+
+Files should be deposited in an approved repository.
+
+Additional information on `Publishing <https://geodynamics.org/software/software-bp/software-publishing` is available on the CIG website.
+
+Data
+~~~~
+
+**Input parameters**
+
+* Main_input, *_input 
+* Data files for custom: 
+  * profiles, 
+  * boundary conditions, 
+  * generic initial conditions, 
+  * reference states (coefficients)
+* Basic simulation information e.g. grid, job
+
+**Model output**
+
+Data products/checkpoints for the cases used in your publication.
+
+Repository
+~~~~~~~~~~
+
+The Rayleigh Simulation Library (RSL), a repository for accessing published Rayleigh datasets has been 
+established using the Open Science Framework (OSF) at the University of Colorado Boulder. 
+For more information on this repository and preparing your datasets see the RSL home page:
+https://osf.io/j275z/
+
+Template
+~~~~~~~~
+
+  We use Rayleigh version number (Featherstone et al., XXXX; Featherstone and Hindman, 2016, Matsui et al., 2016) 
+  which is available for download through its software landing page https://geodynamics.org/resources/rayleigh 
+  or from Zenodo<insert PID>. Model data necessary to reproduce these results including <insert a description> 
+  can be downloaded from Zenodo <insert PID> (Authors, YYYY).
+
+  Featherstone, N.A.; Hindman, B.W. (2016), The spectral amplitude of stellar convection and its scaling in the high-rayleigh-number regime, The Astrophysical Journal, 818 (1) , 32, DOI: 10.3847/0004-637X/818/1/32
+
+  Matsui, H. et al., 2016, Performance benchmarks for a next generation numerical dynamo model, Geochem., Geophys., Geosys., 17,1586 DOI: 10.1002/2015GC006159
+
+  Authors (ZZZZ), ….
+
+
+Where XXXX refers to the appropriate year of the software version cited and Authors (ZZZZ) is the citation to the data.
+
+`IOP <https://publishingsupport.iopscience.iop.org/iop-publishing-standard-data-policy/>` (The Astrophysical Journal) recommends the following form:
+  The data that support the findings of this study are openly available at the following 
+  URL/DOI: [insert web link or DOI to the data].
+
+See above or https://geodynamics.org/resources/rayleigh/howtocite for the citation to the version used.
+
+Published examples
+~~~~~~~~~~~~~~~~~~
+
+https://doi.org/10.5281/zenodo.7117668 
+
+
 Acknowledging
 -------------
 
