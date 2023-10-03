@@ -126,10 +126,38 @@ Contains
                 Call stdout%print(" ---- Magnetic Init Type : RESTART ")
             Endif
         Endif
-        If ( (init_type .eq. -1) .or. ( magnetism .and. (magnetic_init_type .eq. -1) ) ) Then
+        
+        If ( (init_type .lt. 0) .or. ( magnetism .and. (magnetic_init_type .lt. 0) ) ) Then
             Call restart_from_checkpoint(restart_iter)
+             print*,'Init type < 0; Restarting from Checkpoint'
+            ! Bhishek
+            If (init_type .eq. -2) Then
+               ! Add entropy perturbation
+               print*,'Adding Entropy perturbation file'
+               Call add_to_field(tvar, t_init_file)
+            Endif
+            If (magnetic_init_type .eq. -2) Then
+               print*,'Adding poloidal and toroidal componets to a checkpoint'
+               Call add_to_field(cvar, c_init_file)
+               Call add_to_field(avar, a_init_file)
+            Endif
+            ! Bhishek
         Endif
 
+        !NICK
+        If (init_type .eq. -2) Then
+            print*, 'Init type -2; Restart with checkpoint'
+            !Call restart_from_checkpoint(restart_iter)
+            ! Add entropy perturbation
+            print*,'Init type -2; Adding Entropy perturbation file'
+            Call add_to_field(tvar, t_init_file)
+        Endif
+
+        If (magnetic_init_type .eq. -2) Then
+            ! Add A and C perturbations
+            Call add_to_field(cvar, c_init_file)
+            Call add_to_field(avar, a_init_file)
+        Endif
 
         !////////////////////////////////////
         ! Initialize the hydro variables
@@ -224,8 +252,10 @@ Contains
 
         If (magnetism) Then
 
+            If (init_type .eq. -2) rpars(1) = 1
             If (init_type .eq. -1) rpars(1) = 1
             If (magnetic_init_type .eq. -1) rpars(2) = 1
+            If (magnetic_init_type .eq. -2) rpars(2) = 1
 
             !If both variable types are not read in, an euler_step is taken on restart
             prod = rpars(1)*rpars(2)
@@ -620,6 +650,39 @@ Contains
 
     end subroutine magnetic_file_init
 
+    !NICK
+    subroutine add_to_field(field_index, field_file)
+        ! initialize magnetic variables from generic input files
+        Implicit None
+        Integer, Intent(In) :: field_index
+        Character*120, Intent(In) :: field_file
+        Integer :: fcount(3,2)
+        Type(SphericalBuffer) :: tempfield, tempfield2
+        fcount(:,:) = 1
+        print*,'Success 1'
+        call tempfield%init(field_count = fcount, config = 'p1b')
+        print*,'Success 2'
+        call tempfield%construct('p1b')
+        print*,'Success 3'
+        call tempfield2%init(field_count = fcount, config = 'p1b')
+        call tempfield2%construct('p1b')
+        print*,'Success 4'
+
+        call get_rhs(field_index,tempfield2%p1b(:,:,:,1))
+        print*,'Success 5'
+
+        if (trim(field_file) .ne. '__nothing__') then
+            call read_input(field_file, 1, tempfield)
+
+            tempfield%p1b = tempfield%p1b+tempfield2%p1b
+            call set_rhs(field_index, tempfield%p1b(:,:,:,1))
+        end if
+
+
+        call tempfield%deconstruct('p1b')
+        call tempfield2%deconstruct('p1b')
+
+    end subroutine add_to_field
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Diffusion Init (for linear solve development)
