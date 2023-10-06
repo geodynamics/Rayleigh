@@ -113,7 +113,6 @@ Contains
         ! The equation set RHS's stays allocated throughout - it is effectively how we save the AB terms.
         Call Allocate_RHS(zero_rhs=.true.)
 
-
         !////////////////////////////////////////
         ! Read in checkpoint files as appropriate
         If (init_type .eq. -1) Then
@@ -127,36 +126,23 @@ Contains
             Endif
         Endif
         
+        ! Take care of IC's that require reading from a checkpoint (if init_type and magnetic_init_type = -1)
+        ! If (init_type or/and magnetic_init_type = -2), read the checkpoint and add a user defined field to it for IC
         If ( (init_type .lt. 0) .or. ( magnetism .and. (magnetic_init_type .lt. 0) ) ) Then
             Call restart_from_checkpoint(restart_iter)
-             print*,'Init type < 0; Restarting from Checkpoint'
-            ! Bhishek
             If (init_type .eq. -2) Then
-               ! Add entropy perturbation
-               print*,'Adding Entropy perturbation file'
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(" ---- Hydro Init Type    : ADD USER FILE TO CHECKPOINT ")
+                Endif
                Call add_to_field(tvar, t_init_file)
             Endif
             If (magnetic_init_type .eq. -2) Then
-               print*,'Adding poloidal and toroidal componets to a checkpoint'
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(" ---- Magnetic Init Type : ADD USER FILE TO CHECKPOINT ")
+                Endif
                Call add_to_field(cvar, c_init_file)
                Call add_to_field(avar, a_init_file)
             Endif
-            ! Bhishek
-        Endif
-
-        !NICK
-        If (init_type .eq. -2) Then
-            print*, 'Init type -2; Restart with checkpoint'
-            !Call restart_from_checkpoint(restart_iter)
-            ! Add entropy perturbation
-            print*,'Init type -2; Adding Entropy perturbation file'
-            Call add_to_field(tvar, t_init_file)
-        Endif
-
-        If (magnetic_init_type .eq. -2) Then
-            ! Add A and C perturbations
-            Call add_to_field(cvar, c_init_file)
-            Call add_to_field(avar, a_init_file)
         Endif
 
         !////////////////////////////////////
@@ -659,17 +645,12 @@ Contains
         Integer :: fcount(3,2)
         Type(SphericalBuffer) :: tempfield, tempfield2
         fcount(:,:) = 1
-        print*,'Success 1'
         call tempfield%init(field_count = fcount, config = 'p1b')
-        print*,'Success 2'
         call tempfield%construct('p1b')
-        print*,'Success 3'
         call tempfield2%init(field_count = fcount, config = 'p1b')
         call tempfield2%construct('p1b')
-        print*,'Success 4'
 
         call get_rhs(field_index,tempfield2%p1b(:,:,:,1))
-        print*,'Success 5'
 
         if (trim(field_file) .ne. '__nothing__') then
             call read_input(field_file, 1, tempfield)
