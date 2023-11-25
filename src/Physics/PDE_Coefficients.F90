@@ -254,7 +254,7 @@ Contains
     Subroutine Allocate_Reference_State
         Implicit None
 
-        n_ra_constants = 10 + 2*(n_active_scalars + n_passive_scalars)
+        n_ra_constants = 11 + 2*(n_active_scalars + n_passive_scalars)
         n_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
 
         Allocate(ref%density(1:N_R))
@@ -1196,7 +1196,7 @@ Contains
         ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ra_constants(9)/(ref%density(:)*ref%temperature(:))
 
-        ref%dsdr(:)     = ra_functions(:,14)
+        ref%dsdr(:)     = ra_constants(11)*ra_functions(:,14)
 
     End Subroutine Get_Custom_Reference
 
@@ -1680,12 +1680,12 @@ Contains
         do i = 1, n_active_scalars
           Call Initialize_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
                                       kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
-                                      11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
+                                      12+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
         end do
         do i = 1, n_passive_scalars
           Call Initialize_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
                                       kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
-                                      11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
+                                      12+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
         end do
 
         If (viscous_heating) Then
@@ -1723,7 +1723,7 @@ Contains
               If (kappa_chi_a_type(i+1) .eq. 3) Then
                   temp_functions(:,15+i*2) = ra_functions(:,15+i*2)
                   temp_functions(:,16+i*2) = ra_functions(:,16+i*2)
-                  temp_constants(11+i*2)   = ra_constants(11+i*2)
+                  temp_constants(12+i*2)   = ra_constants(12+i*2)
               Endif
             end do
 
@@ -1731,7 +1731,7 @@ Contains
               If (kappa_chi_p_type(i+1) .eq. 3) Then
                   temp_functions(:,15+(n_active_scalars+i)*2) = ra_functions(:,15+(n_active_scalars+i)*2)
                   temp_functions(:,16+(n_active_scalars+i)*2) = ra_functions(:,16+(n_active_scalars+i)*2)
-                  temp_constants(11+(n_active_scalars+i)*2)   = ra_constants(11+(n_active_scalars+i)*2)
+                  temp_constants(12+(n_active_scalars+i)*2)   = ra_constants(12+(n_active_scalars+i)*2)
               Endif
             end do
 
@@ -1964,6 +1964,15 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = ref%viscous_amp(1)*ref%temperature(1)/2.0d0
         ra_constants(9) = ref%ohmic_amp(1)*ref%density(1)*ref%temperature(1)
+        Select Case(reference_type)
+            Case(1,2)
+                ra_constants(11) = 0.0d0
+            Case(3)
+                ra_constants(11) = 1.0d0
+            Case(5)
+                ra_constants(11) = Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number
+        End Select
+
 
         ra_functions(:,1) = ref%density
         ra_functions(:,4) = ref%temperature
@@ -2034,13 +2043,13 @@ Contains
         Endif ! if no magnetism, all of the above are already zero
 
         Do i = 1, n_active_scalars
-            ra_constants(11+(i-1)*2) = kappa_chi_a_norm(i)
+            ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
             ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
             ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
         Enddo
 
         Do i = 1, n_passive_scalars
-            ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
+            ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
             ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
             ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
         Enddo
