@@ -106,7 +106,7 @@ Module PDE_Coefficients
     Real*8 :: Angular_Velocity = -1.0d0 ! Frame rotation rate (sets Coriolis force)
 
     ! Custom reference-state variables (reference_type = 4)
-    Integer, Parameter   :: max_ra_constants = 10 + 2*n_scalar_max
+    Integer, Parameter   :: max_ra_constants = 11 + 2*n_scalar_max
     Integer, Parameter   :: max_ra_functions = 14 + 2*n_scalar_max
     Integer              :: n_ra_constants
     Integer              :: n_ra_functions
@@ -1037,7 +1037,7 @@ Contains
             Call stdout%print('Only heating, buoyancy, or background dTdr/dSdr may be modified.')
             Call stdout%print('Heating requires both c_10 and f_6 to be set.')
             Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
-            Call stdout%print('dTdr/dSdr requires f_14 to be set.')            
+            Call stdout%print('dTdr/dSdr requires f_14 to be set (sets c_11 to 1 if unspecified).')            
             Call stdout%print('Reading from: '//Trim(custom_reference_file))
         Endif
 
@@ -1080,10 +1080,11 @@ Contains
         If (use_custom_function(14)) Then
             If (my_rank .eq. 0) Then
                 Call stdout%print('Background thermal gradient is set to:')
-                Call stdout%print('f_14')
+                Call stdout%print('c_11*f_14')
                 Call stdout%print(' ')
             Endif        
-            ref%dsdr(:) = ra_functions(:,14)
+            ref%dsdr(:) = ra_constants(11)*ra_functions(:,14)
+            temp_constants(11) = ra_constants(11)
             temp_functions(:,14) = ra_functions(:,14)
         Endif
 
@@ -1248,6 +1249,7 @@ Contains
 
         cset(:) = 0
         input_constants(:) = 0.0d0
+        ra_constants(11) = 1.0d0 ! this should be 1 by default (not 0)
 
         
         ref_file = Trim(my_path)//filename
@@ -1277,9 +1279,14 @@ Contains
 
             ! Read in constants and their 'set' flags
             Read(15) eqversion
-            Read(15) cset(1:n_ra_constants)
-            Read(15) fset(1:n_ra_functions)
-            Read(15) input_constants(1:n_ra_constants)
+            If (eqversion .eq. 1) Then
+                !Read(15) cset(1:n_ra_constants-1) ! c_11 didn't exist yet
+                Read(15) cset(1:10) ! equation_coefficients couldn't write the custom active/passive scalar constants yet
+                Read(15) input_constants(1:10)
+            Else
+                Read(15) cset(1:n_ra_constants)
+                Read(15) input_constants(1:n_ra_constants)
+            Endif
             
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
             ! The logic below deals with a constant set in both the reference
