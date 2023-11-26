@@ -1249,7 +1249,6 @@ Contains
 
         cset(:) = 0
         input_constants(:) = 0.0d0
-        ra_constants(11) = 1.0d0 ! this should be 1 by default (not 0)
 
         
         ref_file = Trim(my_path)//filename
@@ -1281,11 +1280,17 @@ Contains
             Read(15) eqversion
             If (eqversion .eq. 1) Then
                 !Read(15) cset(1:n_ra_constants-1) ! c_11 didn't exist yet
-                Read(15) cset(1:10) ! equation_coefficients couldn't write the custom active/passive scalar constants yet
+                Read(15) cset(1:10) ! equation_coefficients couldn't write the custom active/passive scalar constants yet, and c_11 didn't exist yet
+                Read(15) fset(1:n_ra_functions)                
                 Read(15) input_constants(1:10)
+                cset(11) = 1 ! treat this as if c_11 = 1 was specified in the custom reference file
+                input_constants(11) = 1.0d0 
+                If (my_rank .eq. 0) Call stdout%print('got here')
             Else
                 Read(15) cset(1:n_ra_constants)
+                Read(15) fset(1:n_ra_functions) 
                 Read(15) input_constants(1:n_ra_constants)
+                Call stdout%print('actualy got here')
             Endif
             
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
