@@ -1066,6 +1066,8 @@ Contains
             ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
             temp_functions(:,6) = ra_functions(:,6)
             temp_constants(10)  = ra_constants(10)
+            adjust_reference_heating = .false. ! don't distrust the user's choices. 
+            ! Q(r) = c_10*f_6 (whatever it is) WILL be implemented!
         Endif
 
         If (use_custom_constant(2) .and. use_custom_function(2)) Then
