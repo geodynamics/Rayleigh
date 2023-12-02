@@ -147,7 +147,7 @@ respectively. The evolution of :math:`\Theta` is described by
 .. math::
    :label: theta_evol
 
-   \mathrm{f}_1(r)\,\mathrm{f}_4(r)\left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta + \mathrm{f}_{14}(r)v_r\right] =\
+   \mathrm{f}_1(r)\,\mathrm{f}_4(r)\left[\frac{\partial \Theta}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta + c_{11}\,\mathrm{f}_{14}(r)v_r\right] =\
        c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right] \\
         +\ c_{10}\,\mathrm{f}_6(r)
         + c_8\,\Phi(r,\theta,\phi)
@@ -235,7 +235,8 @@ assigning the following to the functions :math:`\mathrm{f}_i(r)` and the constan
    \mathrm{f}_7(r) &\rightarrow \tilde{\eta}(r)\; &c_7 &\rightarrow \frac{1}{Pm} \\
     &\vdots &c_8&\rightarrow 0\\ 
     &\vdots &c_9&\rightarrow 0 \\
-    \mathrm{f}_{14}(r)&\rightarrow 0\; &c_{10}&\rightarrow 0.\end{aligned}
+    &\vdots &c_{10}&\rightarrow 0 \\
+    \mathrm{f}_{14}(r)&\rightarrow 0\; &c_{11}&\rightarrow 0.\end{aligned}
 
 Here the tildes denote nondimensional radial profiles, e.g., :math:`\tilde{\nu}(r) = \nu(r)/\nu_o`. 
 
@@ -296,7 +297,8 @@ When run in dimensional, anelastic mode (cgs units; **reference_type=2**
        \mathrm{f}_7(r) &\rightarrow \eta(r)\; &c_7 &\rightarrow 1 \\
        &\vdots &c_8&\rightarrow 1\\ 
        &\vdots &c_9&\rightarrow \frac{1}{4\pi} \\
-       \mathrm{f}_{14}(r)&\rightarrow \frac{d\hat{S}}{dr }&c_{10}&\rightarrow L_*.\end{aligned}
+       &\vdots &c_{10}&\rightarrow L_* \\
+       \mathrm{f}_{14}(r)&\rightarrow \frac{d\hat{S}}{dr }&c_{11}&\rightarrow 1.\end{aligned}
 
 Here :math:`\hat{\rho}(r)`, :math:`\hat{T}(r)`, and :math:`d\hat{S}/dr` are the spherically symmetric, time-independent reference-state
 density, temperature, and entropy gradient, respectively. The thermal variables satisfy the
@@ -392,7 +394,8 @@ choices result in the functions :math:`\mathrm{f}_i` and the constants
        \mathrm{f}_7(r) &\rightarrow \tilde{\eta}(r) \; &c_7 &\rightarrow \frac{\mathrm{E}}{\mathrm{Pm}} \\
        &\vdots &c_8&\rightarrow \frac{\mathrm{E}\,\mathrm{Di}}{\mathrm{Ra}^*}\\ 
        &\vdots &c_9&\rightarrow  \frac{\mathrm{E}^2\,\mathrm{Di}}{\mathrm{Pm}^2\mathrm{Ra}^*}\\
-       \mathrm{f}_{14}(r)&\rightarrow \frac{d\tilde{S}}{dr }&c_{10}&\rightarrow L_*.\end{aligned}
+       &\vdots &c_{10}&\rightarrow L_* \\
+       \mathrm{f}_{14}(r)&\rightarrow 0&c_{11}&\rightarrow 0.\end{aligned}
 
 As in the Boussinesq case, the nondimensional diffusivities are defined according to, e.g., :math:`\tilde{\nu}(r) \equiv \nu(r)/\nu_o`. The nondimensional heating :math:`\tilde{Q}(r)` is defined such that its volume integral equals the nondimensional **luminosity** or **heating_integral** set in the *main_input* file. As in the dimensional anelastic case, the volume integral of :math:`\mathrm{f}_6(r)` equals unity, and :math:`\mathrm{c}_{10} = L_*`. The unit for luminosity in this nondimensionalization (to get a dimensional luminosity from the nondimensional :math:`L_*`) is :math:`\rho_oL^3T_o\Delta s\Omega_0`. 
 
@@ -428,7 +431,7 @@ We thus arrive at the following nondimensionalized equations:
         + \mathrm{E}\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\\
        %
        %
-       \tilde{\rho}(r)\,\tilde{T}(r)\left[\frac{\partial \Theta}{\partial t} + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta + v_r\frac{d\hat{S}}{dr}\right] =\;
+       \tilde{\rho}(r)\,\tilde{T}(r)\left[\frac{\partial \Theta}{\partial t} + \boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta\right] =\;
        &\frac{\mathrm{E}}{\mathrm{Pr}}\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}(r)\tilde{\rho}(r)\,\tilde{T}(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
        + \tilde{Q}(r)   % Internal heating
        \\
