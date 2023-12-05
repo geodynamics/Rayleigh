@@ -641,6 +641,29 @@ Module Linear_Solve
         Endif
     End Subroutine Set_RHS
 
+    Subroutine Get_RHS(eqid,get_from)
+        ! Set the RHS of equation eqid to the value of set_to
+        Implicit None
+        Real*8, Intent(InOut) :: get_from(:,:,:)
+        Integer, Intent(In) :: eqid
+        Integer :: istart,iend, ind
+
+
+        If (n_modes .gt. 0) Then
+            !Primary equation object always has the full, allocated rhs.
+            ind = eqid
+            if (.not. equation_set(1,eqid)%primary) then
+                ind = equation_set(1,eqid)%links(1)
+            endif
+            ! Individual RHS's inhabit row ranges defined by rowblock and ndim1
+            istart = equation_set(1,eqid)%rowblock+1
+            iend = istart+ndim1-1
+
+
+            get_from(1:ndim1,:,:)=equation_set(1,ind)%rhs(istart:iend,:,:)
+        Endif
+    End Subroutine Get_RHS
+
     Subroutine Zero_RHS(eqid)
         ! Set the RHS of equation eqid to zero
         ! This is useful for when we want to remove explicity time-dependence
