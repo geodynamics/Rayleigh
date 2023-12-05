@@ -720,7 +720,9 @@ Contains
         ! That's fine up to a multiplicative constant which we determine below
 
         nsquared = gravity*ref%dsdr ! N^2 (non-dimensional) up to multiplicative constant
-        nsquared = nsquared/nsquared(N_R) ! N^2 (non-dimensional) now correct if ND_Inner_Radius .eq. .True.
+        If (.not. adiabatic_polytrope) Then ! don't divide by zero!
+            nsquared = nsquared/nsquared(N_R) ! N^2 (non-dimensional) now correct if ND_Inner_Radius .eq. .True.
+        Endif
 
         ! calculate "basal" dissipation number explicitly
         Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0) * (1.0d0/aspect_ratio) * &
@@ -743,7 +745,9 @@ Contains
             ref%density = ref%density/ref%density(1)
             ref%temperature = ref%temperature/ref%temperature(1)
             gravity = gravity/gravity(1)
-            nsquared = nsquared/nsquared(1)
+            If (.not. adiabatic_polytrope) Then ! don't divide by zero!
+                nsquared = nsquared/nsquared(1)
+            Endif
         ElseIf (ND_Volume_Average) Then ! This is the default
             Call Integrate_in_radius(ref%density,norm)
             norm = four_pi*norm/shell_volume
@@ -757,13 +761,11 @@ Contains
             norm = four_pi*norm/shell_volume
             gravity = gravity/norm
 
-            Call Integrate_in_radius(nsquared,norm)
-            norm = four_pi*norm/shell_volume
-            nsquared = nsquared/norm
-
-            Call Integrate_in_radius(nsquared,norm)
-            norm = four_pi*norm/shell_volume
-            nsquared = nsquared/norm
+            If (.not. adiabatic_polytrope) Then ! don't divide by zero!
+                Call Integrate_in_radius(nsquared,norm)
+                norm = four_pi*norm/shell_volume
+                nsquared = nsquared/norm
+            Endif
 
             ! ref%temperature(N_R) is now T_inner/volav(T); gravity(N_R) = g_inner/volav(g)
             Dissipation_Number = Dissipation_Number*ref%temperature(N_R)/gravity(N_R)
