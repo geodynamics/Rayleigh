@@ -636,8 +636,7 @@ Contains
 
     end subroutine magnetic_file_init
 
-    !NICK
-    subroutine add_to_field(field_index, field_file)
+    Subroutine Add_To_Field(field_index, field_file)
         ! initialize magnetic variables from generic input files
         Implicit None
         Integer, Intent(In) :: field_index
@@ -645,25 +644,25 @@ Contains
         Integer :: fcount(3,2)
         Type(SphericalBuffer) :: tempfield, tempfield2
         fcount(:,:) = 1
-        call tempfield%init(field_count = fcount, config = 'p1b')
-        call tempfield%construct('p1b')
-        call tempfield2%init(field_count = fcount, config = 'p1b')
-        call tempfield2%construct('p1b')
+        Call tempfield%init(field_count = fcount, config = 'p1b')
+        Call tempfield%construct('p1b')
+        Call tempfield2%init(field_count = fcount, config = 'p1b')
+        Call tempfield2%construct('p1b')
 
-        call get_rhs(field_index,tempfield2%p1b(:,:,:,1))
+        Call get_rhs(field_index,tempfield2%p1b(:,:,:,1))
 
-        if (trim(field_file) .ne. '__nothing__') then
-            call read_input(field_file, 1, tempfield)
+        If (trim(field_file) .ne. '__nothing__') Then
+            Call read_input(field_file, 1, tempfield)
 
             tempfield%p1b = tempfield%p1b+tempfield2%p1b
-            call set_rhs(field_index, tempfield%p1b(:,:,:,1))
-        end if
+            Call set_rhs(field_index, tempfield%p1b(:,:,:,1))
+        End If
 
 
-        call tempfield%deconstruct('p1b')
-        call tempfield2%deconstruct('p1b')
+        Call tempfield%deconstruct('p1b')
+        Call tempfield2%deconstruct('p1b')
 
-    end subroutine add_to_field
+    End Subroutine add_to_field
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Diffusion Init (for linear solve development)

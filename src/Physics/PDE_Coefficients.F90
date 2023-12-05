@@ -1287,12 +1287,10 @@ Contains
                 Read(15) input_constants(1:10)
                 cset(11) = 1 ! treat this as if c_11 = 1 was specified in the custom reference file
                 input_constants(11) = 1.0d0 
-                If (my_rank .eq. 0) Call stdout%print('got here')
             Else
                 Read(15) cset(1:n_ra_constants)
                 Read(15) fset(1:n_ra_functions) 
                 Read(15) input_constants(1:n_ra_constants)
-                Call stdout%print('actualy got here')
             Endif
             
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
