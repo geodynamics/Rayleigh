@@ -61,7 +61,6 @@ Module ProblemSize
     Real*8              :: aspect_ratio = -1.0d0
     Real*8              :: shell_depth = -1.0d0
     Real*8              :: shell_volume
-    Real*8              :: stretch_factor = 0.0d0
     Real*8, Allocatable :: Radius(:), R_squared(:), One_Over_R(:)
     Real*8, Allocatable :: Two_Over_R(:), OneOverRSquared(:), Delta_R(:)
     Real*8, Allocatable :: radial_integral_weights(:)
@@ -77,9 +76,13 @@ Module ProblemSize
     Integer :: ndomains = 1
     Integer :: n_uniform_domains =1
     Real*8  :: domain_bounds(1:nsubmax+1)=-1.0d0
-    Real*8  :: dr_input(4096) = 0.0d0
     Logical :: uniform_bounds = .false.
     Type(Cheby_Grid), Target :: gridcp
+
+    !///////////////////////////////////////////////////////////////
+    ! Radial Grid Variables Related to Finite-Difference Approach
+    Real*8  :: dr_input(4096) = -1.0d0
+    Integer :: nr_input(4096) = 0
 
     !///////////////////////////////////////////////////////////////
     ! Error-handling variables
@@ -92,7 +95,7 @@ Module ProblemSize
     Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, dr_input, &
             &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
-            &  n_uniform_domains, uniform_bounds, stretch_factor
+            &  n_uniform_domains, uniform_bounds, nr_input
 Contains
 
     Subroutine Init_ProblemSize()
@@ -116,7 +119,7 @@ Contains
         Call Report_Grid_Parameters()     ! Print some grid-related info to the screen
         Call Initialize_Horizontal_Grid() ! Init theta-grid and Legendre transforms
         Call Initialize_Radial_Grid()     ! Init radial grid and Chebyshev transforms
-
+        Call Halt_On_Error()              ! Call this again in case issues were identified during finite-difference grid setup.
         If (my_rank .eq. 0) Then
             call stdout%print(" -- Grid initialized.")
             call stdout%print(" ")
@@ -337,6 +340,16 @@ Contains
             rmin = rmax*aspect_ratio
         Endif
 
+        !//////////////////////////////////////////////////////////////////////
+        ! Check to see if finite-difference and a non-uniform grid
+        ! are being used.  It's important to do this here, so that N_R
+        ! is assigned the correct value BEFORE the load balance is initialized. 
+        If ((.not. chebyshev) .and. (maxval(nr_input) .gt. 0)) Then
+            N_R = SUM(nr_input)
+        Endif
+
+
+
         !////////////////////////////////////////////////////////////////////
         ! Decide how many chebyshev domains we have
         !   - Users may specify:
@@ -495,19 +508,24 @@ Contains
 
     Subroutine Initialize_Radial_Grid()
         Implicit None
-        Integer :: r, nthr,i ,n
+        Integer :: r, nthr,i,j, ii ,n
 
-        real*8 :: uniform_dr, arg, pi_over_N, rmn, rmx, delta, scaling
-        real*8 :: delr0
+        Integer :: nr_check, dr_check
+
+        Real*8 :: uniform_dr, arg, pi_over_N, rmn, rmx, delta, scaling
+        Real*8 :: delr0
+        Real*8, Allocatable :: temp_radius(:)
+
 
         nthr = pfi%nthreads
+
         Allocate(Delta_r(1:N_R))
         Allocate( Radius(1:N_R))
         Allocate(Radial_Integral_Weights(1:N_R))
 
 
 
-        If (chebyshev) Then ! No other choice at this time
+        If (chebyshev) Then 
             grid_type = 2
 
             Call gridcp%Init(radius, radial_integral_weights, &
@@ -522,24 +540,68 @@ Contains
                     r = r+1
                 Enddo
             Enddo
-        Else
+        Else    ! Finite-difference mode
             grid_type = 1
-            Radius(N_R) = rmin ! Follow ASH convention of reversed radius
-            uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
-            If (dr_input(N_R) .eq. 0.0) Then
-                Delta_r(N_R) = uniform_dr
-            Else If (dr_input(N_R) .gt. 0.0) Then
-                Delta_r(N_R) = dr_input(N_R)
-            Endif
+            
+            If (maxval(nr_input) .gt. 0) Then
+            
+                Allocate(temp_radius(1:N_R))
+                
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(" ---- Grid Spacing        :  Nonuniform")                    
+                Endif
+                
+                
+                ! Check for consistency between dr_input and nr_input.
+                nr_check = 0
+                dr_check = 0
 
-            Do r=N_R-1,1,-1
-                    If (dr_input(r) .eq. 0.0) Then
-                        Delta_r(r) = uniform_dr
-                    Else If (dr_input(r) .gt. 0.0) Then
-                        Delta_r(r) = dr_input(r)
-                    Endif
-                    Radius(r) = Delta_r(r) + Radius(r+1)
-            Enddo
+                Do i = 1, size(nr_input)
+                    If (nr_input(i) .gt. 0) nr_check = i
+                    If (dr_input(i) .gt. 0.0d0) dr_check = i
+                Enddo
+
+                If (nr_check .ne. dr_check) Then
+                    Call Add_Ecode(11)
+                Endif
+                
+                ! Build the radius array in ascending order                
+                ii = 1
+                temp_radius(ii) = 0.0d0
+                Do i = 1, nr_check
+                    delta = dr_input(i)
+                    Do j = 1, nr_input(i)
+                        If (ii .gt. 1) temp_radius(ii) = temp_radius(ii-1)+delta
+                        ii = ii+1    
+                    Enddo
+                Enddo
+                ! Rescale so that grid runs from rmin to rmax
+                temp_radius = temp_radius/temp_radius(N_R)*(rmax-rmin)
+                temp_radius = temp_radius+rmin
+                
+                ! Reverse the grid order
+                Do i = 1,N_R
+                    radius(i) = temp_radius(N_R-i+1)
+                Enddo
+                DeAllocate(temp_radius)
+                
+                Delta_r(1) = radius(1)-radius(2)
+                Do i = 2, N_R
+                    Delta_r(i) = radius(i-1)-radius(i)
+                Enddo
+                
+            Else
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(" ---- Grid Spacing        :  Uniform")
+                Endif
+                Radius(N_R) = rmin 
+                uniform_dr = 1.0d0/(N_R-1.0d0)*(rmax-rmin)
+                Delta_r(:) = uniform_dr
+                Do r=N_R-1,1,-1
+                   Radius(r) = Delta_r(r) + Radius(r+1)
+                Enddo
+                
+            Endif
         Endif
 
         Allocate(OneOverRSquared(1:N_R),r_squared(1:N_R),One_Over_r(1:N_R),Two_Over_r(1:N_R))
@@ -550,6 +612,7 @@ Contains
         r_inner = rmin
         r_outer = rmax
         If (.not. chebyshev) Call Initialize_Derivatives(Radius,radial_integral_weights)
+        
     End Subroutine Initialize_Radial_Grid
 
     Subroutine Report_Grid_Parameters()
@@ -574,31 +637,30 @@ Contains
             Call stdout%print(" ---- R_MAX               : "//trim(dstring))
             Write(istr,'(i6)')ndomains
             If (chebyshev) Then
-                call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
-            Else
-                call stdout%print(" ---- Finite Difference Domains   : "//trim(istr))
+                Call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
+
+
+                Do i = 1, ndomains
+                    call stdout%print(" ")
+                    Write(istr,'(i6)')i
+                    call stdout%print("        Domain "//&
+                         & trim(adjustl(istr)))
+                    Write(istr,'(i6)')ncheby(i)
+                    call stdout%print("          Grid points           :  "//trim(adjustl(istr)))
+
+                    If (dealias_by(i) .eq. -1) Then
+                        Write(istr,'(i6)')(ncheby(i)*2)/3
+                    Else
+                        Write(istr,'(i6)')ncheby(i)-dealias_by(i)
+                    Endif
+                    If (chebyshev) Call stdout%print("          Dealiased Polynomials :  "//trim(adjustl(istr)))
+                    Write(dstring,dofmt)domain_bounds(i)
+                    call stdout%print("          Domain Lower Bound    : "//trim(dstring))
+                    Write(dstring,dofmt)domain_bounds(i+1)
+                    call stdout%print("          Domain Upper Bound    : "//trim(dstring))
+                Enddo
+                Call stdout%print(" ")
             Endif
-
-            Do i = 1, ndomains
-                call stdout%print(" ")
-                Write(istr,'(i6)')i
-                call stdout%print("        Domain "//&
-                     & trim(adjustl(istr)))
-                Write(istr,'(i6)')ncheby(i)
-                call stdout%print("          Grid points           :  "//trim(adjustl(istr)))
-
-                If (dealias_by(i) .eq. -1) Then
-                    Write(istr,'(i6)')(ncheby(i)*2)/3
-                Else
-                    Write(istr,'(i6)')ncheby(i)-dealias_by(i)
-                Endif
-                call stdout%print("          Dealiased Polynomials :  "//trim(adjustl(istr)))
-                Write(dstring,dofmt)domain_bounds(i)
-                call stdout%print("          Domain Lower Bound    : "//trim(dstring))
-                Write(dstring,dofmt)domain_bounds(i+1)
-                call stdout%print("          Domain Upper Bound    : "//trim(dstring))
-            Enddo
-            call stdout%print(" ")
         Endif
     End Subroutine Report_Grid_Parameters
 
@@ -640,8 +702,11 @@ Contains
 
         Integer :: i,j,tmp, ecode
         Character*6 :: istr, istr2
+
         If (maxval(perr) .gt. 0) Then
+
             ecode = maxval(perr)
+
             If (my_rank .eq. 0) Then
                 Call stdout%print(' /////////////////////////////////////////////////////////////////')
                 Call stdout%print(' The following errors(s) were detected during grid initialization: ')
@@ -707,6 +772,8 @@ Contains
                         Call stdout%print('          current NPCOL :'//trim(istr))
                         Write(istr,'(i6)')n_r
                         Call stdout%print('          current N_R   :'//trim(istr))
+                    Case(11)
+                        Call stdout%print('  ERROR:  nr_input and dr_input must have the same number of elements.')
                     End Select
                     If (perr(i) .gt. 0) Call stdout%print(' ')
                 Enddo
