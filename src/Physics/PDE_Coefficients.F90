@@ -106,7 +106,7 @@ Module PDE_Coefficients
     Real*8 :: Angular_Velocity = -1.0d0 ! Frame rotation rate (sets Coriolis force)
 
     ! Custom reference-state variables (reference_type = 4)
-    Integer, Parameter   :: max_ra_constants = 10 + 2*n_scalar_max
+    Integer, Parameter   :: max_ra_constants = 11 + 2*n_scalar_max
     Integer, Parameter   :: max_ra_functions = 14 + 2*n_scalar_max
     Integer              :: n_ra_constants
     Integer              :: n_ra_functions
@@ -254,7 +254,7 @@ Contains
     Subroutine Allocate_Reference_State
         Implicit None
 
-        n_ra_constants = 10 + 2*(n_active_scalars + n_passive_scalars)
+        n_ra_constants = 11 + 2*(n_active_scalars + n_passive_scalars)
         n_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
 
         Allocate(ref%density(1:N_R))
@@ -1039,7 +1039,7 @@ Contains
             Call stdout%print('Only heating, buoyancy, or background dTdr/dSdr may be modified.')
             Call stdout%print('Heating requires both c_10 and f_6 to be set.')
             Call stdout%print('Buoyancy requires both c_2 and f_2 to be set.')
-            Call stdout%print('dTdr/dSdr requires f_14 to be set.')            
+            Call stdout%print('dTdr/dSdr requires f_14 to be set (sets c_11 to 1 if unspecified).')            
             Call stdout%print('Reading from: '//Trim(custom_reference_file))
         Endif
 
@@ -1082,10 +1082,11 @@ Contains
         If (use_custom_function(14)) Then
             If (my_rank .eq. 0) Then
                 Call stdout%print('Background thermal gradient is set to:')
-                Call stdout%print('f_14')
+                Call stdout%print('c_11*f_14')
                 Call stdout%print(' ')
             Endif        
-            ref%dsdr(:) = ra_functions(:,14)
+            ref%dsdr(:) = ra_constants(11)*ra_functions(:,14)
+            temp_constants(11) = ra_constants(11)
             temp_functions(:,14) = ra_functions(:,14)
         Endif
 
@@ -1198,7 +1199,7 @@ Contains
         ref%Lorentz_Coeff = ra_constants(4)
         ref%ohmic_amp(:) = ra_constants(9)/(ref%density(:)*ref%temperature(:))
 
-        ref%dsdr(:)     = ra_functions(:,14)
+        ref%dsdr(:)     = ra_constants(11)*ra_functions(:,14)
 
     End Subroutine Get_Custom_Reference
 
@@ -1279,9 +1280,20 @@ Contains
 
             ! Read in constants and their 'set' flags
             Read(15) eqversion
-            Read(15) cset(1:n_ra_constants)
-            Read(15) fset(1:n_ra_functions)
-            Read(15) input_constants(1:n_ra_constants)
+            If (eqversion .eq. 1) Then
+                !Read(15) cset(1:n_ra_constants-1) ! c_11 didn't exist yet
+                Read(15) cset(1:10) ! equation_coefficients couldn't write the custom active/passive scalar constants yet, and c_11 didn't exist yet
+                Read(15) fset(1:n_ra_functions)                
+                Read(15) input_constants(1:10)
+                cset(11) = 1 ! treat this as if c_11 = 1 was specified in the custom reference file
+                input_constants(11) = 1.0d0 
+                If (my_rank .eq. 0) Call stdout%print('got here')
+            Else
+                Read(15) cset(1:n_ra_constants)
+                Read(15) fset(1:n_ra_functions) 
+                Read(15) input_constants(1:n_ra_constants)
+                Call stdout%print('actualy got here')
+            Endif
             
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
             ! The logic below deals with a constant set in both the reference
@@ -1682,12 +1694,12 @@ Contains
         do i = 1, n_active_scalars
           Call Initialize_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
                                       kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
-                                      11+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
+                                      12+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
         end do
         do i = 1, n_passive_scalars
           Call Initialize_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
                                       kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
-                                      11+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
+                                      12+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
         end do
 
         If (viscous_heating) Then
@@ -1725,7 +1737,7 @@ Contains
               If (kappa_chi_a_type(i+1) .eq. 3) Then
                   temp_functions(:,15+i*2) = ra_functions(:,15+i*2)
                   temp_functions(:,16+i*2) = ra_functions(:,16+i*2)
-                  temp_constants(11+i*2)   = ra_constants(11+i*2)
+                  temp_constants(12+i*2)   = ra_constants(12+i*2)
               Endif
             end do
 
@@ -1733,7 +1745,7 @@ Contains
               If (kappa_chi_p_type(i+1) .eq. 3) Then
                   temp_functions(:,15+(n_active_scalars+i)*2) = ra_functions(:,15+(n_active_scalars+i)*2)
                   temp_functions(:,16+(n_active_scalars+i)*2) = ra_functions(:,16+(n_active_scalars+i)*2)
-                  temp_constants(11+(n_active_scalars+i)*2)   = ra_constants(11+(n_active_scalars+i)*2)
+                  temp_constants(12+(n_active_scalars+i)*2)   = ra_constants(12+(n_active_scalars+i)*2)
               Endif
             end do
 
@@ -1966,6 +1978,15 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = ref%viscous_amp(1)*ref%temperature(1)/2.0d0
         ra_constants(9) = ref%ohmic_amp(1)*ref%density(1)*ref%temperature(1)
+        Select Case(reference_type)
+            Case(1,2)
+                ra_constants(11) = 0.0d0
+            Case(3)
+                ra_constants(11) = 1.0d0
+            Case(5)
+                ra_constants(11) = Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number
+        End Select
+
 
         ra_functions(:,1) = ref%density
         ra_functions(:,4) = ref%temperature
@@ -2036,13 +2057,13 @@ Contains
         Endif ! if no magnetism, all of the above are already zero
 
         Do i = 1, n_active_scalars
-            ra_constants(11+(i-1)*2) = kappa_chi_a_norm(i)
+            ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
             ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
             ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
         Enddo
 
         Do i = 1, n_passive_scalars
-            ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
+            ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
             ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
             ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
         Enddo
