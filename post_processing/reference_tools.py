@@ -91,8 +91,6 @@ class equation_coefficients:
             self.nfunc = numpy.fromfile(fd,dtype='int32', count=1)[0]
         else: # if the version is 1, nconst was 10
             self.nconst = 10
-            print("got here")
-            print("nfunc=", self.nfunc)
         self.cset = numpy.fromfile(fd,dtype='int32',count=self.nconst)
         self.fset = numpy.fromfile(fd,dtype='int32',count=self.nfunc)
         self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)
