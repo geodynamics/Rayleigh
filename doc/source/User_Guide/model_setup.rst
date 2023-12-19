@@ -154,13 +154,87 @@ Radial values in the diagnostic output will be repeated at the inner
 domain boundaries. Most quantities are forced to be continuous at these
 points.
 
+
+Alternative Radial Discretization Using a Finite-Difference Approach
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rayleigh's default behavior is to employ a Chebyshev collocation scheme in radius.   If desired, a finite-difference method can be applied instead.  This mode is activated by setting the value of ``chebyshev`` to .false. in the ``numerical_controls_namelist``.  At present, Rayleigh's finite-difference scheme employs a five-point stencil with 4th-order accuracy in the interior points.  Boundary derivatives are taken with second-order accuracy.   By default, a uniform radial grid is assumed.  Consider the following example:
+
+::
+
+   &problemsize_namelist
+    rmin = 1.0
+    rmax = 2.0
+    n_r = 4
+    dr_weights = 0.1,0.3,0.2
+    nr_count = 2,4,2
+   /
+   &numerical_controls_namelist
+    chebyshev=.false.
+   /
+
+This results in the uniform grid:
+
+::
+
+  radius = 1.000 , 1.333 , 1.667 , 2.000
+      dr = 0.333 , 0.333 , 0.333
+
+An example input file using a uniform radial grid and a finite-difference scheme is provided in ``input_examples\main_input_mhd_jones_FD``.
+
+If desired, a nonuniform grid can be generated in one of two ways.  The first of these is to join together a series of uniformly-gridded subdomains with different grid spacings. This is accomplished using the ``dr_weight`` and ``nr_count`` parameters.  ``nr_count`` indicates the number of gridpoints within each subregion, and ``dr_weight`` indicates the relative size of the grid spacing within each region. Consider the following example:
+
+::
+
+   &problemsize_namelist
+    rmin = 1.0
+    rmax = 2.0
+    n_r = 4
+    dr_weights = 0.1,0.3,0.2
+    nr_count = 2,4,2
+   /
+
+This example defines a nonuniform grid ranging from 1.0 to 2.0 with 8 gridpoints (Rayleigh will reset the value of ``n_r`` to be the total of nr_count).  The grid spacing within the first 2-point region will be 1/3 of that in the second, 4-point region.  Similarly, the grid-spacing in the third, 2-point region will be 2/3 that of the second region and twice that of the first region.  The resulting radial grid and spacing is:
+
+::
+
+  radius = 1.000 , 1.059 , 1.235 , 1.412 , 1.588 , 1.765 , 1.882 , 2.   
+      dr = 0.059 , 0.176 , 0.176 , 0.176 , 0.176 , 0.118 , 0.118
+
+Note that for n_r points, there are n_r-1 spaces between gridpoints.  Rayleigh's convention is to apply dr_weights(1) nr_count(1)-1 times. As a result, specifying a symmetric ``nr_count`` will lead to assymetry in the grid spacing.  We can adjust this by adding one to nr_count(1) and subtracting one from nr_count(2) so that we have:
+::
+
+   &problemsize_namelist
+    rmin = 1.0
+    rmax = 2.0
+    n_r = 4
+    dr_weights = 0.1,0.3,0.2
+    nr_count = 3,3,2
+   /
+
+This results in the symmetric grid:
+
+::
+
+  radius = 1.000 , 1.067 , 1.133 , 1.333 , 1.533 , 1.733 , 1.867 , 2.000
+      dr = 0.067 , 0.067 , 0.200 , 0.200 , 0.200 , 0.133 , 0.133   
+
+Be sure to leave the ``nr_count`` and ``dr_weights`` parameters unset in ``main_input`` if you wish to use a uniform grid in radius. 
+
+ADD FINAL PARAGRAPH HERE ABOUT READING A GRIDFILE.
+
+
+
 .. _numerical_controls:
 
 Numerical Controls 
 ------------------
 
-Rayleigh has several options that control aspects of the numerical method
-used. For begining users these can generallly be left to default values.
+The Numerical_Controls namelist was added to facilitate fine-control over some aspects of Rayleigh's parallelization and is documented in :ref:`namelists`.  Two numerical_controls parameters worth mentioning that are particularly important for setting up a new model are the ``chebyshev`` and ``bandsolve`` keywords.   
+
+The value of ``chebyshev`` is set to ``.true.`` by default.  When set to ``.false.``, a finite-difference scheme will be employed in radius rather than a Chebyshev collocation scheme.
+
+The value of the ``bandsolve`` keyword is also set to ``.false.`` by default.  When set to ``.true.``, the otherwise dense matrices used in the implicit timestepping scheme will be recast in banded or block-banded form for the finite-difference and Chebyshev schemes respectively.  This can save memory and may offer performance gains.   Note that this mode has no effect for models run in Chebyshev mode with only 1 or 2 Chebyshev domains in radius.  A minimum of three Chebyshev domains is required before any memory savings is possible.
 
 
 .. _physics_controls:

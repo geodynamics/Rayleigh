@@ -81,8 +81,8 @@ Module ProblemSize
 
     !///////////////////////////////////////////////////////////////
     ! Radial Grid Variables Related to Finite-Difference Approach
-    Real*8  :: dr_input(4096) = -1.0d0
-    Integer :: nr_input(4096) = 0
+    Real*8  :: dr_weights(4096) = -1.0d0
+    Integer :: nr_count(4096) = 0
 
     !///////////////////////////////////////////////////////////////
     ! Error-handling variables
@@ -92,10 +92,10 @@ Module ProblemSize
     Logical :: grid_error = .false.
 
 
-    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, dr_input, &
+    Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, dr_weights, &
             &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
-            &  n_uniform_domains, uniform_bounds, nr_input
+            &  n_uniform_domains, uniform_bounds, nr_count
 Contains
 
     Subroutine Init_ProblemSize()
@@ -344,8 +344,8 @@ Contains
         ! Check to see if finite-difference and a non-uniform grid
         ! are being used.  It's important to do this here, so that N_R
         ! is assigned the correct value BEFORE the load balance is initialized. 
-        If ((.not. chebyshev) .and. (maxval(nr_input) .gt. 0)) Then
-            N_R = SUM(nr_input)
+        If ((.not. chebyshev) .and. (maxval(nr_count) .gt. 0)) Then
+            N_R = SUM(nr_count)
         Endif
 
 
@@ -543,7 +543,7 @@ Contains
         Else    ! Finite-difference mode
             grid_type = 1
             
-            If (maxval(nr_input) .gt. 0) Then
+            If (maxval(nr_count) .gt. 0) Then
             
                 Allocate(temp_radius(1:N_R))
                 
@@ -552,13 +552,13 @@ Contains
                 Endif
                 
                 
-                ! Check for consistency between dr_input and nr_input.
+                ! Check for consistency between dr_weights and nr_count.
                 nr_check = 0
                 dr_check = 0
 
-                Do i = 1, size(nr_input)
-                    If (nr_input(i) .gt. 0) nr_check = i
-                    If (dr_input(i) .gt. 0.0d0) dr_check = i
+                Do i = 1, size(nr_count)
+                    If (nr_count(i) .gt. 0) nr_check = i
+                    If (dr_weights(i) .gt. 0.0d0) dr_check = i
                 Enddo
 
                 If (nr_check .ne. dr_check) Then
@@ -569,8 +569,8 @@ Contains
                 ii = 1
                 temp_radius(ii) = 0.0d0
                 Do i = 1, nr_check
-                    delta = dr_input(i)
-                    Do j = 1, nr_input(i)
+                    delta = dr_weights(i)
+                    Do j = 1, nr_count(i)
                         If (ii .gt. 1) temp_radius(ii) = temp_radius(ii-1)+delta
                         ii = ii+1    
                     Enddo
@@ -773,7 +773,7 @@ Contains
                         Write(istr,'(i6)')n_r
                         Call stdout%print('          current N_R   :'//trim(istr))
                     Case(11)
-                        Call stdout%print('  ERROR:  nr_input and dr_input must have the same number of elements.')
+                        Call stdout%print('  ERROR:  nr_count and dr_weights must have the same number of elements.')
                     End Select
                     If (perr(i) .gt. 0) Call stdout%print(' ')
                 Enddo
