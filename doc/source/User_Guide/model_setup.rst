@@ -221,8 +221,6 @@ This results in the symmetric grid:
 
 Be sure to leave the ``nr_count`` and ``dr_weights`` parameters unset in ``main_input`` if you wish to use a uniform grid in radius. 
 
-ADD FINAL PARAGRAPH HERE ABOUT READING A GRIDFILE.
-
 
 
 .. _numerical_controls:
