@@ -22,7 +22,8 @@ Module ProblemSize
     Use Parallel_Framework, Only : pfi, Load_Config, Spherical
     Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
     Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
-    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row, m_balance_contiguous
+    Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row, m_balance_contiguous, &
+                       & n_active_scalars, n_passive_scalars, magnetism
     Use Chebyshev_Polynomials, Only : Cheby_Grid
     Use Finite_Difference, Only  : Initialize_Derivatives, Rescale_Grid_FD
     Use Math_Constants
@@ -510,7 +511,7 @@ Contains
         Implicit None
         Integer :: r, nthr,i,j, ii ,n
 
-        Integer :: nr_check, dr_check
+        Integer :: nr_check, dr_check, n_r_min
 
         Real*8 :: uniform_dr, arg, pi_over_N, rmn, rmx, delta, scaling
         Real*8 :: delr0
@@ -611,7 +612,20 @@ Contains
         OneOverRSquared = (1.0d0)/r_Squared
         r_inner = rmin
         r_outer = rmax
-        If (.not. chebyshev) Call Initialize_Derivatives(Radius,radial_integral_weights)
+        
+        !Ensure that the minimum number of radial points is set.
+        !This must be at least 2 x (number of fields) due to the 
+        !way boundary conditions are stored in the Checkpoint files.
+        
+        n_r_min = 2*(4+n_active_scalars+n_passive_scalars)
+        If (magnetism) n_r_min = n_r_min+4
+        
+        If (N_R .lt. n_r_min) Call Add_Ecode(12)
+        
+        
+        If ((.not. chebyshev) .and. (N_R .ge. n_r_min)) Then
+            Call Initialize_Derivatives(Radius,radial_integral_weights)
+        Endif
         
     End Subroutine Initialize_Radial_Grid
 
@@ -700,7 +714,7 @@ Contains
 
     Subroutine Halt_On_Error()
 
-        Integer :: i,j,tmp, ecode
+        Integer :: i,j,tmp, ecode, n_r_min
         Character*6 :: istr, istr2
 
         If (maxval(perr) .gt. 0) Then
@@ -774,6 +788,29 @@ Contains
                         Call stdout%print('          current N_R   :'//trim(istr))
                     Case(11)
                         Call stdout%print('  ERROR:  nr_count and dr_weights must have the same number of elements.')
+                    Case(12)
+                        n_r_min = 2*(4+n_active_scalars+n_passive_scalars)
+                        If (magnetism) n_r_min = n_r_min+4
+                        
+                        Call stdout%print('  ERROR:  The specified value for N_R is too small.')
+                        Call stdout%print('          N_R must be at least 2 x (number of state variables)')
+                        Call stdout%print('')
+                        Call stdout%print('            hydrodynamic variables = 4')
+                        If (magnetism) Then
+                            Call stdout%print('                magnetic variables = 2 ')
+                        Else
+                            Call stdout%print('                magnetic variables = 0 ')
+                        Endif
+                        Write(istr,'(i6)')n_active_scalars
+                        Call stdout%print('           active scalar variables = '//trim(adjustl(istr)))
+                        Write(istr,'(i6)')n_passive_scalars
+                        Call stdout%print('          passive scalar variables = '//trim(adjustl(istr)))
+                        Write(istr,'(i6)')n_r_min
+                        Call stdout%print('')
+                        Call stdout%print('             resulting minimum N_R = '//trim(adjustl(istr)))  
+                        Write(istr,'(i6)')n_r
+                        Call stdout%print('                       current N_R = '//trim(adjustl(istr)))
+                      
                     End Select
                     If (perr(i) .gt. 0) Call stdout%print(' ')
                 Enddo
