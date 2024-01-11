@@ -793,7 +793,7 @@ Contains
                         If (magnetism) n_r_min = n_r_min+4
                         
                         Call stdout%print('  ERROR:  The specified value for N_R is too small.')
-                        Call stdout%print('          N_R must be at least 2 x (number of state variables)')
+                        Call stdout%print('          N_R must be at least 2 x (number of state variables).')
                         Call stdout%print('')
                         Call stdout%print('            hydrodynamic variables = 4')
                         If (magnetism) Then
