@@ -84,6 +84,8 @@ Module ProblemSize
     ! Radial Grid Variables Related to Finite-Difference Approach
     Real*8  :: dr_weights(4096) = -1.0d0
     Integer :: nr_count(4096) = 0
+    Character*120 :: radial_grid_file = '__nothing__'
+    Logical :: rescale_radial_grid = .false.
 
     !///////////////////////////////////////////////////////////////
     ! Error-handling variables
@@ -96,7 +98,7 @@ Module ProblemSize
     Namelist /ProblemSize_Namelist/ n_r,n_theta, nprow, npcol,rmin,rmax,npout, dr_weights, &
             &  precise_bounds,grid_type, l_max, n_l, &
             &  aspect_ratio, shell_depth, ncheby, domain_bounds, dealias_by, &
-            &  n_uniform_domains, uniform_bounds, nr_count
+            &  n_uniform_domains, uniform_bounds, nr_count, radial_grid_file, rescale_radial_grid
 Contains
 
     Subroutine Init_ProblemSize()
@@ -544,7 +546,8 @@ Contains
         Else    ! Finite-difference mode
             grid_type = 1
             
-            If (maxval(nr_count) .gt. 0) Then
+            If ((maxval(nr_count) .gt. 0) .and. &
+               (trim(radial_grid_file) .eq. '__nothing__')) Then
             
                 Allocate(temp_radius(1:N_R))
                 
@@ -590,7 +593,12 @@ Contains
                 Do i = 2, N_R
                     Delta_r(i) = radius(i-1)-radius(i)
                 Enddo
-                
+            Else If (trim(radial_grid_file) .ne. '__nothing__') Then
+                !The grid file has already been read so that N_R could be set.
+                Delta_r(1) = radius(1)-radius(2)
+                Do i = 2, N_R
+                    Delta_r(i) = radius(i-1)-radius(i)
+                Enddo
             Else
                 If (my_rank .eq. 0) Then
                     Call stdout%print(" ---- Grid Spacing        :  Uniform")
@@ -810,7 +818,10 @@ Contains
                         Call stdout%print('             resulting minimum N_R = '//trim(adjustl(istr)))  
                         Write(istr,'(i6)')n_r
                         Call stdout%print('                       current N_R = '//trim(adjustl(istr)))
-                      
+                    Case(13)
+                        Call stdout%print('  ERROR:  Unable to read grid from radial_grid_file.')
+                        Call stdout%print('          Use radial_grid class from reference_tools.py')
+                        Call stdout%print('          to ensure that the file is correctly formatted.')                      
                     End Select
                     If (perr(i) .gt. 0) Call stdout%print(' ')
                 Enddo
@@ -822,4 +833,74 @@ Contains
             Call pfi%exit(ecode)
         Endif
     End Subroutine Halt_On_Error
+    
+    Subroutine Read_Radial_Grid()
+        Character*120 :: grid_file
+        Integer :: pi_integer, file_version
+        Integer :: i
+        
+        If (sim
+            grid_file = Trim(my_path)//radial_grid_file
+
+
+            Open(unit=15,file=grid_file,form='unformatted', status='old',access='stream')
+
+            !Verify Endianness
+            Read(15)pi_integer
+            If (pi_integer .ne. 314) Then
+                close(15)
+
+                Open(unit=15,file=grid_file,form='unformatted', status='old', &
+                     CONVERT = 'BIG_ENDIAN' , access='stream')
+                Read(15)pi_integer
+                
+                If (pi_integer .ne. 314) Then
+                    Close(15)
+                    Open(unit=15,file=grid_file,form='unformatted', status='old', &
+                     CONVERT = 'LITTLE_ENDIAN' , access='stream')
+                    Read(15)pi_integer
+                Endif
+                
+            Endif
+
+            N_R = 0
+            If (pi_integer .eq. 314) Then
+
+                ! Read in constants and their 'set' flags
+                Read(15) file_version
+                
+                If (file_version .eq. 1) Then
+                    Read(15) N_R
+
+                    Allocate(radius(1:N_R))
+                    radius(:) = 0.0d0
+                    Read(15)(radius(i),i=1,N_R)
+                    
+                Endif     
+                
+                If (rescale_radial_grid) Then
+                    radius = radius-radius(N_R)
+                    radius = radius/radius(1)
+                    radius = radius*(rmax-rmin)+rmin
+                Else
+                    rmin = radius(N_R)
+                    rmax = radius(1)
+                Endif
+                
+            Endif
+            Close(15)
+        
+        Endif
+        
+        !/////////////////
+        ! Left off here.
+                Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
+
+        nlines = pars(1)
+        line_len = pars(2)
+        If (my_sim_rank .gt. 0)  Allocate(  character(len=line_len) :: input_as_string(nlines) )
+
+        ! Rank 0 broadcasts the file contents
+        Call MPI_Bcast(input_as_string, nlines*line_len, MPI_CHARACTER, 0, sim_comm%comm,ierr)  
+    End Subroutine Read_Radial_Grid
 End Module ProblemSize
