@@ -351,6 +351,11 @@ Contains
             N_R = SUM(nr_count)
         Endif
 
+        !////////////////////////////////////////////////////////////////////
+        !
+        If ((.not. chebyshev) .and. trim(radial_grid_file) .ne. '__nothing__') Then
+            Call Read_Radial_Grid()
+        Endif
 
 
         !////////////////////////////////////////////////////////////////////
@@ -523,7 +528,7 @@ Contains
         nthr = pfi%nthreads
 
         Allocate(Delta_r(1:N_R))
-        Allocate( Radius(1:N_R))
+        If (.not. Allocated(Radius)) Allocate( Radius(1:N_R))
         Allocate(Radial_Integral_Weights(1:N_R))
 
 
@@ -657,6 +662,9 @@ Contains
             call stdout%print(" ---- R_MIN               : "//trim(dstring))
             Write(dstring,dofmt)rmax
             Call stdout%print(" ---- R_MAX               : "//trim(dstring))
+            If (.not. chebyshev .and. (radial_grid_file .ne. '__nothing__')) Then
+            Call stdout%print(" ---- Using custom grid   :  "//trim(radial_grid_file))
+            Endif
             Write(istr,'(i6)')ndomains
             If (chebyshev) Then
                 Call stdout%print(" ---- Chebyshev Domains   : "//trim(istr))
@@ -835,11 +843,14 @@ Contains
     End Subroutine Halt_On_Error
     
     Subroutine Read_Radial_Grid()
-        Character*120 :: grid_file
+        Use RA_MPI_Base
+        Implicit None
+        Character*120 :: grid_file,msg
+        Character*6 :: istr
         Integer :: pi_integer, file_version
         Integer :: i
         
-        If (sim
+        If (global_rank .eq. 0) Then
             grid_file = Trim(my_path)//radial_grid_file
 
 
@@ -866,25 +877,28 @@ Contains
             N_R = 0
             If (pi_integer .eq. 314) Then
 
-                ! Read in constants and their 'set' flags
+
                 Read(15) file_version
                 
                 If (file_version .eq. 1) Then
                     Read(15) N_R
 
-                    Allocate(radius(1:N_R))
-                    radius(:) = 0.0d0
-                    Read(15)(radius(i),i=1,N_R)
-                    
+                    If (N_R .gt. 0) Then
+                        Allocate(radius(1:N_R))
+                        radius(:) = 0.0d0
+                        Read(15)(radius(i),i=1,N_R)
+                    Endif
                 Endif     
                 
-                If (rescale_radial_grid) Then
-                    radius = radius-radius(N_R)
-                    radius = radius/radius(1)
-                    radius = radius*(rmax-rmin)+rmin
-                Else
-                    rmin = radius(N_R)
-                    rmax = radius(1)
+                If (N_R .gt. 0) Then
+                    If (rescale_radial_grid) Then
+                        radius = radius-radius(N_R)
+                        radius = radius/radius(1)
+                        radius = radius*(rmax-rmin)+rmin
+                    Else
+                        rmin = radius(N_R)
+                        rmax = radius(1)
+                    Endif
                 Endif
                 
             Endif
@@ -892,15 +906,29 @@ Contains
         
         Endif
         
-        !/////////////////
-        ! Left off here.
-                Call MPI_Bcast(pars, 2, MPI_INTEGER, 0, sim_comm%comm,ierr)
 
-        nlines = pars(1)
-        line_len = pars(2)
-        If (my_sim_rank .gt. 0)  Allocate(  character(len=line_len) :: input_as_string(nlines) )
-
-        ! Rank 0 broadcasts the file contents
-        Call MPI_Bcast(input_as_string, nlines*line_len, MPI_CHARACTER, 0, sim_comm%comm,ierr)  
+        Call MPI_Bcast(N_R, 1, MPI_INTEGER, 0, pfi%wcomm,i)
+        If (N_R .gt. 0) Then
+            If (global_rank .ne. 0) Then
+                Allocate(radius(1:N_R))
+            Endif
+            Call MPI_Bcast(radius, N_R, MPI_DOUBLE_PRECISION, 0, pfi%wcomm,i)
+        Else
+            If (global_rank .eq. 0) Then
+                If (pi_integer .eq. 314) Then
+                    Call stdout%print('  Error:  N_R must be greater than zero.')
+                    Write(istr,'(i6)')n_r
+                    msg='          The value of N_R contained in '//trim(radial_grid_file)//' is'
+                    msg = trim(msg)//' '//trim(adjustl(istr))//'.' 
+                    Call stdout%print(msg)
+                    Call stdout%print('  Exiting...')
+                Else
+                    Call stdout%print('  Error: '//trim(radial_grid_file)//' is formatted incorrectly.  Exiting...')
+                Endif
+            Endif
+            Call stdout%finalize()
+            Call pfi%exit(4)
+        Endif
+        
     End Subroutine Read_Radial_Grid
 End Module ProblemSize
