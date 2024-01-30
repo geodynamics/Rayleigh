@@ -61,6 +61,11 @@ Rayleigh.
 Grid Setup
 ----------
 
+By default, Rayleigh employs a single-domain Chebyshev decomposition in radius and a spherical-harmonic decomposition in the :math:`\theta-\phi` directions. Additionally, multiple Chebyshev domains or a finite-difference scheme may be alternatively employed in radius.  We focus on the default mode first.
+
+Standard Grid Specification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The number of radial grid points is denoted by
 :math:`N_r`, and the number of :math:`\theta` grid points by
 :math:`N_\theta`. The number of grid points in the :math:`\phi`
@@ -128,6 +133,9 @@ Note that the interpretation of ``rmin`` and ``rmax`` depends on
 whether your simulation is dimensional or nondimensional. We discuss
 these alternative formulations in §\ :ref:`physics_math`
 
+Using Multiple Chebyshev Domains in Radius
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 It is possible to run Rayleigh with multiple, stacked domains in the
 radial direction. Each of these is discretized using their own set of
 Chebyshev polynomials. The boundaries and number of polynomials can be
@@ -155,8 +163,8 @@ domain boundaries. Most quantities are forced to be continuous at these
 points.
 
 
-Alternative Radial Discretization Using a Finite-Difference Approach
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Employing a Finite-Difference Approach in Radius
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Rayleigh's default behavior is to employ a Chebyshev collocation scheme in radius.   If desired, a finite-difference method can be applied instead.  This mode is activated by setting the value of ``chebyshev`` to .false. in the ``numerical_controls_namelist``.  At present, Rayleigh's finite-difference scheme employs a five-point stencil with 4th-order accuracy in the interior points.  Boundary derivatives are taken with second-order accuracy.   By default, a uniform radial grid is assumed.  Consider the following example:
 
@@ -180,9 +188,15 @@ This results in the uniform grid:
   radius = 1.000 , 1.333 , 1.667 , 2.000
       dr = 0.333 , 0.333 , 0.333
 
-An example input file using a uniform radial grid and a finite-difference scheme is provided in ``input_examples\main_input_mhd_jones_FD``.
+An example input file using a uniform radial grid and a finite-difference scheme is provided in ``input_examples\main_input_mhd_jones_FD``.  If desired, a nonuniform grid can also be generated.  There are two ways to do this: via *main_input* and via a grid-description file. 
 
-If desired, a nonuniform grid can be generated in one of two ways.  The first of these is to join together a series of uniformly-gridded subdomains with different grid spacings. This is accomplished using the ``dr_weight`` and ``nr_count`` parameters.  ``nr_count`` indicates the number of gridpoints within each subregion, and ``dr_weight`` indicates the relative size of the grid spacing within each region. Consider the following example:
+
+Using Main_Input to Specify a Nonuniform Grid
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _nonuniform grids:
+
+The first method of specifying a nonuniform grid is to join together a series of uniformly-gridded subdomains with different grid spacings. This is accomplished using the ``dr_weight`` and ``nr_count`` parameters.  ``nr_count`` indicates the number of gridpoints within each subregion, and ``dr_weight`` indicates the relative size of the grid spacing within each region. Consider the following example:
 
 ::
 
@@ -220,6 +234,59 @@ This results in the symmetric grid:
       dr = 0.067 , 0.067 , 0.200 , 0.200 , 0.200 , 0.133 , 0.133   
 
 Be sure to leave the ``nr_count`` and ``dr_weights`` parameters unset in ``main_input`` if you wish to use a uniform grid in radius. 
+
+.. _grid file section:
+
+Using a Grid-Description File to Specify a Nonuniform Grid
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**NOTE:** The functionality described below is currently incompatible with Rayleigh's ensemble mode.  
+
+An arbitrary radial grid may also be generated using Python and then stored to a file that is read when Rayleigh initializes.  To do so, import the *reference_tools* module and define a custom grid as illustrated by the code snippet below.
+::
+   import numpy  # Import necessary modules
+   import reference_tools as rt 
+
+   ri = 0.5   # Inner radius
+   ro = 1.5   # Outer radius
+   nr = 128   # Number of radial points
+   radius = numpy.linspace(ri,ro,nr)  # The radial grid
+
+   my_grid = rt.radial_grid(radius)   # Instantiate the grid object
+
+   my_grid.write('grid_layout_128.dat')   # Store contents to file
+
+Note that we could have generated the grid in either ascending or descending order.  The *write* method accounts for the grid-ordering before storing its contents to the file.  Now that we have created a grid-description file ('grid_layout_128.dat' in this example), we indicate the relevant filename in ``main_input`` using the ``radial_grid_file`` parameter:
+
+::
+
+   &problemsize_namelist
+    n_theta = 32
+    radial_grid_file = 'grid_layout_128.dat'
+   /
+   &numerical_controls_namelist
+    chebyshev=.false.
+   /
+There are two important points to be aware of:
+
+1.  When ``radial_grid_file`` is specified, all information concerning the grid structure is derived from that file.  The values of ``rmin``, ``rmax``, ``N_R`` etc. are completely ignored.  For this reason, we strongly suggest indicating ``N_R`` in the grid file's name. 
+2. In the event that ``radial_grid_file``, ``nr_count`` and ``dr_weights`` are simultaneously specified, the grid-description file takes precedence. 
+
+There is one exception to point 1 above because there may be instances where the same grid structure is useful for problems with different values of *rmin* and *rmax*.  If desired, the grid stored in *radial_grid_file* can be rescaled to a new *rmin* and *rmax* by setting the *rescale_radial_grid* keyword to true:
+::
+
+   &problemsize_namelist
+    n_theta = 32
+    rmin = 1.0
+    rmax = 2.0
+    rescale_radial_grid = .true.
+    radial_grid_file = 'grid_layout_128.dat'
+   /
+   &numerical_controls_namelist
+    chebyshev=.false.
+   /
+
+The example above will generate a grid identical to that stored in the grid file, but rescaled to run from r=1 to r=2, rather than r=0.5 to r=1.5 as specified in the original Python code.
 
 
 

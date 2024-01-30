@@ -913,6 +913,8 @@ Contains
                 Allocate(radius(1:N_R))
             Endif
             Call MPI_Bcast(radius, N_R, MPI_DOUBLE_PRECISION, 0, pfi%wcomm,i)
+            rmin = radius(N_R) ! Only rank zero has calculated rmin and rmax at this point
+            rmax = radius(1)
         Else
             If (global_rank .eq. 0) Then
                 If (pi_integer .eq. 314) Then
