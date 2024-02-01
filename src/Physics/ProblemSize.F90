@@ -907,12 +907,12 @@ Contains
         Endif
         
 
-        Call MPI_Bcast(N_R, 1, MPI_INTEGER, 0, pfi%wcomm,i)
+        Call MPI_Bcast(N_R, 1, MPI_INTEGER, 0, pfi%wcomm%comm,i)
         If (N_R .gt. 0) Then
             If (global_rank .ne. 0) Then
                 Allocate(radius(1:N_R))
             Endif
-            Call MPI_Bcast(radius, N_R, MPI_DOUBLE_PRECISION, 0, pfi%wcomm,i)
+            Call MPI_Bcast(radius, N_R, MPI_DOUBLE_PRECISION, 0, pfi%wcomm%comm,i)
             rmin = radius(N_R) ! Only rank zero has calculated rmin and rmax at this point
             rmax = radius(1)
         Else
