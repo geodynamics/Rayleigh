@@ -79,8 +79,8 @@ Contains
     !/////////////////////////////////////////////////////////////////////
     Subroutine IWait(irq)
         Implicit None
-        Integer :: irq, status(MPI_STATUS_SIZE), mpi_err
-        Call MPI_WAIT(irq,status,mpi_err)
+        Integer :: irq, mpi_err
+        Call MPI_WAIT(irq,MPI_STATUS_IGNORE,mpi_err)
     End Subroutine IWait
 
     !/////////////////////////////////////////////////////////////////////
@@ -99,10 +99,7 @@ Contains
         Integer :: irq(:)
         Integer, Intent(In) :: n
         Integer :: mpi_err
-        Integer, Allocatable :: istat(:,:)
-        Allocate(istat(MPI_STATUS_SIZE,1:n))
-        Call MPI_WAITALL(n,irq,istat,mpi_err)
-        DeAllocate(istat)
+        Call MPI_WAITALL(n,irq,MPI_STATUSES_IGNORE,mpi_err)
     End Subroutine IWaitAll
 
 
