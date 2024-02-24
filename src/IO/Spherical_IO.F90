@@ -84,7 +84,7 @@ Module Spherical_IO
         Integer :: nq, nlevels ! Number of nonzero elements of values and levels
         Integer :: my_nlevels  ! Number of nonzero elements of levels that are in process
 
-        Integer :: file_unit = 15
+        Integer :: file_unit
         Character*120 :: file_prefix = 'None'
 
         Integer, Allocatable :: oqvals(:)   ! Array of size nq used by I/O process to record output ordering of diagnostics
@@ -1504,7 +1504,6 @@ Contains
         self%nq = 0
         self%nlevels = 0
         self%my_nlevels = 0
-        self%file_unit = 15
         self%file_prefix = 'None'
         If (Allocated(self%oqvals))  DeAllocate(self%oqvals)
 
