@@ -18,6 +18,9 @@ env:
 jobs:
   test:
     name: linux-jammy-container-build
+    strategy:
+      matrix:
+        mpi: ["", --mpi-f08, --mpi-f77 --FFLAGS=-fallow-argument-mismatch]
     runs-on: [ubuntu-latest]
     container: geodynamics/rayleigh-buildenv-jammy
 
@@ -35,7 +38,7 @@ jobs:
     - name: Build Rayleigh
       # Now build Rayleigh itself
       run: |
-        ./configure -debian-mkl --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
 
         make fdeps && git diff --exit-code
         make -j
