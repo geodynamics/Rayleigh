@@ -199,7 +199,7 @@ Contains
             ione = 1
         End if
 
-        Call mpi_isend(x(ione), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(ione), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_1D
 
@@ -245,7 +245,7 @@ Contains
             lstart = 1
         Endif
 
-        Call mpi_isend(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
     End Subroutine D_ISend_4D
 
     Subroutine D_IReceive_4D(x, irq,n_elements, source, tag, grp,indstart)
@@ -292,7 +292,7 @@ Contains
             lstart = 1
         Endif
 
-        Call mpi_irecv(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_4D
 
@@ -340,7 +340,7 @@ Contains
             lstart = 1
             mstart = 1
         Endif
-        Call mpi_isend(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_5D
 
@@ -390,7 +390,7 @@ Contains
             mstart = 1
         Endif
 
-        Call mpi_irecv(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_5D
 
@@ -474,7 +474,7 @@ Contains
             ione = 1
             jone = 1
         Endif
-        Call mpi_isend(x(ione,jone), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(ione,jone), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_2D
 
@@ -518,7 +518,7 @@ Contains
             jstart = 1
             kstart = 1
         Endif
-        Call mpi_isend(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_3D
 
@@ -638,7 +638,7 @@ Contains
             ione = 1
         Endif
 
-        Call mpi_irecv(x(ione), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(ione), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_1D
 
@@ -724,7 +724,7 @@ Contains
         Endif
 
 
-        Call mpi_irecv(x(ione,jone), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(ione,jone), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_2D
 
@@ -770,7 +770,7 @@ Contains
             kstart = 1
         Endif
 
-        Call mpi_irecv(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_3D
 

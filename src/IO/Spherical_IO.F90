@@ -696,7 +696,7 @@ Contains
             btype = self%buff_types(i)
             If (btype .eq. 1) Then
                 CALL MPI_FILE_WRITE(funit, self%rvals(di)%data(1), bsize, &
-                                    MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr) 
+                                    MPI_REAL8, MPI_STATUS_IGNORE, ierr) 
                 di = di+1
             Else
                 CALL MPI_FILE_WRITE(funit, self%ivals(ii)%data(1), bsize, &

@@ -56,7 +56,7 @@ contains
     real*8, allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
 
     ! set up some sizes of mpi types
-    call MPI_TYPE_GET_EXTENT(MPI_DOUBLE_PRECISION, lb, real_size, ierr)
+    call MPI_TYPE_GET_EXTENT(MPI_REAL8, lb, real_size, ierr)
     call MPI_TYPE_GET_EXTENT(MPI_INTEGER, lb, int_size, ierr)
 
     ! process 0 reads the first few parameters describing the file
@@ -162,12 +162,12 @@ contains
               disp2 = disp1 + (col_lmn_ind1(i)-1)*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,1), col_lmn_count(i), &
-                                 MPI_DOUBLE_PRECISION, &
+                                 MPI_REAL8, &
                                  MPI_STATUS_IGNORE, ierr)  ! real
               disp2 = disp1 + (n_lmn+col_lmn_ind1(i)-1)*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,2), col_lmn_count(i), &
-                                 MPI_DOUBLE_PRECISION, &
+                                 MPI_REAL8, &
                                  MPI_STATUS_IGNORE, ierr) ! imaginary
               offset = offset + col_lmn_count(i)
             end if
@@ -348,12 +348,12 @@ contains
               disp2 = disp1 + col_lmn_i*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,1), col_lmn_n, &
-                                 MPI_DOUBLE_PRECISION, &
+                                 MPI_REAL8, &
                                  MPI_STATUS_IGNORE, ierr)  ! real
               disp2 = disp1 + (n_lmn+col_lmn_i)*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,2), col_lmn_n, &
-                                 MPI_DOUBLE_PRECISION, &
+                                 MPI_REAL8, &
                                  MPI_STATUS_IGNORE, ierr) ! imaginary
               offset = offset + col_lmn_n
             end if

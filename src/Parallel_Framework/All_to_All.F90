@@ -119,8 +119,8 @@ Contains
         Type(communicator), Intent(in) :: grp
         Integer :: MPI_err
 
-        call MPI_ALLTOALLv(send_buf, send_count, send_displ, MPI_DOUBLE_PRECISION, recv_buf, &
-            & recv_count, recv_displ, MPI_DOUBLE_PRECISION, grp%comm, MPI_err)
+        call MPI_ALLTOALLv(send_buf, send_count, send_displ, MPI_REAL8, recv_buf, &
+            & recv_count, recv_displ, MPI_REAL8, grp%comm, MPI_err)
     End Subroutine D_Transpose_v_1D
 
     !////////////////////////////////////////////////////////////////////////////////////
@@ -154,11 +154,11 @@ Contains
         Integer :: MPI_err
         Logical, Intent(in) :: normal
         If (normal) Then
-            call MPI_ALLTOALL(send_buf, send_count(1), MPI_DOUBLE_PRECISION, recv_buf, &
-                & recv_count(1), MPI_DOUBLE_PRECISION, grp%comm, MPI_err)
+            call MPI_ALLTOALL(send_buf, send_count(1), MPI_REAL8, recv_buf, &
+                & recv_count(1), MPI_REAL8, grp%comm, MPI_err)
         Else
-            call MPI_ALLTOALLv(send_buf, send_count, send_displ, MPI_DOUBLE_PRECISION, recv_buf, &
-                & recv_count, recv_displ, MPI_DOUBLE_PRECISION, grp%comm, MPI_err)
+            call MPI_ALLTOALLv(send_buf, send_count, send_displ, MPI_REAL8, recv_buf, &
+                & recv_count, recv_displ, MPI_REAL8, grp%comm, MPI_err)
         Endif
     End Subroutine D_Transpose_choose_1D
 

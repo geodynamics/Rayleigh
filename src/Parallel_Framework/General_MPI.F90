@@ -71,7 +71,7 @@ Contains
         End If
 
 
-        Call MPI_ALLREDUCE(sendbuf, recvbuf, icount, MPI_DOUBLE_PRECISION, MPI_MAX, comm, MPI_err)
+        Call MPI_ALLREDUCE(sendbuf, recvbuf, icount, MPI_REAL8, MPI_MAX, comm, MPI_err)
 
     End Subroutine Global_Max
 
@@ -146,7 +146,7 @@ Contains
             comm = MPI_COMM_WORLD
         End If
 
-        Call MPI_REDUCE(sendbuf, recvbuf, icount, MPI_DOUBLE_PRECISION, MPI_SUM, dest, comm, MPI_err)
+        Call MPI_REDUCE(sendbuf, recvbuf, icount, MPI_REAL8, MPI_SUM, dest, comm, MPI_err)
 
     End Subroutine DSUM1D
 
@@ -179,7 +179,7 @@ Contains
             comm = MPI_COMM_WORLD
         End If
 
-        Call MPI_ALLREDUCE(sendbuf, recvbuf, icount, MPI_DOUBLE_PRECISION, MPI_SUM, comm, MPI_err)
+        Call MPI_ALLREDUCE(sendbuf, recvbuf, icount, MPI_REAL8, MPI_SUM, comm, MPI_err)
 
     End Subroutine DALLSUM1D
 
@@ -221,7 +221,7 @@ Contains
         End If
 
 
-        Call MPI_REDUCE(sendbuf, recvbuf, icount, MPI_DOUBLE_PRECISION, MPI_SUM, dest, comm, MPI_err)
+        Call MPI_REDUCE(sendbuf, recvbuf, icount, MPI_REAL8, MPI_SUM, dest, comm, MPI_err)
 
     End Subroutine DSUM3D
 
@@ -264,7 +264,7 @@ Contains
         End If
 
 
-        Call MPI_REDUCE(sendbuf, recvbuf, icount, MPI_DOUBLE_PRECISION, MPI_SUM, dest, comm, MPI_err)
+        Call MPI_REDUCE(sendbuf, recvbuf, icount, MPI_REAL8, MPI_SUM, dest, comm, MPI_err)
 
     End Subroutine DSUM2D
 
@@ -299,7 +299,7 @@ Contains
         End If
 
 
-        Call MPI_ALLREDUCE(sendbuf, recvbuf, icount, MPI_DOUBLE_PRECISION, MPI_SUM, comm, MPI_err)
+        Call MPI_ALLREDUCE(sendbuf, recvbuf, icount, MPI_REAL8, MPI_SUM, comm, MPI_err)
 
     End Subroutine DALLSUM2D
 
@@ -336,7 +336,7 @@ Contains
             comm = MPI_COMM_WORLD
         End If
 
-        Call MPI_BCAST(buff, icount, MPI_DOUBLE_PRECISION,  root, comm, MPI_err)
+        Call MPI_BCAST(buff, icount, MPI_REAL8,  root, comm, MPI_err)
 
     End Subroutine BCAST2D
 

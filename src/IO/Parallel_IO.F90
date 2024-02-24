@@ -1588,7 +1588,7 @@ Contains
                             bdisp = self%buffer_disp(j)
                             Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                             Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                                self%buffsize, MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
+                                self%buffsize, MPI_REAL8, MPI_STATUS_IGNORE, ierr)
                         Endif
 
                     Endif
@@ -1604,7 +1604,7 @@ Contains
                             bdisp = 1+self%buffsize*self%nvals*(j-1)
                             Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                             Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                                self%buffsize*self%nvals, MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
+                                self%buffsize*self%nvals, MPI_REAL8, MPI_STATUS_IGNORE, ierr)
                         Enddo
                     Endif
                 Endif
@@ -1619,7 +1619,7 @@ Contains
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
-                           MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
+                           MPI_REAL8, MPI_STATUS_IGNORE, ierr)
 
                     Call MPI_FILE_WRITE(funit, self%iter(j), 1, & 
                            MPI_INTEGER, MPI_STATUS_IGNORE, ierr)
@@ -1686,7 +1686,7 @@ Contains
                     fdisp = self%file_disp_in(j)+hdisp
                     Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                     Call MPI_FILE_READ(funit, self%buffer(1), & 
-                        self%in_buffer_size, MPI_DOUBLE_PRECISION, MPI_STATUS_IGNORE, ierr)
+                        self%in_buffer_size, MPI_REAL8, MPI_STATUS_IGNORE, ierr)
                 Endif
                 Call self%distribute_data(j)
             Enddo

@@ -82,7 +82,7 @@ Contains
         lstart = 1
         mstart = 1
     Endif
-    Call mpi_send(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
     !write(6,*)'zs ', p
     End Subroutine D_Send_5D
 
@@ -131,7 +131,7 @@ Contains
         kstart = 1
         lstart = 1
     Endif
-    Call mpi_send(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
     !write(6,*)'zs ', p
     End Subroutine D_Send_4D
 
@@ -176,7 +176,7 @@ Contains
         jstart = 1
         kstart = 1
     Endif
-    Call mpi_send(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
     !write(6,*)'zs ', p
     End Subroutine D_Send_3D
 
@@ -219,7 +219,7 @@ Contains
         istart = 1
         jstart = 1
     Endif
-    Call mpi_send(x(istart,jstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
 
     End Subroutine D_Send_2D
 
@@ -260,7 +260,7 @@ Contains
     Else
         istart = 1
     Endif
-    Call mpi_send(x(istart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
 
     End Subroutine D_Send_1D
 
@@ -397,7 +397,7 @@ Contains
         mstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
+    Call mpi_recv(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_5D
@@ -449,7 +449,7 @@ Contains
         lstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
+    Call mpi_recv(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_4D
@@ -497,7 +497,7 @@ Contains
         kstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
+    Call mpi_recv(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_3D
@@ -543,7 +543,7 @@ Contains
         jstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
+    Call mpi_recv(x(istart,jstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_2D
@@ -587,7 +587,7 @@ Contains
         istart = 1
     Endif
 
-    Call mpi_recv(x(istart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
+    Call mpi_recv(x(istart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_1D
