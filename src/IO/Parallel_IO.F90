@@ -1249,7 +1249,11 @@ Contains
         Implicit None
         Class(io_buffer) :: self
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Allocatable :: rirqs(:), sirqs(:)
+#else
         Integer, Allocatable :: rirqs(:), sirqs(:)
+#endif
         Integer :: inds(4)
         Integer :: my_nm
 
@@ -1360,7 +1364,11 @@ Contains
         Class(io_buffer) :: self
         Integer, Intent(In) :: cache_ind
         Integer :: p, n, nn, rstart, rend,  nrirq, nsirq
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Allocatable :: rirqs(:), sirqs(:)
+#else
         Integer, Allocatable :: rirqs(:), sirqs(:)
+#endif
         Integer :: inds(4)
         Integer :: ncache
 
@@ -1537,13 +1545,18 @@ Contains
     Subroutine Write_Data(self,disp,file_unit,filename)
         Implicit None
         Class(io_buffer) :: self
-        Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
-        Integer :: funit, ierr, j
+        Integer :: ierr, j
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File), Intent(In), Optional :: file_unit
+        Type(MPI_File) :: funit
+#else
+        Integer, Intent(In), Optional :: file_unit
+        Integer :: funit
+#endif
         Logical :: error
         Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: hdisp, tdisp, fdisp, bdisp
-        Integer :: mstatus(MPI_STATUS_SIZE)
 
         ! A baseline displacement within the file can be passed to this routine.
         ! Can be due to header and/or multiple prior records.
@@ -1589,7 +1602,7 @@ Contains
                             bdisp = self%buffer_disp(j)
                             Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                             Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                                self%buffsize, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                                self%buffsize, MPI_REAL8, MPI_STATUS_IGNORE, ierr)
                         Endif
 
                     Endif
@@ -1605,7 +1618,7 @@ Contains
                             bdisp = 1+self%buffsize*self%nvals*(j-1)
                             Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                             Call MPI_FILE_WRITE(funit, self%buffer(bdisp), & 
-                                self%buffsize*self%nvals, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                                self%buffsize*self%nvals, MPI_REAL8, MPI_STATUS_IGNORE, ierr)
                         Enddo
                     Endif
                 Endif
@@ -1620,10 +1633,10 @@ Contains
                     Call MPI_File_Seek(funit,tdisp,MPI_SEEK_SET,ierr)
 
                     Call MPI_FILE_WRITE(funit, self%time(j), 1, & 
-                           MPI_DOUBLE_PRECISION, mstatus, ierr)
+                           MPI_REAL8, MPI_STATUS_IGNORE, ierr)
 
                     Call MPI_FILE_WRITE(funit, self%iter(j), 1, & 
-                           MPI_INTEGER, mstatus, ierr)
+                           MPI_INTEGER, MPI_STATUS_IGNORE, ierr)
                 Enddo
             Endif    
 
@@ -1641,13 +1654,18 @@ Contains
     Subroutine Read_Data(self,disp,file_unit,filename)
         Implicit None
         Class(io_buffer) :: self
-        Integer, Intent(In), Optional :: file_unit
         Character*120, Intent(In), Optional :: filename
-        Integer :: funit, ierr, j
+        Integer :: ierr, j
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File), Intent(In), Optional :: file_unit
+        Type(MPI_File) :: funit
+#else
+        Integer, Intent(In), Optional :: file_unit
+        Integer :: funit
+#endif
         Logical :: error
         Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: hdisp, fdisp
-        Integer :: mstatus(MPI_STATUS_SIZE)
 
         ! Read data (Checkpoints/Generic I/O)
 
@@ -1688,7 +1706,7 @@ Contains
                     fdisp = self%file_disp_in(j)+hdisp
                     Call MPI_File_Seek( funit, fdisp, MPI_SEEK_SET, ierr) 
                     Call MPI_FILE_READ(funit, self%buffer(1), & 
-                        self%in_buffer_size, MPI_DOUBLE_PRECISION, mstatus, ierr)
+                        self%in_buffer_size, MPI_REAL8, MPI_STATUS_IGNORE, ierr)
                 Endif
                 Call self%distribute_data(j)
             Enddo

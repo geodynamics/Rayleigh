@@ -84,7 +84,11 @@ Module Spherical_IO
         Integer :: nq, nlevels ! Number of nonzero elements of values and levels
         Integer :: my_nlevels  ! Number of nonzero elements of levels that are in process
 
-        Integer :: file_unit = 15
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: file_unit
+#else
+        Integer :: file_unit
+#endif
         Character*120 :: file_prefix = 'None'
 
         Integer, Allocatable :: oqvals(:)   ! Array of size nq used by I/O process to record output ordering of diagnostics
@@ -137,7 +141,12 @@ Module Spherical_IO
         Real*8, Allocatable :: r_vals(:), theta_vals(:), phi_vals(:)
 
         !Communicatory Info for parallel writing (if used)
-        Integer :: ocomm, orank, onp
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Comm) :: ocomm
+#else
+        Integer :: ocomm
+#endif
+        Integer :: orank, onp
         Logical :: master = .false.
         !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -686,8 +695,12 @@ Contains
     Subroutine Write_Header_Data(self)
         Implicit None
         Class(DiagnosticInfo) :: self
-        Integer :: mstatus(MPI_STATUS_SIZE)
-        Integer :: ierr, bsize, btype, i, funit, nbuff, ii,di
+        Integer :: ierr, bsize, btype, i, nbuff, ii,di
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
         funit = self%file_unit
         nbuff = self%nheader
         di = 1
@@ -697,11 +710,11 @@ Contains
             btype = self%buff_types(i)
             If (btype .eq. 1) Then
                 CALL MPI_FILE_WRITE(funit, self%rvals(di)%data(1), bsize, &
-                                    MPI_DOUBLE_PRECISION, mstatus, ierr) 
+                                    MPI_REAL8, MPI_STATUS_IGNORE, ierr) 
                 di = di+1
             Else
                 CALL MPI_FILE_WRITE(funit, self%ivals(ii)%data(1), bsize, &
-                                    MPI_INTEGER, mstatus, ierr) 
+                                    MPI_INTEGER, MPI_STATUS_IGNORE, ierr) 
                 ii = ii+1
             Endif
         Enddo
@@ -728,7 +741,12 @@ Contains
         Class(DiagnosticInfo) :: self
         INTEGER(kind=MPI_OFFSET_KIND) :: new_disp, full_disp
         Logical :: responsible, output_rank
-        Integer :: orank, funit, error, ncache
+        Integer :: orank, error, ncache
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
 
         If ((self%nq > 0) .and. (Mod(this_iter,self%frequency) .eq. 0 )) Then
 
@@ -1149,8 +1167,12 @@ Contains
         Character*120 :: iterstring
         Character*120 :: filename
         Integer :: modcheck, imod, ibelong, icomp
-        Integer :: buffsize, funit
-        Integer :: mstatus(MPI_STATUS_SIZE)
+        Integer :: buffsize
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
         integer(kind=MPI_OFFSET_KIND) :: disp
         Logical :: create_file
         Logical :: file_exists
@@ -1228,17 +1250,17 @@ Contains
 
                     buffsize = 1
                     Call MPI_FILE_WRITE(self%file_unit, endian_tag, buffsize, &
-                        & MPI_INTEGER, mstatus, ierr)
+                        & MPI_INTEGER, MPI_STATUS_IGNORE, ierr)
 
                     buffsize = 1
                     Call MPI_FILE_WRITE(self%file_unit, self%Output_Version, & 
-                        buffsize, MPI_INTEGER, mstatus, ierr)
+                        buffsize, MPI_INTEGER, MPI_STATUS_IGNORE, ierr)
 
                     ! We write zero initially --
                     ! update nrec only after the data is actually written.
                     buffsize = 1
                     Call MPI_FILE_WRITE(self%file_unit, integer_zero, &
-                        & buffsize, MPI_INTEGER, mstatus, ierr) 
+                        & buffsize, MPI_INTEGER, MPI_STATUS_IGNORE, ierr) 
                     
                 Endif
                 
@@ -1252,7 +1274,7 @@ Contains
                     disp = 8
                     Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
                     Call MPI_FILE_READ(self%file_unit, self%current_rec, 1, &
-                        & MPI_INTEGER, mstatus, ierr)
+                        & MPI_INTEGER, MPI_STATUS_IGNORE, ierr)
 
                 Endif
 
@@ -1270,7 +1292,6 @@ Contains
         USE RA_MPI_BASE
         Implicit None
         integer :: ierr, buffsize
-        Integer :: mstatus(MPI_STATUS_SIZE)
         integer(kind=MPI_OFFSET_KIND) :: disp
         !Parallel File Close
         !Peforms the same task as closefile, but using MPI-IO
@@ -1288,7 +1309,7 @@ Contains
             buffsize = 1
 
             call MPI_FILE_WRITE(self%file_unit,self%current_rec , buffsize, MPI_INTEGER, & 
-                mstatus, ierr) 
+                MPI_STATUS_IGNORE, ierr) 
             If (ierr .ne. 0) Write(6,*)'Error writing to header.  Error code: ', ierr, myid, self%file_prefix
         Endif
         Call MPI_FILE_CLOSE(self%file_unit, ierr)
@@ -1504,7 +1525,6 @@ Contains
         self%nq = 0
         self%nlevels = 0
         self%my_nlevels = 0
-        self%file_unit = 15
         self%file_prefix = 'None'
         If (Allocated(self%oqvals))  DeAllocate(self%oqvals)
 

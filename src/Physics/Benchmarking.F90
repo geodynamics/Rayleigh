@@ -934,7 +934,11 @@ Contains
         Real*8, Intent(In) :: inbuff(1:,my_r%min:,my_theta%min:,:)
         Real*8, Allocatable :: all_strips(:,:,:)
         Integer :: i,j, indst(3), ndata
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request) :: rirqs(1:4), sirqs(1:4)
+#else
         Integer :: rirqs(1:4), sirqs(1:4)
+#endif
 
         Integer, Allocatable :: obs_inds(:)
 

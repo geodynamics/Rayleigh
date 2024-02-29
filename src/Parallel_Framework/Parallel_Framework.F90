@@ -226,7 +226,12 @@ Contains
         Class(Parallel_Interface) :: self
         Integer, Intent(In) :: intarr(:)
         Integer, Intent(In), Optional :: src, comm_option
-        Integer :: arr_size, comm_handle, src_rank, ierr
+        Integer :: arr_size, src_rank, ierr
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_comm) :: comm_handle
+#else
+        Integer :: comm_handle
+#endif
         arr_size = size(intarr)
         If (present(src)) Then
             src_rank = src

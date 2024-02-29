@@ -489,14 +489,14 @@ Contains
         Endif
 
         If (my_row_rank .eq. 0) Then
-            Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%ccomm%comm, ierr)
+            Call MPI_Bcast(old_radius,n_r_old, MPI_REAL8, 0, pfi%ccomm%comm, ierr)
         Endif
-        Call MPI_Bcast(old_radius,n_r_old, MPI_DOUBLE_PRECISION, 0, pfi%rcomm%comm, ierr)
+        Call MPI_Bcast(old_radius,n_r_old, MPI_REAL8, 0, pfi%rcomm%comm, ierr)
 
         If (my_row_rank .eq. 0) Then
-            Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%ccomm%comm, ierr)
+            Call MPI_Bcast(dt_pars,3, MPI_REAL8, 0, pfi%ccomm%comm, ierr)
         Endif
-        Call MPI_Bcast(dt_pars,3, MPI_DOUBLE_PRECISION, 0, pfi%rcomm%comm, ierr)
+        Call MPI_Bcast(dt_pars,3, MPI_REAL8, 0, pfi%rcomm%comm, ierr)
 
         checkpoint_dt    = dt_pars(1)
         checkpoint_newdt = dt_pars(2)

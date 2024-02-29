@@ -221,6 +221,12 @@ function displayhelp {
     echo "      match the one used to compile MPI."
     echo ""
 
+    echo "  --mpi-f08 ; -mpi-f08:"
+    echo "      Set this flag to use the newer Fortran 2008 MPI module."
+    echo "      This needs to be supported by the MPI install."
+    echo "      It may help with compiler errors due to type mismatches."
+    echo ""
+
     echo "  --prefix=<RAYLEIGH PREFIX>: "
     echo "      Specifies the directory in which to place Rayleigh's executables"
     echo "      when "make install" is run.  By default, executables are placed in"
@@ -429,6 +435,10 @@ do
       USEMPIF77="TRUE";
       ;;
 
+    --mpi-f08 | -mpi-f08 )
+      USEMPIF08="TRUE";
+      ;;
+
     --with-lapack=*)
       LPROOT=`expr "x$option" : "x-*with-lapack=\(.*\)"`;
       ;;
@@ -548,6 +558,12 @@ else
   then
           OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F77_BINDINGS"
           DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F77_BINDINGS"
+  fi
+
+  if [ "$USEMPIF08" == "TRUE" ]
+  then
+          OPT_FLAGS="$OPT_FLAGS -DUSE_MPI_F08_BINDINGS"
+          DBG_FLAGS="$DBG_FLAGS -DUSE_MPI_F08_BINDINGS"
   fi
 
   if [ $FVERSION == "INTEL" ]
