@@ -1,18 +1,14 @@
 FROM geodynamics/rayleigh-buildenv-jammy:latest
 
+# expose the port for Jupyter
 EXPOSE 8888
 
-RUN useradd \
-  --create-home \
-  rayleigh_user
+# define Rayleigh directory
+ENV RAYLEIGH_DIR /opt/Rayleigh
 
-USER rayleigh_user
+RUN git clone 'https://github.com/geodynamics/Rayleigh.git' ${RAYLEIGH_DIR}
 
-WORKDIR /home/rayleigh_user
-
-RUN git clone 'https://github.com/geodynamics/Rayleigh.git'
-
-WORKDIR /home/rayleigh_user/Rayleigh
+WORKDIR ${RAYLEIGH_DIR}
 
 RUN ./configure \
     -debian-mkl \
@@ -20,8 +16,11 @@ RUN ./configure \
   && make install \
   && make clean
 
-ENV RAYLEIGH_DIR /home/rayleigh_user/Rayleigh
-
+# Add Rayleigh to the path
 ENV PATH="${RAYLEIGH_DIR}/bin:${PATH}"
-
 ENV PYTHONPATH="${RAYLEIGH_DIR}/post_processing${PYTHONPATH:+:$PYTHONPATH}"
+
+# Allow running OpenMPI as root and avoid warning messages
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+ENV OMPI_MCA_btl_vader_single_copy_mechanism=none
