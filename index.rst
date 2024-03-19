@@ -1,7 +1,7 @@
-Welcome to Rayleigh's documentation!
-========================================
+*Rayleigh*:  MHD in Spherical Geometry  
+======================================
 
-Rayleigh solves the magnetohydrodynamic equations, in a rotating frame, within spherical shells,
+Rayleigh solves the magnetohydrodynamic (MHD) equations, in a rotating frame, within spherical shells,
 using the anelastic or Boussinesq approximations.
 Derivatives in Rayleigh are calculated using a spectral transform scheme.
 Spherical harmonics are used as basis functions in the horizontal direction.

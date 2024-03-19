@@ -28,3 +28,11 @@
   Number of uniformly-sized Chebyshev domains spanning the depth of the shell.  Default: 1 
 **uniform_bounds**
   When set to .true., each chebyshev subdomain will possess the same radial extent.  Default:  .false.
+**dr_weights**
+  Comma-separated list of of real-valued numbers that defines the relative weighting of gridpoint spacing between subregions of uniform grid spacing when working with finite-differences and a nonuniform mesh.  If left unspecified, a uniform grid spanning from rmin to rmax will be employed.  dr_weights should contain the same number of elements as nr_count. Additional details may be found :ref:`here <nonuniform grids>`.
+**nr_count**
+  Comma-separated list of integer numbers that defines the number of radial points within each region of uniform grid spacing.  nr_count must contain the same number of elements as dr_weights.  When nr_count and dr_weights are specified, any value of n_r specified in main_input is ignored, and n_r is instead set to SUM(nr_count).  Details are provided :ref:`here <nonuniform grids>`.
+**radial_grid_file**
+  String variable indicating the name of a grid-description file.  When specified, and when finite-difference mode is active, Rayleigh will use the contents of this file to define the radial grid.  Instructions for generating this file in the proper format are provided :ref:`here <grid file section>`.
+**rescale_radial_grid**
+  Logical variable.  When set to .true., the contents of *radial_grid_file* will be rescaled so that *rmin* and *rmax* coincide with any values specified in *main_input*.  Default value = .false.
