@@ -663,12 +663,12 @@ Contains
         Implicit None        
         Real*8, Intent(In) :: qty(:,my_rmin:,my_theta_min:)
         Integer :: i, funit
-        Character*4 :: qstring
+        Character*5 :: qstring
         Character*120 :: iterstring, data_file, grid_file
 
         ! Write the data file (Parallel I/O)
         Write(iterstring,i_ofmt) current_iteration
-        Write(qstring,'(i4.4)') current_qval
+        Write(qstring,'(i5.5)') current_qval
         data_file = trim(local_file_path)//'Spherical_3D/'//trim(iterstring)//'_'//qstring
         Call full_3d_buffer%cache_data(qty)
         Call full_3d_buffer%write_data(filename=data_file)
