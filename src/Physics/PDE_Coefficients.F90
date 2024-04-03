@@ -81,8 +81,8 @@ Module PDE_Coefficients
     Integer :: reference_type = 1 
 
     ! Nondimensional variables (reference_type = 1,3)
-    Real*8 :: Rayleigh_Number         = 1.0d0
-    Real*8 :: Ekman_Number            = 1.0d0
+    Real*8 :: Rayleigh_Number         = -1.0d0
+    Real*8 :: Ekman_Number            = -1.0d0
     Real*8 :: Prandtl_Number          = 1.0d0
     Real*8 :: Magnetic_Prandtl_Number = 1.0d0
     Real*8 :: gravity_power           = 0.0d0
@@ -91,7 +91,7 @@ Module PDE_Coefficients
     Real*8 :: Convective_Rossby_Number = -1.0d0
 
     ! Nondimensional variables for the active/passive scalar fields
-    Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
+    Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = -1.0d0
     Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
     Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = -1.0d0
     Real*8 :: chi_a_convective_rossby_number(1:n_scalar_max) = -1.0d0
@@ -524,6 +524,7 @@ Contains
         Character*8 :: dofmt = '(ES12.5)'
         Logical :: ND_Length_Shell_Depth = .false. ! Defaults to .true. under following logic
         Logical :: Adiabatic_Polytrope ! To be determined (to within the tolerance tol)
+        Logical :: too_many_inputs = .false. 
 
         ! Deal with some preliminary logic before outputting reference state
         If (aspect_ratio .lt. 0) Then
@@ -545,27 +546,48 @@ Contains
         ! Determine how user wants to specify Ra, Chi_A_Ra, and B_visc.
         ! (The modified versions or not).
         If (rotation) Then
-            If (Convective_Rossby_Number .gt. 0) Then !User set Ro_c, not Ra
+            ! Ro_c = sqrt(Ra*), make sure these values are consistent if the user set them
+            If (Convective_Rossby_Number .gt. 0) Then
                 Modified_Rayleigh_Number = Convective_Rossby_Number**2
-                Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
-            Elseif (Modified_Rayleigh_Number .gt. 0) Then !User set Ra*, not Ra
-                Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
-                Convective_Rossby_Number = sqrt(Modified_Rayleigh_Number)
-            Else !User set Ra, not something else
-                Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
+            Endif
+            If (Modified_Rayleigh_Number .gt. 0) Then
                 Convective_Rossby_Number = sqrt(Modified_Rayleigh_Number)
             Endif
 
+            ! Only treat two of Ek, Ra*, or Ra as independent and set the third based on the other two
+            ! Warn the user if they accidentally set all three (warn them later, down below)
+            If (Rayleigh_Number .gt. 0 .and. Modified_Rayleigh_Number .gt. 0 .and. Ekman_Number .gt. 0) Then
+                too_many_inputs = .true.
+            Endif
+            
+            ! Set third parameter based on other two
+            ! If all were set, the combination Ra and Ek "wins"
+            If (Ekman_Number .gt. 0 .and. Rayleigh_Number .gt. 0) Then
+                Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
+            ElseIf (Rayleigh_Number .gt. 0 .and. Modified_Rayleigh_Number .gt. 0) Then
+                Ekman_Number = sqrt(Modified_Rayleigh_Number*Prandtl_Number/Rayleigh_Number)
+            Elseif (Ekman_Number .gt. 0 .and. Modified_Rayleigh_Number .gt. 0) Then
+                Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
+            Endif
+
+
+            ! Do the same setting of either Ra* or Ra for the active scalars
+            ! (Note that the Ekman Number is no longer part of the trio, since it's been set)
             Do i = 1, n_active_scalars
-                If (Chi_A_Convective_Rossby_Number(i) .gt. 0) Then !User set Ro_c, not Ra
+                ! Ro_c = sqrt(Ra*), make sure these values are consistent if the user set them
+                If (Chi_A_Convective_Rossby_Number(i) .gt. 0) Then
                     Chi_A_Modified_Rayleigh_Number(i) = Chi_A_Convective_Rossby_Number(i)**2
-                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Chi_A_Prandtl_Number(i)/Ekman_Number**2
-                Elseif (Chi_A_Modified_Rayleigh_Number(i) .gt. 0) Then !User set Ra*, not Ra
-                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Chi_A_Prandtl_Number(i)/Ekman_Number**2
+                Endif
+                If (Chi_A_Modified_Rayleigh_Number(i) .gt. 0) Then
                     Chi_A_Convective_Rossby_Number(i) = sqrt(Chi_A_Modified_Rayleigh_Number(i))
-                Else !User set Ra, not something else
+                Endif
+
+                ! Set either Ra or Ra* but not both
+                If (Chi_A_Modified_Rayleigh_Number(i) .gt. 0) Then !Set Ra based on Ra*
+                    Chi_A_Rayleigh_Number(i) = Chi_A_Modified_Rayleigh_Number(i)*Chi_A_Prandtl_Number(i)/Ekman_Number**2
+                Endif
+                If (Chi_A_Rayleigh_Number(i) .gt. 0) Then !Set Ra* based on Ra (may be redundant if user set Ra*)
                     Chi_A_Modified_Rayleigh_Number(i) = Chi_A_Rayleigh_Number(i)*Ekman_Number**2/Chi_A_Prandtl_Number(i)
-                    Chi_A_Convective_Rossby_Number(i) = sqrt(Chi_A_Modified_Rayleigh_Number(i))
                 Endif
             Enddo
 
@@ -610,6 +632,14 @@ Contains
                 Call stdout%print("These choices may be physically inconsistent.")
             Endif
         Endif
+
+        If (too_many_inputs) Then
+            If (my_rank .eq. 0) Then
+                Call stdout%print("WARNING: You set all three of Ra, Ra*, and Ek.")
+                Call stdout%print("Rayleigh is only treating Ra and Ek as independent.")
+                Call stdout%print("Ra* has been set to RaEk^2/Pr.")
+            Endif
+        Endif 
  
         If (Adiabatic_Polytrope .and. (abs(Buoyancy_Number_Visc/Rayleigh_Number) .gt. tol) ) Then
             If (my_rank .eq. 0) Then
@@ -1519,8 +1549,8 @@ Contains
         reference_type = 1 
 
         ! Nondimensional variables (reference_type = 1,3)
-        Rayleigh_Number         = 1.0d0
-        Ekman_Number            = 1.0d0
+        Rayleigh_Number         = -1.0d0
+        Ekman_Number            = -1.0d0
         Prandtl_Number          = 1.0d0
         Magnetic_Prandtl_Number = 1.0d0
         gravity_power           = 0.0d0
@@ -1529,9 +1559,9 @@ Contains
         Convective_Rossby_Number = -1.0d0
 
         ! Nondimensional variables for the active/passive scalar fields
-        chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
+        chi_a_rayleigh_number(1:n_scalar_max)          = -1.0d0
         chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
-        chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+        chi_a_modified_rayleigh_number(1:n_scalar_max) = -1.0d0
         chi_a_convective_rossby_number(1:n_scalar_max) = -1.0d0
         chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
 
