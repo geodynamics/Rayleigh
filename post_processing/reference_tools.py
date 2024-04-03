@@ -81,7 +81,7 @@ class equation_coefficients:
         fd.close() 
         
     def read(self, filename='equation_coefficients'):
-
+        class_version = self.version
         fd = open(filename,'rb')
         picheck = numpy.fromfile(fd,dtype='int32',count=1)[0]
        
@@ -93,12 +93,20 @@ class equation_coefficients:
             self.nconst = 10
         self.cset = numpy.fromfile(fd,dtype='int32',count=self.nconst)
         self.fset = numpy.fromfile(fd,dtype='int32',count=self.nfunc)
-        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)
+        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)        
         self.nr = numpy.fromfile(fd,dtype='int32',count=1)[0]
         self.radius = numpy.fromfile(fd,dtype='float64',count=self.nr)
         functions=numpy.fromfile(fd,dtype='float64',count=self.nr*self.nfunc)
         self.functions = numpy.reshape(functions, (self.nfunc,self.nr))
         fd.close()
+
+        # now if we read in v. 1, convert current instance to v. 2
+        if self.version == 1:
+            self.nconst = 11
+            self.version = class_version
+            self.constants[10] = 1.
+            print("Version of input file was 1.")
+            print("Converting current equation_coefficients instance's version to %i." %class_version)
 
 class background_state:
     nr = None
