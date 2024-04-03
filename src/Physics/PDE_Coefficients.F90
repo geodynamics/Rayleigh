@@ -75,7 +75,7 @@ Module PDE_Coefficients
 
     ! Version number for the "equation_coefficients" container that is output to the simulation directory
     ! (i.e., the human-obtainable version of "ref")
-    Integer, Parameter  :: eqn_coeff_version = 1
+    Integer, Parameter  :: eqn_coeff_version = 2
 
     ! Which background state to use; default 1 (non-dimensional Boussinesq)
     Integer :: reference_type = 1 
@@ -1224,6 +1224,8 @@ Contains
             Write(15) eqn_coeff_version
             ra_constant_set(:) = 1
             ra_function_set(:) = 1
+            Write(15) n_ra_constants
+            Write(15) n_ra_functions
             Write(15) (ra_constant_set(i), i=1,n_ra_constants)
             Write(15) (ra_function_set(i), i=1,n_ra_functions)
             Write(15) (ra_constants(i), i=1,n_ra_constants)
@@ -1242,7 +1244,7 @@ Contains
         Character*120, Intent(In) :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
-        Integer :: i, k, j, n_scalars
+        Integer :: i, k, j, n_scalars, dummy
         Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
         Real*8  :: input_constants(1:n_ra_constants)
         Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
@@ -1290,6 +1292,9 @@ Contains
                 cset(11) = 1 ! treat this as if c_11 = 1 was specified in the custom reference file
                 input_constants(11) = 1.0d0 
             Else
+                Read(15) dummy ! n_ra_constants, but its up to the user to make sure this is the same 
+                               ! same number specified in Rayleigh via "n_active_scalars"
+                Read(15) dummy ! n_ra_functions, which Rayleigh should already know           
                 Read(15) cset(1:n_ra_constants)
                 Read(15) fset(1:n_ra_functions) 
                 Read(15) input_constants(1:n_ra_constants)

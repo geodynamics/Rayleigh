@@ -3,12 +3,12 @@ import numpy
 
 class equation_coefficients:
     """ equation coeff class  """
-    nconst = 10
+    nconst = 11 # new "version 2" default
     nfunc = 14
-    version=1
+    version=2
     c_dict    = {'two_omega':1, 'buoy_fact':2, 'p_fact':3, 'lorentz_fact':4, 'visc_fact':5,
                  'diff_fact':6, 'resist_fact':7, 'nu_heat_fact':8, 'ohm_heat_fact':9,
-                 'luminosity':10}
+                 'luminosity':10, 'dsdr_scale': 11}
     f_dict    = {'density':1, 'buoy':2, 'nu':3, 'temperature':4, 'kappa':5, 'heating':6,
                  'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
                  'd_ln_eta':13, 'ds_dr':14}
@@ -65,9 +65,13 @@ class equation_coefficients:
         pi = numpy.array([314],dtype='int32')
         nr = numpy.array([self.nr],dtype='int32')
         version = numpy.array([self.version],dtype='int32')
+        nconst = numpy.array([self.nconst],dtype='int32')
+        nfunc = numpy.array([self.nfunc],dtype='int32')
         fd = open(filename,'wb')
         pi.tofile(fd)
         version.tofile(fd)
+        nconst.tofile(fd)
+        nfunc.tofile(fd)
         self.cset.tofile(fd)
         self.fset.tofile(fd)
         self.constants.tofile(fd)
@@ -77,19 +81,32 @@ class equation_coefficients:
         fd.close() 
         
     def read(self, filename='equation_coefficients'):
-
+        class_version = self.version
         fd = open(filename,'rb')
         picheck = numpy.fromfile(fd,dtype='int32',count=1)[0]
        
         self.version = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        if self.version > 1:
+            self.nconst = numpy.fromfile(fd,dtype='int32', count=1)[0]
+            self.nfunc = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        else: # if the version is 1, nconst was 10
+            self.nconst = 10
         self.cset = numpy.fromfile(fd,dtype='int32',count=self.nconst)
         self.fset = numpy.fromfile(fd,dtype='int32',count=self.nfunc)
-        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)
+        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)        
         self.nr = numpy.fromfile(fd,dtype='int32',count=1)[0]
         self.radius = numpy.fromfile(fd,dtype='float64',count=self.nr)
         functions=numpy.fromfile(fd,dtype='float64',count=self.nr*self.nfunc)
         self.functions = numpy.reshape(functions, (self.nfunc,self.nr))
         fd.close()
+
+        # now if we read in v. 1, convert current instance to v. 2
+        if self.version == 1:
+            self.nconst = 11
+            self.version = class_version
+            self.constants[10] = 1.
+            print("Version of input file was 1.")
+            print("Converting current equation_coefficients instance's version to %i." %class_version)
 
 class background_state:
     nr = None
