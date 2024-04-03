@@ -2860,6 +2860,8 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
     levs=mini+np.linspace(1,nlevs,nlevs)/float(nlevs)*(maxi-mini)
     ax.contour(yr,xr,field,colors='w',levels=levs)
 
+    return img
+
 def streamfunction(vr,vt,r,cost,order=0):
     """------------------------------------------------------------
     This routine takes as input a divergenceless axisymmetric 
