@@ -104,7 +104,9 @@ class equation_coefficients:
         if self.version == 1:
             self.nconst = 11
             self.version = class_version
-            self.constants[10] = 1.
+            # need to increase constants array length by 1 (it's length 10)
+            # and the final entry should be 1.0
+            self.constants = numpy.array(self.constants.tolist() + [1.])
             print("Version of input file was 1.")
             print("Converting current equation_coefficients instance's version to %i." %class_version)
 
