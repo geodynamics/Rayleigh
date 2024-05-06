@@ -9,15 +9,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
-- None yet
+- Rayleigh's configure script now supports the MKL package provided by the Debian and Ubuntu package repositories.  This feature is accessed by invoking the -debian-mkl flag when running configure.  \[Philipp Edelmann; 9-14-2022; [#386](https://github.com/geodynamics/Rayleigh/pull/386)\]
+
+- Rayleigh's equation set can now be extended to evolve multiple passive and/or active scalar fields.  \[Cian Wilson and Nick Featherstone; 11-22-2022; [#408](https://github.com/geodynamics/Rayleigh/pull/408); 12-2-2022 [#415](https://github.com/geodynamics/Rayleigh/pull/408)\]
+
+- A new Docker image of Rayleigh, based on Ubuntu Jammy, is now generated whenever a PR is merged into master or a new release is created.  \[Rene Gassmoeller and Philipp Edelmann; 9-14-2022 and 9-15-2022; [#385](https://github.com/geodynamics/Rayleigh/pull/385), [#387](https://github.com/geodynamics/Rayleigh/pull/387), [#391](https://github.com/geodynamics/Rayleigh/pull/391), [#392](https://github.com/geodynamics/Rayleigh/pull/392) ]
 ### Changed
 - plot_Shell_Slices.py now generates a Mollweide plot. \[Nick Nelson; 9-12-2022; [#372](https://github.com/geodynamics/Rayleigh/pull/372)\]
   
 - Several substantial changes were made to the Documentation in order to facilitate ease of navigation and readability.  Primary contributors to this effort were Nick Nelson, Rene Gassmoeller, Nick Featherstone.  Changes were applied via a series of pull requests during Fall 2022:  [#378](https://github.com/geodynamics/Rayleigh/pull/378), [#379](https://github.com/geodynamics/Rayleigh/pull/379), [#380](https://github.com/geodynamics/Rayleigh/pull/380), [#381](https://github.com/geodynamics/Rayleigh/pull/381), [#388](https://github.com/geodynamics/Rayleigh/pull/388), [#389](https://github.com/geodynamics/Rayleigh/pull/389), [#390](https://github.com/geodynamics/Rayleigh/pull/390)\, [#394](https://github.com/geodynamics/Rayleigh/pull/394), [#395](https://github.com/geodynamics/Rayleigh/pull/395), [#396](https://github.com/geodynamics/Rayleigh/pull/396), [#397](https://github.com/geodynamics/Rayleigh/pull/397), [#398](https://github.com/geodynamics/Rayleigh/pull/398), [#399](https://github.com/geodynamics/Rayleigh/pull/399), [#400](https://github.com/geodynamics/Rayleigh/pull/400), [#401](https://github.com/geodynamics/Rayleigh/pull/401), [#404](https://github.com/geodynamics/Rayleigh/pull/404), [#405](https://github.com/geodynamics/Rayleigh/pull/405), [#406](https://github.com/geodynamics/Rayleigh/pull/406), [#407](https://github.com/geodynamics/Rayleigh/pull/407), [#411](https://github.com/geodynamics/Rayleigh/pull/411), [#412](https://github.com/geodynamics/Rayleigh/pull/412), [#414](https://github.com/geodynamics/Rayleigh/pull/414), [#417](https://github.com/geodynamics/Rayleigh/pull/417), [#418](https://github.com/geodynamics/Rayleigh/pull/418)
   
 - The Readthedocs build environment is now managed using Mamba instead of Conda \[Nick Featherstone; 11-14-2022; [#413](https://github.com/geodynamics/Rayleigh/pull/413)\]
+
+- 
 ### Fixed
-- None yet
+- plot_G_Avgs.py now correctly handles multiple files containing differing numbers of timesteps \[Philipp Edelmann; 9-13-2022; [#383](https://github.com/geodynamics/Rayleigh/pull/383)\]
 
 
 ## [1.1.0] - 4-29-2022
