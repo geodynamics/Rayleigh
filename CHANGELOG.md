@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
+
+- An optional finite-difference scheme in radius is now available.  Updated documentation is provided in the 'Setting Up A Model' section of the User Guide.  An example input file may be found in Rayleigh/input_examples/main_input_mhd_jones_FD. \[Rathish Ratnasingam, Philipp Edelmann, Nick Featherstone; 6-29-2023; [474](https://github.com/geodynamics/Rayleigh/pull/474)\]
+
 - Rayleigh's configure script now supports the MKL package provided by the Debian and Ubuntu package repositories.  This feature is accessed by invoking the -debian-mkl flag when running configure.  \[Philipp Edelmann; 9-14-2022; [#386](https://github.com/geodynamics/Rayleigh/pull/386)\]
 
 - Rayleigh's equation set can now be extended to evolve multiple passive and/or active scalar fields.  \[Cian Wilson, Nick Featherstone, Loren Matilsky, Rafael Fuentes and Maria Camisassa; 11-22-2022; [#408](https://github.com/geodynamics/Rayleigh/pull/408); 12-2-2022 [#415](https://github.com/geodynamics/Rayleigh/pull/408)\; 1-5-2023 [#429](https://github.com/geodynamics/Rayleigh/pull/429) 1-30-2023 [#442](https://github.com/geodynamics/Rayleigh/pull/442)]
