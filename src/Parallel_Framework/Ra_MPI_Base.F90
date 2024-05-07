@@ -21,12 +21,18 @@
 Module Ra_MPI_Base
 #ifdef USE_MPI_F77_BINDINGS
     Include 'mpif.h'
+#elif USE_MPI_F08_BINDINGS
+    Use MPI_F08
 #else
     Use MPI
 #endif
 
     Type communicator
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Comm) :: comm    ! The mpi handle for this group
+#else
         Integer :: comm    ! The mpi handle for this group
+#endif
         Integer :: np    ! The number of processors in this group
         Integer :: rank ! A processes's local rank within this group
     End Type communicator

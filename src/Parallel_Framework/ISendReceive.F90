@@ -79,8 +79,13 @@ Contains
     !/////////////////////////////////////////////////////////////////////
     Subroutine IWait(irq)
         Implicit None
-        Integer :: irq, status(MPI_STATUS_SIZE), mpi_err
-        Call MPI_WAIT(irq,status,mpi_err)
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request) :: irq
+#else
+        Integer :: irq
+#endif
+        Integer :: mpi_err
+        Call MPI_WAIT(irq,MPI_STATUS_IGNORE,mpi_err)
     End Subroutine IWait
 
     !/////////////////////////////////////////////////////////////////////
@@ -96,13 +101,14 @@ Contains
     !
     !/////////////////////////////////////////////////////////////////////
     Subroutine IWaitAll(n,irq)
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request) :: irq(:)
+#else
         Integer :: irq(:)
+#endif
         Integer, Intent(In) :: n
         Integer :: mpi_err
-        Integer, Allocatable :: istat(:,:)
-        Allocate(istat(MPI_STATUS_SIZE,1:n))
-        Call MPI_WAITALL(n,irq,istat,mpi_err)
-        DeAllocate(istat)
+        Call MPI_WAITALL(n,irq,MPI_STATUSES_IGNORE,mpi_err)
     End Subroutine IWaitAll
 
 
@@ -169,8 +175,14 @@ Contains
         Real(8), Intent(In)  :: x(:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,istart
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -202,7 +214,7 @@ Contains
             ione = 1
         End if
 
-        Call mpi_isend(x(ione), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(ione), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_1D
 
@@ -210,8 +222,14 @@ Contains
         Real*8, Intent(in)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), optional :: grp
+        Integer :: p, n, tag2, istart, kstart, jstart,lstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, istart, kstart, jstart,lstart
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -248,16 +266,22 @@ Contains
             lstart = 1
         Endif
 
-        Call mpi_isend(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
     End Subroutine D_ISend_4D
 
     Subroutine D_IReceive_4D(x, irq,n_elements, source, tag, grp,indstart)
         Real*8, Intent(Out)  :: x(1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:4)
         Type(communicator), Intent(In), Optional :: grp
-        Integer :: p, n, comm2, tag2
-        Integer, Intent(Out) :: irq
+        Integer :: p, n, tag2
         Integer :: istart,jstart,kstart,lstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -295,7 +319,7 @@ Contains
             lstart = 1
         Endif
 
-        Call mpi_irecv(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_4D
 
@@ -303,9 +327,15 @@ Contains
         Real*8, Intent(In)  :: x(1:,1:,1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:5)
         Type(communicator), optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart, kstart, jstart,lstart, mstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -343,7 +373,7 @@ Contains
             lstart = 1
             mstart = 1
         Endif
-        Call mpi_isend(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_5D
 
@@ -351,9 +381,15 @@ Contains
         Real*8, Intent(Out)  :: x(1:,1:,1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:5)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart,jstart,kstart,lstart,mstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -393,7 +429,7 @@ Contains
             mstart = 1
         Endif
 
-        Call mpi_irecv(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_5D
 
@@ -401,8 +437,14 @@ Contains
         Complex*16, Intent(In)  :: x(:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,istart
         Type(communicator),Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -442,9 +484,15 @@ Contains
         Real(8), Intent(In)  :: x(1:,1:)
         Type(communicator), Intent(In), optional :: grp
         Integer, Intent(In), Optional :: dest, n_elements, tag, indstart(2)
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: ione, jone
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -477,7 +525,7 @@ Contains
             ione = 1
             jone = 1
         Endif
-        Call mpi_isend(x(ione,jone), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(ione,jone), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_2D
 
@@ -485,9 +533,15 @@ Contains
         Real*8, Intent(in)  :: x(1:,1:,1:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart, kstart, jstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -521,7 +575,7 @@ Contains
             jstart = 1
             kstart = 1
         Endif
-        Call mpi_isend(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq,mpi_err)
+        Call mpi_isend(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2, irq,mpi_err)
 
     End Subroutine D_ISend_3D
 
@@ -529,8 +583,14 @@ Contains
         Complex*16, Intent(In)  :: x(:,:)
         Integer, Intent(In), Optional :: dest, n_elements, tag
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -564,8 +624,14 @@ Contains
         Complex*16, Intent(In)  :: x(:,:,:)
         Integer, Intent(In), Optional :: dest, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, istart, kstart, jstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, istart, kstart, jstart
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -607,8 +673,14 @@ Contains
         Real(8), Intent(Out)  :: x(:)
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -641,7 +713,7 @@ Contains
             ione = 1
         Endif
 
-        Call mpi_irecv(x(ione), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(ione), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_1D
 
@@ -649,8 +721,14 @@ Contains
         Complex*16, Intent(Out)  :: x(:)
         Integer, Intent(In), Optional :: source, n_elements, tag, istart
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, ione
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -691,8 +769,15 @@ Contains
         Real(8), Intent(Out):: x(1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator),  Optional :: grp
+        Integer :: p, n, tag2, ione, jone
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, ione, jone
+        Integer :: comm2
+#endif
+
 
         If (Present(n_elements)) Then
             n = n_elements
@@ -727,7 +812,7 @@ Contains
         Endif
 
 
-        Call mpi_irecv(x(ione,jone), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(ione,jone), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_2D
 
@@ -735,9 +820,15 @@ Contains
         Real*8, Intent(Out)  :: x(1:,1:,1:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart,jstart,kstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -773,7 +864,7 @@ Contains
             kstart = 1
         Endif
 
-        Call mpi_irecv(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, irq, mpi_err)
+        Call mpi_irecv(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2, irq, mpi_err)
 
     End Subroutine D_IReceive_3D
 
@@ -783,8 +874,15 @@ Contains
         Complex*16, Intent(Out)  :: x(:,:)
         Integer, Intent(In), Optional :: source, n_elements, tag, indstart(1:2)
         Type(communicator), Intent(In), Optional :: grp
+        Integer :: p, n, tag2, istart, jstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
         Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2, istart, jstart
+        Integer :: comm2
+#endif
+
 
         If (Present(n_elements)) Then
            n = n_elements
@@ -826,9 +924,15 @@ Contains
         Complex*16, Intent(Out)  :: x(:,:,:)
         Integer, Intent(In), Optional :: source, n_elements, tag,indstart(1:3)
         Type(communicator), Intent(In), Optional :: grp
-        Integer, Intent(Out) :: irq
-        Integer :: p, n, comm2, tag2
+        Integer :: p, n, tag2
         Integer :: istart, jstart, kstart
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_Request), Intent(Out) :: irq
+        Type(MPI_Comm) :: comm2
+#else
+        Integer, Intent(Out) :: irq
+        Integer :: comm2
+#endif
 
         If (Present(n_elements)) Then
            n = n_elements

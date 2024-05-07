@@ -46,18 +46,22 @@ contains
     integer :: l_endian_tag, version, fmode, n_lmn, l_l_max, l_n_max, k_lm_owner, l_max_n
     integer :: i, j, k, l, m, n, lm, mp, j1, jc, jn, jo, ji, p, col_np, col_mp_min
     integer :: start_count, end_count, my_lmn_count, total_lmn_count, col_lmn_n, col_lmn_i, l_lm_count
-    integer :: offset, ierr, funit
+    integer :: offset, ierr
+#ifdef USE_MPI_F08_BINDINGS
+        Type(MPI_File) :: funit
+#else
+        Integer :: funit
+#endif
     integer(kind=MPI_ADDRESS_KIND) :: lb, int_size, real_size
     integer(kind=MPI_OFFSET_KIND) :: disp1, disp2
     integer, dimension(3) :: pars
-    integer, dimension(MPI_STATUS_SIZE) :: mstatus
     integer, allocatable, dimension(:) :: ls, ms, ns
     integer, allocatable, dimension(:) :: proc_lmn_count, col_lmn_count, col_lmn_ind1, col_coeffs_ind1, sendarri
     integer, allocatable, dimension(:,:) :: my_lmn_inds, lmn_inds, sendarri2
     real*8, allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
 
     ! set up some sizes of mpi types
-    call MPI_TYPE_GET_EXTENT(MPI_DOUBLE_PRECISION, lb, real_size, ierr)
+    call MPI_TYPE_GET_EXTENT(MPI_REAL8, lb, real_size, ierr)
     call MPI_TYPE_GET_EXTENT(MPI_INTEGER, lb, int_size, ierr)
 
     ! process 0 reads the first few parameters describing the file
@@ -163,13 +167,13 @@ contains
               disp2 = disp1 + (col_lmn_ind1(i)-1)*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,1), col_lmn_count(i), &
-                                 MPI_DOUBLE_PRECISION, &
-                                 mstatus, ierr)  ! real
+                                 MPI_REAL8, &
+                                 MPI_STATUS_IGNORE, ierr)  ! real
               disp2 = disp1 + (n_lmn+col_lmn_ind1(i)-1)*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,2), col_lmn_count(i), &
-                                 MPI_DOUBLE_PRECISION, &
-                                 mstatus, ierr) ! imaginary
+                                 MPI_REAL8, &
+                                 MPI_STATUS_IGNORE, ierr) ! imaginary
               offset = offset + col_lmn_count(i)
             end if
           end do
@@ -349,13 +353,13 @@ contains
               disp2 = disp1 + col_lmn_i*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,1), col_lmn_n, &
-                                 MPI_DOUBLE_PRECISION, &
-                                 mstatus, ierr)  ! real
+                                 MPI_REAL8, &
+                                 MPI_STATUS_IGNORE, ierr)  ! real
               disp2 = disp1 + (n_lmn+col_lmn_i)*real_size
               call MPI_FILE_SEEK(funit, disp2, MPI_SEEK_SET, ierr)
               call MPI_FILE_READ(funit, col_coeffs(offset,2), col_lmn_n, &
-                                 MPI_DOUBLE_PRECISION, &
-                                 mstatus, ierr) ! imaginary
+                                 MPI_REAL8, &
+                                 MPI_STATUS_IGNORE, ierr) ! imaginary
               offset = offset + col_lmn_n
             end if
           end do

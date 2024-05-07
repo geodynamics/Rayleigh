@@ -43,7 +43,13 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1:5)
      Integer :: istart, kstart, jstart,lstart, mstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
+
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -82,7 +88,7 @@ Contains
         lstart = 1
         mstart = 1
     Endif
-    Call mpi_send(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
     !write(6,*)'zs ', p
     End Subroutine D_Send_5D
 
@@ -94,7 +100,13 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1:4)
      Integer :: istart, kstart, jstart,lstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
+
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -131,7 +143,7 @@ Contains
         kstart = 1
         lstart = 1
     Endif
-    Call mpi_send(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
     !write(6,*)'zs ', p
     End Subroutine D_Send_4D
 
@@ -141,7 +153,13 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1:3)
      Integer ::  istart, kstart, jstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
+
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -176,7 +194,7 @@ Contains
         jstart = 1
         kstart = 1
     Endif
-    Call mpi_send(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
     !write(6,*)'zs ', p
     End Subroutine D_Send_3D
 
@@ -186,7 +204,13 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1:2)
      Integer :: istart, jstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
+
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -219,7 +243,7 @@ Contains
         istart = 1
         jstart = 1
     Endif
-    Call mpi_send(x(istart,jstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart,jstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
 
     End Subroutine D_Send_2D
 
@@ -229,7 +253,13 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1)
      Integer :: istart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
+
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -260,7 +290,7 @@ Contains
     Else
         istart = 1
     Endif
-    Call mpi_send(x(istart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2,  mpi_err)
+    Call mpi_send(x(istart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
 
     End Subroutine D_Send_1D
 
@@ -270,7 +300,13 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1:2)
      Integer :: istart, jstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
+
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -313,7 +349,12 @@ Contains
     Integer, Optional :: dest, n_elements, tag,indstart(1)
      Integer :: istart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -356,7 +397,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1:5)
      Integer :: istart,jstart,kstart,lstart, mstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -397,7 +443,7 @@ Contains
         mstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart,kstart,lstart,mstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_5D
@@ -410,7 +456,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1:4)
      Integer :: istart,jstart,kstart,lstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -449,7 +500,7 @@ Contains
         lstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart,kstart,lstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_4D
@@ -460,7 +511,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1:3)
      Integer :: istart,jstart,kstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -497,7 +553,7 @@ Contains
         kstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart,kstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_3D
@@ -508,7 +564,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1:2)
      Integer :: istart,jstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -543,7 +604,7 @@ Contains
         jstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart,jstart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_2D
@@ -554,7 +615,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1)
      Integer :: istart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -587,7 +653,7 @@ Contains
         istart = 1
     Endif
 
-    Call mpi_recv(x(istart), n, MPI_DOUBLE_PRECISION, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart), n, MPI_REAL8, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine D_Receive_1D
@@ -598,7 +664,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1:2)
     Integer :: istart,jstart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -633,7 +704,7 @@ Contains
         jstart = 1
     Endif
 
-    Call mpi_recv(x(istart,jstart), n, MPI_INTEGER, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart,jstart), n, MPI_INTEGER, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine I_Receive_2D
@@ -645,7 +716,12 @@ Contains
     Integer, Optional :: source, n_elements, tag,indstart(1)
      Integer :: istart
     Type(communicator), optional :: grp
-    Integer :: p, n, comm2, tag2, mstatus(MPI_STATUS_SIZE)
+    Integer :: p, n, tag2
+#ifdef USE_MPI_F08_BINDINGS
+    Type(MPI_Comm) :: comm2
+#else
+    Integer :: comm2
+#endif
 
     If (Present(n_elements)) Then
        n = n_elements
@@ -678,7 +754,7 @@ Contains
         istart = 1
     Endif
 
-    Call mpi_recv(x(istart), n, MPI_INTEGER, p, tag2, comm2, mstatus, mpi_err)
+    Call mpi_recv(x(istart), n, MPI_INTEGER, p, tag2, comm2, MPI_STATUS_IGNORE, mpi_err)
 
 
     End Subroutine I_Receive_1D
