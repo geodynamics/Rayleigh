@@ -35,6 +35,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Two new initial conditions have been added to Rayleigh that allow existing thermal and magnetic fields to be augmented at restart with user-supplied profiles for entropy, and the toroidal and poloidal flux functions. \[Bhishek Manek; 12-5-2023; [488](https://github.com/geodynamics/Rayleigh/pull/488)\]
 
 - A new constant, c_11, has been added to Rayleigh's equation set.  This constant multiplies the background entropy profile so that it may be rescaled at runtime, if desired.  \[Loren Matilsky; 12-5-2023; [489](https://github.com/geodynamics/Rayleigh/pull/489)\]
+
+- Rayleigh now supports the MPI_f08 module (in addition to the older MPI module).  To use MPI_f08, call Rayleigh's configure script with the --mpi-f08 flag.  \[Philipp Edelmann; 2-29-2024; [497](https://github.com/geodynamics/Rayleigh/pull/497)\]
   
 ### Changed
 - plot_Shell_Slices.py now generates a Mollweide plot. \[Nick Nelson; 9-12-2022; [#372](https://github.com/geodynamics/Rayleigh/pull/372)\]
@@ -42,6 +44,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Several substantial changes were made to the Documentation in order to improve navigation and readability.  Primary contributors to this effort were Nick Nelson, Rene Gassmoeller, Nick Featherstone.  Changes were applied via a series of pull requests during Fall 2022:  [#378](https://github.com/geodynamics/Rayleigh/pull/378), [#379](https://github.com/geodynamics/Rayleigh/pull/379), [#380](https://github.com/geodynamics/Rayleigh/pull/380), [#381](https://github.com/geodynamics/Rayleigh/pull/381), [#388](https://github.com/geodynamics/Rayleigh/pull/388), [#389](https://github.com/geodynamics/Rayleigh/pull/389), [#390](https://github.com/geodynamics/Rayleigh/pull/390)\, [#394](https://github.com/geodynamics/Rayleigh/pull/394), [#395](https://github.com/geodynamics/Rayleigh/pull/395), [#396](https://github.com/geodynamics/Rayleigh/pull/396), [#397](https://github.com/geodynamics/Rayleigh/pull/397), [#398](https://github.com/geodynamics/Rayleigh/pull/398), [#399](https://github.com/geodynamics/Rayleigh/pull/399), [#400](https://github.com/geodynamics/Rayleigh/pull/400), [#401](https://github.com/geodynamics/Rayleigh/pull/401), [#404](https://github.com/geodynamics/Rayleigh/pull/404), [#405](https://github.com/geodynamics/Rayleigh/pull/405), [#406](https://github.com/geodynamics/Rayleigh/pull/406), [#407](https://github.com/geodynamics/Rayleigh/pull/407), [#411](https://github.com/geodynamics/Rayleigh/pull/411), [#412](https://github.com/geodynamics/Rayleigh/pull/412), [#414](https://github.com/geodynamics/Rayleigh/pull/414), [#417](https://github.com/geodynamics/Rayleigh/pull/417), [#418](https://github.com/geodynamics/Rayleigh/pull/418)
   
 - The Readthedocs build environment is now managed using Mamba instead of Conda \[Nick Featherstone; 11-14-2022; [#413](https://github.com/geodynamics/Rayleigh/pull/413)\]
+
+- The AZ_Avgs and Shell_Avgs classes in rayleigh_diagnostics.py now support time-averaging and concatenation of multiple files.  The time-averaged or concatenated data can be output to a new AZ_Avgs or Shell_Avgs file with the same format as that used by Rayleigh.  Run help(AZ_Avgs) or help(Shell_Avgs) to see examples of calling syntax.  \[Nick Featherstone; 5-7-2024; [#499](https://github.com/geodynamics/Rayleigh/pull/499), [#500](https://github.com/geodynamics/Rayleigh/pull/500)\]
 
 - 
 ### Fixed
@@ -54,6 +58,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Enthalpy flux is now output correctly in nondimensional models.  \[Loren Matilsky; 6-27-2023; [#480](https://github.com/geodynamics/Rayleigh/pull/480)\]
 
 - A bug preventing Rayleigh from respecting the users choice of heating function in some instances has been corrected.  \[Loren Matilsky; 4-3-2023; [#492](https://github.com/geodynamics/Rayleigh/pull/492)\]
+
+- The equation_coefficients class in rayleigh_diagnostics.py is now properly version-aware when reading in new or old equation_coefficients files \[Loren Matilsky; 5-7-2024, [#501](https://github.com/geodynamics/Rayleigh/pull/443); 3-29-2023, [#447](https://github.com/geodynamics/Rayleigh/pull/501);\]
 
 ## [1.1.0] - 4-29-2022
 ### Added
