@@ -10,27 +10,42 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 ### Added
 
-- An optional finite-difference scheme in radius is now available.  Updated documentation is provided in the 'Setting Up A Model' section of the User Guide.  An example input file may be found in Rayleigh/input_examples/main_input_mhd_jones_FD. \[Rathish Ratnasingam, Philipp Edelmann, Nick Featherstone; 6-29-2023; [474](https://github.com/geodynamics/Rayleigh/pull/474)\]
-
 - Rayleigh's configure script now supports the MKL package provided by the Debian and Ubuntu package repositories.  This feature is accessed by invoking the -debian-mkl flag when running configure.  \[Philipp Edelmann; 9-14-2022; [#386](https://github.com/geodynamics/Rayleigh/pull/386)\]
 
 - Rayleigh's equation set can now be extended to evolve multiple passive and/or active scalar fields.  \[Cian Wilson, Nick Featherstone, Loren Matilsky, Rafael Fuentes and Maria Camisassa; 11-22-2022; [#408](https://github.com/geodynamics/Rayleigh/pull/408); 12-2-2022 [#415](https://github.com/geodynamics/Rayleigh/pull/408)\; 1-5-2023 [#429](https://github.com/geodynamics/Rayleigh/pull/429) 1-30-2023 [#442](https://github.com/geodynamics/Rayleigh/pull/442)]
 
 - A new Docker image of Rayleigh, based on Ubuntu Jammy, is now generated whenever a PR is merged into master or a new release is created.  \[Rene Gassmoeller and Philipp Edelmann; 9-14-2022 and 9-15-2022; [#385](https://github.com/geodynamics/Rayleigh/pull/385), [#387](https://github.com/geodynamics/Rayleigh/pull/387), [#391](https://github.com/geodynamics/Rayleigh/pull/391), [#392](https://github.com/geodynamics/Rayleigh/pull/392) ]
 
+- Docker images and references based on Ubuntu Bionic (18.04) have been removed.   \[Rene Gassmoeller; 6-14-2023; [#463](https://github.com/geodynamics/Rayleigh/pull/463)\]
 
 - Custom profiles for the background dSdr and dTdr can now be specified when the *with_custom_reference* flag is set to True.  \[Nick Featherstone; 1-5-2023; [#416](https://github.com/geodynamics/Rayleigh/pull/416)\]
 
 - A new nondimensional polytropic reference state is now accessible by specifying reference_type=5. \[Loren Matilsky; 6-14-2023; [#450](https://github.com/geodynamics/Rayleigh/pull/450)\]
 
 - The acknowledgement section of the documentation was updated to reflect the new CIG grant number (NSF-2149126) \[Lorraine Hwang; 5-1-2023; [#454](https://github.com/geodynamics/Rayleigh/pull/454)\]
+
+- A new benchmark, based on the results of Breuer et al. 2010, which incorporates multiple contributions to the buoyancy from different chemical species, is now supported in Rayleigh.  It can be run using input files b2010_case0_0T_input, b2010_case0_80T_input and b2010_case0_100T input. \[Cian Wilson; 6-15-2023; [#467](https://github.com/geodynamics/Rayleigh/pull/467)\]
+
+- A new Jupyter notebook that demonstrates how to perform spectral transforms and related operations on Rayeleigh output has been added to the code base.  It can be found in post_processing/spectral_utils_tutorial.ipynb.  \[Catherine Blume; 6-16-2023; [#470](https://github.com/geodynamics/Rayleigh/pull/470)\]
+
+- Two new Jupyter notebooks demonstrating how ultraspherical polynomials might be used to build a sparse linear system for the implicit solve have been placed in the examples/ultraspherical_polynomials directory. \[Kyle Augustson; 6-20-2023; [#476](https://github.com/geodynamics/Rayleigh/pull/476)\]
+
+- An optional finite-difference scheme in radius is now available.  Updated documentation is provided in the 'Setting Up A Model' section of the User Guide.  An example input file may be found in Rayleigh/input_examples/main_input_mhd_jones_FD. \[Rathish Ratnasingam, Philipp Edelmann, Nick Featherstone; 6-29-2023; [474](https://github.com/geodynamics/Rayleigh/pull/474)\]
+
+- Two new initial conditions have been added to Rayleigh that allow existing thermal and magnetic fields to be augmented at restart with user-supplied profiles for entropy, and the toroidal and poloidal flux functions. \[Bhishek Manek; 12-5-2023; [488](https://github.com/geodynamics/Rayleigh/pull/488)\]
+
+- A new constant, c_11, has been added to Rayleigh's equation set.  This constant multiplies the background entropy profile so that it may be rescaled at runtime, if desired.  \[Loren Matilsky; 12-5-2023; [489](https://github.com/geodynamics/Rayleigh/pull/489)\]
+
+- Rayleigh now supports the MPI_f08 module (in addition to the older MPI module).  To use MPI_f08, call Rayleigh's configure script with the --mpi-f08 flag.  \[Philipp Edelmann; 2-29-2024; [497](https://github.com/geodynamics/Rayleigh/pull/497)\]
   
 ### Changed
 - plot_Shell_Slices.py now generates a Mollweide plot. \[Nick Nelson; 9-12-2022; [#372](https://github.com/geodynamics/Rayleigh/pull/372)\]
   
-- Several substantial changes were made to the Documentation in order to facilitate ease of navigation and readability.  Primary contributors to this effort were Nick Nelson, Rene Gassmoeller, Nick Featherstone.  Changes were applied via a series of pull requests during Fall 2022:  [#378](https://github.com/geodynamics/Rayleigh/pull/378), [#379](https://github.com/geodynamics/Rayleigh/pull/379), [#380](https://github.com/geodynamics/Rayleigh/pull/380), [#381](https://github.com/geodynamics/Rayleigh/pull/381), [#388](https://github.com/geodynamics/Rayleigh/pull/388), [#389](https://github.com/geodynamics/Rayleigh/pull/389), [#390](https://github.com/geodynamics/Rayleigh/pull/390)\, [#394](https://github.com/geodynamics/Rayleigh/pull/394), [#395](https://github.com/geodynamics/Rayleigh/pull/395), [#396](https://github.com/geodynamics/Rayleigh/pull/396), [#397](https://github.com/geodynamics/Rayleigh/pull/397), [#398](https://github.com/geodynamics/Rayleigh/pull/398), [#399](https://github.com/geodynamics/Rayleigh/pull/399), [#400](https://github.com/geodynamics/Rayleigh/pull/400), [#401](https://github.com/geodynamics/Rayleigh/pull/401), [#404](https://github.com/geodynamics/Rayleigh/pull/404), [#405](https://github.com/geodynamics/Rayleigh/pull/405), [#406](https://github.com/geodynamics/Rayleigh/pull/406), [#407](https://github.com/geodynamics/Rayleigh/pull/407), [#411](https://github.com/geodynamics/Rayleigh/pull/411), [#412](https://github.com/geodynamics/Rayleigh/pull/412), [#414](https://github.com/geodynamics/Rayleigh/pull/414), [#417](https://github.com/geodynamics/Rayleigh/pull/417), [#418](https://github.com/geodynamics/Rayleigh/pull/418)
+- Several substantial changes were made to the Documentation in order to improve navigation and readability.  Primary contributors to this effort were Nick Nelson, Rene Gassmoeller, Nick Featherstone.  Changes were applied via a series of pull requests during Fall 2022:  [#378](https://github.com/geodynamics/Rayleigh/pull/378), [#379](https://github.com/geodynamics/Rayleigh/pull/379), [#380](https://github.com/geodynamics/Rayleigh/pull/380), [#381](https://github.com/geodynamics/Rayleigh/pull/381), [#388](https://github.com/geodynamics/Rayleigh/pull/388), [#389](https://github.com/geodynamics/Rayleigh/pull/389), [#390](https://github.com/geodynamics/Rayleigh/pull/390)\, [#394](https://github.com/geodynamics/Rayleigh/pull/394), [#395](https://github.com/geodynamics/Rayleigh/pull/395), [#396](https://github.com/geodynamics/Rayleigh/pull/396), [#397](https://github.com/geodynamics/Rayleigh/pull/397), [#398](https://github.com/geodynamics/Rayleigh/pull/398), [#399](https://github.com/geodynamics/Rayleigh/pull/399), [#400](https://github.com/geodynamics/Rayleigh/pull/400), [#401](https://github.com/geodynamics/Rayleigh/pull/401), [#404](https://github.com/geodynamics/Rayleigh/pull/404), [#405](https://github.com/geodynamics/Rayleigh/pull/405), [#406](https://github.com/geodynamics/Rayleigh/pull/406), [#407](https://github.com/geodynamics/Rayleigh/pull/407), [#411](https://github.com/geodynamics/Rayleigh/pull/411), [#412](https://github.com/geodynamics/Rayleigh/pull/412), [#414](https://github.com/geodynamics/Rayleigh/pull/414), [#417](https://github.com/geodynamics/Rayleigh/pull/417), [#418](https://github.com/geodynamics/Rayleigh/pull/418)
   
 - The Readthedocs build environment is now managed using Mamba instead of Conda \[Nick Featherstone; 11-14-2022; [#413](https://github.com/geodynamics/Rayleigh/pull/413)\]
+
+- The AZ_Avgs and Shell_Avgs classes in rayleigh_diagnostics.py now support time-averaging and concatenation of multiple files.  The time-averaged or concatenated data can be output to a new AZ_Avgs or Shell_Avgs file with the same format as that used by Rayleigh.  Run help(AZ_Avgs) or help(Shell_Avgs) to see examples of calling syntax.  \[Nick Featherstone; 5-7-2024; [#499](https://github.com/geodynamics/Rayleigh/pull/499), [#500](https://github.com/geodynamics/Rayleigh/pull/500)\]
 
 - 
 ### Fixed
@@ -39,6 +54,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Several bugs were fixed that prevented Rayleigh constants and functions from being properly reflected in the equation_coefficients file in some instances. \[Loren Matilsky; 1-30-2023, [#443](https://github.com/geodynamics/Rayleigh/pull/443); 3-29-2023, [#447](https://github.com/geodynamics/Rayleigh/pull/447);\]
 
 - The documentation now properly reflects the fact that the constant c_5 is appears in front of the viscous heating term. \[Loren Matilsky; 1-31-2023; [#444](https://github.com/geodynamics/Rayleigh/pull/444)\]
+
+- Enthalpy flux is now output correctly in nondimensional models.  \[Loren Matilsky; 6-27-2023; [#480](https://github.com/geodynamics/Rayleigh/pull/480)\]
+
+- A bug preventing Rayleigh from respecting the users choice of heating function in some instances has been corrected.  \[Loren Matilsky; 4-3-2023; [#492](https://github.com/geodynamics/Rayleigh/pull/492)\]
+
+- The equation_coefficients class in rayleigh_diagnostics.py is now properly version-aware when reading in new or old equation_coefficients files \[Loren Matilsky; 5-7-2024, [#501](https://github.com/geodynamics/Rayleigh/pull/443); 3-29-2023, [#447](https://github.com/geodynamics/Rayleigh/pull/501);\]
 
 ## [1.1.0] - 4-29-2022
 ### Added
