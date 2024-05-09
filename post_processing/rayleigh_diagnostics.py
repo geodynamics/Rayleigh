@@ -1815,7 +1815,6 @@ class AZ_Avgs:
                    
 
         """
-        print(the_file)
         self.fd = open(the_file,'rb')        
         specs = np.fromfile(self.fd,dtype='int32',count=6)
         bcheck = specs[0]       # If not 314, we need to swap the bytes
