@@ -2013,13 +2013,21 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = ref%viscous_amp(1)*ref%temperature(1)/2.0d0
         ra_constants(9) = ref%ohmic_amp(1)*ref%density(1)*ref%temperature(1)
+
+        ! the combination c_11 and f_14 cannot be backed out from the "ref" structure
+        ! (which only has ref%dsdr = c_11*f_14)
+        ! and will depend on the convention of the different reference_types
         Select Case(reference_type)
             Case(1,2)
                 ra_constants(11) = 0.0d0
+                ra_functions(:,14) = 0.0d0
             Case(3)
                 ra_constants(11) = 1.0d0
+                ra_functions(:,14) = ref%dsdr
+            ! For reference_type = 4, c_11 and f_14 have been set already
             Case(5)
                 ra_constants(11) = Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number
+                ra_functions(:,14) = ref%dsdr/ra_constants(11)
         End Select
 
 
@@ -2028,7 +2036,6 @@ Contains
         ra_functions(:,8) = ref%dlnrho
         ra_functions(:,9) = ref%d2lnrho        
         ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr 
 
     End Subroutine Set_Reference_Equation_Coefficients
 
