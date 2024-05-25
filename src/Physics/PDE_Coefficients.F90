@@ -2084,30 +2084,41 @@ Contains
             Endif
         Endif
 
-        ra_constants(5) = nu_norm
-        ra_functions(:,3) = nu(:)/nu_norm
-        ra_functions(:,11) = dlnu(:)
+        If (nu_type .ne. 3) Then 
+            ! if the type is 3, the constant and function were set directly
+            ra_constants(5) = nu_norm
+            ra_functions(:,3) = nu(:)/nu_norm
+            ra_functions(:,11) = dlnu(:)
+        Endif
 
-        ra_constants(6) = kappa_norm
-        ra_functions(:,5) = kappa(:)/kappa_norm
-        ra_functions(:,12) = dlnkappa(:)
-        
+        If (kappa_type .ne. 3) Then 
+            ra_constants(6) = kappa_norm
+            ra_functions(:,5) = kappa(:)/kappa_norm
+            ra_functions(:,12) = dlnkappa(:)
+        Endif
+            
         If (magnetism) Then 
-            ra_constants(7) = eta_norm
-            ra_functions(:,7) = eta(:)/eta_norm
-            ra_functions(:,13) = dlneta(:)
+            If (eta_type .ne. 3) Then 
+                ra_constants(7) = eta_norm
+                ra_functions(:,7) = eta(:)/eta_norm
+                ra_functions(:,13) = dlneta(:)
+            Endif
         Endif ! if no magnetism, all of the above are already zero
 
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
-            ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
-            ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
+            If (kappa_chi_a_type(i) .ne. 3) Then 
+                ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
+                ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
+                ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
+            Endif
         Enddo
 
         Do i = 1, n_passive_scalars
-            ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
-            ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
-            ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
+            If (kappa_chi_p_type(i) .ne. 3) Then 
+                ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
+                ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
+                ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
+            Endif
         Enddo
 
     End Subroutine Set_Diffusivity_Equation_Coefficients
