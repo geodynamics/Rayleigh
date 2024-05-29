@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 ### Added
+### Changed
+### Fixed
+
+## [1.2.0] - 5-29-2024
+
+### Added
 
 - Rayleigh's configure script now supports the MKL package provided by the Debian and Ubuntu package repositories.  This feature is accessed by invoking the -debian-mkl flag when running configure.  \[Philipp Edelmann; 9-14-2022; [#386](https://github.com/geodynamics/Rayleigh/pull/386)\]
 
