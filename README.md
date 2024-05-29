@@ -1,7 +1,7 @@
 
 # Rayleigh - dynamo in spherical geometry #
 [![License GPL3:](https://img.shields.io/badge/license-GPL-blue)](https://github.com/geodynamics/Rayleigh/blob/main/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6522806.svg)](https://doi.org/10.5281/zenodo.6522806)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11391213.svg)](https://doi.org/10.5281/zenodo.11391213)
 [![github-docker](https://github.com/geodynamics/Rayleigh/actions/workflows/docker.yml/badge.svg)](https://github.com/geodynamics/Rayleigh/actions/workflows/docker.yml)
 
 
