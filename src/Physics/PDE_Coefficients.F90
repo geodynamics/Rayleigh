@@ -1063,6 +1063,9 @@ Contains
     Subroutine Augment_Reference()
         Implicit None
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
+        Character(len=2) :: intstring
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
 
         If (my_rank .eq. 0) Then
             Call stdout%print('Reference state will be augmented.')
@@ -1111,10 +1114,29 @@ Contains
             temp_constants(2) = ra_constants(2)
         Endif
 
-        If (use_custom_function(14)) Then
+        If (with_custom_reference .and. use_custom_function(14)) Then
+            ! Set c_11 = 1 by default
+            If (.not. use_custom_constant(11)) Then
+                If (my_rank .eq. 0) Then
+                    Call stdout%print('User didn''t set c_11; now setting c_11 to 1.')
+                Endif
+                ra_constants(11) = 1.0d0
+            Else
+                If (my_rank .eq. 0) Then
+                    Write(dstring,dofmt) ra_constants(11)
+                    Call stdout%print('User set c_11 to '//Trim(dstring))
+                Endif
+            Endif
             If (my_rank .eq. 0) Then
                 Call stdout%print('Background thermal gradient is set to:')
                 Call stdout%print('c_11*f_14')
+                ! Make a warning if the user is trying to change a dsdr that physically was assumed = 0
+                If (any(reference_type .eq. (/1, 2/))) Then 
+                    Write(intstring, '(I2)') reference_type
+                    Call stdout%print('WARNING: reference_type = '//Adjustl(intstring)//' assumes dsdr = 0 by default.')
+                    Call stdout%print('make sure the combination of') 
+                    Call stdout%print('reference_type = '//Adjustl(intstring)//' and nonzero dsdr was intended.')
+                Endif
                 Call stdout%print(' ')
             Endif        
             ref%dsdr(:) = ra_constants(11)*ra_functions(:,14)
@@ -2013,22 +2035,31 @@ Contains
         ra_constants(4) = ref%Lorentz_Coeff
         ra_constants(8) = ref%viscous_amp(1)*ref%temperature(1)/2.0d0
         ra_constants(9) = ref%ohmic_amp(1)*ref%density(1)*ref%temperature(1)
-        Select Case(reference_type)
-            Case(1,2)
-                ra_constants(11) = 0.0d0
-            Case(3)
-                ra_constants(11) = 1.0d0
-            Case(5)
-                ra_constants(11) = Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number
-        End Select
 
+        ! the combination c_11 and f_14 cannot be backed out from the "ref" structure
+        ! (which only has ref%dsdr = c_11*f_14)
+        ! and will depend on the convention of the different reference_types
+        If (.not. use_custom_function(14)) Then
+            ! If user set dsdr via "with custom", then c_11 and f_14 have already been set
+            Select Case(reference_type)
+                Case(1,2)
+                    ra_constants(11) = 0.0d0
+                    ra_functions(:,14) = 0.0d0
+                Case(3)
+                    ra_constants(11) = 1.0d0
+                    ra_functions(:,14) = ref%dsdr
+                ! For reference_type = 4, c_11 and f_14 have been set already
+                Case(5)
+                    ra_constants(11) = Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number
+                    ra_functions(:,14) = ref%dsdr/ra_constants(11)
+            End Select
+        Endif
 
         ra_functions(:,1) = ref%density
         ra_functions(:,4) = ref%temperature
         ra_functions(:,8) = ref%dlnrho
         ra_functions(:,9) = ref%d2lnrho        
         ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr 
 
     End Subroutine Set_Reference_Equation_Coefficients
 
@@ -2077,30 +2108,41 @@ Contains
             Endif
         Endif
 
-        ra_constants(5) = nu_norm
-        ra_functions(:,3) = nu(:)/nu_norm
-        ra_functions(:,11) = dlnu(:)
+        If (nu_type .ne. 3) Then 
+            ! if the type is 3, the constant and function were set directly
+            ra_constants(5) = nu_norm
+            ra_functions(:,3) = nu(:)/nu_norm
+            ra_functions(:,11) = dlnu(:)
+        Endif
 
-        ra_constants(6) = kappa_norm
-        ra_functions(:,5) = kappa(:)/kappa_norm
-        ra_functions(:,12) = dlnkappa(:)
-        
+        If (kappa_type .ne. 3) Then 
+            ra_constants(6) = kappa_norm
+            ra_functions(:,5) = kappa(:)/kappa_norm
+            ra_functions(:,12) = dlnkappa(:)
+        Endif
+            
         If (magnetism) Then 
-            ra_constants(7) = eta_norm
-            ra_functions(:,7) = eta(:)/eta_norm
-            ra_functions(:,13) = dlneta(:)
+            If (eta_type .ne. 3) Then 
+                ra_constants(7) = eta_norm
+                ra_functions(:,7) = eta(:)/eta_norm
+                ra_functions(:,13) = dlneta(:)
+            Endif
         Endif ! if no magnetism, all of the above are already zero
 
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
-            ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
-            ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
+            If (kappa_chi_a_type(i) .ne. 3) Then 
+                ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
+                ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
+                ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
+            Endif
         Enddo
 
         Do i = 1, n_passive_scalars
-            ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
-            ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
-            ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
+            If (kappa_chi_p_type(i) .ne. 3) Then 
+                ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
+                ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
+                ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
+            Endif
         Enddo
 
     End Subroutine Set_Diffusivity_Equation_Coefficients
