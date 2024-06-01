@@ -151,7 +151,7 @@ respectively. The evolution of :math:`\Theta` is described by
        c_6\,\boldsymbol{\nabla}\cdot\left[\mathrm{f}_1(r)\,\mathrm{f}_4(r)\,\mathrm{f}_5(r)\,\boldsymbol{\nabla}\Theta \right] \\
         +\ c_{10}\,\mathrm{f}_6(r)
         + c_8\,\Phi(r,\theta,\phi)
-        + c_9\,\mathrm{f}_7(r)|\boldsymbol{\nabla}\times\boldsymbol{B}|^2,
+        + c_9\,c_7\,\mathrm{f}_7(r)|\boldsymbol{\nabla}\times\boldsymbol{B}|^2,
 
 where the viscous heating :math:`\Phi` is given by
 
