@@ -776,11 +776,12 @@ Contains
                 ! 12 is for the simtime+iteration at the end.
                 full_disp = self%buffer%qdisp*self%buffer%nvals+12 
                 new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
-                !If (responsible) Write(6,*)'check disp: ', self%buffer%qdisp, self%buffer%ncache, self%buffer%spectral
 
-                Call self%buffer%write_data(disp=new_disp,file_unit=funit)
-                Call self%buffer%reset_cache_index()
-                If (output_rank) Call self%closefile_par()
+                If (self%file_open) Then
+                    Call self%buffer%write_data(disp=new_disp,file_unit=funit)
+                    Call self%buffer%reset_cache_index()
+                    If (output_rank) Call self%closefile_par()
+                Endif
 
             Endif            
 
