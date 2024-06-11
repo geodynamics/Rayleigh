@@ -917,6 +917,7 @@ Contains
         !The "Flux" associated with the volume heating
         If (compute_quantity(vol_heat_flux)) Then
             ! Note that radial_integral_weights give int{f r^2}/int(r^2}
+            tmp1d(N_R) = 0.0d0 ! Initialize heat flux to zero at lower boundary
             Do r = N_R-1, 1,-1
                 mean_rho = half*(ref%density(r)     +  ref%density(r+1)    )
                 mean_t   = half*(ref%temperature(r) +  ref%temperature(r+1))
