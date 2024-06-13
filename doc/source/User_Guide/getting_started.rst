@@ -40,6 +40,7 @@ named "radev" and installs all necessary packages.  The third line activates the
 This command will likely take a while (a few minutes).
 
 If you want to undo the change to the channel priority setting afterwards, you can run
+
 .. code-block:: bash
 
     conda config --set channel_priority flexible
