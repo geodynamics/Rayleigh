@@ -30,7 +30,7 @@ of a *hat* character. For example, a vector quantity
 .. math::
    :label: vcomp
 
-       \boldsymbol{a} = a_r\boldsymbol{\hat{a}}+a_\theta\boldsymbol{\hat{\theta}}+a_\phi\boldsymbol{\hat{\phi}}.
+       \boldsymbol{a} = a_r\boldsymbol{\hat{r}}+a_\theta\boldsymbol{\hat{\theta}}+a_\phi\boldsymbol{\hat{\phi}}.
 
 The symbols (:math:`\boldsymbol{\hat{r}}`,
 :math:`\boldsymbol{\hat{\theta}}`, :math:`\boldsymbol{\hat{\phi}}`)
