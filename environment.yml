@@ -17,11 +17,11 @@ dependencies:
   - sphinx=4.0
   - sphinxcontrib-bibtex=2.2
   - nbsphinx=0.8
-  - pandoc=2.13
+  - pandoc=3.2
   - recommonmark=0.7
   - sphinx-book-theme
   - compilers=1.4.2
-  - mkl=2020.4
+  - openblas=0.3.25
   - fftw=3.3
   - mpich=3.4
   - funcsigs=1.0

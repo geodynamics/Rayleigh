@@ -833,13 +833,23 @@ then
 fi
 echo " Include flags              :  "$RAYLEIGH_INC
 echo ""
+
+###############################################################################################
+# Standard LIBRARIES
+if [[ $OSTYPE == *"darwin"* ]]
+then
+    STD_FLAGS="-lc++"
+else
+    STD_FLAGS="-lstdc++"
+fi
+
 ###############################################################################################
 # BLAS, LAPACK, and FFTW LIBRARIES
 if [[ $USE_MKL == "TRUE" ]]
 then
     if [[ $FVERSION == "INTEL" ]]
     then
-        LIB_FLAGS="-mkl -lstdc++"
+        MKL_LIB="-mkl"
     fi
     if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
     then
@@ -848,24 +858,22 @@ then
             if [[ $OSTYPE == *"darwin"* ]]
             then
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-                LIB_FLAGS="\$(MKL_LIB) -lc++"
-                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
             else
                 MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-                LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-                FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+                FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
             fi
         elif [[ $DEBIANMKL == "TRUE" ]]
         then
             MKL_LIB="-Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-            LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-            FULL_LIB="-Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+            FULL_LIB="-Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
         else
             MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-            LIB_FLAGS="\$(MKL_LIB) -lstdc++"
-            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lstdc++"
+            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
         fi
     fi
+
+    LIB_FLAGS="\$(MKL_LIB) ${STD_FLAGS}"
 else
 
     #WE NEED TO RUN CHECKS HERE
@@ -904,8 +912,8 @@ else
         FFTWLINK="-L$FFTWROOT/lib -lfftw3"
     fi
 
-    LIB_FLAGS="\$(LAPACKLINK) \$(FFTWLINK) \$(BLASLINK) -lstdc++"
-    FULL_LIB="$LAPACKLINK $FFTWLINK $BLASLINK -lstdc++"
+    LIB_FLAGS="\$(LAPACKLINK) \$(FFTWLINK) \$(BLASLINK) \$(STD_FLAGS)"
+    FULL_LIB="$LAPACKLINK $FFTWLINK $BLASLINK $STD_FLAGS"
 fi
 
 if [ "$CUSTOMLIB" == "TRUE" ]

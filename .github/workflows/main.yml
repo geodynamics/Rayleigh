@@ -118,6 +118,8 @@ jobs:
         activate-environment: radev
         environment-file: environment.yml
         channel-priority: strict
+        auto-update-conda: true
+        miniconda-version: "latest"
     - name: Build documentation
       continue-on-error: true
       run: |
@@ -126,7 +128,6 @@ jobs:
     - name: Build Rayleigh
       run: |
         cd "$GITHUB_WORKSPACE"
-        export MKLROOT=$CONDA_PREFIX
-        ./configure -conda-mkl --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        ./configure --openblas --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
         make -j
         make install
