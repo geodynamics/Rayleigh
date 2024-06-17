@@ -25,7 +25,7 @@ jobs:
     container: geodynamics/rayleigh-buildenv-jammy
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build documentation
       # First make sure notebooks do not contain output, then build doc
       run: |
@@ -103,7 +103,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: conda-incubator/setup-miniconda@v3
       with:
         activate-environment: radev
