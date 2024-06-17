@@ -20,7 +20,16 @@ jobs:
     name: linux-jammy-container-build
     strategy:
       matrix:
-        mpi: ["", --mpi-f08, --mpi-f77 --FFLAGS=-fallow-argument-mismatch]
+        include:
+          - mpi: ""
+            result-file: "changes-tests.diff"
+            unit-result-file: "changes-unit-tests.diff"
+          - mpi: "--mpi-f08"
+            result-file: "changes-tests-f08.diff"
+            unit-result-file: "changes-unit-tests-f08.diff"
+          - mpi: "--mpi-f77 --FFLAGS=-fallow-argument-mismatch"
+            result-file: "changes-tests-f77.diff"
+            unit-result-file: "changes-unit-tests-f77.diff"
     runs-on: [ubuntu-latest]
     container: geodynamics/rayleigh-buildenv-jammy
 
@@ -71,7 +80,7 @@ jobs:
     - name: archive results
       uses: actions/upload-artifact@v4
       with:
-          name: changes-tests.diff
+          name: ${{ matrix.result-file }}
           path: changes.diff
 
     - name: Unit Tests
@@ -85,7 +94,7 @@ jobs:
     - name: archive results
       uses: actions/upload-artifact@v4
       with:
-          name: changes-unit-tests.diff
+          name: ${{ matrix.unit-result-file }}
           path: tests/unit_tests/SHT/changes.diff
 
   conda:
