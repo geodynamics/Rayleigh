@@ -35,6 +35,8 @@ scalars respectively.
 See `tests/chi_scalar` for example input files.
 
 
+Pseudo-Incompressibility
+-----------------------
 
 
 
