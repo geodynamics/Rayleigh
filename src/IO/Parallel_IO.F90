@@ -1542,7 +1542,7 @@ Contains
 
     End Subroutine Collate_Physical
 
-    Subroutine Write_Data(self,disp,file_unit,filename)
+    Subroutine Write_Data(self,disp,file_unit,filename,clear_existing)
         Implicit None
         Class(io_buffer) :: self
         Character*120, Intent(In), Optional :: filename
@@ -1555,6 +1555,7 @@ Contains
         Integer :: funit
 #endif
         Logical :: error
+        Logical, Intent(In), Optional :: clear_existing
         Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: hdisp, tdisp, fdisp, bdisp
 
@@ -1573,6 +1574,11 @@ Contains
             If (present(filename)) Then
                 ! The file is not open.  We must create it.
                 If (self%output_rank) Then
+                    If (present(clear_existing)) Then
+                        If (clear_existing) Then
+                            Call MPI_File_delete(filename, MPI_INFO_NULL, ierr)
+                        Endif
+                    Endif
                     Call MPI_FILE_OPEN(self%ocomm%comm, filename, & 
                            MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
                            MPI_INFO_NULL, funit, ierr) 
