@@ -5,7 +5,7 @@ Rayleigh solves the magnetohydrodynamic (MHD) equations, in a rotating frame, wi
 using the anelastic or Boussinesq approximations.
 Derivatives in Rayleigh are calculated using a spectral transform scheme.
 Spherical harmonics are used as basis functions in the horizontal direction.
-Chebyshev polynomials are employed in radius.
+Chebyshev polynomials or finite-differences are employed in radius.
 Time-stepping is accomplished using the semi-implicit Crank-Nicolson method
 for the linear terms, and the Adams-Bashforth method for the nonlinear terms.
 Both methods are second-order in time.
