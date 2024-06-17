@@ -504,6 +504,41 @@ and
    
        \left[ \left\{\boldsymbol{\nabla}\times\left(\mathrm{f_1}\,\boldsymbol{v}\right)\right\}_r \right]_\ell^m = \frac{\ell(\ell+1)}{r^2}Z_\ell^m.
        
+
+The equations that are solved are then equations for the radial component of the momentum equation (21): 
+
+.. math::
+   :label: Radial Component of the Momentum Equation
+
+    \begin{aligned}
+        \frac{\partial}{\partial t}\left(\overline{\rho}v_{r}\right)_{l}^{m}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial  W_{l}^{m}}{\partial t}=-\rho\frac{\partial{P_{l}^{m}}}{\partial r}-\overline{g}\left(\frac{\partial\overline{\rho}}{\partial \Theta}\right)_{p,\xi}
+        \\
+        +\frac{2\Omega}{r}\left[im\frac{\partial W_{l}^{m}}{\partial r}+\left(\ell+2\right)C_{l}^{m}Z_{l+1}^{m}-\left(\ell-1\right)C_{l}^{m}Z_{\ell-1}^{m}\right]
+        \\
+        +\frac{\overline{\nu}\ell\left(\ell+
+        1\right)}{r^2}\left[\frac{{\partial^2 W_{l}^{m}}}{{\partial r^2}}+\left(2 h_{\nu}-\frac{h_{\rho}}{3}\right) \frac{{\partial W_{l}^{m}}}{{\partial r}}\right.
+        \\
+        \left.-\left(\frac{4}{3}\left(\left(\frac{h_{\rho}}{r}+\frac{dh_{\rho}}{dr}\right)+h_{\nu}\left(\frac{3}{r}+h_{\rho}\right)\right)+\frac{\ell\left(\ell+1\right)}{r^2}\right)W_{l}^{m}\right]
+        \\
+        +\frac{FLMW1_l^m}{r^2}
+    \end{aligned}
+
+the radial component of the curl of the momentum equation (22)
+
+.. math:: 
+    :label: Radial Component of the Curl of the Momentum Equation
+
+    \begin{aligned}
+    \frac{\partial \left(\nabla\times \overline{\rho}\bf{v}\right)_{r,l}^{m}}{\partial t}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial Z_{l}^{m}}{\partial t}=\frac{2\Omega}{r^2}\left[im Z_{l}^{m} + \ell\left(\ell+1\right)C_{l+1}^{m}\left(\frac{\partial W_{l+1}^{m}}{\partial r}+\right .\right .
+    \\
+    \left .\left . \frac{\left(l+1\right)}{r^2}W_{l+1}^{m}\right)+\left(\ell+1\right)\left(\ell-1\right)C_{l}^m \left(\frac{\partial W_{l-1}^m}{\partial r}-\frac{\ell}{r}W_{l-1}^m\right)\right]+\frac{\nu\ell\left(\ell+1\right)}{r^2}\left[\frac{\partial^2 Z_{l}^m}{\partial r^2}+\left(h_{\nu}-h_{\rho}\right)\frac{\partial Z_{l}^m}{\partial r}\right .
+    \\
+    \left . 
+    -\left(\frac{2h_{\rho}}{r}+\frac{dh_{\rho}}{dr}+h_{\nu}\left(\frac{2}{r}+h_{\rho}\right)+\frac{\ell\left(\ell+1\right)}{r^2}\right)Z_{l}^m\right]
+    \\
+    \left(\ell+1\right)C_{l}^m FLMW3_{l-1}^m-\ell C_{l+1}^m FLMW3_{l+1}^m-im FLMW2_{l}^m
+    \end{aligned}
+
 A similar decomposition is performed on the magnetic field to ensure it remains divergence free.  In that case, the magnetic field is projected onto flux functions such that
 
 .. math::
