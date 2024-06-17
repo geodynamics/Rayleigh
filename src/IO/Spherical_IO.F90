@@ -777,11 +777,12 @@ Contains
                 full_disp = self%buffer%qdisp*self%buffer%nvals+12 
                 new_disp = self%hdisp+full_disp*(self%current_rec-ncache)
 
-                If (self%file_open) Then
-                    Call self%buffer%write_data(disp=new_disp,file_unit=funit)
-                    Call self%buffer%reset_cache_index()
-                    If (output_rank) Call self%closefile_par()
-                Endif
+
+                Call self%buffer%write_data(disp=new_disp,file_unit=funit)
+                Call self%buffer%reset_cache_index()
+
+                If (output_rank .and. self%file_open) Call self%closefile_par()
+
 
             Endif            
 
