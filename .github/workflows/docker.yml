@@ -42,6 +42,12 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_LOGIN }}
 
+      - name: set lower case repository name
+        run: |
+          echo "REPO_NAME_LC=${REPO_NAME,,}" >> ${GITHUB_ENV}
+        env:
+          REPO_NAME: '${{ github.repository }}'
+
       - name: Build and push Docker image for main
         if: contains(github.event_name, 'push')
         uses: docker/build-push-action@v6
@@ -52,8 +58,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ${{ github.repository }}:latest
+            ghcr.io/${{env.REPO_NAME_LC}}:latest
+            ${{env.REPO_NAME_LC}}:latest
 
       - name: Build and push Docker image for release
         if: contains(github.event_name, 'release')
@@ -65,5 +71,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{github.ref_name}}
-            ${{ github.repository }}:${{github.ref_name}}
+            ghcr.io/${{env.REPO_NAME_LC}}:${{github.ref_name}}
+            ${{env.REPO_NAME_LC}}:${{github.ref_name}}
