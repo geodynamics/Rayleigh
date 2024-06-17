@@ -34,7 +34,11 @@ bibtex_bibfiles = ['./doc/source/User_Guide/references.bib',
 './doc/source/publications/publications2019.bib',
 './doc/source/publications/all.bib',
 './doc/source/publications/publications2018.bib',
-'./doc/source/publications/publications2016.bib'
+'./doc/source/publications/publications2016.bib', 
+'./doc/source/publications/publications2020.bib',
+'./doc/source/publications/publications2021.bib', 
+'./doc/source/publications/publications2022.bib', 
+'./doc/source/publications/publications2023.bib', 
 ]
 
 
