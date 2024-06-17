@@ -781,7 +781,7 @@ Contains
                 Call self%buffer%write_data(disp=new_disp,file_unit=funit)
                 Call self%buffer%reset_cache_index()
 
-		        If (output_rank .and. self%file_open) Call self%closefile_par()
+                If (output_rank .and. self%file_open) Call self%closefile_par()
 
 
             Endif            
