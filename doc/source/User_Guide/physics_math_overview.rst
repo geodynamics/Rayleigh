@@ -510,10 +510,10 @@ The equations that are solved are then equations for the radial component of the
 .. math::
    :label: Radial Component of the Momentum Equation
 
-    \begin{aligned}
+    \tiny\begin{aligned}    
         \frac{\partial}{\partial t}\left(\overline{\rho}v_{r}\right)_{l}^{m}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial  W_{l}^{m}}{\partial t}=-\rho\frac{\partial{P_{l}^{m}}}{\partial r}-\overline{g}\left(\frac{\partial\overline{\rho}}{\partial \Theta}\right)_{p,\xi}
         \\
-        +\frac{2\Omega}{r}\left[im\frac{\partial W_{l}^{m}}{\partial r}+\left(\ell+2\right)C_{l}^{m}Z_{l+1}^{m}-\left(\ell-1\right)C_{l}^{m}Z_{\ell-1}^{m}\right]
+        +\frac{2\Omega}{r}\left[im\frac{\partial W_{l}^{m}}{\partial r}+\left(\ell+2\right)d_{l}^{m}Z_{l+1}^{m}-\left(\ell-1\right)d_{l}^{m}Z_{\ell-1}^{m}\right]
         \\
         +\frac{\overline{\nu}\ell\left(\ell+
         1\right)}{r^2}\left[\frac{{\partial^2 W_{l}^{m}}}{{\partial r^2}}+\left(2 h_{\nu}-\frac{h_{\rho}}{3}\right) \frac{{\partial W_{l}^{m}}}{{\partial r}}\right.
@@ -523,21 +523,45 @@ The equations that are solved are then equations for the radial component of the
         +\frac{FLMW1_l^m}{r^2}
     \end{aligned}
 
+
+    
+
 the radial component of the curl of the momentum equation (22)
 
 .. math:: 
     :label: Radial Component of the Curl of the Momentum Equation
 
-    \begin{aligned}
-    \frac{\partial \left(\nabla\times \overline{\rho}\bf{v}\right)_{r,l}^{m}}{\partial t}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial Z_{l}^{m}}{\partial t}=\frac{2\Omega}{r^2}\left[im Z_{l}^{m} + \ell\left(\ell+1\right)C_{l+1}^{m}\left(\frac{\partial W_{l+1}^{m}}{\partial r}+\right .\right .
+     \tiny\begin{aligned}
+     \frac{\partial \left(\nabla\times \overline{\rho}\bf{v}\right)_{r,l}^{m}}{\partial t}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial Z_{l}^{m}}{\partial t}=\frac{2\Omega}{r^2}\left[im Z_{l}^{m} + \right .
     \\
-    \left .\left . \frac{\left(l+1\right)}{r^2}W_{l+1}^{m}\right)+\left(\ell+1\right)\left(\ell-1\right)C_{l}^m \left(\frac{\partial W_{l-1}^m}{\partial r}-\frac{\ell}{r}W_{l-1}^m\right)\right]+\frac{\nu\ell\left(\ell+1\right)}{r^2}\left[\frac{\partial^2 Z_{l}^m}{\partial r^2}+\left(h_{\nu}-h_{\rho}\right)\frac{\partial Z_{l}^m}{\partial r}\right .
+    \left . \ell\left(\ell+1\right)d_{l+1}^{m}\left(\frac{\partial W_{l+1}^{m}}{\partial r}+
+    \frac{\left(l+1\right)}{r^2}W_{l+1}^{m}\right)+\left(\ell+1\right)\left(\ell-1\right)d_{l}^m \left(\frac{\partial W_{l-1}^m}{\partial r}-\frac{\ell}{r}W_{l-1}^m\right)\right]
     \\
-    \left . 
+    +\frac{\nu\ell\left(\ell+1\right)}{r^2}\left[\frac{\partial^2 Z_{l}^m}{\partial r^2}+\left(h_{\nu}-h_{\rho}\right)\frac{\partial Z_{l}^m}{\partial r} 
     -\left(\frac{2h_{\rho}}{r}+\frac{dh_{\rho}}{dr}+h_{\nu}\left(\frac{2}{r}+h_{\rho}\right)+\frac{\ell\left(\ell+1\right)}{r^2}\right)Z_{l}^m\right]
     \\
     \left(\ell+1\right)C_{l}^m FLMW3_{l-1}^m-\ell C_{l+1}^m FLMW3_{l+1}^m-im FLMW2_{l}^m
     \end{aligned}
+
+and the Horizontal Divergence of the Momentum Equation (23)
+
+.. math:: 
+    :label: Horizontal Divergence of the Momentum Equation
+
+    \tiny\begin{aligned}
+    \frac{\partial \left(\nabla\cdot\overline{\rho} \bf{v}\right)_{l}^m}{\partial t}=-\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial}{\partial t}\left(\frac{\partial W_l^m}{\partial r}\right)=\frac{\ell\left(\ell+1\right)}{r^2}\overline{\rho}P_l^m+ 
+    \\
+    \frac{2\Omega}{r^2}\left[\ell\left(\ell+2\right)d_{l+1}^mZ_{l+1}^m +\left(\ell+1\right)\left(\ell-1\right)d_l^m Z_{l-1}^m-im\left(\frac{\partial W_l^m}{\partial r}+\frac{\ell\left(\ell+1\right)}{r}W_l^m\right)\right]
+    \\
+    +\frac{\nu\ell\left(\ell+1\right)}{r^2}\left[-\frac{\partial^3{W_l^m}}{\partial r^3} -\left(h_{\nu}-h_{\rho}\right)\frac{\partial^2 W_l^m}{r^2}\right.
+    \\
+    \left. +\left(\frac{2h_\rho}{r}+\frac{\partial h_{\rho}}{\partial r}+h_{\nu}\left(\frac{2}{r}+h_{\rho}\right)+\frac{\ell\left(\ell+1\right)}{r^2}\right)\frac{\partial W_l^m}{\partial r}\right .
+    \\
+    \left . -\frac{\ell\left(\ell+1\right)}{r^2}\left(h_{\nu}+\frac{2}{3}h_{\rho}+\frac{2}{r}\right)W_l^m\right]
+    \\
+    +\left[\left(\ell+1\right)C_l^mFLMW2_{l-1}^m-\ell C_{l+1}^m FLMW2_{l+1}^m+im FLMW3_l^m\right]
+    \end{aligned}
+
 
 A similar decomposition is performed on the magnetic field to ensure it remains divergence free.  In that case, the magnetic field is projected onto flux functions such that
 
@@ -577,6 +601,62 @@ and
 
 
 .. _pseudospectral:
+
+The equations for C and A, which are solved by Rayleigh are then the Radial Component of the Magnetic Induction Equation (30): 
+
+.. math:: 
+    :label: Radial Component of the Magnetic Induction Equation
+
+    \tiny\begin{aligned}    
+    \frac{\partial B_{r,l}^m}{\partial t}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial C_l^m}{\partial t}  =\overline{\eta}\frac{\ell\left(\ell+1\right)}{r^2}\left(\frac{\partial^2 C_l^m}{\partial r^2}-\frac{\ell\left(\ell+1\right)}{r^2}C_l^m\right)
+    \\
+    +\left[\left(\ell+1\right)d_{l}^mFLMB3_{l-1}^m-\ell d_{l+1}^mFLMB3_{l+1}^m-imFLMB2_l^m\right]   
+    \end{aligned}
+
+and the radial component of the curl of the magnetic induction equation ():
+
+.. math:: 
+    :label: Radial Component of the Curl of the Magnetic Induction Equation
+
+    \tiny\begin{aligned}
+    \frac{\partial\left(\nabla\times B\right)_{r,l}^m}{\partial t}=\frac{\ell\left(\ell+1\right)}{r^2}\frac{\partial A_l^m}{\partial t}=\overline{\eta}\frac{\ell\left(\ell+1\right)}{r^2}\left(\frac{\partial^2 A_l^m}{\partial r^2}+h_{\eta}\frac{\partial A_l^m}{\partial r}-\frac{\ell\left(\ell+1\right)}{r^2} A_l^m \right)+
+    \\
+    \frac{1}{r^2}\left[\frac{\ell\left(\ell+1\right)}{r^2}FLMB1_l^m+\frac{\partial}{\partial r}\left(r^2\left(\left(\ell+1\right)d_l^mFLMB2_{l-1}^m-\ell d_{l+1}^mFLMB2_{l+1}^m+imFLMB3_l^m\right)\right)\right]
+    \end{aligned}
+
+
+Where the "FLM*" terms refer to nonlinear terms, defined as: 
+
+.. math::
+    :label: FLMW1
+
+    \scriptsize FLMW1=r^2\left[-\left(\nabla\cdot\overline{\rho}\bf{v}\bf{v}\right)_r+\frac{1}{\mu}\left(\left(\nabla\times\bf{B}\right)\times\bf{B}\right)_r +\Omega^2\rho r\sin^2\theta\right]_l^m
+
+.. math::
+    :label: FLMW2
+
+    \scriptsize FLMW2=\left[\frac{-\nabla\cdot\left(\overline{\rho}\bf{v}\bf{v}\right)_{\phi}}{r\sin\theta}+\frac{1}{\mu}\frac{\left(\left(\nabla\times\bf{B}\right)\times\bf{B}\right)_{\theta}}{r\sin\theta}+\Omega^2\rho\cos\theta\right]_l^m
+
+.. math:: 
+    :label: FLMW3
+
+    \scriptsize FLMW3=\left[\frac{-\left(\nabla\cdot\overline{\rho}\bf{v}\bf{v}\right)_{\phi}}{r\sin\theta}+\frac{1}{\mu}\frac{\left(\left(\nabla\times\bf{B}\right)\times\bf{B}\right)_{\phi}}{r\sin\theta}\right]_l^m
+
+.. math:: 
+    :label: FLMB1
+
+    \scriptsize FLMB1=\left[r^2\left(\bf{v}\times\bf{B}\right)_r\right]_l^m
+
+.. math:: 
+    :label: FLMB2
+
+    \scriptsize FLMB2=\left[\frac{\left(\bf{v}\times\bf{B}\right)_{\theta}}{r\sin\theta}\right]_l^m    
+
+.. math:: 
+    :label: FLMB3 
+
+    \scriptsize FLMB3=\left[\frac{\left(\bf{v}\times\bf{B}\right)_{\phi}}{r\sin\theta}\right]_l^m
+       
 
 The Pseudospectral Approach
 ---------------------------
