@@ -1574,14 +1574,19 @@ Contains
             If (present(filename)) Then
                 ! The file is not open.  We must create it.
                 If (self%output_rank) Then
-                    If (present(clear_existing)) Then
-                        If (clear_existing) Then
-                            Call MPI_File_delete(filename, MPI_INFO_NULL, ierr)
-                        Endif
-                    Endif
+                    !If (present(clear_existing)) Then
+                    !    If (clear_existing) Then
+                    !        Call MPI_File_delete(filename, MPI_INFO_NULL, ierr)
+                    !    Endif
+                    !Endif
                     Call MPI_FILE_OPEN(self%ocomm%comm, filename, & 
                            MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
                            MPI_INFO_NULL, funit, ierr) 
+                    If (present(clear_existing)) Then
+                        If (clear_existing) Then
+                            Call MPI_FILE_set_size(funit, 0, ierr)
+                        Endif
+                    Endif
                 Endif
             Else
                 error = .true.
