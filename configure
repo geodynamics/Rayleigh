@@ -838,9 +838,9 @@ echo ""
 # Standard LIBRARIES
 if [[ $OSTYPE == *"darwin"* ]]
 then
-    STD_FLAGS="-lc++"
+    STD_FLAGS=""
 else
-    STD_FLAGS="-lstdc++"
+    STD_FLAGS=""
 fi
 
 ###############################################################################################
