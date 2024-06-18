@@ -12,7 +12,7 @@ A list of publications using the Rayleigh code.
 Software Citation
 -----------------
 
-**List:**  :cite:`nicholas_featherstone_2024_11391213`, :cite:`nicholas_featherstone_2022_6522806` :cite:`nicholas_featherstone_2021_5774039`, :cite:`nicholas_featherstone_2021_5683601`, :cite:`nicholas_featherstone_2018_1236565`, :cite:`nicholas_featherstone_2018_1158290`
+**List:**  :cite:`nicholas_featherstone_2024_11391213`, :cite:`nicholas_featherstone_2022_6522806` :cite:`nicholas_featherstone_2021_5774039`, :cite:`nicholas_featherstone_2021_5683601`, :cite:`nicholas_featherstone_2018_1158290`, :cite:`nicholas_featherstone_2018_1236565`
 
 
 .. bibliography:: software.bib
@@ -39,7 +39,7 @@ Publications by Year
 
 2020
 ^^^^
-**List:** :cite:`Matilsky_2020a`, :cite:`Matilsky2020b`, :cite:`Hindman_2020`
+**List:** :cite:`Matilsky_2020a`, :cite:`Matilsky_2020b`, :cite:`Hindman_2020`
 
 .. bibliography:: publications2020.bib
 

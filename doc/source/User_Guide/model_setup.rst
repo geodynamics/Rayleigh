@@ -12,6 +12,7 @@ in Rayleigh. For a commplete list of all Rayleigh input
 parameters, see :ref:`namelists`.
 
 .. _setup_prep:
+
 Preparation
 -----------
 
@@ -41,7 +42,7 @@ from. Copy one of the sample input files from the
 Rayleigh/input_examples/ into your run directory, and rename it to
 main_input. The file named *benchmark_diagnostics_input* can be used to
 generate output for the diagnostics plotting tutorial (see
-§\ :ref:`diagnostics`).
+§\ :ref:`commmon_diagnostics`).
 
 Finally, Rayleigh has some OpenMP-related logic that is still in
 development. We do not support Rayleigh’s OpenMP mode at this time, but
@@ -243,6 +244,7 @@ Using a Grid-Description File to Specify a Nonuniform Grid
 **NOTE:** The functionality described below is currently incompatible with Rayleigh's ensemble mode.  
 
 An arbitrary radial grid may also be generated using Python and then stored to a file that is read when Rayleigh initializes.  To do so, import the *reference_tools* module and define a custom grid as illustrated by the code snippet below.
+
 ::
    import numpy  # Import necessary modules
    import reference_tools as rt 
@@ -267,6 +269,7 @@ Note that we could have generated the grid in either ascending or descending ord
    &numerical_controls_namelist
     chebyshev=.false.
    /
+
 There are two important points to be aware of:
 
 1.  When ``radial_grid_file`` is specified, all information concerning the grid structure is derived from that file.  The values of ``rmin``, ``rmax``, ``N_R`` etc. are completely ignored.  For this reason, we strongly suggest indicating ``N_R`` in the grid file's name. 
@@ -564,7 +567,7 @@ Note that these two examples will have produced different data formats - the fir
 For more examples including magnetic potentials see `tests/generic_input`.
 
 Custom Reference States
----------------------
+-----------------------
 
 If desired, the constant and nonconstant equation coefficients enumerated :ref:`here <equations_solved>` may be completely or partially specified by the user.  This allows the user to specify diffusivity profiles, background states, or nondimensionalizations that are not supplied by Rayleigh.  Two use cases are supported:  
 
@@ -576,7 +579,7 @@ If desired, the constant and nonconstant equation coefficients enumerated :ref:`
 In either case, constant coefficients may be defined within the coefficients file or, read in from main_input, or some combination of the two.  Moreover, the radial variation of transport coefficients, as specified by nu_type, kappa_type, and eta_type flags is respected.  We elaborate on this behavior below.
 
 Creating a Coefficients File
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first step in modifying Rayleigh's equation coefficients is to generate an equation coefficients file.
 This file will be used alongside options defined in main_input to determine which combination of coefficients are overridden.
@@ -633,7 +636,7 @@ The sample code below defines a file with sufficient information to alter the vi
      
 
 Constant Coefficients: Runtime Control
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While constant coefficients may be specified via the coefficients file, many of these coefficients represent simulation
 "control knobs" that the user may wish to modify at run-time.   For instance, the user may want to frequently use a particular profile for viscous diffusion (:math:`f_3`), but would like to vary its amplitude (:math:`c_5`) between simulations without generating a new coefficients file.  Rayleigh provides the opportunity to override 
@@ -690,7 +693,7 @@ To specify a subset of constants, use the override_constant flag for each consta
 In this case, the values of constants :math:`c_2` and :math:`c_{10}` will be taken the main_input file.  The value of :math:`c_5` will be taken from the coefficients file.   If a constant's override flag is set, but its value is not specified in main_input, the default value of zero will be used. 
 
 Augmenting a Rayleigh-Provided Reference State
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When augumenting one of Rayleigh's internal reference-state types, set the with_custom_reference flag (Reference_Namelist) to true in main_input.   In addition, assign a list of values to with_custom_constants and with_custom_functions.  As an example, to modify the heating and buoyancy profiles using entirely information provided through the equation coefficients file, main_input would contain the following
 ::
@@ -723,7 +726,7 @@ These flags can be used in tandem with the override flags to specify values via 
 
 
 Specifing an Entire Custom Reference State
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To specify a full set of custom equation coefficients, set reference_type to 4.  Constant coefficients
 may be overridden, if desired, and as described above.  Note that you must fully specify nonconstant coefficients :math:`f_1-f_7`.
@@ -746,19 +749,21 @@ however, as Rayleigh will compute those funtions if not provided.
 
 
 Behavior of Transport Coefficients
-...........................................................
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`below <transport>`.
 If you wish to specify a custom diffusivity profile, set the corresponding type to 3.  In that case, the corresponding nonconstant coefficient MUST be set in the equation coefficients file.  Moreover, if reference_type=4, these corresponding constant must be set in either the coefficients file or in main_input (regardless of the diffusion type specified).  
 
 For diffusion types 2 and 3, if the reference_type is not 4, the value of {nu,kappa,eta}_top normally used by that reference_type will be invoked if the corresponding constant coefficient is not set.
 
 A Note on Volumetric Heating
-......................
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Finally, if specifying a custom form for the volumetric heating, please ensure that heating_type is set to a positive, nonzero value in the reference_namelist.  Otherwise, reference heating will be deactivated.  Any Rayleigh-initialization of the heating function that takes place initially will be overridden by the with_custom_reference or reference_type=4 flags. 
 
 
 Custom Reference State Examples
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The notebooks below provide several examples of how to generate a custom-equation-coefficient file.
 These notebooks are located in the examples/custom_reference_states subdirectory of the main Rayleigh directory.
@@ -904,7 +909,7 @@ the user to sample a simulation in a variety of ways, and at
 user-specified intervals throughout a run. This package is comprised of
 roughly 17,000 lines of code (about half of the Rayleigh code base). Here we will
 focus on generating basic output, but we refer the user to the section 
-:ref:`plotting` and :ref:`quantityCodes` for more information.
+:ref:`plotting <post_scripts>` and :ref:`quantityCodes` for more information.
 
 Rayleigh can compute the quantities listed in :ref:`quantityCodes` in a variety of
 averages, slices, and spectra, which are collectively called data products. These 
