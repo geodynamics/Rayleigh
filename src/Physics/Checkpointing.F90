@@ -167,7 +167,7 @@ Contains
         Do i = 1, numfields*2
             checkfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//trim(checkpoint_suffix(i))
             Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
-            Call checkpoint_buffer%write_data(filename=checkfile)
+            Call checkpoint_buffer%write_data(filename=checkfile, clear_existing = .true.)
 
         Enddo
 
@@ -187,7 +187,7 @@ Contains
 
         checkfile = TRIM(my_path)//TRIM(checkpoint_prefix)//'/boundary_conditions'
         Call checkpoint_buffer%cache_data_spectral(bctmp%s2a,1)
-        Call checkpoint_buffer%write_data(filename=checkfile)
+        Call checkpoint_buffer%write_data(filename=checkfile, clear_existing = .true.)
 
         Call bctmp%deconstruct('s2a')
         !/////////////////////////////////////////////////////////////////////
