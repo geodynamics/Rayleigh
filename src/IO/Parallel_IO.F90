@@ -1558,6 +1558,7 @@ Contains
         Logical, Intent(In), Optional :: clear_existing
         Integer(kind=MPI_OFFSET_KIND), Intent(In), Optional :: disp
         Integer(kind=MPI_OFFSET_KIND) :: hdisp, tdisp, fdisp, bdisp
+        Integer(kind=MPI_OFFSET_KIND) :: zero_file_size = 0
 
         ! A baseline displacement within the file can be passed to this routine.
         ! Can be due to header and/or multiple prior records.
@@ -1581,7 +1582,7 @@ Contains
 
                     If (present(clear_existing)) Then
                         If (clear_existing) Then
-                            Call MPI_FILE_set_size(funit, 0, ierr)
+                            Call MPI_FILE_set_size(funit, zero_file_size, ierr)
                         Endif
                     Endif
 
