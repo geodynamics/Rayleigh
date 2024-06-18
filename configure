@@ -474,6 +474,22 @@ do
 
     esac
 done
+
+if [ ! -z $RAMKLROOT ]
+  then
+elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  ! -z $LPROOT ]];
+  then
+elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  "$USEOPENBLAS" == "TRUE" ]]
+  then
+else
+  echo "Error Code 1"
+  echo "Incorrect configuration"
+  exit 1
+fi
+
+
+
+
 echo ""
 echo " -----------------------------------------------------------------------------"
 VERSION_FILE="VERSION"
@@ -838,9 +854,9 @@ echo ""
 # Standard LIBRARIES
 if [[ $OSTYPE == *"darwin"* ]]
 then
-    STD_FLAGS=""
+    STD_FLAGS="-lc++"
 else
-    STD_FLAGS=""
+    STD_FLAGS="-lstdc++"
 fi
 
 ###############################################################################################
