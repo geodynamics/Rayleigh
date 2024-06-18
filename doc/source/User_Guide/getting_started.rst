@@ -48,47 +48,6 @@ If you want to undo the change to the channel priority setting afterwards, you c
 after installing the environment (only necessary if you depend on the more flexible conda
 solver).
 
-MKL Setup: Linux and Mac
-^^^^^^^^^^^^^^^^^^^^^^^^
-Once your packages are installed, you will most likely want to have the ``MKLROOT`` environment variable set whenever you activate your Conda environment.  To do this we set ``MKLROOT`` to the location of the currently activated conda environment from the enviroment variable ``CONDA_PREFIX``.
-
-.. code-block:: bash
-
-    export MKLROOT="$CONDA_PREFIX"
-
-Note that this is Bash syntax (use setenv if running c-shell).  Note that there should be no spaces on either side of the "=" sign.
-If you stop here, you will have to do this every time you activate your development environment.   To have this happen automatically,
-you only need to add two small scripts to radev/etc/conda/activate.d and radev/etc/conda/deactivate.d directories.   Scripts in these
-directories are automatically executed when your conda environment is activated and deactivated, respectively.  
-
-Change to your activate.d directory (for me, this was /custom/software/miniconda3/envs/radev/etc/conda/activate.d) and create a file named
-activate_mkl.sh with the following three lines:
-
-.. code-block:: bash
-
-    #!/bin/bash
-    export MKLSAVE="$MKLROOT"
-    export MKLROOT="$CONDA_PREFIX"
-
-In the deactivate.d directory, create a file named deactivate_mkl.sh with the following two lines:
-
-.. code-block:: bash
-
-    #!/bin/bash
-    export MKLROOT="$MKLSAVE"
-
-Now, try it out.
-
-.. code-block:: bash
-
-    conda deactivate
-    echo $MKLROOT
-    conda activate radev
-    echo $MKLROOT
-
-The MKLSAVE variable is used so that a separate MKL installation on your machine, if one exists,
-is properly reset in your environment following deactivation.
-
 Configuration and Compilation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Building the documentation is the same on Linux and Mac.
@@ -107,7 +66,7 @@ Building the code is again the same on Linux and Mac. Execute the following:
 
     conda activate radev
     cd /path/to/Rayleigh
-    ./configure -conda-mkl --FC=mpifort
+    ./configure -openblas --FC=mpifort
     make
 
 At this point, you can run "make install," and run the code using mpirun as you normally would (keep the radev environment active when doing this).
