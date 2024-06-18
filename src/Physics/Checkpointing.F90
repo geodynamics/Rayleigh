@@ -251,7 +251,7 @@ Contains
         Real*8, Allocatable :: old_radius(:), radius_old_loc(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
         Character*120 :: autostring, dstring, iterstring, access_type
-        Character*256 :: grid_file, checkfile
+        Character*256 :: grid_file, checkfile, input_file
         Character*1 :: under_slash 
         Character*13 :: szstr
         Logical :: legacy_format, fexist
