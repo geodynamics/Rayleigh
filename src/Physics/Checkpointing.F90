@@ -242,19 +242,22 @@ Contains
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old
         Integer :: i, ierr, mp, lb,ub, ab_offset
-        Integer :: old_pars(7), fcount(3,2), version
+        Integer :: old_pars(7 + nsubmax), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
         Integer :: read_magnetism = 0, read_hydro = 0
         Integer, Allocatable :: rinds(:), gpars(:,:), read_var(:)
         Real*8 :: dt_pars(3),dt,new_dt
-        Real*8, Allocatable :: old_radius(:), radius_old(:)
+        Real*8, Allocatable :: old_radius(:), radius_old_loc(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
         Character*120 :: autostring, dstring, iterstring, access_type
         Character*256 :: grid_file, checkfile
         Character*1 :: under_slash 
         Character*13 :: szstr
         Logical :: legacy_format, fexist
+        Integer :: ncheby_old(1:nsubmax)
+        Integer :: idom, n_r_loc, n_r_old_loc, irmin, irmax, irmin_old, irmax_old
+        Logical :: first_time_interpolating = .True.
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
@@ -378,6 +381,16 @@ Contains
                 Endif
             Endif
 
+            ! Get the old ncheby
+            If (ndomains .gt. 1) Then ! get the old ncheby from Checkpoint
+                ! main_input
+                input_file = TRIM(my_path)//trim(checkpoint_prefix)//'/main_input'
+                Call Get_Old_Ncheby(input_file, ncheby_old)
+            Else ! for ndomains = 1, user need not specify ncheby
+                ncheby_old(1) = n_r_old
+            Endif
+
+
             If (ierr .eq. 0) Then
                 ! Verify that all checkpoint files exist and  have the correct size.
                 n_r_old_big = n_r_old
@@ -409,6 +422,7 @@ Contains
             old_pars(2) = grid_type_old
             old_pars(3) = l_max_old
             old_pars(7) = ierr
+            old_pars(8:8+nsubmax-1) = ncheby_old(1:nsubmax)
             dt_pars(1) = dt
             dt_pars(2) = new_dt
             dt_pars(3) = checkpoint_time
@@ -416,9 +430,9 @@ Contains
         Endif
 
         If (my_row_rank .eq. 0) Then    !2-D broadcast pattern
-            Call MPI_Bcast(old_pars,7, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
+            Call MPI_Bcast(old_pars,7+nsubmax, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
         Endif
-        Call MPI_Bcast(old_pars,7, MPI_INTEGER, 0, pfi%rcomm%comm, ierr)
+        Call MPI_Bcast(old_pars,7+nsubmax, MPI_INTEGER, 0, pfi%rcomm%comm, ierr)
 
         n_r_old       = old_pars(1)
         grid_type_old = old_pars(2)
@@ -430,6 +444,8 @@ Contains
             under_slash='_'
             legacy_format=.true.
         Endif
+
+        ncheby_old(1:nsubmax) = old_pars(8:8+nsubmax-1)
 
         If (old_pars(7) .ne. 0) Then
             ! Something is wrong with this checkpoint.
@@ -566,78 +582,107 @@ Contains
 
         Endif
 
-        ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
-        ! fields.  Otherwise, we need to interpolate onto the current grid
-        ! When we change the checkpointing format, should also store AB terms in cheby-space
-        If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
-            ! Interpolate
-            ! We will assume the user kept the same radial domain bounds.
-            ! If they  have not, this will end badly.
-            If (my_rank .eq. 0) Then
-                Call stdout%print(' ')
-                Call stdout%print('------ Radial grid has changed.')
-                Call stdout%print('------ Interpolating onto new grid.')
-                Write(szstr,'(i13)')grid_type_old
-                Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
-                Write(szstr,'(i13)')grid_type
-                Call stdout%print('------ Current grid_type: '//TRIM(szstr))
-                Write(szstr,'(i13)')n_r_old
-                Call stdout%print('------ Old N_R:           '//TRIM(szstr))
-                Write(szstr,'(i13)')n_r
-                Call stdout%print('------ Current N_R:       '//TRIM(szstr))
-                Call stdout%print(' ')
+        ! Loop over the domains to set the Chebyshev coefficients, possibly 
+        ! interpolating in radius
+        irmin_old = n_r_old
+        irmax_old = n_r_old - ncheby_old(1) + 1
+        irmin = n_r
+        irmax = n_r - ncheby(1) + 1
+        Do idom = 1, ndomains
+            ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
+            ! fields.  Otherwise, we need to interpolate onto the current grid
+            ! When we change the checkpointing format, should also store AB terms in cheby-space
+
+            ! Loop from inner domain to outer domain
+            n_r_old_loc = ncheby_old(idom)
+            n_r_loc = ncheby(idom)
+            
+            ! Increment (decrement?) the rmin/rmax indices for each domain switch
+            If (idom .gt. 1) Then
+                irmin_old = irmin_old - ncheby_old(idom - 1)
+                irmax_old = irmax_old - ncheby_old(idom)
+                irmin = irmin - ncheby(idom - 1)
+                irmax = irmax - ncheby(idom)
             Endif
 
-            If (n_r_old .lt. n_r) Then
+            ! Interpolate if necessary (in each domain separately)
+            If  ((n_r_old_loc .ne. n_r_loc) .or. (grid_type_old .ne. grid_type) ) Then
+                ! Interpolate
+                ! We will assume the user kept the same radial domain bounds.
+                ! If they  have not, this will end badly.
+                If (my_rank .eq. 0) Then
+                    Call stdout%print(' ')
+                    If (ndomains .gt. 1) Then ! if more than one domain, specify
+                                              ! which one we are in
+                        Write(szstr,'(i13)')idom
+                        Call stdout%print('------ In domain:     '//TRIM(szstr))
+                    Endif
+                    Call stdout%print('------ Radial grid has changed.')
+                    Call stdout%print('------ Interpolating onto new grid.')
+                    Write(szstr,'(i13)')grid_type_old
+                    Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
+                    Write(szstr,'(i13)')grid_type
+                    Call stdout%print('------ Current grid_type: '//TRIM(szstr))
+                    Write(szstr,'(i13)')n_r_old_loc
+                    Call stdout%print('------ Old N_R:           '//TRIM(szstr))
+                    Write(szstr,'(i13)')n_r_loc
+                    Call stdout%print('------ Current N_R:       '//TRIM(szstr))
+                    Call stdout%print(' ')
+                Endif
 
-                ! The fields are OK - they are already in chebyshev space
-                fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+                If (n_r_old_loc .lt. n_r_loc) Then
+                    ! The fields are OK - they are already in chebyshev space
+                    fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
 
-                ! The AB terms are stored in physical space (in radius).
-                ! They need to be transformed, coefficients copied, and transformed back..
-                ! First, we need to initialize the old chebyshev grid.
-                Allocate(radius_old(1:n_r_old))
-                Call cheby_info%Init(radius_old,rmin,rmax)  ! We assume that rmax and rmin do not change
-                fcount(:,:) = numfields
-                Call chktmp2%init(field_count = fcount, config = 'p1a')
-                Call chktmp2%construct('p1a')
-                chktmp2%p1a(:,:,:,:) = 0.0d0
-                ! Allocate tempfield1, tempfield2
-                lb = lbound(chktmp%p1b,3)
-                ub = ubound(chktmp%p1b,3)
-                Allocate(tempfield1(1:n_r_old,1:2,lb:ub,1))
-                Allocate(tempfield2(1:n_r_old,1:2,lb:ub,1))
+                    ! The AB terms are stored in physical space (in radius).
+                    ! They need to be transformed, coefficients copied, and transformed back..
+                    ! First, we need to initialize the old chebyshev grid.
+                    Allocate(radius_old_loc(1:n_r_old_loc))
+                    Call cheby_info%Init(radius_old_loc,radius(irmin),radius(irmax))  ! We assume that the domain bounds do not change
+                    fcount(:,:) = numfields
+                    If (first_time_interpolating) Then ! Can only initialize chktmp2 once
+                        Call chktmp2%init(field_count = fcount, config = 'p1a')
+                        first_time_interpolating = .False.
+                    Endif
+                    Call chktmp2%construct('p1a')
+                    chktmp2%p1a(:,:,:,:) = 0.0d0
+                    ! Allocate tempfield1, tempfield2
+                    lb = lbound(chktmp%p1b,3)
+                    ub = ubound(chktmp%p1b,3)
+                    Allocate(tempfield1(1:n_r_old_loc,1:2,lb:ub,1))
+                    Allocate(tempfield2(1:n_r_old_loc,1:2,lb:ub,1))
 
-                Do i = 1, numfields
-                    tempfield1(:,:,:,:) = 0.0d0
-                    tempfield2(:,:,:,:) = 0.0d0
-                    tempfield1(1:n_r_old,:,:,1) = chktmp%p1b(1:n_r_old,:,:,numfields+i)
-                    call cheby_info%tospec4d(tempfield1,tempfield2)
-                    chktmp2%p1a(1:n_r_old,:,:,i) = tempfield2(1:n_r_old,:,:,1)
-                Enddo
-                DeAllocate(tempfield1,tempfield2)
+                    Do i = 1, numfields
+                        tempfield1(:,:,:,:) = 0.0d0
+                        tempfield2(:,:,:,:) = 0.0d0
+                        tempfield1(:,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
+                        Call cheby_info%tospec4d(tempfield1,tempfield2)
+                        chktmp2%p1a(irmax:irmax+n_r_old_loc-1,:,:,i) = tempfield2(:,:,:,1)
+                    Enddo
+                    DeAllocate(tempfield1,tempfield2)
 
 
-                Call chktmp2%construct('p1b')
-                !Normal transform(p1a,p1b)
-                Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
+                    Call chktmp2%construct('p1b')
+                    !Normal transform(p1a,p1b)
+                    Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
 
-                abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
-                Call cheby_info%destroy()
-                Call chktmp2%deconstruct('p1a')
-                Call chktmp2%deconstruct('p1b')
-                Deallocate(radius_old)
+                    abterms(irmax:irmin,:,:,1:numfields) = chktmp2%p1b(irmax:irmin,:,:,1:numfields)
+                    Call cheby_info%destroy()
+                    Call chktmp2%deconstruct('p1a')
+                    Call chktmp2%deconstruct('p1b')
+                    Deallocate(radius_old_loc)
+                Endif
+
+            Else ! n_r_old_loc = n_r_loc
+                ! Interpolation is complete, now we just copy into the other arrays
+                fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
+                abterms(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,numfields+1:numfields*2)
+
             Endif
+        Enddo
 
-        Else
-
-            ! Interpolation is complete, now we just copy into the other arrays
-            fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
-            abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
-
-        Endif
-        Call chktmp%deconstruct('p1b')
         DeAllocate(old_radius)
+        Call chktmp%deconstruct('p1b')
 
     End Subroutine Read_Checkpoint
 
@@ -696,5 +741,69 @@ Contains
         Real*8, Intent(Out) :: bvals(:,:,:,:)
         bvals(:,:,:,:) = boundary_mask(:,:,:,:)
     End Subroutine Load_BC_Mask
+
+    Subroutine Get_Old_Ncheby(input_file, ncheby_old)
+        Implicit None
+        Character*120, Intent(In) :: input_file
+        Integer, Intent(Out) :: ncheby_old(1:nsubmax)
+        Integer :: n_r_tmp, n_theta_tmp, nprow_tmp, npcol_tmp
+        Real*8  :: rmin_tmp, rmax_tmp
+        Integer :: npout_tmp, precise_bounds_tmp, grid_type_tmp, l_max_tmp, n_l_tmp
+        Real*8 :: aspect_ratio_tmp, shell_depth_tmp
+        !Integer, Parameter :: nsubmax = 256
+        Integer :: ncheby_tmp(1:nsubmax)
+        Real*8  :: domain_bounds_tmp(1:nsubmax+1)
+        Integer :: dealias_by_tmp(1:nsubmax)
+        Integer :: n_uniform_domains_tmp
+        Logical :: uniform_bounds_tmp
+
+        ! Don't overwrite the old problemsize namelist!
+        n_r_tmp = n_r
+        n_theta_tmp = n_theta
+        nprow_tmp = nprow
+        npcol_tmp = npcol
+        rmin_tmp = rmin
+        rmax_tmp = rmax
+        npout_tmp = npout
+        precise_bounds_tmp = precise_bounds
+        grid_type_tmp = grid_type
+        l_max_tmp = l_max
+        n_l_tmp = n_l
+        aspect_ratio_tmp = aspect_ratio
+        shell_depth_tmp = shell_depth
+        ncheby_tmp(1:nsubmax) = ncheby(1:nsubmax) 
+        domain_bounds_tmp(1:nsubmax+1)  = domain_bounds(1:nsubmax+1) 
+        dealias_by_tmp(1:nsubmax)  = dealias_by(1:nsubmax) 
+        n_uniform_domains_tmp = n_uniform_domains
+        uniform_bounds_tmp = uniform_bounds
+
+        ! Read problemsize_namelist of input_file
+        Open(unit=20, file=input_file, status="old", position="rewind")
+        Read(unit=20, nml=problemsize_namelist)
+        Close(20)
+
+        ! "ncheby_old" is now in ncheby 
+        ncheby_old(1:nsubmax) = ncheby(1:nsubmax)
+
+        ! Reset the problemsize_namelist
+        n_r = n_r_tmp
+        n_theta = n_theta_tmp
+        nprow = nprow_tmp
+        npcol = npcol_tmp
+        rmin = rmin_tmp
+        rmax = rmax_tmp
+        npout = npout_tmp
+        precise_bounds = precise_bounds_tmp
+        grid_type = grid_type_tmp
+        l_max = l_max_tmp
+        n_l = n_l_tmp
+        aspect_ratio = aspect_ratio_tmp
+        shell_depth = shell_depth_tmp
+        ncheby(1:nsubmax) = ncheby_tmp(1:nsubmax) 
+        domain_bounds(1:nsubmax+1)  = domain_bounds_tmp(1:nsubmax+1) 
+        dealias_by(1:nsubmax)  = dealias_by_tmp(1:nsubmax) 
+        n_uniform_domains = n_uniform_domains_tmp
+        uniform_bounds = uniform_bounds_tmp
+    End Subroutine Get_Old_Ncheby
 
 End Module Checkpointing
