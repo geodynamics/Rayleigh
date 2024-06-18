@@ -44,7 +44,7 @@ Rayleigh can solve the fluid equations under the pseudo-incompressible approxima
     \begin{aligned}
         \hat{\rho}_*(r) \left[\frac{\partial\boldsymbol{v}}{\partial t} + \boldsymbol{v \cdot \nabla v}   % Advection
         + 2\Omega_0\hat{\boldsymbol{z}}\times\boldsymbol{v} \right]  =\; % Coriolis
-        & \frac{\hat{\rho}_*(r) g(r)}{c_P} \Theta\, \hat{\boldsymbol{r}} + \frac{\hat{\rho}_*(r)}{c_P\,\hat{\rho}} \frac{d\hat{S}}{dr} P\, \hat{\boldsymbol{r}} % Buoyancy
+        & \frac{\hat{\rho}_*(r) g(r)}{c_P} \Theta\, \hat{\boldsymbol{r}} + \frac{\hat{\rho}_*(r)}{c_P\,\hat{\rho}(r)} \frac{d\hat{S}}{dr} P\, \hat{\boldsymbol{r}} % Buoyancy
         - \hat{\rho}_*(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) \\ % Pressure Forces
         &+ \frac{\hat{\rho}_*(r)}{4\pi\hat{\rho}(r)}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
        + \frac{\hat{\rho}_*(r)}{\hat{\rho}(r)}\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\\ % Viscous Forces
