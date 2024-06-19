@@ -477,10 +477,13 @@ done
 
 if [ ! -z $RAMKLROOT ]
   then
+    echo "Correct Configuration"
 elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  ! -z $LPROOT ]];
   then
+    echo "Correct Configuration"
 elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  "$USEOPENBLAS" == "TRUE" ]]
   then
+    echo "Correct Configuration"
 else
   echo "Error Code 1"
   echo "Incorrect configuration"
