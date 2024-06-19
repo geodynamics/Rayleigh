@@ -582,8 +582,11 @@ Contains
 
         Endif
 
-        ! Loop over the domains to set the Chebyshev coefficients, possibly 
-        ! interpolating in radius
+        ! Loop over the domains to set the Chebyshev coefficients, 
+        ! possibly interpolating in radius for each subdomain
+        ! The fields are easy, since they are stored in spectral (Chebyshev) space
+        ! The AB terms are a bit more complicated, since they are currently stored in physical (radius) space
+        ! When we change the checkpointing format, should also store AB terms in cheby-space
         irmin_old = n_r_old
         irmax_old = n_r_old - ncheby_old(1) + 1
         irmin = n_r
@@ -591,13 +594,17 @@ Contains
         Do idom = 1, ndomains
             ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
             ! fields.  Otherwise, we need to interpolate onto the current grid
-            ! When we change the checkpointing format, should also store AB terms in cheby-space
+            ! And by "interpolate," we mean set the lowest-order Chebyshev coefficients of 
+            ! the new checkpoint using the old checkpoint, and zero out the higher-order coefficients. 
+            ! For abterms, we will transform to spectral space, set the lowest-order coefficients and
+            ! and transform back
 
             ! Loop from inner domain to outer domain
             n_r_old_loc = ncheby_old(idom)
             n_r_loc = ncheby(idom)
             
-            ! Increment (decrement?) the rmin/rmax indices for each domain switch
+            ! Decrement the rmin/rmax indices (which go down with increasing radius/idom
+            ! for each subdomain after the first
             If (idom .gt. 1) Then
                 irmin_old = irmin_old - ncheby_old(idom - 1)
                 irmax_old = irmax_old - ncheby_old(idom)
@@ -632,10 +639,11 @@ Contains
 
                 If (n_r_old_loc .lt. n_r_loc) Then
                     ! The fields are OK - they are already in chebyshev space
+                    ! Just set the lowest-order coefficients from the checkpoint
                     fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
 
                     ! The AB terms are stored in physical space (in radius).
-                    ! They need to be transformed, coefficients copied, and transformed back..
+                    ! They need to be transformed, lowest-order coefficients copied, and transformed back.
                     ! First, we need to initialize the old chebyshev grid.
                     Allocate(radius_old_loc(1:n_r_old_loc))
                     Call cheby_info%Init(radius_old_loc,radius(irmin),radius(irmax))  ! We assume that the domain bounds do not change
