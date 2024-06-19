@@ -660,7 +660,11 @@ Contains
                     Allocate(tempfield1(1:n_r_old_loc,1:2,lb:ub,1))
                     Allocate(tempfield2(1:n_r_old_loc,1:2,lb:ub,1))
 
-                    Do i = 1, numfields
+                    ! For each field, put the physical AB terms from the checkpoint in tempfield1
+                    ! use "tospec4d" to put the spectral tempfield1 coefficients in tempfield2
+                    ! copy the tempfield2 spectral coefficients into chktmp2 
+                    ! (thus interpolating, since chktmp2 will have zeros for the higher-order coefficients)
+                    Do i = 1, numfields 
                         tempfield1(:,:,:,:) = 0.0d0
                         tempfield2(:,:,:,:) = 0.0d0
                         tempfield1(:,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
@@ -669,12 +673,14 @@ Contains
                     Enddo
                     DeAllocate(tempfield1,tempfield2)
 
-
+                    ! chktmp2 now has the interpolated abterms from the checkpoint in spectral space
+                    ! use "From_Spectral" to transform these fields into physical space and copy into abterms
                     Call chktmp2%construct('p1b')
                     !Normal transform(p1a,p1b)
                     Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
-
                     abterms(irmax:irmin,:,:,1:numfields) = chktmp2%p1b(irmax:irmin,:,:,1:numfields)
+
+                    ! clean up
                     Call cheby_info%destroy()
                     Call chktmp2%deconstruct('p1a')
                     Call chktmp2%deconstruct('p1b')
@@ -682,7 +688,7 @@ Contains
                 Endif
 
             Else ! n_r_old_loc = n_r_loc
-                ! Interpolation is complete, now we just copy into the other arrays
+                ! no interpolation is needed, we just copy the checkpoint into fields and abterms
                 fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
                 abterms(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,numfields+1:numfields*2)
 
