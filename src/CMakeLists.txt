@@ -24,3 +24,5 @@ endif()
 target_link_libraries(rayleigh MPI::MPI_Fortran)
 target_link_libraries(rayleigh LAPACK::LAPACK)
 target_link_libraries(rayleigh FFTW::fftw3)
+
+install(TARGETS rayleigh DESTINATION ${CMAKE_SOURCE_DIR}/bin)
