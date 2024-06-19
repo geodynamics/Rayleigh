@@ -1,4 +1,12 @@
-file(GLOB SOURCES */*.F90 IO/cmkdir.c)
+file(GLOB SOURCES
+  Data_Structures/*.F90
+  Diagnostics/*.F90
+  IO/*.F90
+  Math_Layer/*.F90
+  Parallel_Framework/*.F90
+  Physics/*.F90
+  Test_Suite/*.F90
+  IO/cmkdir.c)
 list(REMOVE_ITEM SOURCES ${PROJECT_SOURCE_DIR}/src/Physics/Linear_Terms_Cart.F90)
 
 add_custom_target(run_param_header COMMAND env FC=${CMAKE_Fortran_COMPILER} ${PROJECT_SOURCE_DIR}/src/gen_header.sh Run_Param_Header.F ${CMAKE_BUILD_TYPE} "compile flags unavailable" $<TARGET_PROPERTY:rayleigh,LINK_OPTIONS>)
