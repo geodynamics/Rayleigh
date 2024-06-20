@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 ### Fixed
 
+- Rayleigh no longer attempts to update the record count and close a diagnostics file (e.g., G_Avgs) that failed to open correctly.  \[Nick Featherstone; 6-19-2024; [#510](https://github.com/geodynamics/Rayleigh/pull/510) , [#523](https://github.com/geodynamics/Rayleigh/pull/523)  \]
+
 ## [1.2.0] - 5-29-2024
 
 ### Added
