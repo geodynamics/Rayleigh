@@ -26,8 +26,8 @@ to store the output.
 Do not cross the beams: no running two models from within the same
 directory.**
 
-After you create your run directory, you will want to copy (cp) or soft
-link (ln -s ) the executable from Rayleigh/bin to your run directory.
+After you create your run directory, you will want to copy (``cp``) or soft
+link (``ln -s``) the executable from ``Rayleigh/bin`` to your run directory.
 Soft-linking is recommended; if you recompile the code, the executable
 remains up-to-date. If running on an IBM machine, copy the script named
 Rayleigh/etc/make_dirs to your run directory and execute the script.
@@ -39,8 +39,8 @@ Next, you must create a main_input file. This file contains the
 information that describes how your simulation is run. Rayleigh always
 looks for a file named main_input in the directory that it is launched
 from. Copy one of the sample input files from the
-Rayleigh/input_examples/ into your run directory, and rename it to
-main_input. The file named *benchmark_diagnostics_input* can be used to
+``Rayleigh/input_examples/`` into your run directory, and rename it to
+main_input. The file named ``benchmark_diagnostics_input`` can be used to
 generate output for the diagnostics plotting tutorial (see
 §\ :ref:`commmon_diagnostics`).
 
@@ -167,7 +167,7 @@ points.
 Employing a Finite-Difference Approach in Radius
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rayleigh's default behavior is to employ a Chebyshev collocation scheme in radius.   If desired, a finite-difference method can be applied instead.  This mode is activated by setting the value of ``chebyshev`` to .false. in the ``numerical_controls_namelist``.  At present, Rayleigh's finite-difference scheme employs a five-point stencil with 4th-order accuracy in the interior points.  Boundary derivatives are taken with second-order accuracy.   By default, a uniform radial grid is assumed.  Consider the following example:
+Rayleigh's default behavior is to employ a Chebyshev collocation scheme in radius.   If desired, a finite-difference method can be applied instead.  This mode is activated by setting the value of ``chebyshev`` to ``.false.`` in the ``numerical_controls_namelist``.  At present, Rayleigh's finite-difference scheme employs a five-point stencil with 4th-order accuracy in the interior points.  Boundary derivatives are taken with second-order accuracy.   By default, a uniform radial grid is assumed.  Consider the following example:
 
 ::
 
@@ -189,7 +189,7 @@ This results in the uniform grid:
   radius = 1.000 , 1.333 , 1.667 , 2.000
       dr = 0.333 , 0.333 , 0.333
 
-An example input file using a uniform radial grid and a finite-difference scheme is provided in ``input_examples\main_input_mhd_jones_FD``.  If desired, a nonuniform grid can also be generated.  There are two ways to do this: via *main_input* and via a grid-description file. 
+An example input file using a uniform radial grid and a finite-difference scheme is provided in ``input_examples\main_input_mhd_jones_FD``.  If desired, a nonuniform grid can also be generated.  There are two ways to do this: via ``main_input`` and via a grid-description file. 
 
 
 Using Main_Input to Specify a Nonuniform Grid
@@ -258,7 +258,7 @@ An arbitrary radial grid may also be generated using Python and then stored to a
 
    my_grid.write('grid_layout_128.dat')   # Store contents to file
 
-Note that we could have generated the grid in either ascending or descending order.  The *write* method accounts for the grid-ordering before storing its contents to the file.  Now that we have created a grid-description file ('grid_layout_128.dat' in this example), we indicate the relevant filename in ``main_input`` using the ``radial_grid_file`` parameter:
+Note that we could have generated the grid in either ascending or descending order.  The *write* method accounts for the grid-ordering before storing its contents to the file.  Now that we have created a grid-description file (``grid_layout_128.dat`` in this example), we indicate the relevant filename in ``main_input`` using the ``radial_grid_file`` parameter:
 
 ::
 
@@ -318,7 +318,7 @@ the benchmark described in :ref:`benchmark` that you set
 other input flags in favor of running the specified benchmark.
 
 A number of logical variables can be used to turn certain physics on
-(value = .true.) or off ( value = .false.). These variables are
+(``value = .true.``) or off (``value = .false.``). These variables are
 described in Table table_logicals_, with default
 values indicated in brackets.
 
@@ -357,8 +357,8 @@ A Rayleigh simulation may be initialized with a random thermal and/or
 magnetic field, or it may be restarted from an existing checkpoint file
 (see §\ :ref:`checkpointing` for a detailed
 discussion of checkpointing). This behavior is controlled through the
-**initial_conditions_namelist** and the **init_type** and
-**magnetic_init_type** variables. The init_type variable controls the
+``initial_conditions_namelist`` and the ``init_type`` and
+``magnetic_init_type`` variables. The init_type variable controls the
 behavior of the velocity and thermal fields at initialization time.
 Available options are:
 
@@ -378,7 +378,7 @@ Available options are:
 
 When initializing a random thermal field, all spherical harmonic modes
 are independently initialized with a random amplitude whose maximum
-possible value is determined by the namelist variable **temp_amp**. The
+possible value is determined by the namelist variable ``temp_amp``. The
 mathematical form of of this random initialization is given by
 
 .. _eq_init:
@@ -407,8 +407,8 @@ to consider whether it makes sense to separately initialize the
 spherically-symmetric component of the thermal field with a profile that
 is in conductive balance. This is almost certainly the case when running
 with fixed temperature conditions. The logical namelist variable
-**conductive_profile** can be used for this purpose. It’s default value
-is .false. (off), and its value is ignored completely when restarting
+``conductive_profile`` can be used for this purpose. It’s default value
+is ``.false.`` (off), and its value is ignored completely when restarting
 from a checkpoint. To initialize a simulation with a random temperature
 field superimposed on a spherically-symmetric, conductive background
 state, something similar to the following should appear in your
@@ -424,8 +424,8 @@ main_input file:
    
 Alternatively, you may wish to specify an ell=0 initial thermal profile
 that is neither random nor conductive.  To create your own profile, follow the example found in
-Rayleigh/examples/custom_thermal_profile/custom_thermal_profile.ipynb.   Then, use the following combination
-of input parameters in main_input:
+``Rayleigh/examples/custom_thermal_profile/custom_thermal_profile.ipynb``.   Then, use the following combination
+of input parameters in ``main_input``:
 
 ::
 
@@ -454,7 +454,7 @@ values for magnetic_input type are:
 For the randomized magnetic field, both the poloidal and toroidal
 vector-potential functions are given a random power distribution
 described by Equation eq_init_. Each mode’s random
-amplitude is then determined by namelist variable **mag_amp**. This
+amplitude is then determined by namelist variable ``mag_amp``. This
 variable should be interpreted as an approximate magnetic field strength
 (it’s value is rescaled appropriately for the poloidal and toroidal
 vector potentials, which are differentiated to yield the magnetic
@@ -480,7 +480,7 @@ Generic Initial Conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The user can input any initial conditions from data files generated by
-a python routine "rayleigh_spectral_input.py", which can be called as
+a python routine ``rayleigh_spectral_input.py``, which can be called as
 a script or imported as a python class.
 
 The available generic initial conditions options are
@@ -499,12 +499,12 @@ The available generic initial conditions options are
 
    /
 
-where `T_init_file` is a user generated initial temperature field and
-<filename> is the name of the file generated by the python script.  If
-`T_init_file` is not specified the initial field will be zero by
+where ``T_init_file`` is a user generated initial temperature field and
+``<filename>`` is the name of the file generated by the python script.  If
+``T_init_file`` is not specified the initial field will be zero by
 default.  The same for the other fields.  Fields T, W, Z, and P are
-only initialized from the file if `init_type=8`.  Fields C and A are
-only initialized from file if `magnetic_init_type=8`.
+only initialized from the file if ``init_type=8``.  Fields C and A are
+only initialized from file if ``magnetic_init_type=8``.
 
 To generate a generic initial condition input file, for example, if a user wanted to specify a single mode in that input file then they could just run the script:
 
@@ -553,7 +553,7 @@ Alternatively, in "module" mode in a python shell:
    si.write('example')
 
 
-The above commands will generate a file called `example` which can be
+The above commands will generate a file called ``example`` which can be
 called by
 
 ::
@@ -564,7 +564,7 @@ called by
 
 Note that these two examples will have produced different data formats - the first one sparse (listing only the mode specified) and the second one dense (listing all modes).
 
-For more examples including magnetic potentials see `tests/generic_input`.
+For more examples including magnetic potentials see ``tests/generic_input``.
 
 Custom Reference States
 -----------------------
@@ -584,7 +584,7 @@ Creating a Coefficients File
 The first step in modifying Rayleigh's equation coefficients is to generate an equation coefficients file.
 This file will be used alongside options defined in main_input to determine which combination of coefficients are overridden.
 In order create your coefficients file, you will need to create an instance of the equation_coefficients class, provided
-in post_processing/reference_tools.py.  Constant and nonconstant coefficients may then be set through  set_constant and set_function methods respectively.
+in ``post_processing/reference_tools.py``.  Constant and nonconstant coefficients may then be set through  set_constant and set_function methods respectively.
 
 The equation_coefficient class is instantiated by passing a radial grid to its init method.  This grid can be cast in ascending or descending order, but it should generally possess a much finer mesh than what you plan to use in Rayleigh.
 Nonconstant coefficients specified in the coefficients file will be interpolated onto the Rayleigh grid at input time.   
@@ -676,7 +676,7 @@ main_input, its value will be set to Rayleigh's internal default value of 0.   C
 The resulting values of :math:`c_2,\,c_5,\,c_{10}` will be 1.0, 0.0, and 14.0 respectively.  The constant :math:`c_5` will not be set to 20.0 (the value specified in the coefficients file).
 
 
-To specify a subset of constants, use the override_constant flag for each constant you wish to override, as shown below.
+To specify a subset of constants, use the ``override_constant`` flag for each constant you wish to override, as shown below.
 
 ::
 
@@ -752,14 +752,14 @@ Behavior of Transport Coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Transport coefficients may also be specified as desired, but nu_type, kappa_type, and eta_type still behave as described :ref:`below <transport>`.
-If you wish to specify a custom diffusivity profile, set the corresponding type to 3.  In that case, the corresponding nonconstant coefficient MUST be set in the equation coefficients file.  Moreover, if reference_type=4, these corresponding constant must be set in either the coefficients file or in main_input (regardless of the diffusion type specified).  
+If you wish to specify a custom diffusivity profile, set the corresponding type to 3.  In that case, the corresponding nonconstant coefficient MUST be set in the equation coefficients file.  Moreover, if reference_type=4, these corresponding constant must be set in either the coefficients file or in ``main_input`` (regardless of the diffusion type specified).  
 
 For diffusion types 2 and 3, if the reference_type is not 4, the value of {nu,kappa,eta}_top normally used by that reference_type will be invoked if the corresponding constant coefficient is not set.
 
 A Note on Volumetric Heating
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Finally, if specifying a custom form for the volumetric heating, please ensure that heating_type is set to a positive, nonzero value in the reference_namelist.  Otherwise, reference heating will be deactivated.  Any Rayleigh-initialization of the heating function that takes place initially will be overridden by the with_custom_reference or reference_type=4 flags. 
+Finally, if specifying a custom form for the volumetric heating, please ensure that heating_type is set to a positive, nonzero value in the reference_namelist.  Otherwise, reference heating will be deactivated.  Any Rayleigh-initialization of the heating function that takes place initially will be overridden by the ``with_custom_reference`` or ``reference_type=4`` flags. 
 
 
 Custom Reference State Examples
@@ -793,44 +793,44 @@ Boundary Conditions & Internal Heating
 --------------------------------------
 
 Boundary conditions are controlled through the
-**Boundary_Conditions_Namelist**. All Rayleigh simulations are run with
+``Boundary_Conditions_Namelist``. All Rayleigh simulations are run with
 impenetrable boundaries. These boundaries may be either no-slip or
 stress-free (default). If you want to employ no-slip conditions at both
-boundaries, set **no_slip_boundaries = .true.**. If you wish to set
-no-slip conditions at only one boundary, set **no_slip_top=.true.** or
-**no_slip_bottom=.true.** in the Boundary_Conditions_Namelist.
+boundaries, set ``no_slip_boundaries = .true.``. If you wish to set
+no-slip conditions at only one boundary, set ``no_slip_top=.true.`` or
+``no_slip_bottom=.true.`` in the Boundary_Conditions_Namelist.
 
 By default, magnetic boundary conditions are set to match to a potential field at
 each boundary.
 
 By default, the thermal anomoly :math:`\Theta` is set to a fixed value
 at each boundary. The upper and lower boundary-values are specified by
-setting **T_top** and **T_bottom** respectively in the
+setting ``T_top`` and ``T_bottom`` respectively in the
 Boundary_Conditions_Namelist. Their defaults values are 1 and 0
 respectively.
 
 Alternatively, you may specify a constant value of
 :math:`\partial\Theta/\partial r` at each boundary. This is accomplished
-by setting the variables **fix_dTdr_top** and **fix_dTdr_bottom**.
+by setting the variables ``fix_dTdr_top`` and ``fix_dTdr_bottom``.
 Values of the gradient may be enforced by setting the namelist variables
-**dTdr_top** and **dTdr_bottom**. Both default to a value of zero.
+``dTdr_top`` and ``dTdr_bottom``. Both default to a value of zero.
 
 Generic Boundary Conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Boundary conditions for temperature, :math:`T`, and the magnetic poloidal potential, :math:`C`,
 may also be set using generic spectral input.  As with initial conditions (see :ref:`sec:generic_ic`)
-this is done by generating a generic input file using the **rayleigh_spectral_input.py** script.
+this is done by generating a generic input file using the ``rayleigh_spectral_input.py`` script.
 The file output from this script can then be applied using:
 
--  **fix_Tvar_top** and **T_top_file** (overrides **T_top** for a constant boundary condition)
+-  ``fix_Tvar_top`` and ``T_top_file`` (overrides ``T_top`` for a constant boundary condition)
    to set a fixed upper :math:`T` boundary condition
--  **fix_dTdr_top** and **dTdr_top_file** (overrides **dTdr_top**) to set a fixed upper :math:`T` gradient boundary condition
--  **fix_Tvar_bottom** and **T_bottom_file** (overrides **T_bottom**) to set a fixed lower :math:`T` boundary condition
--  **fix_dTdr_bottom** and **dTdr_bottom_file** (overrides **dTdr_bottom**) to set a fixed lower :math:`T` gradient boundary
+-  ``fix_dTdr_top`` and ``dTdr_top_file`` (overrides ``dTdr_top``) to set a fixed upper :math:`T` gradient boundary condition
+-  ``fix_Tvar_bottom`` and ``T_bottom_file`` (overrides ``T_bottom``) to set a fixed lower :math:`T` boundary condition
+-  ``fix_dTdr_bottom`` and ``dTdr_bottom_file`` (overrides ``dTdr_bottom``) to set a fixed lower :math:`T` gradient boundary
    condition
--  **fix_poloidal_top** and **C_top_file** (overrides **impose_dipole_field**) to set a fixed upper :math:`C` boundary condition
--  **fix_poloidal_bottom** and **C_bottom_file** (overrides **impose_dipole_field**) to set a fixed lower :math:`C` boundary condition
+-  ``fix_poloidal_top`` and ``C_top_file`` (overrides ``impose_dipole_field``) to set a fixed upper :math:`C` boundary condition
+-  ``fix_poloidal_bottom`` and ``C_bottom_file`` (overrides ``impose_dipole_field``) to set a fixed lower :math:`C` boundary condition
 
 For example, to set a :math:`C` boundary condition on both boundaries with modes (l,m) = (1,0) and (1,1) set to pre-calculated
 values run:
@@ -852,19 +852,19 @@ conditions in `main_input` using:
    C_bottom_file = 'cbottom_init_bc'
    /
 
-This can be seen being applied in `tests/generic_input`.
+This can be seen being applied in ``tests/generic_input``.
 
 Internal Heating
 ~~~~~~~~~~~~~~~~
 
 The internal heating function :math:`Q(r)` is activated and described by
-two variables in the **Reference_Namelist**. These are **Luminosity**
-and **heating_type**. Note that these values are part of the
-**Reference_Namelist** and not the **Boundary_Conditions** namelist.
+two variables in the ``Reference_Namelist``. These are ``Luminosity``
+and ``heating_type``. Note that these values are part of the
+``Reference_Namelist`` and not the ``Boundary_Conditions`` namelist.
 Three heating types (0,1, and 4) are fully supported at this time.
 Heating type zero corresponds to no heating. This is the default.
 
-**Heating_type=1:** This heating type is given by :
+``Heating_type=1:`` This heating type is given by :
 
 .. math::
 
@@ -885,7 +885,7 @@ where :math:`\gamma` is a normalization constant defined such that
 This heating profile is particularly useful for emulating radiative
 heating in a stellar convection zone.
 
-**Heating_type=4:** This heating type corresponds a heating that is
+``Heating_type=4:`` This heating type corresponds a heating that is
 variable in radius, but constant in *energy density*. Namely
 
 .. math:: \hat{\rho}\hat{T}\frac{\partial \Theta}{\partial t}=\gamma.
@@ -893,11 +893,11 @@ variable in radius, but constant in *energy density*. Namely
 The constant :math:`\gamma` in this case is also set by enforcing
 Equation eq_lum_.
 
-**Note:** If internal heating is used in combination with **fix_dTdr_top**, then the value of :math:`\partial\Theta/\partial r` 
-at the upper boundary is set by Rayleigh.  Any value for **dTdr_top** specified in main_input is ignored.  This is done to ensure consistency with the internal 
+**Note:** If internal heating is used in combination with ``fix_dTdr_top``, then the value of :math:`\partial\Theta/\partial r` 
+at the upper boundary is set by Rayleigh.  Any value for ``dTdr_top`` specified in main_input is ignored.  This is done to ensure consistency with the internal 
 heating and any flux passing through the lower boundary due
-to the use of a fixed-flux condition.  To override this behavior, set **adjust_dTdr_top** to .false. in the
-**Boundary_Conditions** namelist.
+to the use of a fixed-flux condition.  To override this behavior, set ``adjust_dTdr_top`` to ``.false.`` in the
+``Boundary_Conditions`` namelist.
 
 .. _output_controls:
 
@@ -968,7 +968,7 @@ Transport coefficients (viscosity, thermal diffusivity) are specified in the tra
 
 Variables in the Transport_Namelist
 that must be specified when running in dimensional anelastic mode. In
-addition, **reference_type=2** must also be specified in the
+addition, ``reference_type=2`` must also be specified in the
 Reference_Namelist.
 
    +-----------------------------------+-----------------------------------+

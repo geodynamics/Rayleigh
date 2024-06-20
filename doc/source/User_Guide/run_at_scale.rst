@@ -54,9 +54,9 @@ would, and place an appropriately modified main_input into each
 directory. These directories should all reside within the same parent
 directory. Within that parent directory, you should place a copy of the
 Rayleigh executable (or a softlink). In addition, you should create a
-text file named **run_list** that contains the name of each simulation
+text file named ``run_list`` that contains the name of each simulation
 directory, one name per line. An ensemble job may then be executed by
-calling Rayleigh with **nruns** command line flag as:
+calling Rayleigh with the ``-nruns`` command line flag as:
 
 ::
 

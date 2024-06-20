@@ -36,7 +36,7 @@ Once you have Conda installed, create a Conda environment using the environment 
 
 Because Rayleigh installs a number of different packages the first of these lines simplifies the
 search for a compatible selection of package versions. The second line creates a new environment
-named "radev" and installs all necessary packages.  The third line activates the environment.
+named ``radev`` and installs all necessary packages.  The third line activates the environment.
 This command will likely take a while (a few minutes).
 
 If you want to undo the change to the channel priority setting afterwards, you can run
@@ -58,7 +58,7 @@ Building the documentation is the same on Linux and Mac.
     cd /path/to/Rayleigh
     make doc
 
-Once the documetation builds, you can access it by opening Rayleigh/doc/build/html/index.html in your web browser.
+Once the documetation builds, you can access it by opening ``Rayleigh/doc/build/html/index.html`` in your web browser.
 
 Building the code is again the same on Linux and Mac. Execute the following:
 
@@ -69,7 +69,7 @@ Building the code is again the same on Linux and Mac. Execute the following:
     ./configure -openblas --FC=mpifort
     make
 
-At this point, you can run "make install," and run the code using mpirun as you normally would (keep the radev environment active when doing this).
+At this point, you can run ``make install`` and run the code using ``mpirun`` as you normally would (keep the ``radev`` environment active when doing this).
 
 
 
@@ -89,8 +89,8 @@ This container is set up to get used to Rayleigh not to run productive models wi
 
 This command will create a terminal inside the container and drop you in a directory
 that contains a pre-compiled version of Rayleigh. You can run input examples or
-tests by executing `rayleigh.opt` or `rayleigh.dbg` and look at the output files, but
-all files will be deleted when you `exit` the container.
+tests by executing ``rayleigh.opt`` or ``rayleigh.dbg`` and look at the output files, but
+all files will be deleted when you ``exit`` the container.
 
 .. note:: If you use Apptainer/Singularity instead of docker you can keep the model output files, because Apptainer by default mounts the current directory into the container. The command to run Rayleigh inside the container is ``mpirun -np X apptainer exec geodynamics/rayleigh:latest rayleigh.opt``` (assuming you have a Rayleigh input file in the current directory).
 
@@ -217,71 +217,71 @@ Rayleigh is compiled using the standard Linux installation scheme of
 configure/make/make-install. From within the Rayleigh directory, run
 these commands:
 
-#. **./configure** – See Rayleigh/INSTALL or run ./configure --help to
+#. ``./configure`` – See Rayleigh/INSTALL or run ./configure --help to
    see relevant options.
 
-#. **make** – This produces the code. You can run **make -j** to build several
+#. ``make`` – This produces the code. You can run **make -j** to build several
    files in parallel and speed up the build this way.
 
-#. **make install** – This places the Rayleigh executables in
+#. ``make install`` – This places the Rayleigh executables in
    Rayleigh/bin. If you would like to place them in (say)
-   /home/my_rayleigh/bin, run configure as: **./configure
-   –prefix=/home/my_rayleigh**, i.e., the executables will be placed in the
-   **$(prefix)/bin** directory.
+   /home/my_rayleigh/bin, run configure as: ``./configure
+   –prefix=/home/my_rayleigh``, i.e., the executables will be placed in the
+   ``$(prefix)/bin`` directory.
 
-For most builds, two executables will be created: rayleigh.opt and
-rayleigh.dbg. Use them as follows:
+For most builds, two executables will be created: ``rayleigh.opt`` and
+``rayleigh.dbg``. Use them as follows:
 
-#. When running production jobs, use **rayleigh.opt**.
+#. When running production jobs, use ``rayleigh.opt``.
 
 #. If you encounter an unexpected crash and would like to report the
-   error, rerun the job with **rayleigh.dbg**. This version of the code
+   error, rerun the job with ``rayleigh.dbg``. This version of the code
    is compiled with debugging symbols. It will (usually) produce
    meaningful error messages in place of the gibberish that is output
    when rayleigh.opt crashes.
 
-If *configure* detects the Intel compiler, you will be presented with a
-number of choices for the vectorization option. If you select *all*,
-rayleigh.opt will not be created. Instead, rayleigh.sse, rayleigh.avx,
-etc. will be placed in Rayleigh/bin. This is useful if running on a
+If ``configure`` detects the Intel compiler, you will be presented with a
+number of choices for the vectorization option. If you select ``all``,
+``rayleigh.opt`` will not be created. Instead, ``rayleigh.sse``, ``rayleigh.avx``,
+etc. will be placed in ``Rayleigh/bin``. This is useful if running on a
 machine with heterogeneous node architectures (e.g., Pleiades). If you
 are not running on such a machine, pick the appropriate vectorization
 level, and rayleigh.opt will be compiled using that vectorization level.
 
-The default behavior of the **make** command is to build both the
-optimized, **rayleigh.opt**, and the debug versions, **rayleigh.dbg**. As
+The default behavior of the ``make`` command is to build both the
+optimized, ``rayleigh.opt``, and the debug versions, ``rayleigh.dbg``. As
 described above, if Intel is used and *all* is selected, every version will
-be compiled. To build only a single version, the **target=<target>** option
-may be used at the **make** stage, for example:
+be compiled. To build only a single version, the ``target=<target>`` option
+may be used at the ``make`` stage, for example:
 
-#. **make target=opt** - build only the optimized version, **rayleigh.opt**
+#. ``make target=opt`` - build only the optimized version, ``rayleigh.opt``
 
-#. **make target=dbg** - build only the debug version, **rayleigh.dbg**
+#. ``make target=dbg`` - build only the debug version, ``rayleigh.dbg``
 
-#. **make target=avx** - build only the AVX version, **rayleigh.avx**
+#. ``make target=avx`` - build only the AVX version, ``rayleigh.avx``
 
 When building a single target, the final name of the executable can be changed
-with the **output=<output>** option during the **make install** command. For example,
-to build the optimized version and name the executable **a.out**:
+with the ``output=<output>`` option during the ``make install`` command. For example,
+to build the optimized version and name the executable ``a.out``:
 
-#. **make target=opt** - only build the optimized version
+#. ``make target=opt`` - only build the optimized version
 
-#. **make target=opt output=a.out install** - install the optimized version as **a.out**
+#. ``make target=opt output=a.out install`` - install the optimized version as ``a.out``
 
-Inspection of the **$(prefix)/bin** directory (specified at configure time with the -prefix
-option) will show a new file named **a.out**.
+Inspection of the ``$(prefix)/bin`` directory (specified at configure time with the -prefix
+option) will show a new file named ``a.out``.
 
 If both the optimized version and the debug version have already been built, they
 can be renamed at install time as:
 
-#. **make** - build both optimized and debug version (or all versions)
+#. ``make`` - build both optimized and debug version (or all versions)
 
-#. **make target=opt output=a.out.opt install** - install and rename the optimized version
+#. ``make target=opt output=a.out.opt install`` - install and rename the optimized version
 
-#. **make target=dbg output=a.out.dbg install** - install and rename the debug version
+#. ``make target=dbg output=a.out.dbg install`` - install and rename the debug version
 
-The **output** option is only respected when a particular **target** is specified. Running
-**make output=a.out install** will install all **rayleigh.*** executables, they will not
+The ``output`` option is only respected when a particular ``target`` is specified. Running
+``make output=a.out install`` will install all ``rayleigh`` executables, they will not
 be renamed.
 
 .. _spack-setup:
@@ -333,7 +333,7 @@ Installation on HPC systems
 
 Given the amount of computational resources required to simulate convection in highly turbulent parameter regimes, many users will want to run Rayleigh in a HPC environment.  Here we provide instructions for compilation on two widely-used, national-scale supercomputing systems:  TACC Stampede2 and NASA Pleiades.   
 
-Example jobscripts containing the necessary commands to compile and run Rayleigh on various systems may be found in *Rayleigh/job_scripts/*.
+Example jobscripts containing the necessary commands to compile and run Rayleigh on various systems may be found in ``Rayleigh/job_scripts/``.
 
 .. _stampede2:
 
@@ -405,7 +405,7 @@ We suggest using the default Intel and MPI compilers provided by Pleiades as in 
 
    1) comp-intel/2020.4.304   2) mpi-hpe/mpt.2.25
 
-Note that Pleiades is a heterogeneous cluster, composed of many (primarily Intel) processor types. We suggest selecting the 'ALL' option when configuring Rayleigh to ensure that a unique executable is created for each of the possible vectorization options.  An example jobscript for Pleiades may be found in *Rayleigh/job_scripts/NASA_Pleiades*.
+Note that Pleiades is a heterogeneous cluster, composed of many (primarily Intel) processor types. We suggest selecting the ``ALL`` option when configuring Rayleigh to ensure that a unique executable is created for each of the possible vectorization options.  An example jobscript for Pleiades may be found in ``Rayleigh/job_scripts/NASA_Pleiades``.
 
 
 
@@ -441,7 +441,7 @@ benchmark-appropriate values. For example, setting ``benchmark_mode = 1`` define
 Christensen et al. (2001) :cite:`CHRISTENSEN200125` initial conditions. A benchmark report is
 written every 5000 time steps by setting
 ``benchmark_report_interval = 5000``. The benchmark reports are text
-files found within directory **path_to_my_sim/Benchmark_Reports/** and
+files found within directory ``path_to_my_sim/Benchmark_Reports/`` and
 numbered according to the appropriate time step. The
 | ``benchmark_integration_interval`` variable sets the interval at which
 measurements are taken to calculate the values reported in the
@@ -457,37 +457,36 @@ To run this benchmark, create a directory from within which to run your
 benchmark, and follow along with the commands below. Modify the
 directory structure a each step as appropriate:
 
-#. mkdir path_to_my_sim
+#. ``mkdir path_to_my_sim``
 
-#. cd path_to_my_sim
+#. ``cd path_to_my_sim``
 
-#. cp
-   path_to_rayleigh/Rayleigh/input_examples/c2001_case0_minimal   main_input
+#. ``cp
+   path_to_rayleigh/Rayleigh/input_examples/c2001_case0_minimal main_input``
 
-#. cp path_to_rayleigh/Rayleigh/bin/rayleigh.opt   rayleigh.opt (or use
-   *ln -s* in lieu of *cp*)
+#. ``cp path_to_rayleigh/Rayleigh/bin/rayleigh.opt rayleigh.opt`` (or use
+   ``ln -s`` in lieu of ``cp``)
 
-#. mpiexec -np **N** ./rayleigh.opt -nprow **X** -npcol **Y** -nr **R**
-   -ntheta **T**
+#. ``mpiexec -np N ./rayleigh.opt -nprow X -npcol Y -nr R -ntheta T``
 
-For the value **N**, select the number of cores you wish to run with.
+For the value ``N``, select the number of cores you wish to run with.
 For this short test, 32 cores is more than sufficient. Even with only
 four cores, the lower-resolution test suggested below will only take
-around half an hour. The values **X** and **Y** are integers that
+around half an hour. The values ``X`` and ``Y`` are integers that
 describe the process grid. They should both be at least 2, and must
 satisfy the expression
 
 .. math:: N=X \times Y.
 
 Some suggested combinations are {N,X,Y} = {32,4,8}, {16,4,4}, {8,2,4},
-{4,2,2}. The values **R** and **T** denote the number of radial and
+{4,2,2}. The values ``R`` and ``T`` denote the number of radial and
 latitudinal collocation points respectively. Select either {R,T}={48,64}
 or {R,T}={64,96}. The lower-resolution case takes about 3 minutes to run
 on 32 Intel Haswell cores. The higher-resolution case takes about 12
 minutes to run on 32 Intel Haswell cores.
 
 Once your simulation has run, examine the file
-path_to_my_sim/Benchmark_Reports/00025000. You should see output similar
+``path_to_my_sim/Benchmark_Reports/00025000``. You should see output similar
 to that presented in Tables table_benchmark_low_ or table_benchmark_high_ . Your numbers may differ
 slightly, but all values should have a % difference of less than 1. If
 this condition is satisfied, your installation is working correctly.
@@ -599,7 +598,7 @@ Rayleigh below. Rayleigh’s input parameters are grouped in so-called
 namelists, which are subcategories of related input parameters that will
 be read upon program start and assigned to Fortran variables with
 identical names. Below are the first four Fortran namelists in the input
-file **c2001_case0_minimal**.
+file ``c2001_case0_minimal``.
 
 ::
 
@@ -631,7 +630,7 @@ Boussinesq MHD Benchmark: c2001_case1_minimal
 
 The MHD Boussinesq benchmark with an insulating inner core of
 Christensen et al. (2001) :cite:`CHRISTENSEN200125` is denoted as Case 1 and is specified with
-input file **c2001_case1_minimal**. Only the namelists modified compared
+input file ``c2001_case1_minimal``. Only the namelists modified compared
 to Case 0 (\ :ref:`cookbookCase0Minimal` above) are shown
 below.
 
@@ -658,7 +657,7 @@ Steady Anelastic non-MHD Benchmark: j2011_steady_hydro_minimal
 
 Jones et al. (2011) describes a benchmark for an anelastic hydrodynamic
 solution that is steady in a drifting frame. This benchmark is specified
-for Rayleigh with input file **j2011_steady_hydro_minimal**. Below are
+for Rayleigh with input file ``j2011_steady_hydro_minimal``. Below are
 the relevant Fortran namelists.
 
 ::
@@ -691,7 +690,7 @@ Steady Anelastic MHD Benchmark: j2011_steady_mhd_minimal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The anelastic MHD benchmark described in Jones et al. (2011) can be run
-with main input file **j2011_steady_mhd_minimal**. The Fortran namelists
+with main input file ``j2011_steady_mhd_minimal``. The Fortran namelists
 differing from the Jones et al. (2011) anelastic hydro benchmark
 (§:ref:`cookbookHydroAnelastic` above) are shown here.
 
@@ -718,7 +717,7 @@ This is a Boussinesq convection benchmark described in Breuer et al. (2010) :cit
 in a dual buoyancy system that allows both thermal and chemical buoyancy sources. 
 The case 0 contains three input lists that describes varying contributions of 
 thermal vs chemical Rayleigh numbers whereas the total Rayleigh number stays the same. 
-This benchmark is specified for Rayleigh with input file b2010_case0_*T_input. 
+This benchmark is specified for Rayleigh with input file ``b2010_case0_*T_input``. 
 Below is an example for 80% thermal and 20% chemical convection scene for the 
 relevant Fortran namelists:
 

@@ -7,7 +7,7 @@
 Running Rayleigh
 ================
 
-After setting up a custom `main_input` file, now it is time to run the new model.
+After setting up a custom ``main_input`` file, now it is time to run the new model.
 This section focuses on the basics of running a Rayleigh model.
 
 .. _load_balance:
@@ -152,10 +152,10 @@ points for a given run. These files begin with an 8-digit prefix
 indicating the time step at which the checkpoint was created.
 
 The frequency with which standard checkpoints are generated can be
-controlled by modifying the **checkpoint_interval** variable in the
-**temporal_controls_namelist**. For example, if you want to generate a
+controlled by modifying the **checkpoint_interval`` variable in the
+``temporal_controls_namelist``. For example, if you want to generate a
 checkpoint once every 50,000 time steps, you would modify your
-main_input file to read:
+``main_input`` file to read:
 
 ::
 
@@ -167,10 +167,10 @@ The default value of checkpoint_interval is 1,000,000, which is
 typically much larger than what you will use in practice.
 
 Restarting from a checkpoint is accomplished by first assigning a value
-of -1 to the variables **init_type** and/or **magnetic_init_type** in
-the **initial_conditions_namelist**. In addition, the time step from
+of -1 to the variables ``init_type`` and/or ``magnetic_init_type`` in
+the ``initial_conditions_namelist``. In addition, the time step from
 which you wish to restart from should be specified using the
-**restart_iter** variable in the initial_conditions_namelist. The
+``restart_iter`` variable in the initial_conditions_namelist. The
 example below will restart both the magnetic and hydrodynamic variables
 using the set of checkpoint files beginning with the prefix 00005000.
 
@@ -210,7 +210,7 @@ assigning a value of zero to restart_iter:
     restart_iter = 0        ! Restart using the most recent checkpoint
    /
 
-In this case, Rayleigh reads the **last_checkpoint** file (found within
+In this case, Rayleigh reads the ``last_checkpoint`` file (found within
 the Checkpoints directory) to determine which checkpoint it reads.
 
 .. _quicksaves:
@@ -231,15 +231,15 @@ high-cadence, but require low storage due to the rotating reuse of
 quicksave files.
 
 The cadence with which quicksaves are written can be specified by
-setting the **quicksave_interval** variable in the
-**temporal_controls_namelist**. Alternatively, the elapsed wall time (in
+setting the ``quicksave_interval`` variable in the
+``temporal_controls_namelist``. Alternatively, the elapsed wall time (in
 minutes) that passes between quicksaves may be controlled by specifying
 the **quicksave_minutes** variable. If both quicksave_interval and
 quicksave_minutes are specified, quicksave_minutes takes precedence.
 
 What distinguishes quicksaves from standard checkpoints is that only a
 specified number of quicksaves exist on the disk at any given time. That
-number is determined by the value of **num_quicksaves**. Quicksave files
+number is determined by the value of ``num_quicksaves``. Quicksave files
 begin with the prefix *quicksave_XX*, where XX is a 2-digit code,
 ranging from 1 through num_quicksaves and indicates the quicksave
 number. Consider the following example:
@@ -258,7 +258,7 @@ files beginning with prefix quicksave_02 will be generated. Following
 that, at time step 30,000, another checkpoint will be generated, *but it
 will overwrite the existing quicksave_01 files*. At time step 40,000,
 the quicksave_02 files will be overwritten, and so forth. Because the
-**num_quicksaves** was set to 2, filenames with prefix quicksave_03 will
+``num_quicksaves`` was set to 2, filenames with prefix quicksave_03 will
 never be generated.
 
 Note that checkpoints beginning with an 8-digit prefix (e.g., 00035000)
@@ -292,7 +292,7 @@ Checkpoint Logs
 ~~~~~~~~~~~~~~~
 
 When checkpoints are written, the number of the most recent checkpoint
-is appended to a file named **checkpoint_log**, found in the Checkpoints
+is appended to a file named ``checkpoint_log``, found in the Checkpoints
 directory. The checkpoint log can be used to identify the time step
 number of a quicksave file that otherwise has no identifying
 information. While this information is also contained in the grid_etc
@@ -311,35 +311,35 @@ Controlling Run Length & Time Stepping
 --------------------------------------
 
 A simulation’s runtime and time-step size can be controlled using the
-**temporal_controls** namelist. The length of time for which a
+``temporal_controls`` namelist. The length of time for which a
 simulation runs before completing is controlled by the namelist variable
-**max_time_minutes**. The maximum number of time steps that a simulation
+``max_time_minutes``. The maximum number of time steps that a simulation
 will run for is determined by the value of the namelist
-**max_iterations**. The simulation will complete when it has run for
-*max_time_minutes minutes* or when it has run for *max_iterations time
+``max_iterations``. The simulation will complete when it has run for
+``max_time_minutes`` *minutes* or when it has run for ``max_iterations`` *time
 steps* – whichever occurs first.
 
 An orderly shutdown of Rayleigh can be manually triggered by creating a file
-with the name set in **terminate_file** (i.e., running the command *touch
+with the name set in ``terminate_file`` (i.e., running the command *touch
 terminate* in the default setting). If the file is found, Rayleigh will stop
 after the next time step and write a checkpoint file. The existence of
-**terminate_file** is checked every **terminate_check_interval** iterations.
+``terminate_file`` is checked every ``terminate_check_interval`` iterations.
 The check can be switched off completely by setting
-**terminate_check_interval** to -1. Both of these options are set in the
-**io_controls_namelist**. With the appropriate job script this feature can be
+``terminate_check_interval`` to -1. Both of these options are set in the
+``io_controls_namelist``. With the appropriate job script this feature can be
 used to easily restart the code with new settings without losing the current
-allocation in the queuing system. A **terminate_file** left over from
+allocation in the queuing system. A ``terminate_file`` left over from
 a previous run is automatically deleted when the code starts.
 
 Time-step size in Rayleigh is controlled by the Courant-Friedrichs-Lewy
 condition (CFL; as determined by the fluid velocity and Alfvén speed). A
-safety factor of **cflmax** is applied to the maximum time step
+safety factor of ``cflmax`` is applied to the maximum time step
 determined by the CFL. Time-stepping is adaptive. An additional variable
-**cflmin** is used to determine if the time step should be increased.
+``cflmin`` is used to determine if the time step should be increased.
 
 The user may also specify the maximum allowed time-step size through the
-namelist variable **max_time_step**. The minimum allowable time-step
-size is controlled through the variable **min_time_step**. If the CFL
+namelist variable ``max_time_step``. The minimum allowable time-step
+size is controlled through the variable ``min_time_step``. If the CFL
 condition is less than this value, the simulation will exit.
 
 Let :math:`\Delta t` be the current time-step size, and let
@@ -395,13 +395,13 @@ I/O Format Controls
 
 By default, integer output is reported with 8 digits and padded with leading zeros.  This includes integer iteration
 numbers reported to stdout at each timestep and integer-number filenames created through diagnostics and checkpointing
-output.  If desired, the number of digits may be controlled through the **integer_output_digits** variable.   When
-reading in a Checkpoint created with a different number of digits, set the **integer_input_digits** variable to an appropriate
+output.  If desired, the number of digits may be controlled through the ``integer_output_digits`` variable.   When
+reading in a Checkpoint created with a different number of digits, set the ``integer_input_digits`` variable to an appropriate
 value.  
 
 At several points in the code, floating-point output is sent to stdout.  This output is formatted using scienific notation, with
 three digits to the right of the decimal place.     The number of digits after the decimal can be controlled through the
-**decimal_places** variable.
+``decimal_places`` variable.
 
 As an example, the following combination of inputs
 ::
@@ -450,7 +450,7 @@ buffered on-node and written to disk only when the run has terminated.
 There are situations where it can be advantageous to have a regularly
 updated log file whose update frequency may be controlled. This feature
 exists in Rayleigh and may be accessed by assigning values to
-**stdout_flush_interval** and **stdout_file** in the io controls
+``stdout_flush_interval`` and ``stdout_file`` in the io controls
 namelist.
 
 ::
@@ -461,7 +461,7 @@ namelist.
    /
 
 Set stdout_file to the name of a file that will contain Rayleigh’s text
-output. In the example above, a file named *routput* will be appear in
+output. In the example above, a file named ``routput`` will be appear in
 the simulation directory and will be updated periodically throughout the
 run. The variable stdout_flush_interval determines how many lines of
 text are buffered before they are flushed to routput. Rayleigh prints
@@ -474,11 +474,11 @@ accumulated.
 Changes in the time-step size and self-termination of the run will also
 force a text-buffer flush. Unexpected crashes and sudden termination by
 the system job scheduler do not force a buffer flush. Note that the
-default value of stdout_file is **‘nofile’**. If this value is
+default value of stdout_file is ``'nofile'``. If this value is
 specified, output will directed to normal stdout.
 
 To save on disk space for logs of very long runs, the number of status outputs
-can be reduced by specifying **statusline_interval** in the
+can be reduced by specifying ``statusline_interval`` in the
 **io_controls_namelist**. This causes only every n-th status line to be
 written.
 
