@@ -50,7 +50,21 @@ Contains
         If (newtonian_cooling) Then
             Allocate(tvar_eq(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
             tvar_eq(:,:,:) = 0.0d0
+
             If (newtonian_cooling_type .eq. 1) Then
+                ! No angular variation
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        Do k =1, n_phi
+                            tvar_eq(k,r,t) = newtonian_delta_tvar_eq
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+
+
+            If (newtonian_cooling_type .eq. 2) Then
+                ! Angular variation (ell=1,m=1, motivated by hot Jupiters)
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
