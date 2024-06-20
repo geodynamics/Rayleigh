@@ -12,9 +12,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 ### Fixed
 
-- Rayleigh no longer attempts to update the record count and close a diagnostics file (e.g., G_Avgs) that failed to open correctly.  \[Nick Featherstone; 6-19-2024; [#510](https://github.com/geodynamics/Rayleigh/pull/510) , [#523](https://github.com/geodynamics/Rayleigh/pull/523)  \]
+- Rayleigh no longer attempts to update the record count and close a diagnostics file (e.g., G_Avgs) that failed to open correctly.  \[Nick Featherstone; 6-18-2024; [#510](https://github.com/geodynamics/Rayleigh/pull/510) , [#523](https://github.com/geodynamics/Rayleigh/pull/523)  \]
 
-- Before an existing checkpoint file is overwritten, its file size is first set to zero.  This fixes a bug that caused Rayleigh to generate checkpoint files that were too large in some instances due to resolution changes \[Nick Featherstone; 6-19-2024; [#528](https://github.com/geodynamics/Rayleigh/pull/528)  \]
+- Fixed a bug that was causing documentation build to become progressively slower for subsequent builds due to recursive inclusion of the doc\build directory  \[Philipp Edelmann; 6-17-2024; [#527](https://github.com/geodynamics/Rayleigh/pull/527)\]
+
+- Before an existing checkpoint file is overwritten, its file size is first set to zero.  This fixes a bug that caused Rayleigh to generate checkpoint files that were too large in some instances due to resolution changes \[Nick Featherstone; 6-18-2024; [#528](https://github.com/geodynamics/Rayleigh/pull/528)  \]
 
 ## [1.2.0] - 5-29-2024
 
