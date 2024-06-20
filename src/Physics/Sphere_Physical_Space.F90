@@ -38,6 +38,16 @@ Module Sphere_Physical_Space
     Implicit None
 
 Contains
+    
+    Subroutine Physical_Space_Init()
+        Implicit None
+        
+        ! Any persistant arrays needs for physical space routines can be
+        ! initialized here.
+
+
+    End Subroutine Physical_Space_Init
+
     Subroutine physical_space()
         Implicit None
         Integer :: i
