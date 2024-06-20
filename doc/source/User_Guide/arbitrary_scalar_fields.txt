@@ -242,38 +242,38 @@ other outputs, incrementing based on the index of the scalar field.
 Active scalar fields
 ********************
 
-=========================================================== =================== ================================================================
- :math:`\chi_{a_i}`                                         10001+200*(i-1)     active scalar field i
- :math:`\chi_{a_i}^\prime`                                  10002+200*(i-1)     active scalar field i perturbation
- :math:`\overline{\chi_{a_i}}`                              10003+200*(i-1)     active scalar field i mean
- :math:`\frac{\partial\chi_{a_i}}{\partial r}`              10004+200*(i-1)     radial derivative of active scalar field i
- :math:`\frac{\partial\chi_{a_i}^\prime}{\partial r}`       10005+200*(i-1)     radial derivative of the active scalar field i perturbation
- :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial r}`           10006+200*(i-1)     radial derivative of the active scalar field i mean
- :math:`\frac{\partial\chi_{a_i}}{\partial \theta}`         10007+200*(i-1)     latitudinal derivative of active scalar field i
- :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \theta}`  10008+200*(i-1)     latitudinal derivative of the active scalar field i perturbation
- :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \theta}`      10009+200*(i-1)     latitudinal derivative of the active scalar field i mean
- :math:`\frac{\partial\chi_{a_i}}{\partial \phi}`           10010+200*(i-1)     longitudinal derivative of active scalar field i
- :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \phi}`    10011+200*(i-1)     longitudinal derivative of the active scalar field i perturbation
- :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \phi}`        10012+200*(i-1)     longitudinal derivative of the active scalar field i mean
-=========================================================== =================== ================================================================
+=============================================================== =================== ================================================================
+ :math:`\chi_{a_i}`                                             10001+200*(i-1)     active scalar field i
+ :math:`\chi_{a_i}^\prime`                                      10002+200*(i-1)     active scalar field i perturbation
+ :math:`\overline{\chi_{a_i}}`                                  10003+200*(i-1)     active scalar field i mean
+ :math:`\frac{\partial\chi_{a_i}}{\partial r}`                  10004+200*(i-1)     radial derivative of active scalar field i
+ :math:`\frac{\partial\chi_{a_i}^\prime}{\partial r}`           10005+200*(i-1)     radial derivative of the active scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial r}`       10006+200*(i-1)     radial derivative of the active scalar field i mean
+ :math:`\frac{\partial\chi_{a_i}}{\partial \theta}`             10007+200*(i-1)     latitudinal derivative of active scalar field i
+ :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \theta}`      10008+200*(i-1)     latitudinal derivative of the active scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \theta}`  10009+200*(i-1)     latitudinal derivative of the active scalar field i mean
+ :math:`\frac{\partial\chi_{a_i}}{\partial \phi}`               10010+200*(i-1)     longitudinal derivative of active scalar field i
+ :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \phi}`        10011+200*(i-1)     longitudinal derivative of the active scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \phi}`    10012+200*(i-1)     longitudinal derivative of the active scalar field i mean
+=============================================================== =================== ================================================================
 
 Passive scalar fields
 *********************
 
-=========================================================== =================== =================================================================
- :math:`\chi_{p_i}`                                         20001+200*(i-1)     passive scalar field i
- :math:`\chi_{p_i}^\prime`                                  20002+200*(i-1)     passive scalar field i perturbation
- :math:`\overline{\chi_{p_i}}`                              20003+200*(i-1)     passive scalar field i mean
- :math:`\frac{\partial\chi_{p_i}}{\partial r}`              20004+200*(i-1)     radial derivative of passive scalar field i
- :math:`\frac{\partial\chi_{p_i}^\prime}{\partial r}`       20005+200*(i-1)     radial derivative of the passive scalar field i perturbation
- :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial r}`           20006+200*(i-1)     radial derivative of the passive scalar field i mean
- :math:`\frac{\partial\chi_{p_i}}{\partial \theta}`         20007+200*(i-1)     latitudinal derivative of passive scalar field i
- :math:`\frac{\partial\chi_{p_i}^\prime}{\partial \theta}`  20008+200*(i-1)     latitudinal derivative of the passive scalar field i perturbation
- :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial \theta}`      20009+200*(i-1)     latitudinal derivative of the passive scalar field i mean
- :math:`\frac{\partial\chi_{p_i}}{\partial \phi}`           20010+200*(i-1)     longitudinal derivative of passive scalar field i
- :math:`\frac{\partial\chi_{p_i}^\prime}{\partial \phi}`    20011+200*(i-1)     longitudinal derivative of the passive scalar field i perturbation
- :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial \phi}`        20012+200*(i-1)     longitudinal derivative of the passive scalar field i mean
-=========================================================== =================== =================================================================
+=============================================================== =================== =================================================================
+ :math:`\chi_{p_i}`                                             20001+200*(i-1)     passive scalar field i
+ :math:`\chi_{p_i}^\prime`                                      20002+200*(i-1)     passive scalar field i perturbation
+ :math:`\overline{\chi_{p_i}}`                                  20003+200*(i-1)     passive scalar field i mean
+ :math:`\frac{\partial\chi_{p_i}}{\partial r}`                  20004+200*(i-1)     radial derivative of passive scalar field i
+ :math:`\frac{\partial\chi_{p_i}^\prime}{\partial r}`           20005+200*(i-1)     radial derivative of the passive scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial r}`       20006+200*(i-1)     radial derivative of the passive scalar field i mean
+ :math:`\frac{\partial\chi_{p_i}}{\partial \theta}`             20007+200*(i-1)     latitudinal derivative of passive scalar field i
+ :math:`\frac{\partial\chi_{p_i}^\prime}{\partial \theta}`      20008+200*(i-1)     latitudinal derivative of the passive scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial \theta}`  20009+200*(i-1)     latitudinal derivative of the passive scalar field i mean
+ :math:`\frac{\partial\chi_{p_i}}{\partial \phi}`               20010+200*(i-1)     longitudinal derivative of passive scalar field i
+ :math:`\frac{\partial\chi_{p_i}^\prime}{\partial \phi}`        20011+200*(i-1)     longitudinal derivative of the passive scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial \phi}`    20012+200*(i-1)     longitudinal derivative of the passive scalar field i mean
+=============================================================== =================== =================================================================
 
 
 Further Information
