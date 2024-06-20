@@ -36,6 +36,23 @@ add_dependencies(rayleigh run_param_header)
 
 target_include_directories(rayleigh PRIVATE ${PROJECT_SOURCE_DIR}/src/Include ${CMAKE_CURRENT_BINARY_DIR})
 
+set(RAYLEIGH_CPU_OPTIMIZATIONS "none" CACHE PATH "Specify a CPU architecture to build for. Currently only 'native' or 'none' are supported.")
+
+if (RAYLEIGH_CPU_OPTIMIZATIONS STREQUAL "native")
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(rayleigh PRIVATE -march=native)
+    message(STATUS "enabling native optimizations")
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    target_compile_options(rayleigh PRIVATE -xHost)
+  else()
+    message(FATAL_ERROR "For your compiler no native optimizations are automatically detected. Please specify compiler flags manually and set 'CPU_OPTIMIZATIONS' to 'none'")
+  endif()
+elseif (RAYLEIGH_CPU_OPTIMIZATIONS STREQUAL "none")
+  # do nothing, respect manually set compiler flags
+else()
+  message(FATAL_ERROR "Only 'native' and 'none' are supported for parameter 'CPU_OPTIMIZATIONS'")
+endif()
+
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   target_compile_definitions(rayleigh PRIVATE GNU_COMPILER)
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
