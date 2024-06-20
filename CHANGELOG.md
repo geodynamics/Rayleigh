@@ -10,6 +10,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 ### Added
 ### Changed
+
+- The logic in the configure script that determines the library-link flags for compilation on different systems has been simplified.   \[Rene Gassmoeller; 6-19-2024; [#534](https://github.com/geodynamics/Rayleigh/pull/534)\]
+
 ### Fixed
 
 - Rayleigh no longer attempts to update the record count and close a diagnostics file (e.g., G_Avgs) that failed to open correctly.  \[Nick Featherstone; 6-18-2024; [#510](https://github.com/geodynamics/Rayleigh/pull/510) , [#523](https://github.com/geodynamics/Rayleigh/pull/523)  \]
@@ -19,6 +22,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Before an existing checkpoint file is overwritten, its file size is first set to zero.  This fixes a bug that caused Rayleigh to generate checkpoint files that were too large in some instances due to resolution changes \[Nick Featherstone; 6-18-2024; [#528](https://github.com/geodynamics/Rayleigh/pull/528)  \]
 
 - The standard c++ libraries are no longer linked when compiling Rayleigh; \[Brandon Lazard; 6-19-2024; [#532](https://github.com/geodynamics/Rayleigh/pull/532)\]
+
+
 
 ## [1.2.0] - 5-29-2024
 
