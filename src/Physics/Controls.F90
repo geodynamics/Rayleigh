@@ -66,6 +66,8 @@ Module Controls
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
                                                 ! Generally only do this if reference state is nonadiabatic
+    Logical :: pseudo_incompressible = .false.  ! Switch from anelastic to pseudo-incompressible approximation
+    
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
 
@@ -77,7 +79,7 @@ Module Controls
 
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
-                & benchmark_integration_interval, benchmark_report_interval, &
+                & benchmark_integration_interval, benchmark_report_interval, pseudo_incompressible, &
                 & momentum_advection, inertia, n_active_scalars, n_passive_scalars
 
     !///////////////////////////////////////////////////////////////////////////
@@ -217,6 +219,7 @@ Contains
         viscous_heating = .true.
         ohmic_heating = .true.
         advect_reference_state = .true.
+        pseudo_incompressible = .false.
         benchmark_mode = 0
         benchmark_integration_interval = -1
         benchmark_report_interval = -1

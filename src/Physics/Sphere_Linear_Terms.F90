@@ -196,13 +196,21 @@ Contains
     Subroutine Load_Linear_Coefficients()
         Implicit None
 
-        Real*8, Allocatable :: H_Laplacian(:), amp(:)
+        Real*8, Allocatable :: H_Laplacian(:), amp(:), psi_factor(:)
         Integer :: l, lp, i
         Real*8 :: diff_factor,ell_term
         !rmin_norm
         diff_factor = 1.0d0 ! hyperdiffusion factor (if desired, 1.0d0 is equivalent to no hyperdiffusion)
         Allocate(amp(1:N_R))
         Allocate(H_Laplacian(1:N_R))
+        Allocate(psi_factor(1:N_R))
+        
+        If (pseudo_incompressible) Then
+            psi_factor(:) = ref%exp_entropy(:)
+        Else
+            psi_factor(:) = 1.0
+        Endif
+        
         Do lp = 1, my_nl_lm
             If (bandsolve) Call DeAllocate_LHS(lp)
             Call Allocate_LHS(lp)
@@ -290,20 +298,27 @@ Contains
 
 
                 ! Temperature
-                amp = -ref%Buoyancy_Coeff/H_Laplacian
+                amp = -ref%Buoyancy_Coeff*psi_factor/H_Laplacian
                 Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
                 ! Chi
                 do i = 1, n_active_scalars
-                  amp = -ref%chi_buoyancy_coeff(i,:)/H_Laplacian
+                  amp = -ref%chi_buoyancy_coeff(i,:)*psi_factor/H_Laplacian
                   Call add_implicit_term(weq, chiavar(i), 0, amp,lp)    ! Gravity
                 end do
 
 
-                ! Pressure
+                ! Pressure Force
                 !amp = 1.0d0/(Ek*H_Laplacian)*ref%density        ! dPdr
-                amp = ref%dpdr_W_term/H_Laplacian
+                amp = ref%dpdr_W_term*psi_factor/H_Laplacian
                 Call add_implicit_term(weq,pvar, 1, amp,lp)
+                
+                ! LBR term
+                ! amp = -(rho*/rho)(ds/dr)/H_Laplacian (P/c_P)
+                If (pseudo_incompressible) Then
+                    amp = -ref%dsdr_over_cp * psi_factor / H_Laplacian 
+                    Call add_implicit_term(weq,pvar, 0, amp, lp)
+                Endif
 
                 ! W
 
@@ -332,7 +347,7 @@ Contains
 
                 ! Pressure
                 !amp = -(1.0d0)/Ek*ref%density
-                amp = ref%pressure_dwdr_term
+                amp = ref%pressure_dwdr_term*psi_factor
                 Call add_implicit_term(peq,pvar, 0, amp,lp)
 
                 ! W
@@ -453,25 +468,25 @@ Contains
                     amp = 1.0d0
                     Call add_implicit_term(aeq,avar, 0, amp,lp, static = .true.)    ! Time-independent piece
 
-                    amp = H_Laplacian*eta*diff_factor
+                    amp = H_Laplacian*eta*psi_factor*diff_factor
                     Call add_implicit_term(aeq,avar, 0, amp,lp)
 
-                    amp = 1.0d0*eta*diff_factor
+                    amp = 1.0d0*eta*psi_factor*diff_factor
                     Call add_implicit_term(aeq,avar, 2, amp,lp)
 
                     ! Eta variation in radius
-                    amp = A_Diffusion_Coefs_1*diff_factor
+                    amp = A_Diffusion_Coefs_1*psi_factor*diff_factor
                     Call add_implicit_term(aeq,avar,1,amp,lp)
 
                     !=========================================
                     !  Bpol Equation
-                    amp = 1.0d0
+                    amp = psi_factor
                     Call add_implicit_term(ceq,cvar, 0, amp,lp, static = .true.)    ! Time-independent piece
 
-                    amp = H_Laplacian*eta*diff_factor
+                    amp = H_Laplacian*eta*psi_factor*diff_factor
                     Call add_implicit_term(ceq,cvar, 0, amp,lp)
 
-                    amp = 1.0d0*eta*diff_factor
+                    amp = 1.0d0*eta*psi_factor*diff_factor
                     Call add_implicit_term(ceq,cvar, 2, amp,lp)
                 Endif
 
@@ -511,6 +526,7 @@ Contains
         Enddo
         DeAllocate(amp)
         DeAllocate(H_Laplacian)
+        DeAllocate(psi_factor)
     End Subroutine Load_Linear_Coefficients
 
     Subroutine Set_Boundary_Conditions(mode_ind)
@@ -980,6 +996,9 @@ Contains
                 ! Else stress-free
                 r = 1
                 samp = -(2.0d0/radius(r)+ref%dlnrho(r))
+                If (pseudo_incompressible) Then
+                    samp = samp - ref%dsdr_over_cp(r)
+                Endif
                 Call Load_BC(lp,r,peq,wvar,one,2)
                 Call Load_BC(lp,r,peq,wvar,samp,1)
 
@@ -997,6 +1016,9 @@ Contains
                 !stress_free_bottom
                 r = N_R
                 samp = -(2.0d0/radius(r)+ref%dlnrho(r))
+                If (pseudo_incompressible) Then
+                    samp = samp - ref%dsdr_over_cp(r)
+                Endif
                 Call Load_BC(lp,r,peq,wvar,one,2)
                 Call Load_BC(lp,r,peq,wvar,samp,1)
                 Call Load_BC(lp,r,zeq,zvar,one,1)
