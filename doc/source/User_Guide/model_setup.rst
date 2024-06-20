@@ -175,8 +175,6 @@ Rayleigh's default behavior is to employ a Chebyshev collocation scheme in radiu
     rmin = 1.0
     rmax = 2.0
     n_r = 4
-    dr_weights = 0.1,0.3,0.2
-    nr_count = 2,4,2
    /
    &numerical_controls_namelist
     chebyshev=.false.
