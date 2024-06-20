@@ -1,0 +1,284 @@
+Rayleigh can solve for additional active, :math:`\chi_{a_i}`, (coupled to the momentum equation through buoyancy) or
+passive, :math:`\chi_{p_i}`, scalar fields (where :math:`i` can range up to 50 for each type of scalar).
+
+.. _scalar_equations:
+
+Scalar Equations
+^^^^^^^^^^^^^^^^
+
+Both types of scalar fields are evolved using:
+
+.. math::
+   :label: passive_scalar_eval
+
+   \frac{\partial \chi_{p_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{p_i}  + d_{1_i}\,\mathrm{g}_{1_i}(r)v_r =\
+        d_{2_i}\,\boldsymbol{\nabla}\cdot\left[\mathrm{g}_{2_i}(r)\,\boldsymbol{\nabla}\chi_{p_i} \right] + d_{3_i}\,\mathrm{g}_{3_i},\
+        \quad 1 \leq i \leq 50
+
+for the passive scalars, and:
+
+
+.. math::
+   :label: active_scalar_eval
+
+   \frac{\partial \chi_{a_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{a_i}  + d_{4_i}\,\mathrm{g}_{4_i}(r)v_r =\
+        d_{5_i}\,\boldsymbol{\nabla}\cdot\left[\mathrm{g}_{5_i}(r)\,\boldsymbol{\nabla}\chi_{a_i} \right] + d_{6_i}\,\mathrm{g}_{6_i},\
+        \quad 1 \leq i \leq 50
+
+for the active scalars.  
+
+In addition the momentum equation is modified to include a buoyancy coupling to the active scalars through
+a :math:`\sum_i d_{7_i}\,\mathrm{g}_{7_i}(r)\chi_{a_i}` term:
+
+.. math::
+   :label: momentum_active_scalars
+
+       \mathrm{f}_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
+        + c_1\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  =\ % Coriolis
+       &\left[c_2\,\mathrm{f}_2(r)\Theta - \sum_i d_{7_i}\,\mathrm{g}_{7_i}(r)\chi_{a_i} \right]\,\boldsymbol{\hat{r}} % buoyancy
+        - c_3\,\mathrm{f}_1(r)\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1(r)}\right) % pressure
+        \\
+        &+ c_4\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+        + c_5\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}
+
+where all other terms are as defined in :ref:`equations_solved`.
+
+Limitations
+^^^^^^^^^^^
+
+While under development several of the functions :math:`\mathrm{g}_{j_i}` and constants :math:`d_{j_i}` are hard-coded to be 0:
+
+.. math::
+
+   \begin{aligned}
+   \mathrm{g}_{1_i}(r) &\rightarrow 0\; &d_{1_i} &\rightarrow 0 \\
+   \mathrm{g}_{3_i}(r) &\rightarrow 0\; &d_{3_i} &\rightarrow 0 \\
+   \mathrm{g}_{4_i}(r) &\rightarrow 0\; &d_{4_i} &\rightarrow 0 \\
+   \mathrm{g}_{6_i}(r) &\rightarrow 0\; &d_{6_i} &\rightarrow 0 \\
+   \end{aligned}
+
+which reduces :eq:`passive_scalar_eval` and :eq:`active_scalar_eval` to simple advection-diffusion equations.  The remaining non-zero coefficients are set according to the reference type selected.  Currently only reference_type=1 is tested but development is continuing on supporting other reference types, including custom forms for the
+functions :math:`\mathrm{g}_{j_i}` and the constants :math:`d_{j_i}`.
+
+Nondimensional Boussinesq Formulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Rayleigh can be run using a nondimensional, Boussinesq formulation
+of the MHD equations (**reference_type=1**). Adopting this nondimensionalization is equivalent to assigning the following to the
+functions :math:`\mathrm{g}_{j_i}` and the constants :math:`d_{j_i}`:
+
+
+.. math::
+
+   \begin{aligned}
+   \mathrm{g}_{2_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{2_i} &\rightarrow \frac{1}{Pr_{\chi_{p_i}}} \\
+   \mathrm{g}_{5_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{5_i} &\rightarrow \frac{1}{Pr_{\chi_{a_i}}} \\
+   \mathrm{g}_{7_i}(r) &\rightarrow \left(\frac{r}{r_o}\right)^n \; &d_{7_i} &\rightarrow \frac{Ra_{\chi_{a_i}}}{Pr_{\chi_{a_i}}} \\
+   \end{aligned}
+
+When these substitutions, along with those in :ref:`boussinesq`, are made, :eq:`passive_scalar_eval`-:eq:`momentum_active_scalars` transform to:
+
+.. math::
+   :label: boussinesq_scalars
+
+   \frac{\partial \chi_{p_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{p_i}  &=\
+        \frac{1}{Pr_{\chi_{p_i}}}\,\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}(r)\,\boldsymbol{\nabla}\chi_{p_i} \right],\
+        \quad 1 \leq i \leq 50 \\
+   \frac{\partial \chi_{a_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{a_i}  &=\
+        \frac{1}{Pr_{\chi_{a_i}}}\,\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}(r)\,\boldsymbol{\nabla}\chi_{a_i} \right],\
+        \quad 1 \leq i \leq 50 \\
+       \left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
+        + \frac{2}{E}\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
+       \left[\frac{Ra}{Pr}\Theta - \sum_i\frac{Ra_{\chi_{a_i}}}{Pr_{\chi_{a_i}}}\chi_{a_i}\right]\left(\frac{r}{r_o}\right)^n\,\boldsymbol{\hat{r}} % buoyancy
+        - \frac{1}{E}\boldsymbol{\nabla}P % pressure
+        + \frac{1}{E\,Pm}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+        + \boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}
+
+
+Dimensional Anelastic Formulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Dimensional, anelastic mode (cgs units; **reference_type=2**
+), is currently untested with arbitrary scalar fields and requires further development.
+
+
+Nondimensional Anelastic Formulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Non-dimensional, anelastic mode (cgs units; **reference_type=3**
+), is currently untested with arbitrary scalar fields and requires further development.  In addition to the functions set in :ref:`nondim_anelastic`, the following substitutions are made for :math:`\mathrm{g}_{j_i}`
+and :math:`d_{j_i}`:
+
+.. math::
+
+   \begin{aligned}
+   \mathrm{g}_{2_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{2_i} &\rightarrow \frac{E}{Pr_{\chi_{p_i}}} \\
+   \mathrm{g}_{5_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{5_i} &\rightarrow \frac{E}{Pr_{\chi_{a_i}}} \\
+   \mathrm{g}_{7_i}(r) &\rightarrow \tilde{\rho}(r)\frac{r_\mathrm{max}^2}{r^2}\; &c_{7_i} &\rightarrow \mathrm{Ra}_{\chi_{a_i}}^* \\
+   \end{aligned}
+
+
+.. _scalar_setup:
+
+Setup
+^^^^^
+
+Physical controls
+*****************
+
+**n_active_scalars**
+  Set the number of active scalar fields.  Up to 50 allowed.  Default 0.
+**n_passive_scalars**
+  Set the number of passive scalar fields.  Up to 50 allowed.  Default 0.
+
+Boundary conditions
+*******************
+
+Model parameters for the scalar fields follow the same convention as temperature but using the prefix `chi_a` or `chi_p` for active and passive
+scalars respectively.
+
+**fix_chivar_a_top(i)**  
+  Logical flag indicating whether active scalar i should be fixed on the upper boundary.  Default = .false.
+**fix_chivar_a_bottom(i)**
+  Logical flag indicating whether active scalar i should be fixed on the lower boundary.  Default = .false.
+**fix_dchidr_a_top(i)**  
+  Logical flag indicating whether the radial derivative of active scalar i should be fixed on the upper boundary.  Default = .false.
+**fix_dchidr_a_bottom(i)**  
+  Logical flag indicating whether the radial derivative of active scalar i should be fixed on the lower boundary.  Default = .false.
+**chi_a_top(i)**
+  Value of active scalar i at the upper boundary.  Default = 0.
+**chi_a_bottom(i)**
+  Value of active scalar i at the lower boundary.  Default = 0.  
+**dchidr_a_top(i)**
+  Value of active scalar i at the upper boundary.  Default = 0.
+**dchidr_a_bottom(i)**
+  Value of active scalar i at the lower boundary.  Default = 0.  
+**chi_a_top_file(i)**
+  Generic-input file containing a custom, fixed upper boundary condition for active scalar i.    
+**chi_a_bottom_file(i)**
+  Generic-input file containing a custom, fixed lower boundary condition for active scalar i.  
+**dchidr_a_top_file(i)**
+  Generic-input file containing a custom, fixed upper boundary condition for the radial derivative of active scalar i.    
+**dchidr_a_bottom_file(i)**
+  Generic-input file containing a custom, fixed lower boundary condition for the radial derivative of active scalar i.  
+**fix_chivar_p_top(i)**  
+  Logical flag indicating whether passive scalar i should be fixed on the upper boundary.  Default = .false.
+**fix_chivar_p_bottom(i)**
+  Logical flag indicating whether passive scalar i should be fixed on the lower boundary.  Default = .false.
+**fix_dchidr_p_top(i)**  
+  Logical flag indicating whether the radial derivative of passive scalar i should be fixed on the upper boundary.  Default = .false.
+**fix_dchidr_p_bottom(i)**  
+  Logical flag indicating whether the radial derivative of passive scalar i should be fixed on the lower boundary.  Default = .false.
+**chi_p_top(i)**
+  Value of passive scalar i at the upper boundary.  Default = 0.
+**chi_p_bottom(i)**
+  Value of passive scalar i at the lower boundary.  Default = 0.  
+**dchidr_p_top(i)**
+  Value of passive scalar i at the upper boundary.  Default = 0.
+**dchidr_p_bottom(i)**
+  Value of passive scalar i at the lower boundary.  Default = 0.  
+**chi_p_top_file(i)**
+  Generic-input file containing a custom, fixed upper boundary condition for passive scalar i.    
+**chi_p_bottom_file(i)**
+  Generic-input file containing a custom, fixed lower boundary condition for passive scalar i.  
+**dchidr_p_top_file(i)**
+  Generic-input file containing a custom, fixed upper boundary condition for the radial derivative of passive scalar i.    
+**dchidr_p_bottom_file(i)**
+  Generic-input file containing a custom, fixed lower boundary condition for the radial derivative of passive scalar i.  
+
+Initial conditions
+******************
+
+Initial conditions for the scalar fields must be set using generic input files (there are no hard-coded initial conditions for the
+scalar fields), which require `init_type` to be set to 8.
+
+**chi_a_init_file(i)**
+  Name of generic input file that, if `init_type`=8, will be used to initialize active scalar i.
+**chi_p_init_file(i)**
+  Name of generic input file that, if `init_type`=8, will be used to initialize passive scalar i.
+
+Physical controls
+*****************
+
+**chi_a_prandtl_number(i)**
+  Sets the value of the Prandtl number, :math:`Pr_{\chi_{a_i}}`, for active scalar i using reference types 1 and 3.
+**chi_a_rayleigh_number(i)**
+  Sets the value of the Rayleigh number, :math:`Ra_{\chi_{a_i}}` for active scalar i using reference type 1.
+**chi_a_modified_rayleigh_number(i)**
+  Sets the value of the modified Rayleigh number, :math:`Ra^*_{\chi_{a_i}}`,  for active scalar i using reference type 3.    
+**chi_a_convective_rossby_number(i)**
+  Sets the value of the convective Rossby number, :math:`Ro_{\chi_{a_i}}`, for active scalar i using reference type 5.
+**chi_p_prandtl_number(i)**
+  Sets the value of the Prandtl number, :math:`Pr_{\chi_{p_i}}`, for passive scalar i.
+**kappa_chi_a_type(i)**
+  Determines the radial profile of the diffusivity for active scalar i.
+   * type 1 : no radial variation
+   * type 2 : diffusivity profile varies as :math:`\rho^{n}` for some real number *n*.
+   * type 3 : diffusivity profile is read from a custom-reference-state file (under development)
+**kappa_chi_a_top(i)**
+  Specifies the value of the diffusivity coefficient at the upper boundary for active scalar i.  This is primarily used for dimensional models or those employing a custom nondimensionalization via Rayleigh's custom-reference interface.   For Rayleigh's intrinsic nondimensional reference states, the following values are assumed:
+   * reference_type 1: :math:`\kappa_\mathrm{top}=1/\mathrm{Pr_{\chi_{a_i}}}`
+   * reference_type 3: :math:`\kappa_\mathrm{top}=\mathrm{Ek}/\mathrm{Pr_{\chi_{a_i}}}`
+**kappa_chi_a_power(i)**
+  Denotes the value of the exponent *n* in the :math:`\rho^{n}` variation associated with diffusion type 2 for active scalar i.
+**kappa_chi_p_type(i)**
+  Determines the radial profile of the diffusivity for passive scalar i.
+   * type 1 : no radial variation
+   * type 2 : diffusivity profile varies as :math:`\rho^{n}` for some real number *n*.
+   * type 3 : diffusivity profile is read from a custom-reference-state file (under development)
+**kappa_chi_p_top(i)**
+  Specifies the value of the diffusivity coefficient at the upper boundary for passive scalar i.  This is primarily used for dimensional models or those employing a custom nondimensionalization via Rayleigh's custom-reference interface.   For Rayleigh's intrinsic nondimensional reference states, the following values are assumed:
+   * reference_type 1: :math:`\kappa_\mathrm{top}=1/\mathrm{Pr_{\chi_{p_i}}}`
+   * reference_type 3: :math:`\kappa_\mathrm{top}=\mathrm{Ek}/\mathrm{Pr_{\chi_{p_i}}}`
+**kappa_chi_p_power(i)**
+  Denotes the value of the exponent *n* in the :math:`\rho^{n}` variation associated with diffusion type 2 for passive scalar i.
+
+Output Quantity Codes
+^^^^^^^^^^^^^^^^^^^^^
+
+A limited number of quantity codes are currently available for the scalar fields.  These follow a slightly modified scheme to the
+other outputs, incrementing based on the index of the scalar field.
+
+Active scalar fields
+********************
+
+=============================================================== =================== ================================================================
+ :math:`\chi_{a_i}`                                             10001+200*(i-1)     active scalar field i
+ :math:`\chi_{a_i}^\prime`                                      10002+200*(i-1)     active scalar field i perturbation
+ :math:`\overline{\chi_{a_i}}`                                  10003+200*(i-1)     active scalar field i mean
+ :math:`\frac{\partial\chi_{a_i}}{\partial r}`                  10004+200*(i-1)     radial derivative of active scalar field i
+ :math:`\frac{\partial\chi_{a_i}^\prime}{\partial r}`           10005+200*(i-1)     radial derivative of the active scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial r}`       10006+200*(i-1)     radial derivative of the active scalar field i mean
+ :math:`\frac{\partial\chi_{a_i}}{\partial \theta}`             10007+200*(i-1)     latitudinal derivative of active scalar field i
+ :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \theta}`      10008+200*(i-1)     latitudinal derivative of the active scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \theta}`  10009+200*(i-1)     latitudinal derivative of the active scalar field i mean
+ :math:`\frac{\partial\chi_{a_i}}{\partial \phi}`               10010+200*(i-1)     longitudinal derivative of active scalar field i
+ :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \phi}`        10011+200*(i-1)     longitudinal derivative of the active scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \phi}`    10012+200*(i-1)     longitudinal derivative of the active scalar field i mean
+=============================================================== =================== ================================================================
+
+Passive scalar fields
+*********************
+
+=============================================================== =================== =================================================================
+ :math:`\chi_{p_i}`                                             20001+200*(i-1)     passive scalar field i
+ :math:`\chi_{p_i}^\prime`                                      20002+200*(i-1)     passive scalar field i perturbation
+ :math:`\overline{\chi_{p_i}}`                                  20003+200*(i-1)     passive scalar field i mean
+ :math:`\frac{\partial\chi_{p_i}}{\partial r}`                  20004+200*(i-1)     radial derivative of passive scalar field i
+ :math:`\frac{\partial\chi_{p_i}^\prime}{\partial r}`           20005+200*(i-1)     radial derivative of the passive scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial r}`       20006+200*(i-1)     radial derivative of the passive scalar field i mean
+ :math:`\frac{\partial\chi_{p_i}}{\partial \theta}`             20007+200*(i-1)     latitudinal derivative of passive scalar field i
+ :math:`\frac{\partial\chi_{p_i}^\prime}{\partial \theta}`      20008+200*(i-1)     latitudinal derivative of the passive scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial \theta}`  20009+200*(i-1)     latitudinal derivative of the passive scalar field i mean
+ :math:`\frac{\partial\chi_{p_i}}{\partial \phi}`               20010+200*(i-1)     longitudinal derivative of passive scalar field i
+ :math:`\frac{\partial\chi_{p_i}^\prime}{\partial \phi}`        20011+200*(i-1)     longitudinal derivative of the passive scalar field i perturbation
+ :math:`\frac{\partial\overline{\chi_{p_i}}}{\partial \phi}`    20012+200*(i-1)     longitudinal derivative of the passive scalar field i mean
+=============================================================== =================== =================================================================
+
+
+Further Information
+^^^^^^^^^^^^^^^^^^^
+
+See `tests/chi_scalar` for example input files.
+
+
