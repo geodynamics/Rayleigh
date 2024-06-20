@@ -475,7 +475,7 @@ do
     esac
 done
 
-if [ ! -z $RAMKLROOT ]
+if [ "$USE_MKL" == "TRUE" ]
   then
     echo "Correct Configuration"
 elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  ! -z $LPROOT ]];
