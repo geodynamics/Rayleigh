@@ -37,6 +37,8 @@ Module Sphere_Physical_Space
     Use Benchmarking, Only : benchmark_checkup
     Implicit None
 
+    Real*8, Allocatable :: tvar_eq(:,:,:)
+
 Contains
     
     Subroutine Physical_Space_Init()
@@ -44,7 +46,13 @@ Contains
         
         ! Any persistant arrays needs for physical space routines can be
         ! initialized here.
-
+        If (newtonian_cooling) Then
+            Allocate(tvar_eq(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
+            tvar_eq(:,:,:) = 0.0d0
+            If (newtonian_cooling_type .eq. 1) Then
+                tvar_eq(:,:,:) = 0.0d0
+            Endif
+        Endif
 
     End Subroutine Physical_Space_Init
 
@@ -260,7 +268,8 @@ Contains
             Do t = my_theta%min, my_theta%max
                 Do r = my_r%min, my_r%max
                     Do k =1, n_phi
-                        wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar)+0.0d0
+                        wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar) + &
+                                      (tvar_eq(k,r,t) -wsp%p3b(k,r,t,tvar))/newtonian_cooling_time
                     Enddo
                 Enddo
             Enddo

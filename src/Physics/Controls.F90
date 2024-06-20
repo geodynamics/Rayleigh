@@ -79,7 +79,7 @@ Module Controls
     ! --- Newtonian Cooling Variables
     Logical :: newtonian_cooling = .false.  ! Turn newtonian_cooling on/off
     Integer :: newtonian_cooling_type = 1
-    Real*8  :: newtonian_cooling_timescale = 1.0d22
+    Real*8  :: newtonian_cooling_time = 1.0d22
 
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
