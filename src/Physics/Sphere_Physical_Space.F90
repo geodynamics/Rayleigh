@@ -53,10 +53,11 @@ Contains
 
             If (newtonian_cooling_type .eq. 1) Then
                 ! No angular variation
+                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 1'
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
-                            tvar_eq(k,r,t) = newtonian_delta_tvar_eq
+                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp
                         Enddo
                     Enddo
                 Enddo
@@ -65,10 +66,11 @@ Contains
 
             If (newtonian_cooling_type .eq. 2) Then
                 ! Angular variation (ell=1,m=1, motivated by hot Jupiters)
+                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 2'
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
-                            tvar_eq(k,r,t) = newtonian_delta_tvar_eq*costheta(t)*sinphi(k)
+                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*costheta(t)*sinphi(k)
                         Enddo
                     Enddo
                 Enddo
