@@ -86,7 +86,7 @@ that
 
    a_{00}\equiv \frac{1}{4\pi}\int_{0}^{2\pi}\int_{0}^{\pi} a(r,\theta,\phi)\, r\mathrm{sin}\,\theta\mathrm{d}\theta\mathrm{d}\phi.
 
-
+.. _equations_solved:
 
 The System of Equations Solved in Rayleigh
 ------------------------------------

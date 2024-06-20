@@ -6,5 +6,5 @@ Research Enabled by Rayleigh
 
    research_projects
    video_gallery
-   image_gallery
+   images/image_gallery
    publications/publications
