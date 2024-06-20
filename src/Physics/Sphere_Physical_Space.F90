@@ -123,6 +123,7 @@ Contains
         Call Temperature_Advection()
         Call Volumetric_Heating()
 
+
         do i = 1, n_active_scalars
           Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
           Call chi_Source_function(chiavar(i))
@@ -241,7 +242,22 @@ Contains
             Enddo
             !$OMP END PARALLEL DO
         Endif
+
+
+        If (newtonian_cooling) Then
+            ! Added a volumetric heating to the energy equation
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            Do t = my_theta%min, my_theta%max
+                Do r = my_r%min, my_r%max
+                    Do k =1, n_phi
+                        wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar)+0.0d0
+                    Enddo
+                Enddo
+            Enddo
+            !$OMP END PARALLEL DO
+        Endif
     End Subroutine Volumetric_Heating
+
 
     Subroutine chi_Source_Function(chivar)
         Implicit None
