@@ -193,7 +193,7 @@ Nondimensional Boussinesq Formulation of the MHD Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Rayleigh can be run using a nondimensional, Boussinesq formulation
-of the MHD equations (**reference_type=1**). The nondimensionalization
+of the MHD equations (``reference_type=1``). The nondimensionalization
 employed is as follows:
 
 .. math::
@@ -281,8 +281,8 @@ Here :math:`\Theta` refers to the temperature (perturbation from the background)
 Dimensional Anelastic Formulation of the MHD Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When run in dimensional, anelastic mode (cgs units; **reference_type=2**
-), the following values are assigned to the functions
+When run in dimensional, anelastic mode (cgs units; ``reference_type=2``),
+the following values are assigned to the functions
 :math:`\mathrm{f}_i` and the constants :math:`c_i`:
 
 .. math::
@@ -310,15 +310,15 @@ linearized equation of state
 acceleration, :math:`c_P` is the specific heat at constant pressure, and
 :math:`\Omega_0` is the frame rotation rate. The viscous, thermal, and
 magnetic diffusivities (also assumed to be spherically symmetric and time-independent) are given by :math:`\nu(r)`, :math:`\kappa(r)`, and
-:math:`\eta(r)`, respectively. Note that the entropy gradient term :math:`f_{14}(r)v_r` is only used in Equation :eq:`theta_evol` if **advect_reference_state=.true.**. Finally, :math:`Q(r)` is an internal heating
+:math:`\eta(r)`, respectively. Note that the entropy gradient term :math:`f_{14}(r)v_r` is only used in Equation :eq:`theta_evol` if ``advect_reference_state=.true.``. Finally, :math:`Q(r)` is an internal heating
 function; it might represent radiative heating or heating due to nuclear
-fusion, for instance. In our convention, the volume integral of :math:`\mathrm{f}_6(r)` equals unity, and :math:`c_{10}` equals the **luminosity** or **heating_integral** :math:`L_*` specified in the main_input file. When using a custom reference state, this allows easy adjustment of the luminosity using the **override_constants** formalism, e.g.,
+fusion, for instance. In our convention, the volume integral of :math:`\mathrm{f}_6(r)` equals unity, and :math:`c_{10}` equals the ``luminosity`` or ``heating_integral`` :math:`L_*` specified in the main_input file. When using a custom reference state, this allows easy adjustment of the luminosity using the **override_constants** formalism, e.g.,
 
-**override_constants(10) = T**
+``override_constants(10) = T``
 
-**ra_constants(10) = 3.846d33**
+``ra_constants(10) = 3.846d33``
 
-specified in the in the **reference_namelist**.
+specified in the in the ``reference_namelist``.
 
 Note that in the anelastic formulation, the
 thermal variable :math:`\Theta` is interpreted as the entropy perturbation,
@@ -360,7 +360,7 @@ Nondimensional Anelastic MHD Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To run in nondimensional anelastic mode, you must set
-**reference_type=3** in the Reference_Namelist. The reference state is
+``reference_type=3`` in the Reference_Namelist. The reference state is
 assumed to be polytropic with a :math:`\frac{1}{r^2}` profile for
 gravity. When this mode is
 active, the following nondimensionalization is used
@@ -397,7 +397,7 @@ choices result in the functions :math:`\mathrm{f}_i` and the constants
        &\vdots &c_{10}&\rightarrow L_* \\
        \mathrm{f}_{14}(r)&\rightarrow 0&c_{11}&\rightarrow 0.\end{aligned}
 
-As in the Boussinesq case, the nondimensional diffusivities are defined according to, e.g., :math:`\tilde{\nu}(r) \equiv \nu(r)/\nu_o`. The nondimensional heating :math:`\tilde{Q}(r)` is defined such that its volume integral equals the nondimensional **luminosity** or **heating_integral** set in the *main_input* file. As in the dimensional anelastic case, the volume integral of :math:`\mathrm{f}_6(r)` equals unity, and :math:`\mathrm{c}_{10} = L_*`. The unit for luminosity in this nondimensionalization (to get a dimensional luminosity from the nondimensional :math:`L_*`) is :math:`\rho_oL^3T_o\Delta s\Omega_0`. 
+As in the Boussinesq case, the nondimensional diffusivities are defined according to, e.g., :math:`\tilde{\nu}(r) \equiv \nu(r)/\nu_o`. The nondimensional heating :math:`\tilde{Q}(r)` is defined such that its volume integral equals the nondimensional ``luminosity`` or ``heating_integral`` set in the *main_input* file. As in the dimensional anelastic case, the volume integral of :math:`\mathrm{f}_6(r)` equals unity, and :math:`\mathrm{c}_{10} = L_*`. The unit for luminosity in this nondimensionalization (to get a dimensional luminosity from the nondimensional :math:`L_*`) is :math:`\rho_oL^3T_o\Delta s\Omega_0`. 
 
 Two new nondimensional numbers appear in our equations, in addition to those defined for the Boussinesq case. :math:`\mathrm{Di}`, the
 dissipation number, is defined by
