@@ -189,6 +189,8 @@ code, which was originally written dimensionally.
 
 We now describe the nondimensional Boussinesq, and dimensional/nondimensional anelastic formulations used in the code.
 
+.. _boussinesq:
+
 Nondimensional Boussinesq Formulation of the MHD Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -278,6 +280,8 @@ transform as follows.
 
 Here :math:`\Theta` refers to the temperature (perturbation from the background) and :math:`P` to the reduced pressure (ratio of the thermodynamic pressure to the constant density). 
 
+.. _dim_anelastic:
+
 Dimensional Anelastic Formulation of the MHD Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -355,6 +359,8 @@ Equations :eq:`momentum`-:eq:`induction` transform as follows.
        %
        \boldsymbol{\nabla}\cdot\left[\hat{\rho}(r)\,\boldsymbol{v}\right] =\; &0 \\
        \boldsymbol{\nabla}\cdot\boldsymbol{B} =\; &0. \end{aligned}
+
+.. _nondim_anelastic:
 
 Nondimensional Anelastic MHD Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
