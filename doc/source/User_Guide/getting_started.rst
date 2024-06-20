@@ -326,9 +326,6 @@ To see the dependencies being installed you can use:
 
     spack spec rayleigh ^intel-mkl
 
-.. _benchmark:
-
-
 .. _hpc_installation_instructions:
 
 Installation on HPC systems
