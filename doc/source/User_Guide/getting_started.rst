@@ -284,6 +284,21 @@ The ``output`` option is only respected when a particular ``target`` is specifie
 ``make output=a.out install`` will install all ``rayleigh`` executables, they will not
 be renamed.
 
+.. _cmake:
+Alternative: Configure using CMake
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`CMake <https://cmake.org>`_ can be used as an alternative to the configure script. It is especially useful when running on a new platform not yet supported by configure or when you are generally more comfortable with CMake from other projects.
+
+.. code-block:: bash
+
+    # Create a build directory called "build" and configure Rayleigh in it.
+    cmake -Bbuild
+    # Optional: change settings (e.g., select a Debug or Release build)
+    cmake --build build -t edit_cache
+    # Build code in parallel and install in the bin directory
+    cmake --build -j -t install
+
 .. _spack-setup:
 
 Alternative: Installation using Spack
