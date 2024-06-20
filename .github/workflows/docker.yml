@@ -73,3 +73,30 @@ jobs:
           tags: |
             ghcr.io/${{env.REPO_NAME_LC}}:${{github.ref_name}}
             ${{env.REPO_NAME_LC}}:${{github.ref_name}}
+
+
+      - name: Build and push TACC image for main
+        if: contains(github.event_name, 'push')
+        uses: docker/build-push-action@v4
+        with:
+          context: ./docker/rayleigh-tacc/
+          cache-from: type=registry,ref=geodynamics/rayleigh-buildenv-bionic
+          cache-to: type=inline
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{env.REPO_NAME_LC}}:latest-tacc
+            ${{env.REPO_NAME_LC}}:latest-tacc
+
+      - name: Build and push TACC image for release
+        if: contains(github.event_name, 'release')
+        uses: docker/build-push-action@v4
+        with:
+          context: ./docker/rayleigh-tacc/
+          cache-from: type=registry,ref=geodynamics/rayleigh-buildenv-bionic
+          cache-to: type=inline
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{env.REPO_NAME_LC}}:${{github.ref_name}}-tacc
+            ${{env.REPO_NAME_LC}}:${{github.ref_name}}-tacc
