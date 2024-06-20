@@ -248,7 +248,7 @@ Contains
         Integer :: read_magnetism = 0, read_hydro = 0
         Integer, Allocatable :: rinds(:), gpars(:,:), read_var(:)
         Real*8 :: dt_pars(3),dt,new_dt
-        Real*8, Allocatable :: old_radius(:), radius_old_loc(:)
+        Real*8, Allocatable :: old_radius(:), radius_old(:), radius_old_loc(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
         Character*120 :: autostring, dstring, iterstring, access_type
         Character*256 :: grid_file, checkfile, input_file
@@ -582,109 +582,70 @@ Contains
 
         Endif
 
-        ! Loop over the domains to set the Chebyshev coefficients, 
-        ! possibly interpolating in radius for each subdomain
-        ! The fields are easy, since they are stored in spectral (Chebyshev) space
-        ! The AB terms are a bit more complicated, since they are currently stored in physical (radius) space
-        ! When we change the checkpointing format, should also store AB terms in cheby-space
-        irmin_old = n_r_old
-        irmax_old = n_r_old - ncheby_old(1) + 1
-        irmin = n_r
-        irmax = n_r - ncheby(1) + 1
-        Do idom = 1, ndomains
+        If (ndomains .eq. 1) Then ! Keep everything the same as it was before 
+            ! interpolation in multiple domains was enabled
+
             ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
             ! fields.  Otherwise, we need to interpolate onto the current grid
-            ! And by "interpolate," we mean set the lowest-order Chebyshev coefficients of 
-            ! the new checkpoint using the old checkpoint, and zero out the higher-order coefficients. 
-            ! For abterms, we will transform to spectral space, set the lowest-order coefficients and
-            ! and transform back
-
-            ! Loop from inner domain to outer domain
-            n_r_old_loc = ncheby_old(idom)
-            n_r_loc = ncheby(idom)
-            
-            ! Decrement the rmin/rmax indices (which go down with increasing radius/idom
-            ! for each subdomain after the first
-            If (idom .gt. 1) Then
-                irmin_old = irmin_old - ncheby_old(idom - 1)
-                irmax_old = irmax_old - ncheby_old(idom)
-                irmin = irmin - ncheby(idom - 1)
-                irmax = irmax - ncheby(idom)
-            Endif
-
-            ! Interpolate if necessary (in each domain separately)
-            If  ((n_r_old_loc .ne. n_r_loc) .or. (grid_type_old .ne. grid_type) ) Then
+            ! When we change the checkpointing format, should also store AB terms in cheby-space
+            If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
                 ! Interpolate
                 ! We will assume the user kept the same radial domain bounds.
                 ! If they  have not, this will end badly.
                 If (my_rank .eq. 0) Then
                     Call stdout%print(' ')
-                    If (ndomains .gt. 1) Then ! if more than one domain, specify
-                                              ! which one we are in
-                        Write(szstr,'(i13)')idom
-                        Call stdout%print('------ In domain:     '//TRIM(szstr))
-                    Endif
                     Call stdout%print('------ Radial grid has changed.')
                     Call stdout%print('------ Interpolating onto new grid.')
                     Write(szstr,'(i13)')grid_type_old
                     Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
                     Write(szstr,'(i13)')grid_type
                     Call stdout%print('------ Current grid_type: '//TRIM(szstr))
-                    Write(szstr,'(i13)')n_r_old_loc
+                    Write(szstr,'(i13)')n_r_old
                     Call stdout%print('------ Old N_R:           '//TRIM(szstr))
-                    Write(szstr,'(i13)')n_r_loc
+                    Write(szstr,'(i13)')n_r
                     Call stdout%print('------ Current N_R:       '//TRIM(szstr))
                     Call stdout%print(' ')
                 Endif
 
-                If (n_r_old_loc .lt. n_r_loc) Then
+                If (n_r_old .lt. n_r) Then
+
                     ! The fields are OK - they are already in chebyshev space
-                    ! Just set the lowest-order coefficients from the checkpoint
-                    fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
+                    fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
 
                     ! The AB terms are stored in physical space (in radius).
-                    ! They need to be transformed, lowest-order coefficients copied, and transformed back.
+                    ! They need to be transformed, coefficients copied, and transformed back..
                     ! First, we need to initialize the old chebyshev grid.
-                    Allocate(radius_old_loc(1:n_r_old_loc))
-                    Call cheby_info%Init(radius_old_loc,radius(irmin),radius(irmax))  ! We assume that the domain bounds do not change
+                    Allocate(radius_old(1:n_r_old))
+                    Call cheby_info%Init(radius_old,rmin,rmax)  ! We assume that rmax and rmin do not change
                     fcount(:,:) = numfields
-                    If (first_time_interpolating) Then ! Can only initialize chktmp2 once
-                        Call chktmp2%init(field_count = fcount, config = 'p1a')
-                        first_time_interpolating = .False.
-                    Endif
+                    Call chktmp2%init(field_count = fcount, config = 'p1a')
                     Call chktmp2%construct('p1a')
                     chktmp2%p1a(:,:,:,:) = 0.0d0
                     ! Allocate tempfield1, tempfield2
                     lb = lbound(chktmp%p1b,3)
                     ub = ubound(chktmp%p1b,3)
-                    Allocate(tempfield1(1:n_r_old_loc,1:2,lb:ub,1))
-                    Allocate(tempfield2(1:n_r_old_loc,1:2,lb:ub,1))
+                    Allocate(tempfield1(1:n_r_old,1:2,lb:ub,1))
+                    Allocate(tempfield2(1:n_r_old,1:2,lb:ub,1))
 
-                    ! For each field, put the physical AB terms from the checkpoint in tempfield1
-                    ! use "tospec4d" to put the spectral tempfield1 coefficients in tempfield2
-                    ! copy the tempfield2 spectral coefficients into chktmp2 
-                    ! (thus interpolating, since chktmp2 will have zeros for the higher-order coefficients)
-                    Do i = 1, numfields 
+                    Do i = 1, numfields
                         tempfield1(:,:,:,:) = 0.0d0
                         tempfield2(:,:,:,:) = 0.0d0
-                        tempfield1(:,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
-                        Call cheby_info%tospec4d(tempfield1,tempfield2)
-                        chktmp2%p1a(irmax:irmax+n_r_old_loc-1,:,:,i) = tempfield2(:,:,:,1)
+                        tempfield1(1:n_r_old,:,:,1) = chktmp%p1b(1:n_r_old,:,:,numfields+i)
+                        call cheby_info%tospec4d(tempfield1,tempfield2)
+                        chktmp2%p1a(1:n_r_old,:,:,i) = tempfield2(1:n_r_old,:,:,1)
                     Enddo
                     DeAllocate(tempfield1,tempfield2)
 
-                    ! chktmp2 now has the interpolated abterms from the checkpoint in spectral space
-                    ! use "From_Spectral" to transform these fields into physical space and copy into abterms
+
                     Call chktmp2%construct('p1b')
                     !Normal transform(p1a,p1b)
                     Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
-                    abterms(irmax:irmin,:,:,1:numfields) = chktmp2%p1b(irmax:irmin,:,:,1:numfields)
 
-                    ! clean up
+                    abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
                     Call cheby_info%destroy()
                     Call chktmp2%deconstruct('p1a')
                     Call chktmp2%deconstruct('p1b')
-                    Deallocate(radius_old_loc)
+                    Deallocate(radius_old)
                 Else ! Rayleigh doesn't currently support degrading radial resolution--exit now
                     If (my_rank .eq. 0) Then
                         Call stdout%print('ERROR: Rayleigh currently does not support degrading radial resolution.')
@@ -694,16 +655,142 @@ Contains
                     Call pfi%exit()
                     Stop
                 Endif
-            Else ! n_r_old_loc = n_r_loc
-                ! no interpolation is needed, we just copy the checkpoint into fields and abterms
-                fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
-                abterms(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,numfields+1:numfields*2)
+
+            Else
+
+                ! Interpolation is complete, now we just copy into the other arrays
+                fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+                abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
 
             Endif
-        Enddo
+            Call chktmp%deconstruct('p1b')
+            DeAllocate(old_radius)
 
-        DeAllocate(old_radius)
-        Call chktmp%deconstruct('p1b')
+        Else ! ndomains > 1: we need to loop over domains and (maybe) interpolate
+
+            ! Loop over the domains to set the Chebyshev coefficients, 
+            ! possibly interpolating in radius for each subdomain
+            ! The fields are easy, since they are stored in spectral (Chebyshev) space
+            ! The AB terms are a bit more complicated, since they are currently stored in physical (radius) space
+            ! When we change the checkpointing format, should also store AB terms in cheby-space
+            irmin_old = n_r_old
+            irmax_old = n_r_old - ncheby_old(1) + 1
+            irmin = n_r
+            irmax = n_r - ncheby(1) + 1
+            Do idom = 1, ndomains
+                ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
+                ! fields.  Otherwise, we need to interpolate onto the current grid
+                ! And by "interpolate," we mean set the lowest-order Chebyshev coefficients of 
+                ! the new checkpoint using the old checkpoint, and zero out the higher-order coefficients. 
+                ! For abterms, we will transform to spectral space, set the lowest-order coefficients and
+                ! and transform back
+
+                ! Loop from inner domain to outer domain
+                n_r_old_loc = ncheby_old(idom)
+                n_r_loc = ncheby(idom)
+                
+                ! Decrement the rmin/rmax indices (which go down with increasing radius/idom
+                ! for each subdomain after the first
+                If (idom .gt. 1) Then
+                    irmin_old = irmin_old - ncheby_old(idom - 1)
+                    irmax_old = irmax_old - ncheby_old(idom)
+                    irmin = irmin - ncheby(idom - 1)
+                    irmax = irmax - ncheby(idom)
+                Endif
+
+                ! Interpolate if necessary (in each domain separately)
+                If  ((n_r_old_loc .ne. n_r_loc) .or. (grid_type_old .ne. grid_type) ) Then
+                    ! Interpolate
+                    ! We will assume the user kept the same radial domain bounds.
+                    ! If they  have not, this will end badly.
+                    If (my_rank .eq. 0) Then
+                        Call stdout%print(' ')
+                        If (ndomains .gt. 1) Then ! if more than one domain, specify
+                                                  ! which one we are in
+                            Write(szstr,'(i13)')idom
+                            Call stdout%print('------ In domain:     '//TRIM(szstr))
+                        Endif
+                        Call stdout%print('------ Radial grid has changed.')
+                        Call stdout%print('------ Interpolating onto new grid.')
+                        Write(szstr,'(i13)')grid_type_old
+                        Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
+                        Write(szstr,'(i13)')grid_type
+                        Call stdout%print('------ Current grid_type: '//TRIM(szstr))
+                        Write(szstr,'(i13)')n_r_old_loc
+                        Call stdout%print('------ Old N_R:           '//TRIM(szstr))
+                        Write(szstr,'(i13)')n_r_loc
+                        Call stdout%print('------ Current N_R:       '//TRIM(szstr))
+                        Call stdout%print(' ')
+                    Endif
+
+                    If (n_r_old_loc .lt. n_r_loc) Then
+                        ! The fields are OK - they are already in chebyshev space
+                        ! Just set the lowest-order coefficients from the checkpoint
+                        fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
+
+                        ! The AB terms are stored in physical space (in radius).
+                        ! They need to be transformed, lowest-order coefficients copied, and transformed back.
+                        ! First, we need to initialize the old chebyshev grid.
+                        Allocate(radius_old_loc(1:n_r_old_loc))
+                        Call cheby_info%Init(radius_old_loc,radius(irmin),radius(irmax))  ! We assume that the domain bounds do not change
+                        fcount(:,:) = numfields
+                        If (first_time_interpolating) Then ! Can only initialize chktmp2 once
+                            Call chktmp2%init(field_count = fcount, config = 'p1a')
+                            first_time_interpolating = .False.
+                        Endif
+                        Call chktmp2%construct('p1a')
+                        chktmp2%p1a(:,:,:,:) = 0.0d0
+                        ! Allocate tempfield1, tempfield2
+                        lb = lbound(chktmp%p1b,3)
+                        ub = ubound(chktmp%p1b,3)
+                        Allocate(tempfield1(1:n_r_old_loc,1:2,lb:ub,1))
+                        Allocate(tempfield2(1:n_r_old_loc,1:2,lb:ub,1))
+
+                        ! For each field, put the physical AB terms from the checkpoint in tempfield1
+                        ! use "tospec4d" to put the spectral tempfield1 coefficients in tempfield2
+                        ! copy the tempfield2 spectral coefficients into chktmp2 
+                        ! (thus interpolating, since chktmp2 will have zeros for the higher-order coefficients)
+                        Do i = 1, numfields 
+                            tempfield1(:,:,:,:) = 0.0d0
+                            tempfield2(:,:,:,:) = 0.0d0
+                            tempfield1(:,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
+                            Call cheby_info%tospec4d(tempfield1,tempfield2)
+                            chktmp2%p1a(irmax:irmax+n_r_old_loc-1,:,:,i) = tempfield2(:,:,:,1)
+                        Enddo
+                        DeAllocate(tempfield1,tempfield2)
+
+                        ! chktmp2 now has the interpolated abterms from the checkpoint in spectral space
+                        ! use "From_Spectral" to transform these fields into physical space and copy into abterms
+                        Call chktmp2%construct('p1b')
+                        !Normal transform(p1a,p1b)
+                        Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
+                        abterms(irmax:irmin,:,:,1:numfields) = chktmp2%p1b(irmax:irmin,:,:,1:numfields)
+
+                        ! clean up
+                        Call cheby_info%destroy()
+                        Call chktmp2%deconstruct('p1a')
+                        Call chktmp2%deconstruct('p1b')
+                        Deallocate(radius_old_loc)
+                    Else ! Rayleigh doesn't currently support degrading radial resolution--exit now
+                        If (my_rank .eq. 0) Then
+                            Call stdout%print('ERROR: Rayleigh currently does not support degrading radial resolution.')
+                            Call stdout%print('Now exiting')
+                            Call stdout%partial_flush()
+                        Endif
+                        Call pfi%exit()
+                        Stop
+                    Endif
+                Else ! n_r_old_loc = n_r_loc
+                    ! no interpolation is needed, we just copy the checkpoint into fields and abterms
+                    fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
+                    abterms(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,numfields+1:numfields*2)
+
+                Endif
+            Enddo
+
+            DeAllocate(old_radius)
+            Call chktmp%deconstruct('p1b')
+        Endif ! This ends the new block of code to deal with multiple domain interpolation
 
     End Subroutine Read_Checkpoint
 
