@@ -928,7 +928,7 @@ Contains
         Real*8 :: volume_specific_heat
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
-        Real*8, Allocatable :: zeta(:), gravity(:)
+        Real*8, Allocatable :: zeta(:), gravity(:), dlnzeta(:), d2lnzeta(:)
         Real*8 :: One
         Real*8 :: InnerRadius, OuterRadius
         Character*12 :: dstring
@@ -976,7 +976,7 @@ Contains
         ! allocate and define zeta
         ! also rho_c, T_c, P_c
 
-        Allocate(zeta(N_R), gravity(1:N_R))
+        Allocate(zeta(N_R), gravity(1:N_R), dlnzeta(1:N_R), d2lnzeta(1:N_R))
 
         d = OuterRadius - InnerRadius
 
@@ -1018,7 +1018,7 @@ Contains
           ref%chi_buoyancy_coeff(i,:) = -gravity/pressure_specific_heat*ref%density
         end do
 
-        Deallocate(zeta, gravity)
+        Deallocate(zeta, gravity, dlnzeta, d2lnzeta)
 
         Call Initialize_Reference_Heating()
 
@@ -1239,6 +1239,7 @@ Contains
         Integer :: i, fi
         Character(len=2) :: ind
         Integer :: fi_to_check(4) = (/1, 2, 4, 6/)
+        Real*8 :: geofac
 
         If (my_rank .eq. 0) Then
             Write(6,*)'Custom reference state specified.'
@@ -2022,6 +2023,8 @@ Contains
 
     Subroutine Compute_Diffusion_Coefs()
         Implicit None
+        Real*8 :: specific_heat_cp
+        
         ! These coefficients are nonzero only when nu and/or rho vary in radius
         ! They multiply derivatives of the field variables when
         ! constructing the diffusion terms in Sphere_Linear_Terms.F90.
