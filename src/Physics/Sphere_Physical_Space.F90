@@ -43,6 +43,7 @@ Contains
     
     Subroutine Physical_Space_Init()
         Implicit None
+        Integer :: k, r, t
         
         ! Any persistant arrays needs for physical space routines can be
         ! initialized here.
@@ -50,7 +51,13 @@ Contains
             Allocate(tvar_eq(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
             tvar_eq(:,:,:) = 0.0d0
             If (newtonian_cooling_type .eq. 1) Then
-                tvar_eq(:,:,:) = 0.0d0
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        Do k =1, n_phi
+                            tvar_eq(k,r,t) = newtonian_delta_tvar_eq*costheta(t)*sinphi(k)
+                        Enddo
+                    Enddo
+                Enddo
             Endif
         Endif
 
