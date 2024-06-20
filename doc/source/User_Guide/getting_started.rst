@@ -17,7 +17,7 @@ Setting up a Rayleigh Development Environment
 
 When running Rayleigh on HPC resources, always compile the software with the recommended compiler and link against
 libraries optimized for the architecture you are running on. We provide example
-instructions for some common systems at `Installation Instructions for HPC systems`_.
+instructions for some common systems at `Installation on HPC systems`_.
 
 When developing Rayleigh or editing its documentation, however, such optimizations are rarely necessary.  Instead, it is sufficient for the code and documentation to compile.  For this purpose, we recommend setting up a `conda environment`_ or using our `Docker container`_.  Instructions for setting up an environment on Linux and Mac OS are provided below.
 
