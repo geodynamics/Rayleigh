@@ -849,31 +849,31 @@ if [[ $USE_MKL == "TRUE" ]]
 then
     if [[ $FVERSION == "INTEL" ]]
     then
-        MKL_LIB="-mkl"
-    fi
-    if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
+        LIB_FLAGS="-mkl"
+    elif [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
     then
+        # Start by specifying the directory, unless installed by apt on debian
+        # in which case it is in default path
+        if [[ $DEBIANMKL == "FALSE" ]]
+        then
+          LIB_FLAGS="-L${RAMKLROOT}/lib"
+        fi
+
         if [[ $CONDAMKL == "TRUE" ]]
         then
             if [[ $OSTYPE == *"darwin"* ]]
             then
-                MKL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-                FULL_LIB="-L${RAMKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
+                OS_SPECIFIC_LIB="-Wl,-rpath,${RAMKLROOT}/lib -lmkl_intel_lp64"
             else
-                MKL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-                FULL_LIB="-L${RAMKLROOT}/lib -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
+                OS_SPECIFIC_LIB="-Wl,--no-as-needed -lmkl_gf_lp64"
             fi
-        elif [[ $DEBIANMKL == "TRUE" ]]
-        then
-            MKL_LIB="-Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-            FULL_LIB="-Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
         else
-            MKL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-            FULL_LIB="-L${RAMKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl ${STD_FLAGS}"
+            OS_SPECIFIC_LIB="-Wl,--no-as-needed -lmkl_gf_lp64"
         fi
-    fi
 
-    LIB_FLAGS="\$(MKL_LIB) ${STD_FLAGS}"
+        # Add OS independent options
+        LIB_FLAGS="${LIB_FLAGS} ${OS_SPECIFIC_LIB} -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
+    fi
 else
 
     #WE NEED TO RUN CHECKS HERE
@@ -912,17 +912,16 @@ else
         FFTWLINK="-L$FFTWROOT/lib -lfftw3"
     fi
 
-    LIB_FLAGS="\$(LAPACKLINK) \$(FFTWLINK) \$(BLASLINK) \$(STD_FLAGS)"
-    FULL_LIB="$LAPACKLINK $FFTWLINK $BLASLINK $STD_FLAGS"
+    # Combine the flags
+    LIB_FLAGS="${LAPACKLINK} ${FFTWLINK} ${BLASLINK}"
 fi
 
 if [ "$CUSTOMLIB" == "TRUE" ]
 then
   LIB_FLAGS=$RALIB
-  FULL_LIB=$RALIB
 fi
 
-echo " Library flags              :  "$FULL_LIB
+echo " Library flags              :  "$LIB_FLAGS
 echo ""
 ###############################################################################################
 # Create a machine file
@@ -973,21 +972,6 @@ echo $BORDER >> $OFILE
 #  V.  Optimization and Library flags
 echo "# V.  Optimization and Library Flags" >> $OFILE
 echo "" >> $OFILE
-if [[ $USE_MKL != "TRUE" ]]
-then
-    echo "" >> $OFILE
-    echo "BLASLINK = "$BLASLINK >> $OFILE
-    echo "LAPACKLINK = "$LAPACKLINK >> $OFILE
-    echo "FFTWLINK = "$FFTWLINK >> $OFILE
-    echo "" >> $OFILE
-else
-    if [[ $FVERSION == "GNU" || $FVERSION == "AOCC" ]]
-    then
-        echo "" >> $OFILE
-        echo "MKL_LIB = "$MKL_LIB >> $OFILE
-        echo "" >> $OFILE
-    fi
-fi
 COUNTER=0
 while [ $COUNTER -lt $nvers ]; do
   VSTR="FFLAGS_\$("${RVTAGS[$COUNTER]}")"
