@@ -385,7 +385,7 @@ Contains
             If (ndomains .gt. 1) Then ! get the old ncheby from Checkpoint
                 ! main_input
                 input_file = TRIM(my_path)//trim(checkpoint_prefix)//'/main_input'
-                Call Get_Old_Ncheby(input_file, ncheby_old)
+                Call Get_Old_Ncheby(old_radius, n_r_old, ncheby_old)
             Else ! for ndomains = 1, user need not specify ncheby
                 ncheby_old(1) = n_r_old
             Endif
@@ -763,68 +763,36 @@ Contains
         bvals(:,:,:,:) = boundary_mask(:,:,:,:)
     End Subroutine Load_BC_Mask
 
-    Subroutine Get_Old_Ncheby(input_file, ncheby_old)
+    Subroutine Get_Old_Ncheby(old_radius, n_r_old, ncheby_old)
         Implicit None
-        Character*120, Intent(In) :: input_file
+        ! Get the old ncheby from old_radius, looking for repeated radial points
         Integer, Intent(Out) :: ncheby_old(1:nsubmax)
-        Integer :: n_r_tmp, n_theta_tmp, nprow_tmp, npcol_tmp
-        Real*8  :: rmin_tmp, rmax_tmp
-        Integer :: npout_tmp, precise_bounds_tmp, grid_type_tmp, l_max_tmp, n_l_tmp
-        Real*8 :: aspect_ratio_tmp, shell_depth_tmp
-        !Integer, Parameter :: nsubmax = 256
-        Integer :: ncheby_tmp(1:nsubmax)
-        Real*8  :: domain_bounds_tmp(1:nsubmax+1)
-        Integer :: dealias_by_tmp(1:nsubmax)
-        Integer :: n_uniform_domains_tmp
-        Logical :: uniform_bounds_tmp
+        Integer, Intent(In) :: n_r_old
+        Real*8, Intent(In)  :: old_radius(:)
+        Real*8 :: tol = 1.0d-10 ! don't check if things are exactly equal
+        Real*8 :: r_loc, r_above
+        Integer :: ir, nr_in_lower_domains, idom
 
-        ! Don't overwrite the old problemsize namelist!
-        n_r_tmp = n_r
-        n_theta_tmp = n_theta
-        nprow_tmp = nprow
-        npcol_tmp = npcol
-        rmin_tmp = rmin
-        rmax_tmp = rmax
-        npout_tmp = npout
-        precise_bounds_tmp = precise_bounds
-        grid_type_tmp = grid_type
-        l_max_tmp = l_max
-        n_l_tmp = n_l
-        aspect_ratio_tmp = aspect_ratio
-        shell_depth_tmp = shell_depth
-        ncheby_tmp(1:nsubmax) = ncheby(1:nsubmax) 
-        domain_bounds_tmp(1:nsubmax+1)  = domain_bounds(1:nsubmax+1) 
-        dealias_by_tmp(1:nsubmax)  = dealias_by(1:nsubmax) 
-        n_uniform_domains_tmp = n_uniform_domains
-        uniform_bounds_tmp = uniform_bounds
+        ! Loop from bottom to top of shell
+        ! Check if the grid point just above (index - 1) is the same (to within relative tol)
+        ! If so, the current index marks the top of a subdomain
+        nr_in_lower_domains = 0
+        idom = 1
+        Do ir = n_r_old, 2, -1
+            r_loc = old_radius(ir)
+            r_above = old_radius(ir-1)
+            If (abs(r_above - r_loc)/r_loc .lt. tol) Then ! the current r_loc is about to be repeated
+                ncheby_old(idom) = (n_r_old - ir + 1) - nr_in_lower_domains
+                nr_in_lower_domains = nr_in_lower_domains + ncheby_old(idom) 
+                idom = idom + 1
+            Endif
+        Enddo
 
-        ! Read problemsize_namelist of input_file
-        Open(unit=20, file=input_file, status="old", position="rewind")
-        Read(unit=20, nml=problemsize_namelist)
-        Close(20)
+        ! For the final (top) domain, the formula is easy
+        ! Note that for only one domain, this logic should still work
+        ! (For one domain, idom will still = 1 and nr_in_lower_domains still = 0
+        ncheby_old(idom) = n_r_old - nr_in_lower_domains
 
-        ! "ncheby_old" is now in ncheby 
-        ncheby_old(1:nsubmax) = ncheby(1:nsubmax)
-
-        ! Reset the problemsize_namelist
-        n_r = n_r_tmp
-        n_theta = n_theta_tmp
-        nprow = nprow_tmp
-        npcol = npcol_tmp
-        rmin = rmin_tmp
-        rmax = rmax_tmp
-        npout = npout_tmp
-        precise_bounds = precise_bounds_tmp
-        grid_type = grid_type_tmp
-        l_max = l_max_tmp
-        n_l = n_l_tmp
-        aspect_ratio = aspect_ratio_tmp
-        shell_depth = shell_depth_tmp
-        ncheby(1:nsubmax) = ncheby_tmp(1:nsubmax) 
-        domain_bounds(1:nsubmax+1)  = domain_bounds_tmp(1:nsubmax+1) 
-        dealias_by(1:nsubmax)  = dealias_by_tmp(1:nsubmax) 
-        n_uniform_domains = n_uniform_domains_tmp
-        uniform_bounds = uniform_bounds_tmp
     End Subroutine Get_Old_Ncheby
 
 End Module Checkpointing
