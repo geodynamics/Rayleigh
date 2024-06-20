@@ -685,8 +685,15 @@ Contains
                     Call chktmp2%deconstruct('p1a')
                     Call chktmp2%deconstruct('p1b')
                     Deallocate(radius_old_loc)
+                Else ! Rayleigh doesn't currently support degrading radial resolution--exit now
+                    If (my_rank .eq. 0) Then
+                        Call stdout%print('ERROR: Rayleigh currently does not support degrading radial resolution.')
+                        Call stdout%print('Now exiting')
+                        Call stdout%partial_flush()
+                    Endif
+                    Call pfi%exit()
+                    Stop
                 Endif
-
             Else ! n_r_old_loc = n_r_loc
                 ! no interpolation is needed, we just copy the checkpoint into fields and abterms
                 fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
