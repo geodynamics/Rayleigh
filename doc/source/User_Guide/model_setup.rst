@@ -407,7 +407,7 @@ to consider whether it makes sense to separately initialize the
 spherically-symmetric component of the thermal field with a profile that
 is in conductive balance. This is almost certainly the case when running
 with fixed temperature conditions. The logical namelist variable
-``conductive_profile`` can be used for this purpose. It’s default value
+``conductive_profile`` can be used for this purpose. Its default value
 is ``.false.`` (off), and its value is ignored completely when restarting
 from a checkpoint. To initialize a simulation with a random temperature
 field superimposed on a spherically-symmetric, conductive background
@@ -456,7 +456,7 @@ vector-potential functions are given a random power distribution
 described by Equation eq_init_. Each mode’s random
 amplitude is then determined by namelist variable ``mag_amp``. This
 variable should be interpreted as an approximate magnetic field strength
-(it’s value is rescaled appropriately for the poloidal and toroidal
+(its value is rescaled appropriately for the poloidal and toroidal
 vector potentials, which are differentiated to yield the magnetic
 field).
 
