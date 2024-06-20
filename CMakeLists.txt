@@ -23,6 +23,8 @@ project(rayleigh LANGUAGES C Fortran)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(MPI COMPONENTS C REQUIRED Fortran REQUIRED)
 find_package(LAPACK COMPONENTS Fortran REQUIRED)
 find_package(FFTW REQUIRED)

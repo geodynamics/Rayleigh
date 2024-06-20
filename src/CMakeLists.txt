@@ -28,7 +28,7 @@ file(GLOB SOURCES
   IO/cmkdir.c)
 list(REMOVE_ITEM SOURCES ${PROJECT_SOURCE_DIR}/src/Physics/Linear_Terms_Cart.F90)
 
-add_custom_target(run_param_header COMMAND env FC=${CMAKE_Fortran_COMPILER} ${PROJECT_SOURCE_DIR}/src/gen_header.sh Run_Param_Header.F ${CMAKE_BUILD_TYPE} "compile flags unavailable" $<TARGET_PROPERTY:rayleigh,LINK_OPTIONS>)
+add_custom_target(run_param_header COMMAND env FC=${CMAKE_Fortran_COMPILER} ${PROJECT_SOURCE_DIR}/src/gen_header.sh Run_Param_Header.F ${CMAKE_BUILD_TYPE} FROM_CMAKE $<TARGET_PROPERTY:rayleigh,LINK_OPTIONS>)
 
 add_executable(rayleigh ${SOURCES})
 

@@ -75,13 +75,25 @@ var="$pref$val"
 
 #Build flags
 pref="    Character(len=512) :: build_fflags = \"---build fflags---"
-val="$3"
+if [ "$3" = FROM_CMAKE ] && command -v jq > /dev/null
+then
+    val=$(jq '.[0].command' ../compile_commands.json)
+    val="${val%%\"}"
+    val="${val##\"}"
+else
+    val="$3"
+fi
 var="$pref$val"
+
 "$SRC"/format_var.sh "$var" $HFILE
 
 #Build libraries
 pref="    Character(len=512) :: build_lib = \"---build lib---"
 val="$4"
+if [ "$3" = FROM_CMAKE ]
+then
+    val="${val##SHELL:}"
+fi
 var="$pref$val"
 "$SRC"/format_var.sh "$var" $HFILE
 
