@@ -477,16 +477,18 @@ done
 
 if [ "$USE_MKL" == "TRUE" ]
   then
-    echo "Correct Configuration"
+    echo ""
 elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  ! -z $LPROOT ]];
   then
-    echo "Correct Configuration"
+    echo ""
 elif [[ ! -z $FFTWROOT  &&  ! -z $BLASROOT  &&  "$USEOPENBLAS" == "TRUE" ]]
   then
-    echo "Correct Configuration"
+    echo ""
 else
-  echo "Error Code 1"
-  echo "Incorrect configuration"
+  echo "Configuration Error: One of the three combinations must be satisfied"
+  echo "   1)The location of MKL is specified."
+  echo "   2)The location of fftw, blas, and lapack is specified."
+  echo "   3)The location of fftw, blas, and openblas is specified."
   exit 1
 fi
 
