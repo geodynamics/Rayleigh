@@ -3272,10 +3272,10 @@ def checkpoint_read(chk_file_string,nr,ntheta):
     shape = (nell,nell)
     i,j = np.indices(shape)
     m = i <= j
-    target_all = zeros((nell,nell,nr),dtype="complex")
-    length_half = len(fromfile(chk_file_string,"f8"))//2
+    target_all = np.zeros((nell,nell,nr),dtype="complex")
+    length_half = len(np.fromfile(chk_file_string,"f8"))//2
     chunk_length = length_half//nr
-    chk_file = fromfile(chk_file_string,"f8")
+    chk_file = np.fromfile(chk_file_string,"f8")
     for i in range(nr):
         target = np.zeros_like((m),dtype="complex")
         target.real[m] = chk_file[:length_half][i*chunk_length:(i+1)*chunk_length] 
