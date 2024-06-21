@@ -76,7 +76,7 @@ Contains
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
-                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*costheta(t)*sinphi(k)
+                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*sintheta(t)*sinphi(k)
                             tvar_eq(k,r,t) = tvar_eq(k,r,t)*log(press(r)/press(N_R))/log(press(1)/press(N_R))
                         Enddo
                     Enddo
