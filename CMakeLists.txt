@@ -34,7 +34,7 @@ message(STATUS "")
 # Set up CMAKE_BUILD_TYPE to Debug if it is not set by the user.
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE
-      "Debug"
+      "Release"
       CACHE STRING
       "Choose the type of build, options are: Debug, Release."
       FORCE)
