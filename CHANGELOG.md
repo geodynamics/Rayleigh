@@ -27,6 +27,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Added a function called checkpoint_read to the rayleigh_diagnostics.py file to read in checkpoint files    \[Rathish Ratnasingam; 6-21-2024; [#543](https://github.com/geodynamics/Rayleigh/pull/543)\]
 
+-Added a jupyter notebook to read in the checkpoint files, transform it and output the results.         \[Brandon Lazard; 6-21-2024; [#551](https://github.com/geodynamics/Rayleigh/pull/551)]
+
 
 ### Changed
 
