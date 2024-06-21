@@ -38,43 +38,27 @@ See `tests/chi_scalar` for example input files.
 Pseudo-Incompressibility
 -----------------------
 
-Rayleigh can solve the fluid equations under the pseudo-incompressible approximation. The equation set is as follows:
+Rayleigh can solve the fluid equations under a simple form of the pseudo-incompressible approximation. The equation set is identical to the anelastic equations except for the momentum and continuity equations,
 
 .. math::
     \begin{aligned}
-        \hat{\rho}_*(r) \left[\frac{\partial\boldsymbol{v}}{\partial t} + \boldsymbol{v \cdot \nabla v}   % Advection
+        \hat{\rho}(r) \left[\frac{\partial\boldsymbol{v}}{\partial t} + \boldsymbol{v \cdot \nabla v}   % Advection
         + 2\Omega_0\hat{\boldsymbol{z}}\times\boldsymbol{v} \right]  =\; % Coriolis
-        & \frac{\hat{\rho}_*(r) g(r)}{c_P} \Theta\, \hat{\boldsymbol{r}} + \frac{\hat{\rho}_*(r)}{c_P\,\hat{\rho}(r)} \frac{d\hat{S}}{dr} P\, \hat{\boldsymbol{r}} % Buoyancy
-        - \hat{\rho}_*(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) \\ % Pressure Forces
-        &+ \frac{\hat{\rho}_*(r)}{4\pi\hat{\rho}(r)}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
-       + \frac{\hat{\rho}_*(r)}{\hat{\rho}(r)}\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\\ % Viscous Forces
-        %
-        %
-       \hat{\rho}(r)\,\hat{T}(r)\left[\frac{\partial \Theta}{\partial t} +\boldsymbol{v}\cdot\boldsymbol{\nabla}\Theta + v_r\frac{d\hat{S}}{dr}\right] =\;
-       &\boldsymbol{\nabla}\cdot\left[\hat{\rho}(r)\,\hat{T}(r)\,\kappa(r)\,\boldsymbol{\nabla}\Theta \right] % diffusion
-       +Q(r)   % Internal heating
-       \\ &+\Phi(r,\theta,\phi)
-       +\frac{\eta(r)}{4\pi}\left[\boldsymbol{\nabla}\times\boldsymbol{B}\right]^2\\ % Ohmic Heating
-       %
-       %
-       \frac{\partial \boldsymbol{B}}{\partial t} =\; &\boldsymbol{\nabla}\times\left[\,\boldsymbol{v}\times\boldsymbol{B}-\eta(r)\boldsymbol{\nabla}\times\boldsymbol{B}\,\right] \\
-       %
-       %
-       \mathcal{D}_{ij} =\; &2\hat{\rho}(r)\,\nu(r)\left[e_{ij}-\frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)\delta_{ij}\right] \\
-       %
-       %
-       \Phi(r,\theta,\phi) =\; &2\,\hat{\rho}(r)\,\nu(r)\left[e_{ij}e_{ij}-\frac{1}{3}\left(\boldsymbol{\nabla}\cdot\boldsymbol{v}\right)^2\right] \\       %
-       %
-       %
-        \boldsymbol{\nabla}\cdot\left[\hat{\rho}_*(r)\boldsymbol{v}\right] =\; &0 \\ % Continuity
-        \\%
-        %
-       \boldsymbol{\nabla}\cdot\boldsymbol{B} =\; &0, \end{aligned}
+        & \frac{\hat{\rho}(r)}{c_P} \left(g(r)\Theta + \frac{d\hat{S}}{dr} \frac{P}{\hat{\rho}(r)}\right) \, \hat{\boldsymbol{r}} % Buoyancy
+        - \hat{\rho}(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) % Pressure Forces
+    \\ 
+        &+ \frac{1}{4\pi}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
+       + \boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}  % Viscous Forces
+    \\
+        \boldsymbol{\nabla}\cdot\left[\hat{\rho}_*(r)\boldsymbol{v}\right] =\; &0.  % Continuity
+    \end{aligned}
 
-where :math:`\hat{\rho}_*` is the pseudo-density of the background atmsophere. This pseudo-density is a thermodynamic state variable that depends on the mass density and the specific entropy density,
+The momentum equation solved in anelastic mode is augmented by a buoyancy term that is normally ignored under the LBR (Lantz-Braginsky-Roberts) formulation of the anelastic approximation.  This new term is proportional to the background entropy gradient.  Hence, in a convection zone, this term is quite small and its exclusion is well justified.  However, in a stable layer, this term is not small and should be considered.
+
+The continuity equation is still a solenoidal constraint, but instead of the mass flux being divergenceless, a "pseudo-mass" flux is divergenceless.  In the solenoidal constraint above, the quantity :math:`\hat{\rho}_*` is the pseudo-density of the background atmosphere. This pseudo-density is a thermodynamic state variable that depends on the mass density and the specific entropy density,
 
 .. math::
    :label: definition_rho*
    
-   \hat{\rho}_* \equiv \hat{\rho} \, e^{\hat{S}/c_P}
+   \hat{\rho}_*(r) \equiv \hat{\rho}(r) \, e^{\hat{S}(r)/c_P}
 
