@@ -73,17 +73,17 @@ Module BoundaryConditions
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
 
-    Real*8  :: T_chi_coeff_top(1:n_scalar_max)     = 0.0d0
-    Real*8  :: T_dchidr_coeff_top(1:n_scalar_max)  = 0.0d0
+    Real*8  :: T_chi_a_coeff_top(1:n_scalar_max)     = 0.0d0
+    Real*8  :: T_dchidr_a_coeff_top(1:n_scalar_max)  = 0.0d0
     Real*8  :: T_dTdr_coeff_top                    = 0.0d0
-    Real*8  :: T_chi_coeff_bottom(1:n_scalar_max)     = 0.0d0
-    Real*8  :: T_dchidr_coeff_bottom(1:n_scalar_max)  = 0.0d0
+    Real*8  :: T_chi_a_coeff_bottom(1:n_scalar_max)     = 0.0d0
+    Real*8  :: T_dchidr_a_coeff_bottom(1:n_scalar_max)  = 0.0d0
     Real*8  :: T_dTdr_coeff_bottom                    = 0.0d0
-    Real*8  :: dTdr_chi_coeff_top(1:n_scalar_max)     = 0.0d0
-    Real*8  :: dTdr_dchidr_coeff_top(1:n_scalar_max)  = 0.0d0
+    Real*8  :: dTdr_chi_a_coeff_top(1:n_scalar_max)     = 0.0d0
+    Real*8  :: dTdr_dchidr_a_coeff_top(1:n_scalar_max)  = 0.0d0
     Real*8  :: dTdr_T_coeff_top                       = 0.0d0
-    Real*8  :: dTdr_chi_coeff_bottom(1:n_scalar_max)     = 0.0d0
-    Real*8  :: dTdr_dchidr_coeff_bottom(1:n_scalar_max)  = 0.0d0
+    Real*8  :: dTdr_chi_a_coeff_bottom(1:n_scalar_max)     = 0.0d0
+    Real*8  :: dTdr_dchidr_a_coeff_bottom(1:n_scalar_max)  = 0.0d0
     Real*8  :: dTdr_T_coeff_bottom                       = 0.0d0
 
     Real*8  :: chi_a_Bottom(1:n_scalar_max)     = 0.0d0
@@ -91,22 +91,22 @@ Module BoundaryConditions
     Real*8  :: dchidr_a_Top(1:n_scalar_max)     = 0.0d0
     Real*8  :: dchidr_a_Bottom(1:n_scalar_max)  = 0.0d0
 
-    Real*8  :: chi_chi_coeff_top(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
-    Real*8  :: chi_dchidr_coeff_top(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
-    Real*8  :: chi_T_coeff_top(1:n_scalar_max)                      = 0.0d0
-    Real*8  :: chi_dTdr_coeff_top(1:n_scalar_max)                   = 0.0d0
-    Real*8  :: chi_chi_coeff_bottom(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
-    Real*8  :: chi_dchidr_coeff_bottom(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
-    Real*8  :: chi_T_coeff_bottom(1:n_scalar_max)                      = 0.0d0
-    Real*8  :: chi_dTdr_coeff_bottom(1:n_scalar_max)                   = 0.0d0
-    Real*8  :: dchidr_chi_coeff_top(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
-    Real*8  :: dchidr_dchidr_coeff_top(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
-    Real*8  :: dchidr_T_coeff_top(1:n_scalar_max)                      = 0.0d0
-    Real*8  :: dchidr_dTdr_coeff_top(1:n_scalar_max)                   = 0.0d0
-    Real*8  :: dchidr_chi_coeff_bottom(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
-    Real*8  :: dchidr_dchidr_coeff_bottom(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
-    Real*8  :: dchidr_T_coeff_bottom(1:n_scalar_max)                      = 0.0d0
-    Real*8  :: dchidr_dTdr_coeff_bottom(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: chi_a_chi_a_coeff_top(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: chi_a_dchidr_a_coeff_top(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: chi_a_T_coeff_top(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: chi_a_dTdr_coeff_top(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: chi_a_chi_a_coeff_bottom(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: chi_a_dchidr_a_coeff_bottom(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: chi_a_T_coeff_bottom(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: chi_a_dTdr_coeff_bottom(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: dchidr_a_chi_a_coeff_top(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: dchidr_a_dchidr_a_coeff_top(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: dchidr_a_T_coeff_top(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: dchidr_a_dTdr_coeff_top(1:n_scalar_max)                   = 0.0d0
+    Real*8  :: dchidr_a_chi_a_coeff_bottom(1:n_scalar_max,1:n_scalar_max)     = 0.0d0
+    Real*8  :: dchidr_a_dchidr_a_coeff_bottom(1:n_scalar_max,1:n_scalar_max)  = 0.0d0
+    Real*8  :: dchidr_a_T_coeff_bottom(1:n_scalar_max)                      = 0.0d0
+    Real*8  :: dchidr_a_dTdr_coeff_bottom(1:n_scalar_max)                   = 0.0d0
 
     Real*8  :: chi_p_Bottom(1:n_scalar_max)     = 1.0d0
     Real*8  :: chi_p_Top(1:n_scalar_max)        = 0.0d0
@@ -162,15 +162,15 @@ Module BoundaryConditions
         fix_chivar_p_top, fix_chivar_p_bottom, chi_p_bottom, chi_p_top, &
         fix_dchidr_p_bottom, fix_dchidr_p_top, dchidr_p_top, dchidr_p_bottom, &
         couple_Tvar_top, couple_Tvar_bottom, couple_dtdr_top, couple_dtdr_bottom, &
-        T_chi_coeff_top, T_dchidr_coeff_top, T_dTdr_coeff_top, &
-        T_chi_coeff_bottom, T_dchidr_coeff_bottom, T_dTdr_coeff_bottom, &
-        dTdr_chi_coeff_top, dTdr_dchidr_coeff_top, dTdr_T_coeff_top, &
-        dTdr_chi_coeff_bottom, dTdr_dchidr_coeff_bottom, dTdr_T_coeff_bottom, &
+        T_chi_a_coeff_top, T_dchidr_a_coeff_top, T_dTdr_coeff_top, &
+        T_chi_a_coeff_bottom, T_dchidr_a_coeff_bottom, T_dTdr_coeff_bottom, &
+        dTdr_chi_a_coeff_top, dTdr_dchidr_a_coeff_top, dTdr_T_coeff_top, &
+        dTdr_chi_a_coeff_bottom, dTdr_dchidr_a_coeff_bottom, dTdr_T_coeff_bottom, &
         couple_chivar_a_top, couple_chivar_a_bottom, couple_dchidr_a_top, couple_dchidr_a_bottom, &
-        chi_chi_coeff_top, chi_dchidr_coeff_top, chi_T_coeff_top, chi_dTdr_coeff_top, &
-        chi_chi_coeff_bottom, chi_dchidr_coeff_bottom, chi_T_coeff_bottom, chi_dTdr_coeff_bottom, &
-        dchidr_chi_coeff_top, dchidr_dchidr_coeff_top, dchidr_T_coeff_top, dchidr_dTdr_coeff_top, &
-        dchidr_chi_coeff_bottom, dchidr_dchidr_coeff_bottom, dchidr_T_coeff_bottom, dchidr_dTdr_coeff_bottom
+        chi_a_chi_a_coeff_top, chi_a_dchidr_a_coeff_top, chi_a_T_coeff_top, chi_a_dTdr_coeff_top, &
+        chi_a_chi_a_coeff_bottom, chi_a_dchidr_a_coeff_bottom, chi_a_T_coeff_bottom, chi_a_dTdr_coeff_bottom, &
+        dchidr_a_chi_a_coeff_top, dchidr_a_dchidr_a_coeff_top, dchidr_a_T_coeff_top, dchidr_a_dTdr_coeff_top, &
+        dchidr_a_chi_a_coeff_bottom, dchidr_a_dchidr_a_coeff_bottom, dchidr_a_T_coeff_bottom, dchidr_a_dTdr_coeff_bottom
 
 Contains
 
@@ -188,9 +188,10 @@ Contains
            call pfi%exit(1)
         else if (n_active_bcs == 0) then
            call stdout%print(" -- Warning: no boundary conditions set for tvar on top boundary.")
-           call stdout%print("        Defaulting to fix_tvar_top.")
+           call stdout%print("        Defaulting to fix_tvar_top with T_top = 0.0.")
            call stdout%print("        ")      
            fix_tvar_top = .true.
+           T_top = 0.0
         endif
 
         n_active_bcs = count( (/ fix_tvar_bottom, fix_dtdr_bottom, couple_tvar_bottom, couple_dtdr_bottom /) )
@@ -200,9 +201,10 @@ Contains
            call pfi%exit(1)
         else if (n_active_bcs == 0) then
            call stdout%print(" -- Warning: no boundary conditions set for tvar on bottom boundary.")
-           call stdout%print("        Defaulting to fix_tvar_bottom.")
+           call stdout%print("        Defaulting to fix_tvar_bottom with T_bottom = 1.0.")
            call stdout%print("        ")      
            fix_tvar_bottom = .true.
+           T_bottom = 1.0
         endif
 
         do i = 1, n_active_scalars

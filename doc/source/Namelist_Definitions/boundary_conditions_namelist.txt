@@ -1,7 +1,7 @@
 **fix_tvar_top**  
-  Logical flag indicating whether thermal variable (T,S) should be fixed on the upper boundary.  Default = .true.
+  Logical flag indicating whether thermal variable (T,S) should be fixed on the upper boundary.  Default = .false.
 **fix_tvar_bottom**
-  Logical flag indicating whether thermal variable (T,S) should be fixed on the lower boundary.  Default = .true.
+  Logical flag indicating whether thermal variable (T,S) should be fixed on the lower boundary.  Default = .false.
 **fix_dtdr_top**  
   Logical flag indicating whether the radial derivative of thermal variable (T,S) should be fixed on the upper boundary.  Default = .false.
 **fix_dtdr_bottom**  
@@ -9,7 +9,7 @@
 **T_top**
   Value of thermal variable (T,S) at the upper boundary.  Default = 0.
 **T_bottom**
-  Value of thermal variable (T,S) at the lower boundary.  Default = 1.  
+  Value of thermal variable (T,S) at the lower boundary.  Default = 0.  
 **dTdr_top**
   Value of radial derivative of thermal variable (T,S) at the upper boundary.  Default = 0.
 **dTdr_bottom**
