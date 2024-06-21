@@ -24,7 +24,9 @@ and a value of 2 yields
 .. math::
    :label: ncteq2
 
-   \Delta\Theta_\mathrm{eq} = A\mathrm{cos}(\theta)\mathrm{sin}(\phi).
+   \Delta\Theta_\mathrm{eq} = A\mathrm{cos}(\theta)\mathrm{sin}(\phi)\mathrm{log}(\hat{P}/\hat{P}_\mathrm{bottom})/\mathrm{log}(\hat{P}_\mathrm{top}/\hat{P}_\mathrm{bottom}),
+
+where :math:`\hat{P}` is the reference state pressure.
 
 The amplitude :math:`A` is controlled by setting the variable  ``newtonian_cooling_tvar_amp``.   As an example, to use Newtonian cooling, one might add the following four lines to the ``physical_controls_namelist``.
 

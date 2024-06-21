@@ -44,6 +44,9 @@ Contains
     Subroutine Physical_Space_Init()
         Implicit None
         Integer :: k, r, t
+        Real*8, Allocatable :: press(:)
+
+        
         
         ! Any persistant arrays needs for physical space routines can be
         ! initialized here.
@@ -66,11 +69,15 @@ Contains
 
             If (newtonian_cooling_type .eq. 2) Then
                 ! Angular variation (ell=1,m=1, motivated by hot Jupiters)
+
+                Allocate(press(1:N_R))
+                press = ref%density*ref%temperature
                 If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 2'
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
                             tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*costheta(t)*sinphi(k)
+                            tvar_eq(k,r,t) = tvar_eq(k,r,t)*log(press(r)/press(N_R))/log(press(1)/press(N_R))
                         Enddo
                     Enddo
                 Enddo
