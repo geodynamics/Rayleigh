@@ -34,22 +34,22 @@ def test_bcs(case):
   dchi2dr_rmax = slices.vals[:,:,0,slices.lut[10204],0]
 
   # coefficients input
-  chi1bc_rmax = float(bcs['chi_a_top(1)'].replace('d', 'e'))
-  chi1bc_rmin = float(bcs['chi_a_bottom(1)'].replace('d', 'e'))
+  chi1bc_rmax = float(bcs['chi_a_top(1)'.lower()].replace('d', 'e'))
+  chi1bc_rmin = float(bcs['chi_a_bottom(1)'.lower()].replace('d', 'e'))
 
-  dTdrbc_rmax          = float(bcs['dtdr_top'].replace('d', 'e')) 
-  dtdr_chi1_coeff_rmax = float(bcs['dtdr_chi_coeff_top(1)'].replace('d', 'e'))
+  dTdrbc_rmax          = float(bcs['dTdr_top'.lower()].replace('d', 'e')) 
+  dtdr_chi1_coeff_rmax = float(bcs['dTdr_chi_a_coeff_top(1)'.lower()].replace('d', 'e'))
 
-  Tbc_rmin             = float(bcs['t_bottom'].replace('d', 'e'))
-  t_chi1_coeff_rmin    = float(bcs['t_chi_coeff_bottom(1)'].replace('d', 'e'))
-  t_dchi1dr_coeff_rmin = float(bcs['t_dchidr_coeff_bottom(1)'].replace('d', 'e'))
+  Tbc_rmin             = float(bcs['T_bottom'.lower()].replace('d', 'e'))
+  t_chi1_coeff_rmin    = float(bcs['T_chi_a_coeff_bottom(1)'.lower()].replace('d', 'e'))
+  t_dchi1dr_coeff_rmin = float(bcs['T_dchidr_a_coeff_bottom(1)'.lower()].replace('d', 'e'))
 
-  chi2bc_rmax             = float(bcs['chi_a_top(2)'].replace('d', 'e'))
-  chi2_chi1_coeff_rmax    = float(bcs['chi_chi_coeff_top(2,1)'].replace('d', 'e'))
-  chi2_dchi1dr_coeff_rmax = float(bcs['chi_dchidr_coeff_top(2,1)'].replace('d', 'e'))
+  chi2bc_rmax             = float(bcs['chi_a_top(2)'.lower()].replace('d', 'e'))
+  chi2_chi1_coeff_rmax    = float(bcs['chi_a_chi_a_coeff_top(2,1)'.lower()].replace('d', 'e'))
+  chi2_dchi1dr_coeff_rmax = float(bcs['chi_a_dchidr_a_coeff_top(2,1)'.lower()].replace('d', 'e'))
 
-  dchi2drbc_rmin          = float(bcs['dchidr_a_bottom(2)'].replace('d', 'e'))
-  dchi2dr_chi1_coeff_rmin = float(bcs['dchidr_chi_coeff_bottom(2,1)'].replace('d', 'e'))
+  dchi2drbc_rmin          = float(bcs['dchidr_a_bottom(2)'.lower()].replace('d', 'e'))
+  dchi2dr_chi1_coeff_rmin = float(bcs['dchidr_a_chi_a_coeff_bottom(2,1)'.lower()].replace('d', 'e'))
 
   # check if values produced match expected values based on input coefficients
   def failed(values, expected, tol=1.e-10):
