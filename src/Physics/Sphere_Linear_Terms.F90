@@ -316,7 +316,7 @@ Contains
                 ! LBR term
                 ! amp = -(rho*/rho)(ds/dr)/H_Laplacian (P/c_P)
                 If (pseudo_incompressible) Then
-                    amp = -ref%dsdr_over_cp * psi_factor / H_Laplacian 
+                    amp = -ref%dsdr_over_cp * psi_factor * ref%density / H_Laplacian 
                     Call add_implicit_term(weq,pvar, 0, amp, lp)
                 Endif
 
