@@ -297,7 +297,7 @@ Alternative: Configure using CMake
     # Optional: change settings (e.g., select a Debug or Release build)
     cmake --build build -t edit_cache
     # Build code in parallel and install in the bin directory
-    cmake --build -j -t install
+    cmake --build build -j -t install
 
 To select a specific compiler set the ``FC`` (Fortran) and ``CC`` (C) environment variables when you run the first command.
 
@@ -353,39 +353,46 @@ To see the dependencies being installed you can use:
 Installation on HPC systems
 -----------------------------------------
 
-Given the amount of computational resources required to simulate convection in highly turbulent parameter regimes, many users will want to run Rayleigh in a HPC environment.  Here we provide instructions for compilation on two widely-used, national-scale supercomputing systems:  TACC Stampede2 and NASA Pleiades.   
+Given the amount of computational resources required to simulate convection in highly turbulent parameter regimes, many users will want to run Rayleigh in a HPC environment.  Here we provide instructions for compilation on two widely-used, national-scale supercomputing systems:  TACC Stampede3 and NASA Pleiades.   
 
 Example jobscripts containing the necessary commands to compile and run Rayleigh on various systems may be found in ``Rayleigh/job_scripts/``.
 
-.. _stampede2:
+.. _stampede3:
 
-TACC Stampede2
+TACC Stampede3
 ~~~~~~~~~~~~~~
 
-Installing Rayleigh on NSF's Stampede 2 system is straightforward. At the time
-this documentation is written (Sep 2022) the loaded default modules work out of
-the box for Rayleigh. In case the modules change in the future here is a listed
+Installing Rayleigh on NSF's Stampede 3 system is straightforward. At the time
+this documentation is written (June 2024) the loaded default modules work out of
+the box for Rayleigh. In case the modules change in the future here is a list
 for reference:
 
 .. code-block:: bash
 
-  1) intel/18.0.2      3) impi/18.0.2   5) autotools/1.1    7) cmake/3.20.2   9) TACC
-  2) libfabric/1.7.0   4) git/2.24.1    6) python2/2.7.15   8) xalt/2.10.37
+  1) intel/24.0   3) autotools/1.4   5) xalt/3.0.1
+  2) impi/21.11   4) cmake/3.28.1    6) TACC
 
-After cloning a Rayleigh repository, rayleigh can be configured and compiled as:
+We recommend using cmake to configure on Stampede3. After cloning a Rayleigh repository, Rayleigh can be configured and compiled as:
 
 .. code-block:: bash
 
-   FC=mpifc CC=mpicc ./configure  # select 'AVX512'
-   make -j
-   make install
+   FC=$TACC_FC CC=$TACC_CC cmake -DCMAKE_BUILD_TYPE=Release -DRAYLEIGH_CPU_OPTIMIZATIONS=native -Bbuild
+   cmake --build build -j -t install
 
-We suggest choosing 'AVX512' at the configure menu.  This vectorization is supported by both the Skylake and Ice Lake nodes available on Stampede2.  An example jobscript for Stampede2 may be found in *Rayleigh/job_scripts/TACC_Stampede2*.
+The installation on the TACC system Frontera works the same way, except the variables ``TACC_FC``
+and ``TACC_CC`` are not set, and so the compilers need to be specified manually:
+
+.. code-block:: bash
+
+   FC=ifort CC=icc cmake -DCMAKE_BUILD_TYPE=Release -DRAYLEIGH_CPU_OPTIMIZATIONS=native -Bbuild
+   cmake --build build -j -t install
+
+An example jobscript for Stampede3 may be found in *Rayleigh/job_scripts/TACC_Stampede3*.
 
 Using the Apptainer container system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We provide a precompiled container that provides an alternative way to use Rayleigh on the  TACC computing systems Stampede3 and Frontera.
+We provide a precompiled container that provides an alternative way to use Rayleigh on the TACC computing systems Stampede3 and Frontera.
 
 To activate the container system and download the container:
 
