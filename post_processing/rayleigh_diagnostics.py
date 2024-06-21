@@ -3271,7 +3271,7 @@ def checkpoint_read(chk_file_string,nr,ntheta):
     nell=(2*ntheta)//3
     shape = (nell,nell)
     i,j = np.indices(shape)
-    m = np.ceil(i <= j).astype(bool)
+    m = i <= j
     target_all = zeros((nell,nell,nr),dtype="complex")
     length_half = len(fromfile(chk_file_string,"f8"))//2
     chunk_length = length_half//nr
