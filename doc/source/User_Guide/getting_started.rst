@@ -415,9 +415,8 @@ Installation on NASA's Pleiades cluster is similarly straightforward.  After clo
 .. code-block:: bash
 
    module purge
-   module load comp-intel
-   module load mpi-hpe
-   ./configure --FC=mpif90 --CC=icc  # select 'ALL'
+   module load comp-intel mpi-hpe
+   ./configure --FC=mpif90 --CC=icc -mkl  # select 'ALL'
    make -j
    make install
    
