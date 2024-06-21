@@ -44,9 +44,18 @@ Contains
     Subroutine Physical_Space_Init()
         Implicit None
         Integer :: k, r, t
-        Real*8, Allocatable :: press(:)
+        Real*8, Allocatable :: cooling_profile(:)
 
-        
+        Allocate(cooling_profile(1:N_R))
+        If (newtonian_cooling .and. (newtonian_cooling_profile_file .ne. '__nothing__')) Then
+            cooling_profile(:) = newtonian_cooling_profile(:)
+            If (my_rank .eq. 0) Then
+                Write(6,*) 'Newtonian cooling is active.'
+                Write(6,*) 'Cooling profile set from: ',newtonian_cooling_profile_file
+            Endif
+        Else
+            cooling_profile(:) = 1.0d0
+        Endif
         
         ! Any persistant arrays needs for physical space routines can be
         ! initialized here.
@@ -56,11 +65,11 @@ Contains
 
             If (newtonian_cooling_type .eq. 1) Then
                 ! No angular variation
-                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 1'
+                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling type = 1'
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
-                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp
+                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*newtonian_cooling_profile(r)
                         Enddo
                     Enddo
                 Enddo
@@ -70,19 +79,19 @@ Contains
             If (newtonian_cooling_type .eq. 2) Then
                 ! Angular variation (ell=1,m=1, motivated by hot Jupiters)
 
-                Allocate(press(1:N_R))
-                press = ref%density*ref%temperature
-                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 2'
+                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling type = 2'
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
                             tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*sintheta(t)*sinphi(k)
-                            tvar_eq(k,r,t) = tvar_eq(k,r,t)*log(press(r)/press(N_R))/log(press(1)/press(N_R))
+                            tvar_eq(k,r,t) = tvar_eq(k,r,t)*newtonian_cooling_profile(r)
                         Enddo
                     Enddo
                 Enddo
             Endif
         Endif
+
+        DeAllocate(cooling_profile)
 
     End Subroutine Physical_Space_Init
 

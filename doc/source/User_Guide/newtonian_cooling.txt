@@ -17,18 +17,16 @@ At present, :math:`\Delta\Theta_\mathrm{eq}` is allowed to take one of two forms
 .. math::
    :label: ncteq1
    
-   \Delta\Theta_\mathrm{eq} = A,
+   \Delta\Theta_\mathrm{eq} = A\,f_\mathrm{c}(r),
 
 and a value of 2 yields
 
 .. math::
    :label: ncteq2
 
-   \Delta\Theta_\mathrm{eq} = A\mathrm{cos}(\theta)\mathrm{sin}(\phi)\mathrm{log}(\hat{P}/\hat{P}_\mathrm{bottom})/\mathrm{log}(\hat{P}_\mathrm{top}/\hat{P}_\mathrm{bottom}),
+   \Delta\Theta_\mathrm{eq} = A\,f_\mathrm{c}(r)\mathrm{sin}(\theta)\mathrm{sin}(\phi),
 
-where :math:`\hat{P}` is the reference state pressure.
-
-The amplitude :math:`A` is controlled by setting the variable  ``newtonian_cooling_tvar_amp``.   As an example, to use Newtonian cooling, one might add the following four lines to the ``physical_controls_namelist``.
+where :math:`f_\mathrm{c}(r)` is the radial cooling profile.  It is 1 by default, but the user can specify a file from which to read a custom profile by setting the ``newtonian_cooling_profile_file`` variable in the ``physical_controls_namelist``.  The amplitude :math:`A` is controlled by setting the variable  ``newtonian_cooling_tvar_amp``.   As an example, to use Newtonian cooling, one can and and modify the following lines in the ``physical_controls_namelist``.
 
 ::
 
@@ -37,6 +35,7 @@ The amplitude :math:`A` is controlled by setting the variable  ``newtonian_cooli
     newtonian_cooling_type = 1
     newtonian_cooling_time = 1.0d0
     newtonian_cooling_tvar_amp = 1.0d0
+    newtonian_cooling_profile_file = 'my_cooling_profile.dat'
    /
 
 

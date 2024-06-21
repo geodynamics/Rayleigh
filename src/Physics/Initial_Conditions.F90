@@ -216,6 +216,13 @@ Contains
                 Endif
             Endif
         Endif
+
+        If ((newtonian_cooling) .and. (newtonian_cooling_profile_file .ne. '__nothing__')) Then
+            Allocate(newtonian_cooling_profile(1:N_R))
+            newtonian_cooling_profile(:) = 0.0d0
+            Call Load_Radial_Profile(newtonian_cooling_profile_file,newtonian_cooling_profile)
+        Endif
+
         ! Fields are now initialized and loaded into the RHS.
         ! We are ready to enter the main loop
         If (my_rank .eq. 0) Then

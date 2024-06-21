@@ -81,13 +81,15 @@ Module Controls
     Integer :: newtonian_cooling_type = 1
     Real*8  :: newtonian_cooling_time = 1.0d22
     Real*8  :: newtonian_cooling_tvar_amp = 0.0d0
+    Character*120 :: newtonian_cooling_profile_file = '__nothing__'
+    Real*8, Allocatable :: newtonian_cooling_profile(:)
 
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
                 & momentum_advection, inertia, n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
-                & newtonian_cooling_tvar_amp
+                & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
