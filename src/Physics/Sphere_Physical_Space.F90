@@ -37,7 +37,55 @@ Module Sphere_Physical_Space
     Use Benchmarking, Only : benchmark_checkup
     Implicit None
 
+    Real*8, Allocatable :: tvar_eq(:,:,:)
+
 Contains
+    
+    Subroutine Physical_Space_Init()
+        Implicit None
+        Integer :: k, r, t
+        Real*8, Allocatable :: press(:)
+
+        
+        
+        ! Any persistant arrays needs for physical space routines can be
+        ! initialized here.
+        If (newtonian_cooling) Then
+            Allocate(tvar_eq(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max))
+            tvar_eq(:,:,:) = 0.0d0
+
+            If (newtonian_cooling_type .eq. 1) Then
+                ! No angular variation
+                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 1'
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        Do k =1, n_phi
+                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+
+
+            If (newtonian_cooling_type .eq. 2) Then
+                ! Angular variation (ell=1,m=1, motivated by hot Jupiters)
+
+                Allocate(press(1:N_R))
+                press = ref%density*ref%temperature
+                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling is active.  Type = 2'
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        Do k =1, n_phi
+                            tvar_eq(k,r,t) = newtonian_cooling_tvar_amp*sintheta(t)*sinphi(k)
+                            tvar_eq(k,r,t) = tvar_eq(k,r,t)*log(press(r)/press(N_R))/log(press(1)/press(N_R))
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+        Endif
+
+    End Subroutine Physical_Space_Init
+
     Subroutine physical_space()
         Implicit None
         Integer :: i
@@ -122,6 +170,7 @@ Contains
 
         Call Temperature_Advection()
         Call Volumetric_Heating()
+
 
         do i = 1, n_active_scalars
           Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
@@ -241,7 +290,23 @@ Contains
             Enddo
             !$OMP END PARALLEL DO
         Endif
+
+
+        If (newtonian_cooling) Then
+            ! Added a volumetric heating to the energy equation
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            Do t = my_theta%min, my_theta%max
+                Do r = my_r%min, my_r%max
+                    Do k =1, n_phi
+                        wsp%p3b(k,r,t,tvar) = wsp%p3b(k,r,t,tvar) + &
+                                      (tvar_eq(k,r,t) -wsp%p3b(k,r,t,tvar))/newtonian_cooling_time
+                    Enddo
+                Enddo
+            Enddo
+            !$OMP END PARALLEL DO
+        Endif
     End Subroutine Volumetric_Heating
+
 
     Subroutine chi_Source_Function(chivar)
         Implicit None

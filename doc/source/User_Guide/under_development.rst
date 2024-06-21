@@ -16,8 +16,6 @@ Arbitrary Scalar Fields
 
 .. include:: arbitrary_scalar_fields.txt 
 
-
-
-
+.. include:: newtonian_cooling.txt
 
 
