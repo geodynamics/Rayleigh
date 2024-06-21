@@ -1177,7 +1177,6 @@ Contains
             temp_constants(11) = ra_constants(11)
             temp_functions(:,14) = ra_functions(:,14)
             
-            ! BWH: Should I be updating the second derivative of the entropy profile (and how)? Same goes for ref%dsdr_over_cp
         Endif
 
         ra_constants(1:n_ra_constants) = temp_constants(:)
@@ -1297,13 +1296,9 @@ Contains
         Do i = 2, N_R
             ref%entropy(i) = ref%entropy(i-1) - geofac*ref%dsdr(i)*radial_integral_weights(i)/Radius(i)**2           
         Enddo
-        ref%exp_entropy = exp(ref%entropy)
-        ref%dsdr_over_cp = ref%dsdr
+        ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
+        ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
         Call log_deriv(ref%dsdr(:), ref%d2s(:), no_log=.true.)
-  
-        ! BWH: I currently don't know how to determine whether the specified reference state
-        !      is dimensional or not.  Hence, Custom Reference states are currently incompatible
-        !      with pseudo-incompressible mode.  This MUST be fixed.
 
     End Subroutine Get_Custom_Reference
 
