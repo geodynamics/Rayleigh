@@ -131,3 +131,8 @@ jobs:
         ./configure --openblas --with-blas=$CONDA_PREFIX --with-fftw=$CONDA_PREFIX --FC=mpifort --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
         make -j
         make install
+    - name: Build Rayleigh (CMake)
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        cmake -Bbuild
+        cmake --build build -j -t install

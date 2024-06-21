@@ -23,7 +23,7 @@ dependencies:
   - compilers=1.4.2
   - openblas=0.3.25
   - fftw=3.3
-  - mpich=3.4
+  - openmpi=4.1.6
   - funcsigs=1.0
   - vtk=9.0
   - docopt=0.6
