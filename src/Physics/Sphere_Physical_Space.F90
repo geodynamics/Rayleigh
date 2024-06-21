@@ -428,11 +428,19 @@ Contains
 
 
         ! Multiply advection/coriolis pieces by rho
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)
-        END_DO
-        !$OMP END PARALLEL DO
+        If (pseudo_incompressible) Then
+	   !$OMP PARALLEL DO PRIVATE(t,r,k)
+	   DO_IDX
+	      RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)*ref%exp_entropy(r)
+	   END_DO
+	   !$OMP END PARALLEL DO
+        Else
+		!$OMP PARALLEL DO PRIVATE(t,r,k)
+		DO_IDX
+		    RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)
+		END_DO
+		!$OMP END PARALLEL DO
+        Endif
 
 
         If (magnetism .and. lorentz_forces) Then
@@ -544,11 +552,19 @@ Contains
         Endif
 
         ! Multiply advection/coriolis pieces by rho
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)
-        END_DO
-        !OMP END PARALLEL DO
+        If (pseudo_incompressible) Then
+		!$OMP PARALLEL DO PRIVATE(t,r,k)
+		DO_IDX
+		    RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)*ref%exp_entropy(r)
+		END_DO
+		!OMP END PARALLEL DO
+        Else
+		!$OMP PARALLEL DO PRIVATE(t,r,k)
+		DO_IDX
+		    RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)
+		END_DO
+		!OMP END PARALLEL DO
+        Endif
 
         If (magnetism .and. lorentz_forces) Then
             ! Add -[JxB]_theta
@@ -571,9 +587,9 @@ Contains
         END_DO
         !$OMP END PARALLEL DO
 
-
-
     End Subroutine Momentum_Advection_Theta
+    
+    
     Subroutine Momentum_Advection_Phi()
         Implicit None
         Integer :: t, r, k
@@ -611,11 +627,19 @@ Contains
         Endif
 
         ! Multiply advection/coriolis pieces by rho
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)
-        END_DO
-        !OMP END PARALLEL DO
+        If (pseudo_incompressible) Then
+		!$OMP PARALLEL DO PRIVATE(t,r,k)
+		DO_IDX
+		    RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)*ref%exp_entropy(r)
+		END_DO
+		!OMP END PARALLEL DO
+        Else
+		!$OMP PARALLEL DO PRIVATE(t,r,k)
+		DO_IDX
+		    RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)
+		END_DO
+		!OMP END PARALLEL DO
+        Endif
 
         If (magnetism .and. lorentz_forces) Then
             ! Add -[JxB]_phi
