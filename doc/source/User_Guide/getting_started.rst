@@ -299,6 +299,13 @@ Alternative: Configure using CMake
     # Build code in parallel and install in the bin directory
     cmake --build -j -t install
 
+To select a specific compiler set the ``FC`` (Fortran) and ``CC`` (C) environment variables when you run the first command.
+
+.. code-block:: bash
+
+    # Select the Intel compilers.
+    FC=ifort CC=icc cmake -Bbuild
+
 .. _spack-setup:
 
 Alternative: Installation using Spack
