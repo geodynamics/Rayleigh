@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 ### Added
 
+- Allow the boundary conditions of scalar fields (both the thermal temperature/entropy field and active scalar fields) to be linearly coupled together.  This is documented in the "Under Development" section of the User Guide and has an example test. \[Cian Wilson; 6-21-2024; [#460](https://github.com/geodynamics/Rayleigh/pull/460)\]
+
 - The documentation for solving for active and passive scalar fields has been expanded in the "Under Development" section of the User Guide. \[Cian Wilson; 6-20-2024; [#541](https://github.com/geodynamics/Rayleigh/pull/541)\]
 
 - A docker image for Stampede3 and Frontera (TACC) has been added to the repository.   \[Rene Gassmoeller; 6-20-2024; [#402](https://github.com/geodynamics/Rayleigh/pull/402)\]

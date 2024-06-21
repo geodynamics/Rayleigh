@@ -17,6 +17,14 @@ Arbitrary Scalar Fields
 .. include:: arbitrary_scalar_fields.txt 
 
 
+.. _coupled_bcs:
+
+Coupled Boundary Conditions
+---------------------------
+
+.. include:: coupled_bcs.txt 
+
+
 
 
 

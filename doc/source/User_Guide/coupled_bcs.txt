@@ -1,0 +1,181 @@
+Rayleigh can couple the values and gradients of scalar fields (including the temperature/entropy, :math:`\Theta`, and active,
+:math:`\chi_{a_i}`, scalar fields) at the
+boundaries through this initial implementation of coupled boundary conditions.
+
+These boundary conditions take the form:
+
+.. math::
+   :label: coupled_bcs_T
+
+   \Theta = b_{\Theta,\Theta} + b_{\Theta,\frac{\partial \Theta}{\partial r}}\frac{\partial \Theta}{\partial r} \
+       + \sum_{j} b_{\Theta,\chi_{a_j}} \chi_{a_j} \
+       + \sum_{j} b_{\Theta,\frac{\partial\chi_{a_j}}{\partial r}} \frac{\partial\chi_{a_j}}{\partial r}
+
+for coupling temperature/entropy to its gradient and/or to other scalar fields,
+
+.. math::
+   :label: coupled_bcs_dTdr
+
+   \frac{\partial \Theta}{\partial r} = b_{\frac{\partial \Theta}{\partial r},\frac{\partial \Theta}{\partial r}} + b_{\frac{\partial \Theta}{\partial r},\Theta}\Theta \
+       + \sum_{j} b_{\frac{\partial \Theta}{\partial r},\chi_{a_j}} \chi_{a_j} \
+       + \sum_{j} b_{\frac{\partial \Theta}{\partial r},\frac{\partial\chi_{a_j}}{\partial r}} \frac{\partial\chi_{a_j}}{\partial r}
+
+for coupling the derivative of temperature/entropy to its value and/or to other scalar fields,
+
+.. math::
+   :label: coupled_bcs_chia
+
+   \chi_{a_i} = b_{\chi_{a_i},\chi_{a_i}} \
+       + b_{\chi_{a_i},\Theta}\Theta \
+       + b_{\chi_{a_i},\frac{\partial \Theta}{\partial r}}\frac{\partial \Theta}{\partial r} \
+       + \sum_{j (j \ne i)} b_{\chi_{a_i},\chi_{a_j}} \chi_{a_j} \
+       + \sum_{j} b_{\chi_{a_i},\frac{\partial\chi_{a_j}}{\partial r}} \frac{\partial\chi_{a_j}}{\partial r}
+
+for coupling active scalar i to its gradient and/or to other scalar fields including temperature/entropy, and finally
+
+.. math::
+   :label: coupled_bcs_dchiadr
+
+   \frac{\partial \chi_{a_i}}{\partial r} = b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}} \
+       + b_{\frac{\partial\chi_{a_i}}{\partial r},\Theta}\Theta \
+       + b_{\frac{\partial\chi_{a_i}}{\partial r},\frac{\partial \Theta}{\partial r}}\frac{\partial \Theta}{\partial r} \
+       + \sum_{j} b_{\frac{\partial\chi_{a_i}}{\partial r},\chi_{a_j}} \chi_{a_j} \
+       + \sum_{j (j \ne i)} b_{\frac{\partial\chi_{a_i}}{\partial r},\frac{\partial\chi_{a_j}}{\partial r}} \frac{\partial\chi_{a_j}}{\partial r}
+
+for coupling the gradient of active scalar i to its value and/or to other scalar fields including temperature/entropy.
+
+The values of the :math:`b_{i,i}` terms can be constant or spatially varying.  The values of the :math:`b_{i,j}` coefficients are constant.  All values can be set using options in the boundary conditions namespace.
+
+Setup
+^^^^^
+
+Boundary conditions
+*******************
+
+Model parameters for the scalar fields follow the same convention as temperature but using the prefix `chi_a` or `chi_p` for active and passive
+scalars respectively.
+
+**couple_tvar_top**  
+  Logical flag indicating whether thermal variable (T,S) should be coupled to other scalar fields or their gradients on the upper boundary.  Default = .false.
+**couple_tvar_bottom**  
+  Logical flag indicating whether thermal variable (T,S) should be coupled to other scalar fields or their gradients on the lower boundary.  Default = .false.
+
+**couple_dtdr_top**  
+  Logical flag indicating whether radial gradient of thermal variable (T,S) should be coupled to other scalar fields or their gradients on the upper boundary.  Default = .false.
+**couple_dtdr_bottom**  
+  Logical flag indicating whether radial gradient of thermal variable (T,S) should be coupled to other scalar fields or their gradients on the lower boundary.  Default = .false.
+
+**couple_chivar_a_top**  
+  Logical flag indicating whether active scalar i should be coupled to other scalar fields or their gradients on the upper boundary.  Default = .false.
+**couple_chivar_a_bottom**  
+  Logical flag indicating whether active scalar i should be coupled to other scalar fields or their gradients on the lower boundary.  Default = .false.
+
+**couple_dchidr_a_top**  
+  Logical flag indicating whether radial gradient of active scalar i should be coupled to other scalar fields or their gradients on the upper boundary.  Default = .false.
+**couple_dchidr_a_bottom**  
+  Logical flag indicating whether radial gradient of active scalar i should be coupled to other scalar fields or their gradients on the lower boundary.  Default = .false.
+
+**T_top**
+  Set the thermal variable, :math:`b_{\Theta,\Theta}`, at the top of the domain (overloaded)
+**T_top_file**
+  Set a spatially varying thermal variable, :math:`b_{\Theta,\Theta}`, at the top of the domain by specifying a generic input filename (overloaded, untested)
+**T_dTdr_coeff_top**
+  Set the coupling coefficient between the thermal variable and the radial derivative of the thermal variable, :math:`b_{\Theta,\frac{\partial \Theta}{\partial r}}`, at the top of the domain
+**T_chi_a_coeff_top(i)**
+  Set the coupling coefficient between the thermal variable and active scalar field i, :math:`b_{\Theta,\chi_{a_i}}`, at the top of the domain
+**T_dchidr_a_coeff_top(i)**
+  Set the coupling coefficient between the thermal variable and the radial derivative of active scalar field i, :math:`b_{\Theta,\frac{\partial \chi_{a_i}}{\partial r}}`, at the top of the domain
+
+**T_bottom**
+  Set the thermal variable, :math:`b_{\Theta,\Theta}`, at the base of the domain (overloaded)
+**T_bottom_file**
+  Set a spatially varying thermal variable, :math:`b_{\Theta,\Theta}`, at the base of the domain by specifying a generic input filename (overloaded, untested)
+**T_dTdr_coeff_bottom**
+  Set the coupling coefficient between the thermal variable and the radial derivative of the thermal variable, :math:`b_{\Theta,\frac{\partial \Theta}{\partial r}}`, at the base of the domain
+**T_chi_a_coeff_bottom(i)**
+  Set the coupling coefficient between the thermal variable and active scalar field i, :math:`b_{\Theta,\chi_{a_i}}`, at the base of the domain
+**T_dchidr_a_coeff_bottom(i)**
+  Set the coupling coefficient between the thermal variable and the radial derivative of active scalar field i, :math:`b_{\Theta,\frac{\partial \chi_{a_i}}{\partial r}}`, at the base of the domain
+
+**dTdr_top**
+  Set the radial derivative of the thermal variable, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial\Theta}{\partial r}}`, at the top of the domain (overloaded)
+**dTdr_top_file**
+  Set a spatially varying radial derivative of the thermal variable, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial\Theta}{\partial r}}`, at the top of the domain by specifying a generic input filename (overloaded, untested)
+**dTdr_T_coeff_top**
+  Set the coupling coefficient between the radial derivative of the thermal variable and the thermal variable, :math:`b_{\frac{\partial\Theta}{\partial r},\Theta}`, at the top of the domain
+**dTdr_chi_a_coeff_top(i)**
+  Set the coupling coefficient between the radial derivative of the thermal variable and the radial derivative of active scalar field i, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}}`, at the top of the domain
+**dTdr_dchidr_a_coeff_top(i)**
+  Set the coupling coefficient between the radial derivative of the thermal variable and the radial derivative of active scalar field i, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}}`, at the top of the domain
+
+**dTdr_bottom**
+  Set the radial derivative of the thermal variable, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial\Theta}{\partial r}}`, at the base of the domain (overloaded)
+**dTdr_bottom_file**
+  Set a spatially varying radial derivative of the thermal variable, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial\Theta}{\partial r}}`, at the base of the domain by specifying a generic input filename (overloaded, untested)
+**dTdr_T_coeff_bottom**
+  Set the coupling coefficient between the radial derivative of the thermal variable and the thermal variable, :math:`b_{\frac{\partial\Theta}{\partial r},\Theta}`, at the base of the domain
+**dTdr_chi_a_coeff_bottom(i)**
+  Set the coupling coefficient between the radial derivative of the thermal variable and the radial derivative of active scalar field i, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}}`, at the base of the domain
+**dTdr_dchidr_a_coeff_bottom(i)**
+  Set the coupling coefficient between the radial derivative of the thermal variable and the radial derivative of active scalar field i, :math:`b_{\frac{\partial\Theta}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}}`, at the base of the domain
+
+
+**chi_a_top(i)**
+  Set active scalar field i, :math:`b_{\chi_{a_i},\chi_{a_i}}`, at the top of the domain (overloaded)
+**chi_a_top_file(i)**
+  Set a spatially varying active scalar field i, :math:`b_{\chi_{a_i},\chi_{a_i}}`, at the top of the domain by specifying a generic input filename (overloaded, untested)
+**chi_a_T_coeff_top(i)**
+  Set the coupling coefficient between active scalar field i and the thermal variable, :math:`b_{\chi_{a_i},\Theta}`, at the top of the domain
+**chi_a_dTdr_coeff_top(i)**
+  Set the coupling coefficient between active scalar field i and the radial derivative of the thermal variable, :math:`b_{\chi_{a_i},\frac{\partial\Theta}{\partial r}}`, at the top of the domain
+**chi_a_chi_a_coeff_top(i,j)**
+  Set the coupling coefficient between active scalar field i and active scalar field j, :math:`b_{\chi_{a_i},\chi_{a_j}}`, at the top of the domain.  :math:`b_{\chi_{a_i},\chi_{a_i}}` is ignored 
+**chi_a_dchidr_a_coeff_top(i,j)**
+  Set the coupling coefficient between active scalar field i and the radial derivative of active scalar field j, :math:`b_{\chi_{a_i},\frac{\partial \chi_{a_j}}{\partial r}}`, at the top of the domain
+
+**chi_a_bottom(i)**
+  Set active scalar field i, :math:`b_{\chi_{a_i},\chi_{a_i}}`, at the base of the domain (overloaded)
+**chi_a_bottom_file(i)**
+  Set a spatially varying active scalar field i, :math:`b_{\chi_{a_i},\chi_{a_i}}`, at the base of the domain by specifying a generic input filename (overloaded, untested)
+**chi_a_T_coeff_bottom(i)**
+  Set the coupling coefficient between active scalar field i and the thermal variable, :math:`b_{\chi_{a_i},\Theta}`, at the base of the domain
+**chi_a_dTdr_coeff_bottom(i)**
+  Set the coupling coefficient between active scalar field i and the radial derivative of the thermal variable, :math:`b_{\chi_{a_i},\frac{\partial\Theta}{\partial r}}`, at the base of the domain
+**chi_a_chi_a_coeff_bottom(i,j)**
+  Set the coupling coefficient between active scalar field i and active scalar field j, :math:`b_{\chi_{a_i},\chi_{a_j}}`, at the base of the domain.  :math:`b_{\chi_{a_i},\chi_{a_i}}` is ignored 
+**chi_a_dchidr_a_coeff_bottom(i,j)**
+  Set the coupling coefficient between active scalar field i and the radial derivative of active scalar field j, :math:`b_{\chi_{a_i},\frac{\partial \chi_{a_j}}{\partial r}}`, at the base of the domain
+
+**dchidr_a_top(i)**
+  Set the radial derivative of active scalar field i, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}}`, at the top of the domain (overloaded)
+**dchidr_a_top_file(i)**
+  Set a spatially varying radial derivative of active scalar field i, :math:`b_{\frac{\partial\chi_{a_i}}{\partial r},\frac{\partial\chi_{a_i}}{\partial r}}`, at the top of the domain by specifying a generic input filename (overloaded, untested)
+**dchidr_a_T_coeff_top(i)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and the thermal variable, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\Theta}`, at the top of the domain
+**dchidr_a_dTdr_coeff_top(i)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and the radial derivative of the thermal variable, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial\Theta}{\partial r}}`, at the top of the domain
+**dchidr_a_chi_a_coeff_top(i,j)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and active scalar field j, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\chi_{a_j}}`, at the top of the domain
+**dchidr_a_dchidr_a_coeff_top(i,j)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and the radial derivative of active scalar field j, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial \chi_{a_j}}{\partial r}}`, at the top of the domain.  :math:`b_{\frac{\partial\chi_{a_i}}{\partial r},\frac{\partial\chi_{a_i}}{\partial r}}` is ignored
+
+**dchidr_a_bottom(i)**
+  Set the radial derivative of active scalar field i, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial \chi_{a_i}}{\partial r}}`, at the base of the domain (overloaded)
+**dchidr_a_bottom_file(i)**
+  Set a spatially varying radial derivative of active scalar field i, :math:`b_{\frac{\partial\chi_{a_i}}{\partial r},\frac{\partial\chi_{a_i}}{\partial r}}`, at the base of the domain by specifying a generic input filename (overloaded, untested)
+**dchidr_a_T_coeff_bottom(i)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and the thermal variable, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\Theta}`, at the base of the domain
+**dchidr_a_dTdr_coeff_bottom(i)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and the radial derivative of the thermal variable, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial\Theta}{\partial r}}`, at the base of the domain
+**dchidr_a_chi_a_coeff_bottom(i,j)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and active scalar field j, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\chi_{a_j}}`, at the base of the domain
+**dchidr_a_dchidr_a_coeff_bottom(i,j)**
+  Set the coupling coefficient between the radial derivative of active scalar field i and the radial derivative of active scalar field j, :math:`b_{\frac{\partial \chi_{a_i}}{\partial r},\frac{\partial \chi_{a_j}}{\partial r}}`, at the base of the domain.  :math:`b_{\frac{\partial\chi_{a_i}}{\partial r},\frac{\partial\chi_{a_i}}{\partial r}}` is ignored
+
+Further Information
+^^^^^^^^^^^^^^^^^^^
+
+See `tests/coupled_bcs` for example input files.
+
+
+

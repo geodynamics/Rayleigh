@@ -521,7 +521,7 @@ Contains
         Implicit None
         Real*8 :: samp,one
         Integer, Intent(In) :: mode_ind
-        Integer :: l, r,lp, i
+        Integer :: l, r,lp, i, j
         one = 1.0d0
         lp = mode_ind
 
@@ -558,6 +558,30 @@ Contains
             If (fix_dtdr_top) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
+            If (couple_tvar_top) Then
+                do i = 1, n_active_scalars
+                    samp = -T_chi_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -T_dchidr_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = -T_dTdr_coeff_top
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
+            If (couple_dtdr_top) Then
+                do i = 1, n_active_scalars
+                    samp = -dTdr_chi_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -dTdr_dchidr_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = -dTdr_T_coeff_top
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
 
             r = N_R
             If (fix_tvar_bottom) Then
@@ -566,8 +590,32 @@ Contains
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
+            If (couple_tvar_bottom) Then
+                do i = 1, n_active_scalars
+                    samp = -T_chi_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -T_dchidr_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = -T_dTdr_coeff_bottom
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
+            If (couple_dtdr_bottom) Then
+                do i = 1, n_active_scalars
+                    samp = -dTdr_chi_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -dTdr_dchidr_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = -dTdr_T_coeff_bottom
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
 
-            ! PASSIVE
+            ! active scalars
             do i = 1, n_active_scalars
               r = 1
               If (fix_chivar_a_top(i)) Then
@@ -575,6 +623,32 @@ Contains
               Endif
               If (fix_dchidr_a_top(i)) Then
                   Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
+              Endif
+              If (couple_chivar_a_top(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -chi_a_chi_a_coeff_top(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -chi_a_dchidr_a_coeff_top(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -chi_a_T_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -chi_a_dTdr_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
+              Endif
+              If (couple_dchidr_a_top(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -dchidr_a_chi_a_coeff_top(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -dchidr_a_dchidr_a_coeff_top(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -dchidr_a_T_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -dchidr_a_dTdr_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
               Endif
 
               r = N_R
@@ -584,8 +658,35 @@ Contains
               If (fix_dchidr_a_bottom(i)) Then
                   Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
               Endif
+              If (couple_chivar_a_bottom(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -chi_a_chi_a_coeff_bottom(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -chi_a_dchidr_a_coeff_bottom(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -chi_a_T_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -chi_a_dTdr_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
+              Endif
+              If (couple_dchidr_a_bottom(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -dchidr_a_chi_a_coeff_bottom(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -dchidr_a_dchidr_a_coeff_bottom(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -dchidr_a_T_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -dchidr_a_dTdr_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
+              Endif
             end do
 
+            ! passive scalars
             do i = 1, n_passive_scalars
               r = 1
               If (fix_chivar_p_top(i)) Then
@@ -663,6 +764,30 @@ Contains
             If (fix_dtdr_top) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
             Endif
+            If (couple_tvar_top) Then
+                do i = 1, n_active_scalars
+                    samp = -T_chi_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -T_dchidr_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = -T_dTdr_coeff_top
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
+            If (couple_dtdr_top) Then
+                do i = 1, n_active_scalars
+                    samp = -dTdr_chi_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -dTdr_dchidr_a_coeff_top(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = -dTdr_T_coeff_top
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
 
             r = N_R
             If (fix_tvar_bottom) Then
@@ -670,6 +795,30 @@ Contains
             Endif
             If (fix_dtdr_bottom) Then
                 Call Load_BC(lp,r,teq,tvar,one,1)
+            Endif
+            If (couple_tvar_bottom) Then
+                do i = 1, n_active_scalars
+                    samp = -T_chi_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -T_dchidr_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = -T_dTdr_coeff_bottom
+                Call Load_BC(lp,r,teq,tvar,samp,1)
+            Endif
+            If (couple_dtdr_bottom) Then
+                do i = 1, n_active_scalars
+                    samp = -dTdr_chi_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,0)
+                    samp = -dTdr_dchidr_a_coeff_bottom(i)
+                    Call Load_BC(lp,r,teq,chiavar(i),samp,1)
+                end do
+                samp = -dTdr_T_coeff_bottom
+                Call Load_BC(lp,r,teq,tvar,samp,0)
+                samp = 1.0
+                Call Load_BC(lp,r,teq,tvar,samp,1)
             Endif
 
             ! chivar BC
@@ -681,6 +830,32 @@ Contains
               If (fix_dchidr_a_top(i)) Then
                   Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
               Endif
+              If (couple_chivar_a_top(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -chi_a_chi_a_coeff_top(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -chi_a_dchidr_a_coeff_top(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -chi_a_T_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -chi_a_dTdr_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
+              Endif
+              If (couple_dchidr_a_top(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -dchidr_a_chi_a_coeff_top(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -dchidr_a_dchidr_a_coeff_top(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -dchidr_a_T_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -dchidr_a_dTdr_coeff_top(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
+              Endif
 
               r = N_R
               If (fix_chivar_a_bottom(i)) Then
@@ -688,6 +863,32 @@ Contains
               Endif
               If (fix_dchidr_a_bottom(i)) Then
                   Call Load_BC(lp,r,chiaeq(i),chiavar(i),one,1)
+              Endif
+              If (couple_chivar_a_bottom(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -chi_a_chi_a_coeff_bottom(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -chi_a_dchidr_a_coeff_bottom(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -chi_a_T_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -chi_a_dTdr_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
+              Endif
+              If (couple_dchidr_a_bottom(i)) Then
+                  do j = 1, n_active_scalars
+                      samp = -dchidr_a_chi_a_coeff_bottom(i,j)
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,0)
+                      samp = -dchidr_a_dchidr_a_coeff_bottom(i,j)
+                      if (i==j) samp = 1.0
+                      Call Load_BC(lp,r,chiaeq(i),chiavar(j),samp,1)
+                  end do
+                  samp = -dchidr_a_T_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,0)
+                  samp = -dchidr_a_dTdr_coeff_bottom(i)
+                  Call Load_BC(lp,r,chiaeq(i),tvar,samp,1)
               Endif
             end do
 
