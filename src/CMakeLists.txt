@@ -36,7 +36,8 @@ add_dependencies(rayleigh run_param_header)
 
 target_include_directories(rayleigh PRIVATE ${PROJECT_SOURCE_DIR}/src/Include ${CMAKE_CURRENT_BINARY_DIR})
 
-set(RAYLEIGH_CPU_OPTIMIZATIONS "none" CACHE PATH "Specify a CPU architecture to build for. Currently only 'native' or 'none' are supported.")
+set(RAYLEIGH_CPU_OPTIMIZATIONS "none" CACHE STRING "Specify a CPU architecture to build for. Currently only 'native' or 'none' are supported.")
+set_property(CACHE RAYLEIGH_CPU_OPTIMIZATIONS PROPERTY STRINGS "none" "native")
 
 if (RAYLEIGH_CPU_OPTIMIZATIONS STREQUAL "native")
   if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
