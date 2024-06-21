@@ -44,7 +44,7 @@ Rayleigh can solve the fluid equations under a simple form of the pseudo-incompr
     \begin{aligned}
         \hat{\rho}(r) \left[\frac{\partial\boldsymbol{v}}{\partial t} + \boldsymbol{v \cdot \nabla v}   % Advection
         + 2\Omega_0\hat{\boldsymbol{z}}\times\boldsymbol{v} \right]  =\; % Coriolis
-        & \frac{\hat{\rho}(r)}{c_P} \left(g(r)\Theta + \frac{d\hat{S}}{dr} \frac{P}{\hat{\rho}(r)}\right) \, \hat{\boldsymbol{r}} % Buoyancy
+        & \frac{\hat{\rho}(r)}{c_P} \left[g(r)\Theta + \frac{d\hat{S}}{dr} \frac{P}{\hat{\rho}(r)}\right] \, \hat{\boldsymbol{r}} % Buoyancy
         - \hat{\rho}(r)\boldsymbol{\nabla}\left(\frac{P}{\hat{\rho}(r)}\right) % Pressure Forces
     \\ 
         &+ \frac{1}{4\pi}\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
