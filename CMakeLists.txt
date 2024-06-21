@@ -21,9 +21,45 @@ cmake_minimum_required(VERSION 3.13)
 
 project(rayleigh LANGUAGES C Fortran)
 
+# load in version info and export it
+file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" RAYLEIGH_PACKAGE_VERSION LIMIT_COUNT 1)
+
+
+message(STATUS "")
+message(STATUS "====================================================")
+message(STATUS "===== Configuring Rayleigh ${RAYLEIGH_PACKAGE_VERSION}")
+message(STATUS "====================================================")
+message(STATUS "")
+
+# Set up CMAKE_BUILD_TYPE to Debug if it is not set by the user.
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
+  set(CMAKE_BUILD_TYPE
+      "Release"
+      CACHE STRING
+      "Choose the type of build, options are: Debug, Release, RelWithDebInfo, MinSizeRel."
+      FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+  "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
+message(STATUS "Configuring in \"" ${CMAKE_BUILD_TYPE} "\" mode.")
+message(STATUS "")
+
+# Set the default install directory, if run for the first time
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set_property(CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE "${CMAKE_SOURCE_DIR}")
+endif()
+
+message(STATUS "Installing executable in ${CMAKE_INSTALL_PREFIX}/bin")
+message(STATUS "")
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+message(STATUS "===== Configuring external libraries ===============")
+message(STATUS "")
 
 find_package(MPI COMPONENTS C REQUIRED Fortran REQUIRED)
 find_package(LAPACK COMPONENTS Fortran REQUIRED)
