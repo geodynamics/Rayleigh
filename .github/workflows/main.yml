@@ -125,7 +125,6 @@ jobs:
         auto-update-conda: true
         miniconda-version: "latest"
     - name: Build documentation
-      continue-on-error: true
       run: |
         cd "$GITHUB_WORKSPACE"
         make doc
