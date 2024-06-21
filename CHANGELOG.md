@@ -34,6 +34,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - The standard c++ libraries are no longer linked when compiling Rayleigh; \[Brandon Lazard; 6-19-2024; [#532](https://github.com/geodynamics/Rayleigh/pull/532)\]
 
+- Running the configure command now requires the correct combination of library locations to be specified; \[Brandon Lazard; 6-21-2024] [#535](https://github.com/geodynamics/Rayleigh/pull/535) 
 
 
 ## [1.2.0] - 5-29-2024
