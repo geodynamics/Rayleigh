@@ -3267,8 +3267,8 @@ def streamfunction(vr,vt,r,cost,order=0):
     return psi
 
 ###### Function for reading in the checkpoint files (i.e. P,PAB,T,TAB,W,WAB,Z,ZAB)
-def checkpoint_read(chk_file_string,nr,ntheta):
-    nell=(2*ntheta)//3
+def checkpoint_read(chk_file_string, nr, ntheta):
+    nell = (2*ntheta)//3
     shape = (nell,nell)
     i,j = np.indices(shape)
     m = i <= j
