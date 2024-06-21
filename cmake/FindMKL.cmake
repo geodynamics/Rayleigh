@@ -19,8 +19,6 @@
 #  MKL_PATH          - root directory of the MKL installation
 #  MKL_ROOT          - root directory of the MKL installation
 
-option( MKL_PARALLEL "if mkl shoudl be parallel" OFF )
-
 if( MKL_PARALLEL )
 
   set( __mkl_lib_par  MKL_LIB_INTEL_THREAD )
