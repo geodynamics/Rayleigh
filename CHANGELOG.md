@@ -23,6 +23,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Rayleigh can now also be built using CMake in addtion to the `configure` script.    \[Philipp Edelmann; 6-21-2024; [#536](https://github.com/geodynamics/Rayleigh/pull/536)\]
 
+- Added a function called checkpoint_read to the rayleigh_diagnostics.py file to read in checkpoint files    \[Rathish Ratnasingam; 6-21-2024; [#543](https://github.com/geodynamics/Rayleigh/pull/543)\]
+
+
 ### Changed
 
 - The logic in the configure script that determines the library-link flags for compilation on different systems has been simplified.   \[Rene Gassmoeller; 6-19-2024; [#534](https://github.com/geodynamics/Rayleigh/pull/534)\]
