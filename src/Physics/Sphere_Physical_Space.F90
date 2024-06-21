@@ -428,19 +428,11 @@ Contains
 
 
         ! Multiply advection/coriolis pieces by rho
-        If (pseudo_incompressible) Then
-	    !$OMP PARALLEL DO PRIVATE(t,r,k)
-	    DO_IDX
-	       RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)*ref%exp_entropy(r)
-	    END_DO
-	    !$OMP END PARALLEL DO
-        Else
-            !$OMP PARALLEL DO PRIVATE(t,r,k)
-            DO_IDX
-                RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)
-	    END_DO
-	    !$OMP END PARALLEL DO
-        Endif
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%density(r)
+	END_DO
+	!$OMP END PARALLEL DO
 
 
         If (magnetism .and. lorentz_forces) Then
@@ -452,6 +444,14 @@ Contains
             END_DO
             !$OMP END PARALLEL DO
         Endif
+    
+        ! Multiply by rho_*/rho if pseudo_incompressible    
+        If (pseudo_incompressible) Then
+            DO_IDX
+                RHSP(IDX,wvar)= RHSP(IDX,wvar) * ref%exp_entropy(r)
+            END_DO
+        Endif
+        
 
 
 
@@ -552,19 +552,11 @@ Contains
         Endif
 
         ! Multiply advection/coriolis pieces by rho
-        If (pseudo_incompressible) Then
-	    !$OMP PARALLEL DO PRIVATE(t,r,k)
-	    DO_IDX
-	        RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)*ref%exp_entropy(r)
-	    END_DO
-	    !OMP END PARALLEL DO
-        Else
-	    !$OMP PARALLEL DO PRIVATE(t,r,k)
-	    DO_IDX
-	        RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)
-	    END_DO
-	    !OMP END PARALLEL DO
-        Endif
+	!$OMP PARALLEL DO PRIVATE(t,r,k)
+	DO_IDX
+	    RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%density(r)
+	END_DO
+	!OMP END PARALLEL DO
 
         If (magnetism .and. lorentz_forces) Then
             ! Add -[JxB]_theta
@@ -586,6 +578,14 @@ Contains
             RHSP(IDX,pvar) = RHSP(IDX,pvar)*radius(r)*csctheta(t)
         END_DO
         !$OMP END PARALLEL DO
+        
+            
+        ! Multiply by rho_*/rho if pseudo_incompressible    
+        If (pseudo_incompressible) Then
+            DO_IDX
+                RHSP(IDX,pvar)= RHSP(IDX,pvar) * ref%exp_entropy(r)
+            END_DO
+        Endif
 
     End Subroutine Momentum_Advection_Theta
     
@@ -627,19 +627,12 @@ Contains
         Endif
 
         ! Multiply advection/coriolis pieces by rho
-        If (pseudo_incompressible) Then
-	    !$OMP PARALLEL DO PRIVATE(t,r,k)
-	    DO_IDX
-	        RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)*ref%exp_entropy(r)
-	    END_DO
-	    !OMP END PARALLEL DO
-        Else
-	    !$OMP PARALLEL DO PRIVATE(t,r,k)
-	    DO_IDX
-	        RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)
-	    END_DO
-	    !OMP END PARALLEL DO
-        Endif
+	!$OMP PARALLEL DO PRIVATE(t,r,k)
+	DO_IDX
+	    RHSP(IDX,zvar) = RHSP(IDX,zvar)*ref%density(r)
+	END_DO
+	!OMP END PARALLEL DO
+
 
         If (magnetism .and. lorentz_forces) Then
             ! Add -[JxB]_phi
@@ -661,6 +654,14 @@ Contains
             RHSP(IDX,zvar) = RHSP(IDX,zvar)*radius(r)*csctheta(t)
         END_DO
         !OMP END PARALLEL DO
+        
+        ! Multiply by rho_*/rho if pseudo_incompressible    
+        If (pseudo_incompressible) Then
+            DO_IDX
+                RHSP(IDX,zvar)= RHSP(IDX,zvar) * ref%exp_entropy(r)
+            END_DO
+        Endif
+        
     End Subroutine Momentum_Advection_Phi
     Subroutine Phi_Derivatives()
         Implicit None
