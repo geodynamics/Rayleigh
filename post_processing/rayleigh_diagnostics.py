@@ -3275,9 +3275,10 @@ def checkpoint_read(chk_file_string,nr,ntheta):
     target_all = zeros((nell,nell,nr),dtype="complex")
     length_half = int(len(fromfile(chk_file_string,"f8"))/2)
     chunk_length = int(length_half/nr)
+    chk_file = fromfile(chk_file_string,"f8")
     for i in range(nr):
         target = np.zeros_like((m),dtype="complex")
-        target[m] = (fromfile(chk_file_string,"f8")[:length_half][i*chunk_length:(i+1)*chunk_length] 
-                + 1j*fromfile(chk_file_string,"f8")[length_half:][i*chunk_length:(i+1)*chunk_length])
+        target.real[m] = chk_file[:length_half][i*chunk_length:(i+1)*chunk_length] 
+        target.imag[m] = chk_file[length_half:][i*chunk_length:(i+1)*chunk_length]
         target_all[:,:,i] = target
     return target_all
