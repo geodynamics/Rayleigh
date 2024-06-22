@@ -1,0 +1,246 @@
+
+The python module/script `pre_processing/rayleigh_spectral_input.py` can be used to generate generic spectral input files to be used for spatially varying initial and boundary
+conditions of certain variables in Rayleigh.  This is used to generate a file, the name of which is entered into `main_input` to
+specify which variable it will be used with.
+
+Examples
+^^^^^^^^
+
+To generate a generic initial condition input file, for example, if a user wanted to specify a single mode in that input file then they could just run the script:
+
+::
+
+   rayleigh_spectral_input.py -m 0 0 0 1.+0.j -o example
+
+
+to specify (n,l,m) = (0,0,0) to have a coefficient 1.+0.j and output it to the file `example`.
+
+This could also be done using `rayleigh_spectral_input.py` as a module. In a python
+shell this would look like:
+
+::
+
+   from rayleigh_spectral_input import *
+   si = SpectralInput()
+   si.add_mode(1., n=0, l=0, m=0)
+   si.write('example')
+
+
+For a more complicated example, e.g. the hydrodynamic benchmark from
+Christensen et al. 2001, the user can specify functions of theta, phi
+and radius that will then be converted to spectral space:
+
+::
+
+   rayleigh_spectral_input.py -ar 0.35 -sd 1.0 -nt 96 -nr 64 -o example \
+    -e 'import numpy as np; x = 2*radius - rmin - rmax;
+    rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)'
+
+in "script" mode.
+
+Alternatively, in "module" mode in a python shell:
+
+::
+
+   from rayleigh_spectral_input import *
+   si = SpectralInput(n_theta=96, n_r=64)
+   rmin, rmax = radial_extents(aspect_ratio=0.35, shell_depth=1.0)
+   def func(theta, phi, radius):
+      x = 2*radius - rmin - rmax
+      return rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)
+   si.transform_from_rtp_function(func, aspect_ratio=0.35, shell_depth=1.0)
+   si.write('example')
+
+Note that these two examples will have produced different data formats - the first one sparse (listing only the mode specified) and
+the second one dense (listing all modes).  
+
+Purely radial initial conditions can also take advantage of their latitudinal/longitudinal
+independence by only specifying single index Chebyshev modes or only converting from a function of radius, e.g., in a python script:
+
+::
+
+   from rayleigh_spectral_input import *
+   rmin = 0.5; rmax = 1.0
+   si = SpectralInput(n_theta=1,n_r=48)
+   si.transform_from_rtp_function(lambda radius: 1.0 - (rmax/radius)*(radius - rmin)/(rmax - rmin), rmin=rmin, rmax=rmax)
+   si.write('example')
+
+The above commands all generate (different) files called `example` which can be
+used by specifying, e.g.
+
+::
+
+   &initial_conditions_namelist
+   init_type=8
+   T_init_file = 'example'
+
+
+Spatially varying boundary conditions, that do not depend on radius, can also be described using `rayleigh_spectral_input.py`.  For
+example, use only two integer indices with a complex coefficient:
+
+::
+
+   rayleigh_spectral_input.py -m 1 0 5.5225155517445783 -m 1 1 1.3771166096309384+0.j -o bc_example
+
+
+to specify (l,m) = (1,0) to have a coefficient 5.5225155517445783 and (l,m) = (1,1) to have a coefficient 1.3771166096309384+0.j and
+to output the resulting spectral input to the file `bc_example`.
+
+This could also be done using the python as a module. In a python
+shell this would look like:
+
+::
+
+   from rayleigh_spectral_input import *
+   si = SpectralInput()
+   si.add_mode(5.5225155517445783, l=1, m=0)
+   si.add_mode(1.3771166096309384+0.j, l=1, m=1)
+   si.write('bc_example')
+
+
+The above commands will generate a file called ``bc_example`` which can be
+used by specifying, e.g.
+
+::
+
+   &boundary_conditions_namelist
+   C_top_file = 'bc_example'
+
+
+Future Development
+^^^^^^^^^^^^^^^^^^
+
+Currently the transform for expressions (`-e` and `SpectralInput.transform_from_rtp_function`) is slow and inefficient.  Future development should
+improve this to make high resolution conversions more tractable.
+
+`SpectralInput` in `rayleigh_spectral_input.py` also has a rudimentary `inverse_transform` member function that would benefit from further development and testing.
+
+
+Usage
+^^^^^
+
+Note that the latest usage documentation can always be found by running `rayleigh_spectral_input.py -h`.
+
+::
+
+   usage: rayleigh_spectral_input.py [-h] [-m mode [mode ...]] [-e expr]
+                                     [-rn RMIN] [-rx RMAX] [-sd SHELL_DEPTH]
+                                     [-ar ASPECT_RATIO] [-nt N_THETA] [-np N_PHI]
+                                     [-nr N_R] [-lm LM_MAX] [-nm N_R]
+                                     [-f {dense,sparse}] -o FILENAME
+
+   Generate generic spectral input for Rayleigh.
+
+   options:
+     -h, --help            show this help message and exit
+     -m mode [mode ...], --mode mode [mode ...]
+                           Add a mode to the spectral input. This should be
+                           formatted as "-m index coefficient" where index is
+                           either 1, 2 or 3 integers depending on the desired
+                           mode (see below). The coefficient should be parseable
+                           as a complex number. For a pure Chebyshev mode supply
+                           1 integer as the n index followed by the coefficient
+                           value, e.g. "-m 0 1.+1.j". For a purely spherical
+                           harmonic mode supply 2 integers representing the l and
+                           m degree and order respectively, followed by the
+                           coefficient value, e.g. "-m 0 0 1.+1.j". For a mode
+                           with both radial and spherical dependence supply 3
+                           integers representing n, l and m Chebyshev index and
+                           spherical harmonic degree and order respectively,
+                           followed by the coefficient value, e.g. "-m 0 0 0
+                           1.+1.j". All three examples here add the coefficient
+                           1.+1.j to the mode (n,l,m) = (0,0,0). Multiple modes
+                           can be added by using "-m index coefficient"
+                           repeatedly.
+     -e expr, --expr expr  Transform the given expression into Chebyshev-spectral
+                           space. The expression can depend on any combination
+                           (or none) of the variables `radius`, `theta` (co-
+                           latitude), `phi` (longitude). In addition it may use
+                           `rmin`, `rmax`, `aspect_ratio` and `shell_depth`. The
+                           expression should return the field value at the given
+                           radius, theta and phi. It may be vectorized to process
+                           multiple radii, thetas and phis at once. If multiple
+                           expressions are supplied their modes will be added.
+                           Similarly any modes supplied (-m) will be added.
+     -rn RMIN, --rmin RMIN
+                           Supply the minimum radius of the domain. Required if
+                           transforming from an expression that depends on radius
+                           and `aspect_ratio` is not supplied along with either
+                           `rmax` or `shell_depth`. Ignored if no expression
+                           supplied (-e) or the expression does not depend on
+                           radius.
+     -rx RMAX, --rmax RMAX
+                           Supply the maximum radius of the domain. Required if
+                           transforming from an expression that depends on radius
+                           and `aspect_ratio` and `shell_depth` are not supplied.
+                           Ignored if no expression supplied (-e) or the
+                           expression does not depend on radius.
+     -sd SHELL_DEPTH, --shell_depth SHELL_DEPTH
+                           Supply the shell depth of the domain. Required if
+                           transforming from an expression that depends on radius
+                           and `rmax` is not supplied. Ignored if no expression
+                           supplied (-e) or the expression does not depend on
+                           radius.
+     -ar ASPECT_RATIO, --aspect_ratio ASPECT_RATIO
+                           Supply the shell depth of the domain. Required if
+                           transforming from an expression that depends on radius
+                           and `rmax` and `rmin` are not supplied. Ignored if no
+                           expression supplied (-e) or the expression does not
+                           depend on radius.
+     -nt N_THETA, --n_theta N_THETA
+                           Specify the number of co-latitudinal grid points.
+                           Required if `lm_max` is not supplied and either a
+                           dense format is requested or an expression that
+                           depends on theta is supplied.
+     -np N_PHI, --n_phi N_PHI
+                           Specify the number of longitudinal grid points. Not
+                           required. Set from `n_theta` if not supplied.
+     -nr N_R, --n_r N_R    Specify the number of radial grid points. Required if
+                           an expression that depends on radius is supplied and
+                           n_max is not specified.
+     -lm LM_MAX, --lm_max LM_MAX
+                           Specify the maximum Legendre order and degree.
+                           Required if `n_theta` is not supplied and either a
+                           dense format is requested or an expression that
+                           depends on theta is supplied.
+     -nm N_R, --n_max N_R  Specify the maximum Chebyshev polynomial degree.
+                           Required if an expression that depends on radius is
+                           supplied.
+     -f {dense,sparse}, --format {dense,sparse}
+                           Storage format, either `dense` or `sparse`. Defaults
+                           to `sparse`.
+     -o FILENAME, --output FILENAME
+                           Specify the filename of the output file.
+
+   EXAMPLES
+   To write a single constant mode, (n,l,m)=(0,0,0), with coefficient 1.+0.j, 
+   to the file `example` run:
+
+    > rayleigh_spectral_input.py -m 0 0 0 1.+0.j -o example
+
+   or:
+
+    > rayleigh_spectral_input.py -m 0 0 1.+0.j -o example
+
+   where n is assumed to be 0 when not supplied, or:
+
+    > rayleigh_spectral_input.py -m 0 1.+0.j -o example
+
+   where (l,m) is assumed to be (0,0) when not supplied.
+
+   To write spectral input matching the Christensen et al. 2001 hydrodynamic 
+   benchmark initial condition to the file `example`, run:
+                 
+    > rayleigh_spectral_input.py -ar 0.35 -sd 1.0 -nt 96 -nr 64 -o example \
+       -e 'import numpy as np; x = 2*radius - rmin - rmax; 
+           rmax*rmin/radius - rmin + 210*0.1*(1 - 3*x*x + 3*(x**4) - x**6)*(np.sin(theta)**4)*np.cos(4*phi)/np.sqrt(17920*np.pi)'
+
+           
+
+Further Information
+^^^^^^^^^^^^^^^^^^^
+
+See `tests/generic_input` for example usage, scripts and input files and
+`examples/custom_thermal_profile/custom_thermal_profile.ipynb` for an example Jupyter notebook.
+
+
