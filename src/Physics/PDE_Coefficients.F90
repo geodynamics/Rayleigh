@@ -52,7 +52,11 @@ Module PDE_Coefficients
         Real*8, Allocatable :: Temperature(:)
         Real*8, Allocatable :: dlnT(:)
 
+        Real*8, Allocatable :: entropy(:)
+        Real*8, Allocatable :: exp_entropy(:)
         Real*8, Allocatable :: dsdr(:)
+        Real*8, Allocatable :: dsdr_over_cp(:)
+        Real*8, Allocatable :: d2s(:)
 
         Real*8, Allocatable :: heating(:)
 
@@ -262,7 +266,11 @@ Contains
         Allocate(ref%dlnrho(1:N_R))
         Allocate(ref%d2lnrho(1:N_R))
         Allocate(ref%dlnt(1:N_R))
+        Allocate(ref%entropy(1:N_R))
+        Allocate(ref%exp_entropy(1:N_R))
         Allocate(ref%dsdr(1:N_R))
+        Allocate(ref%dsdr_over_cp(1:N_R))
+        Allocate(ref%d2s(1:N_R))
         Allocate(ref%Buoyancy_Coeff(1:N_R))
         Allocate(ref%dpdr_w_term(1:N_R))
         Allocate(ref%pressure_dwdr_term(1:N_R))
@@ -287,7 +295,11 @@ Contains
         ref%dlnrho(:)             = Zero
         ref%d2lnrho(:)            = Zero
         ref%dlnt(:)               = Zero
+        ref%entropy(:)            = Zero
+        ref%exp_entropy(:)        = Zero
         ref%dsdr(:)               = Zero
+        ref%dsdr_over_cp(:)       = Zero
+        ref%d2s(:)                = Zero
         ref%buoyancy_coeff(:)     = Zero
         ref%dpdr_w_term(:)        = Zero
         ref%pressure_dwdr_term(:) = Zero
@@ -348,7 +360,11 @@ Contains
         ref%d2lnrho      = 0.0d0
         ref%temperature  = 1.0d0
         ref%dlnT         = 0.0d0
+        ref%entropy      = 0.0d0
+        ref%exp_entropy  = 1.0d0
         ref%dsdr         = 0.0d0
+        ref%dsdr_over_cp = 0.0d0
+        ref%d2s          = 0.0d0
 
         amp = Rayleigh_Number/Prandtl_Number
 
@@ -473,7 +489,12 @@ Contains
         dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
         ref%d2lnrho = ref%d2lnrho+dtmparr
 
+        ref%entropy(:) = 0.0d0
+        ref%exp_entropy(:) = 1.0d0
         ref%dsdr(:) = 0.0d0
+        ref%dsdr_over_cp(:) = 0.0d0
+        ref%d2s(:) = 0.0d0
+        
         Call Initialize_Reference_Heating()
 
         ref%Coriolis_Coeff = 2.0d0
@@ -738,6 +759,8 @@ Contains
 
         ref%density = zeta**poly_n
         ref%temperature = zeta
+        ref%entropy = (1.0d0/specific_heat_ratio)*(log(ref%Temperature) - (specific_heat_ratio - 1.0d0)*log(ref%density))
+        ref%exp_entropy = exp(ref%entropy)
 
         ref%dlnrho = poly_n*dlnzeta
         ref%dlnT = dlnzeta
@@ -748,6 +771,8 @@ Contains
         ref%dsdr = (1.0d0/Specific_Heat_Ratio)*(ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * ref%dlnrho)
         ! This is (1/c_p) dS/dr (where "S" is dimensional background S)
         ! That's fine up to a multiplicative constant which we determine below
+        ref%dsdr_over_cp = ref%dsdr
+        ref%d2s = (1.0d0/specific_heat_ratio)*(d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
 
         nsquared = gravity*ref%dsdr ! N^2 (non-dimensional) up to multiplicative constant
         If (.not. adiabatic_polytrope) Then ! don't divide by zero!
@@ -807,6 +832,9 @@ Contains
 
         ! These are the same no matter how we non-dimensionalize time
         ref%dsdr = (Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number) * nsquared/gravity
+        ref%dsdr_over_cp = ref%dsdr
+        !ref%d2s = ?    BWH: It is unclear to me whether the second derivative needs to be renormalized.
+        
         ref%dpdr_w_term(:) = ref%density(:)
         ref%pressure_dwdr_term(:) = -ref%density(:)
 
@@ -901,6 +929,7 @@ Contains
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
         Real*8, Allocatable :: zeta(:), gravity(:)
+        Real*8, Allocatable :: dlnzeta(:), d2lnzeta(:)
         Real*8 :: One
         Real*8 :: InnerRadius, OuterRadius
         Character*12 :: dstring
@@ -949,10 +978,13 @@ Contains
         ! also rho_c, T_c, P_c
 
         Allocate(zeta(N_R), gravity(1:N_R))
+        Allocate(dlnzeta(1:N_R), d2lnzeta(1:N_R))
 
         d = OuterRadius - InnerRadius
 
         zeta = c0 + c1 * d / Radius
+        dlnzeta = -c1*d/Radius**2/zeta
+        d2lnzeta = 2.0d0*c1*d/Radius**3/zeta - (c1*d/Radius**2/zeta)**2
 
         rho_c = poly_rho_i / zeta(N_R)**poly_n
 
@@ -974,9 +1006,13 @@ Contains
         Ref%d2lnrho = - Ref%dlnrho*(2.0d0/Radius-c1*d/zeta/Radius**2)
 
         Ref%Temperature = T_c * zeta
-        Ref%dlnT = -(c1*d/Radius**2)/zeta
+        Ref%dlnT = dlnzeta
 
+	ref%entropy = volume_specific_heat * (log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%density))
+	ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
         Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * Ref%dlnrho)
+        ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
+        ref%d2s = volume_specific_heat * (d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
@@ -985,6 +1021,7 @@ Contains
         end do
 
         Deallocate(zeta, gravity)
+        Deallocate(dlnzeta, d2lnzeta)
 
         Call Initialize_Reference_Heating()
 
@@ -1203,6 +1240,7 @@ Contains
         Integer :: i, fi
         Character(len=2) :: ind
         Integer :: fi_to_check(4) = (/1, 2, 4, 6/)
+        Real*8 :: geofac
 
         If (my_rank .eq. 0) Then
             Write(6,*)'Custom reference state specified.'
@@ -1254,6 +1292,14 @@ Contains
         ref%ohmic_amp(:) = ra_constants(9)/(ref%density(:)*ref%temperature(:))
 
         ref%dsdr(:)     = ra_constants(11)*ra_functions(:,14)
+        ! Integrate dsdr to obtain a self-consistent entropy profile. Set s=0 at the upper surface.
+        ref%entropy(1) = 0.0
+        Do i = 2, N_R
+            ref%entropy(i) = ref%entropy(i-1) - geofac*ref%dsdr(i)*radial_integral_weights(i)/Radius(i)**2
+        Enddo
+        ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
+        ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
+        Call log_deriv(ref%dsdr(:), ref%d2s(i), no_log=.true.)
 
     End Subroutine Get_Custom_Reference
 
@@ -1652,7 +1698,11 @@ Contains
         If (allocated(ref%Temperature)) DeAllocate(ref%Temperature)
         If (allocated(ref%dlnT)) DeAllocate(ref%dlnT)
 
+	If (allocated(ref%entropy)) DeAllocate(ref%entropy)
+	If (allocated(ref%exp_entropy)) DeAllocate(ref%exp_entropy)
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
+        If (allocated(ref%dsdr_over_cp)) DeAllocate(ref%dsdr_over_cp)
+        If (allocated(ref%d2s)) DeAllocate(ref%d2s)
 
         If (allocated(ref%heating)) DeAllocate(ref%heating)
 
