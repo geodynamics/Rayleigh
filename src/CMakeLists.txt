@@ -17,6 +17,8 @@
 #  along with RAYLEIGH; see the file LICENSE.  If not see
 #  <http://www.gnu.org/licenses/>.
 
+# Spell out the source directories to avoid including
+# files from in-source builds.
 file(GLOB SOURCES
   Data_Structures/*.F90
   Diagnostics/*.F90
@@ -26,7 +28,6 @@ file(GLOB SOURCES
   Physics/*.F90
   Test_Suite/*.F90
   IO/cmkdir.c)
-list(REMOVE_ITEM SOURCES ${PROJECT_SOURCE_DIR}/src/Physics/Linear_Terms_Cart.F90)
 
 add_custom_target(run_param_header COMMAND env FC=${CMAKE_Fortran_COMPILER} ${PROJECT_SOURCE_DIR}/src/gen_header.sh Run_Param_Header.F $<$<STREQUAL:${CMAKE_BUILD_TYPE},>:Default>${CMAKE_BUILD_TYPE} FROM_CMAKE $<TARGET_PROPERTY:rayleigh,LINK_OPTIONS>)
 
