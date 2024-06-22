@@ -91,6 +91,9 @@ endif
 .PHONY: doc
 doc:
 	@sphinx-build -M html "." "doc/build"
+
+.PHONY: docpdf
+docpdf:
 	@sphinx-build -M latexpdf "." "doc/build"
 
 .PHONY: distclean

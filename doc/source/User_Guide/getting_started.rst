@@ -58,7 +58,7 @@ Building the documentation is the same on Linux and Mac.
     cd /path/to/Rayleigh
     make doc
 
-Once the documetation builds, you can access it by opening ``Rayleigh/doc/build/html/index.html`` in your web browser.
+Once the documetation builds, you can access it by opening ``Rayleigh/doc/build/html/index.html`` in your web browser. To build the PDF version of the documentation (same content as HTML) you run ``make docpdf``.
 
 Building the code is again the same on Linux and Mac. Execute the following:
 
