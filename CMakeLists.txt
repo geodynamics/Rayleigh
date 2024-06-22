@@ -66,3 +66,5 @@ find_package(LAPACK COMPONENTS Fortran REQUIRED)
 find_package(FFTW REQUIRED)
 
 add_subdirectory(src)
+
+add_subdirectory(doc)
