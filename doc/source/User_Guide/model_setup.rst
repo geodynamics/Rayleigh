@@ -330,18 +330,18 @@ brackets)
 +-----------------------------------+-----------------------------------+
 | Variable [Default value]          | Description                       |
 +===================================+===================================+
-| magnetism [.false.]               | Turn magnetism on or off          |
+| magnetism [``.false.``]           | Turn magnetism on or off          |
 +-----------------------------------+-----------------------------------+
-| rotation [.false.]                | Turn rotation on or off (pressure |
+| rotation [``.false.``]            | Turn rotation on or off (pressure |
 |                                   | is not scaled by E when off)      |
 +-----------------------------------+-----------------------------------+
-| lorentz_forces [.true.]           | Turn Lorentz forces on or off     |
+| lorentz_forces [``.true.``]       | Turn Lorentz forces on or off     |
 |                                   | (magnetism must be .true.)        |
 +-----------------------------------+-----------------------------------+
-| viscous_heating [.true.]          | Turn viscous heating on or off    |
+| viscous_heating [``.true.``]      | Turn viscous heating on or off    |
 |                                   | (inactive in Boussinesq mode)     |
 +-----------------------------------+-----------------------------------+
-| ohmic_heating [.true.]            | Turn ohmic heating off or on      |
+| ohmic_heating [``.true.``]        | Turn ohmic heating off or on      |
 |                                   | (inactive in Boussinesq mode)     |
 +-----------------------------------+-----------------------------------+
 .. centered:: **Table. Logicals.**
