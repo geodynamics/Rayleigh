@@ -243,7 +243,8 @@ Using a Grid-Description File to Specify a Nonuniform Grid
 
 An arbitrary radial grid may also be generated using Python and then stored to a file that is read when Rayleigh initializes.  To do so, import the *reference_tools* module and define a custom grid as illustrated by the code snippet below.
 
-::
+.. code-block:: python
+
    import numpy  # Import necessary modules
    import reference_tools as rt 
 
@@ -539,7 +540,7 @@ in "script" mode.
 
 Alternatively, in "module" mode in a python shell:
 
-::
+.. code-block:: python
 
    from rayleigh_spectral_input import *
    si = SpectralInput(n_theta=96, n_r=64)
@@ -591,7 +592,7 @@ The file structure created through the class's write method contains a record of
 
 The sample code below defines a file with sufficient information to alter the viscous, heating, and buoyancy functions of a Rayleigh-provided reference state.  This information would be insufficient for use with reference_type=4, but several example notebooks handling that scenario are provided below. 
 
-.. code-block::
+.. code-block:: python
 
     import numpy
     from reference_tools import equation_coefficients
