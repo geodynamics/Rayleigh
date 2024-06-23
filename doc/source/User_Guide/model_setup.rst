@@ -321,31 +321,31 @@ A number of logical variables can be used to turn certain physics on
 described in Table table_logicals_, with default
 values indicated in brackets.
 
-  .. _table_logicals:
-
-.. centered:: **Table. Logicals.**
-
 Variables in the Physical_Controls_Namelist
 that may be specified to control run behavior (defaults indicated in
 brackets)
 
-   +-----------------------------------+-----------------------------------+
-   | Variable [Default value]          | Description                       |
-   +===================================+===================================+
-   | magnetism [.false.]               | Turn magnetism on or off          |
-   +-----------------------------------+-----------------------------------+
-   | rotation [.false.]                | Turn rotation on or off (pressure |
-   |                                   | is not scaled by E when off)      |
-   +-----------------------------------+-----------------------------------+
-   | lorentz_forces [.true.]           | Turn Lorentz forces on or off     |
-   |                                   | (magnetism must be .true.)        |
-   +-----------------------------------+-----------------------------------+
-   | viscous_heating [.true.]          | Turn viscous heating on or off    |
-   |                                   | (inactive in Boussinesq mode)     |
-   +-----------------------------------+-----------------------------------+
-   | ohmic_heating [.true.]            | Turn ohmic heating off or on      |
-   |                                   | (inactive in Boussinesq mode)     |
-   +-----------------------------------+-----------------------------------+
+.. _table_logicals:
+
++-----------------------------------+-----------------------------------+
+| Variable [Default value]          | Description                       |
++===================================+===================================+
+| magnetism [.false.]               | Turn magnetism on or off          |
++-----------------------------------+-----------------------------------+
+| rotation [.false.]                | Turn rotation on or off (pressure |
+|                                   | is not scaled by E when off)      |
++-----------------------------------+-----------------------------------+
+| lorentz_forces [.true.]           | Turn Lorentz forces on or off     |
+|                                   | (magnetism must be .true.)        |
++-----------------------------------+-----------------------------------+
+| viscous_heating [.true.]          | Turn viscous heating on or off    |
+|                                   | (inactive in Boussinesq mode)     |
++-----------------------------------+-----------------------------------+
+| ohmic_heating [.true.]            | Turn ohmic heating off or on      |
+|                                   | (inactive in Boussinesq mode)     |
++-----------------------------------+-----------------------------------+
+.. centered:: **Table. Logicals.**
+
 
 .. _initial_conditions:
 
