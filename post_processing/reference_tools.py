@@ -15,6 +15,7 @@ class equation_coefficients:
 
     def __init__(self,radius=[], file=None):
         if (len(radius) != 0):
+        if len(radius) != 0:
             if file is not None:
                 raise RuntimeError("Cannot provide radius and file at the same time.")
             nr = len(radius)
@@ -25,8 +26,8 @@ class equation_coefficients:
             self.constants = numpy.zeros(self.nconst     , dtype='float64' )
             self.cset      = numpy.zeros(self.nconst     , dtype='int32'   )
             self.fset      = numpy.zeros(self.nfunc      , dtype='int32'   )
-        elif (file != None):
             self.read(filename=file)
+        elif file is not None:
 
     def __getattr__(self, name):
         if name in self.f_dict:
@@ -46,7 +47,7 @@ class equation_coefficients:
 
     def set_function(self,y,f_name):
 
-        if (isinstance(f_name,str)):
+        if isinstance(f_name,str):
             fi = self.f_dict[f_name]
         else:
             fi = f_name
@@ -55,7 +56,7 @@ class equation_coefficients:
         self.fset[fi-1] = 1
         
     def set_constant(self,c,c_name):
-        if (isinstance(c_name,str)):
+        if isinstance(c_name,str):
             ci = self.c_dict[c_name]
         else:
             ci = c_name
@@ -137,7 +138,7 @@ class background_state:
             print('              Returning empty data structure.')
 
         # Initialize the class attributes
-        if (passed_rcheck):  
+        if passed_rcheck:
             self.nr = nr
             self.radius = radius
 
@@ -148,7 +149,7 @@ class background_state:
                 self.set_variable(k,v)
                             
     def set_variable(self,k,v):
-        if (k != 'self'  and k != 'radius'):
+        if k != 'self'  and k != 'radius':
             attr_consistent = False
             try:
                 nv = len(v)
@@ -161,11 +162,11 @@ class background_state:
                     print('The',k,'attribute will not be initialized.')
 
             except:
-                if (v != None):
+                if v != None:
                     print('Error: ', k, 'must be a numpy array or list.')
                     print('The',k,'attribute will not be initialized.')
 
-            if (attr_consistent):
+            if attr_consistent:
                 setattr(self,k,v)  # sets self.k = v
                     
 def compute_heating_profile(hpars, radius, htype=0, pressure = 0):
@@ -187,7 +188,7 @@ def compute_heating_profile(hpars, radius, htype=0, pressure = 0):
                             to have a constant value of unity.
                  htype > 0:
                         Currently there are no other types defined..."""
-    if (htype == 0):
+    if htype == 0:
         nr= len(radius)
         r0 = hpars[0]
         width = hpars[1]
