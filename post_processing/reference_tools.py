@@ -15,6 +15,8 @@ class equation_coefficients:
 
     def __init__(self,radius=[], file=None):
         if (len(radius) != 0):
+            if file is not None:
+                raise RuntimeError("Cannot provide radius and file at the same time.")
             nr = len(radius)
             self.nr = nr
             self.radius = numpy.asarray(radius, dtype='float64')
