@@ -17,8 +17,7 @@ class equation_coefficients:
         if (len(radius) != 0):
             nr = len(radius)
             self.nr = nr
-            self.radius = numpy.zeros(nr,dtype='float64')
-            self.radius[:] = radius[:]
+            self.radius = numpy.asarray(radius, dtype='float64')
             self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
             
             self.constants = numpy.zeros(self.nconst     , dtype='float64' )
