@@ -1303,7 +1303,7 @@ Contains
         Enddo
         ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
         ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
-        Call log_deriv(ref%dsdr_over_cp(:), ref%d2s_over_cp(i), no_log=.true.)
+        Call log_deriv(ref%dsdr_over_cp(:), ref%d2s_over_cp(:), no_log=.true.)
 
     End Subroutine Get_Custom_Reference
 
@@ -2067,7 +2067,8 @@ Contains
         
         
         If (pseudo_incompressible) Then
-            W_Diffusion_Coefs_0 = W_Diffusion_Coefs_0 - nu*(4.0d0/3.0d0)*ref%dsdr_over_cp*(dnu - ref%dlnrho -ref%dsdr_over_cp - 2.0d0/radius)
+            W_Diffusion_Coefs_0 = W_Diffusion_Coefs_0 - nu*(4.0d0/3.0d0)*ref%dsdr_over_cp*(dlnu - ref%dlnrho -ref%dsdr_over_cp)
+            W_Diffusion_Coefs_0 = W_Diffusion_Coefs_0 + nu*(8.0d0/3.0d0)*ref%dsdr_over_cp/radius
             W_Diffusion_Coefs_0  = W_Diffusion_Coefs_0  - nu*(4.0d0/3.0d0)*ref%d2s_over_cp
             W_Diffusion_Coefs_1  = W_Diffusion_Coefs_1  - nu*(7.0d0/3.0d0)*ref%dsdr_over_cp
             DW_Diffusion_Coefs_0 = DW_Diffusion_Coefs_0 + nu*ref%dsdr_over_cp/3.0d0

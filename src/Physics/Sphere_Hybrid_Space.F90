@@ -49,13 +49,14 @@ Contains
         Allocate(drho_term(my_r%min:my_r%max))
         r1 = my_r%min
         r2 = my_r%max
-        over_rhor(r1:r2) = one_over_r(r1:r2)/ref%density(r1:r2)
-        over_rhorsq(r1:r2) = OneOverRSquared(r1:r2)/ref%density(r1:r2)
-        drho_term(r1:r2) = ref%dlnrho(r1:r2)+one_over_r(r1:r2)
         If (pseudo_incompressible) Then
-            over_rhosq(r1:r2) = over_rhosq(r1:r2)/ ref%exp_entropy(r1:r2)
-            over_rhor(r1:r2)  = over_rhor(r1:r2) / ref%exp_entropy(r1:r2)
-            drho_term(r1:r2)  = drho_term(r1:r2) + ref%dsdr_over_cp(r1:r2)
+            over_rhor(r1:r2)  = one_over_r(r1:r2)/(ref%density(r1:r2)*ref%exp_entropy(r1:r2))
+            over_rhorsq(r1:r2)= OneOverRSquared(r1:r2)/(ref%density(r1:r2)*ref%exp_entropy(r1:r2))
+            drho_term(r1:r2)  = ref%dlnrho(r1:r2)+one_over_r(r1:r2) + ref%dsdr_over_cp(r1:r2)
+        Else
+            over_rhor(r1:r2)  = one_over_r(r1:r2)/ref%density(r1:r2)
+            over_rhorsq(r1:r2)= OneOverRSquared(r1:r2)/ref%density(r1:r2)
+            drho_term(r1:r2)  = ref%dlnrho(r1:r2)+one_over_r(r1:r2)
         Endif
 
     End Subroutine Hybrid_Init

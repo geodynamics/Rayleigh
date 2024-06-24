@@ -321,7 +321,7 @@ Contains
                 ! amp = -exp(s/c_P) rho/(c_P * H_Laplacian) (ds/dr)    Pseudo-incompressible
                 If (pseudo_incompressible) Then
                     amp = -ref%exp_entropy * ref%density * ref%dsdr_over_cp / H_Laplacian
-                    add_implicit_term(weq,pvar, 0, amp, lp)
+                    Call add_implicit_term(weq,pvar, 0, amp, lp)
                 Endif
                 
                 

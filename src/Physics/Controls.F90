@@ -79,7 +79,7 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia, n_active_scalars, n_passive_scalars,
+                & momentum_advection, inertia, n_active_scalars, n_passive_scalars, &
                 & pseudo_incompressible
 
     !///////////////////////////////////////////////////////////////////////////
