@@ -52,11 +52,11 @@ Module PDE_Coefficients
         Real*8, Allocatable :: Temperature(:)
         Real*8, Allocatable :: dlnT(:)
 
-        Real*8, Allocatable :: entropy(:)
-        Real*8, Allocatable :: exp_entropy(:)
+        Real*8, Allocatable :: entropy(:)          ! Entropy s, with s=0 on the outer boundary
+        Real*8, Allocatable :: exp_entropy(:)      ! exp(s/c_P)
         Real*8, Allocatable :: dsdr(:)
-        Real*8, Allocatable :: dsdr_over_cp(:)
-        Real*8, Allocatable :: d2s(:)
+        Real*8, Allocatable :: dsdr_over_cp(:)     ! (1/c_P) ds/dr
+        Real*8, Allocatable :: d2s_over_cp(:)      ! (1/c_P) d2s/dr2
 
         Real*8, Allocatable :: heating(:)
 
@@ -270,7 +270,7 @@ Contains
         Allocate(ref%exp_entropy(1:N_R))
         Allocate(ref%dsdr(1:N_R))
         Allocate(ref%dsdr_over_cp(1:N_R))
-        Allocate(ref%d2s(1:N_R))
+        Allocate(ref%d2s_over_cp(1:N_R))
         Allocate(ref%Buoyancy_Coeff(1:N_R))
         Allocate(ref%dpdr_w_term(1:N_R))
         Allocate(ref%pressure_dwdr_term(1:N_R))
@@ -299,7 +299,7 @@ Contains
         ref%exp_entropy(:)        = Zero
         ref%dsdr(:)               = Zero
         ref%dsdr_over_cp(:)       = Zero
-        ref%d2s(:)                = Zero
+        ref%d2s_over_cp(:)        = Zero
         ref%buoyancy_coeff(:)     = Zero
         ref%dpdr_w_term(:)        = Zero
         ref%pressure_dwdr_term(:) = Zero
@@ -364,7 +364,7 @@ Contains
         ref%exp_entropy  = 1.0d0
         ref%dsdr         = 0.0d0
         ref%dsdr_over_cp = 0.0d0
-        ref%d2s          = 0.0d0
+        ref%d2s_over_cp  = 0.0d0
 
         amp = Rayleigh_Number/Prandtl_Number
 
@@ -489,11 +489,11 @@ Contains
         dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
         ref%d2lnrho = ref%d2lnrho+dtmparr
 
-        ref%entropy(:) = 0.0d0
-        ref%exp_entropy(:) = 1.0d0
-        ref%dsdr(:) = 0.0d0
+        ref%entropy(:)      = 0.0d0
+        ref%exp_entropy(:)  = 1.0d0
+        ref%dsdr(:)         = 0.0d0
         ref%dsdr_over_cp(:) = 0.0d0
-        ref%d2s(:) = 0.0d0
+        ref%d2s_over_cp(:)  = 0.0d0
         
         Call Initialize_Reference_Heating()
 
@@ -760,7 +760,8 @@ Contains
         ref%density = zeta**poly_n
         ref%temperature = zeta
         ref%entropy = (1.0d0/specific_heat_ratio)*(log(ref%Temperature) - (specific_heat_ratio - 1.0d0)*log(ref%density))
-        ref%exp_entropy = exp(ref%entropy)
+        ref%entropy = ref%entropy - ref%entropy(1)		! Set the entropy to zero at the upper surface
+        ref%exp_entropy = exp(ref%entropy)                      ! Note the entropy is dimensionless:  entropy = S/c_P
 
         ref%dlnrho = poly_n*dlnzeta
         ref%dlnT = dlnzeta
@@ -772,7 +773,7 @@ Contains
         ! This is (1/c_p) dS/dr (where "S" is dimensional background S)
         ! That's fine up to a multiplicative constant which we determine below
         ref%dsdr_over_cp = ref%dsdr
-        ref%d2s = (1.0d0/specific_heat_ratio)*(d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
+        ref%d2s_over_cp = (1.0d0/specific_heat_ratio)*(d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
 
         nsquared = gravity*ref%dsdr ! N^2 (non-dimensional) up to multiplicative constant
         If (.not. adiabatic_polytrope) Then ! don't divide by zero!
@@ -832,8 +833,8 @@ Contains
 
         ! These are the same no matter how we non-dimensionalize time
         ref%dsdr = (Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number) * nsquared/gravity
-        ref%dsdr_over_cp = ref%dsdr
-        !ref%d2s = ?    BWH: It is unclear to me whether the second derivative needs to be renormalized.
+        !ref%dsdr_over_cp = ref%dsdr
+        !ref%d2s_over_cp = ?    BWH: It is unclear to me whether derivatives need to be renormalized.
         
         ref%dpdr_w_term(:) = ref%density(:)
         ref%pressure_dwdr_term(:) = -ref%density(:)
@@ -1008,11 +1009,13 @@ Contains
         Ref%Temperature = T_c * zeta
         Ref%dlnT = dlnzeta
 
-	ref%entropy = volume_specific_heat * (log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%density))
-	ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
+	! Set the entropy to zero at the upper surface
+	ref%entropy = volume_specific_heat * (log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%density))
+	ref%entropy = ref%entropy - ref%entropy(1)                    ! zeroing the entropy at the upper boundary
+	ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)     ! Used extensively in the pseudo-incompressible approximation
         Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * Ref%dlnrho)
         ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
-        ref%d2s = volume_specific_heat * (d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
+        ref%d2s_over_cp = (1.0d0/specific_heat_ratio)*(d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
@@ -1293,13 +1296,14 @@ Contains
 
         ref%dsdr(:)     = ra_constants(11)*ra_functions(:,14)
         ! Integrate dsdr to obtain a self-consistent entropy profile. Set s=0 at the upper surface.
-        ref%entropy(1) = 0.0
+        ref%entropy(1) = 0.0d0
+        geofac = (radius(1)**3 - radius(N_R)**3)/3.0d0
         Do i = 2, N_R
             ref%entropy(i) = ref%entropy(i-1) - geofac*ref%dsdr(i)*radial_integral_weights(i)/Radius(i)**2
         Enddo
         ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
         ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
-        Call log_deriv(ref%dsdr(:), ref%d2s(i), no_log=.true.)
+        Call log_deriv(ref%dsdr_over_cp(:), ref%d2s_over_cp(i), no_log=.true.)
 
     End Subroutine Get_Custom_Reference
 
@@ -1702,7 +1706,7 @@ Contains
 	If (allocated(ref%exp_entropy)) DeAllocate(ref%exp_entropy)
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
         If (allocated(ref%dsdr_over_cp)) DeAllocate(ref%dsdr_over_cp)
-        If (allocated(ref%d2s)) DeAllocate(ref%d2s)
+        If (allocated(ref%d2s_over_cp)) DeAllocate(ref%d2s_over_cp)
 
         If (allocated(ref%heating)) DeAllocate(ref%heating)
 
@@ -2029,6 +2033,7 @@ Contains
         W_Diffusion_Coefs_0 =     -nu*(4.0d0/3.0d0)*( dlnu*ref%dlnrho + ref%d2lnrho + ref%dlnrho/radius + &
             & 3.0d0*dlnu/radius )
         W_Diffusion_Coefs_1 = nu*(2.0d0*dlnu-ref%dlnrho/3.0d0)
+            
 
         !/////////////////////////////////////
         ! W Coefficients for dWdr equation
@@ -2059,6 +2064,20 @@ Contains
         Z_Diffusion_Coefs_0 = -nu*( 2.0d0*dlnu/radius + ref%dlnrho*dlnu + &
             & ref%d2lnrho+2.0d0*ref%dlnrho/radius)
         Z_Diffusion_Coefs_1 = nu*(dlnu-ref%dlnrho)
+        
+        
+        If (pseudo_incompressible) Then
+            W_Diffusion_Coefs_0 = W_Diffusion_Coefs_0 - nu*(4.0d0/3.0d0)*ref%dsdr_over_cp*(dnu - ref%dlnrho -ref%dsdr_over_cp - 2.0d0/radius)
+            W_Diffusion_Coefs_0  = W_Diffusion_Coefs_0  - nu*(4.0d0/3.0d0)*ref%d2s_over_cp
+            W_Diffusion_Coefs_1  = W_Diffusion_Coefs_1  - nu*(7.0d0/3.0d0)*ref%dsdr_over_cp
+            DW_Diffusion_Coefs_0 = DW_Diffusion_Coefs_0 + nu*ref%dsdr_over_cp/3.0d0
+            DW_Diffusion_Coefs_1 = DW_Diffusion_Coefs_1 - nu*ref%dsdr_over_cp*(dlnu - ref%dlnrho - ref%dsdr_over_cp)
+            DW_Diffusion_Coefs_1 = DW_Diffusion_Coefs_1 - nu*ref%d2s_over_cp
+            DW_Diffusion_Coefs_2 = DW_Diffusion_Coefs_2 - 2.0d0*nu*ref%dsdr_over_cp
+            Z_Diffusion_Coefs_0  = Z_Diffusion_Coefs_0  - nu*ref%dsdr_over_cp*(dlnu - ref%dlnrho - ref%dsdr_over_cp)
+            Z_Diffusion_Coefs_0  = Z_Diffusion_Coefs_0  - nu*ref%d2s_over_cp
+            Z_Diffusion_Coefs_1  = Z_Diffusion_Coefs_1  - 2.0d0*nu*ref%dsdr_over_cp
+        Endif
 
         !////////////////////////////////////////
         ! A (vector potential) Coefficients
