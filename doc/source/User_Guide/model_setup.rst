@@ -243,7 +243,8 @@ Using a Grid-Description File to Specify a Nonuniform Grid
 
 An arbitrary radial grid may also be generated using Python and then stored to a file that is read when Rayleigh initializes.  To do so, import the *reference_tools* module and define a custom grid as illustrated by the code snippet below.
 
-::
+.. code-block:: python
+
    import numpy  # Import necessary modules
    import reference_tools as rt 
 
@@ -320,31 +321,31 @@ A number of logical variables can be used to turn certain physics on
 described in Table table_logicals_, with default
 values indicated in brackets.
 
-  .. _table_logicals:
-
-.. centered:: **Table. Logicals.**
-
 Variables in the Physical_Controls_Namelist
 that may be specified to control run behavior (defaults indicated in
 brackets)
 
-   +-----------------------------------+-----------------------------------+
-   | Variable [Default value]          | Description                       |
-   +===================================+===================================+
-   | magnetism [.false.]               | Turn magnetism on or off          |
-   +-----------------------------------+-----------------------------------+
-   | rotation [.false.]                | Turn rotation on or off (pressure |
-   |                                   | is not scaled by E when off)      |
-   +-----------------------------------+-----------------------------------+
-   | lorentz_forces [.true.]           | Turn Lorentz forces on or off     |
-   |                                   | (magnetism must be .true.)        |
-   +-----------------------------------+-----------------------------------+
-   | viscous_heating [.true.]          | Turn viscous heating on or off    |
-   |                                   | (inactive in Boussinesq mode)     |
-   +-----------------------------------+-----------------------------------+
-   | ohmic_heating [.true.]            | Turn ohmic heating off or on      |
-   |                                   | (inactive in Boussinesq mode)     |
-   +-----------------------------------+-----------------------------------+
+.. _table_logicals:
+
++-----------------------------------+-----------------------------------+
+| Variable [Default value]          | Description                       |
++===================================+===================================+
+| magnetism [``.false.``]           | Turn magnetism on or off          |
++-----------------------------------+-----------------------------------+
+| rotation [``.false.``]            | Turn rotation on or off (pressure |
+|                                   | is not scaled by E when off)      |
++-----------------------------------+-----------------------------------+
+| lorentz_forces [``.true.``]       | Turn Lorentz forces on or off     |
+|                                   | (magnetism must be .true.)        |
++-----------------------------------+-----------------------------------+
+| viscous_heating [``.true.``]      | Turn viscous heating on or off    |
+|                                   | (inactive in Boussinesq mode)     |
++-----------------------------------+-----------------------------------+
+| ohmic_heating [``.true.``]        | Turn ohmic heating off or on      |
+|                                   | (inactive in Boussinesq mode)     |
++-----------------------------------+-----------------------------------+
+.. centered:: **Table. Logicals.**
+
 
 .. _initial_conditions:
 
@@ -539,7 +540,7 @@ in "script" mode.
 
 Alternatively, in "module" mode in a python shell:
 
-::
+.. code-block:: python
 
    from rayleigh_spectral_input import *
    si = SpectralInput(n_theta=96, n_r=64)
@@ -591,7 +592,7 @@ The file structure created through the class's write method contains a record of
 
 The sample code below defines a file with sufficient information to alter the viscous, heating, and buoyancy functions of a Rayleigh-provided reference state.  This information would be insufficient for use with reference_type=4, but several example notebooks handling that scenario are provided below. 
 
-.. code-block::
+.. code-block:: python
 
     import numpy
     from reference_tools import equation_coefficients
