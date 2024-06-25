@@ -282,7 +282,7 @@ Contains
                   Call add_implicit_term(chipeq(i),chipvar(i), 1, amp,lp)
                 end do
 
-            Else
+            Else    ! l > 0
 
                 !==================================================
                 !                Radial Momentum Equation
@@ -291,20 +291,40 @@ Contains
 
                 ! Temperature
                 amp = -ref%Buoyancy_Coeff/H_Laplacian
+                If (pseudo_incompressible) Then
+                    amp = amp*ref%exp_entropy
+                Endif
                 Call add_implicit_term(weq, tvar, 0, amp,lp)            ! Gravity
 
                 ! Chi
                 do i = 1, n_active_scalars
                   amp = -ref%chi_buoyancy_coeff(i,:)/H_Laplacian
+                  If (pseudo_incompressible) Then
+                      amp = amp*ref%exp_entropy
+                  Endif
                   Call add_implicit_term(weq, chiavar(i), 0, amp,lp)    ! Gravity
                 end do
 
 
-                ! Pressure
+                ! Pressure Force
                 !amp = 1.0d0/(Ek*H_Laplacian)*ref%density        ! dPdr
                 amp = ref%dpdr_W_term/H_Laplacian
+                If (pseudo_incompressible) Then
+                    amp = amp*ref%exp_entropy
+                Endif
                 Call add_implicit_term(weq,pvar, 1, amp,lp)
 
+
+                ! Add the buoyancy term ignored under the LBR approximation
+                ! -(ds/dr) rho/(c_P * H_Laplacian) (P/rho)
+                ! amp = -rho/(c_P * H_Laplacian) (ds/dr)               Non-LBR Anelastic (not implemented)
+                ! amp = -exp(s/c_P) rho/(c_P * H_Laplacian) (ds/dr)    Pseudo-incompressible
+                If (pseudo_incompressible) Then
+                    amp = -ref%exp_entropy * ref%density * ref%dsdr_over_cp / H_Laplacian
+                    Call add_implicit_term(weq,pvar, 0, amp, lp)
+                Endif
+                
+                
                 ! W
 
                 If (inertia) Then
@@ -333,6 +353,9 @@ Contains
                 ! Pressure
                 !amp = -(1.0d0)/Ek*ref%density
                 amp = ref%pressure_dwdr_term
+                If (pseudo_incompressible) Then
+                    amp = amp*ref%exp_entropy
+                Endif
                 Call add_implicit_term(peq,pvar, 0, amp,lp)
 
                 ! W
@@ -980,6 +1003,9 @@ Contains
                 ! Else stress-free
                 r = 1
                 samp = -(2.0d0/radius(r)+ref%dlnrho(r))
+                If (pseudo_incompressible) Then
+                    samp = samp - ref%dsdr_over_cp(r)
+                Endif
                 Call Load_BC(lp,r,peq,wvar,one,2)
                 Call Load_BC(lp,r,peq,wvar,samp,1)
 
@@ -997,6 +1023,9 @@ Contains
                 !stress_free_bottom
                 r = N_R
                 samp = -(2.0d0/radius(r)+ref%dlnrho(r))
+                If (pseudo_incompressible) Then
+                    samp = samp - ref%dsdr_over_cp(r)
+                Endif
                 Call Load_BC(lp,r,peq,wvar,one,2)
                 Call Load_BC(lp,r,peq,wvar,samp,1)
                 Call Load_BC(lp,r,zeq,zvar,one,1)

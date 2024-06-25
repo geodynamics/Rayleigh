@@ -445,6 +445,14 @@ Contains
             !$OMP END PARALLEL DO
         Endif
 
+        ! Multiply by rho_*/rho = exp(s/c_P)  if pseudo-incompressible
+        If (pseudo_incompressible) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,wvar) = RHSP(IDX,wvar)*ref%exp_entropy(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
 
 
     End Subroutine Momentum_Advection_Radial
@@ -561,8 +569,6 @@ Contains
         Endif
 
 
-
-
         ! At this point, we have [u dot grad u]_theta
         ! Multiply by radius/sintheta so that we have r[u dot grad u]_theta/sintheta (getting ready for Z and dWdr RHS building)
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -570,10 +576,22 @@ Contains
             RHSP(IDX,pvar) = RHSP(IDX,pvar)*radius(r)*csctheta(t)
         END_DO
         !$OMP END PARALLEL DO
+        
+                
+        ! Multiply by rho_*/rho = exp(s/c_P)  if pseudo-incompressible
+        If (pseudo_incompressible) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%exp_entropy(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
 
 
 
     End Subroutine Momentum_Advection_Theta
+    
+    
     Subroutine Momentum_Advection_Phi()
         Implicit None
         Integer :: t, r, k
@@ -637,7 +655,19 @@ Contains
             RHSP(IDX,zvar) = RHSP(IDX,zvar)*radius(r)*csctheta(t)
         END_DO
         !OMP END PARALLEL DO
+        
+        ! Multiply by rho_*/rho = exp(s/c_P)  if pseudo-incompressible
+        If (pseudo_incompressible) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,pvar) = RHSP(IDX,pvar)*ref%exp_entropy(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
+        
     End Subroutine Momentum_Advection_Phi
+    
+    
     Subroutine Phi_Derivatives()
         Implicit None
         Integer :: i

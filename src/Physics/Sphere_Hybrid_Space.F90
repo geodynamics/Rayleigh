@@ -49,9 +49,15 @@ Contains
         Allocate(drho_term(my_r%min:my_r%max))
         r1 = my_r%min
         r2 = my_r%max
-        over_rhor(r1:r2) = one_over_r(r1:r2)/ref%density(r1:r2)
-        over_rhorsq(r1:r2) = OneOverRSquared(r1:r2)/ref%density(r1:r2)
-        drho_term(r1:r2) = ref%dlnrho(r1:r2)+one_over_r(r1:r2)
+        If (pseudo_incompressible) Then
+            over_rhor(r1:r2)  = one_over_r(r1:r2)/(ref%density(r1:r2)*ref%exp_entropy(r1:r2))
+            over_rhorsq(r1:r2)= OneOverRSquared(r1:r2)/(ref%density(r1:r2)*ref%exp_entropy(r1:r2))
+            drho_term(r1:r2)  = ref%dlnrho(r1:r2)+one_over_r(r1:r2) + ref%dsdr_over_cp(r1:r2)
+        Else
+            over_rhor(r1:r2)  = one_over_r(r1:r2)/ref%density(r1:r2)
+            over_rhorsq(r1:r2)= OneOverRSquared(r1:r2)/ref%density(r1:r2)
+            drho_term(r1:r2)  = ref%dlnrho(r1:r2)+one_over_r(r1:r2)
+        Endif
 
     End Subroutine Hybrid_Init
 
@@ -283,7 +289,8 @@ Contains
 
         ! .... Small correction for density variation  :  - u_theta*dlnrhodr (added -u_theta/r as well here)
         ! Notice that there is a -u_theta/r term above.  These should be combined
-        ! for efficiency later
+        ! for efficiency later.
+        ! The pseudo-incompressible correction has been implemented through drho_term.
 
         DO_IDX2
             SBUFFA(IDX2,dvtdr) = SBUFFA(IDX2,dvtdr)- &
@@ -305,6 +312,7 @@ Contains
 
         ! .... Small correction for density variation  :  - u_phi*dlnrhodr
         ! .... moved -u_phi/r here as well
+        ! ...  pseudo-incompressible correction has been implemented through drho_term.
         DO_IDX2
             SBUFFA(IDX2,dvpdr) = SBUFFA(IDX2,dvpdr)- &
                 &  SBUFFA(IDX2,vphi)*drho_term(r)
@@ -328,12 +336,19 @@ Contains
             SBUFFA(IDX2,dvrdr) = SBUFFA(IDX2,dvrdr)- &
                 & SBUFFA(IDX2,vr)*ref%dlnrho(r)
         END_DO
+        If (pseudo_incompressible) Then
+            DO_IDX2
+                SBUFFA(IDX2,dvrdr) = SBUFFA(IDX2,dvrdr)- &
+                    & SBUFFA(IDX2,vr)*ref%dsdr_over_cp(r)
+            END_DO
+        Endif        
 
 
         Call d_by_dtheta(wsp%s2a,vr,dvrdt)
 
 
         ! Convert Z to ell(ell+1) Z/r^2  (i.e. omega_r)
+        ! Computing the radial component of the curl of the velocity
         DO_IDX2
             SBUFFA(IDX2,zvar) = l_l_plus1(m:l_max)*SBUFFA(IDX2,zvar)*Over_RhoRSQ(r)
         END_DO
