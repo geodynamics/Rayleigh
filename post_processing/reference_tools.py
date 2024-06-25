@@ -13,19 +13,33 @@ class equation_coefficients:
                  'eta':7, 'd_ln_rho':8, 'd2_ln_rho':9, 'd_ln_T':10, 'd_ln_nu':11, 'd_ln_kappa':12,
                  'd_ln_eta':13, 'ds_dr':14}
 
-    def __init__(self,radius=[], file=None):
-        if (len(radius) != 0):
+    def __init__(self, radius=[], file=None, override_nconst=False):
+        """Reads/writes equation_coefficient and custom reference state files.
+
+        Keyword arguments:
+        radius:          If provided, a new state will be created with these
+                         radii and zero coefficients.
+        file:            If provided, the reference state will be read from the
+                         provided file.
+        override_nconst: Fixes file reading for equation_coefficients created
+                         between versions that already had 11 constants but
+                         had not updated the version number to 2 yet.
+                         See https://github.com/geodynamics/Rayleigh/issues/560
+                         for details.
+        """
+        if len(radius) != 0:
+            if file is not None:
+                raise RuntimeError("Cannot provide radius and file at the same time.")
             nr = len(radius)
             self.nr = nr
-            self.radius = numpy.zeros(nr,dtype='float64')
-            self.radius[:] = radius[:]
+            self.radius = numpy.asarray(radius, dtype='float64')
             self.functions  = numpy.zeros((self.nfunc,nr) , dtype='float64' )
             
             self.constants = numpy.zeros(self.nconst     , dtype='float64' )
             self.cset      = numpy.zeros(self.nconst     , dtype='int32'   )
             self.fset      = numpy.zeros(self.nfunc      , dtype='int32'   )
-        elif (file != None):
-            self.read(filename=file)
+        elif file is not None:
+            self.read(filename=file, override_nconst=override_nconst)
 
     def __getattr__(self, name):
         if name in self.f_dict:
@@ -45,7 +59,7 @@ class equation_coefficients:
 
     def set_function(self,y,f_name):
 
-        if (isinstance(f_name,str)):
+        if isinstance(f_name,str):
             fi = self.f_dict[f_name]
         else:
             fi = f_name
@@ -54,7 +68,7 @@ class equation_coefficients:
         self.fset[fi-1] = 1
         
     def set_constant(self,c,c_name):
-        if (isinstance(c_name,str)):
+        if isinstance(c_name,str):
             ci = self.c_dict[c_name]
         else:
             ci = c_name
@@ -80,7 +94,7 @@ class equation_coefficients:
         self.functions.tofile(fd)
         fd.close() 
         
-    def read(self, filename='equation_coefficients'):
+    def read(self, filename='equation_coefficients', override_nconst=False):
         class_version = self.version
         fd = open(filename,'rb')
         picheck = numpy.fromfile(fd,dtype='int32',count=1)[0]
@@ -89,8 +103,14 @@ class equation_coefficients:
         if self.version > 1:
             self.nconst = numpy.fromfile(fd,dtype='int32', count=1)[0]
             self.nfunc = numpy.fromfile(fd,dtype='int32', count=1)[0]
-        else: # if the version is 1, nconst was 10
-            self.nconst = 10
+        else:
+            if override_nconst:
+                # Override for the versions of Rayleigh that already had 11 constants
+                # but had not updated the version number of the file yet.
+                self.nconst = 11
+            else:
+                # if the version is 1, nconst was 10
+                self.nconst = 10
         self.cset = numpy.fromfile(fd,dtype='int32',count=self.nconst)
         self.fset = numpy.fromfile(fd,dtype='int32',count=self.nfunc)
         self.constants = numpy.fromfile(fd,dtype='float64',count=self.nconst)        
@@ -136,7 +156,7 @@ class background_state:
             print('              Returning empty data structure.')
 
         # Initialize the class attributes
-        if (passed_rcheck):  
+        if passed_rcheck:
             self.nr = nr
             self.radius = radius
 
@@ -147,7 +167,7 @@ class background_state:
                 self.set_variable(k,v)
                             
     def set_variable(self,k,v):
-        if (k != 'self'  and k != 'radius'):
+        if k != 'self'  and k != 'radius':
             attr_consistent = False
             try:
                 nv = len(v)
@@ -160,11 +180,11 @@ class background_state:
                     print('The',k,'attribute will not be initialized.')
 
             except:
-                if (v != None):
+                if v != None:
                     print('Error: ', k, 'must be a numpy array or list.')
                     print('The',k,'attribute will not be initialized.')
 
-            if (attr_consistent):
+            if attr_consistent:
                 setattr(self,k,v)  # sets self.k = v
                     
 def compute_heating_profile(hpars, radius, htype=0, pressure = 0):
@@ -186,7 +206,7 @@ def compute_heating_profile(hpars, radius, htype=0, pressure = 0):
                             to have a constant value of unity.
                  htype > 0:
                         Currently there are no other types defined..."""
-    if (htype == 0):
+    if htype == 0:
         nr= len(radius)
         r0 = hpars[0]
         width = hpars[1]
