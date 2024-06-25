@@ -1,0 +1,26 @@
+ ///////////////////////////////////////////////////////////////////////////
+               RAYLEIGH ACCURACY BENCHMARK SUMMARY               
+  
+   Benchmark:  Jones et al. 2001  (Steady Dynamo Case)
+  
+   Radial Resolution      N_R =          128
+   Angular Resolution N_theta =          192
+  
+   Averaging Interval (seconds) :       0.000000
+  
+   Beginning Iteration :           20
+   Ending Iteration    :           20
+   Number of Samples   :            1
+ ----------------------------------------------------------------------------
+   Observable      |    Measured    | Suggested   | % Difference |  Std. Dev.
+ ----------------------------------------------------------------------------
+   Kinetic Energy  :  2.305238E+29  8.036230E+36 -1.000000E+02  0.000000E+00
+   Zonal KE        :  7.929201E+26  1.153180E+36 -1.000000E+02  0.000000E+00
+   Meridional KE   :  2.754535E+27  1.015870E+33 -9.999973E+01  0.000000E+00
+   Magnetic Energy :  7.182914E+30  6.133330E+36 -9.999988E+01  0.000000E+00
+   Zonal ME        :  5.878429E+28  4.620460E+36 -1.000000E+02  0.000000E+00
+   Meridional ME   :  1.934906E+28  3.249270E+35 -9.999999E+01  0.000000E+00
+   Entropy         :  5.897223E+05  6.089300E+05 -3.154335E+00  0.000000E+00
+   Vphi            :  7.775163E-02 -2.942200E+03 -1.000026E+02  0.000000E+00
+   Btheta          :  3.824210E-01  2.729200E+02 -9.985988E+01  0.000000E+00
+   Drift Frequency :  1.385626E+37  4.307600E-06  3.216701E+44  0.000000E+00
