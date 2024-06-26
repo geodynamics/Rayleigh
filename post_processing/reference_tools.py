@@ -300,3 +300,85 @@ def gen_poly(radius,n,nrho,mass,rhoi,gconst,cp,rb):
                                 pressure_gradient= dpdr, density=density)
     return new_poly
 
+
+class radial_grid:
+    """
+        Class Radial_Grid:
+            Helper class used to generate a custom radial grid for
+            Rayleigh's finite-difference mode.
+            
+            Attributes:
+                version        : Version number of the object (current is 1)
+                nr             : number of radial points (integer)
+                radius[0:nr-1] : the radial grid (numpy array, float64)
+            
+            Usage Examples:
+                Instantiation using a predefined grid:
+                    my_radius = [1,2,3]
+                    my_grid = radial_grid(my_radius)
+                    
+                Instantiation using an existing grid file:
+                    my_grid = radial_grid(filename='my_grid_file.dat')
+                    
+                Writing radial grid to a file:    
+                    my_grid.write('my_grid_file.dat')
+    """
+    version = 1
+    
+    def __init__(self,radius=None,filename=None):
+        if (filename==None and radius != None):
+            print('This branch')
+            nr = len(radius)
+            self.radius = numpy.zeros(nr,dtype='float64')
+            self.radius[:] = radius[:]
+            self.nr = nr
+        elif (filename != None):
+            print('This branch')
+            self.read(filename)
+        
+    def write(self,gridfile):
+
+        header = numpy.zeros(3,dtype='int32')
+        header[0] = 314
+        header[1] = self.version
+        header[2] = self.nr
+        
+        routput = numpy.zeros(self.nr,dtype='float64')
+        # Ensure that routput is stored in descending order.
+        rev_check = self.radius[0]-self.radius[1]
+        if (rev_check < 0 ):
+            # The grid is stored in ascending order. Reverse on copy.
+            routput[:] = self.radius[::-1]
+        else:
+            routput[:] = self.radius[:]
+         
+        fd = open(gridfile,'wb')
+        header.tofile(fd)
+        routput.tofile(fd)
+        fd.close()
+        
+    def read(self,gridfile):
+        fd = open(gridfile,'rb')
+        header = numpy.fromfile(fd,dtype='int32',count=3)
+        pi_check = header[0]
+        if (pi_check == 314):
+            version = header[1]
+            nr = header[2]
+            radius = numpy.fromfile(fd,dtype='float64',count=nr)
+        else:
+            fd.close()
+            fd = open(gridfile,'rb')
+            header = numpy.fromfile(fd,dtype='int32',count=3).byteswap()
+            pi_check = header[0]
+            version = header[1]
+            nr = header[2]
+            radius = numpy.fromfile(fd,dtype='float64',count=nr).byteswap()
+        fd.close()
+        self.version = version
+        self.nr = nr
+        self.radius = radius                   
+        
+           
+        
+        
+        
