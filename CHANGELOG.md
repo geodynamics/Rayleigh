@@ -38,8 +38,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
-
 - Rayleigh no longer attempts to update the record count and close a diagnostics file (e.g., G_Avgs) that failed to open correctly.  \[Nick Featherstone; 6-18-2024; [#510](https://github.com/geodynamics/Rayleigh/pull/510) , [#523](https://github.com/geodynamics/Rayleigh/pull/523)  \]
 
 - Fixed a bug that was causing documentation build to become progressively slower for subsequent builds due to recursive inclusion of the doc\build directory  \[Philipp Edelmann; 6-17-2024; [#527](https://github.com/geodynamics/Rayleigh/pull/527)\]
@@ -51,6 +49,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - The standard c++ libraries are no longer linked when compiling Rayleigh; \[Brandon Lazard; 6-19-2024; [#532](https://github.com/geodynamics/Rayleigh/pull/532)\]
 
 - Running the configure command now requires the correct combination of library locations to be specified; \[Brandon Lazard; 6-21-2024] [#535](https://github.com/geodynamics/Rayleigh/pull/535) 
+
+- Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
 
 
 ## [1.2.0] - 5-29-2024
