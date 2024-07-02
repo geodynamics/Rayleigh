@@ -25,7 +25,7 @@ Diagnostics_Mean_Correction.o : Diagnostics_Mean_Correction.F90 indices.F Diagno
 Diagnostics_Miscellaneous.o : Diagnostics_Miscellaneous.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Poynting_Flux.o : Diagnostics_Poynting_Flux.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Scalars.o : Diagnostics_Scalars.F90 indices.F Controls.o Diagnostics_Base.o 
-Diagnostics_Second_Derivatives.o : Diagnostics_Second_Derivatives.F90 indices.F Spectral_Derivatives.o Structures.o Diagnostics_Base.o 
+Diagnostics_Second_Derivatives.o : Diagnostics_Second_Derivatives.F90 indices.F Finite_Difference.o Spectral_Derivatives.o Structures.o Diagnostics_Base.o 
 Diagnostics_Thermal_Energies.o : Diagnostics_Thermal_Energies.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
 Diagnostics_Thermal_Equation.o : Diagnostics_Thermal_Equation.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
 Diagnostics_Thermodynamic_Gradients.o : Diagnostics_Thermodynamic_Gradients.F90 indices.F Diagnostics_Base.o 

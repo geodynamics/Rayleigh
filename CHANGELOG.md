@@ -50,6 +50,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Running the configure command now requires the correct combination of library locations to be specified; \[Brandon Lazard; 6-21-2024] [#535](https://github.com/geodynamics/Rayleigh/pull/535) 
 
+- Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
+
 
 ## [1.2.0] - 5-29-2024
 
