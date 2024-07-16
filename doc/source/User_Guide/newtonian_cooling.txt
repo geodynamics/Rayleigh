@@ -1,0 +1,41 @@
+.. _newtonian_cooling:
+
+Newtonian Cooling
+-----------------------
+
+We have added an initial implementation of Newtonian cooling to the code that adds a term to the thermal energy equation of the form
+
+.. math::
+   :label: newton
+
+   \frac{\partial \Theta}{\partial t}  = \frac{\Delta\Theta_{\mathrm{eq}}-\Theta}{\tau_\mathrm{eq}}.
+
+Here, :math:`\Delta\Theta_\mathrm{eq}` is a target temperature/entropy variation about the background state and :math:`\tau_\mathrm{eq}` is the cooling timescale.  Newtonian cooling can be turned on by setting ``newtonian_cooling=.true.`` in the ``physical_controls_namelist``, and the cooling time is similarly controlled by specifying the value of ``newtonian_cooling_time``.  
+
+At present, :math:`\Delta\Theta_\mathrm{eq}` is allowed to take one of two forms.  These are controlled by setting the ``newtonian_cooling_type`` variable in ``physical_controls_namelist``.  A value of 1 yields
+
+.. math::
+   :label: ncteq1
+   
+   \Delta\Theta_\mathrm{eq} = A\,f_\mathrm{c}(r),
+
+and a value of 2 yields
+
+.. math::
+   :label: ncteq2
+
+   \Delta\Theta_\mathrm{eq} = A\,f_\mathrm{c}(r)\mathrm{sin}(\theta)\mathrm{sin}(\phi),
+
+where :math:`f_\mathrm{c}(r)` is the radial cooling profile.  It is 1 by default, but the user can specify a file from which to read a custom profile by setting the ``newtonian_cooling_profile_file`` variable in the ``physical_controls_namelist``.  The amplitude :math:`A` is controlled by setting the variable  ``newtonian_cooling_tvar_amp``.   As an example, to use Newtonian cooling, one can and and modify the following lines in the ``physical_controls_namelist``.
+
+::
+
+   &physical_controls_namelist
+    newtonian_cooling = .true.
+    newtonian_cooling_type = 1
+    newtonian_cooling_time = 1.0d0
+    newtonian_cooling_tvar_amp = 1.0d0
+    newtonian_cooling_profile_file = 'my_cooling_profile.dat'
+   /
+
+

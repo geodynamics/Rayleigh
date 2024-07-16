@@ -17,6 +17,9 @@ Arbitrary Scalar Fields
 .. include:: arbitrary_scalar_fields.txt 
 
 
+.. include:: newtonian_cooling.txt
+
+
 .. _coupled_bcs:
 
 Coupled Boundary Conditions
@@ -52,6 +55,7 @@ The continuity equation is still a solenoidal constraint, but instead of the mas
    :label: definition_rho*
    
    \hat{\rho}_*(r) \equiv \hat{\rho}(r) \, e^{\hat{S}(r)/c_P}
+
 
 
 
