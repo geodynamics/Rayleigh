@@ -13,4 +13,5 @@ User Guide
    ../../../CONTRIBUTING.md
    troubleshooting
    references
+   utilities
    under_development

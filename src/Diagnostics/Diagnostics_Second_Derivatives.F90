@@ -27,6 +27,7 @@ Module Diagnostics_Second_Derivatives
     Use Diagnostics_Base
     Use Structures
     Use Spectral_Derivatives
+    Use Finite_Difference, Only : d_by_dx3d3
     Implicit None
 
 
@@ -378,8 +379,12 @@ Contains
         !Move to p1b configuration
         Call d2buffer%reform()
         Call d2buffer%construct('p1a')
-        Call gridcp%To_Spectral(d2buffer%p1b,d2buffer%p1a)
-        Call gridcp%dealias_buffer(d2buffer%p1a)
+        If (chebyshev) Then
+            Call gridcp%To_Spectral(d2buffer%p1b,d2buffer%p1a)
+            Call gridcp%dealias_buffer(d2buffer%p1a)
+        Else
+            d2buffer%p1a = d2buffer%p1b
+        Endif
         d2buffer%p1b = 0.0
         d2buffer%config='p1a'
 
@@ -387,11 +392,18 @@ Contains
 
         !////////////////////////////////////////////////////////////
         ! Steps 5-6:  Load d2_by_dr2 and d2_by_drdt into the buffer
-        Do i = 1, nddfields*2
-            j = i+nddfields*2
-            Call gridcp%d_by_dr_cp(i,j,d2buffer%p1a,1)
-        Enddo
-        Call gridcp%From_Spectral(d2buffer%p1a,d2buffer%p1b)
+        If (chebyshev) Then
+            Do i = 1, nddfields*2
+                j = i+nddfields*2
+                Call gridcp%d_by_dr_cp(i,j,d2buffer%p1a,1)
+            Enddo
+            Call gridcp%From_Spectral(d2buffer%p1a,d2buffer%p1b)
+        Else
+            Do i = 1, nddfields*2
+                j = i+nddfields*2
+                Call d_by_dx3d3(i,j,d2buffer%p1a,1)
+            Enddo
+        Endif
         d2buffer%p1a=d2buffer%p1b
         Call d2buffer%deconstruct('p1b')
 

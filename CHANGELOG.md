@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 ### Added
 
+- Allow the boundary conditions of scalar fields (both the thermal temperature/entropy field and active scalar fields) to be linearly coupled together.  This is documented in the "Under Development" section of the User Guide and has an example test. \[Cian Wilson; 6-21-2024; [#460](https://github.com/geodynamics/Rayleigh/pull/460)\]
+
 - The documentation for solving for active and passive scalar fields has been expanded in the "Under Development" section of the User Guide. \[Cian Wilson; 6-20-2024; [#541](https://github.com/geodynamics/Rayleigh/pull/541)\]
 
 - A docker image for Stampede3 and Frontera (TACC) has been added to the repository.   \[Rene Gassmoeller; 6-20-2024; [#402](https://github.com/geodynamics/Rayleigh/pull/402)\]
@@ -23,9 +25,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Rayleigh can now also be built using CMake in addtion to the `configure` script.    \[Philipp Edelmann; 6-21-2024; [#536](https://github.com/geodynamics/Rayleigh/pull/536)\]
 
+- Added a function called checkpoint_read to the rayleigh_diagnostics.py file to read in checkpoint files    \[Rathish Ratnasingam; 6-21-2024; [#543](https://github.com/geodynamics/Rayleigh/pull/543)\]
+
+-Added a jupyter notebook to read in the checkpoint files, transform it and output the results.         \[Brandon Lazard; 6-21-2024; [#551](https://github.com/geodynamics/Rayleigh/pull/551)]
+
+
 ### Changed
 
 - The logic in the configure script that determines the library-link flags for compilation on different systems has been simplified.   \[Rene Gassmoeller; 6-19-2024; [#534](https://github.com/geodynamics/Rayleigh/pull/534)\]
+
+- The documentation build has been split into HTML (`make doc`) and PDF (`make docpdf`) outputs.   \[Philipp Edelmann; 6-21-2024; [#552](https://github.com/geodynamics/Rayleigh/pull/552)\]
 
 ### Fixed
 
@@ -40,6 +49,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - The standard c++ libraries are no longer linked when compiling Rayleigh; \[Brandon Lazard; 6-19-2024; [#532](https://github.com/geodynamics/Rayleigh/pull/532)\]
 
 - Running the configure command now requires the correct combination of library locations to be specified; \[Brandon Lazard; 6-21-2024] [#535](https://github.com/geodynamics/Rayleigh/pull/535) 
+
+- Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
 
 
 ## [1.2.0] - 5-29-2024
