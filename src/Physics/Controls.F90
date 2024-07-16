@@ -90,7 +90,7 @@ Module Controls
                 & benchmark_integration_interval, benchmark_report_interval, &
                 & momentum_advection, inertia, n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
-                & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file
+                & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
                 & pseudo_incompressible
 
     !///////////////////////////////////////////////////////////////////////////
