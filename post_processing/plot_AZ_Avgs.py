@@ -59,7 +59,6 @@
 
 from rayleigh_diagnostics import AZ_Avgs, build_file_list, plot_azav, streamfunction
 import matplotlib.pyplot as plt
-import pylab
 import numpy
 #from azavg_util import *
 files = build_file_list(30000,40000,path='AZ_Avgs')

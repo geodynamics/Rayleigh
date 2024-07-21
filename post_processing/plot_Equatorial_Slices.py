@@ -55,7 +55,7 @@
 from rayleigh_diagnostics import Equatorial_Slices
 import numpy
 import matplotlib.pyplot as plt
-from matplotlib import ticker, font_manager
+from matplotlib import ticker
 istring = '00040000'
 es = Equatorial_Slices(istring)
 tindex =1 # Grab second time index from this file

@@ -67,7 +67,6 @@
 from rayleigh_diagnostics import Shell_Slices
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import ticker, font_manager
 # Read the data
 
 istring = '00040000'
