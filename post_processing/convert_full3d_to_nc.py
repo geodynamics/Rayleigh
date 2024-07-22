@@ -24,7 +24,6 @@
 #  Converts Spherical_3D output to netCDF files for visualization in ParaView
 #  and other software.
 
-import sys
 import os
 import argparse
 import glob

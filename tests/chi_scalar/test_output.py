@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from rayleigh_diagnostics import G_Avgs, build_file_list
-from rayleigh_spectral_input import SpectralInput, radial_extents
 import numpy as np
 import os
 import sys

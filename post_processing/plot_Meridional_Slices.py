@@ -60,9 +60,7 @@
 #####################################
 #  Meridional Slice
 from rayleigh_diagnostics import Meridional_Slices, plot_azav
-import numpy
 import matplotlib.pyplot as plt
-from matplotlib import ticker, font_manager
 # Read the data
 
 istring = '00040000'
