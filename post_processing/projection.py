@@ -290,7 +290,7 @@ def plot_ortho(data_in,costheta,fig, ax, cax, latcen=45, loncen=0, nyz=512, colo
 
     ##################################3
     # Finally, plot the bounding circle
-    sf=0.99
+    # sf=0.99
     hp = 1/nyz
     yplot = numpy.linspace(-1,1,nplot,dtype='float64')
     yplot = yplot-hp*0
@@ -318,7 +318,7 @@ def plot_ortho(data_in,costheta,fig, ax, cax, latcen=45, loncen=0, nyz=512, colo
 
 
     
-    ax_center_x = ax_xmin + 0.5*ax_delta_x
+    # ax_center_x = ax_xmin + 0.5*ax_delta_x
 
     
     cbar_aspect = 1./10.
