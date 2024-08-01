@@ -2750,8 +2750,6 @@ def TimeAvg_AZAverages(file_list,ofile):
     ntheta = a.ntheta
     nq = a.nq
     tmp = np.zeros((ntheta,nr,nq),dtype='float64')
-    # simtime   = np.zeros(1,dtype='float64')
-    # iteration = np.zeros(1,dtype='int32')
     icount = np.zeros(1,dtype='int32')
     ifinal = np.zeros(1,dtype='int32')
     tfinal = np.zeros(1,dtype='float64')
