@@ -3128,7 +3128,7 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
     import numpy as np
     import pylab as p 
     import matplotlib.pyplot as plt
-    from matplotlib import ticker #, font_manager
+    from matplotlib import ticker
     #Modified version of Antoine Strukarek's routine
     #r = radius/6.9599e10
     r = radius/np.max(radius)
