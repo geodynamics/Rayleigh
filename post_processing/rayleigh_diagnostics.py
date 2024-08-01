@@ -2700,13 +2700,6 @@ def Compile_GlobalAverages(file_list,ofile):
     #   and use the nrecs + nq in the file to create our combined array
     a = G_Avgs(file_list[0], path = '')
     nfiles = len(file_list)
-    # niter_estimate = a.niter*nfiles
-    # nq = a.nq
-    # combined = np.zeros((niter_estimate,a.nq),dtype='float64')
-    # time = np.zeros(niter_estimate,dtype='float64')
-    # iters = np.zeros(niter_estimate,dtype='int32')
-    # ncount = 0 # total number of iterations read so far
-    # ind = 0
 
     # We open the file that we want to store the compiled time traces into and write a header
     fd = open(ofile,'wb') #w = write, b = binary
