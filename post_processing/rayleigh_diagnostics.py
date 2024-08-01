@@ -2806,8 +2806,6 @@ def TimeAvg_ShellAverages(file_list,ofile):
         tmp = np.zeros((nr,nq),dtype='float64')
     else:
         tmp = np.zeros((nr,4,nq),dtype='float64')        
-    # simtime   = np.zeros(1,dtype='float64')
-    # iteration = np.zeros(1,dtype='int32')
     icount = np.zeros(1,dtype='int32')
     ifinal = np.zeros(1,dtype='int32')
     tfinal = np.zeros(1,dtype='float64')
