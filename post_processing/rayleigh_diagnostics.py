@@ -950,7 +950,7 @@ class G_Avgs:
         if (len(qcodes) == 0):
             self.vals[:,:] = fdata['fdata']['vals'][0,:,:]
         else:
-            # nqfile = self.nq        # number of quantity codes in the file
+            # number of quantity codes in the file
             qget = np.array(qcodes,dtype='int32')
             self.qv = qget  # Don't update the lookup table yet
             self.nq = len(self.qv)  # number of quantity codes we will extract
