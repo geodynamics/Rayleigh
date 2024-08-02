@@ -228,7 +228,7 @@ def compute_heating_profile(hpars, radius, htype=0, pressure = 0):
         # We normalize it such that it's integral over the volume is 1
         # This way, we can set the luminosity via a constant in the input file
 
-        qint = 0
+        # qint = 0
         lq = numpy.zeros(nr)
         integrand= numpy.pi*4*radius*radius*profile
         # First pass, compute integral to normalize

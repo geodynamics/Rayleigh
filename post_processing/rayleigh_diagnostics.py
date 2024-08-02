@@ -96,13 +96,13 @@ class main_input:
         var_lower = var.strip().lower()
         
         if (force):
-            if (not (nml_lower in self.namelists)):
+            if nml_lower not in self.namelists:
                 self.vals[nml_lower] = OrderedDict()
                 self.namelists = list(self.vals.keys())
                 
             var_names = list(self.vals[nml_lower].keys())
             
-            if (not (var_lower in var_names)):
+            if var_lower not in var_names:
                 self.vals[nml_lower][var_lower]=""
         
         if nml_lower in self.namelists:
@@ -135,13 +135,13 @@ class main_input:
         
         """
 
-        if (type(ndecimal) != type(6)):
+        if type(ndecimal) is not type(6):
             ndecimal = 6
         dstr = str(ndecimal)
         
         lprint = print
         endl=""
-        if (file != None):
+        if file is not None:
             fd = open(file, "w")
             lprint = fd.write
             endl="\n"
@@ -159,10 +159,10 @@ class main_input:
 
             for var in self.vals[nml].keys():
                 val = self.vals[nml][var]          
-                if (type(val) == type(3.14)):
+                if type(val) is type(3.14):
                     fstring = "{:."+dstr+"e}"
                     val = fstring.format(val)
-                if (type(val) != type('astring')):
+                if type(val) is not type('astring'):
                     val = str(val)
                 if ((val != "") or verbose):
                     val_line = var+' = '+val+endl
@@ -170,7 +170,7 @@ class main_input:
 
             lprint("/"+endl)
             
-        if (file != None):
+        if file is not None:
             fd.close()
 
     def read_file_lines(self,filename):
@@ -242,7 +242,7 @@ class main_input:
                     # Update the namelist list as we go.
                     
                     nml_name = nextline[1:].split('namelist')[0][:-1]
-                    if (not nml_name in self.namelists):
+                    if nml_name not in self.namelists:
                         self.vals[nml_name] = OrderedDict()
                         self.namelists = list(self.vals.keys())
                         
@@ -950,7 +950,7 @@ class G_Avgs:
         if (len(qcodes) == 0):
             self.vals[:,:] = fdata['fdata']['vals'][0,:,:]
         else:
-            nqfile = self.nq        # number of quantity codes in the file
+            # number of quantity codes in the file
             qget = np.array(qcodes,dtype='int32')
             self.qv = qget  # Don't update the lookup table yet
             self.nq = len(self.qv)  # number of quantity codes we will extract
@@ -1073,7 +1073,7 @@ class Shell_Avgs:
         #(a)
         multiple_files = False
         mainfile=filename
-        if (ofile != None):
+        if ofile is not None:
             multiple_files = True
             
         #(b)
@@ -1100,7 +1100,7 @@ class Shell_Avgs:
             else:
                 self.time_average_files(filename, qcodes = qcodes,path=path, ntheta=ntheta, nfiles = nfiles, dt = dt)
                 
-        if (ofile != None):
+        if ofile is not None:
             self.write(ofile)
             
             
@@ -1382,7 +1382,7 @@ class Shell_Avgs:
         if (len(qcodes) == 0):
             self.vals = vals
         else:
-            nqfile = self.nq        # number of quantity codes in the file
+            # nqfile = self.nq        # number of quantity codes in the file
             qget = np.array(qcodes,dtype='int32')
             self.qv = qget  # Don't update the lookup table yet
             self.nq = len(self.qv)  # number of quantity codes we will extract
@@ -1533,7 +1533,7 @@ class AZ_Avgs:
         #(a)
         multiple_files = False
         mainfile=filename
-        if (ofile != None):
+        if ofile is not None:
             multiple_files = True
             
         #(b)
@@ -1560,7 +1560,7 @@ class AZ_Avgs:
             else:
                 self.time_average_files(filename, qcodes = qcodes,path=path, dt = dt, nfiles = nfiles)
                 
-        if (ofile != None):
+        if ofile is not None:
             self.write(ofile)
             
             
@@ -1892,8 +1892,8 @@ class Point_Probes:
         self.ntheta = ntheta
         self.nphi = nphi
 
-        hsize = (nr+ntheta+nphi)*12 + nq*4 + 8 + 16+4
-        recsize = nq*nphi*ntheta*nr*8 + 12
+        # hsize = (nr+ntheta+nphi)*12 + nq*4 + 8 + 16+4
+        # recsize = nq*nphi*ntheta*nr*8 + 12
 
         self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
 
@@ -2700,13 +2700,6 @@ def Compile_GlobalAverages(file_list,ofile):
     #   and use the nrecs + nq in the file to create our combined array
     a = G_Avgs(file_list[0], path = '')
     nfiles = len(file_list)
-    niter_estimate = a.niter*nfiles
-    nq = a.nq
-    combined = np.zeros((niter_estimate,a.nq),dtype='float64')
-    time = np.zeros(niter_estimate,dtype='float64')
-    iters = np.zeros(niter_estimate,dtype='int32')
-    ncount = 0 # total number of iterations read so far
-    ind = 0
 
     # We open the file that we want to store the compiled time traces into and write a header
     fd = open(ofile,'wb') #w = write, b = binary
@@ -2750,8 +2743,6 @@ def TimeAvg_AZAverages(file_list,ofile):
     ntheta = a.ntheta
     nq = a.nq
     tmp = np.zeros((ntheta,nr,nq),dtype='float64')
-    simtime   = np.zeros(1,dtype='float64')
-    iteration = np.zeros(1,dtype='int32')
     icount = np.zeros(1,dtype='int32')
     ifinal = np.zeros(1,dtype='int32')
     tfinal = np.zeros(1,dtype='float64')
@@ -2808,8 +2799,6 @@ def TimeAvg_ShellAverages(file_list,ofile):
         tmp = np.zeros((nr,nq),dtype='float64')
     else:
         tmp = np.zeros((nr,4,nq),dtype='float64')        
-    simtime   = np.zeros(1,dtype='float64')
-    iteration = np.zeros(1,dtype='int32')
     icount = np.zeros(1,dtype='int32')
     ifinal = np.zeros(1,dtype='int32')
     tfinal = np.zeros(1,dtype='float64')
@@ -2961,7 +2950,7 @@ class rayleigh_vapor:
         self.rayleigh_root=rayleigh_root
         self.nxyz=nxyz
         self.grid_file=grid_file
-        if (force == True):
+        if force:
             print('Parameter "force" is set to true.')
             print('Removing: '+self.vaporfile+' > /dev/null')
             print('Removing: '+self.data_dir+' > /dev/null')
@@ -3057,7 +3046,7 @@ class rayleigh_vapor:
 
     def cube_to_vdc(self,ofile,timeind,varind):
         import subprocess as sp
-        if (type(varind) == type(1)):
+        if type(varind) is type(1):
             varname=self.varnames[varind]
         else:
             varname=varind  # string was passed
@@ -3128,7 +3117,7 @@ def plot_azav(fig,ax,field,radius,costheta,sintheta,r_bcz=0.71,mini=-1,maxi=-1,m
     import numpy as np
     import pylab as p 
     import matplotlib.pyplot as plt
-    from matplotlib import ticker, font_manager
+    from matplotlib import ticker
     #Modified version of Antoine Strukarek's routine
     #r = radius/6.9599e10
     r = radius/np.max(radius)
