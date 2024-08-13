@@ -52,7 +52,7 @@ Main.o : Main.F90 Run_Parameters.o Benchmarking.o Fourier_Transform.o Timers.o S
 MakeDir.o : MakeDir.F90 
 Math_Constants.o : Math_Constants.F90 Ra_Precision.o 
 Math_Utility.o : Math_Utility.F90 
-PDE_Coefficients.o : PDE_Coefficients.F90 General_MPI.o Math_Utility.o Math_Constants.o Controls.o ProblemSize.o 
+PDE_Coefficients.o : PDE_Coefficients.F90 Finite_Difference.o General_MPI.o Math_Utility.o Math_Constants.o Controls.o ProblemSize.o 
 Parallel_Framework.o : Parallel_Framework.F90 BufferedOutput.o Structures.o Load_Balance.o General_MPI.o MPI_LAYER.o 
 Parallel_IO.o : Parallel_IO.F90 General_MPI.o Spherical_Buffer.o Legendre_Transforms.o Fourier_Transform.o MPI_LAYER.o ISendReceive.o Structures.o Parallel_Framework.o Ra_MPI_Base.o 
 ProblemSize.o : ProblemSize.F90 Ra_MPI_Base.o Timers.o BufferedOutput.o Math_Constants.o Finite_Difference.o Chebyshev_Polynomials.o Controls.o Spectral_Derivatives.o Legendre_Polynomials.o Parallel_Framework.o 
