@@ -152,7 +152,7 @@ points for a given run. These files begin with an 8-digit prefix
 indicating the time step at which the checkpoint was created.
 
 The frequency with which standard checkpoints are generated can be
-controlled by modifying the **checkpoint_interval`` variable in the
+controlled by modifying the **checkpoint_interval** variable in the
 ``temporal_controls_namelist``. For example, if you want to generate a
 checkpoint once every 50,000 time steps, you would modify your
 ``main_input`` file to read:
@@ -165,6 +165,17 @@ checkpoint once every 50,000 time steps, you would modify your
 
 The default value of checkpoint_interval is 1,000,000, which is
 typically much larger than what you will use in practice.
+
+Alternatively, you can specify the interval in minutes between which successive checkpoints are written.
+To do so, set the ``checkpoint_minutes`` variable:
+
+::
+
+   &temporal_controls_namelist
+    checkpoint_minutes= 30.0d0  ! Save a checkpoint once every half hour.
+   /
+
+If the ``checkpoint_minutes`` variable is set to a positive value in main_input, any value set for ``checkpoint_interval`` will be ignored.
 
 Restarting from a checkpoint is accomplished by first assigning a value
 of -1 to the variables ``init_type`` and/or ``magnetic_init_type`` in
@@ -260,6 +271,15 @@ will overwrite the existing quicksave_01 files*. At time step 40,000,
 the quicksave_02 files will be overwritten, and so forth. Because the
 ``num_quicksaves`` was set to 2, filenames with prefix quicksave_03 will
 never be generated.
+
+As with numbered checkpoints, the number of minutes between successive quicksaves
+can be specified as an alternative to quicksave_interval.  To do so, set the ``quicksave_minutes`` variable:
+
+::
+
+   &temporal_controls_namelist
+    quicksave_minutes= 15.0d0  ! Create a quicksave once every 15 minutes.
+   /
 
 Note that checkpoints beginning with an 8-digit prefix (e.g., 00035000)
 are still written to disk regularly and are not affected by the

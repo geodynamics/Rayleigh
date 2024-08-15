@@ -108,6 +108,7 @@ Module Controls
     Integer :: quicksave_interval =  -1        ! Number of iterations between quicksave dumps
     Integer :: num_quicksaves = 3              ! Number of quick-save checkpoints to write before rolling back to #1
     Real*8  :: quicksave_minutes = -1.0d0      ! Time in minutes between quick saves (overrides quicksave interval)
+    Real*8  :: checkpoint_minutes = -1.0d0     ! Time in minutes between checkpoints (overrides quicksave interval)
 
     Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
     Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
@@ -118,7 +119,7 @@ Module Controls
                 & cflmax, cflmin, max_time_step, diagnostic_reboot_interval, min_time_step, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
                 & max_time_minutes, save_last_timestep, new_iteration, save_on_sigterm, &
-                & max_simulated_time
+                & max_simulated_time, checkpoint_minutes
 
 
 
