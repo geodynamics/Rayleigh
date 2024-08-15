@@ -46,7 +46,6 @@ Input.o : Input.F90 MPI_LAYER.o Ra_MPI_Base.o Checkpointing.o Parallel_Framework
 Legendre_Polynomials.o : Legendre_Polynomials.F90 
 Legendre_Transforms.o : Legendre_Transforms.F90 Structures.o Legendre_Polynomials.o 
 Linear_Solve.o : Linear_Solve.F90 Chebyshev_Polynomials.o Finite_Difference.o 
-Linear_Terms_Cart.o : Linear_Terms_Cart.F90 ClockInfo.o Timers.o BoundaryConditions.o Fields.o Linear_Solve.o ProblemSize.o Controls.o Load_Balance.o 
 Load_Balance.o : Load_Balance.F90 MPI_LAYER.o 
 MPI_LAYER.o : MPI_LAYER.F90 All_to_All.o Ra_MPI_Base.o 
 Main.o : Main.F90 Run_Parameters.o Benchmarking.o Fourier_Transform.o Timers.o Sphere_Driver.o Sphere_Linear_Terms.o Checkpointing.o TestSuite.o Diagnostics_Interface.o Input.o ProblemSize.o Parallel_Framework.o Initial_Conditions.o Fields.o Controls.o MakeDir.o 
