@@ -55,9 +55,11 @@ Module Checkpointing
     Logical :: ItIsTimeForACheckpoint = .false.
     Logical :: ItIsTimeForAQuickSave = .false.
     Integer :: quicksave_num = -1
-    Real*8  :: checkpoint_t0 = 0.0d0
-    Real*8  :: checkpoint_elapsed = 0.0d0  ! Time elapsed since checkpoint_t0
+    Real*8  :: checkpoint_t0 = 0.0d0       ! Time of last checkpoint
+
+    Real*8  :: quicksave_t0 = 0.0d0        ! Time of last quicksave
     Real*8  :: quicksave_seconds = -1  ! Time between quick saves
+    Real*8  :: checkpoint_seconds = -1 ! Time between checkpoints
 
     Type(Cheby_Transform_Interface) :: cheby_info
 
@@ -89,6 +91,11 @@ Contains
             quicksave_seconds = quicksave_minutes*60
             quicksave_interval = -1
         Endif
+        
+        If (checkpoint_minutes .gt. 0) Then
+            checkpoint_seconds = checkpoint_minutes*60
+            checkpoint_interval = -1
+        Endif        
 
         numfields = 4 + n_active_scalars + n_passive_scalars
         if (magnetism) then
@@ -797,18 +804,42 @@ Contains
     Subroutine IsItTimeForACheckpoint(iter)
         Implicit None
         Integer, Intent(In) :: iter
+        Real*8 :: elapsed_seconds
+        
+        ! A checkpoint or quicksave is triggered when the specified
+        ! number of timesteps or seconds has passed.
+        ! Only one numbered checkpoint or one quicksave are written.
+        ! Numbered checkpoints take precedence.
+        
         ItIsTimeForACheckpoint = .false.
         ItIsTimeForAQuickSave = .false.
-        If (Mod(iter,checkpoint_interval) .eq. 0) Then
-            ItIsTimeForACheckpoint = .true.
-            checkpoint_t0 = checkpoint_elapsed      ! quicksaves not written
-            checkpoint_elapsed = 0.0d0
-            !If the long interval check is satisfied, nothing,
-            ! nothing related to the short interval is executed.
-        Else
+       
+       
+        ! First, check to see if we should write a numbered checkpoint. 
+        
+        ! Time since last numbered checkpoint
+        elapsed_seconds = global_msgs(2) - checkpoint_t0
+        
+        If (checkpoint_seconds .gt. 0) Then
+        
+            If (elapsed_seconds .gt. checkpoint_seconds) Then
+                checkpoint_t0 = global_msgs(2)
+                ItIsTimeForACheckpoint = .true.
+            Endif
+            
+        Else If (checkpoint_interval .gt. 0) Then
+            
+            If (Mod(iter,checkpoint_interval) .eq. 0) Then
+                ItIsTimeForACheckpoint = .true.
+                checkpoint_t0 =   global_msgs(2) 
+            Endif
+            
+        Endif
+        
+        ! If a numbered checkpoint was not written, check to 
+        ! see if a quicksave should be written.
+        If (.not. ItIsTimeForACheckpoint) Then
 
-            !Check for quick-save status.  This will be based on either iteration #
-            ! OR on the time since the last checkpoint
 
             If (quicksave_interval .gt. 0) Then
                 If (Mod(iter,quicksave_interval) .eq. 0) Then
@@ -820,19 +851,16 @@ Contains
                 Endif
             Endif
 
-            If (quicksave_seconds .gt. 0) Then
-                checkpoint_elapsed = global_msgs(2) - checkpoint_t0
-                If (checkpoint_elapsed .gt. quicksave_seconds) Then
-
-                    checkpoint_t0 = global_msgs(2)
-                    checkpoint_elapsed = 0.0d0
+            If (quicksave_seconds .gt. 0) Then      
+                !Time since last quicksave      
+                elapsed_seconds = global_msgs(2) - quicksave_t0                
+                If (elapsed_seconds .gt. quicksave_seconds) Then
+                    quicksave_t0 = global_msgs(2)
                     ItIsTimeForACheckpoint = .true.
                     ItIsTimeForAQuickSave = .true.
                     quicksave_num = quicksave_num+1
                     quicksave_num = Mod(quicksave_num,num_quicksaves)
-
                 Endif
-
             Endif
 
         Endif

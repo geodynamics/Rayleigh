@@ -12,6 +12,8 @@
   Number of iterations between successive checkpoint outputs.  Default value is -1 (no checkpointing).
 **check_frequency**
   (deprecated) Same as checkpoint_interval.
+**checkpoint_minutes**
+  Time in minutes between successive numbered checkpoints.  If this variable is set to a positive value (default is -1), the value of checkpoint_interval will be ignored.
 **quicksave_interval**
   Number of iterations between successive quicksave outputs.  Default value is -1 (no quicksaves).
 **num_quicksaves**
