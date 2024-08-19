@@ -199,7 +199,6 @@ Contains
         ! Viscous Transport of turbulent kinetic energy.
         !    -div.F_TV = div.(sigma'.u') = (div.sigma').u' + Phi_T
         If (compute_quantity(transport_viscous_pKE)) Then
-            !Write(6,*)dvrdrdr, shape(d2_fbuffer)
             DO_PSI2
                 one_over_rsin = one_over_r(r) * csctheta(t)
                 ctn_over_r = one_over_r(r) * cottheta(t)

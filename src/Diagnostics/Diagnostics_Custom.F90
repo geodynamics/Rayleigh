@@ -210,7 +210,6 @@ Contains
         !END_DO
 
         If (compute_quantity(ell0_vr)) Then
-            Write(6,*)'Ell0_vr', ell0_vr
             DO_PSI
                 qty(PSI) = ell0_values(r,vr)
             END_DO
@@ -218,7 +217,6 @@ Contains
         Endif
 
         If (compute_quantity(ell0_tvar)) Then
-            Write(6,*)'Ell0 tvar', ell0_tvar
             DO_PSI
                 qty(PSI) = ell0_values(r,tvar)
             END_DO
@@ -226,7 +224,6 @@ Contains
         Endif
 
         If (compute_quantity(ell0_dpdr)) Then
-            Write(6,*)'Ell0 tvar', ell0_dpdr
             DO_PSI
                 qty(PSI) = ell0_values(r,dpdr)
             END_DO

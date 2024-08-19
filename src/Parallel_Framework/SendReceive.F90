@@ -89,7 +89,6 @@ Contains
         mstart = 1
     Endif
     Call mpi_send(x(istart,jstart,kstart,lstart,mstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
-    !write(6,*)'zs ', p
     End Subroutine D_Send_5D
 
 
@@ -144,7 +143,7 @@ Contains
         lstart = 1
     Endif
     Call mpi_send(x(istart,jstart,kstart,lstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
-    !write(6,*)'zs ', p
+
     End Subroutine D_Send_4D
 
     Subroutine D_Send_3D(x, n_elements, dest, tag, grp, indstart)
@@ -195,7 +194,6 @@ Contains
         kstart = 1
     Endif
     Call mpi_send(x(istart,jstart,kstart), n, MPI_REAL8, p, tag2, comm2,  mpi_err)
-    !write(6,*)'zs ', p
     End Subroutine D_Send_3D
 
     Subroutine D_Send_2D(x, n_elements, dest, tag, grp, indstart)

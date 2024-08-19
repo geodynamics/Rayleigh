@@ -266,12 +266,11 @@ Contains
         self%nthreads = omp_get_max_threads()
         !$OMP PARALLEL PRIVATE(my_thread)
         my_thread = omp_get_thread_num()
-        write(6,*)'rank: ', my_mpi_Rank, 'thread: ', my_thread, 'nthread: ', omp_get_num_threads()
+
         !$OMP END PARALLEL
 #endif
 #ifdef usemkl
             my_thread = mkl_get_max_threads()
-            write(6,*)"MKL MAX: ", my_thread
 #endif
     End Subroutine OpenMp_Init
 

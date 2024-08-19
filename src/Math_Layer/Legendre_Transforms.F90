@@ -1011,7 +1011,7 @@ Subroutine StP_4d_dgp2(data_in, data_out)
         If (n_l_even(m) .gt. 0) then
 
             jend = n_l_even(m)
-            !write(6,*)jend,rmn,rmx,nfield
+
             Allocate(temp3(1:jend,rmn:rmx,1:2,1:nfield))
             Do f = 1, nfield
             Do imi = 1, 2

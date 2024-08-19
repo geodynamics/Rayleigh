@@ -146,13 +146,6 @@ Module Diagnostics_Base
     Integer :: lforce_r, lforcepp_r, lforcemm_r
 Contains
 
-    Subroutine Generate_Diagnostic_Labels()
-        ! Define labels for our quantity codes
-        Write(6,*)'A line of code.'
-        !Call Load_Label(v_r,'V_r')
-        !Call Load_Label(v_theta,'V_theta')
-        !Call Load_Label(v_phi, 'V_phi')
-    End Subroutine Generate_Diagnostic_Labels
 
     Subroutine Initialize_Diagnostics_Buffer()
         Logical :: dbtrans, dbconfig
