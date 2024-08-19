@@ -185,7 +185,7 @@ Contains
                 Call stdout%init(116,line_count = stdout_flush_interval,filename=ofilename)
         End Select
         If (.not. inertia) Then
-            Write(6,*)"Setting momentum_advection to False"
+            Call stdout%print("Setting momentum_advection to False")
             momentum_advection = .false.
         Endif
 

@@ -50,8 +50,8 @@ Contains
         If (newtonian_cooling .and. (newtonian_cooling_profile_file .ne. '__nothing__')) Then
             cooling_profile(:) = newtonian_cooling_profile(:)
             If (my_rank .eq. 0) Then
-                Write(6,*) 'Newtonian cooling is active.'
-                Write(6,*) 'Cooling profile set from: ',newtonian_cooling_profile_file
+                call stdout%print('Newtonian cooling is active.')
+                call stdout%print('Cooling profile set from: '//TRIM(ADJUSTL(newtonian_cooling_profile_file)))
             Endif
         Else
             cooling_profile(:) = 1.0d0
@@ -65,7 +65,7 @@ Contains
 
             If (newtonian_cooling_type .eq. 1) Then
                 ! No angular variation
-                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling type = 1'
+                If (my_rank .eq. 0) call stdout%print('Newtonian cooling type = 1')
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
@@ -79,7 +79,7 @@ Contains
             If (newtonian_cooling_type .eq. 2) Then
                 ! Angular variation (ell=1,m=1, motivated by hot Jupiters)
 
-                If (my_rank .eq. 0) Write(6,*) 'Newtonian cooling type = 2'
+                If (my_rank .eq. 0) call stdout%print('Newtonian cooling type = 2')
                 Do t = my_theta%min, my_theta%max
                     Do r = my_r%min, my_r%max
                         Do k =1, n_phi
