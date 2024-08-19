@@ -1721,7 +1721,7 @@ Contains
                 jmin =  indices_inout(i)+1
                 
                 ! Only expand the subrange if the values of jmin and jmax
-                ! are consistent.
+                ! are consistent and if they fall within the grid bounds.
                 If ((jmin .ge. 1) .and. (jmax .ge. jmin)) Then
                     Do j = jmin,jmax
                         If (j .le. indmax) Then
