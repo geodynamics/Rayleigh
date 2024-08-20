@@ -301,7 +301,7 @@ Contains
         Allocate(self%all_3s(0:self%nprow-1))
         Call Standard_Balance(self%all_3s,self%n3s,self%rcomm)
         self%my_3s = self%all_3s(self%rcomm%rank)
-        !Write(6,*), self%my_3s%min, self%my_3s%max,self%rcomm%rank, self%my_3s%delta
+
         ! We assume a high-low pairing of m-values.
         ! This means that we need to set up an index array
         ! for the m-values that tells how many each processor has.

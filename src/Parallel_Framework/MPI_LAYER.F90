@@ -95,8 +95,6 @@ Contains
         Call mpi_comm_size(cgrp%comm, cgrp%np, err)
         Call mpi_comm_rank(cgrp%comm, cgrp%rank, err)
 
-        If (cgrp%rank .ne. col_rank) Write(6,*)'Error - ', cgrp%rank, col_rank
-        If (rgrp%rank .ne. row_rank) Write(6,*)'Error - ', rgrp%rank, row_rank
     End Subroutine RowColSplit
 
     Subroutine Exit_Comm_Lib(err)
