@@ -503,9 +503,9 @@ Contains
             Endif
             Call Set_Boundary_Conditions(lp)
             If (sparsesolve) Then
-                !Write(6,*)'matrix: ', weq,lp, my_rank, l
+
                 Call Sparse_Load(weq,lp)
-                !Write(6,*)'matrix: ', zeq,lp,my_rank, l
+
                 Call Sparse_Load(zeq,lp)
 
                 do i = 1, n_passive_scalars

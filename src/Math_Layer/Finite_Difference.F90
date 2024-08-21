@@ -233,7 +233,7 @@ Contains
             stencil_radius = stencil_size/2
             stencil_center = stencil_radius+1
             offset = (N_S-stencil_size)/2
-            Write(6,*)'I am in and dorder is : ', d
+
             Do jj = jjmin, jjmax
                 Do ii = iimin, iimax
 
@@ -543,7 +543,7 @@ Contains
         !
         !    Currently only type 1 is supported by the derivative routines and Implicit.F
         !*****************************************************************************************************
-        !Write(6,*)deriv_order
+
          ngrid = Size(grid)
         stencil_radius = n_stencil/2
         stencil_center = stencil_radius+1
@@ -594,7 +594,6 @@ Contains
             dsum = zero
 
             Do j = jstart, jend
-                !Write(6,*)i,jstart,jend,stencil_center
                 dees(j) = grid(i+j-stencil_center)-grid(i)
                 dsum = dsum+ABS(dees(j))
             Enddo

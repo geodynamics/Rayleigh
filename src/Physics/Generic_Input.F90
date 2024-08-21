@@ -29,6 +29,8 @@ module Generic_Input
 
   use SendReceive
   use ProblemSize
+  
+  use BufferedOutput
 
   implicit none
 
@@ -59,6 +61,7 @@ contains
     integer, allocatable, dimension(:) :: proc_lmn_count, col_lmn_count, col_lmn_ind1, col_coeffs_ind1, sendarri
     integer, allocatable, dimension(:,:) :: my_lmn_inds, lmn_inds, sendarri2
     real*8, allocatable, dimension(:,:) :: my_lmn_coeffs, lmn_coeffs, col_coeffs, sendarr2
+    character*7, intstr
 
     ! set up some sizes of mpi types
     call MPI_TYPE_GET_EXTENT(MPI_REAL8, lb, real_size, ierr)
@@ -88,8 +91,9 @@ contains
         pars(3) = l_l_max
       else
         n_lmn = 0
-        write(6,*)'Unknown generic input file mode: ', fmode
-        write(6,*)'Acceptable modes are 0 (sparse) or 1 (full).'
+        Write(intstr,'(i7)')fmode
+        Call stdout%print('Unknown generic input file mode: '//TRIM(ADJUSTL(intstr)) )
+        call stdout%print('Acceptable modes are 0 (sparse) or 1 (full).')
       endif
       close(15)
     end if
@@ -178,7 +182,8 @@ contains
             end if
           end do
         else
-          write(6,*)'Error opening generic input file: ', pfi%rcomm%rank
+          Write(intstr,'(i7)')pfi%rcomm%rank
+          Call stdout%print('Error opening generic input file: '//TRIM(ADJUSTL(intstr)))
         end if
         call MPI_FILE_CLOSE(funit, ierr)
 
@@ -307,7 +312,7 @@ contains
           field%p1b(n, 2, lm, field_ind) = my_lmn_coeffs(i, 2)
         end do
       else
-        write(6,*)'field%p1b not allocated in genericinput read_input!'
+        Call stdout%print('field%p1b not allocated in genericinput read_input!')
       end if
       deallocate(my_lmn_inds)
       deallocate(my_lmn_coeffs)
@@ -364,7 +369,8 @@ contains
             end if
           end do
         else
-          write(6,*)'Error opening generic input file: ', pfi%rcomm%rank
+          Write(intstr,'(i7)')pfi%rcomm%rank
+          Call stdout%print('Error opening generic input file: '//TRIM(ADJUSTL(intstr)))
         end if
         call MPI_FILE_CLOSE(funit, ierr)
 
@@ -454,7 +460,7 @@ contains
           field%p1b(1:l_max_n+1, 2, k, field_ind) = my_lmn_coeffs((k-1)*(l_max_n+1)+1:k*(l_max_n+1), 2)
         end do
       else
-        write(6,*)'field%p1b not allocated in genericinput read_input!'
+        Call stdout%print('field%p1b not allocated in genericinput read_input!')
       end if
       deallocate(my_lmn_coeffs)
 

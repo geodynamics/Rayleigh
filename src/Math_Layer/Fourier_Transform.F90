@@ -47,9 +47,7 @@ Contains
                 !Note that when using MKL, iret will be 0 always.
                 !iret = 0 means an error when using normal FFTW, but for MKL
                 ! This routine is a wrapper that does nothing.
-            !write(6,*)"iret is: ", iret
-            ! comment
-            !write(6,*)"FFTW planning with nthreads: ", nthread
+
             call dfftw_plan_with_nthreads(nthread)
         Endif
 #endif

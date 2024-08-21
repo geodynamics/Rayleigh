@@ -1246,8 +1246,8 @@ Contains
         Real*8 :: geofac
 
         If (my_rank .eq. 0) Then
-            Write(6,*)'Custom reference state specified.'
-            Write(6,*)'Reading from: ', custom_reference_file
+            Call stdout%print('Custom reference state specified.')
+            Call stdout%print('Reading from: '//TRIM(ADJUSTL(custom_reference_file)) )
         Endif
 
         Call Read_Custom_Reference_File(custom_reference_file)
@@ -1354,6 +1354,7 @@ Contains
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         Character(len=2) :: ind
+        Character*3 :: intstr
 
         cset(:) = 0
         input_constants(:) = 0.0d0
@@ -1368,17 +1369,14 @@ Contains
         Read(15)pi_integer
         If (pi_integer .ne. 314) Then
             close(15)
-            Write(6,*)'Trying to convert.  pi = : ', pi_integer
             Open(unit=15,file=ref_file,form='unformatted', status='old', &
                  CONVERT = 'BIG_ENDIAN' , access='stream')
             Read(15)pi_integer
             If (pi_integer .ne. 314) Then
                 Close(15)
-                Write(6,*)'Trying to convert again.  pi is now: ', pi_integer
                 Open(unit=15,file=ref_file,form='unformatted', status='old', &
                  CONVERT = 'LITTLE_ENDIAN' , access='stream')
                 Read(15)pi_integer
-                Write(6,*)'My final value of pi is: ', pi_integer
             Endif
         Endif
 
@@ -1427,7 +1425,7 @@ Contains
                     Write(ind, '(I2)') k
                     Write(dstring,dofmt) ra_constants(k)
                     Call stdout%print('c_'//Adjustl(ind)//' = '//Trim(dstring))
-                    !Write(6,*)'c: ', k, ra_constants(k)
+
                 Endif
             Enddo
 
@@ -1446,7 +1444,7 @@ Contains
             !input array of functions
             If (old_radius(1) .lt. old_radius(nr_ref)) Then
 
-                If (my_rank .eq. 0) Write(6,*)'Reversing Radial Indices in Custom Ref File!'
+                If (my_rank .eq. 0) Call stdout%print('Reversing Radial Indices in Custom Ref File!')
 
                 Allocate(rtmp(1:nr_ref))
 
@@ -1528,8 +1526,7 @@ Contains
               Endif
             end do
         Else
-            Write(6,*)'Error.  This file appears to be corrupt (check Endian convention).'
-            Write(6,*)'Pi integer: ', pi_integer
+            Call stdout%print('Error.  This file appears to be corrupt (check Endian convention).')
         Endif
 
         ! only used if user wants to change reference_type=1,2,3
@@ -1541,11 +1538,12 @@ Contains
                         use_custom_constant(j) = .true.
                     Else
                         If (my_rank .eq. 0) Then
-                            Write(6,*)' '
-                            Write(6,*)'You set with_custom_constant: ', j
-                            Write(6,*)'But this constant was not set in either main_input or '
-                            Write(6,*)'the custom reference file.  Selection will be ignored.'
-                            Write(6,*)' '
+                            Write(intstr,'(i3)')j
+                            Call stdout%print(' ')
+                            Call stdout%print('You set with_custom_constant: '//TRIM(ADJUSTL(intstr)))
+                            Call stdout%print('But this constant was not set in either main_input or ')
+                            Call stdout%print('the custom reference file.  Selection will be ignored.')
+                            Call stdout%print(' ')
                         Endif
                     Endif
                 Endif
@@ -1559,11 +1557,12 @@ Contains
                         use_custom_function(j) = .true.
                     Else
                         If (my_rank .eq. 0) Then
-                            Write(6,*)' '
-                            Write(6,*)'You set with_custom_function: ', j
-                            Write(6,*)'But this function was not set in either main_input or '
-                            Write(6,*)'the custom reference file.  Selection will be ignored.'
-                            Write(6,*)' '
+                            Write(intstr,'(i3)')j
+                            Call stdout%print(' ')
+                            Call stdout%print('You set with_custom_function: '//TRIM(ADJUSTL(intstr)))
+                            Call stdout%print('But this function was not set in either main_input or ')
+                            Call stdout%print('the custom reference file.  Selection will be ignored.')
+                            Call stdout%print(' ')
                         Endif
                     Endif
                 Endif

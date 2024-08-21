@@ -77,7 +77,6 @@ Subroutine DeAllocate_Plms(depar)
     Endif
     If (present(depar)) Then
         If (depar .and. parity) Then
-            Write(6,*)'DeAllocating Parity Arrays'
             Call DeAllocate_Parity_Plms()
         Endif
     Endif

@@ -849,6 +849,7 @@ Contains
         Integer :: avg_axes(1:3), ecode
         Integer, Allocatable :: indices(:,:)
         Real*8, Allocatable :: avg_weights(:,:)
+        Character*8 :: cache_str, rec_str
         Class(DiagnosticInfo) :: self 
 
         nonstandard=.false.
@@ -892,6 +893,8 @@ Contains
 
 
         !Check that the cache size is appropriate
+        Write(cache_str,'(i8)')self%cache_size
+        Write(rec_str,'(i8)')self%rec_per_file       
         If (present(cache_size)) Then
             If (cache_size .ge. 1) Then
                 self%cache_size = cache_size
@@ -899,12 +902,12 @@ Contains
         Endif
         If (self%cache_size .lt. 1) Then
             If (myid .eq. 0) Then
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'
-                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
-                    Write(6,*)'   Cache_size must be at least 1.'
-                    Write(6,*)'   Specified cache_size: ', self%cache_size
-                    Write(6,*)'   Caching has been deactivated for ', self%file_prefix
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
+                    Call stdout%print('////////////////////////////////////////////////////////////////////')
+                    Call stdout%print('   Warning:  Incorrect cache_size specification for '//TRIM(ADJUSTL(self%file_prefix)))
+                    Call stdout%print('   Cache_size must be at least 1.')
+                    Call stdout%print('   Specified cache_size: '//TRIM(ADJUSTL(cache_str)) )
+                    Call stdout%print('   Caching has been deactivated for '//TRIM(ADJUSTL(self%file_prefix)) )
+                    Call stdout%print('////////////////////////////////////////////////////////////////////')                    
             Endif
             self%cache_size = 1
         Endif
@@ -913,13 +916,13 @@ Contains
             If (modcheck .ne. 0) Then
 
                 If (myid .eq. 0) Then
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'
-                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
-                    Write(6,*)'   Cache_size cannot be larger than nrec.'
-                    Write(6,*)'   Cache_size: ', self%cache_size
-                    Write(6,*)'   nrec      : ', self%rec_per_file
-                    Write(6,*)'   Cache_size has been set to nrec.'
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
+                    Call stdout%print('////////////////////////////////////////////////////////////////////')
+                    Call stdout%print('   Warning:  Incorrect cache_size specification for '//TRIM(ADJUSTL(self%file_prefix)) )
+                    Call stdout%print('   Cache_size cannot be larger than nrec.')
+                    Call stdout%print('   Cache_size: '//TRIM(ADJUSTL(cache_str)))
+                    Call stdout%print('   nrec      : '//TRIM(ADJUSTL(rec_str)))
+                    Call stdout%print('   Cache_size has been set to nrec.')
+                    Call stdout%print('////////////////////////////////////////////////////////////////////')                    
                 Endif
                 self%cache_size = self%rec_per_file
             Endif
@@ -930,13 +933,13 @@ Contains
             If (modcheck .ne. 0) Then
 
                 If (myid .eq. 0) Then
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'
-                    Write(6,*)'   Warning:  Incorrect cache_size specification for ',self%file_prefix
-                    Write(6,*)'   Cache_size must divide evenly into nrec.'
-                    Write(6,*)'   Cache_size: ', self%cache_size
-                    Write(6,*)'   nrec      : ', self%rec_per_file
-                    Write(6,*)'   Caching has been deactivated for ', self%file_prefix
-                    Write(6,*)'////////////////////////////////////////////////////////////////////'                    
+                    Call stdout%print('////////////////////////////////////////////////////////////////////')
+                    Call stdout%print('   Warning:  Incorrect cache_size specification for '//TRIM(ADJUSTL(self%file_prefix)) )
+                    Call stdout%print('   Cache_size must divide evenly into nrec.')
+                    Call stdout%print('   Cache_size: '//TRIM(ADJUSTL(cache_str)))
+                    Call stdout%print('   nrec      : '//TRIM(ADJUSTL(rec_str)))
+                    Call stdout%print('   Caching has been deactivated for '//TRIM(ADJUSTL(self%file_prefix)) )
+                    Call stdout%print('////////////////////////////////////////////////////////////////////')                    
                 Endif
                 self%cache_size = 1
             Endif
@@ -1295,13 +1298,18 @@ Contains
         Implicit None
         integer :: ierr, buffsize
         integer(kind=MPI_OFFSET_KIND) :: disp
+        Character*8 :: err_str, id_str
         !Parallel File Close
         !Peforms the same task as closefile, but using MPI-IO
         Class(DiagnosticInfo) :: self
         disp = 8
         Call MPI_File_Seek(self%file_unit,disp,MPI_SEEK_SET,ierr)
+
         If (ierr .ne. 0) Then
-            Write(6,*)'Error rewinding to header.  Error code: ', ierr, myid, self%file_prefix
+            Write(err_str,'(i8)')ierr
+            Write(id_str,'(i8)')myid
+            Call stdout%print('Error rewinding to header.  Error code: '//TRIM(err_str)//','//TRIM(id_str)//self%file_prefix)
+            
         Endif
         ! Without this barrier,  the record update below can occurs before some ranks
         ! have read the original record count (leading to oversized, corrupted files).
@@ -1312,10 +1320,14 @@ Contains
 
             call MPI_FILE_WRITE(self%file_unit,self%current_rec , buffsize, MPI_INTEGER, & 
                 MPI_STATUS_IGNORE, ierr) 
-            If (ierr .ne. 0) Write(6,*)'Error writing to header.  Error code: ', ierr, myid, self%file_prefix
+            If (ierr .ne. 0) Then
+                Call stdout%print('Error writing to header.  Error code: '//TRIM(err_str)//','//TRIM(id_str)//self%file_prefix)           
+            Endif
         Endif
         Call MPI_FILE_CLOSE(self%file_unit, ierr)
-        If (ierr .ne. 0) Write(6,*)'Error closing file.  Error code: ',ierr, myid, self%file_prefix
+        If (ierr .ne. 0) Then
+            Call stdout%print('Error closing file.  Error code: '//TRIM(err_str)//','//TRIM(id_str)//self%file_prefix)         
+        Endif 
     End Subroutine CloseFile_Par
 
     Subroutine getq_now(self,yesno)

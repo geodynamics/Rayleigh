@@ -357,9 +357,7 @@ Contains
         Integer :: bsize(4), i,j,k,n,offset, ind1,ind2
 
         bsize = shape(buffer)
-        !do n = 1, self%domain_count
-        !    WRite(6,*)'da check: ', self%rda(n), self%npoly(n)
-        !Enddo
+
         Do k = 1, bsize(4)
         Do j = 1, bsize(3)
         Do i = 1, bsize(2)

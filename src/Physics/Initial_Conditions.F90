@@ -690,7 +690,7 @@ Contains
             rfunc(r) = (1-cos(x))*0.5d0
 
         Enddo
-        !write(6,*)'rf max ', maxval(rfunc1)
+
 
         ! We put our temporary field in spectral space
         Call tempfield%init(field_count = fcount, config = 's2b')
@@ -745,7 +745,6 @@ Contains
             rfunc1(r) = 0.2d0*(1.0d0-3.0d0*x*x+3.0d0*x**4-x**6)
             rfunc2(r) = r_outer*r_inner/radius(r)-r_inner
         Enddo
-        !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
         Call tempfield%init(field_count = fcount, config = 's2b')
@@ -803,7 +802,7 @@ Contains
         !!!!!!!!!
         ! Stuff to set up background entropy gradient (taken from Mark's benchmark init in ASH)
         Delta_S = t_bottom ! bottom_entropy
-        If (my_rank .eq. 0) Write(6,*)'Delta_S is ', delta_s
+
         d = radius(1) - radius(N_R)
         beta = radius(N_R) / radius(1)
         n_rho = 5.0d0
@@ -905,7 +904,6 @@ Contains
             x = (radius(r)-r_inner)/(r_outer-r_inner)
             rfunc2(r) = sin(pi*x)*0.01d0
         Enddo
-        !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
         Call tempfield%init(field_count = fcount, config = 's2b')
@@ -1032,7 +1030,6 @@ Contains
 
             rfunc2(r) = sin(pi*(radius(r)-r_inner))*radius(r)*nrm2  ! function form for a_2_0
         Enddo
-        !write(6,*)'rf max ', maxval(rfunc1)
 
         ! We put our temporary field in spectral space
         Call tempfield%init(field_count = fcount, config = 's2b')

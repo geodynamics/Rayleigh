@@ -1032,7 +1032,7 @@ Module Linear_Solve
 
         n = Size(mat,1)
         Call Dgetrf(n, n, mat, n, pvt, info)
-    !  Write(6,*)'info : ',info,n
+
     End Subroutine LU_Decompose_full
 
 
@@ -1093,7 +1093,6 @@ Module Linear_Solve
         Integer :: ma, mb, info
 
         If (Present(na)) Then
-            Write(6,*)'na specified: ', na, Size(rhs,1)
             ma = na
         Else
             ma = Size(mat,1)
@@ -1101,18 +1100,12 @@ Module Linear_Solve
 
         If (Present(nb)) Then
             mb = nb
-            Write(6,*)'mb specified: ', mb, Size(rhs)/Size(rhs,1)
         Else
             mb = Size(rhs)/Size(rhs,1)
         End If
 
         Call dgetrs('N', ma, mb, mat, Size(mat,1), pvt, rhs, Size(rhs,1), info)
 
-
-        !If(Present(nb)) Then
-        If (info .ne. 0) Then
-            Write(6,*)'Problem is solve!  info is ', info
-        Endif
 
     End Subroutine LU_Solve_full
 
@@ -1207,8 +1200,6 @@ Module Linear_Solve
 
         If (equation_set(mind,eind)%solvefor) Then
 
-        !Write(6,*)'Loading sparse matrix'
-
         nlinks = equation_set(mind,eind)%nlinks
         nsub = cpgrid%domain_count
         N_rows = ndim1*nlinks
@@ -1243,7 +1234,7 @@ Module Linear_Solve
 
         rindex = 1
         s_offset = 0
-        !Write(6,*)'INSIDE: ', eind, mind, nlinks
+
         Do n = 1, nlinks
             c_offset = 0
             Do i = 1, nsub
@@ -1434,9 +1425,9 @@ Module Linear_Solve
 
         offleft = 0                 !Column offset for left-side domain
         offright = cpgrid%npoly(1)  !Column offset for right-side domain
-        !write(6,*)'rind check: ', rind, r
+
         Do hh = 1, nsub -1
-            !write(6,*)'rcheck 2: ', r
+
             ! Clear this row completely
             mpointer(r+row,:) = 0.0d0
 
@@ -1486,7 +1477,6 @@ Module Linear_Solve
             Enddo
             off1 = off1+npoly
         Enddo
-        !write(6,*)'Rout: ', r-1
 
     End Subroutine Load_Interior_Rows_Cheby
 
@@ -1514,7 +1504,7 @@ Module Linear_Solve
         off1 = 0                    ! column offset associated with that domain
         rupper = cpgrid%npoly(1)    ! uppermost radial index that belongs to domain being considered
         local_index = r             ! local index within r's domain
-        !Write(6,*)'rcheck : ', local_index
+
         Do hh = 1, nsub-1
             If (local_index .gt. rupper) Then
                 off1 = off1+cpgrid%npoly(hh)
@@ -1523,7 +1513,7 @@ Module Linear_Solve
             Endif
             rupper = cpgrid%npoly(hh+1)
         Enddo
-        !Write(6,*)'local_index, r, domain : ', local_index, r, domain
+
         Do n = 1, cpgrid%rda(domain)-1     ! De-Alias at boundaries (single rows are really just for boundaries)
             mpointer(row+r,col+n+off1) = mpointer(row+r,col+n+off1) &
                 & + amp*cpgrid%dcheby(domain)%data(local_index,n,dorder)

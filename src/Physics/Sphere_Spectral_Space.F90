@@ -214,7 +214,6 @@ Contains
 
         !Copy each variable out of the RHS into the top part of the buffer
         ! These variables are in spectral space radially
-        !!!DDDD Write(6,*)'I am getting the new rhs: ', my_rank
         Call Get_All_RHS(wsp%p1a)
 
 

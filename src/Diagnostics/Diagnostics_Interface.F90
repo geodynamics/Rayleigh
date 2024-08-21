@@ -376,7 +376,6 @@ Contains
             Endif
         Else
             If (MOD(iteration,diagnostic_reboot_interval) .eq. 0) Then
-                if (my_rank .eq. 0) WRITE(6,*)'REBOOTING DIAGNOSTICS!'
                 ! Find the name of the current reboot file.
                 ndigits = count_digits(reboot_count)
                 Write(ndigstr,'(i1.1)') ndigits

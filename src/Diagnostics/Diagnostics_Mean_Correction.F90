@@ -437,7 +437,6 @@ Contains
         !//////////////////////////////////////////////////////
         ! Perform the averaging
         if (compute_mean_correct) then
-            !Write(6,*)'Allocated: ', allocated(mean_3dbuffer), allocated(mean_ell0buffer)
 
             Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)
         endif

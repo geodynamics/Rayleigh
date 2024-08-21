@@ -309,7 +309,7 @@ Contains
         Call d2buffer%init(field_count = ddfcount, config = 'p3b')
 
         Call d2buffer%construct('p3a')
-        !WRITE(6,*)'BCHECK: ', shape(d2buffer%p3a)
+
         Call d2buffer%deconstruct('p3a')
     End Subroutine Initialize_Second_Derivatives
 
@@ -350,12 +350,10 @@ Contains
 
         !///////////////////////////////////////////////////////////
         ! Step 1: Initialize p3b portion of d2buffer
-        !Write(6,*)'Constructing the buffer...', d2buffer%nf3b
 
         Call d2buffer%construct('p3b')
         d2buffer%config = 'p3b'
 
-        !Write(6,*)'Complete...'
 
         !///////////////////////////////////////////////////////////
         ! Steps 2-3:  Load radial and theta derivatives
@@ -363,7 +361,6 @@ Contains
             d2buffer%p3b(:,:,:,ddindmap(1,i)) = inbuffer(:,:,:,ddindmap(2,i))
         Enddo
 
-        !Write(6,*)'Steps 1-3 complete.'
 
         !////////////////////////////////////////////////////////////////
         ! Step 4:  Move to p1b/p1a configuration
@@ -388,7 +385,6 @@ Contains
         d2buffer%p1b = 0.0
         d2buffer%config='p1a'
 
-        !Write(6,*)'Steps 4 complete.'
 
         !////////////////////////////////////////////////////////////
         ! Steps 5-6:  Load d2_by_dr2 and d2_by_drdt into the buffer
@@ -408,17 +404,14 @@ Contains
         Call d2buffer%deconstruct('p1b')
 
         ! Ordering of fields in buffer is now dxdr, dxdt, dxdrdr, dxdrdt
-        !Write(6,*)'Steps 5-6 complete.'
 
         !///////////////////////////////////////////////////////////////
         ! Step 7:  Move to s2a & overwrite dxdt with sintheta*{dxdtdt}
         Call d2buffer%reform()
 
-        !Write(6,*)'Step 7 reformation complete'
 
         Call Allocate_rlm_Field(ddtemp)
 
-        !Write(6,*)'Step 7 allocation complete', nddfields
 
         Do i = nddfields+1,nddfields*2
             ! We overwrite dxdt with sintheta* {dxdtdt}
@@ -428,18 +421,15 @@ Contains
             END_DO
         Enddo
 
-        !Write(6,*)'Step 7 derivatves complete'
 
         Call DeAllocate_rlm_Field(ddtemp)
 
-        !Write(6,*)'Step 7 deallocation complete'
 
         Call d2buffer%construct('p2a')
         Call Legendre_Transform(d2buffer%s2a,d2buffer%p2a)
         Call d2buffer%deconstruct('s2a')
         d2buffer%config = 'p2a'
 
-        !Write(6,*)'Step 7 complete.'
 
         !/////////////////////////////////////////////////////////////////////
         !  Steps 8-10 : phi derivatives
@@ -478,7 +468,6 @@ Contains
         Enddo
 
         Call d2buffer%deconstruct('p3b')
-       ! Write(6,*)'Steps 8-10 complete.'
 
         !//////////////////////////////////////////
         ! Step 11:   Finalize
@@ -510,7 +499,6 @@ Contains
             END_DO
         ENDDO
 
-        !Write(6,*)'Step 11 complete.'
     End Subroutine Compute_Second_Derivatives
 
     Subroutine Allocate_rlm_Field(arr)

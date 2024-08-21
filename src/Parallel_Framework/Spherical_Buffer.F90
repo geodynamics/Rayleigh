@@ -25,6 +25,7 @@ Module Spherical_Buffer
     Use Load_Balance
     Use General_MPI
     Use Timers
+    Use BufferedOutput
     Implicit None
     Private
 
@@ -471,7 +472,7 @@ Contains
         If (self%dynamic_transpose_buffers) Then
             Allocate(self%send_buff(1:self%send_size32))
         Endif
-        !write(6,*)'executing new transpose'
+
         !--- Not sure if this is good or bad, but copy out the bounds of the loop for now
         nf = self%nf3b
 
@@ -593,7 +594,7 @@ Contains
         If (self%dynamic_transpose_buffers) Then
             Allocate(self%send_buff(1:self%send_size32))
         Endif
-        !write(6,*)'executing new transpose'
+
         !--- Not sure if this is good or bad, but copy out the bounds of the loop for now
         nf = self%nf3b
 
@@ -1279,38 +1280,38 @@ Contains
                 If (allocated(self%p1a)) Then
                     DeAllocate(self%p1a)
                 Else
-                    Write(6,*)'p1a does not appear to be allocated'
+                    Call stdout%print('p1a does not appear to be allocated')
                 Endif
             Case('p1b')
                 If (allocated(self%p1b)) Then
                     DeAllocate(self%p1b)
                 Else
-                    Write(6,*)'p1b does not appear to be allocated'
+                    Call stdout%print('p1b does not appear to be allocated')
                 Endif
             Case('p2a')
                 If (allocated(self%p2a)) Then
                     DeAllocate(self%p2a)
                 Else
-                    Write(6,*)'p2a does not appear to be allocated'
+                    Call stdout%print('p2a does not appear to be allocated')
                 Endif
             Case('p2b')
                 If (allocated(self%p2b)) Then
                     DeAllocate(self%p2b)
                 Else
-                    Write(6,*)'p2b does not appear to be allocated'
+                    Call stdout%print('p2b does not appear to be allocated')
                 Endif
 
             Case('p3a')
                 If (allocated(self%p3a)) Then
                     DeAllocate(self%p3a)
                 Else
-                    Write(6,*)'p3a does not appear to be allocated'
+                    Call stdout%print('p3a does not appear to be allocated')
                 Endif
             Case('p3b')
                 If (allocated(self%p3b)) Then
                     DeAllocate(self%p3b)
                 Else
-                    Write(6,*)'p3b does not appear to be allocated'
+                    Call stdout%print('p3b does not appear to be allocated')
                 Endif
             Case('s2a')
                 ! Appropriate for a triangular truncation
@@ -1324,7 +1325,7 @@ Contains
                     Enddo
                     DeAllocate(self%s2a)
                 Else
-                    Write(6,*)'s2a does not appear to be allocated.'
+                    Call stdout%print('s2a does not appear to be allocated.')
                 Endif
 
             Case('s2b')
@@ -1339,7 +1340,7 @@ Contains
                     Enddo
                     DeAllocate(self%s2b)
                 Else
-                    Write(6,*)'s2b does not appear to be allocated.'
+                    Call stdout%print('s2b does not appear to be allocated.')
                 Endif
 
         End Select
@@ -1434,7 +1435,7 @@ Contains
                     Else
                         mx4 = self%nf3a
                     Endif
-                    !Write(6,*)'p3a -- mx4 is: ', mx4, numfields, self%nf3a
+
                     Allocate(self%p3a(mn1:mx1, mn2:mx2, mn3:mx3, mn4:mx4))
                 Endif
             Case('p3b')
@@ -1451,7 +1452,7 @@ Contains
                     Else
                         mx4 = self%nf3b
                     Endif
-                    !Write(6,*)'Allocating p3b'
+
                     Allocate(self%p3b(mn1:mx1, mn2:mx2, mn3:mx3, mn4:mx4))
                 Endif
 
@@ -1475,7 +1476,7 @@ Contains
 
                     Allocate(self%s2a(mn1:mx1))
                     mx2 = maxval(pfi%inds_3s)    ! l_max = m_max
-                    !Write(6,*)'mx4 is: ', mx4, numfields, self%nf2a
+
                     Do i = mn1, mx1
                         mn2 = pfi%inds_3s(i)        !l_min = m
                         Allocate(self%s2a(i)%data(mn2:mx2,mn3:mx3,1:2,1:mx4))

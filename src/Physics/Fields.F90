@@ -368,10 +368,7 @@ Contains
             wsfcount(2,2) = 7 + n_active_scalars + n_passive_scalars 
             wsfcount(3,2) = 7 + n_active_scalars + n_passive_scalars 
         endif
-        !Write(6,*)'Fields initialized'
-        !Write(6,*)'c1a_counter is: ', wsp_indices%c1a_counter
-        !Write(6,*)'c2a_counter is: ', wsp_indices%c2a_counter
-        !Write(6,*)'c3a_counter is: ', wsp_indices%c3a_counter
+
 
     End Subroutine Initialize_Field_Structure
     Subroutine Initialize_Diagnostic_Indices()
@@ -451,9 +448,9 @@ Contains
             bindex(11) = dbpdt
             bindex(12) = dbpdp
         Endif
-        !Write(6,*)'NEW CHECK: ', wsp%nf3a, wsp_indices%c3a_counter
+
         output_nextra = wsp_indices%c3a_counter- wsfcount(3,1)
-        !Write(6,*)'CHECK:  ', output_nextra, wsp%nf3a, wsfcount(3,1)
+
     End Subroutine Initialize_Diagnostic_Indices
 
 End Module Fields

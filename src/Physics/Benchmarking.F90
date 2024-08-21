@@ -37,6 +37,7 @@ Module Benchmarking
     Use Math_Constants
     Use BoundaryConditions
     Use Initial_Conditions
+    Use BufferedOutput
 
     Implicit None
 
@@ -320,7 +321,7 @@ Contains
             custom_reference_file = file_remember
             heating_type = type_remember
             If (global_rank .eq. 0) Then
-                Write(6,*)'Reference Type 4 set for Benchmark Mode.'
+                Call stdout%print('Reference Type 4 set for Benchmark Mode.')
             Endif
         Endif
         
@@ -629,7 +630,7 @@ Contains
 
         If (benchmark_mode .gt. 0) Then
         If (mod(iteration,integration_interval) .eq. 0) Then
-            !Write(6,*)'Integrating!'
+
             !First we grab the volume-integrated quantities
 
             !We keep a time-series of volume-integrated quantities in memory
@@ -1056,7 +1057,6 @@ Contains
             im1 = i
         Enddo
 
-        If (xind .ne. (msymm+1)) Write(6,*)'ISSUE!'
 
         Do i = 1, nobs
             observations(i) = SUM(vsave(:,i))/msymm
@@ -1096,7 +1096,6 @@ Contains
         If (adjustx) Then
             xref(:) = xnow(:)
             drift_reference_time = time_in
-            !Write(6,*)'Adjusting X'
         Endif
 
         domegadt = domegadt/(msymm*delta_time*n_phi)*two_pi
