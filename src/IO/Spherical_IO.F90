@@ -1695,8 +1695,8 @@ Contains
     Subroutine Parse_Inds(indices_inout, indmax, indcount)
         IMPLICIT NONE
         INTEGER, INTENT(InOut) :: indices_inout(:)
+        INTEGER, INTENT(In)    :: indmax
         INTEGER, INTENT(InOut), Optional :: indcount
-        INTEGER, INTENT(In) :: indmax
         INTEGER, ALLOCATABLE :: indices_out(:)
         INTEGER :: i, j,ind,ni, jmin, jmax
         !Converts index lists of the form [1,-4] to [1,2,3,4].
@@ -1808,13 +1808,7 @@ Contains
         ngrid = size(coord_grid)
         Call Parse_Inds(indices,ngrid)
 
-        
-        ! Remove any indices whose values are outside of the grid bounds.
-
-        !Call Enforce_Bounds(indices,ngrid)
     END SUBROUTINE Interpret_Indices
-
-
 
 
 End Module Spherical_IO
