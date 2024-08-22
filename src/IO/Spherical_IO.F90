@@ -1704,29 +1704,45 @@ Contains
 
     END SUBROUTINE nrm_to_index
 
-    Subroutine Parse_Inds(indices_inout, indcount)
+    Subroutine Parse_Inds(indices_inout, indmax, indcount)
         IMPLICIT NONE
         INTEGER, INTENT(InOut) :: indices_inout(:)
+        INTEGER, INTENT(In)    :: indmax
         INTEGER, INTENT(InOut), Optional :: indcount
         INTEGER, ALLOCATABLE :: indices_out(:)
         INTEGER :: i, j,ind,ni, jmin, jmax
-        !Converts index lists of the form [1,-4] to [1,2,3,4]
+        !Converts index lists of the form [1,-4] to [1,2,3,4].
+        !Also ensures that only values within the grid bounds are retained.
         i = 1
         ind = 1
         ni = size(indices_inout)
         ALLOCATE(indices_out(1:ni))
         indices_out(:) = -1
-        DO WHILE( (indices_inout(i) .gt. -1) .and. (i .le. ni))
-            indices_out(ind) = indices_inout(i)
-            ind = ind+1
+        
+
+        Do While (i .lt. ni)
+            j = indices_inout(i)
+            if ((j .ge. 1) .and. (j .le. indmax)) Then
+                indices_out(ind) = j
+                ind = ind+1
+            Endif
+
             IF ( indices_inout(i+1) .lt. -1) THEN
                 ! User has specified a sub-range in this coordinate
                 jmax = -indices_inout(i+1) 
                 jmin =  indices_inout(i)+1
-                Do j = jmin,jmax
-                    indices_out(ind) = j
-                    ind = ind+1
-                ENDDO
+                
+                ! Only expand the subrange if the values of jmin and jmax
+                ! are consistent and if they fall within the grid bounds.
+                If ((jmin .ge. 1) .and. (jmax .ge. jmin)) Then
+                    Do j = jmin,jmax
+                        If (j .le. indmax) Then
+                            indices_out(ind) = j
+                            ind = ind+1
+                        Endif
+                    ENDDO
+                Endif
+
                 i = i + 1  ! We increment an extra time here to skip the next negative number
             ENDIF
             i = i + 1
@@ -1738,7 +1754,7 @@ Contains
 
     SUBROUTINE PROCESS_COORDINATES()
         IMPLICIT NONE
-        INTEGER :: i
+        INTEGER :: i,lmax,ngrid
         Real*8, Allocatable :: tmp_theta(:), tmp_phi(:)
         ALLOCATE(tmp_theta(1:ntheta), tmp_phi(1:nphi))
 
@@ -1768,7 +1784,9 @@ Contains
         DeALLOCATE(tmp_theta,tmp_phi)
         
         ! Parse the SPH_MODE_ELL list:
-        Call Parse_inds(sph_mode_ell, SPH_MODE_Nell)
+        lmax = maxval(pfi%inds_3s)
+        ngrid = lmax+1
+        Call Parse_inds(sph_mode_ell,ngrid, SPH_MODE_Nell)
         If (SPH_Mode_nell .gt. 0) Then
             Do i =1, sph_mode_nell
                 sph_mode_nmode = sph_mode_nmode+(sph_mode_ell(i)+1)
@@ -1783,6 +1801,7 @@ Contains
         REAL*8, INTENT(InOut) :: coord_grid(:), indices_nrm(:)
         LOGICAL, INTENT(In), Optional :: revg
         LOGICAL :: reverse_grid 
+        Integer :: ngrid
         IF (present(revg)) THEN
             IF (revg) reverse_grid = .true.
         ELSE
@@ -1798,7 +1817,10 @@ Contains
 
         ! Next, interpret any range shorthand used.
         ! e.g., convert [1,-4,8] to [1,2,3,4,8]
-        Call Parse_Inds(indices)
+        ngrid = size(coord_grid)
+        Call Parse_Inds(indices,ngrid)
+
     END SUBROUTINE Interpret_Indices
+
 
 End Module Spherical_IO
