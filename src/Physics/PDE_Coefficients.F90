@@ -1617,7 +1617,9 @@ Contains
             arr2(:) = arr2(:)/arr1(:)
         Endif
 
-        DeAllocate(dtemp,dtemp2)
+        If (chebyshev) Then
+           DeAllocate(dtemp,dtemp2)
+        Endif
 
     End Subroutine log_deriv
 
