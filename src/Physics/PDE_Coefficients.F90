@@ -37,6 +37,7 @@ Module PDE_Coefficients
     Use Math_Constants
     Use Math_Utility
     Use General_MPI, Only : BCAST2D
+    Use Finite_Difference, Only : d_by_dx
     Implicit None
 
     !///////////////////////////////////////////////////////////
@@ -1583,31 +1584,39 @@ Contains
         ! Arr1 is assumed to be in physical space.
         ! Set no_log = .true. to take normal derivative.
 
-        Allocate(dtemp(1:n_r,1,1,2))
-        Allocate(dtemp2(1:n_r,1,1,2))
+        If (chebyshev) Then
+        
+            Allocate(dtemp(1:n_r,1,1,2))
+            Allocate(dtemp2(1:n_r,1,1,2))
 
-        dtemp(:,:,:,:) = 0.0d0
-        dtemp2(:,:,:,:) = 0.0d0
-        dtemp(1:n_r,1,1,1) = arr1(1:n_r)
+            dtemp(:,:,:,:) = 0.0d0
+            dtemp2(:,:,:,:) = 0.0d0
+            dtemp(1:n_r,1,1,1) = arr1(1:n_r)
 
-        ! Transform to spectral space & de-alias
-        Call gridcp%to_Spectral(dtemp,dtemp2)
-        dtemp2((n_r*2)/3:n_r,1,1,1) = 0.0d0
+            ! Transform to spectral space & de-alias
+            Call gridcp%to_Spectral(dtemp,dtemp2)
+            dtemp2((n_r*2)/3:n_r,1,1,1) = 0.0d0
 
-        ! Take the derivative & de-alias
-        Call gridcp%d_by_dr_cp(1,2,dtemp2,1)
-        dtemp2((n_r*2)/3:n_r,1,1,2) = 0.0d0 
+            ! Take the derivative & de-alias
+            Call gridcp%d_by_dr_cp(1,2,dtemp2,1)
+            dtemp2((n_r*2)/3:n_r,1,1,2) = 0.0d0 
 
-        !Transform back to physical space.
-        Call gridcp%From_Spectral(dtemp2,dtemp)
-        arr2(:) = dtemp(:,1,1,2)
+            !Transform back to physical space.
+            Call gridcp%From_Spectral(dtemp2,dtemp)
+            arr2(:) = dtemp(:,1,1,2)
+            
+            DeAllocate(dtemp,dtemp2)
+        
+        Else
+        
+            Call d_by_dx(arr1,arr2,1)
+        
+        Endif
         
         ! If desired, convert to logarithmic derivative (default)
         If (.not. present(no_log)) Then
             arr2(:) = arr2(:)/arr1(:)
         Endif
-
-        DeAllocate(dtemp,dtemp2)
 
     End Subroutine log_deriv
 
