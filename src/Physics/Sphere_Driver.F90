@@ -72,7 +72,7 @@ Contains
     Subroutine Main_Loop_Sphere()
         Implicit None
         Integer ::  last_iteration, first_iteration, i, iret
-        Integer :: io=15, ierr
+        Integer :: io=15, ierr, iteration_count
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
@@ -310,7 +310,8 @@ Contains
             Write(tmstr,fmtstr)captured_time
             Call stdout%print('captured time: '//tmstr)
 
-            Write(tmstr,fmtstr)(last_iteration-first_iteration)/StopWatch(loop_time)%elapsed
+            iteration_count = last_iteration-first_iteration
+            Write(tmstr,fmtstr)(iteration_count)/StopWatch(loop_time)%elapsed
             Call stdout%print('   ')
             Call stdout%print('     iter/sec: '//tmstr)
 
@@ -318,7 +319,7 @@ Contains
 
             
         Endif
-        Call Finalize_Timing(n_r,l_max,max_iterations)
+        Call Finalize_Timing(n_r,l_max,iteration_count)
     End Subroutine Main_Loop_Sphere
 
     ! Signal handler function
