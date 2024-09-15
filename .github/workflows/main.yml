@@ -62,6 +62,14 @@ jobs:
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0_FD_uniform
         mpirun -np 4 ../../bin/rayleigh.dbg
 
+        # J2011 steady hydro test
+        cd "$GITHUB_WORKSPACE"/tests/j2011_steady_hydro_minimal
+        mpirun -np 4 ../../bin/rayleigh.dbg
+
+        # J2011 steady mhd test
+        cd "$GITHUB_WORKSPACE"/tests/j2011_steady_mhd_minimal
+        mpirun -np 4 ../../bin/rayleigh.dbg
+
         # Generic input test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/generic_input/run_test.sh

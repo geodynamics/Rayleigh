@@ -1,0 +1,22 @@
+ ///////////////////////////////////////////////////////////////////////////
+               RAYLEIGH ACCURACY BENCHMARK SUMMARY               
+  
+   Benchmark:  Jones et al. 2001  (Hydrodynamic Case)
+  
+   Radial Resolution      N_R =          128
+   Angular Resolution N_theta =          192
+  
+   Averaging Interval (seconds) :       0.000000
+  
+   Beginning Iteration :           20
+   Ending Iteration    :           20
+   Number of Samples   :            1
+ ----------------------------------------------------------------------------
+   Observable      |    Measured    | Suggested   | % Difference |  Std. Dev.
+ ----------------------------------------------------------------------------
+   Kinetic Energy  :  5.384025E+24  5.570280E+35 -1.000000E+02  0.000000E+00
+   Zonal KE        :  5.518963E+04  6.380990E+34 -1.000000E+02  0.000000E+00
+   Meridional KE   :  4.598309E+07  1.498250E+32 -1.000000E+02  0.000000E+00
+   Entropy         :  8.006096E+05  7.945200E+05  7.664490E-01  0.000000E+00
+   Vphi            : -7.725785E-03  6.902700E+02 -1.000011E+02  0.000000E+00
+   Drift Frequency :  2.510466+273  3.105120E-06  8.084924+280  0.000000E+00
