@@ -52,6 +52,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
 
+- The documentation has been updated to reflect that output quantity 1434 (volumetric heating) contains a factor of c10. \[Loren Matilsky; 12-5-2024; [#579](https://github.com/geodynamics/Rayleigh/pull/579) \]
 
 ## [1.2.0] - 5-29-2024
 
