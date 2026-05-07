@@ -29,6 +29,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Added a jupyter notebook to read in the checkpoint files, transform it and output the results.         \[Brandon Lazard; 6-21-2024; [#551](https://github.com/geodynamics/Rayleigh/pull/551)]
 
+- The checkpointing interval can now be specified in minutes by setting the value of checkpoint\_minutes and/or quicksave\_minutes in the temporal\_controls namelist \[Nick Featherstone; 8-15-2024; [#573](https://github.com/geodynamics/Rayleigh/pull/573) \]
 
 ### Changed
 
@@ -51,6 +52,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Running the configure command now requires the correct combination of library locations to be specified; \[Brandon Lazard; 6-21-2024] [#535](https://github.com/geodynamics/Rayleigh/pull/535) 
 
 - Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
+
+- Slice-like outputs (e.g., Shell\_Slices, Meridional\_Slices) now ignore positional-index values that fall outside of the grid bounds. \[Nick Featherstone; 8-19-2024; [#574](https://github.com/geodynamics/Rayleigh/pull/574) \]
 
 - Timing output files now record the actual number of timesteps taken by a timing run.  Previously, they always recorded the maximum allowable number of timesteps. \[Nick Featherstone; 9-9-2024; [#577](https://github.com/geodynamics/Rayleigh/pull/577) \]
 
