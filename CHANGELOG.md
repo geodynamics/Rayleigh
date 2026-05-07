@@ -8,6 +8,15 @@ Add new entries a the bottom of the current list in the subheading. Item format:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [1.3.0] - 5-8-2026
+
 ### Added
 
 - Allow the boundary conditions of scalar fields (both the thermal temperature/entropy field and active scalar fields) to be linearly coupled together.  This is documented in the "Under Development" section of the User Guide and has an example test. \[Cian Wilson; 6-21-2024; [#460](https://github.com/geodynamics/Rayleigh/pull/460)\]
