@@ -58,7 +58,9 @@ jobs:
         #Primary test (Chebyshev Mode)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
         mpirun -np 4 ../../bin/rayleigh.dbg
-        
+
+    - name: FD Test
+      run: |        
         #Finite-difference test (uniform grid)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0_FD_uniform
         mpirun -np 4 ../../bin/rayleigh.dbg
