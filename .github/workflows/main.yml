@@ -52,35 +52,46 @@ jobs:
         make fdeps && git diff --exit-code
         make -j
         make install
-    - name: Test
+    - name: Primary Test (C2001 case 0; Chebyshev)
       run: |
+      
         #Primary test (Chebyshev Mode)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
         mpirun -np 4 ../../bin/rayleigh.dbg
 
-        # Finite-difference test (uniform grid)
+    - name: Finite-difference Test (C2001 case 0; FD, uniform grid)
+      run: |        
+        #Finite-difference test (uniform grid)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0_FD_uniform
         mpirun -np 4 ../../bin/rayleigh.dbg
-
-        # J2011 steady hydro test
-        # cd "$GITHUB_WORKSPACE"/tests/j2011_steady_hydro_minimal
-        # mpirun -np 4 ../../bin/rayleigh.dbg
-
-        # J2011 steady mhd test
-        # cd "$GITHUB_WORKSPACE"/tests/j2011_steady_mhd_minimal
-        # mpirun -np 4 ../../bin/rayleigh.dbg
-
-        # Generic input test
+        
+    - name: Anelastic Test (C2001 case 0; Chebyshev)
+      run: |            
+        #J2011 steady hydro test
+        cd "$GITHUB_WORKSPACE"/tests/j2011_steady_hydro_minimal
+        mpirun -np 4 ../../bin/rayleigh.dbg
+        
+    - name: Generic Input Test
+      run: |           
+        #Generic input test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/generic_input/run_test.sh
 
+    - name: Scalar Field Test
+      run: |       
         # chi scalar test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/chi_scalar/run_test.sh
+
+    - name: Custom Reference State Test
+      run: |       
         
         # custom reference state test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/custom_reference/run_test.sh
+
+    - name: Coupled Boundary-Condition Test
+      run: |       
 
         # coupled bc test
         cd "$GITHUB_WORKSPACE"

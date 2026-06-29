@@ -1,6 +1,6 @@
 &problemsize_namelist
- n_r = 128
- n_theta = 192
+ n_r = 64
+ n_theta = 96
  nprow = 2
  npcol = 2
 /
