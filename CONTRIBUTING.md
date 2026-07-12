@@ -4,7 +4,7 @@ members — i.e., including you! It is our goal to build an inclusive
 and participatory community so we are happy that you are interested in
 participating! 
 
-This first trail
+This first trail and second
 
 ## Getting started with git and GitHub
 GitHub provides a helpful
