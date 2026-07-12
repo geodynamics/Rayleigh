@@ -2,9 +2,7 @@
 Rayleigh is a community project that lives by the participation of its
 members — i.e., including you! It is our goal to build an inclusive
 and participatory community so we are happy that you are interested in
-participating! 
-
-## Abdullah
+participating!
 
 ## Getting started with git and GitHub
 GitHub provides a helpful
