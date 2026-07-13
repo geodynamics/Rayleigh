@@ -163,8 +163,7 @@ Contains
         ! Next, convert the AB terms into chebyshev space and copy them into the buffer
         Call abterms_cheby%construct('p1a')
         abterms_cheby%config='p1a'
-        !chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
-        ! TRANSFORM ABTERMS CHEBY
+        !chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields) ! earlier version -- physical space storage
         Call gridcp%to_spectral(abterms,abterms_cheby%p1a)
         chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms_cheby%p1a(:,:,:,1:numfields)
         Call abterms_cheby%deconstruct('p1a')
@@ -577,6 +576,14 @@ Contains
 
         Call chktmp%reform()    ! move to p1b
 
+        If (version .ge. 2) Then
+            ! For version 2+, the AB terms are stored in Chebyshev space
+            Call abterms_cheby%construct('p1b')
+            abterms_cheby%config='p1b'
+            abterms_cheby%p1b(:,:,:,1:numfields)=chktmp%p1b(:,:,:,numfields+1:numfields*2)
+        Endif
+
+
         If (.not. legacy_format) Then
             ! Load the boundary values array
 
@@ -627,44 +634,55 @@ Contains
                     Call stdout%print(' ')
                 Endif
 
-                If (n_r_old .lt. n_r) Then
+        
 
-                    ! The fields are OK - they are already in chebyshev space
-                    fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+                If ((n_r_old .lt. n_r) .and. (version .lt. 2) ) Then
 
-                    ! The AB terms are stored in physical space (in radius).
-                    ! They need to be transformed, coefficients copied, and transformed back..
-                    ! First, we need to initialize the old chebyshev grid.
+                    ! Prior to version 2, the AB terms were stored in radial-physical space rather
+                    ! than in radial-Chebyshev space.
+                    ! Before proceeding, we need to convert to Chebyshev space.
+                    ! During the read-in process above, old fields were stored in
+                    ! indices 1:n_r_old of first dimension of chktmp%p1b.
+
+
+                    ! (1) Initialize the old Chebyshev grid.
                     Allocate(radius_old(1:n_r_old))
-                    Call cheby_info%Init(radius_old,rmin,rmax)  ! We assume that rmax and rmin do not change
+                    Call cheby_info%Init(radius_old,rmin,rmax)  ! rmax and rmin cannot change
+  
+                    ! (2) Create some buffer space to store the old radial profiles and 
+                    !     the new Chebyshev coefficients.
                     fcount(:,:) = numfields
                     Call chktmp2%init(field_count = fcount, config = 'p1a')
                     Call chktmp2%construct('p1a')
                     chktmp2%p1a(:,:,:,:) = 0.0d0
-                    ! Allocate tempfield1, tempfield2
                     lb = lbound(chktmp%p1b,3)
                     ub = ubound(chktmp%p1b,3)
                     Allocate(tempfield1(1:n_r_old,1:2,lb:ub,1))
                     Allocate(tempfield2(1:n_r_old,1:2,lb:ub,1))
 
+                    ! (3) Convert to the new Chebyshev grid
                     Do i = 1, numfields
                         tempfield1(:,:,:,:) = 0.0d0
                         tempfield2(:,:,:,:) = 0.0d0
+                        ! Subsample smaller-grid fields from larger-grid buffer
                         tempfield1(1:n_r_old,:,:,1) = chktmp%p1b(1:n_r_old,:,:,numfields+i)
-                        call cheby_info%tospec4d(tempfield1,tempfield2)
+                        ! Transform
+                        Call cheby_info%tospec4d(tempfield1,tempfield2)
+
+                        ! Grab Chebyshev coefficients up to old n_max
                         chktmp2%p1a(1:n_r_old,:,:,i) = tempfield2(1:n_r_old,:,:,1)
                     Enddo
                     DeAllocate(tempfield1,tempfield2)
 
 
-                    Call chktmp2%construct('p1b')
+                    !Call chktmp2%construct('p1b')
                     !Normal transform(p1a,p1b)
-                    Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
+                    !Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
 
-                    abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
+                    !abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
                     Call cheby_info%destroy()
-                    Call chktmp2%deconstruct('p1a')
-                    Call chktmp2%deconstruct('p1b')
+                    !Call chktmp2%deconstruct('p1a')
+                    !Call chktmp2%deconstruct('p1b')
                     Deallocate(radius_old)
                 Else ! Rayleigh doesn't currently support degrading radial resolution--exit now
                     If (my_rank .eq. 0) Then
@@ -676,13 +694,19 @@ Contains
                     Stop
                 Endif
 
-            Else
-
-                ! Interpolation is complete, now we just copy into the other arrays
-                fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
-                abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
-
             Endif
+
+            ! Interpolation is complete, now we just copy into the other arrays
+            fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+            If (version .ge. 2) Then
+                Call gridcp%From_Spectral(abterms_cheby%p1b,abterms)
+                Call abterms_cheby%deconstruct('p1b')
+            Else
+                Call gridcp%From_Spectral(chktmp2%p1a,abterms)
+                Call chktmp2%deconstruct('p1a')
+                !abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
+            Endif
+            
             Call chktmp%deconstruct('p1b')
             DeAllocate(old_radius)
 
