@@ -36,10 +36,10 @@ Module Checkpointing
     ! Simple Checkpointing Module
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
     Implicit None
-    Type(SphericalBuffer) :: chktmp, chktmp2, bctmp
+    Type(SphericalBuffer) :: chktmp, chktmp2, bctmp,abterms_cheby
     Integer, private :: numfields
     Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
-    Integer, private :: checkpoint_version = 2
+    Integer, private :: checkpoint_version = 3
     Integer,private :: checkpoint_tag = 425
     Character*120 :: checkpoint_prefix ='nothing'
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
@@ -138,6 +138,10 @@ Contains
         Call checkpoint_buffer%Init(gpars, mpi_tag=checkpoint_tag, &
                 spectral=.true., cache_spectral = .true., spec_comp = .true.)
         DeAllocate(gpars)
+
+        ! Buffer to hold Adams-Bashforth terms in Chebyshev format
+        nfs(:) = numfields
+        Call abterms_cheby%init(field_count = nfs, config = 'p1a')
     End Subroutine Initialize_Checkpointing
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time, input_file)
@@ -152,10 +156,20 @@ Contains
         endian_tag=314
         Call chktmp%construct('p1a')
         chktmp%config = 'p1a'
-        !Copy the RHS into chtkmp
-        Call Get_All_RHS(chktmp%p1a)
-        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
-        !Now we want to move from p1a to s2a (rlm space)
+
+        !Copy the RHS (contains state variables at current timestep) into chtkmp
+        Call Get_All_RHS(chktmp%p1a) 
+
+        ! Next, convert the AB terms into chebyshev space and copy them into the buffer
+        Call abterms_cheby%construct('p1a')
+        abterms_cheby%config='p1a'
+        !chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
+        ! TRANSFORM ABTERMS CHEBY
+        Call gridcp%to_spectral(abterms,abterms_cheby%p1a)
+        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms_cheby%p1a(:,:,:,1:numfields)
+        Call abterms_cheby%deconstruct('p1a')
+
+        !Move checkpoint buffer from p1a to s2a (rlm space)
         Call chktmp%reform()
 
         If (ItIsTimeForAQuickSave) Then
