@@ -288,7 +288,7 @@ be renamed.
 Alternative: Configure using CMake
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`CMake <https://cmake.org>`_ can be used as an alternative to the configure script. It is especially useful when running on a new platform not yet supported by configure or when you are generally more comfortable with CMake from other projects.
+`CMake <https://cmake.org>`_ can be used as an alternative to the configure script. It is especially useful when running on a new platform not yet supported by configure or when you are generally more comfortable with CMake from other projects. It is recommended to load MKL library beforehand, and CMake can find it automatically. When using custom BLAS, LAPACK, and FFTW instead of MKL, loding them before running CMake command is recommended, as they will be automatically detected as well.
 
 .. code-block:: bash
 
