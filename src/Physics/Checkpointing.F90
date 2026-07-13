@@ -188,7 +188,6 @@ Contains
             checkfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//trim(checkpoint_suffix(i))
             Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
             Call checkpoint_buffer%write_data(filename=checkfile, clear_existing = .true.)
-
         Enddo
 
         Call chktmp%deconstruct('s2a')
@@ -638,8 +637,8 @@ Contains
 
                 If ((n_r_old .lt. n_r) .and. (version .lt. 2) ) Then
 
-                    ! Prior to version 2, the AB terms were stored in radial-physical space rather
-                    ! than in radial-Chebyshev space.
+                    ! Prior to version 2, the AB terms were stored in radial-physical 
+                    ! space rather than in radial-Chebyshev space.
                     ! Before proceeding, we need to convert to Chebyshev space.
                     ! During the read-in process above, old fields were stored in
                     ! indices 1:n_r_old of first dimension of chktmp%p1b.
