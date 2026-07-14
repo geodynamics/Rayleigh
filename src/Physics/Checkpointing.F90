@@ -276,7 +276,7 @@ Contains
         Logical :: legacy_format, fexist
         Integer :: ncheby_old(1:nsubmax)
         Integer :: idom, n_r_loc, n_r_old_loc, irmin, irmax, irmin_old, irmax_old
-        Logical :: first_time_interpolating = .True., interpolate=.False.
+        Logical :: first_time_interpolating = .True.
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
