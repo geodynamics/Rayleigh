@@ -677,10 +677,18 @@ Contains
                     Call chktmp2%deconstruct('p1a')
                 Else
                     If (my_rank .eq. 0) Then
-                        Call stdout%print('****************** ERROR ******************')
-                        Call stdout%print('ERROR: Rayleigh does not support degrading radial resolution')
-                        Call stdout%print('for checkpoints generated using version 1.3.0 or earlier.')
-
+                        Call stdout%print(' ')
+                        Call stdout%print('********************************  ERROR   *********************************')
+                        Call stdout%print('------  Rayleigh does not support degrading radial resolution')
+                        Call stdout%print('------  for checkpoints generated using version 1.3.0 or earlier.')
+                        Call stdout%print(' ')
+                        Call stdout%print('------  In order to degrade the radial resolution of this model:')
+                        Call stdout%print('------  (1) Restart from the current checkpoint using this version of')
+                        Call stdout%print('------      Rayleigh and maintain the current radial resolution.')
+                        Call stdout%print('------  (2) Generate a new checkpoint at the current resolution.')
+                        Call stdout%print('------      This checkpoint will be saved using the updated format.')
+                        Call stdout%print('------  (3) Restart using the new checkpoint and desired radial resolution.')
+                        Call stdout%print(' ')
                         Call stdout%partial_flush()
                     Endif
                     Call pfi%exit()
