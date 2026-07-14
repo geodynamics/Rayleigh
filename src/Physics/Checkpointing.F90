@@ -613,7 +613,6 @@ Contains
             abterms_cheby%p1b = 0d0
             ub = Min(n_r,n_r_old)
             abterms_cheby%p1b(1:ub,:,:,1:numfields)=chktmp%p1b(1:ub,:,:,numfields+1:numfields*2)
-            Write(6,*)'In first 3-branch'
         Endif
 
 
@@ -636,9 +635,11 @@ Contains
                 ! For checkpoint versions 1 and 2, AB terms were stored in physical space.
                 ! If the grid resolution changed, we need to perform a Chebyshev interpolation.
                 ! If not, we can load directly from the checkpoint buffer.
+                ! Due to the storage convention for versions 1 and 2, interpolation
+                ! can only be carried out if n_r_old < n_r.
                 If (n_r_old .eq. n_r) Then
                     abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
-                Else
+                Else If (n_r_old .lt. n_r) Then
                     Write(6,*)'Inside  interpolation branch'
                     ! (1) Initialize the old Chebyshev grid.
                     Allocate(radius_old(1:n_r_old))
@@ -674,7 +675,16 @@ Contains
                     Call cheby_info%destroy()
                     Deallocate(radius_old)
                     Call chktmp2%deconstruct('p1a')
+                Else
+                    If (my_rank .eq. 0) Then
+                        Call stdout%print('****************** ERROR ******************')
+                        Call stdout%print('ERROR: Rayleigh does not support degrading radial resolution')
+                        Call stdout%print('for checkpoints generated using version 1.3.0 or earlier.')
 
+                        Call stdout%partial_flush()
+                    Endif
+                    Call pfi%exit()
+                    Stop
                 Endif  ! (n_r_old .eq. n_r)
 
             Endif  ! (version .ge. 3)
@@ -697,6 +707,14 @@ Contains
                 Write(szstr,'(i13)')n_r
                 Call stdout%print('------ Current N_R:       '//TRIM(szstr))
                 Call stdout%print(' ')
+                If (n_r_old .gt. n_r) Then
+                Call stdout%print('------ ******************* WARNING *****************************')
+                Call stdout%print('------ Boundary conditions are not formally satisfied by the')
+                Call stdout%print('------ checkpoint save state when N_R is decreased upon restart.')
+                Call stdout%print('------ Drastically degrading the radial resolution may lead')
+                Call stdout%print('------ to unexpected results.')
+                Call stdout%print(' ')
+                Endif
             Endif
 
         Else ! ndomains > 1: we need to loop over domains and (maybe) interpolate
