@@ -256,7 +256,7 @@ Contains
 
                 Call Velocity_Advection()
                 !Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
-                !Call Velocity_Diffusion()
+                Call Velocity_Diffusion()
                 !Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
                 Call Pressure_Force()
                 !Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
@@ -925,7 +925,7 @@ Contains
             RHSP(IDX,vtheta) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvtdr) &
                 - One_Over_R(r)*FIELDSP(IDX,vtheta) * ( FIELDSP(IDX,dvtdt) + FIELDSP(IDX,vr) ) &
                 - One_Over_R(r)*FIELDSP(IDX,vphi) & 
-                * ( csctheta(t)*FIELDSP(IDX,dvpdp) - FIELDSP(IDX,vphi)*cottheta(t) ) ! - ...
+                * ( csctheta(t)*FIELDSP(IDX,dvtdp) - FIELDSP(IDX,vphi)*cottheta(t) ) ! - ...
         END_DO
         !$OMP END PARALLEL DO
 
@@ -1133,7 +1133,7 @@ Contains
         ! II.  theta-component of grad(mu)
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
-            work(IDX) = Two*(gnu(IDX,3) + gnu(IDX,1)*FIELDSP(IDX,drhodt))
+            work(IDX) = Two*One_Over_R(r)*(gnu(IDX,3) + gnu(IDX,1)*FIELDSP(IDX,drhodt))
         END_DO
         !$OMP END PARALLEL DO
 
@@ -1162,7 +1162,7 @@ Contains
         ! III.  phi-component of grad(mu)
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
-            work(IDX) = Two*(gnu(IDX,4) + gnu(IDX,1)*FIELDSP(IDX,drhodp))
+            work(IDX) = Two*One_Over_R(r)*csctheta(t)*(gnu(IDX,4) + gnu(IDX,1)*FIELDSP(IDX,drhodp))
         END_DO
         !$OMP END PARALLEL DO
 
