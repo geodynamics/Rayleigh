@@ -23,6 +23,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Containers for the TACC systems are no longer supported. \[Philipp Edelmann; 7-12-2026; [#608](https://github.com/geodynamics/Rayleigh/pull/608)\]
 
+- Modified the routine Shell_Spectra in rayleigh_diagnostics.py to allow the user to specify that only portions of the file be read and returned.  The user can now specify which iterations, quantities, radii, harmonic degrees, and azimuthal orders are desired.  \[Brad Hindman; 7-15-2026; [#618](https://github.com/geodynamics/Rayleigh/pull/618)\]
+
 ### Fixed
 
 - Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 7-13-2026; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]

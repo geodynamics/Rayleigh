@@ -2346,6 +2346,7 @@ class SPH_Modes:
         self.lut = get_lut(self.qv)
         fd.close()
 
+
 class Shell_Spectra:
     """Rayleigh Shell Spectrum Structure
     ----------------------------------
@@ -2361,10 +2362,11 @@ class Shell_Spectra:
     self.rad_inds[0:nr-1]                         : radial indices of the shell slices output (from the full simulation radial grid) 
                                                   : corresponding to each point in self.radius
     self.inds                                     : same as self.rad_inds (for backwards compatibility)
-    self.vals[0:lmax,0:mmax,0:nr-1,0:nq-1,0:niter-1] 
-                                                  : The complex spectra of the shells output 
-    self.lpower[0:lmax,0:nr-1,0:nq-1,0:niter-1,3]    : The power as a function of ell, integrated over m
-                                                     :  index indicates (0:total,1:m=0, 2:total-m=0 power)
+    self.ell                                      : harmonic degrees for the output
+    self.m                                        : azimuthal orders for the output
+    self.vals[0:nell-1,0:nm-1,0:nr-1,0:nq-1,0:niter-1] : The complex spectra of the shells output 
+    self.lpower[0:nell-1,0:nr-1,0:nq-1,0:niter-1,3]    : The power as a function of ell, integrated over m
+                                                       :  index indicates (0:total,1:m=0, 2:total-m=0 power)
     self.iters[0:niter-1]                         : The time step numbers stored in this output file
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
@@ -2390,6 +2392,10 @@ class Shell_Spectra:
         print( '.......................')
         print( 'rad_inds : ', self.rad_inds)
         print( '.......................')
+        print( 'm        : ', self.m)
+        print( '.......................')
+        print( 'ell      : ', self.ell)
+        print( '.......................')
         print( 'iters    : ', self.iters)
         print( '.......................')
         print( 'time     : ', self.time)
@@ -2397,16 +2403,29 @@ class Shell_Spectra:
         print( 'qv       : ', self.qv)
 
 
-    def __init__(self,filename='none',path='Shell_Spectra/'):
+    def __init__(self, filename='none', path='Shell_Spectra/', lset=None, mset=None, irset=None, qvset=None, iterset=None):
         """
            filename  : The reference state file to read.
            path      : The directory where the file is located (if full path not in filename)
+           iterset   : list of timestep indices to read, values running from 0 to niter-1
+           qvset     : list of quantity codes to read
+           irset     : list of radial indices, values running from 0 to nr-1
+           lset      : list of harmonic degrees, values running from 0 to lmax
+           mset      : list of azimuthal orders, values running from 0 to lmax
+
+           --- The lists of requested values (not necessarily python lists) will be sorted,
+               redundant values removed, and converted into numpy arrays.
+           --- If the user asks for data that doesn't exist, they will be warned and the nonexistent
+               request removed from the lists.
+           --- If all of the requested values for a particular keyword are unavailable, an error
+               is thrown and no data is returned.
         """
         if (filename == 'none'):
             the_file = path+'00000001'
         else:
             the_file = path+filename
         fd = open(the_file,'rb')
+        
         # We read an integer to assess which endian the file was written in...
         bs = check_endian(fd,314,'int32')
         version = swapread(fd,dtype='int32',count=1,swap=bs)
@@ -2418,61 +2437,317 @@ class Shell_Spectra:
         nr = swapread(fd,dtype='int32',count=1,swap=bs)
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
-        self.niter = nrec
-        self.nq = nq
-        self.nr = nr
-        self.nell = nell
-        self.nm   = nm
         self.lmax = lmax
         self.mmax = mmax
-
-        self.qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
-        self.radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
-        self.rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
-        self.vals  = np.zeros((nell,nm,nr,nq,nrec),dtype='complex128')
-        
-        self.iters = np.zeros(nrec,dtype='int32')
-        self.time  = np.zeros(nrec,dtype='float64')
         self.version = version
 
+        qv = np.reshape(swapread(fd,dtype='int32',count=nq,swap=bs),(nq), order = 'F')
+        radius = np.reshape(swapread(fd,dtype='float64',count=nr,swap=bs),(nr), order = 'F')
+        rad_inds = np.reshape(swapread(fd,dtype='int32',count=nr,swap=bs),(nr), order = 'F')
+
+
+        # Default data set
+        if iterset is None: # read all records
+            iterset = np.arange(nrec)
+            
+        if irset is None: # read all levels
+            irset = np.arange(nr)
+
+        if qvset is None: # read all quantities
+            qvset = qv
+
+        if lset is None: # read all harmonic degrees
+            lset = np.arange(lmax+1)
+
+        if mset is None: # read all azimuthal orders
+            mset = np.arange(mmax+1)
+              
+        # make everything an integer array, and make sure they're sorted, and uniquified
+        qvset = np.unique([np.int32(qvset)]) if np.isscalar(qvset) else np.unique(np.int32(qvset))
+        iterset = np.unique([np.int32(iterset)]) if np.isscalar(iterset) else np.unique(np.int32(iterset))
+        irset = np.unique([np.int32(irset)]) if np.isscalar(irset) else np.unique(np.int32(irset))
+        lset = np.unique([np.int32(lset)]) if np.isscalar(lset) else np.unique(np.int32(lset))
+        mset = np.unique([np.int32(mset)]) if np.isscalar(mset) else np.unique(np.int32(mset))
+
+
+        # remove requested items that don't exist in the file
+        error = False                 # Unrecoverable errors?
+        match = np.isin(qvset, qv)
+        nmatch = len(qvset[match])
+        if (nmatch == 0):
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" ERROR: Quantity codes not found")
+            print(" Specified quantity codes: ", qvset)
+            print(" Available quantity codes: ", qv)
+            print("---------------------------------------------------------")
+            print(" ")
+            error = True       # No data can be read!
+            qvset = np.array([])
+        elif (nmatch < len(qvset)):
+            nomatch = np.setdiff1d(qvset, qv)
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" WARNING: One or more quantity codes not found")
+            print(" Invalid quantity codes requested: ", nomatch)
+            print(" Valid quantity codes requested: ", qvset[match])
+            print(" Available quantity codes: ", qv)
+            print(" ")
+            print(" Returning only the quantity codes that were found")
+            print("---------------------------------------------------------")
+            print(" ")
+            qvset = qvset[match]
+
+        match = np.isin(iterset, np.arange(nrec))
+        nmatch = len(iterset[match])
+        if (nmatch == 0):
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" ERROR: Requested iterations not found")
+            print(" Specified iterations: ", iterset)
+            print(" Available iterations: ", np.arange(nrec))
+            print("---------------------------------------------------------")
+            print(" ")
+            error = True
+            iterset = np.array([])
+        elif (nmatch < len(iterset)):
+            nomatch = np.setdiff1d(iterset, np.arange(nrec))
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" WARNING: One or more iterations not found")
+            print(" Invalid iterations requested: ", nomatch)
+            print(" Valid iterations requested: ", iterset[match])
+            print(" Available quantity codes: ", np.arange(nrec))
+            print(" ")
+            print(" Returning only the iterations that were found")
+            print("---------------------------------------------------------")
+            print(" ")
+            iterset = iterset[match]
+
+        match = np.isin(irset, np.arange(nr))
+        nmatch = len(irset[match])
+        if (nmatch == 0):
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" ERROR: Requested radii not found")
+            print(" Specified radial indices: ", irset)
+            print(" Available radial indices: ", np.arange(nr))
+            print("---------------------------------------------------------")
+            print(" ")
+            error = True
+            irset = np.array([])
+        elif (nmatch < len(irset)):
+            nomatch = np.setdiff1d(irset, np.arange(nr))
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" WARNING: One or more radii not found")
+            print(" Invalid radial indices requested: ", nomatch)
+            print(" Valid radial indices requested: ", irset[match])
+            print(" Available radial indices: ", np.arange(nr))
+            print(" ")
+            print(" Returning only the radii that were found")
+            print("---------------------------------------------------------")
+            print(" ")
+            irset = irset[match]
+
+        match = np.isin(lset, np.arange(nell))
+        nmatch = len(lset[match])
+        if (nmatch == 0):
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" ERROR: Requested harmonic degrees not found")
+            print(" Specified degrees: ", lset)
+            print(" Available degrees: ", np.arange(nell))
+            print("---------------------------------------------------------")
+            print(" ")
+            error = True
+            lset = np.array([])
+        elif (nmatch < len(lset)):
+            nomatch = np.setdiff1d(lset, np.arange(nell))
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" WARNING: One or more harmonic degrees not found")
+            print(" Invalid degrees requested: ", nomatch)
+            print(" Valid degrees requested: ", lset[match])
+            print(" Available degrees: ", np.arange(nell))
+            print(" ")
+            print(" Returning only the degrees that were found")
+            print("---------------------------------------------------------")
+            print(" ")
+            lset = lset[match]
+
+        match = np.isin(mset, np.arange(nm))
+        nmatch = len(mset[match])
+        if (nmatch == 0):
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" ERROR: Requested azimuthal orders not found")
+            print(" Specified orders: ", mset)
+            print(" Available orders: ", np.arange(nm))
+            print("---------------------------------------------------------")
+            print(" ")
+            error = True
+            mset = np.array([])
+        elif (nmatch < len(mset)):
+            nomatch = np.setdiff1d(mset, np.arange(nm))
+            print(" ")
+            print("---------------------------------------------------------")
+            print(" WARNING: One or more azimuthal orders not found")
+            print(" Invalid orders requested: ", nomatch)
+            print(" Valid orders requested: ", mset[match])
+            print(" Available orders: ", np.arange(nm))
+            print(" ")
+            print(" Returning only the orders that were found")
+            print("---------------------------------------------------------")
+            print(" ")
+            mset = mset[match]  
+
+        # now assign metadata depending on what we will read
+        niter = len(iterset)
+        self.niter = niter
+        self.nq = len(qvset)
+        self.nr = len(irset)
+        self.nell = len(lset)
+        self.nm = len(mset)
+        self.qv = qvset
+        self.m = mset
+        self.ell = lset
+        self.radius = radius[irset]      
+        self.lut = get_lut(qvset)
+
         # convert from Fortran 1-based to Python 0-based indexing
-        self.rad_inds = self.rad_inds - 1
-        self.inds = self.rad_inds
+        rad_inds = rad_inds[irset]
+        self.rad_inds = rad_inds - 1
+        self.inds = rad_inds
+        
+        if (error):
+            print(" Returning zero shell spectra data.")
+            self.vals = np.array([])
+            self.iters = np.array([])
+            self.time = np.array([])
+            self.lpower = np.array([])
+            fd.close()
+            return
 
-        for i in range(nrec):
+        # Check: are entire records being read
+        qv = np.unique(qv)
+        nq = len(qv)
+        alldata = True        # Entire records are being read
+        common = np.intersect1d(qv, qvset)
+        if (len(common) != nq):
+            alldata = False   # Partial records are being read
+        common = np.intersect1d(np.arange(nr), irset)
+        if (len(common) != nr):
+            alldata = False   # Partial records are being read  
+            
+        # now read only the records/slices we want
+        self.iters = np.zeros(niter,dtype='int32')
+        self.time  = np.zeros(niter,dtype='float64')
+        self.vals  = np.zeros((len(lset), self.nm, self.nr, self.nq, niter), dtype='complex128')
 
-            tmp = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
-            self.vals[:,:,:,:,i].real = tmp
+        
+        # loop over each record (iteration), then 
+        #      within each record loop over each quantity and radius for the real part
+        #      continuing within that recod loop over each quantity and radius for the imaginary part
+        # For each data block, check whether the desired data includes the current record, quantity, and radius.
+        #      If it does, read ALL of the ells and ms. Save those ells and ms that are desired and move on.
+        #      If it does not, skip over that particular slice (size nell * nm * 8 bytes)
+        # Once all "slices" within a record have been examined, decide if the time and iteration needs to be read
+        offset = np.int64(0)
+        for iter in range(nrec):
+            if (alldata and (iter in iterset)):     # Read the entire record
+                it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
+                realvals = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
+                if (len(lset) < nell):              # Throw away the data that wasn't requested   
+                    realvals = realvals[lset,:,:,:]
+                if (len(mset) < nm):                # Throw away the data that wasn't requested
+                    realvals = realvals[:,mset]
+                self.vals[:,:,:,:,it].real = realvals
 
-            tmp2 = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
-            self.vals[:,:,:,:,i].imag = tmp2
+                imagvals = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
+                if (len(lset) < nell):              # Throw away the data that wasn't requested   
+                    imagvals = imagvals[lset,:,:,:]
+                if (len(mset) < nm):                # Throw away the data that wasn't requested
+                    imagvals = imagvals[:,mset,:,:]
+                self.vals[:,:,:,:,it].imag = imagvals
 
-            self.time[i] = swapread(fd,dtype='float64',count=1,swap=bs)
-            self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
+                self.time[it] = swapread(fd,dtype='float64',count=1,swap=bs)
+                self.iters[it] = swapread(fd,dtype='int32',count=1,swap=bs)
+            else:       # Read only a piece of the record
+            
+                # Read the real parts
+                for qval in qv:
+                    for ir in range(nr):
+                        readit = (iter in iterset) and (qval in qvset) and (ir in irset)
+                        if readit:
+                            fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
+                            realvals = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs),(nell,nm), order = 'F')
+                            if (len(lset) < nell):              # Throw away the data that wasn't requested
+                                realvals = realvals[lset,:]     
+                            if (len(mset) < nm):                # Throw away the data that wasn't requested
+                                realvals = realvals[:,mset]
+                        
+                            ir_new = np.where(irset == ir)[0][0]  # figure out the radial position in the output array
+                            iqv = np.where(qvset == qval)[0][0]   # figure out the quantity position in the output array
+                            it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
+                            self.vals[:,:,ir_new,iqv,it].real = realvals
 
-        if (self.version != 4):
+                            offset = np.int64(0) # always reset offset after reading
+                        else: # don't read this part of file; increase offset
+                            offset += 8*nell*nm   # 8 bytes per number for the real part
+
+                # Read the imaginary parts
+                for qval in qv:
+                    for ir in range(nr):
+                        readit = (iter in iterset) and (qval in qvset) and (ir in irset)
+                        if readit:
+                            fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
+                            imagvals = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs),(nell,nm), order = 'F')
+                            if (len(lset) < nell):              # Throw away the data that wasn't requested   
+                                imagvals = imagvals[lset,:]
+                            if (len(mset) < nm):                # Throw away the data that wasn't requested
+                                imagvals = imagvals[:,mset]
+                        
+                            ir_new = np.where(irset == ir)[0][0]  # figure out the radial position in the output array
+                            iqv = np.where(qvset == qval)[0][0]   # figure out the quantity position in the output array
+                            it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
+                            self.vals[:,:,ir_new,iqv,it].imag = imagvals
+
+                            offset = np.int64(0) # always reset offset after reading
+                        else: # don't read this part of file; increase offset
+                            offset += 8*nm*nell   # 8 bytes per number for the imaginary part
+                if (iter in iterset):
+                    fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
+                    self.time[it] = swapread(fd,dtype='float64',count=1,swap=bs)   # Read the time at the end of of the record
+                    self.iters[it] = swapread(fd,dtype='int32',count=1,swap=bs)
+                    offset = np.int64(0)
+                else:
+                    offset += 12     # 8-bytes for the time and 4-bytes for the iteration number
+
+        fd.close()
+                
+        if (self.version != 4) and (np.max(mset) > 0):
             # The m>0 --power-- is too high by a factor of 2
             # We divide the --complex amplitude-- by sqrt(2)
-            self.vals[:,1:,:,:,:] /= np.sqrt(2.0)
+            if (0 in mset):
+                self.vals[:,1:,:,:,:] /= np.sqrt(2.0)
+            else:
+                self.vals[:,:,:,:,:] /= np.sqrt(2.0)
 
-        self.lut = get_lut(self.qv)
-        fd.close()
 
-        self.lpower  = np.zeros((nell,nr,nq,nrec,3),dtype='float64')
+        self.lpower  = np.zeros((self.nell, self.nr, self.nq, niter, 3),dtype='float64')
         #!Finally, we create the power
-        for k in range(nrec):
-            for q in range(nq):
-                for j in range(nr):
-                    # Load the m=0 power
-                    self.lpower[:,j,q,k,1] = self.lpower[:,j,q,k,1]+np.real(self.vals[:,0,j,q,k])**2 +np.imag(self.vals[:,0,j,q,k])**2
-
-                    # m !=0 (convective) power
-
-                    for m in range(1,nm):
-                        self.lpower[:,j,q,k,2] = self.lpower[:,j,q,k,2]+np.real(self.vals[:,m,j,q,k])**2 +np.imag(self.vals[:,m,j,q,k])**2
+        for k in range(niter):
+            for q in range(self.nq):
+                for j in range(self.nr):                  
+                    if (0 in mset):        # Load the m=0 power
+                        self.lpower[:,j,q,k,1] = self.lpower[:,j,q,k,1]+np.real(self.vals[:,0,j,q,k])**2 +np.imag(self.vals[:,0,j,q,k])**2
+                    for im in range(0,len(mset)):           # total power         
+                        self.lpower[:,j,q,k,0] = self.lpower[:,j,q,k,0]+np.real(self.vals[:,im,j,q,k])**2 +np.imag(self.vals[:,im,j,q,k])**2
+                    self.lpower[:,j,q,k,2] = self.lpower[:,j,q,k,0] - self.lpower[:,j,q,k,1]            # m !=0 (convective) power
 
 
-                    self.lpower[:,j,q,k,0] = self.lpower[:,j,q,k,2]+self.lpower[:,j,q,k,1] # total power
+
 
 class Power_Spectrum():
     """Rayleigh Power Spectrum Structure
