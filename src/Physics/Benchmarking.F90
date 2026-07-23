@@ -583,10 +583,10 @@ Contains
                 Call stdout%print(" ")
                 Call stdout%print(" -- Benchmarking Mode is Activated.")
                 Call stdout%print(" -- Selected Benchmark :  "//trim(benchmark_name))
-                Call stdout%print(" ")
                 If (reference_type .eq. 4) Then
                     Call stdout%print(' -- Reference Type 4 set for Benchmark Mode.')
                 Endif
+                Call stdout%print(" ")                
             Endif
         Endif
         If (benchmark_integration_interval .gt. 0) Then
