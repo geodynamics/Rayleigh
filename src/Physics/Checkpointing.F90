@@ -141,6 +141,7 @@ Contains
 
         ! Buffer to hold Adams-Bashforth terms in Chebyshev format
         nfs(:) = numfields
+        if (magnetism) nfs(:) = numfields+1 ! magnetic mode has one extra field space used to combined derivatives
         Call abterms_cheby%init(field_count = nfs, config = 'p1a')
     End Subroutine Initialize_Checkpointing
 
