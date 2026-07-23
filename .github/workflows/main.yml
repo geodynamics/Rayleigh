@@ -58,7 +58,7 @@ jobs:
         #make -j
         #make install        
         cd ..
-        ln -s Rayleigh_1.3/rayleigh.dbg ./bin/rayleigh.v13
+        #ln -s Rayleigh_1.3/rayleigh.dbg ./bin/rayleigh.v13
     - name: Build Rayleigh
       # Now build the current Rayleigh
       run: |
