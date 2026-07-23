@@ -2461,7 +2461,7 @@ class Shell_Spectra:
 
         if mset is None: # read all azimuthal orders
             mset = np.arange(mmax+1)
-        
+              
         # make everything an integer array, and make sure they're sorted, and uniquified
         qvset = np.unique([np.int32(qvset)]) if np.isscalar(qvset) else np.unique(np.int32(qvset))
         iterset = np.unique([np.int32(iterset)]) if np.isscalar(iterset) else np.unique(np.int32(iterset))
@@ -2470,7 +2470,7 @@ class Shell_Spectra:
         mset = np.unique([np.int32(mset)]) if np.isscalar(mset) else np.unique(np.int32(mset))
 
 
-        # remove request items that don't exist in the file
+        # remove requested items that don't exist in the file
         error = False                 # Unrecoverable errors?
         match = np.isin(qvset, qv)
         nmatch = len(qvset[match])
@@ -2600,7 +2600,7 @@ class Shell_Spectra:
             print(" Returning only the orders that were found")
             print("---------------------------------------------------------")
             print(" ")
-            mset = mset[match]
+            mset = mset[match]  
 
         # now assign metadata depending on what we will read
         niter = len(iterset)
@@ -2628,7 +2628,18 @@ class Shell_Spectra:
             self.lpower = np.array([])
             fd.close()
             return
-        
+
+        # Check: are entire records being read
+        qv = np.unique(qv)
+        nq = len(qv)
+        alldata = True        # Entire records are being read
+        common = np.intersect1d(qv, qvset)
+        if (len(common) != nq):
+            alldata = False   # Partial records are being read
+        common = np.intersect1d(np.arange(nr), irset)
+        if (len(common) != nr):
+            alldata = False   # Partial records are being read  
+            
         # now read only the records/slices we want
         self.iters = np.zeros(niter,dtype='int32')
         self.time  = np.zeros(niter,dtype='float64')
@@ -2644,55 +2655,74 @@ class Shell_Spectra:
         # Once all "slices" within a record have been examined, decide if the time and iteration needs to be read
         offset = np.int64(0)
         for iter in range(nrec):
-            
-            # Read the real parts
-            for qval in qv:
-                for ir in range(nr):
-                    readit = (iter in iterset) and (qval in qvset) and (ir in irset)
-                    if readit:
-                        fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
-                        realvals = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs),(nell,nm), order = 'F')
-                        if (len(lset) < nell):              # Throw away the data that wasn't requested
-                            realvals = realvals[lset,:]     
-                        if (len(mset) < nm):                # Throw away the data that wasn't requested
-                            realvals = realvals[:,mset]
-                        
-                        ir_new = np.where(irset == ir)[0][0]  # figure out the radial position in the output array
-                        iqv = np.where(qvset == qval)[0][0]   # figure out the quantity position in the output array
-                        it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
-                        self.vals[:,:,ir_new,iqv,it].real = realvals
+            if (alldata and (iter in iterset)):     # Read the entire record
+                it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
+                realvals = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
+                if (len(lset) < nell):              # Throw away the data that wasn't requested   
+                    realvals = realvals[lset,:,:,:]
+                if (len(mset) < nm):                # Throw away the data that wasn't requested
+                    realvals = realvals[:,mset]
+                self.vals[:,:,:,:,it].real = realvals
 
-                        offset = np.int64(0) # always reset offset after reading
-                    else: # don't read this part of file; increase offset
-                        offset += 8*nell*nm   # 8 bytes per number for the real part
+                imagvals = np.reshape(swapread(fd,dtype='float64',count=nq*nr*nell*nm,swap=bs),(nm,nell,nr,nq), order = 'F')
+                if (len(lset) < nell):              # Throw away the data that wasn't requested   
+                    imagvals = imagvals[lset,:,:,:]
+                if (len(mset) < nm):                # Throw away the data that wasn't requested
+                    imagvals = imagvals[:,mset,:,:]
+                self.vals[:,:,:,:,it].imag = imagvals
 
-            # Read the imaginary parts
-            for qval in qv:
-                for ir in range(nr):
-                    readit = (iter in iterset) and (qval in qvset) and (ir in irset)
-                    if readit:
-                        fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
-                        imagvals = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs),(nell,nm), order = 'F')
-                        if (len(lset) < nell):              # Throw away the data that wasn't requested   
-                            imagvals = imagvals[lset,:]
-                        if (len(mset) < nm):                # Throw away the data that wasn't requested
-                            imagvals = imagvals[:,mset]
-                        
-                        ir_new = np.where(irset == ir)[0][0]  # figure out the radial position in the output array
-                        iqv = np.where(qvset == qval)[0][0]   # figure out the quantity position in the output array
-                        it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
-                        self.vals[:,:,ir_new,iqv,it].imag = imagvals
-
-                        offset = np.int64(0) # always reset offset after reading
-                    else: # don't read this part of file; increase offset
-                        offset += 8*nm*nell   # 8 bytes per number for the imaginary part
-            if (iter in iterset):
-                fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
-                self.time[it] = swapread(fd,dtype='float64',count=1,swap=bs)   # Read the time at the end of of the record
+                self.time[it] = swapread(fd,dtype='float64',count=1,swap=bs)
                 self.iters[it] = swapread(fd,dtype='int32',count=1,swap=bs)
-                offset = np.int64(0)
-            else:
-                offset += 12     # 8-bytes for the time and 4-bytes for the iteration number
+            else:       # Read only a piece of the record
+            
+                # Read the real parts
+                for qval in qv:
+                    for ir in range(nr):
+                        readit = (iter in iterset) and (qval in qvset) and (ir in irset)
+                        if readit:
+                            fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
+                            realvals = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs),(nell,nm), order = 'F')
+                            if (len(lset) < nell):              # Throw away the data that wasn't requested
+                                realvals = realvals[lset,:]     
+                            if (len(mset) < nm):                # Throw away the data that wasn't requested
+                                realvals = realvals[:,mset]
+                        
+                            ir_new = np.where(irset == ir)[0][0]  # figure out the radial position in the output array
+                            iqv = np.where(qvset == qval)[0][0]   # figure out the quantity position in the output array
+                            it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
+                            self.vals[:,:,ir_new,iqv,it].real = realvals
+
+                            offset = np.int64(0) # always reset offset after reading
+                        else: # don't read this part of file; increase offset
+                            offset += 8*nell*nm   # 8 bytes per number for the real part
+
+                # Read the imaginary parts
+                for qval in qv:
+                    for ir in range(nr):
+                        readit = (iter in iterset) and (qval in qvset) and (ir in irset)
+                        if readit:
+                            fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
+                            imagvals = np.reshape(swapread(fd,dtype='float64',count=nell*nm,swap=bs),(nell,nm), order = 'F')
+                            if (len(lset) < nell):              # Throw away the data that wasn't requested   
+                                imagvals = imagvals[lset,:]
+                            if (len(mset) < nm):                # Throw away the data that wasn't requested
+                                imagvals = imagvals[:,mset]
+                        
+                            ir_new = np.where(irset == ir)[0][0]  # figure out the radial position in the output array
+                            iqv = np.where(qvset == qval)[0][0]   # figure out the quantity position in the output array
+                            it = np.where(iterset == iter)[0][0]  # figure out the iteration position in the output array
+                            self.vals[:,:,ir_new,iqv,it].imag = imagvals
+
+                            offset = np.int64(0) # always reset offset after reading
+                        else: # don't read this part of file; increase offset
+                            offset += 8*nm*nell   # 8 bytes per number for the imaginary part
+                if (iter in iterset):
+                    fd.seek(offset,1)            # skip to the beginning of the required spatial spectra
+                    self.time[it] = swapread(fd,dtype='float64',count=1,swap=bs)   # Read the time at the end of of the record
+                    self.iters[it] = swapread(fd,dtype='int32',count=1,swap=bs)
+                    offset = np.int64(0)
+                else:
+                    offset += 12     # 8-bytes for the time and 4-bytes for the iteration number
 
         fd.close()
                 
