@@ -19,6 +19,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Implemented new diagnostic quantity codes for scalar fields.  Added buoyancy forces, buoyancy work, and buoyant KE production associated with the active chi fields.  These are documented in the "Under Development" section of the User Guide.  Additional placeholders have been included for future codes to be added. \[Cian Wilson; 7-13-2026; [#582](https://github.com/geodynamics/Rayleigh/pull/582)\]
 - Add support for building with NVHPC compilers as a preparation for using OpenMP on Nvidia systems. \[Philipp Edelmann; 7-17-2026; [#630](https://github.com/geodynamics/Rayleigh/pull/630)\]
 
+- Augmented spectral_utils_tutorial.ipynb to demonstrate how to use the new TemporalFFT class in rayleigh_diagnostics.py. \[Brad Hindman; 7-23-2026; [#636](https://github.com/geodynamics/Rayleigh/pull/636)\]
+
 ### Changed
 
 - Containers for the TACC systems are no longer supported. \[Philipp Edelmann; 7-12-2026; [#608](https://github.com/geodynamics/Rayleigh/pull/608)\]
