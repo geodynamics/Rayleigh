@@ -22,7 +22,7 @@ Module Sphere_Driver
     Use ClockInfo
     Use Sphere_Hybrid_Space,   Only : rlm_spacea, rlm_spaceb, hybrid_init
     Use Sphere_Physical_Space, Only : physical_space, ohmic_heating_coeff, physical_space_init
-    Use Sphere_Spectral_Space, Only : post_solve, advancetime, ctemp, post_solve_FD
+    Use Sphere_Spectral_Space, Only : post_solve_anelastic, advancetime, ctemp, post_solve_FD, post_solve_compressible
     Use Diagnostics_Interface, Only : Reboot_Diagnostics
     Use Spherical_IO, Only : time_to_output
     Use Checkpointing
@@ -160,8 +160,13 @@ Contains
             If (terminate_file_exists) global_msgs(5) = 1.0d0
 
             If (chebyshev) Then
-                Call Post_Solve() ! Linear Solve Configuration
-            Else
+               If (compressible) Then
+                  Call Post_Solve_Compressible() ! Linear Solve Configuration
+               Else
+                  Call Post_Solve_Anelastic() ! Linear Solve Configuration
+               Endif 
+               
+               Else
                 Call Post_Solve_FD()
             Endif
 

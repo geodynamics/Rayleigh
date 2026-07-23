@@ -79,20 +79,21 @@ pressure_specific_heat = 3.5d8
 angular_velocity = 0.d0
 
 !override_constants=T
-override_constant(5)= T
-ra_constants(5)= 8d12 ! nu_top
+!override_constant(5)= T
+!ra_constants(5)= 8d12 ! nu_top
 
-override_constant(6)= T
-ra_constants(6)= 8d12 ! kappa_top
+!override_constant(6)= T
+!ra_constants(6)= 8d12 ! kappa_top
 
-override_constant(1)= T
-ra_constants(1) = 0.d0  ! 2 x angular velocity
+!override_constant(1)= T
+!ra_constants(1) = 0.d0  ! 2 x angular velocity
 
 !override_constant(10)= T
 !ra_constants(10) = 3.846d33 ! luminosity
 
-
-
 /
 &Transport_Namelist
+kappa_type = 3 ! Type 3 ensures values from reference state are used
+nu_type = 3    ! Type 3 ensures values from reference state are used
+eta_type = 3   ! Type 3 ensures values from reference state are used
 /

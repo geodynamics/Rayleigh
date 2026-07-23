@@ -4,14 +4,20 @@ Interface to the Rayleigh grid and spectral transforms, including:
     + Fourier grid/transforms/derivatives
     + Legendre grid/transforms/derivatives
     + Chebyshev grid/transforms/derivatives
+    + Temporal transforms with windowing and grid interpolation (Added 07/2026)
 
 R. Orvedahl May 24, 2021
 """
 from __future__ import print_function
 import numpy as np
+from scipy.fft import fft, fftfreq, ifft
+from scipy.interpolate import make_interp_spline, interp1d
 from scipy.linalg.blas import dgemm as DGEMM
 from scipy.linalg.blas import zgemm as ZGEMM
+from scipy.signal import get_window
 import warnings
+
+
 
 def ddx_repeated_gridpoints(data, grid, indices, axis=0):
     """
@@ -2717,4 +2723,402 @@ class SHT:
             raise ValueError(e)
 
         return data_out
+        
+        
+
+
+class TemporalFFT:
+  """
+     Temporal Fourier transform wrapper class for computing FFTs and inverse FFTs
+     on temporal data.
+     
+     This class handles both uniform and nonuniform time/frequency grids, and provides
+     windowing capabilities for time-domain data (forward FFT) and frequency-domain 
+     filtering (inverse FFT).
+     
+     Usage:
+         Call one of the class methods to construct an instance:
+         
+         - uniform(...)          : For uniformly spaced time data
+         - nonuniform(...)       : For nonuniformly spaced time data (interpolates to uniform grid)
+         - uniform_inverse(...)  : For uniformly spaced frequency coefficients
+         - nonuniform_inverse(...): For nonuniformly spaced frequency coefficients (interpolates to uniform grid)
+         
+     Windowing behavior:
+         - Forward FFT (uniform/nonuniform): Window is applied to time-domain data before FFT
+           to reduce spectral leakage. Common windows: 'hann', 'hamming', 'blackman', etc.
+           
+         - Inverse FFT (uniform_inverse/nonuniform_inverse): Window is called filter and acts 
+           as a frequency-domain filter, multiplying the frequency coefficients before inverse FFT. 
+           This allows for frequency filtering (e.g., low-pass, high-pass, band-pass) of 
+           the resulting signal.
+
+        - Window usage: None or empty string for no window, string with name of scipy supported windows,
+          or an array which will serve as a custom window.
+
+     Rolling/Shifting:
+        By default, TemporalFFT shifts/rolls frequency coefficients (freq_shift = True by default),
+         such that the output tranform (and the associated frequency grid) has the zero frequency placed
+         in the middle of the array. Negative frequencies occupy the first half of the array and positive
+         frequencies the last half.  Similarly, the inverse transform assumes by default that the data also
+         comes in this form such that a deshift must be performed before the transform.  The shifting
+         algorithm is accomplished through numpy's fftshift.
+  
+     Martin Krivos & Brad Hindman 07/17/2026       
+  """
+
+  def __init__(self, data, dt, window="hann", axis=-1, freq_shift=True):
+    """
+       Initialize TemporalFFT instance.
+       
+       Input parameters:
+           data       : array_like
+                        Data array to transform.
+           dt         : float
+                        Time step (for FFT) or frequency step (for inverse FFT).
+           window     : str, array_like, or None, optional (default='hann')
+                        Window function name, custom window array, or None for no windowing.
+           axis       : int, optional (default=-1)
+                        Axis along which to perform the transform.
+           freq_shift : bool, optional (default=True)
+                        If True, shifts zero-frequency component to center of spectrum.
+    """
+    self.data = data
+    self.dt = dt
+    self.axis = axis
+    self.window = window
+    self.freq_shift = freq_shift
+
+    if dt <= 0:
+      raise ValueError(f"dt must be a positive number. dt = {dt}.")
+    
+    if not (-data.ndim <= axis < data.ndim):
+      raise ValueError(f"Accessing data time index {axis}, but ndim is {data.ndim}")
+
+  @classmethod
+  def uniform(cls, data, dt, window="hann", axis=-1, freq_shift=True):
+    """
+       Constructor for computing FFT on uniformly spaced temporal data.
+       
+       Input parameters:
+           data       : array_like
+                        Temporal data with uniform time spacing.
+           dt         : float
+                        Time step between consecutive data points.
+           window     : str, array_like, or None, optional (default='hann')
+                        Window function to apply before FFT. If string, uses scipy.signal.get_window.
+                        If array, must have length matching time axis. If None, no window is applied.
+           axis       : int, optional (default=-1)
+                        Axis along which to perform the FFT.
+           freq_shift : bool, optional (default=True)
+                        If True, shifts zero-frequency component to center of spectrum.
+                        
+       Returns:
+           obj : TemporalFFT instance
+                 Call obj.fft() to compute the FFT and obtain (coefficients, frequencies).
+                 
+       Calling syntax:
+           fft_obj = TemporalFFT.uniform(data, dt, window='hann')
+           coeffs, freqs = fft_obj.fft()
+    """
+    obj = cls(data, dt, window, axis, freq_shift)
+    obj.grid = None
+    return obj
+
+  @classmethod
+  def nonuniform(cls, data, times, dt, method="linear", window="hann", axis=-1, freq_shift=True):
+    """
+       Constructor for computing FFT on nonuniformly spaced temporal data.
+       
+       Data is first interpolated onto a uniform time grid before FFT is computed.
+       
+       Input parameters:
+           data       : array_like
+                        Temporal data with nonuniform time spacing.
+           times      : array_like
+                        Time values corresponding to data points.
+           dt         : float
+                        Desired uniform time step for interpolation.
+           method     : str, optional (default='linear')
+                        Interpolation method: 'linear', 'cubic', or 'nearest'.
+           window     : str, array_like, or None, optional (default='hann')
+                        Window function to apply before FFT.
+           axis       : int, optional (default=-1)
+                        Axis along which to perform the FFT.
+           freq_shift : bool, optional (default=True)
+                        If True, shifts zero-frequency component to center of spectrum.
+                        
+       Returns:
+           obj : TemporalFFT instance
+                 Call obj.fft() to compute the FFT. The uniform time grid is available
+                 as obj.grid.
+                 
+       Calling syntax:
+           fft_obj = TemporalFFT.nonuniform(data, times, dt, method='cubic')
+           coeffs, freqs = fft_obj.fft()
+           uniform_times = fft_obj.grid
+    """
+    data_inter, time_uniform = cls.temporal_interpolation(data, times, dt, method, axis)
+    obj = cls(data_inter, dt, window, axis, freq_shift)
+    obj.grid = time_uniform
+    return obj
+
+  @classmethod
+  def uniform_inverse(cls, coefficients, df, filter=None, axis=-1, freq_shift=True):
+    """
+       Constructor for computing inverse FFT on uniformly spaced frequency coefficients.
+       
+       Input parameters:
+           coefficients : array_like
+                          Frequency domain coefficients with uniform frequency spacing.
+           df           : float
+                          Frequency step between consecutive coefficients.
+           filter       : array_like or None, optional (default=None)
+                          Frequency-domain filter to apply to coefficients before inverse FFT.
+                          If array, must have length matching frequency axis.
+           axis         : int, optional (default=-1)
+                          Axis along which to perform the inverse FFT.
+           freq_shift   : bool, optional (default=True)
+                          If True, assumes zero-frequency component is at center of spectrum.
+                          
+       Returns:
+           obj : TemporalFFT instance
+                 Call obj.ifft() to compute the inverse FFT and obtain (signal, times).
+                 
+       Calling syntax:
+           ifft_obj = TemporalFFT.uniform_inverse(coeffs, df, filter=lowpass_filter)
+           signal, times = ifft_obj.ifft()
+    """
+    obj = cls(coefficients, df, filter, axis, freq_shift)
+    obj.grid = None
+    return obj
+
+  @classmethod
+  def nonuniform_inverse(cls, coefficients, freqs, df, n=None, method="linear", filter=None, axis=-1, freq_shift=True):
+    """
+       Constructor for computing inverse FFT on nonuniformly spaced frequency coefficients.
+       
+       Coefficients are first interpolated onto a uniform frequency grid before inverse FFT.
+       
+       Input parameters:
+           coefficients : array_like
+                          Frequency domain coefficients with nonuniform frequency spacing.
+           freqs        : array_like
+                          Frequency values corresponding to coefficient points.
+           df           : float
+                          Desired uniform frequency step for interpolation.
+           n            : int or None, optional (default=None)
+                          Target number of frequency samples after interpolation.
+                          If None, computed from freqs span and df.
+           method       : str, optional (default='linear')
+                          Interpolation method: 'linear', 'cubic', or 'nearest'.
+           filter       : array_like or None, optional (default=None)
+                          Frequency-domain filter to apply after interpolation.
+           axis         : int, optional (default=-1)
+                          Axis along which to perform the inverse FFT.
+           freq_shift   : bool, optional (default=True)
+                          If True, assumes zero-frequency component is at center of spectrum.
+                          
+       Returns:
+           obj : TemporalFFT instance
+                 Call obj.ifft() to compute the inverse FFT. The uniform frequency grid
+                 is available as obj.grid.
+                 
+       Calling syntax:
+           ifft_obj = TemporalFFT.nonuniform_inverse(coeffs, freqs, df, method='cubic')
+           signal, times = ifft_obj.ifft()
+           uniform_freqs = ifft_obj.grid
+    """
+    coeffs_inter, freq_uniform = cls.temporal_interpolation(
+      coefficients, freqs, df, method, axis, n_uniform=n
+    )
+    obj = cls(coeffs_inter, df, filter, axis, freq_shift)
+    obj.grid = freq_uniform
+    return obj
+
+  def fft(self):
+    """
+       Compute the forward FFT.
+       
+       Returns:
+           coefficients : ndarray
+                          Complex FFT coefficients.
+           freq         : ndarray
+                          Corresponding frequency values.
+    """
+    return self.temporal_fft_uniform()
+
+  def ifft(self):
+    """
+       Compute the inverse FFT.
+       
+       Returns:
+           signal : ndarray
+                    Real or complex time-domain signal.
+           times  : ndarray
+                    Corresponding time values.
+    """
+    return self.temporal_ifft_uniform()
+
+  def temporal_fft_uniform(self):
+    """
+       Perform FFT on uniformly spaced time points data.
+       
+       Applies windowing if specified, then computes FFT along the specified axis.
+       
+       Returns:
+           coefficients : ndarray
+                          Complex FFT coefficients.
+           freq         : ndarray
+                          Frequency values. If freq_shift=True, zero frequency is centered.
+    """
+    n_t = self.data.shape[self.axis]
+    freq = fftfreq(n_t, d=self.dt)
+
+    windowed_data = self.get_windowed()
+
+    coefficients = fft(windowed_data, axis=self.axis)
+
+    if self.freq_shift:
+      freq = np.fft.fftshift(freq)
+      coefficients = np.fft.fftshift(coefficients, axes=self.axis)
+
+    return coefficients, freq
+
+  def temporal_ifft_uniform(self):
+    """
+       Perform inverse FFT on uniformly spaced frequency coefficients.
+       
+       Applies frequency-domain filter if specified, then computes inverse FFT.
+       
+       Input:
+           self.data : The frequency coefficients (stored during initialization)
+           self.dt   : Interpreted as frequency spacing of coefficient grid
+           
+       Returns:
+           signal : ndarray
+                    Time-domain signal (real or complex).
+           times  : ndarray
+                    Corresponding time values.
+    """
+    coefficients = self.get_windowed()
+    n_t = coefficients.shape[self.axis]
+
+    if self.freq_shift:
+      coefficients = np.fft.ifftshift(coefficients, axes=self.axis)
+
+    signal = ifft(coefficients, axis=self.axis)
+
+    dt_time = 1.0 / (n_t * self.dt)
+    times = dt_time * np.arange(n_t)
+
+    return signal, times
+  
+  @staticmethod
+  def temporal_interpolation(data, x, dx, method="linear", axis=-1, n_uniform=None):
+    """
+       Interpolate data onto a uniform grid.
+       
+       Input parameters:
+           data      : array_like
+                       Data to be interpolated.
+           x         : array_like
+                       Original (nonuniform) grid coordinates.
+           dx        : float
+                       Desired uniform grid spacing.
+           method    : str, optional (default='linear')
+                       Interpolation method: 'linear', 'cubic', or 'nearest'.
+           axis      : int, optional (default=-1)
+                       Axis along which to interpolate.
+           n_uniform : int or None, optional (default=None)
+                       Target number of uniform grid points. If None, computed from
+                       x span and dx.
+                       
+       Returns:
+           interpolated_data : ndarray
+                               Data interpolated onto uniform grid.
+           x_uniform        : ndarray
+                               Uniform grid coordinates.
+                               
+       Note:
+           The uniform grid spans from x[0] to approximately x[-1] with step dx.
+           It is recommended to use axis=-1 for efficiency.
+    """
+    if dx <= 0: 
+      raise ValueError(f"dx must be a positive number. dx = {dx}.")
+      
+    methods = ["linear", "cubic", "nearest"]
+
+    if method not in methods:
+      raise ValueError(f"Interpolation method must be one of: {', '.join(methods)}.")
+    
+    if len(x) > 1:
+      x_diff = np.diff(x)
+      if not np.all(x_diff > 0):
+          raise ValueError(
+              f"x must be strictly monotonically increasing. "
+              f"Found non-positive differences at indices: {np.where(x_diff <= 0)[0]}"
+          )
+    
+    if n_uniform is None:
+      n_x = int(np.floor((x[-1]-x[0])/dx) + 1)
+    else:
+      n_x = int(n_uniform)
+      if n_x <= 0:
+        raise ValueError(f"n_uniform must be a positive integer. n_uniform = {n_uniform}.")
+    x_uniform = x[0] + dx*np.arange(n_x)
+
+    if method == "linear":
+      f = make_interp_spline(x, data, k=1, axis=axis)
+    elif method == "cubic":
+      f = make_interp_spline(x, data, k=3, axis=axis)
+    elif method == "nearest":
+      f = interp1d(x, data, kind="nearest", axis=axis)
+
+    interpolated_data = f(x_uniform)
+
+    return interpolated_data, x_uniform
+
+  def get_windowed(self):
+    """
+       Apply window or filter to data.
+       
+       Behavior depends on context:
+           - For forward FFT: Applies time-domain window to reduce spectral leakage.
+           - For inverse FFT: Applies frequency-domain filter to coefficients.
+           
+       Input:
+           self.window : str, array_like, or None
+                         If string, uses scipy.signal.get_window to generate window.
+                         If array, must have length matching the transform axis.
+                         If None or empty string, no windowing is applied.
+                         
+       Returns:
+           windowed_data : ndarray
+                           Data multiplied by window/filter, or original data if no window.
+                           
+       Note:
+           The window/filter is reshaped to broadcast correctly along self.axis.
+    """
+    n_t = self.data.shape[self.axis]
+
+    if self.window is None or (isinstance(self.window, str) and self.window == ""):
+      windowed_data = self.data
+
+    elif isinstance(self.window, str):
+      w = get_window(self.window, n_t, fftbins=True)
+      shape = [1] * self.data.ndim
+      shape[self.axis] = n_t
+      windowed_data = self.data * w.reshape(shape)
+
+    else:
+      w = np.asarray(self.window)
+
+      if len(w) != n_t:
+        raise ValueError(f"Window size (={len(w)}) does not match data size (={n_t}).")
+      shape = [1] * self.data.ndim
+      shape[self.axis] = n_t
+      windowed_data = self.data * w.reshape(shape)
+
+    return windowed_data
 

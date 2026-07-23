@@ -139,7 +139,6 @@ Contains
             Call d_by_dx(avar,d2adr2,wsp%p1a,2)! 2nd derivative will be overwritten with dadr
             Call Add_Derivative(aeq,avar,2,wsp%p1b,wsp%p1a,d2adr2)
             Call d_by_dx(avar,dadr,wsp%p1a,1)
-
             Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
 
             !///////////////////
@@ -175,7 +174,7 @@ Contains
         Call StopWatch(ctranspose_time)%increment()
     End Subroutine Post_Solve_FD
 
-    Subroutine Post_Solve()
+    Subroutine Post_Solve_Anelastic()
         Implicit None
         Integer :: m, i
         Character*12 :: tstring, otstring
@@ -215,9 +214,6 @@ Contains
         !Copy each variable out of the RHS into the top part of the buffer
         ! These variables are in spectral space radially
         Call Get_All_RHS(wsp%p1a)
-
-
-
         Call gridcp%dealias_buffer(wsp%p1a)    ! de-alias
 
 
@@ -416,8 +412,144 @@ Contains
         Call wsp%reform()    ! move from p1a to s2a
         Call StopWatch(ctranspose_time)%increment()
 
-    End Subroutine Post_Solve
+    End Subroutine Post_Solve_Anelastic
 
+    Subroutine Post_Solve_Compressible()
+        Implicit None
+        Integer :: m, i
+        Character*12 :: tstring, otstring
+
+        ! wsp%p1b is assumed to be allocated
+        Call StopWatch(psolve_time)%startclock()
+        Call wsp%construct('p1a')
+        wsp%config = 'p1a'
+
+        old_deltat = deltat
+        If (new_timestep) Then
+            deltat = new_deltat
+            new_timestep = .false.
+            If (my_rank .eq. 0) Then
+                Write(otstring,t_ofmt)old_deltat
+                Write(tstring,t_ofmt)deltat
+                Call stdout%print(' Timestep has changed from '//Trim(otstring)//' to '//Trim(tstring)//'.')
+                Call stdout%partial_flush()  ! Make SURE that a changing timestep is recorded ...
+                                             ! ... even at the expense of additional file I/O for redirected stdout
+
+            Endif
+
+            Call Reset_Linear_Equations()
+        Endif
+
+        if (iteration .eq. 1) then
+                !Euler Step
+                new_ab_factor = deltat
+                old_ab_factor = 0.0d0
+        else
+                new_ab_factor = 0.5d0*deltat*(2 + deltat/old_deltat)
+                old_ab_factor = -0.5d0*deltat**2/old_deltat
+        endif
+
+        wsp%p1b = wsp%p1b*old_ab_factor
+
+        !Copy each variable out of the RHS into the top part of the buffer
+        ! These variables are in spectral space radially
+        Call Get_All_RHS(wsp%p1a)
+        Call gridcp%dealias_buffer(wsp%p1a)    ! de-alias
+
+                ! The magnetic variable d2adr2 doesn't need to leave
+        ! this configuration, but is necessary for the diffusion
+        ! terms.   Handle that variable first. 
+        If (magnetism) then
+            ctemp%nf1a = 1
+            ctemp%nf1b = 1
+            Call ctemp%construct('p1a')
+
+            Call gridcp%d_by_dr_cp(avar,d2adr2,wsp%p1a,2)
+            ctemp%p1a(:,:,:,1) = wsp%p1a(:,:,:,d2adr2)
+            Call gridcp%dealias_buffer(ctemp%p1a)    ! de-alias
+
+            Call ctemp%construct('p1b')
+            Call gridcp%From_Spectral(ctemp%p1a,ctemp%p1b)
+            Call Add_Derivative(aeq,avar,2,wsp%p1b,ctemp%p1b,1)
+
+            Call ctemp%deconstruct('p1a')
+            Call ctemp%deconstruct('p1b')
+        Endif
+
+        Call gridcp%d_by_dr_cp(    vr,   dvrdr, wsp%p1a, 1)
+        Call gridcp%d_by_dr_cp(    vr, d2vrdr2, wsp%p1a, 2)
+        Call gridcp%d_by_dr_cp(vtheta,   dvtdr, wsp%p1a, 1)
+        Call gridcp%d_by_dr_cp(vtheta, d2vtdr2, wsp%p1a, 2)
+        Call gridcp%d_by_dr_cp(  vphi,   dvpdr, wsp%p1a, 1)
+        Call gridcp%d_by_dr_cp(  vphi, d2vpdr2, wsp%p1a, 2)
+        Call gridcp%d_by_dr_cp(  tvar,   dtdr, wsp%p1a, 1)
+        !Call gridcp%d_by_dr_cp(  tvar,  d2tdr2, wsp%p1a, 2)
+        Call gridcp%d_by_dr_cp(  dtdr,  d2tdr2, wsp%p1a, 1)
+        Call gridcp%d_by_dr_cp(rhovar,  drhodr, wsp%p1a, 1)
+
+
+        ! Magnetism
+        If (magnetism) Then
+            Call gridcp%d_by_dr_cp(avar,dadr  ,wsp%p1a,1)
+            Call gridcp%d_by_dr_cp(cvar,dcdr  ,wsp%p1a,1)
+            Call gridcp%d_by_dr_cp(cvar,d2cdr2,wsp%p1a,2)
+        Endif
+
+        !//////////////////////////////////////////////////////////////////////////
+        ! Now everything we need is in the wsp or ctemp buffer
+        ! The ctemp terms are those terms that do not leave this configuration
+        ! transform them now & add them to appropriate equations
+
+        !//////////////////////////////////////////////
+        !  Next, we reconstruct ctemp%p1a and copy wsp%p1a into it
+        !  p1a is currently spectral, but needs to be physical before
+        !  reforming
+        ctemp%nf1a = wsp%nf1a
+        Call ctemp%construct('p1a')
+        ctemp%p1a(:,:,:,:) = wsp%p1a(:,:,:,:)
+        Call gridcp%dealias_buffer(ctemp%p1a) !De-Alias
+        wsp%p1a(:,:,:,:) = 0.0d0    ! Shouldn't need to do this, but just to be sure
+        Call gridcp%From_Spectral(ctemp%p1a,wsp%p1a)
+        Call ctemp%deconstruct('p1a')
+
+        Call Add_Derivative(teq,tvar,0, wsp%p1b,wsp%p1a,tvar)
+        Call Add_Derivative(vreq,vr,0, wsp%p1b,wsp%p1a,vr)
+        Call Add_Derivative(vteq,vtheta,0, wsp%p1b,wsp%p1a,vtheta)
+        Call Add_Derivative(vpeq,vphi,0, wsp%p1b,wsp%p1a,vphi)
+        Call Add_Derivative(rhoeq,rhovar,0, wsp%p1b,wsp%p1a,rhovar)
+
+
+        !///////////////////////////////////////////////////////////////
+        !  Only magnetic terms have any implicitly-evolved linear terms
+        !  Call Add_Derivative for those terms.
+        If (magnetism) Then
+            !//////////////
+            ! A-terms (Toroidal magnetic field)
+
+            Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
+            
+            !///////////////////
+            ! C-terms (Poloidal magnetic field)
+
+            Call Add_Derivative(ceq,cvar,2,wsp%p1b,wsp%p1a,d2cdr2)
+
+            Call Add_Derivative(ceq,cvar,0,wsp%p1b,wsp%p1a,cvar)
+
+        Endif
+
+        !Load the old ab array into the RHS
+        Call Set_All_RHS(wsp%p1b)    ! RHS now holds old_AB+CN factors
+
+        Call wsp%deconstruct('p1b')
+        Call StopWatch(psolve_time)%increment()
+
+        Call StopWatch(ctranspose_time)%startclock()
+
+        Call wsp%reform()    ! move from p1a to s2a
+        Call StopWatch(ctranspose_time)%increment()
+
+    End Subroutine Post_Solve_Compressible
+    
     Subroutine AdvanceTime
         Implicit None
         ! wsp will be in 'p1b' config
@@ -438,7 +570,8 @@ Contains
         simulation_time = simulation_time+deltat
         ! The righthand side of the equation set structure
         ! Now contains the updated fields.
-    End Subroutine AdvanceTime
+      End Subroutine AdvanceTime
+      
     Subroutine Finalize_EMF()
         Implicit None
         Integer m, i

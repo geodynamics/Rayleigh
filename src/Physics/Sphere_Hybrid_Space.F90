@@ -63,7 +63,7 @@ Contains
 
     Subroutine rlm_spacea()
         Implicit None
-        Integer :: mp, i
+        Integer :: mp, i, r, imi, m, l, ind_top
         Call StopWatch(rlma_time)%startclock()
 
         ! Zero out l_max mode
@@ -71,29 +71,61 @@ Contains
             SBUFFA(l_max,:,:,:) = 0.0d0
         Enddo
 
-
         ! Allocate two work arrays
         Call Allocate_rlm_Field(ftemp1)
         Call Allocate_rlm_Field(ftemp2)
 
+
         If (output_iteration) Call Hybrid_Output_Initial()
+        
+        If (compressible) Then
+           ! First theta-derivatives...
+           Call d_by_dtheta(wsp%s2a  ,     vr, dvrdt)
+           Call d_by_dtheta(wsp%s2a  , vtheta, dvtdt)
+           Call d_by_dtheta(wsp%s2a  ,   vphi, dvpdt)
+           Call d_by_dtheta(wsp%s2a  ,   tvar, dtdt)
+           Call d_by_dtheta(wsp%s2a  , rhovar, drhodt)
 
-        Call Velocity_Components()
-        Call Velocity_Derivatives()
-        Call d_by_dtheta(wsp%s2a,tvar,dtdt)
-        do i = 1, n_active_scalars
-          Call d_by_dtheta(wsp%s2a,chiavar(i),dchiadt(i))
-        end do
-        do i = 1, n_passive_scalars
-          Call d_by_dtheta(wsp%s2a,chipvar(i),dchipdt(i))
-        end do
+           Call d_by_dtheta(wsp%s2a  , dvrdr, d2vrdrdt)
+           Call d_by_dtheta(wsp%s2a  , dvtdr, d2vtdrdt)
 
+           Call d_by_dtheta(wsp%s2a  , dvtdt, d2vtdt2)
 
-        If (magnetism) Call compute_BandCurlB()
+           ! Compute l_l_plus/r^2 for each term
+           ! vr
+           DO_IDX2
+           SBUFFA(IDX2,hvr) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vr)*OneOverRsquared(r)
+           END_DO
 
+           ! vtheta
+           DO_IDX2
+           SBUFFA(IDX2,hvtheta) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vtheta)*OneOverRsquared(r)
+           END_DO
+
+           ! vphi
+           DO_IDX2
+           SBUFFA(IDX2,hvphi) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vphi)*OneOverRSquared(r)
+           END_DO
+
+           ! T
+           DO_IDX2
+           SBUFFA(IDX2,htvar) = l_l_plus1(m:l_max)*SBUFFA(IDX2,tvar)*OneOverRSquared(r)
+           END_DO
+        Else
+           Call Velocity_Components()
+           Call Velocity_Derivatives()
+           Call d_by_dtheta(wsp%s2a,tvar,dtdt)
+           do i = 1, n_active_scalars
+              Call d_by_dtheta(wsp%s2a,chiavar(i),dchiadt(i))
+           end do
+           do i = 1, n_passive_scalars
+              Call d_by_dtheta(wsp%s2a,chipvar(i),dchipdt(i))
+           end do
+        Endif 
+        
         If (output_iteration) Call Hybrid_Output_Final()
 
-
+        If (magnetism) Call compute_BandCurlB()
 
         Call DeAllocate_rlm_Field(ftemp1)
         Call DeAllocate_rlm_Field(ftemp2)
@@ -148,62 +180,69 @@ Contains
         Call StopWatch(rlmb_time)%startclock()
 
 
+        If (.NOT. compressible) Then
+           ! The NL RHS for W is r^2/(l(l+1)) * the NL RHS for Ur
+           ! We already have the r^2 taken care of.  Now for the l(l+1)
 
-        ! The NL RHS for W is r^2/(l(l+1)) * the NL RHS for Ur
-        ! We already have the r^2 taken care of.  Now for the l(l+1)
-
-        DO_IDX2
-            SBUFFB(IDX2,wvar) = SBUFFB(IDX2,wvar)*over_l_l_plus1(m:l_max)
-        END_DO
+           DO_IDX2
+           SBUFFB(IDX2,wvar) = SBUFFB(IDX2,wvar)*over_l_l_plus1(m:l_max)
+           END_DO
+        Endif 
 
         ! Now for the Z RHS, formed from the radial component of the curl of u dot grad u
-
-        Call Allocate_rlm_Field(ftemp1)
-        Call Allocate_rlm_Field(ftemp2)
-
-        Call d_by_sdtheta(wsp%s2b, zvar,ftemp1)    ! need to be sure we have this indexing correct
-        Call d_by_dphi(wsp%s2b,pvar,ftemp2)
-
-        DO_IDX2
-            ftemp1(mp)%data(IDX2) = ( ftemp2(mp)%data(IDX2)- &
+        If (compressible) Then
+            If (magnetism) Then
+                Call Allocate_rlm_Field(ftemp1)
+                Call Allocate_rlm_Field(ftemp2)
+                Call adjust_emf()
+                Call DeAllocate_rlm_Field(ftemp1)
+                Call DeAllocate_rlm_Field(ftemp2)
+            Endif
+        Else
+           Call Allocate_rlm_Field(ftemp1)
+           Call Allocate_rlm_Field(ftemp2)
+           
+           Call d_by_sdtheta(wsp%s2b, zvar,ftemp1)    ! need to be sure we have this indexing correct
+           Call d_by_dphi(wsp%s2b,pvar,ftemp2)
+        
+           DO_IDX2
+           ftemp1(mp)%data(IDX2) = ( ftemp2(mp)%data(IDX2)- &
                 & ftemp1(mp)%data(IDX2) )*over_l_l_plus1(m:l_max)
-        END_DO
+           END_DO
 
 
 
-        Call d_by_dphi(wsp%s2b,zvar,ftemp2)
-        Call d_by_sdtheta(wsp%s2b,pvar,zvar)
+           Call d_by_dphi(wsp%s2b,zvar,ftemp2)
+           Call d_by_sdtheta(wsp%s2b,pvar,zvar)
 
-        DO_IDX2
-            SBUFFB(IDX2,pvar) = ( SBUFFB(IDX2,zvar)+ &
+           DO_IDX2
+           SBUFFB(IDX2,pvar) = ( SBUFFB(IDX2,zvar)+ &
                 & ftemp2(mp)%data(IDX2) )*over_l_l_plus1(m:l_max)
-        END_DO
-        ! dwdr RHS (p equation) is now loaded
+           END_DO
+           ! dwdr RHS (p equation) is now loaded
 
 
-        DO_IDX2
-            SBUFFB(IDX2,zvar) = ftemp1(mp)%data(IDX2)
-        END_DO
-        ! Z RHS is now loaded
+           DO_IDX2
+           SBUFFB(IDX2,zvar) = ftemp1(mp)%data(IDX2)
+           END_DO
+           ! Z RHS is now loaded
 
+           ! The ell =0 w and p and z equations have zero RHS
+           Do mp = my_mp%min, my_mp%max
+              m = m_values(mp)
+              if (m .eq. 0) then
+                 SBUFFB(0,my_r%min:my_r%max,1:2, pvar) = 0.0d0
+                 SBUFFB(0,my_r%min:my_r%max,1:2, wvar) = 0.0d0
+                 SBUFFB(0,my_r%min:my_r%max,1:2, zvar) = 0.0d0
+              endif
+           Enddo
 
+           If (magnetism) Call adjust_emf()
 
-        ! The ell =0 w and p and z equations have zero RHS
-        Do mp = my_mp%min, my_mp%max
-            m = m_values(mp)
-            if (m .eq. 0) then
-                SBUFFB(0,my_r%min:my_r%max,1:2, pvar) = 0.0d0
-                SBUFFB(0,my_r%min:my_r%max,1:2, wvar) = 0.0d0
-                SBUFFB(0,my_r%min:my_r%max,1:2, zvar) = 0.0d0
-            endif
-        Enddo
+           Call DeAllocate_rlm_Field(ftemp1)
+           Call DeAllocate_rlm_Field(ftemp2)
 
-
-        If (magnetism) Call adjust_emf()
-
-        Call DeAllocate_rlm_Field(ftemp1)
-        Call DeAllocate_rlm_Field(ftemp2)
-
+        Endif 
 
         ! Zero out l_max mode
         Do mp = my_mp%min, my_mp%max
@@ -217,7 +256,6 @@ Contains
         Call StopWatch(ctranspose_time)%increment()
 
         Call Adjust_TimeStep()
-
 
     End Subroutine rlm_spaceb
 
@@ -505,6 +543,7 @@ Contains
     Subroutine Hybrid_Output_Initial()
         Implicit None
         Integer :: r, m, mp, imi
+        If (compressible) Call cobuffer%construct("s2a")
         If (magnetism) Then
             Call Allocate_rlm_Field(ftemp3)
             Call Allocate_rlm_Field(ftemp4)
@@ -538,7 +577,7 @@ Contains
         Do mp = my_mp%min, my_mp%max
             ASBUFFA(l_max,:,:,:) = 0.0d0
         Enddo
-        Call Hydro_Output_Derivatives()
+        if (.NOT. compressible) Call Hydro_Output_Derivatives()
         If (magnetism) Then
             ! We compute some derivatives of B as well
             Call BField_Derivatives()

@@ -174,6 +174,7 @@ Contains
             Call ComputeM0(buffer,m0_values)
             Call Compute_Fluctuations(buffer)
 
+            Call Initialize_Viscous_Force()
             Call Initialize_Mean_Correction()
 
 
@@ -187,10 +188,9 @@ Contains
             Allocate(tmp1d(1:N_R))
             over_n_phi = 1.0d0/dble(n_phi)
 
-
-
+            Call Viscous_Force(buffer) ! Pre-calculate the viscous forces and place them in the vforce_buffer
+            
             Call Mean_Correction(buffer)    ! Remove ell=0 component from radial and theta forces
-
 
             ! All requested Shell_Average quantities are computed twice
             ! During the first pass, ell = 0 and m = 0 averages are computed
@@ -257,7 +257,8 @@ Contains
                 Call d2buffer%deconstruct('p3a')
                 DeAllocate(d2_ell0,d2_m0,d2_fbuffer)
             ENDIF
-            Call Finalize_Mean_Correction
+            Call Finalize_Viscous_Force()
+            Call Finalize_Mean_Correction()
         Endif  ! time_to_output(iteration)
     End Subroutine PS_Output
 

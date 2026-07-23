@@ -2322,8 +2322,8 @@ class SPH_Modes:
         self.time  = np.zeros(nrec,dtype='float64')
         self.version = version
         for i in range(nrec):
-            for qv in range(nq):
-                for p in range(2):
+            for p in range(2):
+                for qv in range(nq):
                     for rr in range(nr):
                         for lv in range(nell):
                             lval = self.lvals[lv]

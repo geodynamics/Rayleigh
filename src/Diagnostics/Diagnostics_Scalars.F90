@@ -139,6 +139,75 @@ Contains
                 END_DO
                 Call Add_Quantity(qty)
             Endif
+
+            ! only valid for active scalars
+            if (ii .le. n_active_scalars) then
+                ! NOTE:  The ell=0 component of the r-momentum equation is entirely described by
+                !        hydrostatic balance between the pressure and entropy and composition perturbations
+                !        (the reference state is assumed to also be in hydrostatic balance).
+                !        As such, the ell=0 buoancy force is uninteresting from the point of
+                !        view of the flow.  We explicitly separate the ell=0 component for this
+                !        term (as with the entropy and pressure terms).
+                ! -- full buoyancy
+                If (compute_quantity(chi_buoyancy_force+scoff) .or. compute_quantity(chi_buoy_work+scoff)) Then
+                    DO_PSI
+                        qty(PSI) = ref%chi_buoyancy_coeff(ii,r)*(buffer(PSI,chivar)-&
+                                & ell0_values(r,chivar))
+                    END_DO
+                    If (compute_quantity(chi_buoyancy_force+scoff)) Call Add_Quantity(qty)
+                    If (compute_quantity(chi_buoy_work+scoff)) Then
+                        DO_PSI
+                            qty(PSI)=buffer(PSI,vr)*qty(PSI)
+                        END_DO
+                        Call Add_Quantity(qty)
+                    Endif
+                Endif
+
+                ! -- fluctuating buoyancy (ell = 0, m =0 already subtracted)
+                If (compute_quantity(chi_buoyancy_pforce+scoff) .or. compute_quantity(chi_buoy_work_pp+scoff)) Then
+                    DO_PSI
+                        qty(PSI) = ref%chi_buoyancy_coeff(ii,r)*fbuffer(PSI,chivar)
+                    END_DO
+                    If (compute_quantity(chi_buoyancy_pforce+scoff)) Call Add_Quantity(qty)
+                    If (compute_quantity(chi_buoy_work_pp+scoff)) Then
+                        DO_PSI
+                            qty(PSI)=buffer(PSI,vr)*qty(PSI)
+                        END_DO
+                        Call Add_Quantity(qty)
+                    Endif
+                Endif
+
+                ! -- mean buoyancy
+                If (compute_quantity(chi_buoyancy_mforce+scoff) .or. compute_quantity(chi_buoy_work_mm+scoff)) Then
+                    DO_PSI
+                        qty(PSI) = ref%chi_buoyancy_coeff(ii,r)*(m0_values(PSI2,chivar)-&
+                                & ell0_values(r,chivar))
+                    END_DO
+                    If (compute_quantity(chi_buoyancy_mforce+scoff)) Call Add_Quantity(qty)
+                    If (compute_quantity(chi_buoy_work_mm+scoff)) Then
+                        DO_PSI
+                            qty(PSI)=buffer(PSI,vr)*qty(PSI)
+                        END_DO
+                        Call Add_Quantity(qty)
+                    Endif
+                Endif
+
+                If (compute_quantity(chi_buoyancy_force_ell0+scoff)) Then
+                    DO_PSI
+                        qty(PSI) = ref%chi_buoyancy_coeff(ii,r)*ell0_values(r,chivar)
+                    END_DO
+                    Call Add_Quantity(qty)
+                Endif
+
+                ! Chi Buoyant Production of turbulent kinetic energy.
+                If (compute_quantity(chi_production_buoyant_pKE+scoff)) Then
+                    DO_PSI
+                        qty(PSI) = ref%chi_buoyancy_coeff(ii,r)*fbuffer(PSI,chivar)*fbuffer(PSI,vr)
+                    END_DO
+                    Call Add_Quantity(qty)
+                Endif
+            endif
+            
         Enddo
     End Subroutine Compute_Scalars
 

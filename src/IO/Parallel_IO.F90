@@ -440,7 +440,7 @@ Contains
             my_min = pfi%all_2p(self%row_rank)%min
             my_max = pfi%all_2p(self%row_rank)%max
 
-            Allocate(tmp(1:(my_max-my_min)))
+            Allocate(tmp(1:(my_max-my_min+1)))
 
             Do p = 0, pfi%nprow-1
                 tmin = pfi%all_2p(p)%min
