@@ -44,36 +44,20 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         make clear_ipynb && git diff --exit-code --name-only
         make doc
-    - name: Build Rayleigh 1.3
-      # Need this for testing checkpoint format compatibility
-      run: |
-        git clone -b rayleigh-1.3.0 https://github.com/geodynamics/Rayleigh.git
-        mv Rayleigh Rayleigh_1.3
-        ls
-        pwd        
-        cd Rayleigh_1.3
-
-        #./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
-        #make fdeps && git diff --exit-code
-        #make -j
-        #make install        
-        cd ..
-        #ln -s Rayleigh_1.3/rayleigh.dbg ./bin/rayleigh.v13
     - name: Build Rayleigh
-      # Now build the current Rayleigh
+      # Now build Rayleigh itself
       run: |
         ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
 
         make fdeps && git diff --exit-code
         make -j
         make install
-    - name: Chebyshev Test
+    - name: Test
       run: |
         #Primary test (Chebyshev Mode)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
         mpirun -np 4 ../../bin/rayleigh.dbg
-    - name: Finite-Difference Test
-      run: |
+
         # Finite-difference test (uniform grid)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0_FD_uniform
         mpirun -np 4 ../../bin/rayleigh.dbg
@@ -85,23 +69,18 @@ jobs:
         # J2011 steady mhd test
         # cd "$GITHUB_WORKSPACE"/tests/j2011_steady_mhd_minimal
         # mpirun -np 4 ../../bin/rayleigh.dbg
-    - name: Generic Input Tests
-      run: |
+
         # Generic input test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/generic_input/run_test.sh
-    - name: Chi Scalar Tests
-      run: |
+
         # chi scalar test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/chi_scalar/run_test.sh
-    - name: Custom Reference Test
-      run: |        
+        
         # custom reference state test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/custom_reference/run_test.sh
-    - name: Coupled BC Test
-      run: |    
 
         # chi custom reference state test
         cd "$GITHUB_WORKSPACE"
