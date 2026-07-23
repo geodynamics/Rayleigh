@@ -48,12 +48,11 @@ jobs:
       # Need this for testing checkpoint format compatibility
       run: |
         git clone -b rayleigh-1.3.0 https://github.com/geodynamics/Rayleigh.git
-        ls
-        pwd
         mv Rayleigh Rayleigh_1.3
         cd Rayleigh_1.3
+        ls
+        pwd
         ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
-
         make fdeps && git diff --exit-code
         make -j
         make install        
