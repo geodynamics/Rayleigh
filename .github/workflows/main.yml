@@ -44,6 +44,17 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         make clear_ipynb && git diff --exit-code --name-only
         make doc
+    - name: Build Rayleigh 1.3
+      # Need this for testing checkpoint format compatibility
+      run: |
+        git checkout rayleigh-1.3.0
+        ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+
+        make fdeps && git diff --exit-code
+        make -j
+        make install 
+        mv ./bin/rayleigh.dbg ./bin/rayleigh.v13       
+        git checkout main
     - name: Build Rayleigh
       # Now build Rayleigh itself
       run: |
