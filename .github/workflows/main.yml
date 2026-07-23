@@ -47,7 +47,8 @@ jobs:
     - name: Build Rayleigh 1.3
       # Need this for testing checkpoint format compatibility
       run: |
-        git checkout rayleigh-1.3.0
+        git clone -b rayleigh-1.3.0 https://github.com/geodynamics/Rayleigh.git
+        cd Rayleigh
         ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
 
         make fdeps && git diff --exit-code
