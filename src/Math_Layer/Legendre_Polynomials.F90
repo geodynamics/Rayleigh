@@ -19,19 +19,26 @@
 !
 
 Module Legendre_Polynomials
+#ifdef NVHPC_COMPILER
+    use Iso_Fortran_Env, Only : REAL64
+    integer, parameter :: qp = REAL64 ! switch to double for nvfortran
+#else
+    use Iso_Fortran_Env, Only : REAL128
+    integer, parameter :: qp = REAL128
+#endif
     ! NOTE - need to convert everything here except for the last step to quad precision eventually
 
     ! This module contains all code necessary to generate and store the Legendre polynomials,
     ! their colocation points, and their associated integration weights.
     ! The polynomials computed are actually the renormalized associated legendre polynomials -
     !  - meaning that they carry the spherical harmonic normalization.
-    Real*16, Allocatable :: coloc(:), gl_weights(:)
+    Real(kind=qp), Allocatable :: coloc(:), gl_weights(:)
     Integer :: n_theta
     Integer :: l_max, n_m
     Integer :: m_mod = 1    ! Only calculate p_lms for every m_mod'th m
     Integer, Allocatable :: m_values(:),n_l(:),n_l_even(:),n_l_odd(:)
     Logical :: parity = .true.
-    Real*16 ::    PiQuad  = 3.1415926535897932384626433832795028841972q+0
+    Real(kind=qp), parameter ::    PiQuad  = 3.1415926535897932384626433832795028841972_qp
     Type, Public :: even_odd_sep
         Real*8, Allocatable :: even(:)
         Real*8, Allocatable :: odd(:)
@@ -45,7 +52,7 @@ Module Legendre_Polynomials
     End Type p_lm_array
 
     Type, Public :: p_lm_array_quad
-        Real*16, Allocatable :: data(:,:)
+        Real(kind=qp), Allocatable :: data(:,:)
     End Type p_lm_array_quad
 
     Type(p_lm_array_quad), Allocatable :: p_lmq(:)
@@ -122,7 +129,7 @@ End Subroutine DeAllocate_Parity_Plms
 
 Subroutine Initialize_Legendre(nt,lmax,mval,parity_in)
     Implicit None
-    Real*16 :: coloc_min,coloc_max
+    Real(kind=qp) :: coloc_min,coloc_max
     Logical, Intent(In) :: parity_in
     Integer, Intent(in) :: nt,lmax, mval(:)
 
@@ -148,7 +155,7 @@ Subroutine Compute_Plms()
     ! We feed this a list of m_values (presumably distributed across processors)
     ! And also l_max.  This is sufficient to initialize the legendre polynomials
     Implicit None
-    Real*16 ::  x,tmp,factorial_ratio,amp, renorm
+    Real(kind=qp) ::  x,tmp,factorial_ratio,amp, renorm
     Integer :: i, m, l, mv, ntmax
 
     n_m = size(m_values)
@@ -189,25 +196,25 @@ Subroutine Compute_Plms()
 
     ! First, fill in the l = m pieces (closed form expression)
     ! and the l = m+1 pieces
-    factorial_ratio = 1.0q0
+    factorial_ratio = 1.0_qp
 
         mv = m_values(m)
         Call compute_factorial_ratio(mv,factorial_ratio)
-        amp = ((mv+0.5q0)/(2.0q0*PiQuad))**0.5q0
+        amp = ((mv+0.5_qp)/(2.0_qp*PiQuad))**0.5_qp
         amp = amp*factorial_ratio
         Do i = 1, ntmax
             x = coloc(i)
-            tmp = 1.0q0-x*x
+            tmp = 1.0_qp-x*x
 
             If (mod(mv,2) .eq. 1) Then
                 !odd m
-                p_lmq(m)%data(i,mv) = -amp*tmp**(mv/2+0.5q0)
+                p_lmq(m)%data(i,mv) = -amp*tmp**(mv/2+0.5_qp)
             Else
                 !even m
                 p_lmq(m)%data(i,mv) = amp*tmp**(mv/2)
             Endif
             If (mv .lt. l_max) then
-                p_lmq(m)%data(i,mv+1) = p_lmq(m)%data(i,mv)*x*(2.0q0*mv+3)**0.5q0
+                p_lmq(m)%data(i,mv+1) = p_lmq(m)%data(i,mv)*x*(2.0_qp*mv+3)**0.5_qp
             Endif
         Enddo
 
@@ -218,11 +225,11 @@ Subroutine Compute_Plms()
             Do i = 1, ntmax
                 x = coloc(i)
                 amp = (l-1)**2-mv*mv
-                amp = amp/ (4.0q0*(l-1)**2-1.0q0)
-                amp = amp**0.5q0
+                amp = amp/ (4.0_qp*(l-1)**2-1.0_qp)
+                amp = amp**0.5_qp
                 tmp = p_lmq(m)%data(i,l-1)*x-amp*p_lmq(m)%data(i,l-2)
-                amp = (4.0q0*l*l-1.0q0)/(l*l-mv*mv)
-                p_lmq(m)%data(i,l) = tmp*amp**0.5q0
+                amp = (4.0_qp*l*l-1.0_qp)/(l*l-mv*mv)
+                p_lmq(m)%data(i,l) = tmp*amp**0.5_qp
             Enddo
         Enddo
 
@@ -238,7 +245,7 @@ Subroutine Compute_Plms()
                 Do i = 1, ntmax
 
                     p_lm(m)%data(l,i)  = p_lmq(m)%data(i,l)
-                    renorm = 2.0q0*PiQuad*gl_weights(i)
+                    renorm = 2.0_qp*PiQuad*gl_weights(i)
                     tmp = p_lmq(m)%data(i,l)*renorm
                     ip_lm(m)%data(i,l) = tmp
                 Enddo
@@ -261,8 +268,8 @@ Subroutine Parity_Resort(m)
     Implicit None
     Integer, Intent(In) :: m
     Integer :: l, indeven, indodd,partest, i
-    Real*16 :: renorm, tmp
-    Real*16 :: PTS_normalization, STP_normalization
+    Real(kind=qp) :: renorm, tmp
+    Real(kind=qp) :: PTS_normalization, STP_normalization
     ! Resort the p_lms into even and odd arrays
 
         ! We wrap a normalization factor, related to the FFT
@@ -306,7 +313,7 @@ Subroutine Parity_Resort(m)
                  lvals(m)%odd(indodd) = l
                 lvalsi(m)%odd(indodd) = l
                 Do i = 1, n_theta/2
-                    renorm = 2.0q0*PiQuad*gl_weights(i)
+                    renorm = 2.0_qp*PiQuad*gl_weights(i)
                     tmp = p_lmq(m)%data(i,l)*renorm
                     ip_lm_odd(m)%data(i,indodd) = tmp*PTS_normalization
                     p_lm_odd(m)%data(indodd,i) = p_lmq(m)%data(i,l)*STP_normalization
@@ -317,7 +324,7 @@ Subroutine Parity_Resort(m)
                  lvals(m)%even(indeven) = l
                 lvalsi(m)%even(indeven) = l
                 Do i = 1, n_theta/2
-                    renorm = 2.0q0*PiQuad*gl_weights(i)
+                    renorm = 2.0_qp*PiQuad*gl_weights(i)
                     tmp = p_lmq(m)%data(i,l)*renorm
                     ip_lm_even(m)%data(i,indeven) = tmp*PTS_normalization
                     p_lm_even(m)%data(indeven,i) =   p_lmq(m)%data(i,l)*STP_normalization
@@ -337,23 +344,23 @@ Subroutine Find_Colocation(x1,x2,abscissas, weights, order_n)
     ! Variables have been renamed for clarity
     ! Legendre polynomial calculation is accomplished in a separate subroutine
     !    to help with readability.
-    Real*16, Intent(Out) :: abscissas(1:), weights(1:)
-    Real*16, Intent(In) :: x1,x2
+    Real(kind=qp), Intent(Out) :: abscissas(1:), weights(1:)
+    Real(kind=qp), Intent(In) :: x1,x2
     Integer, Intent(In) :: order_n
-    Real*16 :: pn, ith_root,deriv_pn, new_guess
-    Real*16 :: midpoint, scaling
+    Real(kind=qp) :: pn, ith_root,deriv_pn, new_guess
+    Real(kind=qp) :: midpoint, scaling
     Integer :: i, n_roots
     Logical :: converged
-    Real*16  :: eps, del
-    midpoint = 0.5q0*(x1+x2)
-    scaling  = 0.5q0*(x2-x1)
+    Real(kind=qp)  :: eps, del
+    midpoint = 0.5_qp*(x1+x2)
+    scaling  = 0.5_qp*(x2-x1)
     n_roots  = (order_n+1)/2    ! Roots are symmetric - exploit symmetry
 
-    eps = 3.0Q-14
+    eps = 3.0e-14_qp
 
 
     Do i = 1, n_roots
-        ith_root = cos(PiQuad*(i-0.25q0)/(order_n+0.5q0))
+        ith_root = cos(PiQuad*(i-0.25_qp)/(order_n+0.5_qp))
         converged = .false.
         Do While (.not. converged)
             Call nth_legendre(ith_root,order_n,pn,deriv_pn)
@@ -366,7 +373,7 @@ Subroutine Find_Colocation(x1,x2,abscissas, weights, order_n)
             Endif
             abscissas(i) = midpoint-scaling*ith_root
             abscissas(order_n+1-i) = midpoint+scaling*ith_root
-            weights(i) = 2.0q0*scaling/((1.0q0-ith_root*ith_root)*deriv_pn*deriv_pn)
+            weights(i) = 2.0_qp*scaling/((1.0_qp-ith_root*ith_root)*deriv_pn*deriv_pn)
             weights(order_n+1-i) = weights(i)
         Enddo
     Enddo
@@ -376,28 +383,28 @@ Subroutine nth_legendre(x,n,pn,deriv_pn)
     ! Calculates the value of the nth legendre polynomial at location x
     ! Returns x, p_n(x) and d_by_dx (p_n(x))
     Implicit None
-    Real*16, Intent(Out) :: pn, deriv_pn
-    Real*16, Intent(In) :: x
+    Real(kind=qp), Intent(Out) :: pn, deriv_pn
+    Real(kind=qp), Intent(In) :: x
     Integer, Intent(In) :: n
     Integer :: j
-    Real*16 :: pn_minus1, pn_minus2
-    pn = 1.0q0    !p0
-    pn_minus1 = 0.0q0
+    Real(kind=qp) :: pn_minus1, pn_minus2
+    pn = 1.0_qp    !p0
+    pn_minus1 = 0.0_qp
     ! Use recursion relation to build p_order_n(x)
     Do j = 1, n
         pn_minus2 = pn_minus1
         pn_minus1 = pn
-        pn = ( (2.0q0*j-1.0q0)*x*pn_minus1 - (j-1.0q0)*pn_minus2 )/j
+        pn = ( (2.0_qp*j-1.0_qp)*x*pn_minus1 - (j-1.0_qp)*pn_minus2 )/j
     Enddo
-    deriv_pn = n*(x*pn-pn_minus1)/(x*x-1.0q0)
+    deriv_pn = n*(x*pn-pn_minus1)/(x*x-1.0_qp)
 End Subroutine nth_legendre
 
 
 Subroutine factorial(n,f)
     Integer :: n
-    Real(16), Intent(Out) :: f
+    Real(qp), Intent(Out) :: f
     Integer :: i
-    f = 1.0q0
+    f = 1.0_qp
     Do i = 1, n
         f = f*i
     Enddo
@@ -406,11 +413,11 @@ End Subroutine factorial
 Subroutine compute_factorial_ratio(m,ratio)
         ! build sqrt( (2m-1)!!(2m-1)!!/(2m)!! ) stably
         Integer, Intent(In) :: m
-        Real*16, Intent(Out) :: ratio
+        Real(kind=qp), Intent(Out) :: ratio
         Integer :: i
-        ratio = 1.0q0
+        ratio = 1.0_qp
         Do    i = 1, m
-            ratio = ratio*((i-0.5q0)/i)**0.5q0  !ratio = ratio*(2m-1)/(2m)
+            ratio = ratio*((i-0.5_qp)/i)**0.5_qp  !ratio = ratio*(2m-1)/(2m)
         Enddo
 End Subroutine compute_factorial_ratio
 End Module Legendre_Polynomials

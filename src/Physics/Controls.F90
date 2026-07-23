@@ -60,22 +60,39 @@ Module Controls
     Logical :: momentum_advection = .true.  ! u dot grad u is not calculated (mostly useful for debugging)
     Logical :: inertia = .true.             ! If false, Du/Dt is set to zero (useful for mantle convection problems)
     Logical :: Rotation = .false.           ! Rotate or not
+    Logical :: Coriolis = .false.            ! turn off or on
+    Logical :: Centrifugal = .false.         ! turn off or on
+    Logical :: Gravity = .false.            ! Turn off or on. Specifically for compressible case
+    Logical :: Remove_Reference = .false.   ! Remove (or not) the reference state from hydrostatic balance and thermal diffusion (compressible only)
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
     Logical :: pseudo_incompressible = .false.  ! Switch from anelastic to pseudo-incompressible approximation
+    Logical :: compressible = .false.           !run compressible or not
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
                                                 ! Generally only do this if reference state is nonadiabatic
+    ! Nondimensional variables for the active/passive scalar fields
+
+    ! Allow up to 50 active/passive scalar fields
+    Integer, Parameter :: n_scalar_max = 50
+
+
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
 
+    Logical :: chi_a_advect_reference_state(1:n_scalar_max)  = .true.
+    Logical :: chi_p_advect_reference_state(1:n_scalar_max)  = .true.
 
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
     Integer :: benchmark_mode = 0
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
+
+    Real*8 :: R_gas = -1 !erg/g/K
+    Real*8 :: pulse_freq = 3.14d0
+    Real*8 :: pulse_sharpness = 0.01d0
 
     ! --- Newtonian Cooling Variables
     Logical :: newtonian_cooling = .false.  ! Turn newtonian_cooling on/off
@@ -88,10 +105,12 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia, n_active_scalars, n_passive_scalars, &
+                & momentum_advection, inertia, coriolis, centrifugal, gravity, remove_reference, &
+                & n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
-                & pseudo_incompressible
+                & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
+                & chi_a_advect_reference_state, chi_p_advect_reference_state
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -109,7 +128,7 @@ Module Controls
     Integer :: num_quicksaves = 3              ! Number of quick-save checkpoints to write before rolling back to #1
     Real*8  :: quicksave_minutes = -1.0d0      ! Time in minutes between quick saves (overrides quicksave interval)
     Real*8  :: checkpoint_minutes = -1.0d0     ! Time in minutes between checkpoints (overrides quicksave interval)
-
+    
     Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
     Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
     Real*8  :: min_time_step = 1.0d-13
@@ -231,7 +250,10 @@ Contains
         viscous_heating = .true.
         ohmic_heating = .true.
         pseudo_incompressible = .false.
+        compressible = .false.
         advect_reference_state = .true.
+        chi_a_advect_reference_state = .true.
+        chi_p_advect_reference_state = .true.
         benchmark_mode = 0
         benchmark_integration_interval = -1
         benchmark_report_interval = -1

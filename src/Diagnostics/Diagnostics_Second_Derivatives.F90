@@ -394,13 +394,13 @@ Contains
                 Call gridcp%d_by_dr_cp(i,j,d2buffer%p1a,1)
             Enddo
             Call gridcp%From_Spectral(d2buffer%p1a,d2buffer%p1b)
+            d2buffer%p1a=d2buffer%p1b
         Else
             Do i = 1, nddfields*2
                 j = i+nddfields*2
                 Call d_by_dx3d3(i,j,d2buffer%p1a,1)
             Enddo
         Endif
-        d2buffer%p1a=d2buffer%p1b
         Call d2buffer%deconstruct('p1b')
 
         ! Ordering of fields in buffer is now dxdr, dxdt, dxdrdr, dxdrdt

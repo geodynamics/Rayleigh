@@ -61,6 +61,10 @@ Module Fields
     Integer :: dwdr,  d3wdr3, dtdr, dzdr, d2zdr2, d2tdr2, d2wdr2
     Integer :: vr, vtheta, vphi,dtdt,dvrdt,dvtdr,dvpdr,dvrdr
     Integer :: dvrdp, dvtdp, dvpdp, dtdp
+    Integer :: d2vrdr2, hvr, d2vrdrdt, d2vrdrdp    !Abdullah
+    Integer :: d2vtdr2, hvtheta, d2vtdrdt, d2vtdt2, d2vtdtdp   !Abdullah
+    Integer :: d2vpdr2, hvphi, d2vpdrdp, d2vpdtdp, d2vpdp2, htvar  ! Abdullah
+    Integer :: rhovar, drhodr, d2rhodr2, drhodt, drhodp, hrhovar ! Abdullah
 
     Integer :: dvtdt, dvpdt
 
@@ -83,11 +87,12 @@ Module Fields
     !        Integer parameters used to reference specific equations and variables
     !                FOR LINEAR Solve
     !==============================================================================
-    Integer, parameter :: weq = 1,  peq = 2,  teq = 3
-    Integer, parameter :: zeq = 4
-    Integer, Parameter :: ceq = 5,  aeq = 6
-    Integer, Allocatable :: chiaeq(:), chipeq(:)
 
+
+    Integer :: weq, peq, teq, zeq, ceq, aeq
+    Integer :: vreq, vteq, vpeeq, rhoeq
+    Integer :: vpeq
+    Integer, Allocatable :: chiaeq(:), chipeq(:)
 
 
 
@@ -158,6 +163,26 @@ Contains
         Implicit None
         Integer :: i
         Character*3 :: config
+        If (compressible) Then
+            vreq = 1
+            vteq = 2
+            vpeq = 3
+            teq = 4  
+            rhoeq = 5
+            ceq = 6
+            aeq = 7
+            n_equations=5
+            n_variables=5
+        Else
+            weq = 1
+            peq = 2  
+            teq = 3
+            zeq = 4
+            ceq = 5  
+            aeq = 6
+            n_equations=4
+            n_variables=4
+        Endif
 
         allocate(chiaeq(n_active_scalars))
         allocate(chipeq(n_passive_scalars))
@@ -174,8 +199,8 @@ Contains
 
         ! Starting out we record the number of variables and equations we are expecting.
         If (magnetism) Then
-            n_equations = 6 + n_active_scalars + n_passive_scalars
-            n_variables = 6 + n_active_scalars + n_passive_scalars
+            n_equations = n_equations + 2 + n_active_scalars + n_passive_scalars
+            n_variables = n_variables + 2 + n_active_scalars + n_passive_scalars
             if (n_active_scalars.gt.0) then
                 chiaeq(1) = aeq+1
             end if
@@ -183,8 +208,8 @@ Contains
                 chipeq(1) = aeq+n_active_scalars+1
             end if
         Else
-            n_equations = 4 + n_active_scalars + n_passive_scalars
-            n_variables = 4 + n_active_scalars + n_passive_scalars
+            n_equations = n_equations + n_active_scalars + n_passive_scalars
+            n_variables = n_variables + n_active_scalars + n_passive_scalars
             if (n_active_scalars.gt.0) then
                 chiaeq(1) = zeq+1
             end if
@@ -233,14 +258,25 @@ Contains
         !  if they are not used in all configurations.  We want the
         !  equation numbering and the field numbering to agree - always
         !  Add the primary fields - this should ALWAYS come first
-        Call wsp_indices%Add_Field(Wvar , config)
-        Call wsp_indices%Add_Field(Pvar , config)
-        Call wsp_indices%Add_Field(Tvar , config)
-        Call wsp_indices%Add_Field(Zvar , config)
+        If (compressible) Then 
+            Call wsp_indices%Add_Field(vr      , config)
+            Call wsp_indices%Add_Field(vtheta  , config)
+            Call wsp_indices%Add_Field(vphi    , config)
+            Call wsp_indices%Add_Field(tvar    , config)
+            Call wsp_indices%Add_Field(rhovar  , config)        
+        Else
+            Call wsp_indices%Add_Field(Wvar , config)
+            Call wsp_indices%Add_Field(Pvar , config)
+            Call wsp_indices%Add_Field(Tvar , config) ! Ask Nick why T
+            Call wsp_indices%Add_Field(Zvar , config)
+        endif
+
         If (magnetism) Then
           Call wsp_indices%Add_Field(cvar , config)
           Call wsp_indices%Add_field(avar , config)
         Endif
+        
+        
         do i = 1, n_active_scalars
           call wsp_indices%add_field(chiavar(i) , config)
         end do
@@ -248,10 +284,25 @@ Contains
           call wsp_indices%add_field(chipvar(i) , config)
         end do
 
-        Call wsp_indices%Add_Field(d3Wdr3 , config)
-        Call wsp_indices%Add_Field(dPdr1  , config)
-        Call wsp_indices%Add_field(d2Zdr2 , config)
-        Call wsp_indices%Add_Field(d2Wdr2 , config)
+        If (compressible) Then
+            call wsp_indices%Add_Field(dvrdr,   config)
+            call wsp_indices%Add_Field(d2vrdr2, config)
+            call wsp_indices%Add_Field(dvtdr,   config)
+            call wsp_indices%Add_Field(d2vtdr2, config)
+            call wsp_indices%Add_Field(dvpdr,   config)
+            call wsp_indices%Add_Field(d2vpdr2, config)
+            call wsp_indices%Add_Field(dtdr,    config)
+            call wsp_indices%Add_Field(d2tdr2,  config)
+            call wsp_indices%Add_Field(drhodr,  config)
+
+        Else
+            call wsp_indices%Add_Field(d3Wdr3, config)
+            call wsp_indices%Add_Field(dPdr1,  config)
+            call wsp_indices%Add_Field(d2Zdr2, config)
+            call wsp_indices%Add_Field(d2Wdr2, config)
+
+        Endif
+
 
         If (magnetism) Then
           Call wsp_indices%Add_field(dcdr   , config)
@@ -272,14 +323,32 @@ Contains
         !  Next, we want to account for fields that we build in s2a/p2a (many are d by dtheta fields)
         !  In configuration p2a, we are in r l/theta m space.  Take theta derivatives.
         config = 'p2a'
-        Call wsp_indices%Add_Field(vtheta , config)
-        Call wsp_indices%Add_Field(vphi   , config)
-        Call wsp_indices%Add_Field(dvtdr  , config)
-        Call wsp_indices%Add_Field(dvpdr  , config)
+        ! Velocity theta derivatives and nonlinear terms
+        
+
+        If (compressible) Then
+            Call wsp_indices%Add_Field(dvrdt   , config)
+            Call wsp_indices%Add_Field(dvtdt   , config)
+            Call wsp_indices%Add_Field(d2vtdt2 , config)
+            Call wsp_indices%Add_Field(dvpdt   , config)
+            Call wsp_indices%Add_Field(drhodt  , config)
+            Call wsp_indices%Add_Field(dtdt  , config)
+            Call wsp_indices%Add_Field(hvr     , config)
+            Call wsp_indices%Add_Field(hvtheta , config)
+            Call wsp_indices%Add_Field(hvphi   , config)
+            Call wsp_indices%Add_Field(htvar   , config)    
+
+            Call wsp_indices%Add_Field(d2vrdrdt, config)
+            Call wsp_indices%Add_Field(d2vtdrdt, config) 
+        Else
+            Call wsp_indices%Add_Field(vtheta , config)
+            Call wsp_indices%Add_Field(vphi   , config)
+            Call wsp_indices%Add_Field(dvtdr  , config)
+            Call wsp_indices%Add_Field(dvpdr  , config)
+        Endif
+
         If (magnetism) Then
-
             Call wsp_indices%Add_Field(curlbr     ,config)
-
         Endif
 
         do i = 1, n_active_scalars
@@ -294,12 +363,29 @@ Contains
         !  that we add to the p3a buffer
         !  This is r theta (phi,m) space
         config = 'p3a'
-        Call wsp_indices%Add_Field(dvrdp,config)
-        Call wsp_indices%Add_field(dvtdp,config)
-        Call wsp_indices%Add_field(dvpdp,config)
-        Call wsp_indices%Add_Field(dvtdt,config)
-        Call wsp_indices%Add_field(dvpdt,config)
-        Call wsp_indices%Add_field(dtdp,config)
+
+        If (compressible) Then
+            Call wsp_indices%Add_Field(dvrdp   , config)
+            Call wsp_indices%Add_field(dvtdp   , config)
+            Call wsp_indices%Add_field(dvpdp   , config)
+            Call wsp_indices%Add_field(dtdp    , config)
+            Call wsp_indices%Add_Field(drhodp  , config)
+
+            Call wsp_indices%Add_Field(d2vrdrdp, config)
+            Call wsp_indices%Add_Field(d2vtdtdp, config)
+
+            Call wsp_indices%Add_Field(d2vpdrdp, config)
+            Call wsp_indices%Add_Field(d2vpdtdp, config)
+
+            Call wsp_indices%Add_Field(d2vpdp2, config)
+        Else
+            Call wsp_indices%Add_Field(dvrdp,config)
+            Call wsp_indices%Add_field(dvtdp,config)
+            Call wsp_indices%Add_field(dvpdp,config)
+            Call wsp_indices%Add_Field(dvtdt,config)
+            Call wsp_indices%Add_field(dvpdt,config)
+            Call wsp_indices%Add_field(dtdp,config)
+        Endif
 
         do i = 1, n_active_scalars
           call wsp_indices%Add_Field(dchiadp(i), config)
@@ -313,17 +399,18 @@ Contains
         !   with new variables (e.g., vr overwrites W to save memory).
         !   Those overwrites are handled here, as they do not modify
         !   the buffer size.
+        If (.not. compressible) Then
+            d2Tdr2 = dPdr1
 
-        d2Tdr2 = dPdr1
+            dWdr   = d3Wdr3
+            dTdr   = dPdr1 !replaces d2tdr2, which replaced dpdr1
+            dZdr   = d2Zdr2
 
-        dWdr   = d3Wdr3
-        dTdr   = dPdr1 !replaces d2tdr2, which replaced dpdr1
-        dZdr   = d2Zdr2
-
-        vr    = wvar
-        dvrdr = dwdr
-        dtdt  = d2wdr2
-        dvrdt = dzdr
+            vr    = wvar
+            dvrdr = dwdr
+            dtdt  = d2wdr2
+            dvrdt = dzdr
+        Endif
 
         If (magnetism) Then
             d2cdr2 = d2adr2
@@ -332,6 +419,15 @@ Contains
             Bphi   = dcdr
             curlbtheta = d2cdr2
             curlbphi   = dadr
+        Endif
+                !///////////////////////////////////////////////////
+        ! Finally, for output purposes, this will let us see rho without changing
+        ! the Diagnostics modules
+        If (compressible) Then
+            pvar = rhovar
+            dpdr = drhodr
+            dpdt = drhodt
+            dpdp = drhodp
         Endif
 
         !///////////////////////////////////////////////////////////////
@@ -356,21 +452,22 @@ Contains
 
         ! These following code should pretty much never be modified by the user.
         if (.not. magnetism) then
-            wsfcount(1,2) = 4 + n_active_scalars + n_passive_scalars
-            wsfcount(2,2) = 4 + n_active_scalars + n_passive_scalars
-            wsfcount(3,2) = 4 + n_active_scalars + n_passive_scalars
+            wsfcount(1,2) = n_equations + n_active_scalars + n_passive_scalars
+            wsfcount(2,2) = n_equations + n_active_scalars + n_passive_scalars
+            wsfcount(3,2) = n_equations + n_active_scalars + n_passive_scalars
         else
             emfr     = avar
             emftheta = cvar
             emfphi   = avar+1
             ! seven RHS's (plus scalars) go back for the solve (1 field is differentiated and combined at the end)
-            wsfcount(1,2) = 7 + n_active_scalars + n_passive_scalars 
-            wsfcount(2,2) = 7 + n_active_scalars + n_passive_scalars 
-            wsfcount(3,2) = 7 + n_active_scalars + n_passive_scalars 
+            wsfcount(1,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
+            wsfcount(2,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
+            wsfcount(3,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
         endif
 
 
     End Subroutine Initialize_Field_Structure
+    
     Subroutine Initialize_Diagnostic_Indices()
         Implicit None
         Character*3 :: config
@@ -391,12 +488,14 @@ Contains
         !here we have some indices within the cobuffer
         ! Config p1a
         config = 'p1a'
-        Call co_indices%Add_Field(dpdr_cb,config)
+        If (.not. compressible) Call co_indices%Add_Field(dpdr_cb,config)
 
 
         ! Config p2a
         config = 'p2a'
-        Call co_indices%Add_Field(dpdt_cb,config)
+        If (.not. compressible) Call co_indices%Add_Field(dpdt_cb,config)
+
+        
         If (magnetism) Then
             Call co_indices%Add_Field(dbrdr_cb , config)
             Call co_indices%Add_Field(dbtdr_cb , config)
@@ -416,9 +515,11 @@ Contains
         !
         !  We now continue to increment the counters.
         config = 'p3a'
-        Call wsp_indices%Add_Field(dpdr , config)
-        Call wsp_indices%Add_Field(dpdt , config)
-        Call wsp_indices%Add_Field(dpdp , config)
+        If (.not. compressible) Then
+            Call wsp_indices%Add_Field(dpdr , config)
+            Call wsp_indices%Add_Field(dpdt , config)
+            Call wsp_indices%Add_Field(dpdp , config)
+        Endif
 
 
         If (magnetism) Then

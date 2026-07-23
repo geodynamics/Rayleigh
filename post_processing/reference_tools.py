@@ -130,6 +130,126 @@ class equation_coefficients:
             print("Version of input file was 1.")
             print("Converting current equation_coefficients instance's version to %i." %class_version)
 
+class scalar_equation_coefficients:
+    """ scalar equation coeff class  """
+    consts = ['dchirefdr_scale', 'kappa_chi_scale', 'source_chi_scale', 'buoy_chi_scale']
+    funcs  = ['dchirefdr', 'kappa_chi', 'source_chi', 'd_ln_kappa_chi', 'buoy_chi']
+    nconst = len(consts)
+    nfunc  = len(funcs)
+    version = 1
+    c_dict  = {name:i for i, name in enumerate(consts, start=1)}
+    f_dict  = {name:i for i, name in enumerate(funcs, start=1)}
+
+    def __init__(self, nscalars=1, radius=[], file=None):
+        """Reads/writes equation_coefficient and custom reference state files.
+
+        Keyword arguments:
+        nscalars:      The number of scalar fields for which to create the reference state.  
+                        This is only used if radius is provided and a new state is being created and defaults to 1.
+        radius:          If provided, a new state will be created with these
+                         radii and zero coefficients.
+        file:            If provided, the reference state will be read from the
+                         provided file.
+        """
+        if len(radius) != 0:
+            if file is not None:
+                raise RuntimeError("Cannot provide radius and file at the same time.")
+            self.nscalars = nscalars
+            nr = len(radius)
+            self.nr = nr
+            self.radius = numpy.asarray(radius, dtype='float64')
+            self.functions  = numpy.zeros((self.nscalars, self.nfunc, nr) , dtype='float64' )
+            
+            self.constants = numpy.zeros((self.nscalars, self.nconst)     , dtype='float64' )
+            self.cset      = numpy.zeros((self.nscalars, self.nconst)     , dtype='int32'   )
+            self.fset      = numpy.zeros((self.nscalars, self.nfunc)      , dtype='int32'   )
+        elif file is not None:
+            self.read(filename=file)
+
+    def __getattr__(self, nameindex):
+        if isinstance(nameindex, (list, tuple)):
+            name, index = nameindex
+        else:
+            name = nameindex
+            index = 0
+        
+        if name in self.f_dict:
+            return self.functions[index,self.f_dict[name] - 1,:]
+        elif name in self.c_dict:
+            return self.constants[index,self.c_dict[name] - 1]
+        else:
+            raise AttributeError("'{}' has no attribute '{}'".format(self.__class__, name))
+
+    def __setattr__(self, nameindex, value):
+        if isinstance(nameindex, (list, tuple)):
+            name, index = nameindex
+        else:
+            name = nameindex
+            index = 0
+
+        if name in self.f_dict:
+            self.set_function(value, name, index=index)
+        elif name in self.c_dict:
+            self.set_constant(value, name, index=index)
+        else:
+            super().__setattr__(name, value)
+
+    def set_function(self,y,f_name,index=0):
+
+        if isinstance(f_name,str):
+            fi = self.f_dict[f_name]
+        else:
+            fi = f_name
+
+        self.functions[index,fi-1,:] = y
+        self.fset[index,fi-1] = 1
+        
+    def set_constant(self,c,c_name,index=0):
+        if isinstance(c_name,str):
+            ci = self.c_dict[c_name]
+        else:
+            ci = c_name
+        self.constants[index,ci-1] = c
+        self.cset[index,ci-1] = 1
+
+    def write(self, filename='scoefs.dat'):
+        pi = numpy.array([314],dtype='int32')
+        nr = numpy.array([self.nr],dtype='int32')
+        version = numpy.array([self.version],dtype='int32')
+        nconst = numpy.array([self.nconst],dtype='int32')
+        nfunc = numpy.array([self.nfunc],dtype='int32')
+        nscalars = numpy.array([self.nscalars],dtype='int32')
+        fd = open(filename,'wb')
+        pi.tofile(fd)
+        version.tofile(fd)
+        nconst.tofile(fd)
+        nfunc.tofile(fd)
+        nscalars.tofile(fd)
+        self.cset.tofile(fd)
+        self.fset.tofile(fd)
+        self.constants.tofile(fd)
+        nr.tofile(fd)
+        self.radius.tofile(fd)
+        self.functions.tofile(fd)
+        fd.close() 
+        
+    def read(self, filename='equation_coefficients', override_nconst=False):
+        fd = open(filename,'rb')
+        picheck = numpy.fromfile(fd,dtype='int32',count=1)[0]
+       
+        self.version = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        self.nconst = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        self.nfunc = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        self.nscalars = numpy.fromfile(fd,dtype='int32', count=1)[0]
+        self.cset = numpy.fromfile(fd,dtype='int32',count=self.nscalars*self.nconst).reshape(self.nscalars,self.nconst)
+        self.fset = numpy.fromfile(fd,dtype='int32',count=self.nscalars*self.nfunc).reshape(self.nscalars,self.nfunc)
+        self.constants = numpy.fromfile(fd,dtype='float64',count=self.nscalars*self.nconst).reshape(self.nscalars,self.nconst)        
+        self.nr = numpy.fromfile(fd,dtype='int32',count=1)[0]
+        self.radius = numpy.fromfile(fd,dtype='float64',count=self.nr)
+        functions=numpy.fromfile(fd,dtype='float64',count=self.nscalars*self.nr*self.nfunc)
+        self.functions = numpy.reshape(functions, (self.nscalars,self.nfunc,self.nr))
+        fd.close()
+
 class background_state:
     nr = None
     radius = None

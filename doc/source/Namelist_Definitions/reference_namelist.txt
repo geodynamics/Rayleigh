@@ -40,7 +40,7 @@
 **gravity_power**
   Specifies the value of *n* (real number) used to determine the radial variation of gravitational acceleration *g* in reference type 1, where :math:`g\propto\left(\frac{r}{r_\mathrm{max}}\right)^n`.
 **ra_constants**
-  Indicates the desired value of specified constant coefficients when reading the value from main_input instead of from a custom-refernce file.  For use with override_constants or override_constant flags.   Syntax is:
+  Indicates the desired value of specified constant coefficients when reading the value from main_input instead of from a custom-reference file.  For use with override_constants or override_constant flags.   Syntax is:
   
   ::
   
@@ -51,9 +51,9 @@
     ...
    /
 **with_custom_constants**
-  Comma separated list of integers indicating which constant coefficients should be read from a custom-refernce file when with_custom_reference is true.  
+  Comma separated list of integers indicating which constant coefficients should be read from a custom-reference file when with_custom_reference is true.  
 **with_custom_functions**
-  Comma separated list of integers indicating which non-constant coefficients should be read from a custom-refernce file when with_custom_reference is true.
+  Comma separated list of integers indicating which non-constant coefficients should be read from a custom-reference file when with_custom_reference is true.
 **with_custom_reference**  
   Logical flag that indicates some constant and non-constant coefficients should be read from a custom-reference file and used to overwrite those values otherwise assigned for reference_Types 1--3.  Default value is .false.
 **custom_reference_file**

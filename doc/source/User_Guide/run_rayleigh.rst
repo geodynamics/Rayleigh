@@ -64,8 +64,8 @@ The number of spherical harmonic degrees :math:`N_\ell` is defined by
 
 .. math:: N_\ell = \frac{2}{3}N_\theta
 
-For optimal load-balancing, *nprow* should divide evenly into
-:math:`N_r` and *npcol* should divide evenly into the number of
+For optimal load-balancing, *npcol* should divide evenly into
+:math:`N_r` and *nprow* should divide evenly into the number of
 high-\ :math:`m`/low-:math:`m` pairs (i.e., :math:`N_\ell/2`). Both
 *nprow* and *npcol* must be at least 2.
 

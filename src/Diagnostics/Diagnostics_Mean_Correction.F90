@@ -206,8 +206,6 @@ Contains
         Logical :: compute_fluct_fluct = .false.
         Logical :: compute_mean_mean = .false.
         logical :: compute_mean_correct =.false.
-        Real*8 :: del2u, estress
-        Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
 
         compute_mean_correct = .false.
         !///////////////////////////////////////////////////
@@ -350,58 +348,13 @@ Contains
         !///////////////////////////////////////////////////////////////////////
         ! Viscous Force
 
-        Allocate(ovstheta(1:N_theta), ovs2theta(1:N_theta)) ! 1/sin; 1/sin^2
-        ovstheta = 1.0d0/sintheta
-        ovs2theta = 1.0d0/sin2theta
-
-        !Compute the dynamic viscosity mu=rho*nu (nu is kinematic viscosity)
-        Allocate(mu_visc(1:N_R), dmudr(1:N_R))
-
-        mu_visc = ref%density*nu
-        dmudr = mu_visc*(ref%dlnrho+dlnu)
-
-
-
-
-
         If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
             compute_quantity(viscous_mforce_r) ) Then
 
-            DO_PSI
-                ! first, compute all the terms multiplied by mu
-                ! Del^2 {u_r}
-                del2u = DDBUFF(PSI,dvrdrdr)+Two_Over_R(r)*buffer(PSI,dvrdr)
-                del2u = del2u+OneOverRSquared(r)*(DDBUFF(PSI,dvrdtdt)+cottheta(t)*buffer(PSI,dvrdt))
-                del2u = del2u+OneOverRSquared(r)*DDBUFF(PSI,dvrdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{u} }_r
-                del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-                        buffer(PSI,vr) + &
-                        buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t) + &
-                        ovstheta(t)*buffer(PSI,dvpdp) )
-
-                ! Move onto the non del squared terms (compressibility term)
-                del2u = del2u-One_Third*(buffer(PSI,dvrdr)*ref%dlnrho(r)+ &
-                        buffer(PSI,vr)*ref%d2lnrho(r) )
-
-
-
-                ! Finally, add the piece due to the gradient of mu
-                estress = buffer(PSI,dvrdr)+One_Third*buffer(PSI,vr)*ref%dlnrho(r)
-
-                mean_3dbuffer(PSI,vforce_r) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
-
-
-            END_DO
+            mean_3dbuffer(:,:,:,vforce_r) = vforce_buffer(:,:,:,vf_r)
 
             compute_mean_correct=.true.
         Endif
-
-
-        DeAllocate(mu_visc, dmudr)
-        DeAllocate(ovstheta,ovs2theta)
-
-
 
         !//////////////////////////////////////////////////////////
         ! Lorentz Forces
@@ -431,13 +384,9 @@ Contains
             compute_mean_correct=.true.
         Endif
 
-
-
-
         !//////////////////////////////////////////////////////
         ! Perform the averaging
         if (compute_mean_correct) then
-
             Call ComputeEll0(mean_3dbuffer,mean_ell0buffer)
         endif
     End Subroutine Mean_Correction

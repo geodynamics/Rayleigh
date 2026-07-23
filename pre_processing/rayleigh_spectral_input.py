@@ -64,18 +64,20 @@ def dealias_g2m(g):
   if m_max < 0: m_max = 0
   return m_max
 
-def radial_extents(rmin=None, rmax=None, aspect_ratio=None, shell_depth=None):
+def radial_extents(rmin=None, rmax=None, aspect_ratio=None, shell_depth=None, throw=True):
   """
   Return rmin and rmax if they aren't set using aspect_ratio and shell_depth.
   """
   if rmax is None:
     if shell_depth is None or aspect_ratio is None:
-      raise Exception("Must supply shell_depth and aspect_ratio if rmax is not set.")
-    rmax = shell_depth/(1.-aspect_ratio)
+      if throw: raise Exception("Must supply shell_depth and aspect_ratio if rmax is not set.")
+    else:
+      rmax = shell_depth/(1.-aspect_ratio)
   if rmin is None:
-    if aspect_ratio is None:
-      raise Exception("Must supply aspect_ratio if rmin is not set.")
-    rmin = rmax*aspect_ratio
+    if rmax is None or aspect_ratio is None:
+      if throw: raise Exception("Must supply aspect_ratio and rmax or shell_depth if rmin is not set.")
+    else:
+      rmin = rmax*aspect_ratio
   return rmin, rmax
 
 def swapwrite(vals,fd,byteswap=False):
@@ -349,11 +351,7 @@ class SpectralInput(object):
         raise Exception("'{}' supplied in func_kwargs.  You probably didn't mean to do this.".format((k,)))
 
     # some sanity checks that we have enough info for the radial domain
-    if func_radius:
-      rmin, rmax = radial_extents(rmin, rmax, aspect_ratio, shell_depth)
-    else:
-      rmin = None
-      rmax = None
+    rmin, rmax = radial_extents(rmin, rmax, aspect_ratio, shell_depth, throw=func_radius)
 
     # work out the number of points...
     if func_theta or func_phi:
@@ -685,8 +683,8 @@ def main(fformat=None, n_theta=None, lm_max=None, n_r=None, n_max=None, n_phi=No
       if expr.find('phi') >= 0: func_args.append("phi")
       if expr.find('radius') >= 0:
         func_args.append("radius")
-        if func_kwargs['rmin'] is None or func_kwargs['rmax'] is None:
-          func_kwargs['rmin'], func_kwargs['rmax'] = radial_extents(rmin, rmax, aspect_ratio, shell_depth)
+      if func_kwargs['rmin'] is None or func_kwargs['rmax'] is None:
+        func_kwargs['rmin'], func_kwargs['rmax'] = radial_extents(rmin, rmax, aspect_ratio, shell_depth, throw=expr.find('radius')>=0)
       func_argstr, exec_argstr = "", ""
       if len(func_args) > 0: 
         func_argstr = ", ".join([fa+"=None" for fa in func_args])+", "
@@ -758,7 +756,7 @@ if __name__ == "__main__":
     #--------------------------------------------------------------------------------
     #  )+                       end of grouping
     # - from http://rick.measham.id.au/paste/explain.pl
-    r = re.compile(r'(?:[^,; '+os.linesep+'([{]|\([^)]*\)|\[[^]]*\]|\{[^}]*\})+')
+    r = re.compile(r'(?:[^,; '+os.linesep+'([{]|\\([^)]*\\)|\\[[^]]*\\]|\\{[^}]*\\})+')
     modelist = r.findall(modestr)
     for index in modelist[:min(3,len(modelist)-1)]:
       if not index.isdigit():

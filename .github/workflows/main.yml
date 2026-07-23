@@ -102,9 +102,18 @@ jobs:
         sh ./tests/custom_reference/run_test.sh
     - name: Coupled BC Test
       run: |    
+
+        # chi custom reference state test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/chi_custom_reference/run_test.sh
+
         # coupled bc test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/coupled_bcs/run_test.sh
+
+        # vforce diagnostics regression test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/vforce_diagnostics/run_test.sh
         
         git diff > changes.diff
         git diff --exit-code --name-only

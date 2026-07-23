@@ -24,6 +24,7 @@
 !Benchmark 3: Jones et al. hydro + steady
 !Benchmark 4: Jones et al. mhd + steady
 !Benchmark 5: Jones et al. mhd + unsteady (In Development)
+!Benchmark 6: Jones et al. compressible + hydro + steady
 
 !  This module is intended for checking ACCURACY of Rayleigh's results.
 !  This module has NOT been programmed with EFFICIENCY in mind (much).
@@ -316,6 +317,63 @@ Contains
 
         Endif
 
+        If (benchmark_mode .eq. 6) Then
+            ! Jones et al. Hydro
+            ! Domain Size
+            rmin = 2.45d9
+            rmax = 7.0d9
+
+            !Physical Controls
+            rotation = .true.
+            advect_reference_state = .false.   
+            compressible = .true.
+            coriolis = .true.
+            centrifugal = .false. 
+            remove_reference = .false.
+            gravity = .true.
+            R_gas = 3.503d7        
+            gas_gamma = 1.5d0 
+
+            !Temporal Controls
+            max_time_step = 1.0d-2
+            alpha_implicit = 0.50001d0
+            cflmin = 0.4d0
+            cflmax = 0.6d0
+            
+            !Boundary Conditions
+            no_slip_boundaries = .false.
+            strict_L_Conservation = .false.
+            dtdr_bottom = 0.0d0
+            T_Top    = 28610.578735500316d0 !28610.578735500316d0 
+            T_Bottom = 352782.20265746413d0 !352782.20265746413d0 !111557.37012267619d0 !42.34d2
+            fix_tvar_top = .true.
+            fix_tvar_bottom = .true.
+            fix_dtdr_bottom = .false.
+
+            !Initial Conditions
+            init_type = 9
+            If (init_remember .eq. -1) Then
+                 ! Allow for restarts
+                 init_type = -1
+                 restart_iter = restart_remember
+            Endif
+
+            !Reference_Namelist
+            reference_type = 2
+            heating_type = 0
+            luminosity = 7.014464d32
+            poly_n = 2.0d0
+            poly_Nrho = 5.0d0
+            poly_mass = 1.9D30
+            poly_rho_i = 1.1d0
+            pressure_specific_heat = 1.0509d8
+            angular_velocity = 1.76d-4
+
+            !Transport Namelist
+            nu_top    = 3.64364d12
+            kappa_top = 3.64364d12
+        Endif
+
         If (ref_remember .eq. 4) Then
             reference_type = 4
             custom_reference_file = file_remember
@@ -490,6 +548,39 @@ Contains
 
         Endif
 
+        If (benchmark_mode .eq. 6) Then
+            benchmark_name = 'Jones et al. 2001  (Hydrodynamic Case) for Compressible'
+
+            drift_sign = 1 ! Prograde Drift
+            integration_interval = 100 !100
+            report_interval = 10000 ! 10000
+            max_numt = report_interval/integration_interval
+            msymm = 19
+            num_rep = 6
+            volume_norm = (four_pi/3.0d0)*(radius(1)**3-radius(n_r)**3)
+
+            Allocate(report_names(1:6))
+            Allocate(report_vals(1:6))
+            Allocate(report_sdev(1:6))
+            Allocate(suggested_vals(1:6))
+            report_names(1) = '  Kinetic Energy  : '
+            report_names(2) = '  Zonal KE        : '
+            report_names(3) = '  Meridional KE   : '
+            report_names(4) = '  Entropy         : '
+            report_names(5) = '  Vphi            : '
+            report_names(6) = '  Drift Frequency : '
+
+            !Suggested values from Jones et al. 2000
+            suggested_vals(1) = 5.57028d35
+            suggested_vals(2) = 6.38099d34
+            suggested_vals(3) = 1.49825d32
+            suggested_vals(4) = 7.9452d5
+            suggested_vals(5) = 690.27
+            suggested_vals(6) = 3.10512d-6
+            ! Ideally, we override namelist values with benchmark values here
+
+        Endif
+
         If (my_rank .eq. 0) Then
             If (benchmark_mode .gt. 0) Then
                 Call stdout%print(" ")
@@ -616,7 +707,7 @@ Contains
         Integer, Intent(In) :: iteration
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,:)
         Real*8, Intent(In) :: current_time
-        Real*8 :: tmp, tmp2, over_n_phi
+        Real*8 :: tmp, tmp2, tmp3, over_n_phi
         Real*8 :: rel_diff, mean_value, sdev_value
 
         Integer :: i,p,t,r, funit, iter_start, iter_end
@@ -646,28 +737,78 @@ Contains
             qty(1:n_phi,:,:,1) = buffer(1:n_phi,:,:,vphi)**2
             qty(1:n_phi,:,:,1) = qty(1:n_phi,:,:,1)+buffer(1:n_phi,:,:,vr)**2
             qty(1:n_phi,:,:,1) = qty(1:n_phi,:,:,1)+buffer(1:n_phi,:,:,vtheta)**2
-            Do t = my_theta%min, my_theta%max
-                Do r = my_r%min, my_r%max
-                    Do p = 1, n_phi
-                        qty(p,r,t,1) = qty(p,r,t,1)*ref%density(r)*0.5d0
+
+            If (compressible) Then
+
+                !KE for compressible
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        Do p = 1, n_phi
+                            qty(p,r,t,1) = qty(p,r,t,1)*exp(buffer(p,r,t,rhovar))*0.5d0
+                        Enddo
                     Enddo
                 Enddo
-            Enddo
 
+                !Zonal KE for compressible
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        ! compute mean v_phi here
+                        tmp = 0.0d0
+                        tmp2 = 0.d0
+                        Do p = 1, n_phi
+                            tmp = tmp+buffer(p,r,t,vphi)
+                            tmp2 = tmp2+buffer(p,r,t,rhovar)
+                        Enddo
+                        tmp = tmp*over_n_phi
+                        tmp2 = tmp*over_n_phi
+                        tmp = 0.5d0*exp(tmp2)*tmp**2
+                        qty(:,r,t,2) = tmp
+                    Enddo
+                Enddo
+
+                !Meridional KE for compressible
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        ! compute mean v_phi here
+                        tmp = 0.0d0
+                        tmp2 = 0.0d0
+                        tmp3 = 0.0d0
+                        Do p = 1, n_phi
+                            tmp = tmp+buffer(p,r,t,vr)
+                            tmp2 = tmp2+buffer(p,r,t,vtheta)
+                            tmp3 = tmp3+buffer(p,r,t,rhovar)
+                        Enddo
+                        tmp = tmp*over_n_phi
+                        tmp2 = tmp2*over_n_phi
+                        tmp3 = tmp3*over_n_phi
+                        tmp = 0.5d0*exp(tmp3)*(tmp**2+tmp2**2)
+                        qty(:,r,t,3) = tmp
+                    Enddo
+                Enddo
+
+            Else
+                !Global KE
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        Do p = 1, n_phi
+                            qty(p,r,t,1) = qty(p,r,t,1)*ref%density(r)*0.5d0
+                        Enddo
+                    Enddo
+                Enddo
 
             !Zonal KE
-            Do t = my_theta%min, my_theta%max
-                Do r = my_r%min, my_r%max
-                    ! compute mean v_phi here
-                    tmp = 0.0d0
-                    Do p = 1, n_phi
-                        tmp = tmp+buffer(p,r,t,vphi)
+                Do t = my_theta%min, my_theta%max
+                    Do r = my_r%min, my_r%max
+                        ! compute mean v_phi here
+                        tmp = 0.0d0
+                        Do p = 1, n_phi
+                            tmp = tmp+buffer(p,r,t,vphi)
+                        Enddo
+                        tmp = tmp*over_n_phi
+                        tmp = 0.5d0*ref%density(r)*tmp**2
+                        qty(:,r,t,2) = tmp
                     Enddo
-                    tmp = tmp*over_n_phi
-                    tmp = 0.5d0*ref%density(r)*tmp**2
-                    qty(:,r,t,2) = tmp
                 Enddo
-            Enddo
 
             !Meridional KE
             Do t = my_theta%min, my_theta%max
@@ -685,6 +826,7 @@ Contains
                     qty(:,r,t,3) = tmp
                 Enddo
             Enddo
+            Endif
 
             If (magnetism) Then
 
@@ -911,6 +1053,24 @@ Contains
                         fmtstr = '(ES14.6)'
                     Endif
 
+                    If (benchmark_mode .eq. 6) Then
+                        report_vals(1) = volume_integrals(1)*volume_norm
+                        report_vals(2) = volume_integrals(2)*volume_norm
+                        report_vals(3) = volume_integrals(3)*volume_norm
+                        report_vals(4) = observations(3)
+                        report_vals(5) = observations(2)
+
+                        report_sdev(1) = volume_sdev(1)*volume_norm
+                        report_sdev(2) = volume_sdev(2)*volume_norm
+                        report_sdev(3) = volume_sdev(3)*volume_norm
+                        report_sdev(4) = obs_sdev(3)
+                        report_sdev(5) = obs_sdev(2)
+
+                        Call get_moments(drifts(1:global_count,2),mean_value,sdev_value)
+                        report_vals(6) = mean_value
+                        report_sdev(6) = sdev_value
+                        fmtstr = '(ES14.6)'
+                    Endif
 
                     Do i = 1, num_rep
                         rel_diff = (report_vals(i)-suggested_vals(i))/suggested_vals(i)*100

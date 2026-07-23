@@ -187,6 +187,401 @@ Contains
     Subroutine Compute_Viscous_Force(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Integer :: r, k, t
+
+        !////////////////////////////////////////////////////////
+
+        ! r-direction; Full
+        If (compute_quantity(viscous_force_r) .or. &
+            compute_quantity(visc_work)) Then
+            DO_PSI
+                qty(PSI) = mean_3dbuffer(PSI,vforce_r)-mean_ell0buffer(r,vforce_r)
+            END_DO
+            If (compute_quantity(viscous_force_r)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work)) Then
+                DO_PSI
+                    tmp1(PSI)=buffer(PSI,vr)*qty(PSI)
+                END_DO
+            Endif
+        Endif
+
+        !Theta-direction; Full
+        If (compute_quantity(viscous_force_theta) .or. &
+            compute_quantity(visc_work)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vf_t)
+
+            If (compute_quantity(viscous_force_theta)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+buffer(PSI,vtheta)*qty(PSI)
+                END_DO
+            Endif
+        Endif
+
+
+        !Phi-direction
+        If (compute_quantity(viscous_force_phi) .or. &
+            compute_quantity(visc_work)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vf_p)
+
+            If (compute_quantity(viscous_force_phi)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+buffer(PSI,vphi)*qty(PSI)
+                END_DO
+                Call Add_Quantity(tmp1)
+            Endif
+        Endif
+
+        !.............................................................
+
+        ! r-direction; fluctuating
+        If (compute_quantity(viscous_pforce_r) .or. &
+            compute_quantity(visc_work_pp)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vfp_r)
+
+            If (Compute_quantity(viscous_pforce_r)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work_pp)) Then
+                DO_PSI
+                    tmp1(PSI)=fbuffer(PSI,vr)*qty(PSI)
+                END_DO
+            Endif
+        Endif
+
+        !Theta-direction; Fluctuating
+        If (compute_quantity(viscous_pforce_theta) .or. &
+            compute_quantity(visc_work_pp)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vfp_t)
+
+            If (Compute_quantity(viscous_pforce_theta)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work_pp)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+fbuffer(PSI,vtheta)*qty(PSI)
+                END_DO
+            Endif
+        Endif
+
+        !Phi-direction (fluctuating)
+        If (compute_quantity(viscous_pforce_phi) .or. &
+            compute_quantity(visc_work_pp)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vfp_p)
+
+            If (Compute_quantity(viscous_pforce_phi)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work_pp)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+fbuffer(PSI,vphi)*qty(PSI)
+                END_DO
+                Call Add_Quantity(tmp1)
+            Endif
+        Endif
+
+        !.............................................................
+
+        ! r-direction; mean
+        If (compute_quantity(viscous_mforce_r) .or. &
+            compute_quantity(visc_work_mm)) Then
+
+            DO_PSI
+                qty(PSI) = vforce_buffer(PSI,vfm_r)-mean_ell0buffer(r,vforce_r)
+            END_DO
+
+            If (Compute_quantity(viscous_mforce_r)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work_mm)) Then
+                DO_PSI
+                    tmp1(PSI)=m0_values(PSI2,vr)*qty(PSI)
+                END_DO
+            Endif
+        Endif
+
+        !Theta-direction; Mean
+        If (compute_quantity(viscous_mforce_theta) .or. &
+            compute_quantity(visc_work_mm)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vfm_t)
+
+            If (Compute_quantity(viscous_mforce_theta)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work_mm)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+m0_values(PSI2,vtheta)*qty(PSI)
+                END_DO
+            Endif
+        Endif
+
+        !Phi-direction (mean)
+        If (compute_quantity(viscous_mforce_phi) .or. compute_quantity(samom_diffusion) .or. compute_quantity(visc_work_mm)) Then
+
+            qty(:,:,:) = vforce_buffer(:,:,:,vfm_p)
+
+            If (compute_quantity(viscous_mforce_phi)) Call Add_Quantity(qty)
+            If (compute_quantity(visc_work_mm)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+m0_values(PSI2,vphi)*qty(PSI)
+                END_DO
+                Call Add_Quantity(tmp1)
+            Endif
+            If (compute_quantity(samom_diffusion)) Then
+                    DO_PSI
+                        qty(PSI) = qty(PSI)*radius(r)*sintheta(t)
+                    END_DO
+                    Call Add_Quantity(qty)
+            Endif
+        Endif
+
+    End Subroutine Compute_Viscous_Force
+
+    Subroutine Compute_Pressure_Force(buffer)
+        Implicit None
+        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real*8  :: pfactor(my_r%min:my_r%max)
+        Integer :: r,k, t
+        ! This routine essentially just compute the pressure gradient, but
+        ! scaled by the reference pressure term.  This is typically either 1
+        ! or 1/Ekman number.  We still treat it as a function of radius to
+        ! keep things general.
+        pfactor(my_r%min:my_r%max) = ref%dpdr_w_term(my_r%min:my_r%max) &
+                                    /ref%density(my_r%min:my_r%max)
+
+        !////////////////////////////////////////
+        !       Pressure Force
+
+
+        ! NOTE:  The ell=0 component of the r-momentum equation is entirely described by
+        !        hydrostatic balance between the pressure and entropy perturbations
+        !        (the reference state is assumed to be in hydrostatic balance).
+        !        As such, the ell=0 pressure force is uninteresting from the point of
+        !        view of the flow.  We explicitly separate the ell=0 component for this
+        !        term (as with the buoyancy term).
+
+        ! pressure full
+        ! r
+        If (compute_quantity(pressure_force_r) .or. compute_quantity(press_work)) Then
+            DO_PSI
+                qty(PSI) = -(buffer(PSI,dpdr)-ell0_values(r,dpdr))*pfactor(r) + &
+                            (buffer(PSI,pvar)-ell0_values(r,pvar))*pfactor(r) * &
+                            ref%dlnrho(r)
+            END_DO
+            If (compute_quantity(pressure_force_r)) Call Add_Quantity(qty)
+            If (compute_quantity(press_work)) Then
+                DO_PSI
+                    tmp1(PSI)=qty(PSI)*buffer(PSI,vr)
+                END_DO
+            Endif
+        Endif
+
+        ! theta
+        If (compute_quantity(pressure_force_theta) .or. compute_quantity(press_work)) Then
+            DO_PSI
+                qty(PSI) = -buffer(PSI,dpdt)*pfactor(r)*One_Over_R(r)
+            END_DO
+            If (compute_quantity(pressure_force_theta)) Call Add_Quantity(qty)
+            If (compute_quantity(press_work)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+qty(PSI)*buffer(PSI,vtheta)
+                END_DO
+            Endif
+        Endif
+
+        ! phi
+        If (compute_quantity(pressure_force_phi) .or. compute_quantity(press_work)) Then
+            DO_PSI
+                qty(PSI) = -buffer(PSI,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)
+            END_DO
+            If (compute_quantity(pressure_force_phi)) Call Add_Quantity(qty)
+            If (compute_quantity(press_work)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+qty(PSI)*buffer(PSI,vphi)
+                END_DO
+                Call Add_Quantity(tmp1)
+            Endif
+        Endif
+
+
+        !fluctuating pressure
+        ! r
+        If (compute_quantity(pressure_pforce_r) .or. compute_quantity(press_work_pp)) Then
+            DO_PSI
+                qty(PSI) = -fbuffer(PSI,dpdr)*pfactor(r) + &
+                            fbuffer(PSI,pvar)*pfactor(r) * &
+                            ref%dlnrho(r)
+            END_DO
+            If (compute_quantity(pressure_pforce_r)) Call Add_Quantity(qty)
+            If (compute_quantity(press_work_pp)) Then
+                DO_PSI
+                    tmp1(PSI)=qty(PSI)*fbuffer(PSI,vr)
+                END_DO
+            Endif
+        Endif
+
+        ! theta
+        If (compute_quantity(pressure_pforce_theta) .or. compute_quantity(press_work_pp)) Then
+            DO_PSI
+                qty(PSI) = -fbuffer(PSI,dpdt)*pfactor(r)*One_Over_R(r)
+            END_DO
+            If (compute_quantity(pressure_pforce_theta)) Call Add_Quantity(qty)
+            If (compute_quantity(press_work_pp)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+qty(PSI)*fbuffer(PSI,vtheta)
+                END_DO
+            Endif
+        Endif
+
+        ! phi
+        If (compute_quantity(pressure_pforce_phi) .or. compute_quantity(press_work_pp)) Then
+            DO_PSI
+                qty(PSI) = -fbuffer(PSI,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)
+            END_DO
+            If (compute_quantity(pressure_pforce_phi)) Call Add_Quantity(qty)
+            If (compute_quantity(press_work_pp)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+qty(PSI)*fbuffer(PSI,vphi)
+                END_DO
+                Call Add_Quantity(tmp1)
+            Endif
+        Endif
+
+
+        ! Mean pressure
+
+        ! r
+        If (compute_quantity(pressure_mforce_r).or. compute_quantity(press_work_mm)) Then
+            DO_PSI
+                qty(PSI) = -( m0_values(PSI2,dpdr) - ell0_values(r,dpdr) )*pfactor(r) + &
+                            ( m0_values(PSI2,pvar) - ell0_values(r,pvar) )*pfactor(r) * &
+                            ref%dlnrho(r)
+            END_DO
+
+            If (compute_quantity(pressure_mforce_r)) Call Add_Quantity(qty)
+
+            If (compute_quantity(press_work_mm)) Then
+                DO_PSI
+                    tmp1(PSI)=qty(PSI)*m0_values(PSI2,vr)
+                END_DO
+            Endif
+        Endif
+
+
+
+        ! Theta
+        If (compute_quantity(pressure_mforce_theta) .or. compute_quantity(press_work_mm)) Then
+            DO_PSI
+                qty(PSI) = -m0_values(PSI2,dpdt)*pfactor(r)*One_Over_R(r)
+            END_DO
+            If (compute_quantity(pressure_mforce_theta)) Call Add_Quantity(qty)
+
+            If (compute_quantity(press_work_mm)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+qty(PSI)*m0_values(PSI2,vtheta)
+                END_DO
+            Endif
+        Endif
+
+        ! Phi
+        If (compute_quantity(pressure_mforce_phi) .or. compute_quantity(press_work_mm)) Then
+            DO_PSI
+                qty(PSI) = -m0_values(PSI2,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)
+            END_DO
+
+            If (compute_quantity(pressure_mforce_phi)) Call Add_Quantity(qty)
+
+            If (compute_quantity(press_work_mm)) Then
+                DO_PSI
+                    tmp1(PSI)=tmp1(PSI)+qty(PSI)*m0_values(PSI2,vphi)
+                END_DO
+                Call Add_Quantity(tmp1)
+            Endif
+
+        Endif
+
+
+
+        ! Spherically symmetric component
+        If (compute_quantity(pressure_force_ell0_r)) Then
+            DO_PSI
+                qty(PSI) = -(ell0_values(r,dpdr))*pfactor(r) + &
+                            (ell0_values(r,pvar))*pfactor(r) * &
+                            ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
+
+    End Subroutine Compute_Pressure_Force
+
+    Subroutine Initialize_Viscous_Force()
+        Implicit None
+        nvf = 0
+
+        If (compute_quantity(viscous_force_r) .or. &
+            compute_quantity(visc_work) .or. &
+            compute_quantity(viscous_mforce_r)) Then
+            nvf = nvf+1
+            vf_r = nvf
+        Endif
+
+        If (compute_quantity(viscous_force_theta) .or. &
+            compute_quantity(visc_work)) Then
+            nvf = nvf + 1
+            vf_t = nvf
+        Endif
+
+        If (compute_quantity(viscous_force_phi) .or. &
+            compute_quantity(visc_work)) Then
+            nvf = nvf + 1
+            vf_p = nvf
+        Endif
+
+        If (compute_quantity(viscous_pforce_r) .or. &
+            compute_quantity(visc_work_pp)) Then
+            nvf = nvf+1
+            vfp_r = nvf
+        Endif
+
+        If (compute_quantity(viscous_pforce_theta) .or. &
+            compute_quantity(visc_work_pp)) Then
+            nvf = nvf + 1
+            vfp_t = nvf
+        Endif
+
+        If (compute_quantity(viscous_pforce_phi) .or. &
+            compute_quantity(visc_work_pp)) Then
+            nvf = nvf + 1
+            vfp_p = nvf
+        Endif
+
+        If (compute_quantity(viscous_mforce_r) .or. &
+            compute_quantity(visc_work_mm)) Then
+            nvf = nvf+1
+            vfm_r = nvf
+        Endif
+
+        If (compute_quantity(viscous_mforce_theta) .or. &
+            compute_quantity(visc_work_mm)) Then
+            nvf = nvf + 1
+            vfm_t = nvf
+        Endif
+
+        If (compute_quantity(viscous_mforce_phi) .or. &
+            compute_quantity(samom_diffusion) .or. &
+            compute_quantity(visc_work_mm)) Then
+            nvf = nvf + 1
+            vfm_p = nvf
+        Endif
+
+        if (nvf .gt. 0) Then
+            Allocate(vforce_buffer(1:n_phi, my_r%min:my_r%max, my_theta%min:my_theta%max,1:nvf))
+        Endif
+
+    End Subroutine Initialize_Viscous_Force
+
+    Subroutine Viscous_Force(buffer)
+        Implicit None
+        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
         Real*8 :: del2u, estress
         Real*8, Allocatable :: mu_visc(:), dmudr(:), ovstheta(:), ovs2theta(:)
@@ -201,62 +596,40 @@ Contains
         mu_visc = ref%density*nu
         dmudr = mu_visc*(ref%dlnrho+dlnu)
 
+        If (compute_quantity(viscous_force_r) .or. &
+            compute_quantity(visc_work) .or. &
+            compute_quantity(viscous_mforce_r) ) Then
 
-        !////////////////////////////////////////////////////////
-
-        ! r-direction; Full
-        !If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work)) Then
-
-        !    DO_PSI
+            DO_PSI
                 ! first, compute all the terms multiplied by mu
                 ! Del^2 {u_r}
-        !        del2u = DDBUFF(PSI,dvrdrdr)+Two_Over_R(r)*buffer(PSI,dvrdr)
-        !        del2u = del2u+OneOverRSquared(r)*(DDBUFF(PSI,dvrdtdt)+cottheta(t)*buffer(PSI,dvrdt))
-        !        del2u = del2u+OneOverRSquared(r)*DDBUFF(PSI,dvrdpdp)*ovs2theta(t)
+                del2u = DDBUFF(PSI,dvrdrdr)+Two_Over_R(r)*buffer(PSI,dvrdr)
+                del2u = del2u+OneOverRSquared(r)*(DDBUFF(PSI,dvrdtdt)+cottheta(t)*buffer(PSI,dvrdt))
+                del2u = del2u+OneOverRSquared(r)*DDBUFF(PSI,dvrdpdp)*ovs2theta(t)
 
                 !Add geometric terms to make this { Del^2{u} }_r
-        !        del2u = del2u-2.0d0*OneOverRsquared(r)*( &
-        !                buffer(PSI,vr) + &
-        !                buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t) + &
-        !                ovstheta(t)*buffer(PSI,dvpdp) )
+                del2u = del2u-2.0d0*OneOverRsquared(r)*( &
+                        buffer(PSI,vr) + &
+                        buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t) + &
+                        ovstheta(t)*buffer(PSI,dvpdp) )
 
                 ! Move onto the non del squared terms (compressibility term)
-        !        del2u = del2u-One_Third*(buffer(PSI,dvrdr)*ref%dlnrho(r)+ &
-        !                buffer(PSI,vr)*ref%d2lnrho(r) )
+                del2u = del2u-One_Third*(buffer(PSI,dvrdr)*ref%dlnrho(r)+ &
+                        buffer(PSI,vr)*ref%d2lnrho(r) )
 
 
 
                 ! Finally, add the piece due to the gradient of mu
-        !        estress = buffer(PSI,dvrdr)+One_Third*buffer(PSI,vr)*ref%dlnrho(r)
+                estress = buffer(PSI,dvrdr)+One_Third*buffer(PSI,vr)*ref%dlnrho(r)
 
-        !        qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
+                vforce_buffer(PSI,vf_r) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
 
-
-        !    END_DO
-
-        !    If (compute_quantity(viscous_force_r)) Call Add_Quantity(qty)
-        !    If (compute_quantity(visc_work)) Then
-        !        DO_PSI
-        !            tmp1(PSI)=buffer(PSI,vr)*qty(PSI)
-        !        END_DO
-        !    Endif
-        !Endif
-
-        ! r-direction; Full
-        If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work)) Then
-            DO_PSI
-                qty(PSI) = mean_3dbuffer(PSI,vforce_r)-mean_ell0buffer(r,vforce_r)
             END_DO
-            If (compute_quantity(viscous_force_r)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work)) Then
-                DO_PSI
-                    tmp1(PSI)=buffer(PSI,vr)*qty(PSI)
-                END_DO
-            Endif
         Endif
 
         !Theta-direction; Full
-        If (compute_quantity(viscous_force_theta) .or. compute_quantity(visc_work)) Then
+        If (compute_quantity(viscous_force_theta) .or. &
+            compute_quantity(visc_work)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -276,20 +649,13 @@ Contains
                 ! Finally, add the piece due to the gradient of mu
                 estress = One_Over_R(r)*(buffer(PSI,dvrdt)-buffer(PSI,vtheta) ) +buffer(PSI,dvtdr)
 
-                qty(PSI) = dmudr(r)*estress +mu_visc(r)*del2u
+                vforce_buffer(PSI,vf_t) = dmudr(r)*estress +mu_visc(r)*del2u
             END_DO
-
-            If (compute_quantity(viscous_force_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work)) Then
-                DO_PSI
-                    tmp1(PSI)=tmp1(PSI)+buffer(PSI,vtheta)*qty(PSI)
-                END_DO
-            Endif
         Endif
 
-
         !Phi-direction
-        If (compute_quantity(viscous_force_phi) .or. compute_quantity(visc_work)) Then
+        If (compute_quantity(viscous_force_phi) .or. &
+            compute_quantity(visc_work)) Then
 
             DO_PSI
                 del2u = DDBUFF(PSI,dvpdrdr)+Two_Over_R(r)*buffer(PSI,dvpdr)
@@ -310,23 +676,15 @@ Contains
                 estress = One_Over_R(r)*(ovstheta(t)*buffer(PSI,dvrdp)-buffer(PSI,vphi) )+ &
                           buffer(PSI,dvpdr)
 
-                qty(PSI) =dmudr(r)*estress + mu_visc(r)*del2u
+                vforce_buffer(PSI,vf_p) = dmudr(r)*estress + mu_visc(r)*del2u
             END_DO
-
-            If (compute_quantity(viscous_force_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work)) Then
-                DO_PSI
-                    tmp1(PSI)=tmp1(PSI)+buffer(PSI,vphi)*qty(PSI)
-                END_DO
-                Call Add_Quantity(tmp1)
-            Endif
         Endif
-
 
         !.............................................................
 
         ! r-direction; fluctuating
-        If (compute_quantity(viscous_pforce_r) .or. compute_quantity(visc_work_pp)) Then
+        If (compute_quantity(viscous_pforce_r) .or. &
+            compute_quantity(visc_work_pp)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -350,21 +708,14 @@ Contains
                 ! Finally, add the piece due to the gradient of mu
                 estress = fbuffer(PSI,dvrdr)+One_Third*fbuffer(PSI,vr)*ref%dlnrho(r)
 
-                qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
-
+                vforce_buffer(PSI,vfp_r) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
 
             END_DO
-
-            If (Compute_quantity(viscous_pforce_r)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work_pp)) Then
-                DO_PSI
-                    tmp1(PSI)=fbuffer(PSI,vr)*qty(PSI)
-                END_DO
-            Endif
         Endif
 
         !Theta-direction; Fluctuating
-        If (compute_quantity(viscous_pforce_theta) .or. compute_quantity(visc_work_pp)) Then
+        If (compute_quantity(viscous_pforce_theta) .or. &
+            compute_quantity(visc_work_pp)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -384,20 +735,13 @@ Contains
                 ! Finally, add the piece due to the gradient of mu
                 estress = One_Over_R(r)*(fbuffer(PSI,dvrdt)-fbuffer(PSI,vtheta) ) +fbuffer(PSI,dvtdr)
 
-                qty(PSI) = dmudr(r)*estress +mu_visc(r)*del2u
+                vforce_buffer(PSI,vfp_t) = dmudr(r)*estress +mu_visc(r)*del2u
             END_DO
-
-
-            If (Compute_quantity(viscous_pforce_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work_pp)) Then
-                DO_PSI
-                    tmp1(PSI)=tmp1(PSI)+fbuffer(PSI,vtheta)*qty(PSI)
-                END_DO
-            Endif
         Endif
 
         !Phi-direction (fluctuating)
-        If (compute_quantity(viscous_pforce_phi) .or. compute_quantity(visc_work_pp)) Then
+        If (compute_quantity(viscous_pforce_phi) .or. &
+            compute_quantity(visc_work_pp)) Then
 
             DO_PSI
                 del2u = d2_fbuffer(PSI,dvpdrdr)+Two_Over_R(r)*fbuffer(PSI,dvpdr)
@@ -418,20 +762,15 @@ Contains
                 estress = One_Over_R(r)*(ovstheta(t)*fbuffer(PSI,dvrdp)-fbuffer(PSI,vphi) )+ &
                           fbuffer(PSI,dvpdr)
 
-                qty(PSI) =dmudr(r)*estress + mu_visc(r)*del2u
+                vforce_buffer(PSI,vfp_p) =dmudr(r)*estress + mu_visc(r)*del2u
             END_DO
-
-            If (Compute_quantity(viscous_pforce_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work_pp)) Then
-                DO_PSI
-                    tmp1(PSI)=tmp1(PSI)+fbuffer(PSI,vphi)*qty(PSI)
-                END_DO
-                Call Add_Quantity(tmp1)
-            Endif
         Endif
 
+        !.............................................................
+
         ! r-direction; mean
-        If (compute_quantity(viscous_mforce_r) .or. compute_quantity(visc_work_mm)) Then
+        If (compute_quantity(viscous_mforce_r) .or. &
+            compute_quantity(visc_work_mm)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -450,31 +789,17 @@ Contains
                 del2u = del2u-One_Third*(m0_values(PSI2,dvrdr)*ref%dlnrho(r)+ &
                         m0_values(PSI2,vr)*ref%d2lnrho(r) )
 
-
-
                 ! Finally, add the piece due to the gradient of mu
                 estress = m0_values(PSI2,dvrdr)+One_Third*m0_values(PSI2,vr)*ref%dlnrho(r)
 
-                qty(PSI) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
-                qty(PSI) = qty(PSI)-mean_ell0buffer(r,vforce_r)
-
+                vforce_buffer(PSI,vfm_r) = 2.0d0*dmudr(r)*estress + mu_visc(r)*del2u
+                
             END_DO
-
-
-            If (Compute_quantity(viscous_mforce_r)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work_mm)) Then
-                DO_PSI
-                    tmp1(PSI)=m0_values(PSI2,vr)*qty(PSI)
-                END_DO
-            Endif
         Endif
 
-
-
-
-
         !Theta-direction; Mean
-        If (compute_quantity(viscous_mforce_theta) .or. compute_quantity(visc_work_mm)) Then
+        If (compute_quantity(viscous_mforce_theta) .or. &
+            compute_quantity(visc_work_mm)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -494,23 +819,14 @@ Contains
                 ! Finally, add the piece due to the gradient of mu
                 estress = One_Over_R(r)*(m0_values(PSI2,dvrdt)-m0_values(PSI2,vtheta) ) +m0_values(PSI2,dvtdr)
 
-                qty(PSI) = dmudr(r)*estress +mu_visc(r)*del2u
+                vforce_buffer(PSI,vfm_t) = dmudr(r)*estress +mu_visc(r)*del2u
             END_DO
-
-            If (Compute_quantity(viscous_mforce_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work_mm)) Then
-                DO_PSI
-                    tmp1(PSI)=tmp1(PSI)+m0_values(PSI2,vtheta)*qty(PSI)
-                END_DO
-            Endif
         Endif
 
-
-
-
-
         !Phi-direction (mean)
-        If (compute_quantity(viscous_mforce_phi) .or. compute_quantity(samom_diffusion) .or. compute_quantity(visc_work_mm)) Then
+        If (compute_quantity(viscous_mforce_phi) .or. &
+            compute_quantity(samom_diffusion) .or. &
+            compute_quantity(visc_work_mm)) Then
 
             DO_PSI
                 del2u = d2_m0(PSI2,dvpdrdr)+Two_Over_R(r)*m0_values(PSI2,dvpdr)
@@ -531,204 +847,20 @@ Contains
                 estress = One_Over_R(r)*(ovstheta(t)*m0_values(PSI2,dvrdp)-m0_values(PSI2,vphi) )+ &
                           m0_values(PSI2,dvpdr)
 
-                qty(PSI) =dmudr(r)*estress + mu_visc(r)*del2u
+                vforce_buffer(PSI,vfm_p) = dmudr(r)*estress + mu_visc(r)*del2u
             END_DO
-
-            If (compute_quantity(viscous_mforce_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(visc_work_mm)) Then
-                DO_PSI
-                    tmp1(PSI)=tmp1(PSI)+m0_values(PSI2,vphi)*qty(PSI)
-                END_DO
-                Call Add_Quantity(tmp1)
-            Endif
-            If (compute_quantity(samom_diffusion)) Then
-                    DO_PSI
-                        qty(PSI) = qty(PSI)*radius(r)*sintheta(t)
-                    END_DO
-                    Call Add_Quantity(qty)
-            Endif
         Endif
+
         DeAllocate(mu_visc, dmudr)
         DeAllocate(ovstheta,ovs2theta)
-    End Subroutine Compute_Viscous_Force
 
-Subroutine Compute_Pressure_Force(buffer)
-    Implicit None
-    Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-    Real*8  :: pfactor(my_r%min:my_r%max)
-    Integer :: r,k, t
-    ! This routine essentially just compute the pressure gradient, but
-    ! scaled by the reference pressure term.  This is typically either 1
-    ! or 1/Ekman number.  We still treat it as a function of radius to
-    ! keep things general.
-    pfactor(my_r%min:my_r%max) = ref%dpdr_w_term(my_r%min:my_r%max) &
-                                /ref%density(my_r%min:my_r%max)
+    End Subroutine Viscous_Force
 
-    !////////////////////////////////////////
-    !       Pressure Force
-
-
-    ! NOTE:  The ell=0 component of the r-momentum equation is entirely described by
-    !        hydrostatic balance between the pressure and entropy perturbations
-    !        (the reference state is assumed to be in hydrostatic balance).
-    !        As such, the ell=0 pressure force is uninteresting from the point of
-    !        view of the flow.  We explicitly separate the ell=0 component for this
-    !        term (as with the buoyancy term).
-
-    ! pressure full
-    ! r
-    If (compute_quantity(pressure_force_r) .or. compute_quantity(press_work)) Then
-        DO_PSI
-            qty(PSI) = -(buffer(PSI,dpdr)-ell0_values(r,dpdr))*pfactor(r) + &
-                        (buffer(PSI,pvar)-ell0_values(r,pvar))*pfactor(r) * &
-                        ref%dlnrho(r)
-        END_DO
-        If (compute_quantity(pressure_force_r)) Call Add_Quantity(qty)
-        If (compute_quantity(press_work)) Then
-            DO_PSI
-                tmp1(PSI)=qty(PSI)*buffer(PSI,vr)
-            END_DO
+    Subroutine Finalize_Viscous_Force()
+        Implicit None
+        If (nvf .gt. 0) Then
+            DeAllocate(vforce_buffer)
         Endif
-    Endif
-
-    ! theta
-    If (compute_quantity(pressure_force_theta) .or. compute_quantity(press_work)) Then
-        DO_PSI
-            qty(PSI) = -buffer(PSI,dpdt)*pfactor(r)*One_Over_R(r)
-        END_DO
-        If (compute_quantity(pressure_force_theta)) Call Add_Quantity(qty)
-        If (compute_quantity(press_work)) Then
-            DO_PSI
-                tmp1(PSI)=tmp1(PSI)+qty(PSI)*buffer(PSI,vtheta)
-            END_DO
-        Endif
-    Endif
-
-    ! phi
-    If (compute_quantity(pressure_force_phi) .or. compute_quantity(press_work)) Then
-        DO_PSI
-            qty(PSI) = -buffer(PSI,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)
-        END_DO
-        If (compute_quantity(pressure_force_phi)) Call Add_Quantity(qty)
-        If (compute_quantity(press_work)) Then
-            DO_PSI
-                tmp1(PSI)=tmp1(PSI)+qty(PSI)*buffer(PSI,vphi)
-            END_DO
-            Call Add_Quantity(tmp1)
-        Endif
-    Endif
-
-
-    !fluctuating pressure
-    ! r
-    If (compute_quantity(pressure_pforce_r) .or. compute_quantity(press_work_pp)) Then
-        DO_PSI
-            qty(PSI) = -fbuffer(PSI,dpdr)*pfactor(r) + &
-                        fbuffer(PSI,pvar)*pfactor(r) * &
-                        ref%dlnrho(r)
-        END_DO
-        If (compute_quantity(pressure_pforce_r)) Call Add_Quantity(qty)
-        If (compute_quantity(press_work_pp)) Then
-            DO_PSI
-                tmp1(PSI)=qty(PSI)*fbuffer(PSI,vr)
-            END_DO
-        Endif
-    Endif
-
-    ! theta
-    If (compute_quantity(pressure_pforce_theta) .or. compute_quantity(press_work_pp)) Then
-        DO_PSI
-            qty(PSI) = -fbuffer(PSI,dpdt)*pfactor(r)*One_Over_R(r)
-        END_DO
-        If (compute_quantity(pressure_pforce_theta)) Call Add_Quantity(qty)
-        If (compute_quantity(press_work_pp)) Then
-            DO_PSI
-                tmp1(PSI)=tmp1(PSI)+qty(PSI)*fbuffer(PSI,vtheta)
-            END_DO
-        Endif
-    Endif
-
-    ! phi
-    If (compute_quantity(pressure_pforce_phi) .or. compute_quantity(press_work_pp)) Then
-        DO_PSI
-            qty(PSI) = -fbuffer(PSI,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)
-        END_DO
-        If (compute_quantity(pressure_pforce_phi)) Call Add_Quantity(qty)
-        If (compute_quantity(press_work_pp)) Then
-            DO_PSI
-                tmp1(PSI)=tmp1(PSI)+qty(PSI)*fbuffer(PSI,vphi)
-            END_DO
-            Call Add_Quantity(tmp1)
-        Endif
-    Endif
-
-
-    ! Mean pressure
-
-    ! r
-    If (compute_quantity(pressure_mforce_r).or. compute_quantity(press_work_mm)) Then
-        DO_PSI
-            qty(PSI) = -( m0_values(PSI2,dpdr) - ell0_values(r,dpdr) )*pfactor(r) + &
-                        ( m0_values(PSI2,pvar) - ell0_values(r,pvar) )*pfactor(r) * &
-                        ref%dlnrho(r)
-        END_DO
-
-        If (compute_quantity(pressure_mforce_r)) Call Add_Quantity(qty)
-
-        If (compute_quantity(press_work_mm)) Then
-            DO_PSI
-                tmp1(PSI)=qty(PSI)*m0_values(PSI2,vr)
-            END_DO
-        Endif
-    Endif
-
-
-
-    ! Theta
-    If (compute_quantity(pressure_mforce_theta) .or. compute_quantity(press_work_mm)) Then
-        DO_PSI
-            qty(PSI) = -m0_values(PSI2,dpdt)*pfactor(r)*One_Over_R(r)
-        END_DO
-        If (compute_quantity(pressure_mforce_theta)) Call Add_Quantity(qty)
-
-        If (compute_quantity(press_work_mm)) Then
-            DO_PSI
-                tmp1(PSI)=tmp1(PSI)+qty(PSI)*m0_values(PSI2,vtheta)
-            END_DO
-        Endif
-    Endif
-
-    ! Phi
-    If (compute_quantity(pressure_mforce_phi) .or. compute_quantity(press_work_mm)) Then
-        DO_PSI
-            qty(PSI) = -m0_values(PSI2,dpdp)*pfactor(r)*One_Over_R(r)*csctheta(t)
-        END_DO
-
-        If (compute_quantity(pressure_mforce_phi)) Call Add_Quantity(qty)
-
-        If (compute_quantity(press_work_mm)) Then
-            DO_PSI
-                tmp1(PSI)=tmp1(PSI)+qty(PSI)*m0_values(PSI2,vphi)
-            END_DO
-            Call Add_Quantity(tmp1)
-        Endif
-
-    Endif
-
-
-
-    ! Spherically symmetric component
-    If (compute_quantity(pressure_force_ell0_r)) Then
-        DO_PSI
-            qty(PSI) = -(ell0_values(r,dpdr))*pfactor(r) + &
-                        (ell0_values(r,pvar))*pfactor(r) * &
-                        ref%dlnrho(r)
-        END_DO
-        Call Add_Quantity(qty)
-    Endif
-
-
-
-End Subroutine Compute_Pressure_Force
+    End Subroutine Finalize_Viscous_Force
 
 End Module Diagnostics_Linear_Forces

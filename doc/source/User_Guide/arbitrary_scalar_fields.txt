@@ -11,8 +11,8 @@ Both types of scalar fields are evolved using:
 .. math::
    :label: passive_scalar_eval
 
-   \frac{\partial \chi_{p_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{p_i}  + d_{1_i}\,\mathrm{g}_{1_i}(r)v_r =\
-        d_{2_i}\,\boldsymbol{\nabla}\cdot\left[\mathrm{g}_{2_i}(r)\,\boldsymbol{\nabla}\chi_{p_i} \right] + d_{3_i}\,\mathrm{g}_{3_i},\
+   \frac{\partial \chi_{p_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{p_i}  + d_{p1_i}\,\mathrm{g}_{p1_i}(r)v_r =\
+        d_{p2_i}\,\boldsymbol{\nabla}\cdot\left[\mathrm{g}_{p2_i}(r)\,\boldsymbol{\nabla}\chi_{p_i} \right] + d_{p3_i}\,\mathrm{g}_{p3_i},\
         \quad 1 \leq i \leq 50
 
 for the passive scalars, and:
@@ -21,21 +21,21 @@ for the passive scalars, and:
 .. math::
    :label: active_scalar_eval
 
-   \frac{\partial \chi_{a_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{a_i}  + d_{4_i}\,\mathrm{g}_{4_i}(r)v_r =\
-        d_{5_i}\,\boldsymbol{\nabla}\cdot\left[\mathrm{g}_{5_i}(r)\,\boldsymbol{\nabla}\chi_{a_i} \right] + d_{6_i}\,\mathrm{g}_{6_i},\
+   \frac{\partial \chi_{a_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{a_i}  + d_{a1_i}\,\mathrm{g}_{a1_i}(r)v_r =\
+        d_{a2_i}\,\boldsymbol{\nabla}\cdot\left[\mathrm{g}_{a2_i}(r)\,\boldsymbol{\nabla}\chi_{a_i} \right] + d_{a3_i}\,\mathrm{g}_{a3_i},\
         \quad 1 \leq i \leq 50
 
 for the active scalars.  
 
 In addition the momentum equation is modified to include a buoyancy coupling to the active scalars through
-a :math:`\sum_i d_{7_i}\,\mathrm{g}_{7_i}(r)\chi_{a_i}` term:
+a :math:`\sum_i d_{a4_i}\,\mathrm{g}_{a5_i}(r)\chi_{a_i}` term:
 
 .. math::
    :label: momentum_active_scalars
 
        \mathrm{f}_1(r)\left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
         + c_1\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  =\ % Coriolis
-       &\left[c_2\,\mathrm{f}_2(r)\Theta - \sum_i d_{7_i}\,\mathrm{g}_{7_i}(r)\chi_{a_i} \right]\,\boldsymbol{\hat{r}} % buoyancy
+       &\left[c_2\,\mathrm{f}_2(r)\Theta - \sum_i d_{a4_i}\,\mathrm{g}_{a5_i}(r)\chi_{a_i} \right]\,\boldsymbol{\hat{r}} % buoyancy
         - c_3\,\mathrm{f}_1(r)\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1(r)}\right) % pressure
         \\
         &+ c_4\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B} % Lorentz Force
@@ -46,34 +46,23 @@ where all other terms are as defined in :ref:`equations_solved`.
 Limitations
 ^^^^^^^^^^^
 
-While under development several of the functions :math:`\mathrm{g}_{j_i}` and constants :math:`d_{j_i}` are hard-coded to be 0:
-
-.. math::
-
-   \begin{aligned}
-   \mathrm{g}_{1_i}(r) &\rightarrow 0\; &d_{1_i} &\rightarrow 0 \\
-   \mathrm{g}_{3_i}(r) &\rightarrow 0\; &d_{3_i} &\rightarrow 0 \\
-   \mathrm{g}_{4_i}(r) &\rightarrow 0\; &d_{4_i} &\rightarrow 0 \\
-   \mathrm{g}_{6_i}(r) &\rightarrow 0\; &d_{6_i} &\rightarrow 0 \\
-   \end{aligned}
-
-which reduces :eq:`passive_scalar_eval` and :eq:`active_scalar_eval` to simple advection-diffusion equations.  The remaining non-zero coefficients are set according to the reference type selected.  Currently only reference_type=1 is tested but development is continuing on supporting other reference types, including custom forms for the
-functions :math:`\mathrm{g}_{j_i}` and the constants :math:`d_{j_i}`.
+The coefficients are set according to the reference type selected.  Currently only reference_type=1 is well-tested but testing is continuing on the other reference types, including custom forms for the
+functions :math:`\mathrm{g}_{sj_i}` and the constants :math:`d_{sj_i}`.
 
 Nondimensional Boussinesq Formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Rayleigh can be run using a nondimensional, Boussinesq formulation
 of the MHD equations (**reference_type=1**). Adopting this nondimensionalization is equivalent to assigning the following to the
-functions :math:`\mathrm{g}_{j_i}` and the constants :math:`d_{j_i}`:
+functions :math:`\mathrm{g}_{sj_i}` and the constants :math:`d_{sj_i}`:
 
 
 .. math::
 
    \begin{aligned}
-   \mathrm{g}_{2_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{2_i} &\rightarrow \frac{1}{Pr_{\chi_{p_i}}} \\
-   \mathrm{g}_{5_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{5_i} &\rightarrow \frac{1}{Pr_{\chi_{a_i}}} \\
-   \mathrm{g}_{7_i}(r) &\rightarrow \left(\frac{r}{r_o}\right)^n \; &d_{7_i} &\rightarrow \frac{Ra_{\chi_{a_i}}}{Pr_{\chi_{a_i}}} \\
+   \mathrm{g}_{p2_i}(r) &\rightarrow \tilde{\kappa}_{p_i}(r)\; &d_{p2_i} &\rightarrow \frac{1}{Pr_{\chi_{p_i}}} \\
+   \mathrm{g}_{a2_i}(r) &\rightarrow \tilde{\kappa}_{a_i}(r)\; &d_{a2_i} &\rightarrow \frac{1}{Pr_{\chi_{a_i}}} \\
+   \mathrm{g}_{a5_i}(r) &\rightarrow \left(\frac{r}{r_o}\right)^n \; &d_{a4_i} &\rightarrow \frac{Ra_{\chi_{a_i}}}{Pr_{\chi_{a_i}}} \\
    \end{aligned}
 
 When these substitutions, along with those in :ref:`boussinesq`, are made, :eq:`passive_scalar_eval`-:eq:`momentum_active_scalars` transform to:
@@ -82,10 +71,10 @@ When these substitutions, along with those in :ref:`boussinesq`, are made, :eq:`
    :label: boussinesq_scalars
 
    \frac{\partial \chi_{p_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{p_i}  &=\
-        \frac{1}{Pr_{\chi_{p_i}}}\,\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}(r)\,\boldsymbol{\nabla}\chi_{p_i} \right],\
+        \frac{1}{Pr_{\chi_{p_i}}}\,\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}_{p_i}(r)\,\boldsymbol{\nabla}\chi_{p_i} \right],\
         \quad 1 \leq i \leq 50 \\
    \frac{\partial \chi_{a_i}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\chi_{a_i}  &=\
-        \frac{1}{Pr_{\chi_{a_i}}}\,\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}(r)\,\boldsymbol{\nabla}\chi_{a_i} \right],\
+        \frac{1}{Pr_{\chi_{a_i}}}\,\boldsymbol{\nabla}\cdot\left[\tilde{\kappa}_{a_i}(r)\,\boldsymbol{\nabla}\chi_{a_i} \right],\
         \quad 1 \leq i \leq 50 \\
        \left[\frac{\partial \boldsymbol{v}}{\partial t}  + \boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}  %advection
         + \frac{2}{E}\boldsymbol{\hat{z}}\times\boldsymbol{v} \right]  &= % Coriolis
@@ -99,23 +88,35 @@ Dimensional Anelastic Formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Dimensional, anelastic mode (cgs units; **reference_type=2**
-), is currently untested with arbitrary scalar fields and requires further development.
+), is currently untested with arbitrary scalar fields.
 
 
 Nondimensional Anelastic Formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Non-dimensional, anelastic mode (cgs units; **reference_type=3**
-), is currently untested with arbitrary scalar fields and requires further development.  In addition to the functions set in :ref:`nondim_anelastic`, the following substitutions are made for :math:`\mathrm{g}_{j_i}`
-and :math:`d_{j_i}`:
+), is currently untested with arbitrary scalar fields.  In addition to the functions set in :ref:`nondim_anelastic`, the following substitutions are made for :math:`\mathrm{g}_{sj_i}`
+and :math:`d_{sj_i}`:
 
 .. math::
 
    \begin{aligned}
-   \mathrm{g}_{2_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{2_i} &\rightarrow \frac{E}{Pr_{\chi_{p_i}}} \\
-   \mathrm{g}_{5_i}(r) &\rightarrow \tilde{\kappa}(r)\; &d_{5_i} &\rightarrow \frac{E}{Pr_{\chi_{a_i}}} \\
-   \mathrm{g}_{7_i}(r) &\rightarrow \tilde{\rho}(r)\frac{r_\mathrm{max}^2}{r^2}\; &c_{7_i} &\rightarrow \mathrm{Ra}_{\chi_{a_i}}^* \\
+   \mathrm{g}_{p2_i}(r) &\rightarrow \tilde{\kappa}_{p_i}(r)\; &d_{p2_i} &\rightarrow \frac{E}{Pr_{\chi_{p_i}}} \\
+   \mathrm{g}_{a2_i}(r) &\rightarrow \tilde{\kappa}_{a_i}(r)\; &d_{a2_i} &\rightarrow \frac{E}{Pr_{\chi_{a_i}}} \\
+   \mathrm{g}_{a5_i}(r) &\rightarrow \tilde{\rho}(r)\frac{r_\mathrm{max}^2}{r^2}\; &c_{a4_i} &\rightarrow \mathrm{Ra}_{\chi_{a_i}}^* \\
    \end{aligned}
+
+Custom Reference Formulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With **reference_type=4**, custom reference files for active and passive scalar fields can be supplied using the namelist parameters **chi_a_custom_reference_file** and **chi_p_custom_reference_file** respectively.  These files can be constructed using the `scalar_equation_coefficients` class in `post_processing/reference_tools.py`.  
+
+The custom reference file for active scalars can be used to define :math:`d_{aj_i}` and :math:`f_{aj_i}` coefficients.  The custom reference file for passive scalars can be used to defined :math:`d_{pj_i}` and :math:`f_{pj_i}` coefficients.  If :math:`d_{p4_i}` or :math:`d_{p5_i}` are supplied they are ignored.  Additionally both files can be used to define:
+
+.. math::
+    \mathrm{g}_{t4_i}(r) = \frac{d\ln{\mathrm{g}_{t2_i}}}{dr}
+
+or this can be left undefined and it will be calculated in Rayleigh.
 
 
 .. _scalar_setup:
@@ -214,7 +215,7 @@ Physical controls
   Determines the radial profile of the diffusivity for active scalar i.
    * type 1 : no radial variation
    * type 2 : diffusivity profile varies as :math:`\rho^{n}` for some real number *n*.
-   * type 3 : diffusivity profile is read from a custom-reference-state file (under development)
+   * type 3 : diffusivity profile is read from a custom-reference-state file
 **kappa_chi_a_top(i)**
   Specifies the value of the diffusivity coefficient at the upper boundary for active scalar i.  This is primarily used for dimensional models or those employing a custom nondimensionalization via Rayleigh's custom-reference interface.   For Rayleigh's intrinsic nondimensional reference states, the following values are assumed:
    * reference_type 1: :math:`\kappa_\mathrm{top}=1/\mathrm{Pr_{\chi_{a_i}}}`
@@ -225,13 +226,78 @@ Physical controls
   Determines the radial profile of the diffusivity for passive scalar i.
    * type 1 : no radial variation
    * type 2 : diffusivity profile varies as :math:`\rho^{n}` for some real number *n*.
-   * type 3 : diffusivity profile is read from a custom-reference-state file (under development)
+   * type 3 : diffusivity profile is read from a custom-reference-state file
 **kappa_chi_p_top(i)**
   Specifies the value of the diffusivity coefficient at the upper boundary for passive scalar i.  This is primarily used for dimensional models or those employing a custom nondimensionalization via Rayleigh's custom-reference interface.   For Rayleigh's intrinsic nondimensional reference states, the following values are assumed:
    * reference_type 1: :math:`\kappa_\mathrm{top}=1/\mathrm{Pr_{\chi_{p_i}}}`
    * reference_type 3: :math:`\kappa_\mathrm{top}=\mathrm{Ek}/\mathrm{Pr_{\chi_{p_i}}}`
 **kappa_chi_p_power(i)**
-  Denotes the value of the exponent *n* in the :math:`\rho^{n}` variation associated with diffusion type 2 for passive scalar i.
+  Denotes the value of the exponent *n* in the :math:`\rho^{n}` variation associated with diffusion type 2 for passive scalar i
+**chi_a_advect_reference_state**
+  List of booleans that determine whether the reference-state chi is advected for each active scalar field.  The default is .true. for all active scalar fields (which makes no difference if the reference-state gradient is set to 0, the default).  When set to .false., the :math:`v_r\frac{\partial\overline{\chi}_a}{\partial r} = d_{a1_i}g_{a1,i}(r)v_r` term is omitted in the active scalar equation.
+**chi_p_advect_reference_state**
+  List of booleans that determine whether the reference-state chi is advected for each passive scalar field.  The default is .true. for all passive scalar fields (which makes no difference if the reference-state gradient is set to 0, the default).  When set to .false., the :math:`v_r\frac{\partial\overline{\chi}_p}{\partial r} = d_{p1_i}g_{p1,i}(r)v_r` term is omitted in the passive scalar equation.
+
+Reference
+*********
+
+**chi_a_custom_reference_file**
+  Name of file from which to read custom-reference-state information for all the active scalar fields when using reference_type 4 or when augmenting reference types 1--3.
+**override_chi_a_constant**
+  Indicates that particular constant coefficients for the active scalar fields, rather than all, should be overridden using main_input values when using reference_type 4.  Multiple constant overrides can be specified, one per line, with the syntax, e.g. for active scalar field 1 and constant coefficients 2 & 3:
+  
+  ::
+
+   &Reference_Namelist
+    ...
+    override_chi_a_constant(1, 2) = T
+    override_chi_a_constant(1, 3) = T
+    ...
+   /
+**chi_a_constants**
+  Indicates the desired value of specified constant coefficients for the active scalar fields when reading the value from main_input instead of from a custom-reference file.  For use with override_constants or override_chi_a_constant flags.   Syntax is, e.g. for active scalar field 1 and constant coefficients 2 & 3:
+  
+  ::
+  
+   &Reference_Namelist
+    ...
+    chi_a_constants(1, 2) = 1.0
+    chi_a_constants(1, 3) = 14.0
+    ...
+   /
+**with_custom_chi_a_constants**
+  Comma separated list of integers for a particular active scalar field indicating which constant coefficients should be read from a custom-reference file when with_custom_reference is true.
+**with_custom_chi_a_functions**
+  Comma separated list of integers for a particular active scalar field indicating which non-constant coefficients should be read from a custom-reference file when with_custom_reference is true.
+**chi_p_custom_reference_file**
+  Name of file from which to read custom-reference-state information for all the passive scalar fields when using reference_type 4 or when augmenting reference types 1--3.
+**override_chi_p_constant**
+  Indicates that particular constant coefficients for the passive scalar fields, rather than all, should be overridden using main_input values when using reference_type 4.  Multiple constant overrides can be specified, one per line, with the syntax, e.g. for passive scalar field 1 and constant coefficients 2 & 3:
+  
+  ::
+
+   &Reference_Namelist
+    ...
+    override_chi_p_constant(1, 2) = T
+    override_chi_p_constant(1, 3) = T
+    ...
+   /
+**chi_p_constants**
+  Indicates the desired value of specified constant coefficients for the passive scalar fields when reading the value from main_input instead of from a custom-reference file.  For use with override_constants or override_chi_p_constant flags.   Syntax is, e.g. for passive scalar field 1 and constant coefficients 2 & 3:
+  
+  ::
+  
+   &Reference_Namelist
+    ...
+    chi_p_constants(1, 2) = 1.0
+    chi_p_constants(1, 3) = 14.0
+    ...
+   /
+**with_custom_chi_p_constants**
+  Comma separated list of integers for a particular passive scalar field indicating which constant coefficients should be read from a custom-reference file when with_custom_reference is true.
+**with_custom_chi_p_functions**
+  Comma separated list of integers for a particular passive scalar field indicating which non-constant coefficients should be read from a custom-reference file when with_custom_reference is true.
+
 
 Output Quantity Codes
 ^^^^^^^^^^^^^^^^^^^^^
@@ -255,6 +321,14 @@ Active scalar fields
  :math:`\frac{\partial\chi_{a_i}}{\partial \phi}`               10010+200*(i-1)     longitudinal derivative of active scalar field i
  :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \phi}`        10011+200*(i-1)     longitudinal derivative of the active scalar field i perturbation
  :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \phi}`    10012+200*(i-1)     longitudinal derivative of the active scalar field i mean
+ :math:`d_{7_i}\mathrm{g}_{7_i}\chi`                            10071+200*(i-1)     chi\_buoyancy\_force for active scalar field i
+ :math:`d_{7_i}\mathrm{g}_{7_i}\chi'`                           10072+200*(i-1)     chi\_buoyancy\_pforce for active scalar field i perturbation
+ :math:`d_{7_i}\mathrm{g}_{7_i}\overline{\chi}`                 10073+200*(i-1)     chi\_buoyancy\_mforce for active scalar field i mean
+ :math:`d_{7_i}\mathrm{g}_{7_i}\chi_{00}`                       10074+200*(i-1)     chi\_buoyancy\_force\_ell0 for active scalar field i l0
+ :math:`d_{7_i}v_r\mathrm{g}_{7_i}\chi`                         10171+200*(i-1)     chi\_buoy\_work for active scalar field i
+ :math:`d_{7_i}v'_r\mathrm{g}_{7_i}\chi'`                       10172+200*(i-1)     chi\_buoy\_work\_pp  for active scalar field i perturbation
+ :math:`d_{7_i}\overline{v_r}\mathrm{g}_{7_i}\overline{\chi}`   10173+200*(i-1)     chi\_buoy\_work\_mm for active scalar field i mean
+ :math:`d_{7_i}\mathrm{g}_{7_i}{\chi^\prime}{v^\prime}_r`       10181+200*(i-1)     chi\_production\_buoyant\_pKE for active scalar field i
 =============================================================== =================== ================================================================
 
 Passive scalar fields

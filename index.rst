@@ -21,4 +21,5 @@ This documentation is structured into the following sections:
    doc/source/research_enabled_by_rayleigh
    doc/source/quick_reference
    doc/source/getting_help
+   doc/source/in_the_news
 

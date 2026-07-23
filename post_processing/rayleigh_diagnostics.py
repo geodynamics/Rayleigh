@@ -2230,6 +2230,8 @@ class Shell_Slices:
             self.qv[0] = qspec
             tmp = np.reshape(swapread(fd,dtype='float64',count=ntheta*nphi,swap=bs),(nphi,ntheta), order = 'F')
             self.vals[:,:,0,0,0] = tmp
+            seek_offset = rec_size*(tspec+1) - seek_bytes - slice_size - 12  # distance to the end of the record - 12-bytes (for time and time index)
+            fd.seek(seek_offset,1) # skip to the end of the quantity data in the record
             self.time[0]  = swapread(fd, dtype='float64',count=1,swap=bs)
             self.iters[0] = swapread(fd, dtype='int32'  ,count=1,swap=bs)
         else:
@@ -2320,8 +2322,8 @@ class SPH_Modes:
         self.time  = np.zeros(nrec,dtype='float64')
         self.version = version
         for i in range(nrec):
-            for qv in range(nq):
-                for p in range(2):
+            for p in range(2):
+                for qv in range(nq):
                     for rr in range(nr):
                         for lv in range(nell):
                             lval = self.lvals[lv]

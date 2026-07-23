@@ -29,7 +29,7 @@ Module BoundaryConditions
     Use Generic_Input
     Use PDE_Coefficients
     Use Checkpointing, Only : Store_BC_Mask, Load_BC_Mask
-    Use Controls, Only : full_restart
+    Use Controls, Only : full_restart, n_scalar_max
 
     Implicit None
 
