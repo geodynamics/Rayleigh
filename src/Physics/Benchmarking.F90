@@ -378,9 +378,6 @@ Contains
             reference_type = 4
             custom_reference_file = file_remember
             heating_type = type_remember
-            If (global_rank .eq. 0) Then
-                Call stdout%print('Reference Type 4 set for Benchmark Mode.')
-            Endif
         Endif
         
         If (with_custom_reference) Then
@@ -586,6 +583,9 @@ Contains
                 Call stdout%print(" ")
                 Call stdout%print(" -- Benchmarking Mode is Activated.")
                 Call stdout%print(" -- Selected Benchmark :  "//trim(benchmark_name))
+                If (reference_type .eq. 4) Then
+                    Call stdout%print(' -- Reference Type 4 set for Benchmark Mode.')
+                Endif
                 Call stdout%print(" ")
             Endif
         Endif
