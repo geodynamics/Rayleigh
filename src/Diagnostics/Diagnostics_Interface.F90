@@ -175,7 +175,6 @@ Contains
             Call ComputeM0(buffer,m0_values)
             Call Compute_Fluctuations(buffer)
 
-            Call Initialize_Viscous_Force()
             Call Initialize_Mean_Correction()
 
 
@@ -225,6 +224,7 @@ Contains
                 Call Compute_Angular_Momentum_Balance(buffer)
                 Call Compute_Inertial_Terms(buffer)
                 Call Compute_Linear_Forces(buffer)
+                Call Compute_Curl_Momentum_Forces(buffer)
 
                 Call Compute_KE_Flux(buffer)
 
@@ -262,7 +262,6 @@ Contains
                 Call d2buffer%deconstruct('p3a')
                 DeAllocate(d2_ell0,d2_m0,d2_fbuffer)
             ENDIF
-            Call Finalize_Viscous_Force()
             Call Finalize_Mean_Correction()
         Endif  ! time_to_output(iteration)
     End Subroutine PS_Output
@@ -342,6 +341,8 @@ Contains
 
 
         Call Initialize_Second_Derivatives()
+
+        Call Initialize_Viscous_Force()
 
         Call Initialize_Grad_Viscous_Force()
 

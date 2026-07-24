@@ -85,22 +85,49 @@ Contains
 
         !//////////////////////////////////////////////////////////////////
         ! Terms related to viscosity
-        If (sometimes_compute(viscous_force_r))  compute_vr_dd = .true.
-        If (sometimes_compute(viscous_pforce_r)) compute_vr_dd = .true.
-        If (sometimes_compute(viscous_mforce_r)) compute_vr_dd = .true.
-
-        If (sometimes_compute(viscous_force_theta))  compute_vt_dd = .true.
-        If (sometimes_compute(viscous_pforce_theta)) compute_vt_dd = .true.
-        If (sometimes_compute(viscous_mforce_theta)) compute_vt_dd = .true.
-
-        If (sometimes_compute(viscous_force_phi))  compute_vp_dd = .true.
-        If (sometimes_compute(viscous_pforce_phi)) compute_vp_dd = .true.
-        If (sometimes_compute(viscous_mforce_phi)) compute_vp_dd = .true.
-
-        If (sometimes_compute(visc_work) .or. sometimes_compute(visc_work_pp) &
-            .or. sometimes_compute(visc_work_mm) ) Then
+        If (sometimes_compute(visc_work) .or. &
+            sometimes_compute(viscous_force_r) .or. &
+            sometimes_compute(curl_viscous_force_theta) .or. &
+            sometimes_compute(curl_viscous_force_theta_squared) .or. &
+            sometimes_compute(curl_viscous_force_phi) .or. &
+            sometimes_compute(curl_viscous_force_phi_squared) .or. &
+            sometimes_compute(viscous_pforce_r) .or. &
+            sometimes_compute(curl_viscous_pforce_theta) .or. &
+            sometimes_compute(curl_viscous_pforce_phi) .or. &
+            sometimes_compute(viscous_mforce_r) .or. &
+            sometimes_compute(curl_viscous_mforce_theta) .or. &
+            sometimes_compute(curl_viscous_mforce_phi)) Then
             compute_vr_dd = .true.
+        Endif
+
+
+        If (sometimes_compute(visc_work_pp) .or. &
+            sometimes_compute(viscous_force_theta) .or. &
+            sometimes_compute(curl_viscous_force_r) .or. &
+            sometimes_compute(curl_viscous_force_r_squared) .or. &
+            sometimes_compute(curl_viscous_force_phi) .or. &
+            sometimes_compute(curl_viscous_force_phi_squared) .or. &
+            sometimes_compute(viscous_pforce_theta) .or. &
+            sometimes_compute(curl_viscous_pforce_r) .or. &
+            sometimes_compute(curl_viscous_pforce_phi) .or. &
+            sometimes_compute(viscous_mforce_theta) .or. &
+            sometimes_compute(curl_viscous_mforce_r) .or. &
+            sometimes_compute(curl_viscous_mforce_phi)) Then
             compute_vt_dd = .true.
+        Endif
+
+        If (sometimes_compute(visc_work_mm) .or. & 
+            sometimes_compute(viscous_force_phi) .or. &
+            sometimes_compute(curl_viscous_force_r) .or. &
+            sometimes_compute(curl_viscous_force_r_squared) .or. &
+            sometimes_compute(curl_viscous_force_theta) .or. &
+            sometimes_compute(curl_viscous_force_theta_squared) .or. &
+            sometimes_compute(viscous_pforce_phi) .or. &
+            sometimes_compute(curl_viscous_pforce_r) .or. &
+            sometimes_compute(curl_viscous_pforce_theta) .or. &
+            sometimes_compute(viscous_mforce_phi) .or. &
+            sometimes_compute(curl_viscous_mforce_r) .or. &
+            sometimes_compute(curl_viscous_mforce_theta)) Then
             compute_vp_dd = .true.
         Endif
 
@@ -319,11 +346,6 @@ Contains
         INTEGER :: r,k, t
         Real*8, Intent(InOut) :: inbuffer(1:,my_r%min:,my_theta%min:,1:)
         Type(rmcontainer3D), Allocatable :: ddtemp(:)
-
-
-
-
-
 
         ! Here were compute all second derivatives for N variables
         ! Outline of the process:

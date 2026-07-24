@@ -517,82 +517,82 @@ Contains
         Implicit None
         nvf = 0
 
-        If (compute_quantity(viscous_force_r) .or. &
-            compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_theta) .or. &
-            compute_quantity(curl_viscous_force_theta_squared) .or. &
-            compute_quantity(curl_viscous_force_phi) .or. &
-            compute_quantity(curl_viscous_force_phi_squared) .or. &
-            compute_quantity(viscous_mforce_r)) Then
+        If (sometimes_compute(viscous_force_r) .or. &
+            sometimes_compute(visc_work) .or. &
+            sometimes_compute(curl_viscous_force_theta) .or. &
+            sometimes_compute(curl_viscous_force_theta_squared) .or. &
+            sometimes_compute(curl_viscous_force_phi) .or. &
+            sometimes_compute(curl_viscous_force_phi_squared) .or. &
+            sometimes_compute(viscous_mforce_r)) Then
             nvf = nvf+1
             vf_r = nvf
         Endif
 
-        If (compute_quantity(viscous_force_theta) .or. &
-            compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_r) .or. &
-            compute_quantity(curl_viscous_force_r_squared) .or. &
-            compute_quantity(curl_viscous_force_phi) .or. &
-            compute_quantity(curl_viscous_force_phi_squared)) Then
+        If (sometimes_compute(viscous_force_theta) .or. &
+            sometimes_compute(visc_work) .or. &
+            sometimes_compute(curl_viscous_force_r) .or. &
+            sometimes_compute(curl_viscous_force_r_squared) .or. &
+            sometimes_compute(curl_viscous_force_phi) .or. &
+            sometimes_compute(curl_viscous_force_phi_squared)) Then
             nvf = nvf + 1
             vf_t = nvf
         Endif
 
-        If (compute_quantity(viscous_force_phi) .or. &
-            compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_r) .or. &
-            compute_quantity(curl_viscous_force_r_squared) .or. &
-            compute_quantity(curl_viscous_force_theta) .or. &
-            compute_quantity(curl_viscous_force_theta_squared)) Then
+        If (sometimes_compute(viscous_force_phi) .or. &
+            sometimes_compute(visc_work) .or. &
+            sometimes_compute(curl_viscous_force_r) .or. &
+            sometimes_compute(curl_viscous_force_r_squared) .or. &
+            sometimes_compute(curl_viscous_force_theta) .or. &
+            sometimes_compute(curl_viscous_force_theta_squared)) Then
             nvf = nvf + 1
             vf_p = nvf
         Endif
 
-        If (compute_quantity(viscous_pforce_r) .or. &
-            compute_quantity(visc_work_pp) .or. &
-            compute_quantity(curl_viscous_pforce_theta) .or. &
-            compute_quantity(curl_viscous_pforce_phi)) Then
+        If (sometimes_compute(viscous_pforce_r) .or. &
+            sometimes_compute(visc_work_pp) .or. &
+            sometimes_compute(curl_viscous_pforce_theta) .or. &
+            sometimes_compute(curl_viscous_pforce_phi)) Then
             nvf = nvf+1
             vfp_r = nvf
         Endif
 
-        If (compute_quantity(viscous_pforce_theta) .or. &
-            compute_quantity(visc_work_pp) .or. &
-            compute_quantity(curl_viscous_pforce_r) .or. &
-            compute_quantity(curl_viscous_pforce_phi)) Then
+        If (sometimes_compute(viscous_pforce_theta) .or. &
+            sometimes_compute(visc_work_pp) .or. &
+            sometimes_compute(curl_viscous_pforce_r) .or. &
+            sometimes_compute(curl_viscous_pforce_phi)) Then
             nvf = nvf + 1
             vfp_t = nvf
         Endif
 
-        If (compute_quantity(viscous_pforce_phi) .or. &
-            compute_quantity(visc_work_pp).or. &
-            compute_quantity(curl_viscous_pforce_r) .or. &
-            compute_quantity(curl_viscous_pforce_theta)) Then
+        If (sometimes_compute(viscous_pforce_phi) .or. &
+            sometimes_compute(visc_work_pp) .or. &
+            sometimes_compute(curl_viscous_pforce_r) .or. &
+            sometimes_compute(curl_viscous_pforce_theta)) Then
             nvf = nvf + 1
             vfp_p = nvf
         Endif
 
-        If (compute_quantity(viscous_mforce_r) .or. &
-            compute_quantity(visc_work_mm) .or. &
-            compute_quantity(curl_viscous_mforce_theta) .or. &
-            compute_quantity(curl_viscous_mforce_phi)) Then
+        If (sometimes_compute(viscous_mforce_r) .or. &
+            sometimes_compute(visc_work_mm) .or. &
+            sometimes_compute(curl_viscous_mforce_theta) .or. &
+            sometimes_compute(curl_viscous_mforce_phi)) Then
             nvf = nvf+1
             vfm_r = nvf
         Endif
 
-        If (compute_quantity(viscous_mforce_theta) .or. &
-            compute_quantity(visc_work_mm).or. &
-            compute_quantity(curl_viscous_mforce_r) .or. &
-            compute_quantity(curl_viscous_mforce_phi)) Then
+        If (sometimes_compute(viscous_mforce_theta) .or. &
+            sometimes_compute(visc_work_mm) .or. &
+            sometimes_compute(curl_viscous_mforce_r) .or. &
+            sometimes_compute(curl_viscous_mforce_phi)) Then
             nvf = nvf + 1
             vfm_t = nvf
         Endif
 
-        If (compute_quantity(viscous_mforce_phi) .or. &
-            compute_quantity(samom_diffusion) .or. &
-            compute_quantity(visc_work_mm).or. &
-            compute_quantity(curl_viscous_mforce_r) .or. &
-            compute_quantity(curl_viscous_mforce_theta)) Then
+        If (sometimes_compute(viscous_mforce_phi) .or. &
+            sometimes_compute(samom_diffusion) .or. &
+            sometimes_compute(visc_work_mm) .or. &
+            sometimes_compute(curl_viscous_mforce_r) .or. &
+            sometimes_compute(curl_viscous_mforce_theta)) Then
             nvf = nvf + 1
             vfm_p = nvf
         Endif
@@ -622,6 +622,10 @@ Contains
 
         If (compute_quantity(viscous_force_r) .or. &
             compute_quantity(visc_work) .or. &
+            compute_quantity(curl_viscous_force_theta) .or. &
+            compute_quantity(curl_viscous_force_theta_squared) .or. &
+            compute_quantity(curl_viscous_force_phi) .or. &
+            compute_quantity(curl_viscous_force_phi_squared) .or. &
             compute_quantity(viscous_mforce_r) ) Then
 
             DO_PSI
@@ -653,7 +657,11 @@ Contains
 
         !Theta-direction; Full
         If (compute_quantity(viscous_force_theta) .or. &
-            compute_quantity(visc_work)) Then
+            compute_quantity(visc_work) .or. &
+            compute_quantity(curl_viscous_force_r) .or. &
+            compute_quantity(curl_viscous_force_r_squared) .or. &
+            compute_quantity(curl_viscous_force_phi) .or. &
+            compute_quantity(curl_viscous_force_phi_squared)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -679,7 +687,11 @@ Contains
 
         !Phi-direction
         If (compute_quantity(viscous_force_phi) .or. &
-            compute_quantity(visc_work)) Then
+            compute_quantity(visc_work) .or. &
+            compute_quantity(curl_viscous_force_r) .or. &
+            compute_quantity(curl_viscous_force_r_squared) .or. &
+            compute_quantity(curl_viscous_force_theta) .or. &
+            compute_quantity(curl_viscous_force_theta_squared)) Then
 
             DO_PSI
                 del2u = DDBUFF(PSI,dvpdrdr)+Two_Over_R(r)*buffer(PSI,dvpdr)
@@ -708,7 +720,9 @@ Contains
 
         ! r-direction; fluctuating
         If (compute_quantity(viscous_pforce_r) .or. &
-            compute_quantity(visc_work_pp)) Then
+            compute_quantity(visc_work_pp) .or. &
+            compute_quantity(curl_viscous_pforce_theta) .or. &
+            compute_quantity(curl_viscous_pforce_phi)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -739,7 +753,9 @@ Contains
 
         !Theta-direction; Fluctuating
         If (compute_quantity(viscous_pforce_theta) .or. &
-            compute_quantity(visc_work_pp)) Then
+            compute_quantity(visc_work_pp) .or. &
+            compute_quantity(curl_viscous_pforce_r) .or. &
+            compute_quantity(curl_viscous_pforce_phi)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -765,7 +781,9 @@ Contains
 
         !Phi-direction (fluctuating)
         If (compute_quantity(viscous_pforce_phi) .or. &
-            compute_quantity(visc_work_pp)) Then
+            compute_quantity(visc_work_pp) .or. &
+            compute_quantity(curl_viscous_pforce_r) .or. &
+            compute_quantity(curl_viscous_pforce_theta)) Then
 
             DO_PSI
                 del2u = d2_fbuffer(PSI,dvpdrdr)+Two_Over_R(r)*fbuffer(PSI,dvpdr)
@@ -794,7 +812,9 @@ Contains
 
         ! r-direction; mean
         If (compute_quantity(viscous_mforce_r) .or. &
-            compute_quantity(visc_work_mm)) Then
+            compute_quantity(visc_work_mm) .or. &
+            compute_quantity(curl_viscous_mforce_theta) .or. &
+            compute_quantity(curl_viscous_mforce_phi)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -823,7 +843,9 @@ Contains
 
         !Theta-direction; Mean
         If (compute_quantity(viscous_mforce_theta) .or. &
-            compute_quantity(visc_work_mm)) Then
+            compute_quantity(visc_work_mm) .or. &
+            compute_quantity(curl_viscous_mforce_r) .or. &
+            compute_quantity(curl_viscous_mforce_phi)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -850,7 +872,9 @@ Contains
         !Phi-direction (mean)
         If (compute_quantity(viscous_mforce_phi) .or. &
             compute_quantity(samom_diffusion) .or. &
-            compute_quantity(visc_work_mm)) Then
+            compute_quantity(visc_work_mm) .or. &
+            compute_quantity(curl_viscous_mforce_r) .or. &
+            compute_quantity(curl_viscous_mforce_theta)) Then
 
             DO_PSI
                 del2u = d2_m0(PSI2,dvpdrdr)+Two_Over_R(r)*m0_values(PSI2,dvpdr)
@@ -879,12 +903,5 @@ Contains
         DeAllocate(ovstheta,ovs2theta)
 
     End Subroutine Viscous_Force
-
-    Subroutine Finalize_Viscous_Force()
-        Implicit None
-        If (nvf .gt. 0) Then
-            DeAllocate(vforce_buffer)
-        Endif
-    End Subroutine Finalize_Viscous_Force
 
 End Module Diagnostics_Linear_Forces
