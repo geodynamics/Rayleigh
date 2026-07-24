@@ -1,0 +1,77 @@
+&problemsize_namelist
+ n_r=48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ aspect_ratio = 0.35d0
+ shell_depth = 1.0d0
+/
+&numerical_controls_namelist
+/
+&physical_controls_namelist
+! benchmark_mode = 1
+! benchmark_integration_interval = 100
+! benchmark_report_interval = 5000
+ rotation  = .True.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+ advect_reference_state = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 1.0d-4
+ max_iterations = 200
+ checkpoint_interval = 25
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+
+! New equatorial slices output
+
+sph_mode_ell = 2,4,8, 32
+sph_mode_levels = 1  ! outer boundary
+sph_mode_values = 507 ! radial entropy gradient
+sph_mode_frequency = 10
+sph_mode_nrec = 5
+
+globalavg_values = 401  ! kinetic energy
+globalavg_frequency = 10
+globalavg_nrec = 5
+
+
+full3d_values = 64 ! temperature
+full3d_frequency = 9000000
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .true.
+strict_L_Conservation = .false.
+dtdr_bottom = 0.0d0
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type=7    ! Benchmark init
+temp_amp = 1.0d-3
+temp_w = 0.01d4
+restart_iter=-1
+conductive_profile=.true.
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d-3
+Rayleigh_Number = 1.0d5
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 1.0d0  ! g ~ radius
+/
+&Transport_Namelist
+/
