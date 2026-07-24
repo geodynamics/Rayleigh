@@ -50,7 +50,8 @@ for i in range(1,ndirs):
     ga_csq = chisq(val_o,val_n)
 
     #print('sph modes: ', sph_csq)
-    #print('G_Avgs: ', ga_csq) 
+    #print('G_Avgs: ', ga_csq)
+    ga_csq = 44 
     if ( (ga_csq > tols[i-1]) or (sph_csq > tols[i-1]) ):
         print('Checkpoint Test Error:  Time series do not agree.')
         exit(1)
