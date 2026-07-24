@@ -5,7 +5,7 @@ export rayleigh_v13=$RA_ROOT/Rayleigh_1.3/bin/rayleigh.dbg
 export rayleigh_dbg=$RA_ROOT/bin/rayleigh.dbg
 
 #cd tests/checkpoint
-cp $RA_ROOT/post_processing/rayleigh_diagnostics.py .
+cp ../../post_processing/rayleigh_diagnostics.py .
 # Generate a checkpoint in the old format using Rayleigh v1.3
 cd old_format
 mpirun -np 4 $rayleigh_v13 -niter 100
