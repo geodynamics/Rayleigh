@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-export RA_ROOT=../../..
+export RA_ROOT=../..
 export rayleigh_v13=$RA_ROOT/Rayleigh_1.3/bin/rayleigh.dbg
-export rayleigh_dbg=.$RA_ROOT/bin/rayleigh.dbg
+export rayleigh_dbg=$RA_ROOT/bin/rayleigh.dbg
 
 #cd tests/checkpoint
 cp $RA_ROOT/post_processing/rayleigh_diagnostics.py .
@@ -90,3 +90,4 @@ sed -i 's/restart_iter=150/restart_iter=200/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
 cd ..
 
+python3 compare_check.py
