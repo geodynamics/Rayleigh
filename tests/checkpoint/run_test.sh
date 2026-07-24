@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export RA_ROOT=../..
+export RA_ROOT=../../..
 export rayleigh_v13=$RA_ROOT/Rayleigh_1.3/bin/rayleigh.dbg
 export rayleigh_dbg=$RA_ROOT/bin/rayleigh.dbg
 
