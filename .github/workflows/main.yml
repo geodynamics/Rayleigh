@@ -58,14 +58,14 @@ jobs:
         git clone -b rayleigh-1.3.0 https://github.com/geodynamics/Rayleigh.git
         mv Rayleigh Rayleigh_1.3
         cd Rayleigh_1.3
-        ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+        ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall' -devel
 
         make fdeps && git diff --exit-code
         make -j
         make install
     - name: Checkpoint Test
       run: |  
-        # coupled bc test
+        # Checkpoint Test
         cd "$GITHUB_WORKSPACE"
         cd ./tests/checkpoint
         sh ./run_test.sh        
