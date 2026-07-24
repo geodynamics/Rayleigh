@@ -586,7 +586,7 @@ Contains
                 If (reference_type .eq. 4) Then
                     Call stdout%print(' -- Reference Type 4 set for Benchmark Mode.')
                 Endif
-                Call stdout%print(" ")                
+                Call stdout%print(" ")
             Endif
         Endif
         If (benchmark_integration_interval .gt. 0) Then
