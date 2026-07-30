@@ -518,6 +518,19 @@ Contains
         Call Add_Derivative(vpeq,vphi,0, wsp%p1b,wsp%p1a,vphi)
         Call Add_Derivative(rhoeq,rhovar,0, wsp%p1b,wsp%p1a,rhovar)
 
+        If (implicit_compressible_acoustics) Then
+            ! Tier-2: old-time application of the coupled-block cross terms,
+            ! mirroring the same-variable dorder-0 pattern above.  All
+            ! derivative slots are computed earlier in this routine.
+            Call Add_Derivative(vreq , tvar  , 1, wsp%p1b, wsp%p1a, dtdr)
+            Call Add_Derivative(vreq , tvar  , 0, wsp%p1b, wsp%p1a, tvar)
+            Call Add_Derivative(vreq , rhovar, 1, wsp%p1b, wsp%p1a, drhodr)
+            Call Add_Derivative(vreq , rhovar, 0, wsp%p1b, wsp%p1a, rhovar)
+            Call Add_Derivative(rhoeq, vr    , 1, wsp%p1b, wsp%p1a, dvrdr)
+            Call Add_Derivative(rhoeq, vr    , 0, wsp%p1b, wsp%p1a, vr)
+            Call Add_Derivative(teq  , vr    , 0, wsp%p1b, wsp%p1a, vr)
+        Endif
+
 
         !///////////////////////////////////////////////////////////////
         !  Only magnetic terms have any implicitly-evolved linear terms

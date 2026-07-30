@@ -99,13 +99,47 @@ Contains
         If (chebyshev) Call Use_Chebyshev(gridpointer)    ! Turns chebyshev mode to "on" for the linear solve
         Call Initialize_Equation_Set(n_equations,n_variables,N_R,my_nl_lm, my_nm_lm,2)
 
+        If (implicit_compressible_acoustics) Then
+            nlinks = 3
+            Allocate(eq_links(1:nlinks))
+            Allocate(var_links(1:nlinks))
+            eq_links(1)  = vreq
+            eq_links(2)  = rhoeq
+            eq_links(3)  = teq
+            var_links(1) = vr
+            var_links(2) = rhovar
+            var_links(3) = tvar
+        Endif
+
         Do lp = 1, my_nl_lm
-            l = my_lm_lval(lp)
-            Call Initialize_Equation_Coefficients(vreq ,     vr, 1, lp)
-            Call Initialize_Equation_Coefficients(vteq , vtheta, 1, lp)
-            Call Initialize_Equation_Coefficients(vpeq ,   vphi, 1, lp)
-            Call Initialize_Equation_Coefficients(teq  ,   tvar, 1, lp)
+           l = my_lm_lval(lp)
+           If (implicit_compressible_acoustics) Then
+                ! Tier-2: couple the radial-acoustic block {vr, lnrho, S}
+                Call link_equations(eq_links, var_links, nlinks, lp)
+           Endif
+           If (implicit_compressible_diffusion) Then
+                !diffusion operators need second radial derivatives
+                Call Initialize_Equation_Coefficients(vreq ,     vr, 2, lp)
+                Call Initialize_Equation_Coefficients(vteq , vtheta, 2, lp)
+                Call Initialize_Equation_Coefficients(vpeq ,   vphi, 2, lp)
+                Call Initialize_Equation_Coefficients(teq  ,   tvar, 2, lp)
+            Else
+                Call Initialize_Equation_Coefficients(vreq ,     vr, 1, lp)
+                Call Initialize_Equation_Coefficients(vteq , vtheta, 1, lp)
+                Call Initialize_Equation_Coefficients(vpeq ,   vphi, 1, lp)
+                Call Initialize_Equation_Coefficients(teq  ,   tvar, 1, lp)
+            Endif
             Call Initialize_Equation_Coefficients(rhoeq, rhovar, 1, lp)
+            If (implicit_compressible_acoustics) Then
+                ! Cross-variable columns of the coupled block:
+                !   vr row: pressure force, linearized about the reference
+                !   lnrho row: radial part of the velocity divergence
+                !   S row: background-entropy advection (0 for adiabatic ref)
+                Call Initialize_Equation_Coefficients(vreq ,   tvar, 1, lp)
+                Call Initialize_Equation_Coefficients(vreq , rhovar, 1, lp)
+                Call Initialize_Equation_Coefficients(rhoeq,     vr, 1, lp)
+                Call Initialize_Equation_Coefficients(teq  ,     vr, 0, lp)
+            Endif
 
             If (l .ne. 0) Then
                 If (magnetism) Then
@@ -626,6 +660,84 @@ Contains
             Call add_implicit_term(  teq,   tvar, 0, amp,lp,static = .true.)
             Call add_implicit_term(rhoeq, rhovar, 0, amp,lp,static = .true.)
 
+            If (implicit_compressible_diffusion) Then
+                ! Radial diffusion operators, CN-treated.  The explicit
+                ! RHS subtracts identical content (Subtract_Implicit_Diffusion_V/_T):
+                ! one operator, two uses; nu(r), kappa(r) are the baselines.
+                ! vr: (4/3)nu D2 + [(8/3)nu/r + (4/3)nu rp] D1
+                !     + nu[Hlap - (8/3)/r^2 - (4/3) rp/r]
+                amp = (4.0d0/3.0d0)*nu*diff_factor
+                Call add_implicit_term(vreq, vr, 2, amp, lp)
+                amp = ( (8.0d0/3.0d0)*One_Over_R + (4.0d0/3.0d0)*ref%dlnrho )*nu*diff_factor
+                Call add_implicit_term(vreq, vr, 1, amp, lp)
+                amp = ( H_Laplacian - (8.0d0/3.0d0)*OneOverRSquared &
+                        - (4.0d0/3.0d0)*ref%dlnrho*One_Over_R )*nu*diff_factor
+                Call add_implicit_term(vreq, vr, 0, amp, lp)
+
+                ! vtheta, vphi: nu D2 + nu[2/r + rp] D1 - nu rp/r
+                amp = nu*diff_factor
+                Call add_implicit_term(vteq, vtheta, 2, amp, lp)
+                Call add_implicit_term(vpeq, vphi,   2, amp, lp)
+                amp = ( 2.0d0*One_Over_R + ref%dlnrho )*nu*diff_factor
+                Call add_implicit_term(vteq, vtheta, 1, amp, lp)
+                Call add_implicit_term(vpeq, vphi,   1, amp, lp)
+                amp = -ref%dlnrho*One_Over_R*nu*diff_factor
+                Call add_implicit_term(vteq, vtheta, 0, amp, lp)
+                Call add_implicit_term(vpeq, vphi,   0, amp, lp)
+
+                ! T: (gamma/Pr) kappa [ D2 + (2/r + rp) D1 + Hlap ]
+                If (thermal_variable .eq. 2) Then
+                   amp = (1.0d0/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 2, amp, lp)
+                   amp = ( 2.0d0*One_Over_R + ref%dlnrho + ref%dlnT ) &
+                        *(1.0d0/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 1, amp, lp)
+                   amp = H_Laplacian*(1.0d0/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 0, amp, lp)
+                Else
+                   amp = (gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 2, amp, lp)
+                   amp = ( 2.0d0*One_Over_R + ref%dlnrho )*(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 1, amp, lp)
+                   amp = H_Laplacian*(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 0, amp, lp)
+                EndIf
+            Endif
+
+            If (implicit_compressible_acoustics) Then
+                ! ---- Tier-2 coupled radial-acoustic block (thermal_variable=2) ----
+                ! Linearized about the reference state; the explicit RHS
+                ! subtracts identical content (Subtract_Implicit_Acoustics_*)
+                ! at the end of Pressure_Force / Density_Advection /
+                ! Temperature_Advection so the CN machinery owns these terms.
+                ! garr = inward gravity magnitude from general hydrostatics.
+                !
+                ! vr row:  -(g-1)*Tbar * dS/dr        - g*(g-1)*bigz*Tbar * dq/dr
+                !          + (garr/bigz) * S          + (g-1)*garr * q
+                amp = -(gas_gamma-1.0d0)*ref%temperature
+                Call add_implicit_term(vreq, tvar, 1, amp, lp)
+                amp = -(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
+                Call add_implicit_term(vreq, rhovar, 1, amp, lp)
+                amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
+                      + ref%temperature*ref%dlnrho )          ! garr(r) > 0 inward
+                amp = amp/bigz
+                Call add_implicit_term(vreq, tvar, 0, amp, lp)
+                amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
+                      + ref%temperature*ref%dlnrho )
+                amp = (gas_gamma-1.0d0)*amp
+                Call add_implicit_term(vreq, rhovar, 0, amp, lp)
+
+                ! lnrho row:  -dvr/dr - (2/r + dlnrho_bar) * vr
+                amp = -1.0d0
+                Call add_implicit_term(rhoeq, vr, 1, amp, lp)
+                amp = -( 2.0d0*One_Over_R + ref%dlnrho )
+                Call add_implicit_term(rhoeq, vr, 0, amp, lp)
+
+                ! S row:  -dSbar/dr * vr   (identically ~0 for adiabatic ref)
+                amp = -bigz*( ref%dT/ref%temperature &
+                      + (1.0d0-gas_gamma)*ref%dlnrho )
+                Call add_implicit_term(teq, vr, 0, amp, lp)
+            Endif
 
             If (l .ne. 0) Then
                

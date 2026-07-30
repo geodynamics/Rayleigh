@@ -332,11 +332,11 @@ Contains
             remove_reference = .false.
             gravity = .true.
             R_gas = 3.503d7        
-            gas_gamma = 1.5d0 
+            gas_gamma = 1.5d0
 
             !Temporal Controls
             max_time_step = 1.0d-2
-            alpha_implicit = 0.50001d0
+            alpha_implicit = 0.5d0
             cflmin = 0.4d0
             cflmax = 0.6d0
             
@@ -378,6 +378,9 @@ Contains
             reference_type = 4
             custom_reference_file = file_remember
             heating_type = type_remember
+            If (global_rank .eq. 0) Then
+                Call stdout%print('Reference Type 4 set for Benchmark Mode.')
+            Endif
         Endif
         
         If (with_custom_reference) Then
@@ -583,9 +586,6 @@ Contains
                 Call stdout%print(" ")
                 Call stdout%print(" -- Benchmarking Mode is Activated.")
                 Call stdout%print(" -- Selected Benchmark :  "//trim(benchmark_name))
-                If (reference_type .eq. 4) Then
-                    Call stdout%print(' -- Reference Type 4 set for Benchmark Mode.')
-                Endif
                 Call stdout%print(" ")
             Endif
         Endif

@@ -79,6 +79,7 @@ Contains
         If (output_iteration) Call Hybrid_Output_Initial()
         
         If (compressible) Then
+           Call M0_Pole_Projection()
            ! First theta-derivatives...
            Call d_by_dtheta(wsp%s2a  ,     vr, dvrdt)
            Call d_by_dtheta(wsp%s2a  , vtheta, dvtdt)
@@ -156,6 +157,56 @@ Contains
         Call StopWatch(rtranspose_time)%increment()
     End Subroutine rlm_spacea
 
+    Subroutine M0_Pole_Projection()
+        ! Remove the pole-singular m=0 sector from the sintheta-weighted
+        ! vtheta and vphi slot fields.  Physical v = synth(slot)/sin(theta).
+        ! For m=0, slot content with nonzero pole value gives v ~ 1/sin(theta):
+        ! unphysical.  Enforce synth(slot)(costheta = +/-1) = 0 at every radius
+        ! via the minimal-norm coefficient correction; the two pole constraints
+        ! decouple by parity (even/odd l):
+        !     c_l <- c_l - (sum_class c_l*w_l / sum_class w_l^2) * w_l
+        ! with w_l = sqrt(2l+1).  The global normalization of Pbar_l0(+/-1)
+        ! cancels in the ratio; only the relative l-weighting matters.
+        ! Loop bound l_max-1: the l = l_max slot never reaches physical space
+        ! (measured), so it is excluded from sums and corrections.
+        ! Regular m=0 physics (e.g. meridional circulation) has zero pole
+        ! sum already: the projection is a strict no-op on it.
+        Implicit None
+        Integer :: mp, r, l, imi, f, fld
+        Real*8  :: pe, po, we, wo
+
+        Do mp = my_mp%min, my_mp%max
+            If (m_values(mp) .ne. 0) Cycle
+            Do f = 1, 2
+                If (f .eq. 1) fld = vtheta
+                If (f .eq. 2) fld = vphi
+                Do imi = 1, 2
+                Do r = my_r%min, my_r%max
+                    pe = 0.0d0; po = 0.0d0; we = 0.0d0; wo = 0.0d0
+                    Do l = 0, l_max-1
+                        If (mod(l,2) .eq. 0) Then
+                            pe = pe + wsp%s2a(mp)%data(l,r,imi,fld)*sqrt(2.0d0*l+1.0d0)
+                            we = we + (2.0d0*l+1.0d0)
+                        Else
+                            po = po + wsp%s2a(mp)%data(l,r,imi,fld)*sqrt(2.0d0*l+1.0d0)
+                            wo = wo + (2.0d0*l+1.0d0)
+                        Endif
+                    Enddo
+                    Do l = 0, l_max-1
+                        If (mod(l,2) .eq. 0) Then
+                            wsp%s2a(mp)%data(l,r,imi,fld) = wsp%s2a(mp)%data(l,r,imi,fld) &
+                                                          - (pe/we)*sqrt(2.0d0*l+1.0d0)
+                        Else
+                            wsp%s2a(mp)%data(l,r,imi,fld) = wsp%s2a(mp)%data(l,r,imi,fld) &
+                                                          - (po/wo)*sqrt(2.0d0*l+1.0d0)
+                        Endif
+                    Enddo
+                Enddo
+                Enddo
+            Enddo
+        Enddo
+    End Subroutine M0_Pole_Projection
+    
     Subroutine rlm_spaceb()
         Implicit None
         Integer :: m, mp, r, imi

@@ -69,6 +69,11 @@ Module Controls
     Logical :: ohmic_heating = .true.
     Logical :: pseudo_incompressible = .false.  ! Switch from anelastic to pseudo-incompressible approximation
     Logical :: compressible = .false.           !run compressible or not
+    Logical :: implicit_compressible_diffusion = .false. ! CN treatment of radial diffusion (compressible only)
+    Integer :: thermal_variable = 1 ! 1 = temperature (current path)
+    Logical :: implicit_compressible_acoustics = .false. ! Tier-2: coupled implicit (vr,lnrho,S) radial-acoustic block
+                                    ! 2 = entropy     (compressible treatment)
+                                    ! (3 reserved: potential temperature)
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
                                                 ! Generally only do this if reference state is nonadiabatic
@@ -110,7 +115,9 @@ Module Controls
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
                 & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
-                & chi_a_advect_reference_state, chi_p_advect_reference_state
+                & chi_a_advect_reference_state, chi_p_advect_reference_state, &
+                & implicit_compressible_diffusion, thermal_variable, &
+                & implicit_compressible_acoustics
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls

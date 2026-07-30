@@ -42,6 +42,7 @@ Module Sphere_Physical_Space
     Real*8, Allocatable :: gnu(:,:,:,:), gkappa(:,:,:,:)
     Real*8, Allocatable :: phi_visc(:,:,:), str(:,:,:,:)
     Real*8, Allocatable :: csquared(:,:,:)  ! sound speed squared
+    Real*8, Allocatable :: T_recon(:,:,:)   ! same shape/indexing as Phi_Visc
     Real*8, Allocatable :: work(:,:,:)
     Logical :: vars_allocated = .false.
     Integer, Parameter :: e_rr = 1, e_tt = 2, e_pp = 3
@@ -125,8 +126,13 @@ Contains
             Allocate(gnu(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
             Allocate(gkappa(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
             Allocate(str(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:6))
+            
             Allocate(csquared(1:n_phi+2,my_r%min:my_r%max,my_theta%min:my_theta%max))
             csquared = Zero
+
+            Allocate(T_recon(1:n_phi+2,my_r%min:my_r%max,my_theta%min:my_theta%max))
+            T_recon = Zero
+            
             Allocate(work(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
             vars_allocated = .true.
         Endif
@@ -159,6 +165,10 @@ Contains
             Call sintheta_div(d2vtdtdp)
             Call sintheta_div(d2vtdrdt)
             Call sintheta_div(d2vrdrdt)
+            Call sintheta_div(d2vpdp2)
+            Call sintheta_div(d2vpdrdp)
+            Call sintheta_div(d2vtdr2)
+            Call sintheta_div(d2vpdr2)
         Endif
 
         do i = 1, n_active_scalars
@@ -193,9 +203,49 @@ Contains
 
             ! step 3:  divide by sin(theta), leaving d^2 vtheta/dtheta^2
             Call sintheta_div(d2vtdt2)
-        Endif 
 
-
+            ! Each buffer below holds d_theta(sin(theta)*X); remove cos*X, divide again.
+            DO_IDX
+                wsp%p3a(IDX,dvtdt) = wsp%p3a(IDX,dvtdt) - costheta(t)*wsp%p3a(IDX,vtheta)
+            END_DO
+            Call sintheta_div(dvtdt)
+            DO_IDX
+                wsp%p3a(IDX,dvpdt) = wsp%p3a(IDX,dvpdt) - costheta(t)*wsp%p3a(IDX,vphi)
+            END_DO
+            Call sintheta_div(dvpdt)
+            DO_IDX
+                wsp%p3a(IDX,d2vtdrdt) = wsp%p3a(IDX,d2vtdrdt) - costheta(t)*wsp%p3a(IDX,dvtdr)
+            END_DO
+            Call sintheta_div(d2vtdrdt)
+            DO_IDX
+                wsp%p3a(IDX,d2vtdtdp) = wsp%p3a(IDX,d2vtdtdp) - costheta(t)*wsp%p3a(IDX,dvtdp)
+            END_DO
+            Call sintheta_div(d2vtdtdp)
+            DO_IDX
+                wsp%p3a(IDX,d2vpdtdp) = wsp%p3a(IDX,d2vpdtdp) - costheta(t)*wsp%p3a(IDX,dvpdp)
+            END_DO
+            Call sintheta_div(d2vpdtdp)
+            ! d2vtdt2 = d_theta^2(sin*vtheta) = sin*d2(v) + 2*cos*d1(v) - sin*v
+            DO_IDX
+                wsp%p3a(IDX,d2vtdt2) = wsp%p3a(IDX,d2vtdt2) &
+                    + sintheta(t)*wsp%p3a(IDX,vtheta)       &
+                    - 2.0d0*costheta(t)*wsp%p3a(IDX,dvtdt)
+            END_DO
+            Call sintheta_div(d2vtdt2)
+            ! hvtheta/hvphi = l(l+1)/r^2 * (sin*v) = -Lap_h(sin*v); convert to -Lap_h(v)
+            DO_IDX
+                wsp%p3a(IDX,hvtheta) = ( wsp%p3a(IDX,hvtheta) + OneOverRSquared(r)*( &
+                     2.0d0*costheta(t)*wsp%p3a(IDX,dvtdt) &
+                     + (costheta(t)*costheta(t)-sintheta(t)*sintheta(t))*csctheta(t)*wsp%p3a(IDX,vtheta) &
+                     ) ) * csctheta(t)
+            END_DO
+            DO_IDX
+                wsp%p3a(IDX,hvphi) = ( wsp%p3a(IDX,hvphi) + OneOverRSquared(r)*( &
+                     2.0d0*costheta(t)*wsp%p3a(IDX,dvpdt) &
+                     + (costheta(t)*costheta(t)-sintheta(t)*sintheta(t))*csctheta(t)*wsp%p3a(IDX,vphi) &
+                     ) ) * csctheta(t)
+            END_DO
+        Endif
 
         Call StopWatch(sdiv_time)%increment()
 
@@ -223,93 +273,106 @@ Contains
         !Logic for computing compressible terms in physical space
         !Brandon 
         If (compressible) Then
-            Call Compute_DivU()
-            !Write(6, *) "DIVU,", Maxval(RHSP)
-            Call Compute_Strain_Rate()
-            !Write(6, *) "STR, ",Maxval(RHSP)
-            Call Compute_Grad_Kappa()
-            !Write(6, *) "KAPPA, ",Maxval(RHSP)
-            Call Compute_Grad_Nu()
-            !Write(6, *) "NU, " ,Maxval(RHSP)
+           Call Compute_T_Recon()
+           Call Compute_DivU()
+           !Write(6, *) "DIVU,", Maxval(RHSP)
+           Call Compute_Strain_Rate()
+           !Write(6, *) "STR, ",Maxval(RHSP)
+           Call Compute_Grad_Kappa()
+           !Write(6, *) "KAPPA, ",Maxval(RHSP)
+           Call Compute_Grad_Nu()
+           !Write(6, *) "NU, " ,Maxval(RHSP)
+           
+           Call Compute_Phi_Visc()
+           !Write(6, *) "PHI VISC, ", Maxval(RHSP)
 
-            Call Compute_Phi_Visc()
-            !Write(6, *) "PHI VISC, ", Maxval(RHSP)
-
-            If (debug) Then
-                Call Temperature_Diffusion()
-                !Call Temperature_Heating()
-            Else
-                Call Temperature_Advection_Compressible()
-                !Write(6, *) "TEP ADVECT COMP, ", Maxval(RHSP)
-                Call Temperature_Compression()
-                !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
-                Call Temperature_Diffusion()
-                !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
-                !Call Temperature_Heating()
-                Call Temperature_Viscous_Heating()
-                !Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
-
-                Call Density_Advection()
-                !Write(6, *) "DENSITY ADVECT", Maxval(RHSP)
-                Call Density_Compression()
-                !Write(6, *) "DENSITY COMPRESS", Maxval(RHSP)
-
-                Call Velocity_Advection()
-                !Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
-                Call Velocity_Diffusion()
-                !Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
-                Call Pressure_Force()
-                !Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
-                
-                If (gravity) Call Compute_Gravity()
-                If (rotation) Call Coriolis_Centrifugal()
-            Endif
+           If (debug) Then
+              Call Temperature_Diffusion()
+              !Call Temperature_Heating()
+           Else
+              Call Temperature_Advection_Compressible()
+              !Write(6, *) "TEP ADVECT COMP, ", Maxval(RHSP)
+              If (thermal_variable .eq. 1) Call Temperature_Compression()
+              ! entropy formulation: no compression term exists — absorbed exactly by S.
+              !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
+              Call Temperature_Diffusion()
+              !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
+              !Call Temperature_Heating()
+              !Call Temperature_Viscous_Heating()
+              !Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
+              
+              Call Density_Advection()
+              !Write(6, *) "DENSITY ADVECT", Maxval(RHSP)
+              Call Density_Compression()
+              !Write(6, *) "DENSITY COMPRESS", Maxval(RHSP)
+              
+              Call Velocity_Advection()
+              !Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
+              Call Velocity_Diffusion()
+              !Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
+              Call Pressure_Force()
+              !Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
+              
+              If (gravity) Call Compute_Gravity()
+              If (rotation) Call Coriolis_Centrifugal()
+           Endif
         Else
-            Call Temperature_Advection()
-            Call Volumetric_Heating()
-
-            do i = 1, n_active_scalars
-            Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
-            Call chi_Source_function(chiavar(i), ref%chi_a_source(:,i))
-            end do
-            do i = 1, n_passive_scalars
-            Call chi_Advection(chipvar(i), dchipdr(i), dchipdt(i), dchipdp(i))
-            Call chi_Source_function(chipvar(i), ref%chi_p_source(:,i))
-            end do
-            
-            If (viscous_heating) Call Compute_Viscous_Heating()
-
-            Call Momentum_Advection_Radial()
-            Call Momentum_Advection_Theta()
-            Call Momentum_Advection_Phi()
-
+           Call Temperature_Advection()
+           Call Volumetric_Heating()
+           
+           do i = 1, n_active_scalars
+              Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
+              Call chi_Source_function(chiavar(i), ref%chi_a_source(:,i))
+           end do
+           do i = 1, n_passive_scalars
+              Call chi_Advection(chipvar(i), dchipdr(i), dchipdt(i), dchipdp(i))
+              Call chi_Source_function(chipvar(i), ref%chi_p_source(:,i))
+           end do
+           
+           If (viscous_heating) Call Compute_Viscous_Heating()
+           
+           Call Momentum_Advection_Radial()
+           Call Momentum_Advection_Theta()
+           Call Momentum_Advection_Phi()
+           
         Endif
-
+        
         If (magnetism) Then
-            Call Compute_Ohmic_Heating()
-            Call Compute_EMF()
+           Call Compute_Ohmic_Heating()
+           Call Compute_EMF()
         Endif
-
+        
         Call StopWatch(nl_time)%increment()
         !...........................
-
+        
         Call wsp%deconstruct('p3a')
-
+        
         Call StopWatch(pspace_time)%increment()
-
-
+        
+        
         Call StopWatch(fft_time)%startclock()
         Call fft_to_spectral(wsp%p3b, rsc = .true.)
         Call StopWatch(fft_time)%increment()
-
-
+        
+        
         Call wsp%load_cargo(global_msgs)
-
+        
         Call StopWatch(rtranspose_time)%startclock()
         Call wsp%reform()    ! Move to p2b
         Call StopWatch(rtranspose_time)%increment()
     End Subroutine Physical_Space
 
+    Subroutine Compute_T_Recon()
+      Implicit None
+      Integer :: t, r, k
+      !$OMP PARALLEL DO PRIVATE(t,r,k)
+      DO_IDX
+         T_recon(IDX) = Cs*exp( FIELDSP(IDX,tvar)/bigz &
+              + (gas_gamma-1.0d0)*FIELDSP(IDX,rhovar) )
+      END_DO
+      !$OMP END PARALLEL DO
+    End Subroutine Compute_T_Recon
+    
     Subroutine Compute_Sound_Speed()
         Implicit None
         Integer :: t, r, k
@@ -318,9 +381,19 @@ Contains
         !       Fredy (8/22/19)
         !       Nick (8/27/19)
         gfactor = gas_gamma*(gas_gamma-1.0d0)*bigz
-        DO_IDX
-            csquared(IDX) = gfactor*FIELDSP(IDX,tvar)
-        END_DO
+        If (thermal_variable .eq. 2) Then
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           csquared(IDX) = gfactor*T_recon(IDX)
+           END_DO
+           !$OMP END PARALLEL DO
+        Else
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           csquared(IDX) = gfactor*FIELDSP(IDX,tvar)
+           END_DO
+           !$OMP END PARALLEL DO
+        Endif
 
     End Subroutine Compute_Sound_Speed
 
@@ -946,54 +1019,157 @@ Contains
 
     Subroutine Pressure_Force()
         Implicit None
-        Integer :: t, r,k
+        Integer :: t,r,k
         Real*8 :: gfactor
-        ! Add terms like du/dt = a Grad T + b T Grad lnrho
-        ! Checked:
-        !           Nick (8/20/19)
 
+        If (thermal_variable .eq. 2) Then
+           gfactor = gas_gamma - 1.0d0
+           ! Radial component: -(gamma-1)*T*( dS/dr + gamma*bigz*dlnrho/dr )
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*T_recon(IDX)*( &
+                FIELDSP(IDX,dtdr) &
+                + gas_gamma*bigz*FIELDSP(IDX,drhodr) )
+           END_DO
+           !$OMP END PARALLEL DO
+           
+           ! Theta component
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
+                - gfactor*T_recon(IDX)*One_Over_R(r)*( &
+                FIELDSP(IDX,dtdt) &
+                + gas_gamma*bigz*FIELDSP(IDX,drhodt) )
+           END_DO
+           !$OMP END PARALLEL DO
 
-        
-        gfactor = (1.0-gas_gamma)*bigz
+           ! Phi component
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,vphi) = RHSP(IDX,vphi) &
+                - gfactor*T_recon(IDX)*One_Over_R(r)*csctheta(t)*( &
+                FIELDSP(IDX,dtdp) &
+                + gas_gamma*bigz*FIELDSP(IDX,drhodp) )
+           END_DO
+           !$OMP END PARALLEL DO
+           If (implicit_compressible_acoustics) Call Subtract_Implicit_Acoustics_V()
+        Else
+           ! ---- existing T-formulation body, verbatim, unchanged ----
 
+           ! Add terms like du/dt = a Grad T + b T Grad lnrho
+           ! Checked:
+           !           Nick (8/20/19)
+           
+           gfactor = (1.0-gas_gamma)*bigz
 
-        ! Radial component
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,vr) = RHSP(IDX,vr) + gfactor*( FIELDSP(IDX,dtdr) &
-                                        +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodr))
-        END_DO
-        !$OMP END PARALLEL DO
-
-        If (Remove_Reference) Then     
-            !$OMP PARALLEL DO PRIVATE(t,r,k)       
-            DO_IDX
-                RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*(ref%dT(r) +  ref%temperature(r)*ref%dlnrho(r))
-            END_DO
-            !$OMP END PARALLEL DO
-        EndIf
-
-        ! Theta component
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + gfactor*One_Over_R(r) & 
-                                *( FIELDSP(IDX,dtdt) &
-                                  +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodt) )
-        END_DO
-        !$OMP END PARALLEL DO
-
-        ! Phi component
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,vphi) = RHSP(IDX,vphi) +gfactor*One_Over_R(r)*csctheta(t) &
-                                *( FIELDSP(IDX,dtdp) &
-                                 + FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodp) )
-        END_DO
-        !$OMP END PARALLEL DO
-
+           ! Radial component
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,vr) = RHSP(IDX,vr) + gfactor*( FIELDSP(IDX,dtdr) &
+                +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodr))
+           END_DO
+           !$OMP END PARALLEL DO
+           
+           ! Theta component
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + gfactor*One_Over_R(r) & 
+                *( FIELDSP(IDX,dtdt) &
+                +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodt) )
+           END_DO
+           !$OMP END PARALLEL DO
+           
+           ! Phi component
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,vphi) = RHSP(IDX,vphi) +gfactor*One_Over_R(r)*csctheta(t) &
+                *( FIELDSP(IDX,dtdp) &
+                + FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodp) )
+           END_DO
+           !$OMP END PARALLEL DO
+        Endif
 
     End Subroutine Pressure_Force
 
+    Subroutine Subtract_Implicit_Diffusion_V()
+        ! Remove from the velocity RHS exactly the content loaded into
+        ! the CN matrices.  Called at the END of Velocity_Diffusion so every
+        ! buffer consumed here (d2v*dr2, dv*dr, hvr, v*) is guaranteed live.
+        ! Radial-derivative buffers are the same Chebyshev-spectral
+        ! derivatives the matrices implement; nu(r) is the implicit baseline
+        ! (any future 3D transport part remains explicit by construction).
+        ! Sign note: hvr = +l(l+1)/r^2 * vr.
+        Implicit None
+        Integer :: r,t,k
+        Real*8 :: w
+        DO_IDX
+            w = (4.0d0/3.0d0)*nu(r)*FIELDSP(IDX,d2vrdr2) &
+              + ( (8.0d0/3.0d0)*One_Over_R(r) + (4.0d0/3.0d0)*ref%dlnrho(r) )*nu(r)*FIELDSP(IDX,dvrdr) &
+              - nu(r)*FIELDSP(IDX,hvr) &
+              - ( (8.0d0/3.0d0)*OneOverRSquared(r) &
+              +   (4.0d0/3.0d0)*ref%dlnrho(r)*One_Over_R(r) )*nu(r)*FIELDSP(IDX,vr)
+            RHSP(IDX,vr) = RHSP(IDX,vr) - w
+        END_DO
+        DO_IDX
+            w = nu(r)*FIELDSP(IDX,d2vtdr2) &
+              + ( 2.0d0*One_Over_R(r) + ref%dlnrho(r) )*nu(r)*FIELDSP(IDX,dvtdr) &
+              - ref%dlnrho(r)*One_Over_R(r)*nu(r)*FIELDSP(IDX,vtheta)
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) - w
+        END_DO
+        DO_IDX
+            w = nu(r)*FIELDSP(IDX,d2vpdr2) &
+              + ( 2.0d0*One_Over_R(r) + ref%dlnrho(r) )*nu(r)*FIELDSP(IDX,dvpdr) &
+              - ref%dlnrho(r)*One_Over_R(r)*nu(r)*FIELDSP(IDX,vphi)
+            RHSP(IDX,vphi) = RHSP(IDX,vphi) - w
+        END_DO
+    End Subroutine Subtract_Implicit_Diffusion_V
+
+    Subroutine Subtract_Implicit_Acoustics_V()
+        ! Remove from the vr RHS exactly the linear acoustic content loaded
+        ! into the CN matrices (Tier-2).  Called at the END of the
+        ! Pressure_Force entropy branch: dtdr/drhodr/tvar/rhovar are live.
+        ! garr = inward gravity magnitude from general hydrostatics.
+        Implicit None
+        Integer :: r,t,k
+        Real*8 :: w, garr, Tb
+        DO_IDX
+            Tb   = ref%temperature(r)
+            garr = -(gas_gamma-1.0d0)*bigz*( ref%dT(r) + Tb*ref%dlnrho(r) )
+            w = -(gas_gamma-1.0d0)*Tb*FIELDSP(IDX,dtdr) &
+                -(gas_gamma-1.0d0)*gas_gamma*bigz*Tb*FIELDSP(IDX,drhodr) &
+                +(garr/bigz)*FIELDSP(IDX,tvar) &
+                +(gas_gamma-1.0d0)*garr*FIELDSP(IDX,rhovar)
+            RHSP(IDX,vr) = RHSP(IDX,vr) - w
+        END_DO
+    End Subroutine Subtract_Implicit_Acoustics_V
+
+    Subroutine Subtract_Implicit_Acoustics_Q()
+        ! Remove from the lnrho RHS the linear radial-divergence content
+        ! loaded into the CN matrices (Tier-2).
+        Implicit None
+        Integer :: r,t,k
+        Real*8 :: w
+        DO_IDX
+            w = -FIELDSP(IDX,dvrdr) &
+                -( 2.0d0*One_Over_R(r) + ref%dlnrho(r) )*FIELDSP(IDX,vr)
+            RHSP(IDX,rhovar) = RHSP(IDX,rhovar) - w
+        END_DO
+    End Subroutine Subtract_Implicit_Acoustics_Q
+
+    Subroutine Subtract_Implicit_Acoustics_S()
+        ! Remove from the S RHS the background-entropy advection content
+        ! loaded into the CN matrices (Tier-2).  ~0 for an adiabatic ref.
+        Implicit None
+        Integer :: r,t,k
+        Real*8 :: w, dSbardr
+        DO_IDX
+            dSbardr = bigz*( ref%dT(r)/ref%temperature(r) &
+                      + (1.0d0-gas_gamma)*ref%dlnrho(r) )
+            w = -dSbardr*FIELDSP(IDX,vr)
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) - w
+        END_DO
+    End Subroutine Subtract_Implicit_Acoustics_S
+    
     Subroutine Velocity_Diffusion()
         Implicit None
         Integer :: t, r,k
@@ -1188,9 +1364,9 @@ Contains
         END_DO
         !$OMP END PARALLEL DO     
 
-
+        If (implicit_compressible_diffusion) Call Subtract_Implicit_Diffusion_V()
     End Subroutine Velocity_Diffusion
-
+    
     Subroutine Coriolis_Centrifugal()
         Implicit None
         Integer :: t, r,k
@@ -1287,6 +1463,9 @@ Contains
                              + FIELDSP(IDX,vphi)*FIELDSP(IDX,drhodp)*csctheta(t) )
         END_DO
         !$OMP END PARALLEL DO
+        If ((implicit_compressible_acoustics) .and. (thermal_variable .eq. 2)) Then
+            Call Subtract_Implicit_Acoustics_Q()
+        Endif
     End Subroutine Density_Advection
 
     Subroutine Density_Compression()
@@ -1320,6 +1499,9 @@ Contains
                              + FIELDSP(IDX,vphi)*FIELDSP(IDX,dtdp)*csctheta(t) )
         END_DO
         !$OMP END PARALLEL DO
+        If ((implicit_compressible_acoustics) .and. (thermal_variable .eq. 2)) Then
+            Call Subtract_Implicit_Acoustics_S()
+        Endif
     End Subroutine Temperature_Advection_Compressible
 
 
@@ -1350,13 +1532,22 @@ Contains
         Integer :: t,r,k
         Real*8 :: zfactor
         zfactor = 1.0d0/bigz
-        ! Add the PHI term to the temperature equation
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
 
-        DO_IDX
-            RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*Phi_Visc(IDX)
-        END_DO
-        !$OMP END PARALLEL DO
+        If (thermal_variable .eq. 2) Then
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,tvar) = RHSP(IDX,tvar) &
+                + zfactor * Phi_Visc(IDX) * bigz/T_recon(IDX)
+           END_DO
+           !$OMP END PARALLEL DO
+        Else
+           ! Add the PHI term to the temperature equation
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*Phi_Visc(IDX)
+           END_DO
+           !$OMP END PARALLEL DO
+        EndIf
     End Subroutine Temperature_Viscous_Heating
 
     Subroutine Temperature_Compression()
@@ -1376,6 +1567,21 @@ Contains
         !$OMP END PARALLEL DO
     End Subroutine Temperature_Compression
 
+    Subroutine Subtract_Implicit_Diffusion_T()
+        ! Temperature analog; called at the END of Temperature_Diffusion.
+        ! Sign note: htvar = +l(l+1)/r^2 * T.
+        Implicit None
+        Integer :: r,t,k
+        Real*8 :: w, kc
+        kc = gas_gamma/Prandtl_Number
+        DO_IDX
+            w = kc*kappa(r)*( FIELDSP(IDX,d2tdr2) &
+              + ( 2.0d0*One_Over_R(r) + ref%dlnrho(r) )*FIELDSP(IDX,dtdr) &
+              - FIELDSP(IDX,htvar) )
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) - w
+        END_DO
+    End Subroutine Subtract_Implicit_Diffusion_T
+    
     Subroutine Temperature_Diffusion()
         Implicit None
         Integer :: t, r,k
@@ -1386,8 +1592,11 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !    
-
-        kcoeff = gas_gamma/Prandtl_Number
+        If (thermal_variable .eq. 2) Then
+           kcoeff = 1.0d0/Prandtl_Number          ! S diffuses with kappa
+        Else
+           kcoeff = gas_gamma/Prandtl_Number      ! T path
+        Endif
 
         If (ddebug) Then
             DO_IDX
@@ -1411,7 +1620,7 @@ Contains
         END_DO
         !$OMP END PARALLEL DO
 
-        If (Remove_Reference) Then
+        If ((Remove_Reference) .and. (thermal_variable .ne. 2)) Then
             !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,tvar) = RHSP(IDX,tvar) - kcoeff*gkappa(IDX,1)*(ref%d2T(r) + &
@@ -1421,7 +1630,22 @@ Contains
             !$OMP END PARALLEL DO
         EndIf
 
-        !kcoeff = 0.0d0
+        If (thermal_variable .eq. 2) Then
+           ! exact first-order products: kappa*(gamma grad lnrho + grad S / cv).grad S
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*gkappa(IDX,1)*( &
+                ( gas_gamma*FIELDSP(IDX,drhodr) &
+                + FIELDSP(IDX,dtdr)/bigz )*FIELDSP(IDX,dtdr) &
+                + OneOverRSquared(r)*( gas_gamma*FIELDSP(IDX,drhodt) &
+                + FIELDSP(IDX,dtdt)/bigz )*FIELDSP(IDX,dtdt) &
+                + OneOverRSquared(r)*csctheta(t)*csctheta(t)*( &
+                gas_gamma*FIELDSP(IDX,drhodp) &
+                + FIELDSP(IDX,dtdp)/bigz )*FIELDSP(IDX,dtdp) )
+           END_DO
+           !$OMP END PARALLEL DO
+        Endif
+        
         ! Grad T dot Grad Kappa
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -1432,8 +1656,6 @@ Contains
                              FIELDSP(IDX,dtdp)*gkappa(IDX,4)*csctheta(t)*csctheta(t))) ! 4 is dkappa/dphi
         END_DO
         !$OMP END PARALLEL DO
-
-
 
         ! Kapp Grad T dot Grad lnrho
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1447,6 +1669,7 @@ Contains
         !$OMP END PARALLEL DO
         Endif
 
+        If (implicit_compressible_diffusion) Call Subtract_Implicit_Diffusion_T()
     End Subroutine Temperature_Diffusion
 
     Subroutine Compute_Grad_Kappa()
@@ -1604,13 +1827,25 @@ Contains
         Call d_by_dphi(wsp%p3a,vtheta,dvtdp)
         Call d_by_dphi(wsp%p3a,vphi,dvpdp)
         Call d_by_dphi(wsp%p3a,tvar,dtdp)
+        
+        If (compressible) Then
+            Call d_by_dphi(wsp%p3a, rhovar, drhodp)
+            Call d_by_dphi(wsp%p3a, dvpdp, d2vpdp2)
+            Call d_by_dphi(wsp%p3a, dvpdt, d2vpdtdp)
+            Call d_by_dphi(wsp%p3a, dvtdt, d2vtdtdp)
+            Call d_by_dphi(wsp%p3a, dvpdr, d2vpdrdp)
+            Call d_by_dphi(wsp%p3a, dvrdr, d2vrdrdp)
+        Endif
+        
         do i = 1, n_active_scalars
           Call d_by_dphi(wsp%p3a,chiavar(i),dchiadp(i))
         end do
         do i = 1, n_passive_scalars
           Call d_by_dphi(wsp%p3a,chipvar(i),dchipdp(i))
         end do
-    End Subroutine Phi_Derivatives
+   End Subroutine Phi_Derivatives
+
+      
     Subroutine sintheta_div(ind)
         ! Divide by sintheta
         Implicit None
@@ -1647,7 +1882,13 @@ Contains
                 ovht2 = Maxval(csquared(:,r,:) + wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
                                     *OneOverRSquared(r)*l_l_plus1(l_max) ! horizontal
                 ovt2  = Max(ovt2, ovht2)
-                ovrt2 = Maxval(csquared(:,r,:) + wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
+                If (implicit_compressible_acoustics) Then
+                    ! Tier-2: radial acoustics are CN-implicit -- only the
+                    ! radial FLOW speed constrains the explicit terms.
+                    ovrt2 = Maxval(wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)  ! radial
+                Else
+                    ovrt2 = Maxval(csquared(:,r,:) + wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
+                Endif
                 ovt2  = Max(ovt2,ovrt2)
             Enddo
 
