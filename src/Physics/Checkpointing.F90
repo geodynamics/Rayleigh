@@ -174,14 +174,18 @@ Contains
         !Copy the RHS (contains state variables at current timestep) into chtkmp
         Call Get_All_RHS(chktmp%p1a) 
 
-        ! Next, convert the AB terms into chebyshev space and copy them into the buffer
-        Call abterms_cheby%construct('p1a')
-        abterms_cheby%config='p1a'
-        !chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields) ! earlier version -- physical space storage
-        Call gridcp%to_spectral(abterms,abterms_cheby%p1a)
-        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms_cheby%p1a(:,:,:,1:numfields)
-        Call abterms_cheby%deconstruct('p1a')
 
+        If ( (chebyshev) .and. (ndomains .eq. 1) ) Then
+            ! Convert the AB terms into chebyshev space and copy them into the buffer
+            ! For now, if ndomains > 1, we do not perform this conversion
+            Call abterms_cheby%construct('p1a')
+            abterms_cheby%config='p1a'
+            !chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields) ! earlier version -- physical space storage
+            Call gridcp%to_spectral(abterms,abterms_cheby%p1a)
+            chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms_cheby%p1a(:,:,:,1:numfields)
+            Call abterms_cheby%deconstruct('p1a')
+        Endif
+        
         !Move checkpoint buffer from p1a to s2a (rlm space)
         Call chktmp%reform()
 
@@ -620,7 +624,8 @@ Contains
 
         Endif
 
-        If (version .ge. 3) Then
+
+        If ( (version .ge. 3) .and. chebyshev ) Then
             ! For version 3+, the AB terms are stored in Chebyshev space
             Call abterms_cheby%construct('p1b')
             abterms_cheby%config='p1b'
@@ -633,15 +638,18 @@ Contains
         If (ndomains .eq. 1) Then
             ! Regardless of the checkpoint version or resolution, we can load the state vector
             ! fields directly from the checkpoint buffer because that portion of the buffer is
-            ! already in the expected Chebyshev format.  
+            ! already in the expected format.  
             ub = Min(n_r,n_r_old)
             fields = 0d0
             fields(1:ub,:,:,1:numfields) = chktmp%p1b(1:ub,:,:,1:numfields)
 
-            ! For checkpoint version 3 and later, the AB terms are also stored in
-            ! Chebyshev space, but they need to be in grid space.
-            ! Even if the resolution changes, no further work needs to be done.
-            If (version .ge. 3) Then
+            If (.not. chebyshev) Then
+                abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
+
+            Else If (version .ge. 3) Then
+                ! For checkpoint version 3 and later, the AB terms are also stored in
+                ! Chebyshev space, but they need to be in grid space.
+                ! Even if the resolution changes, no further work needs to be done.
                 !Need to convert from Chebyshev space to physical space
                 Call gridcp%From_Spectral(abterms_cheby%p1b,abterms)
                 Call abterms_cheby%deconstruct('p1b')
@@ -740,7 +748,7 @@ Contains
             Endif
 
         Else ! ndomains > 1: we need to loop over domains and (maybe) interpolate
-
+            ! Note that ndomains > 1 is not possible when running in finite-difference mode.
             ! Loop over the domains to set the Chebyshev coefficients, 
             ! possibly interpolating in radius for each subdomain
             ! The fields are easy, since they are stored in spectral (Chebyshev) space
