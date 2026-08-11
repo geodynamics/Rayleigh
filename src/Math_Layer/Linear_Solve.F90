@@ -494,42 +494,22 @@ Module Linear_Solve
     End Subroutine Point_Variables
 
 
-    Subroutine Add_Implicit_Term(eqind,varind,dorder,amp,mode, static, lhs_only)
+    Subroutine Add_Implicit_Term(eqind,varind,dorder,amp,mode, static)
         ! This subroutine adds derivative coefficients into the implicit matrix
         ! and also saves them into the correct part of the equation coefficient arrays
         ! If static is set, it means that this term is a piece of:
         ! (W^n+1-W^n)/dt  and gets added to the RHS and LHS with no dt factor
         ! and with the same amplitude.
-        ! If lhs_only is set, the term goes into the LHS matrix only (no
-        ! old-time coefs) = backward-Euler treatment at unchanged amp (the
-        ! LHS weight is already the full-dt weight; measured: 2x amp gave a
-        ! 4x energy response).
-        ! Used by the v14 step-3 horizontal-acoustic couplings, where the CN
-        ! extrapolated-old-time path anti-damps oscillatory terms in the
-        ! omega*dt ~ 0.01-1 window.
         Implicit None
         Integer, Intent(In) :: eqind, varind, dorder, mode
         real*8, Intent(InOut) :: amp(:)
         real*8 :: time_amp
         Integer :: rowblock, colblock
-        Logical, Intent(In), optional :: static, lhs_only
+        Logical, Intent(In), optional :: static
         real*8, Pointer, Dimension(:,:) :: mpointer
         rowblock = equation_set(mode,eqind)%rowblock
         colblock = equation_set(mode,eqind)%colblock(varind)
         mpointer => equation_set(mode,eqind)%mpointer
-
-        If (present(lhs_only)) Then
-            time_amp = LHS_time_factor
-            amp = amp*time_amp
-            If (chebyshev) Then
-                Call Load_Interior_Rows_Cheby(rowblock, colblock,amp,dorder,mpointer)
-            Else
-                Call Load_Interior_Rows(rowblock, colblock,amp,dorder,mpointer)
-            Endif
-            amp = amp/time_amp
-            var_set(varind)%in_equation(mode,eqind,dorder) = .true.
-            Return
-        Endif
 
         If(present(static)) Then
             equation_set(mode,eqind)%coefs(varind)%data(:,dorder) = amp + &

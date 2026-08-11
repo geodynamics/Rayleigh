@@ -23,7 +23,7 @@ Module ProblemSize
     Use Legendre_Polynomials, Only : Initialize_Legendre,coloc
     Use Spectral_Derivatives, Only : Initialize_Angular_Derivatives
     Use Controls, Only : Chebyshev, use_parity, multi_run_mode, run_cpus, my_path, outputs_per_row, m_balance_contiguous, &
-                       & n_active_scalars, n_passive_scalars, magnetism, compressible
+                       & n_active_scalars, n_passive_scalars, magnetism, compressible, spin_horizontal
     Use Chebyshev_Polynomials, Only : Cheby_Grid
     Use Finite_Difference, Only  : Initialize_Derivatives, Rescale_Grid_FD
     Use Math_Constants
@@ -477,7 +477,11 @@ Contains
         allocate(m_vals(1:tmp))
         m_vals(:) = m_values(my_mp%min:my_mp%max)
 
-        Call Initialize_Legendre(n_theta,l_max,m_vals,use_parity,spin_tables_in=compressible)
+        ! The spin-weighted Legendre tables are consumed only by the spin
+        ! (q+/-) analysis/synthesis path (spin_horizontal); do not build
+        ! them otherwise.
+        Call Initialize_Legendre(n_theta,l_max,m_vals,use_parity, &
+             spin_tables_in=(compressible .and. spin_horizontal))
         tmp = my_r%delta
         Call Initialize_Angular_Derivatives(m_vals,l_max,tmp)
         DeAllocate(m_vals)

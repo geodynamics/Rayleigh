@@ -74,7 +74,7 @@ Module Controls
     Integer :: thermal_variable = 1 ! 1 = temperature (current path)
     Logical :: implicit_compressible_acoustics = .false. ! Tier-2: coupled implicit (vr,lnrho,S) radial-acoustic block
     Logical :: nulltest_deltas_zero = .false.       ! diagnostic: zero the conductive contrast
-    Logical :: implicit_horizontal_acoustics = .false.   ! v14 step 3: horizontal acoustics into the coupled block (BE); requires spin_horizontal + T2
+    Logical :: implicit_horizontal_acoustics = .false.   ! horizontal acoustics into the coupled block; requires spin_horizontal + thermal_variable=2
                                     ! 2 = entropy     (compressible treatment)
                                     ! (3 reserved: potential temperature)
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
@@ -199,6 +199,19 @@ Contains
         Allocate(global_msgs(1:nglobal_msgs))
         global_msgs = 0.0d0
 
+        ! The spin (q+/-) horizontal representation is implemented for the
+        ! entropy formulation (thermal_variable = 2) only: the spin-aware
+        ! acoustic/pressure couplings and the physical-space masking that
+        ! balances them are thermal_variable=2 forms, so thermal_variable=1
+        ! would load a partial, unbalanced operator.
+        If (spin_horizontal .and. (thermal_variable .ne. 2)) Then
+            Write(6,*) 'ERROR: spin_horizontal = .true. requires '// &
+                       'thermal_variable = 2 (entropy formulation).'
+            Write(6,*) 'The spin representation is not implemented for '// &
+                       'thermal_variable = 1.  Stopping.'
+            Stop
+        Endif
+
         !Set default for diagnostic_reboot_interval (if necessary)
         If (diagnostic_reboot_interval .le. 0) Then
             diagnostic_reboot_interval = checkpoint_interval
@@ -223,7 +236,7 @@ Contains
             ! Version banner: every log self-identifies the spin branch build.
             ! Bump the tag with every physics-relevant change to this branch.
             Call stdout%print(" ")
-            Call stdout%print("== SPIN BRANCH v14.1 (T1 thermal gate; implicit horiz acoustics) ==")
+            Call stdout%print("== SPIN BRANCH v14.8.6 (uniform CN implicit; audit complete) ==")
             Call stdout%print("   divl/supply: K*sqrt(L2); force bridge sqrt(2 pi); cross terms IMPLICIT (coupled block)")
         Endif
 

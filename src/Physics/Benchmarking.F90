@@ -342,7 +342,7 @@ Contains
             gas_gamma = 1.5d0
 
             !Temporal Controls
-            ! v14.1 refresh: entropy formulation (tv=2) with the implicit
+            ! Entropy formulation (tv=2) with the implicit
             ! acoustic/diffusion chain -- dt=30 s matches the mainline
             ! anelastic benchmark run (Featherstone & Hindman 2015, Tab. A.1).
             max_time_step = 30.0d0

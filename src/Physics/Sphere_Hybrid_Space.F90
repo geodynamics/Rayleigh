@@ -24,6 +24,7 @@ Module Sphere_Hybrid_Space
     ! NOTE: WE NEED a 1/density variable
     Use Load_Balance, Only : mp_lm_values, l_lm_values, my_num_lm, m_lm_values, my_lm_min, my_nl_lm, my_nm_lm, my_lm_lval, my_lm_max
     Use Parallel_Framework
+    Use Math_Constants, Only : sqrt2pi, Ksp
     Use Controls
     Use Legendre_Polynomials, Only : iwp_lm, iwm_lm, wp_lm, wm_lm, ws0_lm, iws0_lm
     Use Spin_Conversions, Only : spin_state_is_slot, Convert_Slot_Pair_To_Spin, Convert_Spin_Pair_To_Slot
@@ -268,7 +269,7 @@ Contains
                     ! applies to the d_r(div_h) supply below.
                     ! TRUE scalar-convention divergence.  The pair part's
                     ! constant is K*sqrt(L2)/r with K = 1/(2*sqrt(2*pi)) =
-                    ! 0.19947114: the measured synthesis-kernel constant
+                    ! Ksp = 1/(2 sqrt(2 pi)): the synthesis-kernel constant
                     ! (multi-m plane scan, ratio flat 0.0996 vs the old 2*sL
                     ! form at every m from 0 to 31, i.e. true = K*sL exactly;
                     ! K pinned to 1/(2*sqrt(2*pi)) at 1e-5 via the exact
@@ -277,10 +278,9 @@ Contains
                     ! and is retired.  This divl feeds BOTH the d_r(div_h)
                     ! supply (scalar consumers: must be true-convention) and
                     ! the fviscq div force below (which carries the exact
-                    ! reverse bridge sqrt(2*pi) so the pair->pair round trip
-                    ! is convention-free and equals the end-to-end-verified
-                    ! v9 force).
-                    divl = 0.19947114d0*sL*oor*( wsp%s2a(mp)%data(l,r,imi,vtheta) &
+                    ! reverse bridge sqrt(2*pi), so the pair->pair round trip
+                    ! is convention-free).
+                    divl = Ksp*sL*oor*( wsp%s2a(mp)%data(l,r,imi,vtheta) &
                                         - wsp%s2a(mp)%data(l,r,imi,vphi) ) &
                          + wsp%s2a(mp)%data(l,r,imi,dvrdr) &
                          + 2.0d0*oor*wsp%s2a(mp)%data(l,r,imi,vr)
@@ -302,20 +302,18 @@ Contains
                     ! and dropped 28% of the true pair viscous force
                     ! (F_syn/F_true = 0.72 measured pre-fix).
                     If (implicit_compressible_acoustics) Then
-                        ! v12: the cross terms are implicit (SLT coupled
-                        ! block); nothing explicit remains of them.
+                        ! The cross terms are implicit (coupled block);
+                        ! nothing explicit remains of them.
                         crossg = 0.0d0
                     Else
                         crossg = nu(r)*2.0d0*oor2*sL*wsp%s2a(mp)%data(l,r,imi,vr) &
-                               + 2.5066283d0*(nu(r)/3.0d0)*oor*sL*divl
+                               + sqrt2pi*(nu(r)/3.0d0)*oor*sL*divl
                     Endif
                     If (implicit_compressible_diffusion) Then
-                        ! v14 masked remainder: the T1 CN rows own the full
+                        ! The T1 CN rows own the full
                         ! nu[D2+(2/r+dlnrho)D1+(Hlap-dlnrho/r)D0] pair operator,
-                        ! so the explicit remainder is assembled DIRECTLY as
-                        !   -nu*dlnrho*(D1 - 1/r) q+/-   (l-independent),
-                        ! replacing the old assemble-full-then-subtract pattern
-                        ! (one coefficient source, no cancellation pass).
+                        ! so the explicit remainder is assembled directly as
+                        !   -nu*dlnrho*(D1 - 1/r) q+/-   (l-independent).
                         fviscq(mp)%data(l,r,imi,1) = -nu(r)*ref%dlnrho(r)*( &
                               wsp%s2a(mp)%data(l,r,imi,dvtdr) &
                             - oor*wsp%s2a(mp)%data(l,r,imi,vtheta) ) &
@@ -338,11 +336,11 @@ Contains
                     ! feeds the spin-branch divu(:,2) = d_r(div u), whose consumer
                     ! is the ungated vr-equation nu/3 term:
                     If (implicit_compressible_acoustics) Then
-                        ! v12: the d_r(div_h) supply is implicit (vreq <- pair columns);
-                        ! the explicit slot must carry zero.
+                        ! The d_r(div_h) supply is implicit (vreq <- pair
+                        ! columns); the explicit slot must carry zero.
                         wsp%s2a(mp)%data(l,r,imi,d2vtdrdt) = 0.0d0
                     Else
-                        wsp%s2a(mp)%data(l,r,imi,d2vtdrdt) = 0.19947114d0*sL*( &
+                        wsp%s2a(mp)%data(l,r,imi,d2vtdrdt) = Ksp*sL*( &
                               ( wsp%s2a(mp)%data(l,r,imi,dvtdr) &
                               - wsp%s2a(mp)%data(l,r,imi,dvpdr) )*oor &
                               - ( wsp%s2a(mp)%data(l,r,imi,vtheta) &
@@ -429,15 +427,12 @@ Contains
         If (compressible .and. spin_horizontal) Then
             ! The momentum RHS components (Ftheta,Fphi) analyze as a spin pair;
             ! the equation slots then hold native F+/- for the q+/- updates.
-            ! spin_sindiv=.FALSE. (v13): the physical-space assembly delivers TRUE
-            ! unweighted (Ftheta,Fphi) (every RHSP pair term audited); the analysis
-            ! path with sindiv off is the exact inverse of the unweighted synthesis
-            ! (full-loop injection utest: identity to 1e-13 at m=1,2,10 incl. l=1,
-            ! both imi; real-force Coriolis response l-compact).  With sindiv on,
-            ! every force term was analyzed as F/sintheta -> broad-l pole-band
-            ! error at every step, worst at m=1 (the v11/v12 killer).  The v12
-            ! k(theta)=256*sintheta measurement misattributed the tables' quadrature
-            ! weight to the content; the original A/B rejection stands.
+            ! spin_sindiv MUST stay .false.: the physical-space assembly
+            ! delivers true unweighted (Ftheta,Fphi), and analysis with
+            ! sindiv off is the exact inverse of the unweighted synthesis.
+            ! With sindiv on, every force term is analyzed as F/sintheta,
+            ! injecting a broad-l pole-band error each step (worst at m=1)
+            ! that drives an l-tail instability.
             Call Legendre_Transform(wsp%p2b,wsp%s2b, spin_fa=(/vtheta/), spin_fb=(/vphi/), spin_sindiv=.false.)
         Else
             Call Legendre_Transform(wsp%p2b,wsp%s2b)

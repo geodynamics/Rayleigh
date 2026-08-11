@@ -101,10 +101,9 @@ Contains
 
         If (implicit_compressible_acoustics) Then
             If (spin_horizontal) Then
-                ! v12: the spin pair joins the coupled block so the nu/3
+                ! The spin pair joins the coupled block so the nu/3
                 ! grad(div) vr<->pair cross coupling (and the vr coupling)
-                ! can be CN/Euler-implicit -- Dedalus-style: no explicit
-                ! spin cross terms remain.
+                ! can be implicit; no explicit spin cross terms remain.
                 nlinks = 5
             Else
                 nlinks = 3
@@ -154,7 +153,7 @@ Contains
                 Call Initialize_Equation_Coefficients(rhoeq,     vr, 1, lp)
                 Call Initialize_Equation_Coefficients(teq  ,     vr, 0, lp)
                 If (spin_horizontal) Then
-                    ! v12 spin cross columns (see the loader for the amps):
+                    ! Spin cross columns (see the loader for the amps):
                     ! vr row <- pair (the d_r(div_h) supply, now implicit)
                     Call Initialize_Equation_Coefficients(vreq , vtheta, 1, lp)
                     Call Initialize_Equation_Coefficients(vreq ,   vphi, 1, lp)
@@ -165,7 +164,7 @@ Contains
                     Call Initialize_Equation_Coefficients(vteq ,   vphi, 0, lp)
                     Call Initialize_Equation_Coefficients(vpeq , vtheta, 0, lp)
                     If (implicit_horizontal_acoustics) Then
-                        ! v14 step 3: horizontal-acoustic columns
+                        ! Horizontal-acoustic columns
                         Call Initialize_Equation_Coefficients(rhoeq, vtheta, 0, lp)
                         Call Initialize_Equation_Coefficients(rhoeq,   vphi, 0, lp)
                         Call Initialize_Equation_Coefficients(vteq ,   tvar, 0, lp)
@@ -670,7 +669,6 @@ Contains
         Implicit None
 
         Real*8, Allocatable :: H_Laplacian(:), amp(:)
-        Real*8 :: sqrt2pi, Ksp   ! spin-basis bridge constants
         Real*8 :: sLl
         Integer :: l, lp
         Real*8 :: diff_factor,ell_term
@@ -678,8 +676,6 @@ Contains
         diff_factor = 1.0d0 ! hyperdiffusion factor (if desired, 1.0d0 is equivalent to no hyperdiffusion)
         Allocate(amp(1:N_R))
         Allocate(H_Laplacian(1:N_R))
-        sqrt2pi = sqrt(2.0d0*Pi)
-        Ksp = 1.0d0/(2.0d0*sqrt2pi)          ! synthesis kernel K
         Do lp = 1, my_nl_lm
             If (bandsolve) Call DeAllocate_LHS(lp)
             Call Allocate_LHS(lp)
@@ -737,15 +733,13 @@ Contains
                 Call add_implicit_term(vpeq, vphi,   0, amp, lp)
 
                 If (spin_horizontal .and. implicit_compressible_acoustics) Then
-                    ! v12: the spin cross terms, implicit (Euler flavor -- no
-                    ! Post_Solve old-time calls, mirroring the Tier-1
-                    ! diffusion precedent; dissipative couplings, so the
-                    ! first-order-in-dt treatment is benign).  Constants:
-                    ! Ksp = 1/(2 sqrt(2 pi)) (the measured kernel identity),
-                    ! B = sqrt(2 pi) = 1/(2 Ksp) (the force bridge);
-                    ! B*Ksp = 1/2 exactly for the pair-pair block.
-                    ! Explicit counterparts are gated off in
-                    ! Assemble_Spin_Viscous / the d2vtdrdt supply.
+                    ! Spin viscous cross terms, implicit without old-time
+                    ! calls (dissipative couplings; first-order-in-dt is
+                    ! benign).  Constants: Ksp = 1/(2 sqrt(2 pi)) (synthesis
+                    ! kernel), B = sqrt(2 pi) = 1/(2 Ksp) (force bridge);
+                    ! B*Ksp = 1/2 for the pair-pair block.  Explicit
+                    ! counterparts are gated off in Assemble_Spin_Viscous /
+                    ! the d2vtdrdt supply.
                     sLl = sqrt(l_l_plus1(l))
                     ! vr row <- pair: +(nu/3) d_r[Ksp*sL/r (q+ - q-)]
                     amp = (nu/3.0d0)*Ksp*sLl*One_Over_R
@@ -756,11 +750,11 @@ Contains
                     Call add_implicit_term(vreq, vphi, 1, amp, lp)
                     amp = (nu/3.0d0)*Ksp*sLl*OneOverRSquared
                     Call add_implicit_term(vreq, vphi, 0, amp, lp)
-                    ! pair rows <- vr, both viscous cross-couplings: (nu/3)grad(div u)
-                    ! horizontal part AND the vector-Laplacian mixed term
-                    ! (2 nu/r^2) grad_h(vr).  Both are spin-+/-1 projections of
-                    ! d_theta(scalar), so both carry the SAME bridge sqrt(2 pi)
-                    ! (v14.3 fix: the Laplacian term previously lacked it).
+                    ! pair rows <- vr, both viscous cross-couplings: the
+                    ! (nu/3) grad(div u) horizontal part AND the
+                    ! vector-Laplacian mixed term (2 nu/r^2) grad_h(vr).
+                    ! Both are spin-+/-1 projections of d_theta(scalar), so
+                    ! both carry the same bridge sqrt(2 pi).
                     amp = -sqrt2pi*(nu/3.0d0)*sLl*One_Over_R
                     Call add_implicit_term(vteq, vr, 1, amp, lp)
                     amp = -( 2.0d0 + 2.0d0/3.0d0 )*sqrt2pi*nu*sLl*OneOverRSquared
@@ -834,21 +828,13 @@ Contains
                 Call add_implicit_term(teq, vr, 0, amp, lp)
 
                 If (spin_horizontal .and. implicit_horizontal_acoustics) Then
-                    ! ---- Horizontal acoustics (v14 step 3); Crank-Nicolson as
-                    ! of v14.6.  History: v14-v14.5 used backward Euler here
-                    ! (lhs_only, amps pre-doubled to compensate the alpha
-                    ! factor).  BE's extra damping only matters for
-                    ! omega_ac*dt > ~0.3 (dt > ~150 s in this configuration);
-                    ! at production dt it cost first-order accuracy (measured:
-                    ! -1.4% growth rate, -2% frequency).  Amps below are the
-                    ! PHYSICAL values; their old-time (CN) counterparts are
-                    ! applied in Post_Solve_Compressible (v14.6 block).
-                    ! Certified identity: div_h = Ksp*sL/r (q+ - q-); the pair
-                    ! rows carry the adjoint horizontal gradient of the same
-                    ! pressure scalar as the vr row's D1 terms (bridge B);
-                    ! B*Ksp = 1/2 closes the oscillator: omega_h^2 = c^2 L2/r^2.
-                    ! Amplitudes verified against the extracted implicit
-                    ! matrices and the step-1 RHS probe (v14.4-v14.5 audits).
+                    ! ---- Horizontal acoustics, Crank-Nicolson: amps below
+                    ! are the physical values and their old-time counterparts
+                    ! are applied in Post_Solve_Compressible.  Identities:
+                    ! div_h = Ksp*sL/r (q+ - q-); the pair rows carry the
+                    ! adjoint horizontal gradient of the same pressure scalar
+                    ! as the vr row's D1 terms (bridge B); B*Ksp = 1/2 closes
+                    ! the oscillator: omega_h^2 = c^2 L2/r^2.
                     sLl = sqrt(l_l_plus1(l))
                     ! lnrho row <- pair: -(1/2)*sL/r (q+ - q-)
                     amp = -0.5d0*sLl*One_Over_R

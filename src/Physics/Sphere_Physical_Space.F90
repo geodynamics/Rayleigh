@@ -303,12 +303,10 @@ Contains
               If (thermal_variable .eq. 1) Call Temperature_Compression()
               ! entropy formulation: no compression term exists — absorbed exactly by S.
               !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
-              ! v14.1: under T1 the FULL thermal-diffusion operator lives in the
-              ! implicit teq rows; the explicit routine was being ADDED ON TOP
-              ! with no thermal Subtract_Implicit_Diffusion counterpart -- a
-              ! double-diffusion whose bare-Laplacian mismatch injected
-              ! -kappa*(dlnrho+dlnT)*dS/dr each step (the ell=0 spurious
-              ! driver).  Diffusion is purely implicit under T1.
+              ! Under T1 the full thermal-diffusion operator lives in the
+              ! implicit teq rows; diffusion is purely implicit (an explicit
+              ! call on top would double-diffuse and inject
+              ! -kappa*(dlnrho+dlnT)*dS/dr as a spurious ell=0 driver).
               If (.not. implicit_compressible_diffusion) Call Temperature_Diffusion()
               !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
               !Call Temperature_Heating()
@@ -1067,69 +1065,76 @@ Contains
         If (thermal_variable .eq. 2) Then
            gfactor = gas_gamma - 1.0d0
            ! Radial component: -(gamma-1)*T*( dS/dr + gamma*bigz*dlnrho/dr )
-           !$OMP PARALLEL DO PRIVATE(t,r,k)
-           DO_IDX
            If (implicit_compressible_acoustics) Then
-              ! v14.7: fused form of the previous add-then-subtract.  The
-              ! implicit vreq rows act on the TOTAL fields, so the reference
-              ! linear operator must be removed against the TOTAL gradients
-              ! (Tbar*G_total) and the analytic linear T'(S,lnrho); what
-              ! remains explicit is the nonlinear temperature weighting plus
-              ! the linear-T' restoration.  Identical content to
-              ! Subtract_Implicit_Acoustics_V (retired), one grid pass.
-              w  = -(gas_gamma-1.0d0)*bigz*( ref%dT(r) &
-                   + ref%temperature(r)*ref%dlnrho(r) )        ! garr
-              w2 = FIELDSP(IDX,dtdr) + gas_gamma*bigz*FIELDSP(IDX,drhodr)
-              RHSP(IDX,vr) = RHSP(IDX,vr) &
-                   - gfactor*(T_recon(IDX)-ref%temperature(r))*w2 &
-                   - (w/bigz)*FIELDSP(IDX,tvar) &
-                   - (gas_gamma-1.0d0)*w*FIELDSP(IDX,rhovar)
+              ! The implicit vreq rows act on the TOTAL fields, so the linear
+              ! operator is removed against Tbar*G_total and the analytic
+              ! linear T'(S,lnrho); the explicit remainder is the nonlinear
+              ! temperature weighting plus the linear-T' restoration.
+              !$OMP PARALLEL DO PRIVATE(t,r,k,w,w2)
+              DO_IDX
+                 w  = -(gas_gamma-1.0d0)*bigz*( ref%dT(r) &
+                      + ref%temperature(r)*ref%dlnrho(r) )        ! garr
+                 w2 = FIELDSP(IDX,dtdr) + gas_gamma*bigz*FIELDSP(IDX,drhodr)
+                 RHSP(IDX,vr) = RHSP(IDX,vr) &
+                      - gfactor*(T_recon(IDX)-ref%temperature(r))*w2 &
+                      - (w/bigz)*FIELDSP(IDX,tvar) &
+                      - (gas_gamma-1.0d0)*w*FIELDSP(IDX,rhovar)
+              END_DO
+              !$OMP END PARALLEL DO
            Else
-              RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*T_recon(IDX)*( &
-                   FIELDSP(IDX,dtdr) &
-                   + gas_gamma*bigz*FIELDSP(IDX,drhodr) )
+              !$OMP PARALLEL DO PRIVATE(t,r,k)
+              DO_IDX
+                 RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*T_recon(IDX)*( &
+                      FIELDSP(IDX,dtdr) &
+                      + gas_gamma*bigz*FIELDSP(IDX,drhodr) )
+              END_DO
+              !$OMP END PARALLEL DO
            Endif
-           END_DO
-           !$OMP END PARALLEL DO
            
            ! Theta component
-           !$OMP PARALLEL DO PRIVATE(t,r,k)
-           DO_IDX
            If (implicit_horizontal_acoustics) Then
-              ! v14 step 3: the linear (Tbar-weighted) horizontal pressure
-              ! gradient is implicit; mask it here (T -> T - Tbar), leaving
-              ! the nonlinear T' remainder explicit.
-              RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
-                   - gfactor*(T_recon(IDX)-ref%temperature(r))*One_Over_R(r)*( &
-                   FIELDSP(IDX,dtdt) &
-                   + gas_gamma*bigz*FIELDSP(IDX,drhodt) )
+              ! The linear (Tbar-weighted) horizontal pressure gradient is
+              ! implicit; mask it (T -> T - Tbar), leaving the nonlinear T'
+              ! remainder explicit.
+              !$OMP PARALLEL DO PRIVATE(t,r,k)
+              DO_IDX
+                 RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
+                      - gfactor*(T_recon(IDX)-ref%temperature(r))*One_Over_R(r)*( &
+                      FIELDSP(IDX,dtdt) &
+                      + gas_gamma*bigz*FIELDSP(IDX,drhodt) )
+              END_DO
+              !$OMP END PARALLEL DO
            Else
-              RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
-                   - gfactor*T_recon(IDX)*One_Over_R(r)*( &
-                   FIELDSP(IDX,dtdt) &
-                   + gas_gamma*bigz*FIELDSP(IDX,drhodt) )
+              !$OMP PARALLEL DO PRIVATE(t,r,k)
+              DO_IDX
+                 RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
+                      - gfactor*T_recon(IDX)*One_Over_R(r)*( &
+                      FIELDSP(IDX,dtdt) &
+                      + gas_gamma*bigz*FIELDSP(IDX,drhodt) )
+              END_DO
+              !$OMP END PARALLEL DO
            Endif
-           END_DO
-           !$OMP END PARALLEL DO
 
            ! Phi component
-           !$OMP PARALLEL DO PRIVATE(t,r,k)
-           DO_IDX
            If (implicit_horizontal_acoustics) Then
-              RHSP(IDX,vphi) = RHSP(IDX,vphi) &
-                   - gfactor*(T_recon(IDX)-ref%temperature(r))*One_Over_R(r)*csctheta(t)*( &
-                   FIELDSP(IDX,dtdp) &
-                   + gas_gamma*bigz*FIELDSP(IDX,drhodp) )
+              !$OMP PARALLEL DO PRIVATE(t,r,k)
+              DO_IDX
+                 RHSP(IDX,vphi) = RHSP(IDX,vphi) &
+                      - gfactor*(T_recon(IDX)-ref%temperature(r))*One_Over_R(r)*csctheta(t)*( &
+                      FIELDSP(IDX,dtdp) &
+                      + gas_gamma*bigz*FIELDSP(IDX,drhodp) )
+              END_DO
+              !$OMP END PARALLEL DO
            Else
-              RHSP(IDX,vphi) = RHSP(IDX,vphi) &
-                   - gfactor*T_recon(IDX)*One_Over_R(r)*csctheta(t)*( &
-                   FIELDSP(IDX,dtdp) &
-                   + gas_gamma*bigz*FIELDSP(IDX,drhodp) )
+              !$OMP PARALLEL DO PRIVATE(t,r,k)
+              DO_IDX
+                 RHSP(IDX,vphi) = RHSP(IDX,vphi) &
+                      - gfactor*T_recon(IDX)*One_Over_R(r)*csctheta(t)*( &
+                      FIELDSP(IDX,dtdp) &
+                      + gas_gamma*bigz*FIELDSP(IDX,drhodp) )
+              END_DO
+              !$OMP END PARALLEL DO
            Endif
-           END_DO
-           !$OMP END PARALLEL DO
-           ! v14.7: Subtract_Implicit_Acoustics_V retired -- the radial loop
-           ! above now adds only the non-implicit content directly.
         Else
            ! ---- existing T-formulation body, verbatim, unchanged ----
 
@@ -1173,21 +1178,13 @@ Contains
         ! the CN matrices.  Called at the END of Velocity_Diffusion so every
         ! buffer consumed here (d2v*dr2, dv*dr, hvr, v*) is guaranteed live.
         !
-        ! v14.8 audit note -- why this add-then-subtract pattern REMAINS
-        ! while the acoustic ones were gated away in v14.7: the viscous
-        ! vr-linear content is not a separable loop.  It accumulates across
-        ! Velocity_Diffusion's mixed-source loops (the scalar-Laplacian loop,
-        ! the vr piece of the geometric-terms loop, and the vr content of the
-        ! (1/3) grad(div u) loop via divu), interleaved with pair-sourced
-        ! terms in the same expressions; the pair components' own removal is
-        ! SPECTRAL (Assemble_Spin_Viscous) for the stability reason noted
-        ! below.  Gating would require rewriting several mixed loops with
-        ! exact algebraic removal of only the vr-source pieces, for the
-        ! saving of roughly one grid pass.  Risk exceeds benefit; the
-        ! pattern stays, documented.
+        ! This add-then-subtract pattern stays: the viscous vr-linear
+        ! content accumulates across mixed-source loops (scalar Laplacian,
+        ! geometric terms, (1/3) grad(div u) via divu) interleaved with
+        ! pair-sourced terms, and the pair removal is spectral (see below),
+        ! so gating would rewrite several loops to save ~one grid pass.
         ! Radial-derivative buffers are the same Chebyshev-spectral
-        ! derivatives the matrices implement; nu(r) is the implicit baseline
-        ! (any future 3D transport part remains explicit by construction).
+        ! derivatives the matrices implement; nu(r) is the implicit baseline.
         ! Sign note: hvr = +l(l+1)/r^2 * vr.
         Implicit None
         Integer :: r,t,k
@@ -1556,30 +1553,29 @@ Contains
         !           Nick (8/20/19)
         !          
         !Write(6, *) "MIN:MAX dhroFIELD", Maxval(FIELDSP(:, :, :, drhodr)), Minval(FIELDSP(:, :, :, drhodr))
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
         If ((implicit_compressible_acoustics) .and. (thermal_variable .eq. 2)) Then
-            ! v14.7: the background radial advection (-dlnrhobar/dr * vr) is
-            ! implicit (part of the rhoeq <- vr rows); advect the fluctuation
-            ! gradient directly.  Exact algebra; the paired radial-divergence
-            ! content is gated in Density_Compression and
-            ! Subtract_Implicit_Acoustics_Q is retired.
+            ! The background radial advection (-dlnrhobar/dr * vr) is
+            ! implicit (rhoeq <- vr rows); advect the fluctuation gradient
+            ! directly.  The paired radial-divergence content is gated in
+            ! Density_Compression.
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,rhovar) = -FIELDSP(IDX,vr)*(FIELDSP(IDX,drhodr)-ref%dlnrho(r)) &
                                  - one_over_r(r)*(                     &
                                  FIELDSP(IDX,drhodt)*FIELDSP(IDX,vtheta) &
                                  + FIELDSP(IDX,vphi)*FIELDSP(IDX,drhodp)*csctheta(t) )
             END_DO
+            !$OMP END PARALLEL DO
         Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,rhovar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,drhodr)    &
                                  - one_over_r(r)*(                     &
                                  FIELDSP(IDX,drhodt)*FIELDSP(IDX,vtheta) &
                                  + FIELDSP(IDX,vphi)*FIELDSP(IDX,drhodp)*csctheta(t) )
             END_DO
+            !$OMP END PARALLEL DO
         Endif
-        !$OMP END PARALLEL DO
-        ! v14.7: Subtract_Implicit_Acoustics_Q retired -- the advection loop
-        ! above and Density_Compression now add only non-implicit content.
     End Subroutine Density_Advection
 
     Subroutine Density_Compression()
@@ -1590,36 +1586,37 @@ Contains
         !           Nick (8/20/19)
         !          
 
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
         If (implicit_horizontal_acoustics .and. implicit_compressible_acoustics) Then
-            ! v14.7: the ENTIRE linear divergence (radial via rhoeq <- vr,
-            ! horizontal via rhoeq <- pair) is implicit; div u is linear in u,
-            ! so nothing remains on the explicit side.  Previously the radial
-            ! part was added here and removed by Subtract_Implicit_Acoustics_Q
-            ! (now retired).
+            ! The entire linear divergence (radial via rhoeq <- vr,
+            ! horizontal via rhoeq <- pair) is implicit; div u is linear in
+            ! u, so nothing remains on the explicit side.
             Continue
         Else If (implicit_horizontal_acoustics) Then
-            ! v14 step 3 without Tier-2: horizontal divergence implicit,
-            ! radial divergence explicit.
+            ! Horizontal divergence implicit, radial divergence explicit.
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,rhovar) = RHSP(IDX,rhovar) &
                     - ( FIELDSP(IDX,vr)*two_over_r(r) + FIELDSP(IDX,dvrdr) )
             END_DO
+            !$OMP END PARALLEL DO
         Else If (implicit_compressible_acoustics) Then
             ! Tier-2 without step 3: radial-linear divergence implicit
             ! (the dlnrhobar stratification term is handled on the advection
             ! side); keep the horizontal divergence only.
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,rhovar) = RHSP(IDX,rhovar) - divu(IDX,1) &
                     + FIELDSP(IDX,dvrdr) &
                     + two_over_r(r)*FIELDSP(IDX,vr)
             END_DO
+            !$OMP END PARALLEL DO
         Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,rhovar) = RHSP(IDX,rhovar)-divu(IDX,1)
             END_DO
+            !$OMP END PARALLEL DO
         Endif
-        !$OMP END PARALLEL DO
     End Subroutine Density_Compression
 
     Subroutine Temperature_Advection_Compressible()
@@ -1631,12 +1628,10 @@ Contains
         !           Nick (8/20/19)
         !    
 
-        !$OMP PARALLEL DO PRIVATE(t,r,k,w)
         If ((implicit_compressible_acoustics) .and. (thermal_variable .eq. 2)) Then
-            ! v14.7: the background radial advection (-dSbar/dr * vr) is
-            ! implicit; advect the fluctuation gradient directly.  Exact
-            ! algebra -- replaces the add-then-subtract pattern
-            ! (Subtract_Implicit_Acoustics_S retired).
+            ! The background radial advection (-dSbar/dr * vr) is implicit;
+            ! advect the fluctuation gradient directly.
+            !$OMP PARALLEL DO PRIVATE(t,r,k,w)
             DO_IDX
                 w = bigz*( ref%dT(r)/ref%temperature(r) &
                     + (1.0d0-gas_gamma)*ref%dlnrho(r) )
@@ -1645,15 +1640,17 @@ Contains
                                  FIELDSP(IDX,dtdt)*FIELDSP(IDX,vtheta) &
                                  + FIELDSP(IDX,vphi)*FIELDSP(IDX,dtdp)*csctheta(t) )
             END_DO
+            !$OMP END PARALLEL DO
         Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
                 RHSP(IDX,tvar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dtdr)    &
                                  - one_over_r(r)*(                     &
                                  FIELDSP(IDX,dtdt)*FIELDSP(IDX,vtheta) &
                                  + FIELDSP(IDX,vphi)*FIELDSP(IDX,dtdp)*csctheta(t) )
             END_DO
+            !$OMP END PARALLEL DO
         Endif
-        !$OMP END PARALLEL DO
     End Subroutine Temperature_Advection_Compressible
 
 
@@ -1769,7 +1766,7 @@ Contains
         END_DO
         !$OMP END PARALLEL DO
         If (thermal_variable .eq. 2) Then
-            ! v14.1: entropy diffusion is (1/rhoT) Div(kappa rho T Grad S)
+            ! Entropy diffusion is (1/rhoT) Div(kappa rho T Grad S)
             ! = kappa[ Del2 S + (dlnrho + dlnT) dS/dr ] (kappa_type=1).
             ! The stratification terms were missing here (bare Laplacian);
             ! only matters when diffusion is stepped explicitly (T1 off) --
@@ -2062,7 +2059,7 @@ Contains
                 ovht2 = Maxval(csquared(:,r,:) + wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
                                     *OneOverRSquared(r)*l_l_plus1(l_max) ! horizontal
                 If (implicit_horizontal_acoustics) Then
-                    ! v14 step 3: horizontal acoustics implicit -- only the
+                    ! Horizontal acoustics implicit -- only the
                     ! horizontal FLOW speed constrains the explicit terms.
                     ovht2 = Maxval(wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
                                         *OneOverRSquared(r)*l_l_plus1(l_max)

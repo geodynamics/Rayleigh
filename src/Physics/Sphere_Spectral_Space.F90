@@ -517,7 +517,8 @@ Contains
         Call Add_Derivative(vteq,vtheta,0, wsp%p1b,wsp%p1a,vtheta)
         Call Add_Derivative(vpeq,vphi,0, wsp%p1b,wsp%p1a,vphi)
         Call Add_Derivative(rhoeq,rhovar,0, wsp%p1b,wsp%p1a,rhovar)
-        ! v14.4-audit: restore the missing old-time (CN) applications.
+        ! Old-time (CN) applications: this hand-maintained list must
+        ! mirror every non-static term the loader adds implicitly.
         ! The mainline pattern applies every stored dorder; the compressible
         ! port had truncated this list to dorder-0, leaving all D1/D2
         ! diffusive content (and the viscous cross terms) at alpha-strength.
@@ -549,10 +550,10 @@ Contains
             Call Add_Derivative(rhoeq, vr    , 1, wsp%p1b, wsp%p1a, dvrdr)
             Call Add_Derivative(rhoeq, vr    , 0, wsp%p1b, wsp%p1a, vr)
             Call Add_Derivative(teq  , vr    , 0, wsp%p1b, wsp%p1a, vr)
-            ! v14.5: pair<->pair viscous off-diagonal old-time (D0-only).
+            ! pair<->pair viscous off-diagonal old-time (D0-only).
             Call Add_Derivative(vteq , vphi  , 0, wsp%p1b, wsp%p1a, vphi)
             Call Add_Derivative(vpeq , vtheta, 0, wsp%p1b, wsp%p1a, vtheta)
-            ! v14.6: horizontal-acoustic (step 3) old-time counterparts --
+            ! Horizontal-acoustic old-time counterparts --
             ! these terms are now Crank-Nicolson like every other implicit
             ! term (amps in Sphere_Linear_Terms at physical strength).
             Call Add_Derivative(rhoeq, vtheta, 0, wsp%p1b, wsp%p1a, vtheta)

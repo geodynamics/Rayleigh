@@ -305,7 +305,7 @@ Contains
         Call StopWatch(cread_time)%Increment()
 
         If (compressible .and. spin_horizontal) Then
-            ! v13.1: faithful spin restart.  Convert the pair STATE and the pair
+            ! Faithful spin restart.  Convert the pair STATE and the pair
             ! AB history slot -> q+/- at read time, via a scratch buffer with the
             ! writer's 2*numfields field count (the parked 2-field Convert_AB_Pair
             ! violated the transpose plan sizing; the checkpoint WRITER already
@@ -951,11 +951,9 @@ Contains
 
       DeltaS = 851225.7d0
       If (nulltest_deltas_zero) DeltaS = 0.0d0   ! adiabatic null diagnostic
-      ! v13.2: honor the namelist knob.  temp_amp (namelist) multiplies the
-      ! historical hardcoded seed 1e-4*DeltaS, so temp_amp=1.0 reproduces
-      ! every existing run bit-identically; temp_amp=1e-4 gives the linear
-      ! (gate-G) seed 1e-8*DeltaS.  (The old line overwrote the namelist
-      ! value -- the knob was dead for the entropy init.)
+      ! temp_amp (namelist) multiplies the historical hardcoded seed
+      ! 1e-4*DeltaS, so temp_amp=1.0 reproduces existing runs bit-identically;
+      ! temp_amp=1e-4 gives the linear-phase seed 1e-8*DeltaS.
       temp_amp = temp_amp*1.0d-4*DeltaS  ! seed amplitude in entropy units
       
       Allocate(rfunc1(my_r%min:my_r%max))
