@@ -81,6 +81,13 @@ Contains
 
 
         ref_remember = 1
+        If (benchmark_report_only) Then
+            ! Reporting-only: keep the user's configuration untouched;
+            ! Initialize_Benchmarking and Benchmark_Checkup still run off
+            ! benchmark_mode, so the official observables get written for
+            ! any config.
+            Return
+        Endif
         If (benchmark_mode .gt. 0) Then
 
             mode_remember = benchmark_mode  ! Keep track of a few things before restoring defaults
@@ -335,17 +342,25 @@ Contains
             gas_gamma = 1.5d0
 
             !Temporal Controls
-            max_time_step = 1.0d-2
-            alpha_implicit = 0.5d0
+            ! v14.1 refresh: entropy formulation (tv=2) with the implicit
+            ! acoustic/diffusion chain -- dt=30 s matches the mainline
+            ! anelastic benchmark run (Featherstone & Hindman 2015, Tab. A.1).
+            max_time_step = 30.0d0
+            alpha_implicit = 0.50001d0
             cflmin = 0.4d0
             cflmax = 0.6d0
-            
-            !Boundary Conditions
+            thermal_variable = 2
+            spin_horizontal = .true.
+            implicit_compressible_diffusion = .true.
+            implicit_compressible_acoustics = .true.
+            implicit_horizontal_acoustics = .true.
+
+            !Boundary Conditions (entropy pair: S(ro)=0, S(ri)=DeltaS)
             no_slip_boundaries = .false.
             strict_L_Conservation = .false.
             dtdr_bottom = 0.0d0
-            T_Top    = 28610.578735500316d0 !28610.578735500316d0 
-            T_Bottom = 352782.20265746413d0 !352782.20265746413d0 !111557.37012267619d0 !42.34d2
+            T_Top    = 0.0d0
+            T_Bottom = 851225.7d0
             fix_tvar_top = .true.
             fix_tvar_bottom = .true.
             fix_dtdr_bottom = .false.

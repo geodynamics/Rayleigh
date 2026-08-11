@@ -1,0 +1,1039 @@
+Cleaning up existing executables in src/build/compiled...
+ 
+******************************************************************** 
+                 Now Building: /rayleigh.opt
+ 
+                  
+ 
+Cleaning up compiled object files...
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Ra_Precision.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Structures.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c BufferedOutput.F90
+cc    -c -o cmkdir.o cmkdir.c
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c MakeDir.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Ra_MPI_Base.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Timing.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c All_to_All.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c SendReceive.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c ISendReceive.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c General_MPI.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c MPI_LAYER.F90
+
+    Use All_to_All
+        ^          
+ftn-878 ftn: WARNING MPI_LAYER, File = MPI_LAYER.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 114 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Load_Balance.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Parallel_Framework.F90
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Load_Balance
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "ALL_TO_ALL" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 351 source lines
+Cray Fortran : 0 errors, 10 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Timers.F90
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING TIMERS, File = Timers.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use SendReceive
+        ^           
+ftn-878 ftn: WARNING TIMERS, File = Timers.F90, Line = 24, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 146 source lines
+Cray Fortran : 0 errors, 2 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Spherical_Buffer.F90
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^                  
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 23, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^                  
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 23, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+    Use Load_Balance
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "ALL_TO_ALL" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Timers
+        ^      
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 27, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^      
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 27, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^      
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 27, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 1555 source lines
+Cray Fortran : 0 errors, 16 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Legendre_Polynomials.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Legendre_Transforms.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Fourier_Transform.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Parallel_IO.F90
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 22, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^                  
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 22, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+    Use ISendReceive
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use MPI_Layer
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Legendre_Transforms, Only : Legendre_Transform
+        ^                                              
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 27, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use Spherical_Buffer
+        ^                
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 28, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 1734 source lines
+Cray Fortran : 0 errors, 16 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c General_IO.F90
+
+    Use General_MPI, Only : BCAST2D, BCAST1D
+        ^                                    
+ftn-878 ftn: WARNING GENERAL_IO, File = General_IO.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 119 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Math_Constants.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Finite_Difference.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Chebyshev_Polynomials.F90
+
+        !$OMP PARALLEL DO PRIVATE(i,j,k,hh,hoff,n)
+              ^                                    
+ftn-1077 ftn: WARNING CHEBY_DERIV_BUFFER_4D, File = Chebyshev_Polynomials.F90, Line = 580, Column = 15 
+  This compilation contains OpenMP directives.  -h omp is not active so the directives are ignored.
+
+Cray Fortran : 731 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Chebyshev_Polynomials_Alt.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Linear_Solve.F90
+
+        IF (error .NE. 0) THEN
+ftn-7212 ftn: WARNING LU_SOLVE_SPARSE, File = Linear_Solve.F90, Line = 957 
+  Variable "error" is used before it is defined.
+
+            IF (error .NE. 0) THEN
+ftn-7212 ftn: WARNING LU_DECOMPOSE_SPARSE, File = Linear_Solve.F90, Line = 988 
+  Variable "error" is used before it is defined.
+
+Cray Fortran : 1529 source lines
+Cray Fortran : 0 errors, 2 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Math_Utility.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Spectral_Derivatives.F90
+
+    !$OMP PARALLEL DO PRIVATE(i,m,k,l)
+          ^                            
+ftn-1077 ftn: WARNING D_DTHETA_SINGLE, File = Spectral_Derivatives.F90, Line = 101, Column = 11 
+  This compilation contains OpenMP directives.  -h omp is not active so the directives are ignored.
+
+Cray Fortran : 605 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Spherical_IO.F90
+
+    Use SendReceive
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 24, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use ISendReceive
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 25, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Legendre_Transforms, Only : Legendre_Transform
+        ^                                              
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 28, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use Parallel_IO
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "GENERAL_MPI" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "SPHERICAL_BUFFER" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "FOURIER_TRANSFORM" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "ISENDRECEIVE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 1826 source lines
+Cray Fortran : 0 errors, 19 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Controls.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c ClockInfo.F90
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c ProblemSize.F90
+
+    Use Timers
+        ^      
+ftn-878 ftn: WARNING PROBLEMSIZE, File = ProblemSize.F90, Line = 31, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^      
+ftn-878 ftn: WARNING PROBLEMSIZE, File = ProblemSize.F90, Line = 31, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 936 source lines
+Cray Fortran : 0 errors, 2 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c PDE_Coefficients.F90
+
+    Use ProblemSize
+        ^           
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 35, Column = 9 
+  A module named "MATH_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 35, Column = 9 
+  A module named "CONTROLS" has already been directly or indirectly use associated into this scope.
+
+    Use Controls
+        ^        
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 36, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+
+    Use Math_Constants
+        ^              
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 37, Column = 9 
+  A module named "RA_PRECISION" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI, Only : BCAST2D
+        ^                           
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 39, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 2927 source lines
+Cray Fortran : 0 errors, 5 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Fields.F90
+
+    Use Problemsize
+        ^           
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 23, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 23, Column = 9 
+  A module named "CONTROLS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 23, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+    Use Controls
+        ^        
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 24, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+
+    Use Spherical_Buffer
+        ^                
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 25, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 557 source lines
+Cray Fortran : 0 errors, 5 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Generic_Input.F90
+
+  use Parallel_Framework
+      ^                  
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 24, Column = 7 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+      ^                  
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 24, Column = 7 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+
+  use SendReceive
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 30, Column = 7 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+  use ProblemSize
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "SENDRECEIVE" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 474 source lines
+Cray Fortran : 0 errors, 9 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O3 -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Checkpointing.F90
+
+Module Checkpointing
+       ^             
+ftn-855 ftn: ERROR CHECKPOINTING, File = Checkpointing.F90, Line = 21, Column = 8 
+  The compiler has detected errors in module "CHECKPOINTING".  No module information file will be created for this module.
+
+    Use ProblemSize
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "TIMING" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "TIMERS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "CONTROLS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 24, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+
+    Use Spherical_Buffer
+        ^                
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 25, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use Controls
+        ^        
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 27, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+
+    Use RA_MPI_BASE
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 28, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Parallel_IO
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "SPHERICAL_BUFFER" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+        Use Spin_Conversions, Only : Convert_Spin_Pair_To_Slot
+            ^                                                  
+ftn-292 ftn: ERROR WRITE_CHECKPOINT, File = Checkpointing.F90, Line = 158, Column = 13 
+  "SPIN_CONVERSIONS" is specified as the module name on a USE statement, but the compiler cannot find it.
+
+Cray Fortran : 936 source lines
+Cray Fortran : 2 errors, 19 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+make[3]: *** [Makefile:73: Checkpointing.o] Error 1
+make[2]: *** [Makefile:65: opt] Error 2
+ 
+******************************************************************** 
+                 Now Building: /rayleigh.dbg
+ 
+                  
+ 
+Cleaning up compiled object files...
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Ra_Precision.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Structures.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c BufferedOutput.F90
+cc    -c -o cmkdir.o cmkdir.c
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c MakeDir.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Ra_MPI_Base.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Timing.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c All_to_All.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c SendReceive.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c ISendReceive.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c General_MPI.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c MPI_LAYER.F90
+
+    Use All_to_All
+        ^          
+ftn-878 ftn: WARNING MPI_LAYER, File = MPI_LAYER.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 114 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Load_Balance.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Parallel_Framework.F90
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 28, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Load_Balance
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "ALL_TO_ALL" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_FRAMEWORK, File = Parallel_Framework.F90, Line = 29, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 351 source lines
+Cray Fortran : 0 errors, 10 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Timers.F90
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING TIMERS, File = Timers.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use SendReceive
+        ^           
+ftn-878 ftn: WARNING TIMERS, File = Timers.F90, Line = 24, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 146 source lines
+Cray Fortran : 0 errors, 2 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Spherical_Buffer.F90
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^                  
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 23, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^                  
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 23, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+    Use Load_Balance
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "ALL_TO_ALL" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 25, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 26, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Timers
+        ^      
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 27, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^      
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 27, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^      
+ftn-878 ftn: WARNING SPHERICAL_BUFFER, File = Spherical_Buffer.F90, Line = 27, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 1555 source lines
+Cray Fortran : 0 errors, 16 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Legendre_Polynomials.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Legendre_Transforms.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Fourier_Transform.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Parallel_IO.F90
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 22, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^                  
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 22, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+
+    Use ISendReceive
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^            
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 24, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use MPI_Layer
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^         
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 25, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Legendre_Transforms, Only : Legendre_Transform
+        ^                                              
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 27, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use Spherical_Buffer
+        ^                
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 28, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PARALLEL_IO, File = Parallel_IO.F90, Line = 29, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 1734 source lines
+Cray Fortran : 0 errors, 16 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c General_IO.F90
+
+    Use General_MPI, Only : BCAST2D, BCAST1D
+        ^                                    
+ftn-878 ftn: WARNING GENERAL_IO, File = General_IO.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 119 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Math_Constants.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Finite_Difference.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Chebyshev_Polynomials.F90
+
+        !$OMP PARALLEL DO PRIVATE(i,j,k,hh,hoff,n)
+             ^                                     
+ftn-1077 ftn: WARNING CHEBY_DERIV_BUFFER_4D, File = Chebyshev_Polynomials.F90, Line = 580, Column = 14 
+  This compilation contains OpenMP directives.  -h omp is not active so the directives are ignored.
+
+Cray Fortran : 731 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Chebyshev_Polynomials_Alt.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Linear_Solve.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Math_Utility.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Spectral_Derivatives.F90
+
+    !$OMP PARALLEL DO PRIVATE(i,m,k,l)
+         ^                             
+ftn-1077 ftn: WARNING D_DTHETA_SINGLE, File = Spectral_Derivatives.F90, Line = 101, Column = 10 
+  This compilation contains OpenMP directives.  -h omp is not active so the directives are ignored.
+
+Cray Fortran : 605 source lines
+Cray Fortran : 0 errors, 1 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Spherical_IO.F90
+
+    Use SendReceive
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 24, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use ISendReceive
+        ^            
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 25, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 26, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Legendre_Transforms, Only : Legendre_Transform
+        ^                                              
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 28, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use Parallel_IO
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "GENERAL_MPI" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "SPHERICAL_BUFFER" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "FOURIER_TRANSFORM" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "MPI_LAYER" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "ISENDRECEIVE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING SPHERICAL_IO, File = Spherical_IO.F90, Line = 35, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 1826 source lines
+Cray Fortran : 0 errors, 19 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Controls.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c ClockInfo.F90
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c ProblemSize.F90
+
+    Use Timers
+        ^      
+ftn-878 ftn: WARNING PROBLEMSIZE, File = ProblemSize.F90, Line = 31, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^      
+ftn-878 ftn: WARNING PROBLEMSIZE, File = ProblemSize.F90, Line = 31, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 936 source lines
+Cray Fortran : 0 errors, 2 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c PDE_Coefficients.F90
+
+    Use ProblemSize
+        ^           
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 35, Column = 9 
+  A module named "MATH_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 35, Column = 9 
+  A module named "CONTROLS" has already been directly or indirectly use associated into this scope.
+
+    Use Controls
+        ^        
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 36, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+
+    Use Math_Constants
+        ^              
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 37, Column = 9 
+  A module named "RA_PRECISION" has already been directly or indirectly use associated into this scope.
+
+    Use General_MPI, Only : BCAST2D
+        ^                           
+ftn-878 ftn: WARNING PDE_COEFFICIENTS, File = PDE_Coefficients.F90, Line = 39, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 2927 source lines
+Cray Fortran : 0 errors, 5 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Fields.F90
+
+    Use Problemsize
+        ^           
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 23, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 23, Column = 9 
+  A module named "CONTROLS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 23, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+    Use Controls
+        ^        
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 24, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+
+    Use Spherical_Buffer
+        ^                
+ftn-878 ftn: WARNING FIELDS, File = Fields.F90, Line = 25, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 557 source lines
+Cray Fortran : 0 errors, 5 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Generic_Input.F90
+
+  use Parallel_Framework
+      ^                  
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 24, Column = 7 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+      ^                  
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 24, Column = 7 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+
+  use SendReceive
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 30, Column = 7 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+  use ProblemSize
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "SENDRECEIVE" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+      ^           
+ftn-878 ftn: WARNING GENERIC_INPUT, File = Generic_Input.F90, Line = 31, Column = 7 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+Cray Fortran : 474 source lines
+Cray Fortran : 0 errors, 9 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+mpif90 -O0 -g -I/opt/cray/pe/fftw/3.3.10.11/x86_turin/include -c Checkpointing.F90
+
+Module Checkpointing
+       ^             
+ftn-855 ftn: ERROR CHECKPOINTING, File = Checkpointing.F90, Line = 21, Column = 8 
+  The compiler has detected errors in module "CHECKPOINTING".  No module information file will be created for this module.
+
+    Use ProblemSize
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "TIMING" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "TIMERS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "CONTROLS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 23, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+
+    Use Parallel_Framework
+        ^                  
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 24, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+
+    Use Spherical_Buffer
+        ^                
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 25, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+
+    Use Controls
+        ^        
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 27, Column = 9 
+  A module named "BUFFEREDOUTPUT" has already been directly or indirectly use associated into this scope.
+
+    Use RA_MPI_BASE
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 28, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+    Use Parallel_IO
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "LOAD_BALANCE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "MPI_BASE" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "MPI_SIZEOFS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "MPI_CONSTANTS" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "SPHERICAL_BUFFER" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "STRUCTURES" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "PARALLEL_FRAMEWORK" has already been directly or indirectly use associated into this scope.
+        ^           
+ftn-878 ftn: WARNING CHECKPOINTING, File = Checkpointing.F90, Line = 30, Column = 9 
+  A module named "RA_MPI_BASE" has already been directly or indirectly use associated into this scope.
+
+        Use Spin_Conversions, Only : Convert_Spin_Pair_To_Slot
+            ^                                                  
+ftn-292 ftn: ERROR WRITE_CHECKPOINT, File = Checkpointing.F90, Line = 158, Column = 13 
+  "SPIN_CONVERSIONS" is specified as the module name on a USE statement, but the compiler cannot find it.
+
+Cray Fortran : 936 source lines
+Cray Fortran : 2 errors, 19 warnings, 0 other messages, 0 ansi
+Cray Fortran : "explain ftn-message number" gives more information about each message.
+make[3]: *** [Makefile:73: Checkpointing.o] Error 1
+make[2]: *** [Makefile:65: dbg] Error 2
+make[1]: *** [Makefile:45: all] Error 2
+make: *** [Makefile:17: rayleigh] Error 2

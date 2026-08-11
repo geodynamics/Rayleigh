@@ -517,6 +517,26 @@ Contains
         Call Add_Derivative(vteq,vtheta,0, wsp%p1b,wsp%p1a,vtheta)
         Call Add_Derivative(vpeq,vphi,0, wsp%p1b,wsp%p1a,vphi)
         Call Add_Derivative(rhoeq,rhovar,0, wsp%p1b,wsp%p1a,rhovar)
+        ! v14.4-audit: restore the missing old-time (CN) applications.
+        ! The mainline pattern applies every stored dorder; the compressible
+        ! port had truncated this list to dorder-0, leaving all D1/D2
+        ! diffusive content (and the viscous cross terms) at alpha-strength.
+        Call Add_Derivative(teq ,tvar  ,1, wsp%p1b,wsp%p1a,dtdr)
+        Call Add_Derivative(teq ,tvar  ,2, wsp%p1b,wsp%p1a,d2tdr2)
+        Call Add_Derivative(vreq,vr    ,1, wsp%p1b,wsp%p1a,dvrdr)
+        Call Add_Derivative(vreq,vr    ,2, wsp%p1b,wsp%p1a,d2vrdr2)
+        Call Add_Derivative(vteq,vtheta,1, wsp%p1b,wsp%p1a,dvtdr)
+        Call Add_Derivative(vteq,vtheta,2, wsp%p1b,wsp%p1a,d2vtdr2)
+        Call Add_Derivative(vpeq,vphi  ,1, wsp%p1b,wsp%p1a,dvpdr)
+        Call Add_Derivative(vpeq,vphi  ,2, wsp%p1b,wsp%p1a,d2vpdr2)
+        Call Add_Derivative(vreq,vtheta,0, wsp%p1b,wsp%p1a,vtheta)
+        Call Add_Derivative(vreq,vtheta,1, wsp%p1b,wsp%p1a,dvtdr)
+        Call Add_Derivative(vreq,vphi  ,0, wsp%p1b,wsp%p1a,vphi)
+        Call Add_Derivative(vreq,vphi  ,1, wsp%p1b,wsp%p1a,dvpdr)
+        Call Add_Derivative(vteq,vr    ,0, wsp%p1b,wsp%p1a,vr)
+        Call Add_Derivative(vteq,vr    ,1, wsp%p1b,wsp%p1a,dvrdr)
+        Call Add_Derivative(vpeq,vr    ,0, wsp%p1b,wsp%p1a,vr)
+        Call Add_Derivative(vpeq,vr    ,1, wsp%p1b,wsp%p1a,dvrdr)
 
         If (implicit_compressible_acoustics) Then
             ! Tier-2: old-time application of the coupled-block cross terms,
@@ -529,6 +549,18 @@ Contains
             Call Add_Derivative(rhoeq, vr    , 1, wsp%p1b, wsp%p1a, dvrdr)
             Call Add_Derivative(rhoeq, vr    , 0, wsp%p1b, wsp%p1a, vr)
             Call Add_Derivative(teq  , vr    , 0, wsp%p1b, wsp%p1a, vr)
+            ! v14.5: pair<->pair viscous off-diagonal old-time (D0-only).
+            Call Add_Derivative(vteq , vphi  , 0, wsp%p1b, wsp%p1a, vphi)
+            Call Add_Derivative(vpeq , vtheta, 0, wsp%p1b, wsp%p1a, vtheta)
+            ! v14.6: horizontal-acoustic (step 3) old-time counterparts --
+            ! these terms are now Crank-Nicolson like every other implicit
+            ! term (amps in Sphere_Linear_Terms at physical strength).
+            Call Add_Derivative(rhoeq, vtheta, 0, wsp%p1b, wsp%p1a, vtheta)
+            Call Add_Derivative(rhoeq, vphi  , 0, wsp%p1b, wsp%p1a, vphi)
+            Call Add_Derivative(vteq , tvar  , 0, wsp%p1b, wsp%p1a, tvar)
+            Call Add_Derivative(vteq , rhovar, 0, wsp%p1b, wsp%p1a, rhovar)
+            Call Add_Derivative(vpeq , tvar  , 0, wsp%p1b, wsp%p1a, tvar)
+            Call Add_Derivative(vpeq , rhovar, 0, wsp%p1b, wsp%p1a, rhovar)
         Endif
 
 

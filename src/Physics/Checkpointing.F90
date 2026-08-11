@@ -154,6 +154,9 @@ Contains
     End Subroutine Initialize_Checkpointing
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time, input_file)
+        Use Controls, Only : spin_horizontal
+        Use Spin_Conversions, Only : Convert_Spin_Pair_To_Slot
+        Use Fields, Only : vtheta, vphi, vteq, vpeq
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
@@ -170,6 +173,14 @@ Contains
         chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
         !Now we want to move from p1a to s2a (rlm space)
         Call chktmp%reform()
+
+        If (spin_horizontal) Then
+            ! State and AB slots for the horizontal pair hold native q+/-.
+            ! Convert to the componentwise slot representation so checkpoint
+            ! files remain format- and tool-compatible (real coordinate fields).
+            Call Convert_Spin_Pair_To_Slot(chktmp%s2a, vtheta, vphi)
+            Call Convert_Spin_Pair_To_Slot(chktmp%s2a, numfields+vteq, numfields+vpeq)
+        Endif
 
         If (ItIsTimeForAQuickSave) Then
             write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1

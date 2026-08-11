@@ -69,9 +69,12 @@ Module Controls
     Logical :: ohmic_heating = .true.
     Logical :: pseudo_incompressible = .false.  ! Switch from anelastic to pseudo-incompressible approximation
     Logical :: compressible = .false.           !run compressible or not
+    Logical :: spin_horizontal = .false.        !compressible horizontal pair in spin (q+/-) representation
     Logical :: implicit_compressible_diffusion = .false. ! CN treatment of radial diffusion (compressible only)
     Integer :: thermal_variable = 1 ! 1 = temperature (current path)
     Logical :: implicit_compressible_acoustics = .false. ! Tier-2: coupled implicit (vr,lnrho,S) radial-acoustic block
+    Logical :: nulltest_deltas_zero = .false.       ! diagnostic: zero the conductive contrast
+    Logical :: implicit_horizontal_acoustics = .false.   ! v14 step 3: horizontal acoustics into the coupled block (BE); requires spin_horizontal + T2
                                     ! 2 = entropy     (compressible treatment)
                                     ! (3 reserved: potential temperature)
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
@@ -92,6 +95,7 @@ Module Controls
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
     Integer :: benchmark_mode = 0
+    Logical :: benchmark_report_only = .false.   ! reports without preset-override
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
@@ -108,7 +112,7 @@ Module Controls
     Real*8, Allocatable :: newtonian_cooling_profile(:)
 
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
-                & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
+                & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, benchmark_report_only, &
                 & benchmark_integration_interval, benchmark_report_interval, &
                 & momentum_advection, inertia, coriolis, centrifugal, gravity, remove_reference, &
                 & n_active_scalars, n_passive_scalars, &
@@ -117,7 +121,8 @@ Module Controls
                 & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
                 & chi_a_advect_reference_state, chi_p_advect_reference_state, &
                 & implicit_compressible_diffusion, thermal_variable, &
-                & implicit_compressible_acoustics
+                & implicit_compressible_acoustics, spin_horizontal, &
+                & implicit_horizontal_acoustics, nulltest_deltas_zero
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -213,6 +218,13 @@ Contains
         If (.not. inertia) Then
             Call stdout%print("Setting momentum_advection to False")
             momentum_advection = .false.
+        Endif
+        If (spin_horizontal) Then
+            ! Version banner: every log self-identifies the spin branch build.
+            ! Bump the tag with every physics-relevant change to this branch.
+            Call stdout%print(" ")
+            Call stdout%print("== SPIN BRANCH v14.1 (T1 thermal gate; implicit horiz acoustics) ==")
+            Call stdout%print("   divl/supply: K*sqrt(L2); force bridge sqrt(2 pi); cross terms IMPLICIT (coupled block)")
         Endif
 
         Call Initialize_IO_Format_Codes()

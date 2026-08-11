@@ -100,7 +100,15 @@ Contains
         Call Initialize_Equation_Set(n_equations,n_variables,N_R,my_nl_lm, my_nm_lm,2)
 
         If (implicit_compressible_acoustics) Then
-            nlinks = 3
+            If (spin_horizontal) Then
+                ! v12: the spin pair joins the coupled block so the nu/3
+                ! grad(div) vr<->pair cross coupling (and the vr coupling)
+                ! can be CN/Euler-implicit -- Dedalus-style: no explicit
+                ! spin cross terms remain.
+                nlinks = 5
+            Else
+                nlinks = 3
+            Endif
             Allocate(eq_links(1:nlinks))
             Allocate(var_links(1:nlinks))
             eq_links(1)  = vreq
@@ -109,6 +117,12 @@ Contains
             var_links(1) = vr
             var_links(2) = rhovar
             var_links(3) = tvar
+            If (spin_horizontal) Then
+                eq_links(4)  = vteq
+                eq_links(5)  = vpeq
+                var_links(4) = vtheta
+                var_links(5) = vphi
+            Endif
         Endif
 
         Do lp = 1, my_nl_lm
@@ -139,6 +153,27 @@ Contains
                 Call Initialize_Equation_Coefficients(vreq , rhovar, 1, lp)
                 Call Initialize_Equation_Coefficients(rhoeq,     vr, 1, lp)
                 Call Initialize_Equation_Coefficients(teq  ,     vr, 0, lp)
+                If (spin_horizontal) Then
+                    ! v12 spin cross columns (see the loader for the amps):
+                    ! vr row <- pair (the d_r(div_h) supply, now implicit)
+                    Call Initialize_Equation_Coefficients(vreq , vtheta, 1, lp)
+                    Call Initialize_Equation_Coefficients(vreq ,   vphi, 1, lp)
+                    ! pair rows <- vr (vr coupling + the div term's vr part)
+                    Call Initialize_Equation_Coefficients(vteq ,     vr, 1, lp)
+                    Call Initialize_Equation_Coefficients(vpeq ,     vr, 1, lp)
+                    ! pair rows <- opposite pair slot (the div term's pair part)
+                    Call Initialize_Equation_Coefficients(vteq ,   vphi, 0, lp)
+                    Call Initialize_Equation_Coefficients(vpeq , vtheta, 0, lp)
+                    If (implicit_horizontal_acoustics) Then
+                        ! v14 step 3: horizontal-acoustic columns
+                        Call Initialize_Equation_Coefficients(rhoeq, vtheta, 0, lp)
+                        Call Initialize_Equation_Coefficients(rhoeq,   vphi, 0, lp)
+                        Call Initialize_Equation_Coefficients(vteq ,   tvar, 0, lp)
+                        Call Initialize_Equation_Coefficients(vteq , rhovar, 0, lp)
+                        Call Initialize_Equation_Coefficients(vpeq ,   tvar, 0, lp)
+                        Call Initialize_Equation_Coefficients(vpeq , rhovar, 0, lp)
+                    Endif
+                Endif
             Endif
 
             If (l .ne. 0) Then
@@ -281,6 +316,7 @@ Contains
         Implicit None
 
         Real*8, Allocatable :: H_Laplacian(:), amp(:)
+        Real*8 :: sLl
         Integer :: l, lp, i
         Real*8 :: diff_factor,ell_term
         !rmin_norm
@@ -634,12 +670,16 @@ Contains
         Implicit None
 
         Real*8, Allocatable :: H_Laplacian(:), amp(:)
+        Real*8 :: sqrt2pi, Ksp   ! spin-basis bridge constants
+        Real*8 :: sLl
         Integer :: l, lp
         Real*8 :: diff_factor,ell_term
         !rmin_norm
         diff_factor = 1.0d0 ! hyperdiffusion factor (if desired, 1.0d0 is equivalent to no hyperdiffusion)
         Allocate(amp(1:N_R))
         Allocate(H_Laplacian(1:N_R))
+        sqrt2pi = sqrt(2.0d0*Pi)
+        Ksp = 1.0d0/(2.0d0*sqrt2pi)          ! synthesis kernel K
         Do lp = 1, my_nl_lm
             If (bandsolve) Call DeAllocate_LHS(lp)
             Call Allocate_LHS(lp)
@@ -681,9 +721,64 @@ Contains
                 amp = ( 2.0d0*One_Over_R + ref%dlnrho )*nu*diff_factor
                 Call add_implicit_term(vteq, vtheta, 1, amp, lp)
                 Call add_implicit_term(vpeq, vphi,   1, amp, lp)
-                amp = -ref%dlnrho*One_Over_R*nu*diff_factor
+                If (spin_horizontal) Then
+                    ! Spin pair: the angular diagonal is exactly -L2/r^2 q±
+                    ! (the spin basis diagonalizes it), so it can join the CN
+                    ! rows -- Dedalus-style full-implicit pair diagonal.  The
+                    ! spectral subtraction in Assemble_Spin_Viscous carries the
+                    ! identical term; the componentwise (off) rows must NOT
+                    ! have it (their angular content is csc^2-coupled and
+                    ! stays explicit).
+                    amp = (H_Laplacian - ref%dlnrho*One_Over_R)*nu*diff_factor
+                Else
+                    amp = -ref%dlnrho*One_Over_R*nu*diff_factor
+                Endif
                 Call add_implicit_term(vteq, vtheta, 0, amp, lp)
                 Call add_implicit_term(vpeq, vphi,   0, amp, lp)
+
+                If (spin_horizontal .and. implicit_compressible_acoustics) Then
+                    ! v12: the spin cross terms, implicit (Euler flavor -- no
+                    ! Post_Solve old-time calls, mirroring the Tier-1
+                    ! diffusion precedent; dissipative couplings, so the
+                    ! first-order-in-dt treatment is benign).  Constants:
+                    ! Ksp = 1/(2 sqrt(2 pi)) (the measured kernel identity),
+                    ! B = sqrt(2 pi) = 1/(2 Ksp) (the force bridge);
+                    ! B*Ksp = 1/2 exactly for the pair-pair block.
+                    ! Explicit counterparts are gated off in
+                    ! Assemble_Spin_Viscous / the d2vtdrdt supply.
+                    sLl = sqrt(l_l_plus1(l))
+                    ! vr row <- pair: +(nu/3) d_r[Ksp*sL/r (q+ - q-)]
+                    amp = (nu/3.0d0)*Ksp*sLl*One_Over_R
+                    Call add_implicit_term(vreq, vtheta, 1, amp, lp)
+                    amp = -(nu/3.0d0)*Ksp*sLl*OneOverRSquared
+                    Call add_implicit_term(vreq, vtheta, 0, amp, lp)
+                    amp = -(nu/3.0d0)*Ksp*sLl*One_Over_R
+                    Call add_implicit_term(vreq, vphi, 1, amp, lp)
+                    amp = (nu/3.0d0)*Ksp*sLl*OneOverRSquared
+                    Call add_implicit_term(vreq, vphi, 0, amp, lp)
+                    ! pair rows <- vr, both viscous cross-couplings: (nu/3)grad(div u)
+                    ! horizontal part AND the vector-Laplacian mixed term
+                    ! (2 nu/r^2) grad_h(vr).  Both are spin-+/-1 projections of
+                    ! d_theta(scalar), so both carry the SAME bridge sqrt(2 pi)
+                    ! (v14.3 fix: the Laplacian term previously lacked it).
+                    amp = -sqrt2pi*(nu/3.0d0)*sLl*One_Over_R
+                    Call add_implicit_term(vteq, vr, 1, amp, lp)
+                    amp = -( 2.0d0 + 2.0d0/3.0d0 )*sqrt2pi*nu*sLl*OneOverRSquared
+                    Call add_implicit_term(vteq, vr, 0, amp, lp)
+                    amp = sqrt2pi*(nu/3.0d0)*sLl*One_Over_R
+                    Call add_implicit_term(vpeq, vr, 1, amp, lp)
+                    amp = ( 2.0d0 + 2.0d0/3.0d0 )*sqrt2pi*nu*sLl*OneOverRSquared
+                    Call add_implicit_term(vpeq, vr, 0, amp, lp)
+                    ! pair rows <- pair (the div term's pair part; B*Ksp = 1/2):
+                    amp = -0.5d0*(nu/3.0d0)*l_l_plus1(l)*OneOverRSquared
+                    Call add_implicit_term(vteq, vtheta, 0, amp, lp)
+                    amp =  0.5d0*(nu/3.0d0)*l_l_plus1(l)*OneOverRSquared
+                    Call add_implicit_term(vteq, vphi,   0, amp, lp)
+                    amp =  0.5d0*(nu/3.0d0)*l_l_plus1(l)*OneOverRSquared
+                    Call add_implicit_term(vpeq, vtheta, 0, amp, lp)
+                    amp = -0.5d0*(nu/3.0d0)*l_l_plus1(l)*OneOverRSquared
+                    Call add_implicit_term(vpeq, vphi,   0, amp, lp)
+                Endif
 
                 ! T: (gamma/Pr) kappa [ D2 + (2/r + rp) D1 + Hlap ]
                 If (thermal_variable .eq. 2) Then
@@ -737,6 +832,40 @@ Contains
                 amp = -bigz*( ref%dT/ref%temperature &
                       + (1.0d0-gas_gamma)*ref%dlnrho )
                 Call add_implicit_term(teq, vr, 0, amp, lp)
+
+                If (spin_horizontal .and. implicit_horizontal_acoustics) Then
+                    ! ---- Horizontal acoustics (v14 step 3); Crank-Nicolson as
+                    ! of v14.6.  History: v14-v14.5 used backward Euler here
+                    ! (lhs_only, amps pre-doubled to compensate the alpha
+                    ! factor).  BE's extra damping only matters for
+                    ! omega_ac*dt > ~0.3 (dt > ~150 s in this configuration);
+                    ! at production dt it cost first-order accuracy (measured:
+                    ! -1.4% growth rate, -2% frequency).  Amps below are the
+                    ! PHYSICAL values; their old-time (CN) counterparts are
+                    ! applied in Post_Solve_Compressible (v14.6 block).
+                    ! Certified identity: div_h = Ksp*sL/r (q+ - q-); the pair
+                    ! rows carry the adjoint horizontal gradient of the same
+                    ! pressure scalar as the vr row's D1 terms (bridge B);
+                    ! B*Ksp = 1/2 closes the oscillator: omega_h^2 = c^2 L2/r^2.
+                    ! Amplitudes verified against the extracted implicit
+                    ! matrices and the step-1 RHS probe (v14.4-v14.5 audits).
+                    sLl = sqrt(l_l_plus1(l))
+                    ! lnrho row <- pair: -(1/2)*sL/r (q+ - q-)
+                    amp = -0.5d0*sLl*One_Over_R
+                    Call add_implicit_term(rhoeq, vtheta, 0, amp, lp)
+                    amp =  0.5d0*sLl*One_Over_R
+                    Call add_implicit_term(rhoeq, vphi, 0, amp, lp)
+                    ! pair rows <- (S, lnrho): +/- 1.0*sL/r*[(g-1)*Tbar*S
+                    !                                 + g*(g-1)*bigz*Tbar*lnrho]
+                    amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*ref%temperature
+                    Call add_implicit_term(vteq, tvar, 0, amp, lp)
+                    amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
+                    Call add_implicit_term(vteq, rhovar, 0, amp, lp)
+                    amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*ref%temperature
+                    Call add_implicit_term(vpeq, tvar, 0, amp, lp)
+                    amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
+                    Call add_implicit_term(vpeq, rhovar, 0, amp, lp)
+                Endif
             Endif
 
             If (l .ne. 0) Then

@@ -1125,6 +1125,13 @@ Contains
 
         If (compressible) Then
             Ref%gravity = gravity
+            ! Set the adiabat constant here so that it is defined on EVERY
+            ! startup path, including checkpoint restarts.  Previously Cs was
+            ! set only inside the entropy initial condition (init_type=9), so
+            ! restarted runs had Cs=0, T_recon=0, zero pressure force, and the
+            ! l=0 sector free-fell under bare gravity.  The reference polytrope
+            ! is the S=0 adiabat, so Cs = Tbar * rhobar**(1-gamma) at any radius.
+            Cs = ref%temperature(N_R)*ref%density(N_R)**(1.0d0-gas_gamma)
             If (R_gas .gt. 0) Then 
                 bigZ = R_gas / (gas_gamma - 1)
             Else
