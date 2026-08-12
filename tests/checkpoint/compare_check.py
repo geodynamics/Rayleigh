@@ -25,6 +25,7 @@ for i in range(1,ndirs):
     
     mx_ref = np.max([sphm_o.vals.real**2,sphm_o.vals.imag**2])**0.5
     for j, l in enumerate(sphm_o.lvals):
+        m=l
         val_o = sphm_o.vals[l,j,0,0,:]
         val_n = sphm_n.vals[l,j,0,0,:]
         c = chisq(val_o.real,val_n.real)
