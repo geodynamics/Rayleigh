@@ -37,10 +37,10 @@ Module Checkpointing
     ! Simple Checkpointing Module
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
     Implicit None
-    Type(SphericalBuffer) :: chktmp, chktmp2, bctmp
+    Type(SphericalBuffer) :: chktmp, chktmp2, bctmp,abterms_cheby
     Integer, private :: numfields
     Integer, private :: check_err_off = 100  ! Checkpoint errors report in range 100-200.
-    Integer, private :: checkpoint_version = 2
+    Integer, private :: checkpoint_version = 3
     Integer,private :: checkpoint_tag = 425
     Character*120 :: checkpoint_prefix ='nothing'
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
@@ -151,6 +151,11 @@ Contains
         Call checkpoint_buffer%Init(gpars, mpi_tag=checkpoint_tag, &
                 spectral=.true., cache_spectral = .true., spec_comp = .true.)
         DeAllocate(gpars)
+
+        ! Buffer to hold Adams-Bashforth terms in Chebyshev format
+        nfs(:) = numfields
+        if (magnetism) nfs(:) = numfields+1 ! magnetic mode has one extra field space used to combined derivatives
+        Call abterms_cheby%init(field_count = nfs, config = 'p1a')
     End Subroutine Initialize_Checkpointing
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time, input_file)
@@ -165,10 +170,23 @@ Contains
         endian_tag=314
         Call chktmp%construct('p1a')
         chktmp%config = 'p1a'
-        !Copy the RHS into chtkmp
-        Call Get_All_RHS(chktmp%p1a)
-        chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields)
-        !Now we want to move from p1a to s2a (rlm space)
+
+        !Copy the RHS (contains state variables at current timestep) into chtkmp
+        Call Get_All_RHS(chktmp%p1a) 
+
+
+        If ( (chebyshev) .and. (ndomains .eq. 1) ) Then
+            ! Convert the AB terms into chebyshev space and copy them into the buffer
+            ! For now, if ndomains > 1, we do not perform this conversion
+            Call abterms_cheby%construct('p1a')
+            abterms_cheby%config='p1a'
+            !chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms(:,:,:,1:numfields) ! earlier version -- physical space storage
+            Call gridcp%to_spectral(abterms,abterms_cheby%p1a)
+            chktmp%p1a(:,:,:,numfields+1:numfields*2) = abterms_cheby%p1a(:,:,:,1:numfields)
+            Call abterms_cheby%deconstruct('p1a')
+        Endif
+        
+        !Move checkpoint buffer from p1a to s2a (rlm space)
         Call chktmp%reform()
 
         If (ItIsTimeForAQuickSave) Then
@@ -188,7 +206,6 @@ Contains
             checkfile = Trim(my_path)//trim(checkpoint_prefix)//'/'//trim(checkpoint_suffix(i))
             Call checkpoint_buffer%cache_data_spectral(chktmp%s2a,i)
             Call checkpoint_buffer%write_data(filename=checkfile, clear_existing = .true.)
-
         Enddo
 
         Call chktmp%deconstruct('s2a')
@@ -262,7 +279,7 @@ Contains
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old
         Integer :: i, ierr, mp, lb,ub, ab_offset
-        Integer :: old_pars(7 + nsubmax), fcount(3,2), version
+        Integer :: old_pars(8 + nsubmax), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
         Integer :: read_magnetism = 0, read_hydro = 0
@@ -374,6 +391,7 @@ Contains
                 If (legacy_format .or. (endian_tag .eq. 314)) Then
                     If (.not. legacy_format) Then
                         Read(funit)version
+                        Write(6,*)'Current Checkpoint Version: ', version
                         Read(funit)n_r_old
                     Else
                         Read(funit)n_r_old
@@ -441,7 +459,8 @@ Contains
             old_pars(2) = grid_type_old
             old_pars(3) = l_max_old
             old_pars(7) = ierr
-            old_pars(8:8+nsubmax-1) = ncheby_old(1:nsubmax)
+            old_pars(8) = version
+            old_pars(9:9+nsubmax-1) = ncheby_old(1:nsubmax)
             dt_pars(1) = dt
             dt_pars(2) = new_dt
             dt_pars(3) = checkpoint_time
@@ -458,13 +477,14 @@ Contains
         l_max_old     = old_pars(3)
         checkpoint_iter = old_pars(4)
         last_auto = old_pars(5)
+        version = old_pars(8)
 
         If (old_pars(6) .eq. 2) Then
             under_slash='_'
             legacy_format=.true.
         Endif
 
-        ncheby_old(1:nsubmax) = old_pars(8:8+nsubmax-1)
+        ncheby_old(1:nsubmax) = old_pars(9:9+nsubmax-1)
 
         If (old_pars(7) .ne. 0) Then
             ! Something is wrong with this checkpoint.
@@ -566,6 +586,10 @@ Contains
             DeAllocate(rinds)
             DeAllocate(gpars)
         Endif
+
+        ! Load the state vector fields and the AB terms.
+        ! During the read-in process below, old fields are stored in
+        ! indices 1:n_r_old of first dimension of chktmp%p1b.
         Do i = 1, numfields*2
             If (read_var(i) .eq. 1) Then
                 checkfile = trim(checkpoint_prefix)//under_slash//trim(checkpoint_suffix(i))
@@ -573,7 +597,6 @@ Contains
                 Call checkpoint_inbuffer%grab_data_spectral(chktmp%s2b,i)
             Endif
         Enddo
-
         Call chktmp%reform()    ! move to p1b
 
         If (.not. legacy_format) Then
@@ -601,92 +624,131 @@ Contains
 
         Endif
 
-        If (ndomains .eq. 1) Then ! Keep everything the same as it was before 
-            ! interpolation in multiple domains was enabled
 
-            ! NOW, if n_r_old and grid_type_old are the same, we can copy chtkmp%p1b into abterms and
-            ! fields.  Otherwise, we need to interpolate onto the current grid
-            ! When we change the checkpointing format, should also store AB terms in cheby-space
-            If  ((n_r_old .ne. n_r) .or. (grid_type_old .ne. grid_type) ) Then
-                ! Interpolate
-                ! We will assume the user kept the same radial domain bounds.
-                ! If they  have not, this will end badly.
-                If (my_rank .eq. 0) Then
-                    Call stdout%print(' ')
-                    Call stdout%print('------ Radial grid has changed.')
-                    Call stdout%print('------ Interpolating onto new grid.')
-                    Write(szstr,'(i13)')grid_type_old
-                    Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
-                    Write(szstr,'(i13)')grid_type
-                    Call stdout%print('------ Current grid_type: '//TRIM(szstr))
-                    Write(szstr,'(i13)')n_r_old
-                    Call stdout%print('------ Old N_R:           '//TRIM(szstr))
-                    Write(szstr,'(i13)')n_r
-                    Call stdout%print('------ Current N_R:       '//TRIM(szstr))
-                    Call stdout%print(' ')
-                Endif
+        If ( (version .ge. 3) .and. chebyshev ) Then
+            ! For version 3+, the AB terms are stored in Chebyshev space
+            Call abterms_cheby%construct('p1b')
+            abterms_cheby%config='p1b'
+            abterms_cheby%p1b = 0d0
+            ub = Min(n_r,n_r_old)
+            abterms_cheby%p1b(1:ub,:,:,1:numfields)=chktmp%p1b(1:ub,:,:,numfields+1:numfields*2)
+        Endif
 
-                If (n_r_old .lt. n_r) Then
 
-                    ! The fields are OK - they are already in chebyshev space
-                    fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
+        If (ndomains .eq. 1) Then
+            ! Regardless of the checkpoint version or resolution, we can load the state vector
+            ! fields directly from the checkpoint buffer because that portion of the buffer is
+            ! already in the expected format.  
+            ub = Min(n_r,n_r_old)
+            fields = 0d0
+            fields(1:ub,:,:,1:numfields) = chktmp%p1b(1:ub,:,:,1:numfields)
 
-                    ! The AB terms are stored in physical space (in radius).
-                    ! They need to be transformed, coefficients copied, and transformed back..
-                    ! First, we need to initialize the old chebyshev grid.
+            If (.not. chebyshev) Then
+                abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
+
+            Else If (version .ge. 3) Then
+                ! For checkpoint version 3 and later, the AB terms are also stored in
+                ! Chebyshev space, but they need to be in grid space.
+                ! Even if the resolution changes, no further work needs to be done.
+                !Need to convert from Chebyshev space to physical space
+                Call gridcp%From_Spectral(abterms_cheby%p1b,abterms)
+                Call abterms_cheby%deconstruct('p1b')
+            Else
+                ! For checkpoint versions 1 and 2, AB terms were stored in physical space.
+                ! If the grid resolution changed, we need to perform a Chebyshev interpolation.
+                ! If not, we can load directly from the checkpoint buffer.
+                ! Due to the storage convention for versions 1 and 2, interpolation
+                ! can only be carried out if n_r_old < n_r.
+                If (n_r_old .eq. n_r) Then
+                    abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
+                Else If (n_r_old .lt. n_r) Then
+                    Write(6,*)'Inside  interpolation branch'
+                    ! (1) Initialize the old Chebyshev grid.
                     Allocate(radius_old(1:n_r_old))
-                    Call cheby_info%Init(radius_old,rmin,rmax)  ! We assume that rmax and rmin do not change
+                    Call cheby_info%Init(radius_old,rmin,rmax)  ! rmax and rmin cannot change
+  
+                    ! (2) Create some buffer space to store the old radial profiles and 
+                    !     the new Chebyshev coefficients.
                     fcount(:,:) = numfields
                     Call chktmp2%init(field_count = fcount, config = 'p1a')
                     Call chktmp2%construct('p1a')
                     chktmp2%p1a(:,:,:,:) = 0.0d0
-                    ! Allocate tempfield1, tempfield2
-                    lb = lbound(chktmp%p1b,3)
+                    lb = lbound(chktmp%p1b,3) ! describes bounds of lm mode index
                     ub = ubound(chktmp%p1b,3)
                     Allocate(tempfield1(1:n_r_old,1:2,lb:ub,1))
                     Allocate(tempfield2(1:n_r_old,1:2,lb:ub,1))
 
+                    ! (3) Convert to the new Chebyshev grid
                     Do i = 1, numfields
                         tempfield1(:,:,:,:) = 0.0d0
                         tempfield2(:,:,:,:) = 0.0d0
+                        ! Subsample smaller-grid fields from larger-grid buffer
                         tempfield1(1:n_r_old,:,:,1) = chktmp%p1b(1:n_r_old,:,:,numfields+i)
-                        call cheby_info%tospec4d(tempfield1,tempfield2)
+                        ! Transform
+                        Call cheby_info%tospec4d(tempfield1,tempfield2)
+
+                        ! Grab Chebyshev coefficients up to old n_max
                         chktmp2%p1a(1:n_r_old,:,:,i) = tempfield2(1:n_r_old,:,:,1)
                     Enddo
+                    Call gridcp%From_Spectral(chktmp2%p1a,abterms)
+
+                    ! clean up
                     DeAllocate(tempfield1,tempfield2)
-
-
-                    Call chktmp2%construct('p1b')
-                    !Normal transform(p1a,p1b)
-                    Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
-
-                    abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
                     Call cheby_info%destroy()
-                    Call chktmp2%deconstruct('p1a')
-                    Call chktmp2%deconstruct('p1b')
                     Deallocate(radius_old)
-                Else ! Rayleigh doesn't currently support degrading radial resolution--exit now
+                    Call chktmp2%deconstruct('p1a')
+                Else
                     If (my_rank .eq. 0) Then
-                        Call stdout%print('ERROR: Rayleigh currently does not support degrading radial resolution.')
-                        Call stdout%print('Now exiting')
+                        Call stdout%print(' ')
+                        Call stdout%print('********************************  ERROR   *********************************')
+                        Call stdout%print('------  Rayleigh does not support degrading radial resolution')
+                        Call stdout%print('------  for checkpoints generated using version 1.3.0 or earlier.')
+                        Call stdout%print(' ')
+                        Call stdout%print('------  In order to degrade the radial resolution of this model:')
+                        Call stdout%print('------  (1) Restart from the current checkpoint using this version of')
+                        Call stdout%print('------      Rayleigh and maintain the current radial resolution.')
+                        Call stdout%print('------  (2) Generate a new checkpoint at the current resolution.')
+                        Call stdout%print('------      This checkpoint will be saved using the updated format.')
+                        Call stdout%print('------  (3) Restart using the new checkpoint and desired radial resolution.')
+                        Call stdout%print(' ')
                         Call stdout%partial_flush()
                     Endif
                     Call pfi%exit()
                     Stop
+                Endif  ! (n_r_old .eq. n_r)
+
+            Endif  ! (version .ge. 3)
+
+            ! clean up
+            Call chktmp%deconstruct('p1b') 
+            Deallocate(old_radius)
+
+            ! Finally, print a message if we interpolated
+            If ( (my_rank .eq. 0) .and. (n_r .ne. n_r_old) ) Then
+                Call stdout%print(' ')
+                Call stdout%print('------ Radial grid has changed.')
+                Call stdout%print('------ Interpolating onto new grid.')
+                Write(szstr,'(i13)')grid_type_old
+                Call stdout%print('------ Old grid_type:     '//TRIM(szstr))
+                Write(szstr,'(i13)')grid_type
+                Call stdout%print('------ Current grid_type: '//TRIM(szstr))
+                Write(szstr,'(i13)')n_r_old
+                Call stdout%print('------ Old N_R:           '//TRIM(szstr))
+                Write(szstr,'(i13)')n_r
+                Call stdout%print('------ Current N_R:       '//TRIM(szstr))
+                Call stdout%print(' ')
+                If (n_r_old .gt. n_r) Then
+                Call stdout%print('------ ******************* WARNING *****************************')
+                Call stdout%print('------ Boundary conditions are not formally satisfied by the')
+                Call stdout%print('------ checkpoint save state when N_R is decreased upon restart.')
+                Call stdout%print('------ Drastically degrading the radial resolution may lead')
+                Call stdout%print('------ to unexpected results.')
+                Call stdout%print(' ')
                 Endif
-
-            Else
-
-                ! Interpolation is complete, now we just copy into the other arrays
-                fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
-                abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
-
             Endif
-            Call chktmp%deconstruct('p1b')
-            DeAllocate(old_radius)
 
         Else ! ndomains > 1: we need to loop over domains and (maybe) interpolate
-
+            ! Note that ndomains > 1 is not possible when running in finite-difference mode.
             ! Loop over the domains to set the Chebyshev coefficients, 
             ! possibly interpolating in radius for each subdomain
             ! The fields are easy, since they are stored in spectral (Chebyshev) space

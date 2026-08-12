@@ -180,7 +180,7 @@ Contains
                                     averaging_weights, nrec, skip,  &
                                     write_timestamp, averaging_axes, & 
                                     spectral, mode, l_values, cache_spectral, &
-                                    spec_comp, lmax_in, full_cache)
+                                    spec_comp, nr_in, lmax_in, full_cache)
         Implicit None
         Class(io_buffer) :: self
         Integer, Intent(In) :: grid_pars(1:,1:)
@@ -191,6 +191,7 @@ Contains
         Logical, Intent(In), Optional :: full_cache, spec_comp
         Integer, Intent(In), Optional :: averaging_axes(3)
         Integer, Intent(In), Optional :: mode
+        Integer, Intent(In), Optional :: nr_in
         Integer, Intent(In), Optional :: lmax_in
         Integer ::  adim(2), in_lmax
         Real*8, Allocatable :: avg_weights(:,:)
