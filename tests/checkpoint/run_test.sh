@@ -28,7 +28,7 @@ echo ""
 echo "Now in: "$PWD
 echo ""
 sed -i 's/n_r=48/n_r=64/g' main_input
-sed -i 's/init_type=7/init_type=-1/g' main_input
+sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=-1/restart_iter=50/g' main_input
 mpirun -np 4 $rayleigh_v13 -niter 100
 cd ..
@@ -48,7 +48,7 @@ echo ""
 echo "Now in: "$PWD
 echo ""
 #sed -i 's/n_r=48/n_r=64/g' main_input
-sed -i 's/init_type=7/init_type=-1/g' main_input
+sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=-1/restart_iter=50/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
 cd ..
