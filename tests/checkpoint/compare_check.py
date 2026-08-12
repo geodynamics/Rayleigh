@@ -25,24 +25,23 @@ for i in range(1,ndirs):
     
     mx_ref = np.max([sphm_o.vals.real**2,sphm_o.vals.imag**2])**0.5
     for j, l in enumerate(sphm_o.lvals):
-        for m in range(0,l+1):
-            val_o = sphm_o.vals[m,j,0,0,:]
-            val_n = sphm_n.vals[m,j,0,0,:]
-            c = chisq(val_o.real,val_n.real)
+        val_o = sphm_o.vals[l,j,0,0,:]
+        val_n = sphm_n.vals[l,j,0,0,:]
+        c = chisq(val_o.real,val_n.real)
 
-            mx = np.max([val_o.real**2,val_n.imag**2])**0.5
+        mx = np.max([val_o.real**2,val_n.imag**2])**0.5
+        chisqs.append(c*mx/mx_ref)
+        
+        if (m > 0):  # m = 0 has no imaginary component
+            c = chisq(val_o.imag,val_n.imag)
             chisqs.append(c*mx/mx_ref)
-            
-            if (m > 0):  # m = 0 has no imaginary component
-                c = chisq(val_o.imag,val_n.imag)
-                chisqs.append(c*mx/mx_ref)
-            if ((l == 4000) and (m ==4)):
-                fig,ax = plt.subplots(ncols=2,figsize=(10,5))
-                ax[0].plot(val_o.real)
-                ax[0].plot(val_n.real)
-                ax[1].plot(val_o.imag)
-                ax[1].plot(val_n.imag)
-                plt.show()
+        if ((l == 4000) and (m ==4)):
+            fig,ax = plt.subplots(ncols=2,figsize=(10,5))
+            ax[0].plot(val_o.real)
+            ax[0].plot(val_n.real)
+            ax[1].plot(val_o.imag)
+            ax[1].plot(val_n.imag)
+            plt.show()
     sph_csq = np.max(chisqs)
 
     val_o = ga_o.vals[:,0]
