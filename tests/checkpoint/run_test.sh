@@ -8,6 +8,9 @@ export rayleigh_dbg=$RA_ROOT/bin/rayleigh.dbg
 cp ../../post_processing/rayleigh_diagnostics.py .
 # Generate a checkpoint in the old format using Rayleigh v1.3
 cd old_format
+echo ""
+echo "Now in: "$PWD
+echo ""
 mpirun -np 4 $rayleigh_v13 -niter 100
 cd ..
 
@@ -21,6 +24,9 @@ cp $lastdir/main_input $newdir/.
 cp -r $lastdir/Checkpoints/00000050 $newdir/Checkpoints/.
 
 cd $newdir
+echo ""
+echo "Now in: "$PWD
+echo ""
 sed -i 's/n_r=48/n_r=64/g' main_input
 sed -i 's/init_type=7/init_type=-1/g' main_input
 sed -i 's/restart_iter=-1/restart_iter=50/g' main_input
@@ -38,6 +44,9 @@ cp $lastdir/main_input $newdir/.
 cp -r $lastdir/Checkpoints/00000050 $newdir/Checkpoints/.
 
 cd $newdir
+echo ""
+echo "Now in: "$PWD
+echo ""
 #sed -i 's/n_r=48/n_r=64/g' main_input
 sed -i 's/init_type=7/init_type=-1/g' main_input
 sed -i 's/restart_iter=-1/restart_iter=50/g' main_input
@@ -54,6 +63,9 @@ cp $lastdir/main_input $newdir/.
 cp -r $lastdir/Checkpoints/00000100 $newdir/Checkpoints/.
 
 cd $newdir
+echo ""
+echo "Now in: "$PWD
+echo ""
 #sed -i 's/n_r=48/n_r=64/g' main_input
 #sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=50/restart_iter=100/g' main_input
@@ -69,6 +81,9 @@ cp $lastdir/main_input $newdir/.
 cp -r $lastdir/Checkpoints/00000150 $newdir/Checkpoints/.
 
 cd $newdir
+echo ""
+echo "Now in: "$PWD
+echo ""
 sed -i 's/n_r=48/n_r=64/g' main_input
 #sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=100/restart_iter=150/g' main_input
@@ -84,6 +99,9 @@ cp $lastdir/main_input $newdir/.
 cp -r $lastdir/Checkpoints/00000200 $newdir/Checkpoints/.
 
 cd $newdir
+echo ""
+echo "Now in: "$PWD
+echo ""
 sed -i 's/n_r=64/n_r=48/g' main_input
 #sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=150/restart_iter=200/g' main_input
