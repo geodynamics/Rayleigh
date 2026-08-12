@@ -90,4 +90,8 @@ sed -i 's/restart_iter=150/restart_iter=200/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
 cd ..
 
+pwd
+ls
+ls */SPH_Modes
+
 python3 compare_check.py
