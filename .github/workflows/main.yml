@@ -69,7 +69,7 @@ jobs:
         # Checkpoint Test
         cd "$GITHUB_WORKSPACE"
         cd ./tests/checkpoint
-        sh ./run_test.sh        
+        sh ./radial_res_test.sh        
         
     - name: Chebyshev Test
       run: |

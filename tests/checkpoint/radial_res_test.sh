@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
+# This test ensures that Rayleigh handles changes in radial resolution
+# as expected and ensures compatibility with checkpoint formats from 
+# version 1.3 and prior.
+
 export RA_ROOT=../../..
 export rayleigh_v13=$RA_ROOT/Rayleigh_1.3/bin/rayleigh.dbg
 export rayleigh_dbg=$RA_ROOT/bin/rayleigh.dbg
 
-#cd tests/checkpoint
 cp ../../post_processing/rayleigh_diagnostics.py .
+
 # Generate a checkpoint in the old format using Rayleigh v1.3
 cd old_format
 echo ""
@@ -47,7 +51,6 @@ cd $newdir
 echo ""
 echo "Now in: "$PWD
 echo ""
-#sed -i 's/n_r=48/n_r=64/g' main_input
 sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=-1/restart_iter=50/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
@@ -66,8 +69,6 @@ cd $newdir
 echo ""
 echo "Now in: "$PWD
 echo ""
-#sed -i 's/n_r=48/n_r=64/g' main_input
-#sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=50/restart_iter=100/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
 cd ..
@@ -85,7 +86,6 @@ echo ""
 echo "Now in: "$PWD
 echo ""
 sed -i 's/n_r=48/n_r=64/g' main_input
-#sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=100/restart_iter=150/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
 cd ..
@@ -103,13 +103,8 @@ echo ""
 echo "Now in: "$PWD
 echo ""
 sed -i 's/n_r=64/n_r=48/g' main_input
-#sed -i 's/init_type=1/init_type=-1/g' main_input
 sed -i 's/restart_iter=150/restart_iter=200/g' main_input
 mpirun -np 4 $rayleigh_dbg -niter 100
 cd ..
-
-pwd
-ls
-ls */SPH_Modes
 
 python3 compare_check.py
