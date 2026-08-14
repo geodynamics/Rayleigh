@@ -69,6 +69,14 @@ Module Controls
     Logical :: ohmic_heating = .true.
     Logical :: pseudo_incompressible = .false.  ! Switch from anelastic to pseudo-incompressible approximation
     Logical :: compressible = .false.           !run compressible or not
+    Logical :: spin_horizontal = .false.        !compressible horizontal pair in spin (q+/-) representation
+    Logical :: implicit_compressible_diffusion = .false. ! CN treatment of radial diffusion (compressible only)
+    Integer :: thermal_variable = 1 ! 1 = temperature (current path)
+    Logical :: implicit_compressible_acoustics = .false. ! Tier-2: coupled implicit (vr,lnrho,S) radial-acoustic block
+    Logical :: nulltest_deltas_zero = .false.       ! diagnostic: zero the conductive contrast
+    Logical :: implicit_horizontal_acoustics = .false.   ! horizontal acoustics into the coupled block; requires spin_horizontal + thermal_variable=2
+                                    ! 2 = entropy     (compressible treatment)
+                                    ! (3 reserved: potential temperature)
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
                                                 ! Generally only do this if reference state is nonadiabatic
@@ -87,6 +95,7 @@ Module Controls
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
     Integer :: benchmark_mode = 0
+    Logical :: benchmark_report_only = .false.   ! reports without preset-override
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
@@ -103,14 +112,17 @@ Module Controls
     Real*8, Allocatable :: newtonian_cooling_profile(:)
 
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
-                & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
+                & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, benchmark_report_only, &
                 & benchmark_integration_interval, benchmark_report_interval, &
                 & momentum_advection, inertia, coriolis, centrifugal, gravity, remove_reference, &
                 & n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
                 & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
-                & chi_a_advect_reference_state, chi_p_advect_reference_state
+                & chi_a_advect_reference_state, chi_p_advect_reference_state, &
+                & implicit_compressible_diffusion, thermal_variable, &
+                & implicit_compressible_acoustics, spin_horizontal, &
+                & implicit_horizontal_acoustics, nulltest_deltas_zero
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -130,12 +142,27 @@ Module Controls
     Real*8  :: checkpoint_minutes = -1.0d0     ! Time in minutes between checkpoints (overrides quicksave interval)
     
     Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
+    ! Acoustic timestep control (compressible, entropy formulation).  When
+    ! acoustic_cfl is on: (1) the explicitly-integrated acoustic REMAINDER
+    ! (wave speed c' = sqrt(gamma*(gamma-1)*cv*|T-Tbar|), the fluctuation
+    ! part the implicit rows do not carry) contributes a hard CFL limit
+    ! dt <= acoustic_cfl_safety * dx/c'; (2) when the local Mach number
+    ! exceeds acoustic_mach_gate, an accuracy limit dt <= acoustic_theta /
+    ! omega_ac is enforced, with omega_ac = cs*sqrt(l(l+1))/r evaluated at
+    ! acoustic_ell (0 = use l_max).  As Ma -> 1, c' -> cs and the hard limit
+    ! approaches the full acoustic CFL, which is the correct sonic endpoint.
+    Logical :: acoustic_cfl = .false.
+    Real*8  :: acoustic_cfl_safety = 1.0d0   ! remainder-CFL safety, relative to cflmax
+    Real*8  :: acoustic_mach_gate  = 0.1d0   ! Ma above which the accuracy limit engages
+    Real*8  :: acoustic_theta      = 0.1d0   ! omega_ac*dt ceiling once gated
+    Integer :: acoustic_ell        = 0       ! ell for omega_ac (0 = l_max)
     Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
     Real*8  :: min_time_step = 1.0d-13
     Integer :: diagnostic_reboot_interval = 10000000
     Integer :: new_iteration = 0
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
                 & cflmax, cflmin, max_time_step, diagnostic_reboot_interval, min_time_step, &
+                & acoustic_cfl, acoustic_cfl_safety, acoustic_mach_gate, acoustic_theta, acoustic_ell, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
                 & max_time_minutes, save_last_timestep, new_iteration, save_on_sigterm, &
                 & max_simulated_time, checkpoint_minutes
@@ -176,7 +203,7 @@ Module Controls
     ! full pool of processes
     Real*8, Allocatable :: global_msgs(:)
     Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
-    Integer :: nglobal_msgs = 5  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found
+    Integer :: nglobal_msgs = 7  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found, max Mach^2, acoustic accuracy term
 
     Logical :: full_restart = .false.  ! Set to true if a full-restart is initiated from the command line
 
@@ -186,6 +213,19 @@ Contains
         character*120 :: ofilename
         Allocate(global_msgs(1:nglobal_msgs))
         global_msgs = 0.0d0
+
+        ! The spin (q+/-) horizontal representation is implemented for the
+        ! entropy formulation (thermal_variable = 2) only: the spin-aware
+        ! acoustic/pressure couplings and the physical-space masking that
+        ! balances them are thermal_variable=2 forms, so thermal_variable=1
+        ! would load a partial, unbalanced operator.
+        If (spin_horizontal .and. (thermal_variable .ne. 2)) Then
+            Write(6,*) 'ERROR: spin_horizontal = .true. requires '// &
+                       'thermal_variable = 2 (entropy formulation).'
+            Write(6,*) 'The spin representation is not implemented for '// &
+                       'thermal_variable = 1.  Stopping.'
+            Stop
+        Endif
 
         !Set default for diagnostic_reboot_interval (if necessary)
         If (diagnostic_reboot_interval .le. 0) Then
@@ -206,6 +246,13 @@ Contains
         If (.not. inertia) Then
             Call stdout%print("Setting momentum_advection to False")
             momentum_advection = .false.
+        Endif
+        If (spin_horizontal) Then
+            ! Version banner: every log self-identifies the spin branch build.
+            ! Bump the tag with every physics-relevant change to this branch.
+            Call stdout%print(" ")
+            Call stdout%print("== SPIN BRANCH v14.9.3.2 (HWM leak-hunt + argmax rank) ==")
+            Call stdout%print("   divl/supply: K*sqrt(L2); force bridge sqrt(2 pi); cross terms IMPLICIT (coupled block)")
         Endif
 
         Call Initialize_IO_Format_Codes()

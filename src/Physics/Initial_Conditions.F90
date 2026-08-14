@@ -29,9 +29,11 @@ Module Initial_Conditions
     Use Checkpointing, Only : read_checkpoint
     Use Generic_Input, Only : read_input
     Use Controls
+    Use Controls, Only : spin_horizontal
+    Use Spin_Conversions, Only : spin_state_is_slot, Convert_Slot_Pair_To_Spin
     Use Timers
     Use General_MPI, Only : BCAST2D
-    Use PDE_Coefficients, Only : s_conductive, heating_type,ref, kappa, dlnkappa
+    Use PDE_Coefficients
     Use BoundaryConditions, Only : T_top, T_bottom, fix_tvar_Top, fix_tvar_bottom,&
          & fix_dtdr_top, fix_dtdr_bottom, dtdr_top, dtdr_bottom, &
          & C10_bottom, C11_bottom, C1m1_bottom
@@ -194,12 +196,18 @@ Contains
             If (my_rank .eq. 0) Then
                 call stdout%print(" ---- Hydro Init Type Compressible    : Benchmark (Jones et al. 2011) ")
             Endif
-            call Compressible_Init_Hydro()
+            If (thermal_variable .eq. 2) Then
+                call Compressible_Init_Hydro_Entropy()
+            Else
+                call Compressible_Init_Hydro_Temperature()
+            Endif
         Endif
 
         if (init_type .eq. 42) Then
             call ellzero_init()
         Endif
+
+        Call Load_State_File()
 
 
         If (magnetism) Then
@@ -297,6 +305,47 @@ Contains
         Call Read_Checkpoint(tempfield%p1a,wsp%p1b,iteration,rpars)
 
         Call StopWatch(cread_time)%Increment()
+
+        If (compressible .and. spin_horizontal) Then
+            ! Faithful spin restart.  Convert the pair STATE and the pair
+            ! AB history slot -> q+/- at read time, via a scratch buffer with the
+            ! writer's 2*numfields field count (the parked 2-field Convert_AB_Pair
+            ! violated the transpose plan sizing; the checkpoint WRITER already
+            ! proves the 2*numfields p1a->s2a transpose works).  The solve-side
+            ! RHS then receives native q+/- before the first solve -- the old
+            ! one-shot converted only the transform-side buffer, so the first
+            ! restart solve mangled slot coefficients as q+/- (pair-only,
+            ! second-step-onset corruption).  No Euler re-prime needed.
+            Block
+                Type(SphericalBuffer) :: cvt
+                Integer :: cfc(3,2), mp
+                cfc(:,:) = numfields*2
+                Call cvt%init(field_count=cfc, config='p1a')
+                Call cvt%construct('p1a')
+                cvt%p1a(:,:,:,:) = 0.0d0
+                cvt%p1a(:,:,:,vtheta) = tempfield%p1a(:,:,:,vtheta)
+                cvt%p1a(:,:,:,vphi)   = tempfield%p1a(:,:,:,vphi)
+                cvt%p1a(:,:,:,numfields+vteq) = wsp%p1b(:,:,:,vteq)
+                cvt%p1a(:,:,:,numfields+vpeq) = wsp%p1b(:,:,:,vpeq)
+                Call cvt%reform()   ! p1a -> s2a (pure transpose)
+                Call Convert_Slot_Pair_To_Spin(cvt%s2a, vtheta, vphi)
+                Call Convert_Slot_Pair_To_Spin(cvt%s2a, numfields+vteq, numfields+vpeq)
+                Call cvt%construct('s2b')
+                Do mp = my_mp%min, my_mp%max
+                    cvt%s2b(mp)%data(:,:,:,:) = cvt%s2a(mp)%data(:,:,:,:)
+                Enddo
+                Call cvt%deconstruct('s2a')
+                cvt%config = 's2b'
+                Call cvt%reform()   ! s2b -> p1b (pure transpose)
+                tempfield%p1a(:,:,:,vtheta) = cvt%p1b(:,:,:,vtheta)
+                tempfield%p1a(:,:,:,vphi)   = cvt%p1b(:,:,:,vphi)
+                wsp%p1b(:,:,:,vteq) = cvt%p1b(:,:,:,numfields+vteq)
+                wsp%p1b(:,:,:,vpeq) = cvt%p1b(:,:,:,numfields+vpeq)
+                Call cvt%deconstruct('p1b')
+            End Block
+            spin_state_is_slot = .false.
+            If (my_rank .eq. 0) Write(6,*) 'spin_horizontal: restart pair state+AB converted slot -> q+/- (v13.1)'
+        Endif
 
         If (rescale_velocity) Then
             euler_step = .true.
@@ -812,6 +861,101 @@ Contains
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Benchmark Initialization Routines
+    Subroutine Load_State_File()
+        ! Wave-restart experiment: env RAYLEIGH_STATE_FILE points to a physical-
+        ! space (phi,theta,r) state file (CGS totals: vr, vtheta, vphi, S, lnrho)
+        ! on THIS run's collocation grids. All five prognostic states are
+        ! overwritten using the code's own analysis transforms (FFT + spin/
+        ! standard Legendre + Chebyshev), so every convention is the solver's.
+        Implicit None
+        Character(len=512) :: sfile
+        Integer :: ios, np_f, nt_f, nr_f
+        Integer(kind=4) :: dims(3)
+        Real*8, Allocatable :: phi_f(:), cth_f(:), rad_f(:), A(:,:,:,:)
+        Integer, Allocatable :: tmap(:), rmap(:)
+        Integer :: i,f,t,r,jj,kk
+        Type(SphericalBuffer) :: tempfield
+        Integer :: fcount(3,2)
+        Call Get_Environment_Variable('RAYLEIGH_STATE_FILE', sfile, status=ios)
+        If (ios .ne. 0 .or. len_trim(sfile) .eq. 0) Return
+        Open(unit=317, file=Trim(sfile), form='unformatted', access='stream', status='old')
+        Read(317) dims
+        np_f = dims(1); nt_f = dims(2); nr_f = dims(3)
+        If (np_f .ne. n_phi .or. nt_f .ne. n_theta .or. nr_f .ne. N_R) Then
+            If (my_rank .eq. 0) Write(6,*)'STATE FILE DIM MISMATCH:',np_f,nt_f,nr_f,n_phi,n_theta,N_R
+            Stop
+        Endif
+        Allocate(phi_f(np_f), cth_f(nt_f), rad_f(nr_f), A(np_f, nt_f, nr_f, 5))
+        Read(317) phi_f
+        Read(317) cth_f
+        Read(317) rad_f
+        Read(317) A
+        Close(317)
+        Allocate(tmap(1:n_theta), rmap(1:N_R))
+        tmap = -1; rmap = -1
+        Do t = 1, n_theta
+            Do jj = 1, nt_f
+                If (abs(costheta(t)-cth_f(jj)) .lt. 1.0d-10) tmap(t) = jj
+            Enddo
+        Enddo
+        Do r = 1, N_R
+            Do kk = 1, nr_f
+                If (abs(radius(r)-rad_f(kk)) .lt. 1.0d-6*abs(radius(r))) rmap(r) = kk
+            Enddo
+        Enddo
+        If (any(tmap .lt. 0) .or. any(rmap .lt. 0)) Then
+            If (my_rank .eq. 0) Then
+                Write(6,*)'STATE FILE GRID MATCH FAILED: nt bad ',count(tmap.lt.0),' nr bad ',count(rmap.lt.0)
+                Write(6,*)'code radius 1,N: ',radius(1),radius(N_R)
+                Write(6,*)'file rad  1,N: ',rad_f(1),rad_f(nr_f)
+                Write(6,*)'code radius 2,3,4: ',radius(2),radius(3),radius(4)
+                Write(6,*)'file rad  2,3,4: ',rad_f(2),rad_f(3),rad_f(4)
+                Write(6,*)'code costheta 1,N: ',costheta(1),costheta(n_theta)
+                Write(6,*)'file cth 1,N: ',cth_f(1),cth_f(nt_f)
+            Endif
+            Stop
+        Endif
+        fcount(:,:) = 5
+        Call tempfield%init(field_count=fcount, config='p3b')
+        Call tempfield%construct('p3b')
+        tempfield%p3b(:,:,:,:) = 0.0d0
+        Do f = 1, 5
+        Do t = my_theta%min, my_theta%max
+        Do r = my_r%min, my_r%max
+        Do i = 1, n_phi
+            tempfield%p3b(i,r,t,f) = A(i, tmap(t), rmap(r), f)
+        Enddo
+        Enddo
+        Enddo
+        Enddo
+        DeAllocate(A)
+        Call fft_to_spectral(tempfield%p3b, rsc=.true.)
+        Call tempfield%reform()      ! p3b -> p2b
+        Call tempfield%construct('s2b')
+        If (spin_horizontal) Then
+            Call Legendre_Transform(tempfield%p2b, tempfield%s2b, spin_fa=(/2/), spin_fb=(/3/), spin_sindiv=.false.)
+        Else
+            Call Legendre_Transform(tempfield%p2b, tempfield%s2b)
+        Endif
+        Call tempfield%deconstruct('p2b')
+        tempfield%config = 's2b'
+        Call tempfield%reform()      ! s2b -> p1b
+        If (chebyshev) Then
+            Call tempfield%construct('p1a')
+            Call gridcp%To_Spectral(tempfield%p1b,tempfield%p1a)
+            tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
+            Call tempfield%deconstruct('p1a')
+        Endif
+        Call Set_RHS(vreq,  tempfield%p1b(:,:,:,1))
+        Call Set_RHS(vteq,  tempfield%p1b(:,:,:,2))
+        Call Set_RHS(vpeq,  tempfield%p1b(:,:,:,3))
+        Call Set_RHS(teq,   tempfield%p1b(:,:,:,4))
+        Call Set_RHS(rhoeq, tempfield%p1b(:,:,:,5))
+        Call tempfield%deconstruct('p1b')
+        DeAllocate(phi_f, cth_f, rad_f, tmap, rmap)
+        If (my_rank .eq. 0) Write(6,*)' -- STATE loaded from ', Trim(sfile)
+    End Subroutine Load_State_File
+
     Subroutine Benchmark_Init_Hydro()
         Implicit None
         Real*8, Allocatable :: rfunc1(:), rfunc2(:)
@@ -870,7 +1014,263 @@ Contains
         Call tempfield%deconstruct('p1b')
     End Subroutine Benchmark_Init_Hydro
 
-    Subroutine Compressible_Init_Hydro()
+    ! ==========================================================================
+    ! Reference listing: Compressible_Init_Hydro, entropy branch
+    ! (thermal_variable == 2). Companion to rayleigh_entropy_handdoc_partA.md,
+    ! Edit 5. Written in the tree's own idiom (descending radius array:
+    ! radius(1) = r_outer, radius(N_R) = r_inner; global radius/ref arrays on
+    ! every rank; spectral loading skeleton retained verbatim from the current
+    ! routine). Hand-transcription reference -- adapt names to taste.
+    !
+    ! Uses only: radius, ref%temperature, ref%density, ref%dT, ref%dlnrho,
+    ! gas_gamma, bigz. GENERAL BACKGROUND (adiabatic NOT assumed): the entropy
+    ! zero-point constant Cs is set at the inner radius, the background entropy
+    ! profile Sbar(r) = bigz*ln( Tbar rhobar^{1-gamma} / Cs ) is computed from the
+    ! reference arrays and loaded into the l=0 field (identically zero for an
+    ! adiabatic background, so j2011 is unchanged), and gravity comes from the
+    ! general hydrostatic identity g = -R[ dTbar/dr + Tbar dlnrho/dr ],
+    ! R = (gamma-1)*bigz. The H-gate verifies this matches the momentum
+    ! routine's gravity discretely.
+    ! ==========================================================================
+
+    Subroutine Compressible_Init_Hydro_Entropy()
+      Implicit None
+      Real*8, Allocatable :: rfunc1(:), Scond(:), dScond(:), Lprof(:)
+      Real*8, Allocatable :: Stot(:), dStot(:)
+      Real*8, Allocatable :: Jarr(:), finteg(:), gprof(:), Sbar(:)
+      Real*8, Allocatable :: Fw(:), Iw(:)
+      Real*8 :: norm, DeltaS, dr   ! (Cs comes from PDE_Coefficients -- do NOT redeclare locally, it would shadow the module variable)
+      Real*8 :: anchor, mass_ref, danchor, m1, m2, Rg, pex
+      Integer :: r, l, m, mp, it
+      Integer :: fcount(3,2)
+      type(SphericalBuffer) :: tempfield
+      fcount(:,:) = 2
+
+      DeltaS = 851225.7d0
+      If (nulltest_deltas_zero) DeltaS = 0.0d0   ! adiabatic null diagnostic
+      ! temp_amp (namelist) multiplies the historical hardcoded seed
+      ! 1e-4*DeltaS, so temp_amp=1.0 reproduces existing runs bit-identically;
+      ! temp_amp=1e-4 gives the linear-phase seed 1e-8*DeltaS.
+      temp_amp = temp_amp*1.0d-4*DeltaS  ! seed amplitude in entropy units
+      
+      Allocate(rfunc1(my_r%min:my_r%max))
+      Allocate(Scond(1:N_R), dScond(1:N_R), Lprof(1:N_R), Sbar(1:N_R))
+      Allocate(Jarr(1:N_R), finteg(1:N_R), gprof(1:N_R))
+      Allocate(Fw(1:N_R), Iw(1:N_R))
+      
+      ! SELF-TEST of Cheby_Antiderivative conventions (index order, wall
+      ! row, domain scaling) in one shot: F=1 must give X = r - r_inner.
+      Fw(:) = 1.0d0
+      Call Cheby_Antiderivative(Fw, Iw)
+      If (my_rank .eq. 0) Then
+         Write(6,*) ' entropy init: antideriv self-test max err = ', &
+              MaxVal(Abs(Iw(:) - (radius(:) - radius(N_R))))
+         ! expect ~1e-12 * (r_outer - r_inner)-scale; anything larger
+         ! means an index/scaling convention mismatch -- fix before use.
+      Endif
+      
+      !------------------------------------------------------------------
+      ! (0) entropy zero-point + background entropy profile (GENERAL).
+      !     S = cv ln( T rho^{1-gamma} / Cs );  Cs fixes S(inner adiabat)=0.
+      Cs = ref%temperature(N_R)*ref%density(N_R)**(1.0d0-gas_gamma)
+      Do r = 1, N_R
+         Sbar(r) = bigz*Log( ref%temperature(r) &
+              *ref%density(r)**(1.0d0-gas_gamma)/Cs )
+      Enddo
+      If (my_rank .eq. 0) Then
+         Write(6,*) ' entropy init: Cs = ', Cs
+         Write(6,*) ' entropy init: max|Sbar|/DeltaS = ', &
+              MaxVal(Abs(Sbar))/DeltaS
+         ! For an adiabatic background (j2011) this is ~1e-12 -- Sbar = 0.
+         ! Nonzero values are fine: that IS the non-adiabatic background,
+         ! carried in the total-field S.
+      Endif
+      
+      !------------------------------------------------------------------
+      ! (1) conductive entropy profile:  rho T r^2 dS/dr = const
+      !     S(r) = DeltaS * (1 - J(ri,r)/J(ri,ro)),  J = int dr/(rho T r^2)
+      Do r = 1, N_R
+         finteg(r) = 1.0d0/(ref%density(r)*ref%temperature(r)*radius(r)**2)
+      Enddo
+      ! SPECTRAL integral: Jarr = antiderivative of finteg, zeroed at the
+      ! inner wall (implementation below: gridcp%dcheby + dgesv).
+      Call Cheby_Antiderivative(finteg, Jarr)
+      Jarr(:) = Jarr(:) - Jarr(N_R)
+      Do r = 1, N_R
+         Scond(r)  = DeltaS*(1.0d0 - Jarr(r)/Jarr(1))
+         dScond(r) = -DeltaS*finteg(r)/Jarr(1)      ! analytic dS/dr
+      Enddo
+        
+      !------------------------------------------------------------------
+      ! (2) gravity from GENERAL background hydrostatics:
+      !     g = -(1/rhobar) dpbar/dr = -R[ dTbar/dr + Tbar dlnrhobar/dr ]
+      Do r = 1, N_R
+         gprof(r) = -(gas_gamma-1.0d0)*bigz*( ref%dT(r) &
+              + ref%temperature(r)*ref%dlnrho(r) )
+      Enddo
+
+      !------------------------------------------------------------------
+      ! (3) hydrostatic total ln(rho) with S = Stot = Sbar + Scond, via the
+      !     EXACT LINEARIZATION w = p^((gamma-1)/gamma):
+      !        dw/dr = -((gamma-1)/gamma) (R*Cs)^(-1/gamma) g e^{-S/(gamma cv)}
+      !     -> single anchor-independent quadrature; then
+      !        p = w^(gamma/(gamma-1)),
+      !        L = ( ln(p/(R*Cs)) )/gamma - S/(gamma*bigz).
+      !     Mass Newton = scalar secant on the inner anchor (no
+      !     re-integration: the integral is anchor-independent).
+      Allocate(Stot(1:N_R), dStot(1:N_R))
+      Do r = 1, N_R
+         Stot(r)  = Sbar(r) + Scond(r)
+         dStot(r) = dScond(r) + bigz*( ref%dT(r)/ref%temperature(r) &
+              + (1.0d0-gas_gamma)*ref%dlnrho(r) )
+      Enddo
+
+      Rg  = (gas_gamma-1.0d0)*bigz
+      pex = (gas_gamma-1.0d0)/gas_gamma
+      Do r = 1, N_R
+         Fw(r) = gprof(r)*Exp(-Stot(r)/(gas_gamma*bigz))
+      Enddo
+      Call Cheby_Antiderivative(Fw, Iw)
+      Iw(:) = Iw(:) - Iw(N_R)
+
+      ! reference mass (use the grid's spectral integration weights if
+      ! available; trapezoid shown for self-containment):
+      mass_ref = 0.0d0
+      Do r = 1, N_R-1
+         dr = radius(r) - radius(r+1)
+         mass_ref = mass_ref + 0.5d0*(ref%density(r)*radius(r)**2 &
+              + ref%density(r+1)*radius(r+1)**2)*dr
+      Enddo
+      
+      anchor  = Log(ref%density(N_R))                ! first guess: rhobar
+      danchor = 1.0d-3
+      Do it = 1, 12
+         Call W_To_Mass(anchor,          m1)
+         If (Abs(m1/mass_ref - 1.0d0) .lt. 1.0d-14) Exit
+         Call W_To_Mass(anchor+danchor,  m2)
+         anchor = anchor - (m1 - mass_ref)*danchor/(m2 - m1)
+      Enddo
+      Call W_To_Mass(anchor, m1)
+      If (my_rank .eq. 0) Then
+         Write(6,*) ' entropy init: mass Newton dM/M = ', m1/mass_ref-1.0d0
+         Write(6,*) ' entropy init: L(inner), L(outer) = ', &
+              Lprof(N_R), Lprof(1)
+      Endif
+
+      !------------------------------------------------------------------
+      ! (4) seed radial shape (unchanged from current routine)
+      norm = 2.0d0*Pi/(radius(1)-radius(N_R))
+      Do r = my_r%min, my_r%max
+         rfunc1(r) = (1.0d0-Cos(norm*(radius(r)-radius(N_R))))*temp_amp
+      Enddo
+      
+      !------------------------------------------------------------------
+      ! (5) spectral loading -- the tree's existing skeleton with the new
+      !     l=0 payloads (Stot, Lprof) and the entropy-unit seed.
+      Call tempfield%init(field_count = fcount, config = 's2b')
+      Call tempfield%construct('s2b')
+      
+      Do mp = my_mp%min, my_mp%max
+         m = m_values(mp)
+         tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
+         Do l = m, l_max
+            if ( (l .eq. 19) .and. (m .eq. 19) ) Then
+               Do r = my_r%min, my_r%max
+                  tempfield%s2b(mp)%data(l,r,1,1) = rfunc1(r)
+               Enddo
+            endif
+            if ( (l .eq. 1) .and. (m .eq. 1) ) Then
+               Do r = my_r%min, my_r%max
+                  tempfield%s2b(mp)%data(l,r,1,1) = rfunc1(r)*0.1d0
+               Enddo
+            endif
+            if ( (l .eq. 0) .and. (m .eq. 0) ) Then
+               Do r = my_r%min, my_r%max
+                  tempfield%s2b(mp)%data(l,r,1,1) = Stot(r)*sqrt(4.0d0*pi)
+                  tempfield%s2b(mp)%data(l,r,1,2) = Lprof(r)*sqrt(4.0d0*pi)
+               Enddo
+            endif
+         Enddo
+      Enddo
+      
+      Call tempfield%reform() ! goes to p1b
+      If (chebyshev) Then
+         ! load chebyshev coefficients, not the physical representation
+         Call tempfield%construct('p1a')
+         Call gridcp%to_Spectral(tempfield%p1b,tempfield%p1a)
+         tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
+         Call tempfield%deconstruct('p1a')
+      Endif
+      
+      Call Set_RHS(teq,tempfield%p1b(:,:,:,1))
+      Call Set_RHS(rhoeq,tempfield%p1b(:,:,:,2))
+      Call tempfield%deconstruct('p1b')
+
+      DeAllocate(rfunc1, Scond, dScond, Lprof, Jarr, finteg, gprof)
+      DeAllocate(Sbar, Stot, dStot, Fw, Iw)
+    Contains
+
+      Subroutine W_To_Mass(a_in, mass_out)
+        ! Closed-form profile family from the precomputed integral Iw:
+        ! fills Lprof for inner anchor a_in and returns the shell mass.
+        Implicit None
+        Real*8, Intent(In)  :: a_in
+        Real*8, Intent(Out) :: mass_out
+        Real*8 :: wi0, wr0, drm
+        Integer :: rr
+        wi0 = ( Rg*Cs*Exp(Stot(N_R)/bigz + gas_gamma*a_in) )**pex
+        Do rr = 1, N_R
+           wr0 = wi0 - pex*(Rg*Cs)**(-1.0d0/gas_gamma)*Iw(rr)
+           Lprof(rr) = ( Log(wr0)/pex - Log(Rg*Cs) )/gas_gamma &
+                - Stot(rr)/(gas_gamma*bigz)
+        Enddo
+        mass_out = 0.0d0
+        Do rr = 1, N_R-1
+           drm = radius(rr) - radius(rr+1)
+           mass_out = mass_out + 0.5d0*( Exp(Lprof(rr))*radius(rr)**2 &
+                + Exp(Lprof(rr+1))*radius(rr+1)**2 )*drm
+        Enddo
+      End Subroutine W_To_Mass
+          
+    End Subroutine Compressible_Init_Hydro_Entropy
+
+    ! ---------------------------------------------------------------------
+    ! Cheby_Antiderivative: solve X' = F with X(r_inner) = 0 at spectral
+    ! precision, using the grid's OWN stored Chebyshev matrices
+    ! (gridcp%dcheby(1)%data(point, coeff, order): order 0 = value synthesis
+    ! T_n(r_k), order 1 = d/dr synthesis, already domain-scaled). Unknowns
+    ! are the Chebyshev coefficients c of X:
+    !     [ dcheby(:,:,1) ] c = F        (derivative rows, every node)
+    !     [ dcheby(iwall,:,0) ] c = 0    (value row replacing the inner-wall
+    !                                     derivative row -- the BC that makes
+    !                                     the otherwise-singular d/dr matrix
+    !                                     invertible)
+    ! then X = dcheby(:,:,0) c. Because these are the SAME matrices the
+    ! solver's radial derivative uses, the IC becomes discretely balanced
+    ! with respect to the code's own d/dr -- the exact null criterion.
+    !
+    ! If the coefficient dimension (N_max, dealiased) is smaller than N_R,
+    ! the stacked system is (N_R x N_max) overdetermined: use dgels instead
+    ! of dgesv (smooth integrands live in the dealiased range; residual is
+    ! machine-level). Square case shown.
+    Subroutine Cheby_Antiderivative(F_in, X_out)
+      Implicit None
+      Real*8, Intent(In)  :: F_in(1:N_R)
+      Real*8, Intent(Out) :: X_out(1:N_R)
+      Real*8  :: Amat(1:N_R,1:N_R), rhs(1:N_R)
+      Integer :: ipiv(1:N_R), info
+      Amat(1:N_R,1:N_R) = gridcp%dcheby(1)%data(1:N_R,1:N_R,1)
+      rhs(1:N_R)        = F_in(1:N_R)
+      Amat(N_R,1:N_R)   = gridcp%dcheby(1)%data(N_R,1:N_R,0)  ! inner-wall value row
+      rhs(N_R)          = 0.0d0
+      Call dgesv(N_R, 1, Amat, N_R, ipiv, rhs, N_R, info)
+      If ((info .ne. 0) .and. (my_rank .eq. 0)) Then
+         Write(6,*) ' Cheby_Antiderivative: dgesv info = ', info
+      Endif
+      X_out(1:N_R) = MatMul( gridcp%dcheby(1)%data(1:N_R,1:N_R,0), rhs )
+    End Subroutine Cheby_Antiderivative
+    
+    Subroutine Compressible_Init_Hydro_Temperature()
         Implicit None
         Real*8, Allocatable :: rfunc1(:), rfunc2(:)
         Real*8 :: norm
@@ -878,25 +1278,20 @@ Contains
         Integer :: fcount(3,2)
         type(SphericalBuffer) :: tempfield
         fcount(:,:) = 2
-
         Allocate(rfunc1(my_r%min: my_r%max))
         Allocate(rfunc2(my_r%min: my_r%max))
-        !!!!!!!!!
         temp_amp = 1.0d0
-
         norm = 2.0d0*Pi/(radius(1)-radius(N_R))
         Do r = my_r%min, my_r%max
             
-            rfunc2(r) = 4234*((radius(N_R)/radius(r) - radius(N_R)/radius(1))/(1-radius(N_R)/radius(1)))
-
+            rfunc2(r) = (4234)*((radius(N_R)/radius(r) - radius(N_R)/radius(1))/(1-radius(N_R)/radius(1)))
+    
             rfunc1(r) = (1.0d0-Cos(norm*(radius(r)-radius(N_R))))*temp_amp
         Enddo
-
-        ! We put our temporary field in spectral space
+    ! We put our temporary field in spectral space
         Call tempfield%init(field_count = fcount, config = 's2b')
         Call tempfield%construct('s2b')
-
-        ! Set the ell = 0 temperature and the real part of Y_19^19    and Y_1_1
+    ! Set the ell = 0 temperature and the real part of Y_19^19 and Y_1_1
         Do mp = my_mp%min, my_mp%max
             m = m_values(mp)
             tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
@@ -920,7 +1315,6 @@ Contains
             Enddo
         Enddo
         DeAllocate(rfunc1,rfunc2)
-
         Call tempfield%reform() ! goes to p1b
         If (chebyshev) Then
             ! we need to load the chebyshev coefficients, and not the physical representation into the RHS
@@ -929,13 +1323,11 @@ Contains
             tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
             Call tempfield%deconstruct('p1a')
         Endif
-
         ! Set temperature.  Leave the other fields alone
         Call Set_RHS(teq,tempfield%p1b(:,:,:,1))
         Call Set_RHS(rhoeq,tempfield%p1b(:,:,:,2))
         Call tempfield%deconstruct('p1b')
-    End Subroutine Compressible_Init_Hydro 
-
+    End Subroutine Compressible_Init_Hydro_Temperature
 
     Subroutine ABenchmark_Init_Hydro()
         Implicit None
@@ -1363,4 +1755,38 @@ Contains
         a_init_file = '__nothing__'
 
     End Subroutine Restore_InitialCondition_Defaults
+    Subroutine Convert_AB_Pair(abbuf)
+        ! Faithful slot -> q+/- conversion of the horizontal pair's AB history.
+        ! abbuf is in p1 layout (lm-distributed); route the pair through the
+        ! transpose cycle to rlm space (all-l-local), convert with the
+        ! certified machinery, and return via the standard s2b -> p1b leg.
+        Implicit None
+        Real*8, Intent(InOut) :: abbuf(:,:,:,:)
+        Type(SphericalBuffer) :: abtmp
+        Integer :: abcount(3,2), mp
+
+        abcount(:,:) = 2
+        Call abtmp%init(field_count = abcount, config = 'p1a')
+        Call abtmp%construct('p1a')
+        abtmp%p1a(:,:,:,1) = abbuf(:,:,:,vteq)
+        abtmp%p1a(:,:,:,2) = abbuf(:,:,:,vpeq)
+        Call abtmp%reform()          ! p1a -> s2a (pure transpose)
+
+        Call Convert_Slot_Pair_To_Spin(abtmp%s2a, 1, 2)
+
+        ! Return leg: s2a and s2b share the rlm layout; construct s2b, copy,
+        ! and take the standard transpose back to p1b.
+        Call abtmp%construct('s2b')
+        Do mp = my_mp%min, my_mp%max
+            abtmp%s2b(mp)%data(:,:,:,1:2) = abtmp%s2a(mp)%data(:,:,:,1:2)
+        Enddo
+        Call abtmp%deconstruct('s2a')
+        abtmp%config = 's2b'
+        Call abtmp%reform()          ! s2b -> p1b (pure transpose)
+
+        abbuf(:,:,:,vteq) = abtmp%p1b(:,:,:,1)
+        abbuf(:,:,:,vpeq) = abtmp%p1b(:,:,:,2)
+        Call abtmp%deconstruct('p1b')
+    End Subroutine Convert_AB_Pair
+
 End Module Initial_Conditions
