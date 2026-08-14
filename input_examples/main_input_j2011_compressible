@@ -7,14 +7,16 @@
 ! ============================================================================
 
 &problemsize_namelist
- n_r = 64
- n_theta = 96
- nprow = 16
- npcol = 16
+ n_r = 128
+ n_theta = 192
+ nprow = 64
+ npcol = 32
  rmin = 2.45d9
  rmax = 7.0d9
 /
 &numerical_controls_namelist
+static_transpose = .true.
+pad_alltoall = .true.
 /
 &physical_controls_namelist
  spin_horizontal = .true.
