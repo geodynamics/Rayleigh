@@ -142,12 +142,27 @@ Module Controls
     Real*8  :: checkpoint_minutes = -1.0d0     ! Time in minutes between checkpoints (overrides quicksave interval)
     
     Real*8  :: cflmax = 0.6d0, cflmin = 0.4d0  ! Limits for the cfl condition
+    ! Acoustic timestep control (compressible, entropy formulation).  When
+    ! acoustic_cfl is on: (1) the explicitly-integrated acoustic REMAINDER
+    ! (wave speed c' = sqrt(gamma*(gamma-1)*cv*|T-Tbar|), the fluctuation
+    ! part the implicit rows do not carry) contributes a hard CFL limit
+    ! dt <= acoustic_cfl_safety * dx/c'; (2) when the local Mach number
+    ! exceeds acoustic_mach_gate, an accuracy limit dt <= acoustic_theta /
+    ! omega_ac is enforced, with omega_ac = cs*sqrt(l(l+1))/r evaluated at
+    ! acoustic_ell (0 = use l_max).  As Ma -> 1, c' -> cs and the hard limit
+    ! approaches the full acoustic CFL, which is the correct sonic endpoint.
+    Logical :: acoustic_cfl = .false.
+    Real*8  :: acoustic_cfl_safety = 1.0d0   ! remainder-CFL safety, relative to cflmax
+    Real*8  :: acoustic_mach_gate  = 0.1d0   ! Ma above which the accuracy limit engages
+    Real*8  :: acoustic_theta      = 0.1d0   ! omega_ac*dt ceiling once gated
+    Integer :: acoustic_ell        = 0       ! ell for omega_ac (0 = l_max)
     Real*8  :: max_time_step = 1.0d0           ! Maximum timestep to take, whatever CFL says (should always specify this in main_input file)
     Real*8  :: min_time_step = 1.0d-13
     Integer :: diagnostic_reboot_interval = 10000000
     Integer :: new_iteration = 0
     Namelist /Temporal_Controls_Namelist/ alpha_implicit, max_iterations, check_frequency, &
                 & cflmax, cflmin, max_time_step, diagnostic_reboot_interval, min_time_step, &
+                & acoustic_cfl, acoustic_cfl_safety, acoustic_mach_gate, acoustic_theta, acoustic_ell, &
                 & num_quicksaves, quicksave_interval, checkpoint_interval, quicksave_minutes, &
                 & max_time_minutes, save_last_timestep, new_iteration, save_on_sigterm, &
                 & max_simulated_time, checkpoint_minutes
@@ -188,7 +203,7 @@ Module Controls
     ! full pool of processes
     Real*8, Allocatable :: global_msgs(:)
     Real*8 :: kill_signal = 0.0d0  ! Signal will be passed in Real*8 buffer, but should be integer-like
-    Integer :: nglobal_msgs = 5  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found
+    Integer :: nglobal_msgs = 7  ! timestep, elapsed since checkpoint, kill_signal/global message, simulation time, terminate file found, max Mach^2, acoustic accuracy term
 
     Logical :: full_restart = .false.  ! Set to true if a full-restart is initiated from the command line
 
@@ -236,7 +251,7 @@ Contains
             ! Version banner: every log self-identifies the spin branch build.
             ! Bump the tag with every physics-relevant change to this branch.
             Call stdout%print(" ")
-            Call stdout%print("== SPIN BRANCH v14.8.6 (uniform CN implicit; audit complete) ==")
+            Call stdout%print("== SPIN BRANCH v14.9.3.2 (HWM leak-hunt + argmax rank) ==")
             Call stdout%print("   divl/supply: K*sqrt(L2); force bridge sqrt(2 pi); cross terms IMPLICIT (coupled block)")
         Endif
 

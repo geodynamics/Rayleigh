@@ -207,8 +207,6 @@ Contains
             call ellzero_init()
         Endif
 
-        Call Load_State_File()
-
 
         If (magnetism) Then
             ! Initialize the magnetic variables
@@ -861,101 +859,6 @@ Contains
 
     !//////////////////////////////////////////////////////////////////////////////////
     !  Benchmark Initialization Routines
-    Subroutine Load_State_File()
-        ! Wave-restart experiment: env RAYLEIGH_STATE_FILE points to a physical-
-        ! space (phi,theta,r) state file (CGS totals: vr, vtheta, vphi, S, lnrho)
-        ! on THIS run's collocation grids. All five prognostic states are
-        ! overwritten using the code's own analysis transforms (FFT + spin/
-        ! standard Legendre + Chebyshev), so every convention is the solver's.
-        Implicit None
-        Character(len=512) :: sfile
-        Integer :: ios, np_f, nt_f, nr_f
-        Integer(kind=4) :: dims(3)
-        Real*8, Allocatable :: phi_f(:), cth_f(:), rad_f(:), A(:,:,:,:)
-        Integer, Allocatable :: tmap(:), rmap(:)
-        Integer :: i,f,t,r,jj,kk
-        Type(SphericalBuffer) :: tempfield
-        Integer :: fcount(3,2)
-        Call Get_Environment_Variable('RAYLEIGH_STATE_FILE', sfile, status=ios)
-        If (ios .ne. 0 .or. len_trim(sfile) .eq. 0) Return
-        Open(unit=317, file=Trim(sfile), form='unformatted', access='stream', status='old')
-        Read(317) dims
-        np_f = dims(1); nt_f = dims(2); nr_f = dims(3)
-        If (np_f .ne. n_phi .or. nt_f .ne. n_theta .or. nr_f .ne. N_R) Then
-            If (my_rank .eq. 0) Write(6,*)'STATE FILE DIM MISMATCH:',np_f,nt_f,nr_f,n_phi,n_theta,N_R
-            Stop
-        Endif
-        Allocate(phi_f(np_f), cth_f(nt_f), rad_f(nr_f), A(np_f, nt_f, nr_f, 5))
-        Read(317) phi_f
-        Read(317) cth_f
-        Read(317) rad_f
-        Read(317) A
-        Close(317)
-        Allocate(tmap(1:n_theta), rmap(1:N_R))
-        tmap = -1; rmap = -1
-        Do t = 1, n_theta
-            Do jj = 1, nt_f
-                If (abs(costheta(t)-cth_f(jj)) .lt. 1.0d-10) tmap(t) = jj
-            Enddo
-        Enddo
-        Do r = 1, N_R
-            Do kk = 1, nr_f
-                If (abs(radius(r)-rad_f(kk)) .lt. 1.0d-6*abs(radius(r))) rmap(r) = kk
-            Enddo
-        Enddo
-        If (any(tmap .lt. 0) .or. any(rmap .lt. 0)) Then
-            If (my_rank .eq. 0) Then
-                Write(6,*)'STATE FILE GRID MATCH FAILED: nt bad ',count(tmap.lt.0),' nr bad ',count(rmap.lt.0)
-                Write(6,*)'code radius 1,N: ',radius(1),radius(N_R)
-                Write(6,*)'file rad  1,N: ',rad_f(1),rad_f(nr_f)
-                Write(6,*)'code radius 2,3,4: ',radius(2),radius(3),radius(4)
-                Write(6,*)'file rad  2,3,4: ',rad_f(2),rad_f(3),rad_f(4)
-                Write(6,*)'code costheta 1,N: ',costheta(1),costheta(n_theta)
-                Write(6,*)'file cth 1,N: ',cth_f(1),cth_f(nt_f)
-            Endif
-            Stop
-        Endif
-        fcount(:,:) = 5
-        Call tempfield%init(field_count=fcount, config='p3b')
-        Call tempfield%construct('p3b')
-        tempfield%p3b(:,:,:,:) = 0.0d0
-        Do f = 1, 5
-        Do t = my_theta%min, my_theta%max
-        Do r = my_r%min, my_r%max
-        Do i = 1, n_phi
-            tempfield%p3b(i,r,t,f) = A(i, tmap(t), rmap(r), f)
-        Enddo
-        Enddo
-        Enddo
-        Enddo
-        DeAllocate(A)
-        Call fft_to_spectral(tempfield%p3b, rsc=.true.)
-        Call tempfield%reform()      ! p3b -> p2b
-        Call tempfield%construct('s2b')
-        If (spin_horizontal) Then
-            Call Legendre_Transform(tempfield%p2b, tempfield%s2b, spin_fa=(/2/), spin_fb=(/3/), spin_sindiv=.false.)
-        Else
-            Call Legendre_Transform(tempfield%p2b, tempfield%s2b)
-        Endif
-        Call tempfield%deconstruct('p2b')
-        tempfield%config = 's2b'
-        Call tempfield%reform()      ! s2b -> p1b
-        If (chebyshev) Then
-            Call tempfield%construct('p1a')
-            Call gridcp%To_Spectral(tempfield%p1b,tempfield%p1a)
-            tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
-            Call tempfield%deconstruct('p1a')
-        Endif
-        Call Set_RHS(vreq,  tempfield%p1b(:,:,:,1))
-        Call Set_RHS(vteq,  tempfield%p1b(:,:,:,2))
-        Call Set_RHS(vpeq,  tempfield%p1b(:,:,:,3))
-        Call Set_RHS(teq,   tempfield%p1b(:,:,:,4))
-        Call Set_RHS(rhoeq, tempfield%p1b(:,:,:,5))
-        Call tempfield%deconstruct('p1b')
-        DeAllocate(phi_f, cth_f, rad_f, tmap, rmap)
-        If (my_rank .eq. 0) Write(6,*)' -- STATE loaded from ', Trim(sfile)
-    End Subroutine Load_State_File
-
     Subroutine Benchmark_Init_Hydro()
         Implicit None
         Real*8, Allocatable :: rfunc1(:), rfunc2(:)

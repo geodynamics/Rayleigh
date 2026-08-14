@@ -742,26 +742,26 @@ Contains
                     ! the d2vtdrdt supply.
                     sLl = sqrt(l_l_plus1(l))
                     ! vr row <- pair: +(nu/3) d_r[Ksp*sL/r (q+ - q-)]
-                    amp = (nu/3.0d0)*Ksp*sLl*One_Over_R
+                    amp = (nu/3.0d0)*Half*sLl*One_Over_R
                     Call add_implicit_term(vreq, vtheta, 1, amp, lp)
-                    amp = -(nu/3.0d0)*Ksp*sLl*OneOverRSquared
+                    amp = -(nu/3.0d0)*Half*sLl*OneOverRSquared
                     Call add_implicit_term(vreq, vtheta, 0, amp, lp)
-                    amp = -(nu/3.0d0)*Ksp*sLl*One_Over_R
+                    amp = -(nu/3.0d0)*Half*sLl*One_Over_R
                     Call add_implicit_term(vreq, vphi, 1, amp, lp)
-                    amp = (nu/3.0d0)*Ksp*sLl*OneOverRSquared
+                    amp = (nu/3.0d0)*Half*sLl*OneOverRSquared
                     Call add_implicit_term(vreq, vphi, 0, amp, lp)
                     ! pair rows <- vr, both viscous cross-couplings: the
                     ! (nu/3) grad(div u) horizontal part AND the
                     ! vector-Laplacian mixed term (2 nu/r^2) grad_h(vr).
                     ! Both are spin-+/-1 projections of d_theta(scalar), so
                     ! both carry the same bridge sqrt(2 pi).
-                    amp = -sqrt2pi*(nu/3.0d0)*sLl*One_Over_R
+                    amp = -(nu/3.0d0)*sLl*One_Over_R
                     Call add_implicit_term(vteq, vr, 1, amp, lp)
-                    amp = -( 2.0d0 + 2.0d0/3.0d0 )*sqrt2pi*nu*sLl*OneOverRSquared
+                    amp = -( 2.0d0 + 2.0d0/3.0d0 )*nu*sLl*OneOverRSquared
                     Call add_implicit_term(vteq, vr, 0, amp, lp)
-                    amp = sqrt2pi*(nu/3.0d0)*sLl*One_Over_R
+                    amp = (nu/3.0d0)*sLl*One_Over_R
                     Call add_implicit_term(vpeq, vr, 1, amp, lp)
-                    amp = ( 2.0d0 + 2.0d0/3.0d0 )*sqrt2pi*nu*sLl*OneOverRSquared
+                    amp = ( 2.0d0 + 2.0d0/3.0d0 )*nu*sLl*OneOverRSquared
                     Call add_implicit_term(vpeq, vr, 0, amp, lp)
                     ! pair rows <- pair (the div term's pair part; B*Ksp = 1/2):
                     amp = -0.5d0*(nu/3.0d0)*l_l_plus1(l)*OneOverRSquared

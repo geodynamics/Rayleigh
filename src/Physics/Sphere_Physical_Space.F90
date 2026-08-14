@@ -303,14 +303,24 @@ Contains
               If (thermal_variable .eq. 1) Call Temperature_Compression()
               ! entropy formulation: no compression term exists — absorbed exactly by S.
               !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
-              ! Under T1 the full thermal-diffusion operator lives in the
-              ! implicit teq rows; diffusion is purely implicit (an explicit
-              ! call on top would double-diffuse and inject
-              ! -kappa*(dlnrho+dlnT)*dS/dr as a spurious ell=0 driver).
-              If (.not. implicit_compressible_diffusion) Call Temperature_Diffusion()
+              ! Under T1 the BACKGROUND thermal-diffusion operator lives in
+              ! the implicit teq rows: kappa[Del2 S + (dlnrho_bar+dlnT_bar)
+              ! dS/dr].  The full explicit call on top would double-diffuse
+              ! and inject -kappa*(dlnrho+dlnT)*dS/dr as a spurious ell=0
+              ! driver -- but the QUADRATIC fluctuation products of the
+              ! exact first-order content are NOT in the implicit rows and
+              ! must run explicitly (direct remainder form, no
+              ! add-then-subtract).
+              If (.not. implicit_compressible_diffusion) Then
+                  Call Temperature_Diffusion()
+              Else If (thermal_variable .eq. 2) Then
+                  Call Temperature_Diffusion_Fluctuation_Products()
+              Endif
               !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
               !Call Temperature_Heating()
-              !Call Temperature_Viscous_Heating()
+              ! Viscous heating: Phi/(rho T) in the entropy equation
+              ! (quadratic; zero in linear physics).
+              If (thermal_variable .eq. 2) Call Temperature_Viscous_Heating()
               !Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
               
               Call Density_Advection()
@@ -1699,6 +1709,42 @@ Contains
         EndIf
     End Subroutine Temperature_Viscous_Heating
 
+    Subroutine Temperature_Diffusion_Fluctuation_Products()
+        ! Explicit remainder of the tv=2 entropy diffusion under
+        ! implicit_compressible_diffusion.  The implicit teq rows carry the
+        ! background operator kappa[Del2 S + (dlnrho_bar + dlnT_bar) dS/dr];
+        ! the full first-order content of div(kappa rho T grad S)/(rho T) is
+        ! kappa[Del2 S + (gamma grad lnrho + grad S / cv) . grad S].  The
+        ! difference -- this routine -- is quadratic in fluctuations:
+        !   kappa[ (gamma dlnrho/dr + (dS/dr)/cv
+        !                       - dlnrho_bar - dlnT_bar) dS/dr
+        !        + (1/r^2)      (gamma dlnrho/dth + (dS/dth)/cv) dS/dth
+        !        + (csc^2/r^2)  (gamma dlnrho/dph + (dS/dph)/cv) dS/dph ]
+        ! with lnrho, S the evolved totals.  Background gradients are radial
+        ! only; subtracting the implicit row's own (dlnrho_bar + dlnT_bar)
+        ! keeps the pairing exact for any reference (for the adiabatic
+        ! reference it equals gamma dlnrho_bar).  Direct non-implicit form.
+        ! Grad-kappa variation terms are not carried here (constant-kappa
+        ! configs have gkappa(:,2:4) = 0); they remain with the full
+        ! explicit path.
+        Implicit None
+        Integer :: t, r, k
+        Real*8  :: kcoeff
+        kcoeff = 1.0d0/Prandtl_Number
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*gkappa(IDX,1)*( &
+                ( gas_gamma*FIELDSP(IDX,drhodr) + FIELDSP(IDX,dtdr)/bigz &
+                  - ref%dlnrho(r) - ref%dlnT(r) )*FIELDSP(IDX,dtdr) &
+                + OneOverRSquared(r)*( gas_gamma*FIELDSP(IDX,drhodt) &
+                  + FIELDSP(IDX,dtdt)/bigz )*FIELDSP(IDX,dtdt) &
+                + OneOverRSquared(r)*csctheta(t)*csctheta(t)*( &
+                  gas_gamma*FIELDSP(IDX,drhodp) &
+                  + FIELDSP(IDX,dtdp)/bigz )*FIELDSP(IDX,dtdp) )
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Temperature_Diffusion_Fluctuation_Products
+
     Subroutine Temperature_Compression()
         Implicit None
         Integer :: t, r,k
@@ -2050,7 +2096,8 @@ Contains
     Subroutine Find_MyMinDT()
         Implicit None
         Real*8 :: ovt2, ovht2, ovrt2
-        Integer :: r
+        Real*8 :: over_safe2, csbar2, cp2, ma2max, ovacc2
+        Integer :: r, la
         Call StopWatch(ts_time)%startclock()
 
         ovt2 = 0.0d0    ! "over t squared"
@@ -2086,6 +2133,55 @@ Contains
                 Endif
                 ovt2  = Max(ovt2,ovrt2)
             Enddo
+
+            If (acoustic_cfl .and. (thermal_variable .eq. 2)) Then
+                ! Acoustic remainder CFL (hard): the implicit rows carry the
+                ! Tbar-linearized acoustics; the explicit remainder is a wave
+                ! operator with c'^2 = gamma*(gamma-1)*cv*|T - Tbar|
+                !                    = |csquared - csbar2|.
+                ! AB2 excludes the imaginary axis, so c' must satisfy a CFL of
+                ! its own.  Negligible at low Ma (c' ~ cs*Ma); approaches the
+                ! full acoustic CFL as Ma -> 1.
+                over_safe2 = 1.0d0/(acoustic_cfl_safety**2)
+                la = acoustic_ell
+                If (la .le. 0) la = l_max
+                ma2max  = 0.0d0
+                ovacc2  = 0.0d0
+                Do r = my_r%min, my_r%max
+                    ! csquared is zero until its first fill; skip until live
+                    ! (a zero field would masquerade as a full-strength
+                    ! remainder and a spurious Mach number).
+                    If (Maxval(csquared(1:n_phi,r,:)) .le. 0.0d0) Cycle
+                    ! Slice to 1:n_phi -- the buffer carries two FFT padding
+                    ! planes that stay zero.  c'^2 is measured against the
+                    ! spherical mean of csquared at this radius, not against
+                    ! the polytropic reference: the static, spherically
+                    ! symmetric offset between the conductive background and
+                    ! the reference (a few percent of cs^2) is held by the
+                    ! conductive equilibrium and does not propagate; only the
+                    ! horizontal fluctuation of cs^2 rings as the explicit
+                    ! remainder wave.
+                    csbar2 = Sum(csquared(1:n_phi,r,:)) &
+                             /Dble(n_phi*Size(csquared,3))
+                    cp2 = Maxval(Abs(csquared(1:n_phi,r,:) - csbar2))
+                    ovt2 = Max(ovt2, cp2*OneOverRSquared(r)*l_l_plus1(l_max)*over_safe2)
+                    ovt2 = Max(ovt2, cp2/(delta_r(r)**2)*over_safe2)
+                    ! Local Mach number and the acoustic frequency at
+                    ! acoustic_ell (horizontal; reduced globally by max, the
+                    ! accuracy gate is applied in Adjust_TimeStep).
+                    ! Floor csquared at a fraction of the background value:
+                    ! it is zeroed before the first fill, and the Mach gauge
+                    ! must not divide by zero.
+                    ma2max = Max(ma2max, Maxval( (wsp%p3a(1:n_phi,r,:,vr)**2 &
+                             + wsp%p3a(1:n_phi,r,:,vtheta)**2 &
+                             + wsp%p3a(1:n_phi,r,:,vphi)**2) &
+                             /Max(csquared(1:n_phi,r,:), 1.0d-6*csbar2) ))
+                    ovacc2 = Max(ovacc2, Maxval(csquared(1:n_phi,r,:)) &
+                             *OneOverRSquared(r)*l_l_plus1(la))
+                Enddo
+                global_msgs(6) = ma2max
+                global_msgs(7) = ovacc2
+            Endif
 
         Else            
             Do r = my_r%min, my_r%max

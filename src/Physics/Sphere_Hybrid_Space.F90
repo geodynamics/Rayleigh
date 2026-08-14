@@ -923,11 +923,31 @@ Contains
         Real*8 :: maxt2, maxt
         Character*8 :: dtfmt ='(ES10.4)'
         Character*14 :: tmstr, tmstr2
+        Character*14 :: mastr
+        Logical, Save :: acoustic_gate_open = .false.
 
         Call wsp%unload_cargo(global_msgs)
 
 
         maxt2 = global_msgs(1)
+        If (acoustic_cfl .and. (thermal_variable .eq. 2)) Then
+            ! Accuracy gate: once the flow is compressive enough for stepped-
+            ! over acoustics to matter (Ma > acoustic_mach_gate, i.e. the
+            ! compressive energy fraction ~ Ma^2 exceeds gate^2), cap
+            ! omega_ac*dt at acoustic_theta.  Folding (cflmax/theta)^2 *
+            ! omega_ac^2 into the 1/t^2 budget realizes exactly that cap.
+            If (global_msgs(6) .gt. acoustic_mach_gate**2) Then
+                maxt2 = Max(maxt2, global_msgs(7)*(cflmax/acoustic_theta)**2)
+                If (.not. acoustic_gate_open) Then
+                    acoustic_gate_open = .true.
+                    Write(mastr, dtfmt) sqrt(global_msgs(6))
+                    Call stdout%print(' -- Acoustic accuracy limit engaged; Ma_max = '//trim(mastr))
+                Endif
+            Else If (acoustic_gate_open) Then
+                acoustic_gate_open = .false.
+                Call stdout%print(' -- Acoustic accuracy limit released.')
+            Endif
+        Endif
         if (maxt2 .gt. 0.0d0) Then
             maxt = 1.0d0/sqrt(maxt2)
 
