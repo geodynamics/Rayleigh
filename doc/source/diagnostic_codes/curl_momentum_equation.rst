@@ -52,16 +52,12 @@ Curl Momentum Equation
  :math:`\left[\boldsymbol{\nabla}\times\left(c_5\,(\boldsymbol{\nabla}\cdot\overline{\boldsymbol{\mathcal D}})\right)\right]_r`                                        1351    curl\_viscous\_mforce\_r      
  :math:`\left[\boldsymbol{\nabla}\times\left(c_5\,(\boldsymbol{\nabla}\cdot\overline{\boldsymbol{\mathcal D}})\right)\right]_\theta`                                   1352    curl\_viscous\_mforce\_theta  
  :math:`\left[\boldsymbol{\nabla}\times\left(c_5\,(\boldsymbol{\nabla}\cdot\overline{\boldsymbol{\mathcal D}})\right)\right]_\phi`                                     1353    curl\_viscous\_mforce\_phi    
- :math:`\left[\nabla\times\nabla P\right]_r`                                                                                                                           1357    curl\_pressure\_force\_r       
  :math:`\left[\nabla\times\nabla P\right]_\theta`                                                                                                                      1358    curl\_pressure\_force\_theta   
  :math:`\left[\nabla\times\nabla P\right]_\phi`                                                                                                                        1359    curl\_pressure\_force\_phi     
- :math:`\left[\nabla\times\nabla P\right]_r^2`                                                                                                                         1360    curl\_pressure\_force\_r\_squared       
  :math:`\left[\nabla\times\nabla P\right]_\theta^2`                                                                                                                    1361    curl\_pressure\_force\_theta\_squared   
  :math:`\left[\nabla\times\nabla P\right]_\phi^2`                                                                                                                      1362    curl\_pressure\_force\_phi\_squared     
- :math:`\left[\nabla\times\nabla P\right]_r`                                                                                                                           1363    curl\_pressure\_pforce\_r      
  :math:`\left[\nabla\times\nabla P\right]_\theta`                                                                                                                      1364    curl\_pressure\_pforce\_theta  
  :math:`\left[\nabla\times\nabla P\right]_\phi`                                                                                                                        1365    curl\_pressure\_pforce\_phi    
- :math:`\left[\nabla\times\nabla P\right]_r`                                                                                                                           1366    curl\_pressure\_mforce\_r      
  :math:`\left[\nabla\times\nabla P\right]_\theta`                                                                                                                      1367    curl\_pressure\_mforce\_theta  
  :math:`\left[\nabla\times\nabla P\right]_\phi`                                                                                                                        1368    curl\_pressure\_mforce\_phi    
  :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B)\times\boldsymbol B\right)\right)\right]_r`                              1369    curl\_j\_cross\_b\_r     

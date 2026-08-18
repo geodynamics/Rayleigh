@@ -450,25 +450,12 @@ Contains
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!! Pressure Force !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       If (compute_quantity(curl_pressure_force_r) .or. compute_quantity(curl_pressure_force_r_squared)) Then
-            DO_PSI
-                qty(PSI) = pfactor(r) * &
-                            OneOverRSquared(r) * csctheta(t) * (DDBUFF(PSI,dvpdtdp)-DDBUFF(PSI,dvpdtdp)) 
-            END_DO
-            If (compute_quantity(curl_pressure_force_r)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_pressure_force_r_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif           
-        Endif
+       ! curl_pressure_force_r is always 0
          
         If (compute_quantity(curl_pressure_force_theta) .or. compute_quantity(curl_pressure_force_theta_squared)) Then
             DO_PSI
                 qty(PSI) = pfactor(r) * &
-                            OneOverRSquared(r) * csctheta(t) * (DDBUFF(PSI,dvpdrdp) + &
-                            ref%dlnrho(r) * buffer(PSI,dpdp) + DDBUFF(PSI,dvpdrdp))
+                            One_Over_R(r) * csctheta(t) * ref%dlnrho(r) * buffer(PSI,dpdt) 
             END_DO
             If (compute_quantity(curl_pressure_force_theta)) Call Add_Quantity(qty)
             If (compute_quantity(curl_pressure_force_theta_squared)) Then
@@ -479,13 +466,10 @@ Contains
             Endif
         Endif
 
-
-
         If (compute_quantity(curl_pressure_force_phi) .or. compute_quantity(curl_pressure_force_phi_squared)) Then
             DO_PSI
-                qty(PSI) = pfactor(r) * &
-                            one_over_r(r) * csctheta(t) * (-DDBUFF(PSI,dvpdrdt) + DDBUFF(PSI,dvpdrdt) - &
-                            ref%dlnrho(r) * buffer(PSI,dpdt))
+                qty(PSI) = - pfactor(r) * &
+                              One_Over_R(r) * ref%dlnrho(r) * buffer(PSI,dpdt)
             END_DO
             If (compute_quantity(curl_pressure_force_phi)) Call Add_Quantity(qty)
             If (compute_quantity(curl_pressure_force_phi_squared)) Then
