@@ -287,6 +287,17 @@ Contains
                 Call Add_Quantity(tmp1)
             Endif
         Endif
+        If (compute_quantity(j_cross_b_abs)) Then
+            DO_PSI
+                qty(PSI) = (((buffer(PSI,curlbtheta)*buffer(PSI,bphi)- &
+                         & buffer(PSI,btheta)*buffer(PSI,curlbphi) ) *ref%Lorentz_Coeff)**2 + &
+                            (( buffer(PSI,br)*buffer(PSI,curlbphi)- &
+                            buffer(PSI,curlbr)*buffer(PSI,bphi) )*ref%Lorentz_Coeff)**2 + &
+                            (( buffer(PSI,curlbr)*buffer(PSI,btheta)- &
+                            buffer(PSI,br)*buffer(PSI,curlbtheta) )*ref%Lorentz_Coeff)**2)**0.5
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
     End Subroutine Compute_Lorentz_Forces
 

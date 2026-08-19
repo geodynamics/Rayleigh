@@ -121,3 +121,49 @@
     Integer, Parameter :: jp_cross_bp_r     = mom_eq_off+60 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r$
     Integer, Parameter :: jp_cross_bp_theta = mom_eq_off+61 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta$
     Integer, Parameter :: jp_cross_bp_phi   = mom_eq_off+62 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi$
+    
+    !\\\\\\\\\\\\\\\\\\\\\ New Quantities /////////////////////!
+
+    ! Calculate squared magnitudes of each force 
+    
+    !    v_grad_v_squared = v_grad_v_r**2 + v_grad_v_theta**2 + v_grad_v_phi**2
+    !Coriolis_Force_squared = Coriolis_Force_r**2 + Coriolis_Force_theta**2 + Coriolis_Force_phi**2
+    !j_cross_b_squared = j_cross_b_r**2 + j_cross_b_theta**2 + j_cross_b_phi**2
+    !viscous_Force_squared = viscous_Force_r**2 + viscous_Force_theta**2 + viscous_Force_phi**2
+    !pressure_Force_squared = pressure_Force_r**2 + pressure_Force_theta**2 + pressure_Force_phi**2
+    !Ageo_Coriolis_Force = (Coriolis_Force_r-pressure_Force_r)**2 + (Coriolis_Force_theta-pressure_Force_theta)**2 + (Coriolis_Force_theta-pressure_Force_theta)**2
+    !Ageost_Coriolis_Force = Coriolis - Pressure
+
+
+    ! Define parameters for squared magnitudes 
+    Integer, Parameter :: v_grad_v_abs       = mom_eq_off+63
+    Integer, Parameter :: buoyancy_force_abs = mom_eq_off+64
+    Integer, Parameter :: coriolis_force_abs = mom_eq_off+65
+    Integer, Parameter :: viscous_force_abs  = mom_eq_off+66
+    Integer, Parameter :: pressure_force_abs = mom_eq_off+67
+    Integer, Parameter :: j_cross_b_abs      = mom_eq_off+68
+    Integer, Parameter :: ageo_coriolis_force= mom_eq_off+69   
+
+
+!    Integer, Parameter :: j_cross_b_r_squared    = mom_eq_off+70   
+!    Integer, Parameter :: j_cross_b_theta_squared    = mom_eq_off+71   
+!    Integer, Parameter :: j_cross_b_phi_squared    = mom_eq_off+72   
+
+!    Integer, Parameter :: v_grad_v_r_squared    = mom_eq_off+73   
+!    Integer, Parameter :: v_grad_v_theta_squared    = mom_eq_off+74   
+!    Integer, Parameter :: v_grad_v_phi_squared    = mom_eq_off+75    
+
+!    Integer, Parameter :: Coriolis_Force_r_squared = mom_eq_off+76
+!    Integer, Parameter :: Coriolis_Force_Theta_squared = mom_eq_off+77
+!    Integer, Parameter :: Coriolis_Force_Phi_squared = mom_eq_off+78
+
+!    Integer, Parameter :: viscous_force_r_squared  = mom_eq_off+79
+!    Integer, Parameter :: viscous_force_theta_squared  = mom_eq_off+80
+!    Integer, Parameter :: viscous_force_phi_squared  = mom_eq_off+81
+
+!    Integer, Parameter :: pressure_force_r_squared = mom_eq_off+82
+!    Integer, Parameter :: pressure_force_theta_squared = mom_eq_off+83
+!    Integer, Parameter :: pressure_force_phi_squared = mom_eq_off+84
+
+
+
