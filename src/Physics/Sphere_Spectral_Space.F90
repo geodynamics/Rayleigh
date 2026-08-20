@@ -486,6 +486,10 @@ Contains
         !Call gridcp%d_by_dr_cp(  tvar,  d2tdr2, wsp%p1a, 2)
         Call gridcp%d_by_dr_cp(  dtdr,  d2tdr2, wsp%p1a, 1)
         Call gridcp%d_by_dr_cp(rhovar,  drhodr, wsp%p1a, 1)
+        If ((sigma_formulation .and. (energy_diffusion_type .eq. 1)) .or. &
+            ((thermal_variable .eq. 2) .and. (energy_diffusion_type .eq. 2))) Then
+            Call gridcp%d_by_dr_cp(drhodr, d2rhodr2, wsp%p1a, 1)
+        Endif
 
 
         ! Magnetism
@@ -550,6 +554,21 @@ Contains
             Call Add_Derivative(rhoeq, vr    , 1, wsp%p1b, wsp%p1a, dvrdr)
             Call Add_Derivative(rhoeq, vr    , 0, wsp%p1b, wsp%p1a, vr)
             Call Add_Derivative(teq  , vr    , 0, wsp%p1b, wsp%p1a, vr)
+            If (sigma_formulation) &
+                Call Add_Derivative(teq, vr, 1, wsp%p1b, wsp%p1a, dvrdr)
+            ! Cross-diffusion old-time terms.  The field argument must be
+            ! the order-matched derivative buffer, and every loaded column
+            ! order must appear here: all pieces of one operator must share
+            ! the same Crank-Nicolson time weights.
+            If ((sigma_formulation .and. (energy_diffusion_type .eq. 1)) .or. &
+                ((thermal_variable .eq. 2) .and. (energy_diffusion_type .eq. 2))) Then
+                Call Add_Derivative(teq, rhovar, 0, wsp%p1b, wsp%p1a, rhovar)
+                Call Add_Derivative(teq, rhovar, 2, wsp%p1b, wsp%p1a, d2rhodr2)
+            Endif
+            If (sigma_formulation .or. &
+                ((thermal_variable .eq. 2) .and. (energy_diffusion_type .eq. 2))) Then
+                Call Add_Derivative(teq, rhovar, 1, wsp%p1b, wsp%p1a, drhodr)
+            Endif
             ! pair<->pair viscous off-diagonal old-time (D0-only).
             Call Add_Derivative(vteq , vphi  , 0, wsp%p1b, wsp%p1a, vphi)
             Call Add_Derivative(vpeq , vtheta, 0, wsp%p1b, wsp%p1a, vtheta)
@@ -562,6 +581,10 @@ Contains
             Call Add_Derivative(vteq , rhovar, 0, wsp%p1b, wsp%p1a, rhovar)
             Call Add_Derivative(vpeq , tvar  , 0, wsp%p1b, wsp%p1a, tvar)
             Call Add_Derivative(vpeq , rhovar, 0, wsp%p1b, wsp%p1a, rhovar)
+            If (sigma_formulation) Then
+                Call Add_Derivative(teq, vtheta, 0, wsp%p1b, wsp%p1a, vtheta)
+                Call Add_Derivative(teq, vphi  , 0, wsp%p1b, wsp%p1a, vphi)
+            Endif
         Endif
 
 

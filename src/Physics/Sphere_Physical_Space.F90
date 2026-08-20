@@ -292,35 +292,31 @@ Contains
            !Write(6, *) "NU, " ,Maxval(RHSP)
            
            Call Compute_Phi_Visc()
-           !Write(6, *) "PHI VISC, ", Maxval(RHSP)
 
            If (debug) Then
               Call Temperature_Diffusion()
               !Call Temperature_Heating()
            Else
               Call Temperature_Advection_Compressible()
-              !Write(6, *) "TEP ADVECT COMP, ", Maxval(RHSP)
               If (thermal_variable .eq. 1) Call Temperature_Compression()
-              ! entropy formulation: no compression term exists — absorbed exactly by S.
-              !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
-              ! Under T1 the BACKGROUND thermal-diffusion operator lives in
-              ! the implicit teq rows: kappa[Del2 S + (dlnrho_bar+dlnT_bar)
-              ! dS/dr].  The full explicit call on top would double-diffuse
-              ! and inject -kappa*(dlnrho+dlnT)*dS/dr as a spurious ell=0
-              ! driver -- but the QUADRATIC fluctuation products of the
-              ! exact first-order content are NOT in the implicit rows and
-              ! must run explicitly (direct remainder form, no
-              ! add-then-subtract).
+              ! (The entropy formulation has no compression term; it is
+              ! absorbed exactly by S.)
+              ! With implicit diffusion, the linear background operator
+              ! lives in the implicit teq rows; only the quadratic
+              ! fluctuation products remain explicit, evaluated in direct
+              ! remainder form below.
               If (.not. implicit_compressible_diffusion) Then
                   Call Temperature_Diffusion()
               Else If (thermal_variable .eq. 2) Then
                   Call Temperature_Diffusion_Fluctuation_Products()
+              Else If (sigma_formulation) Then
+                  Call Temperature_Diffusion_Fluctuation_Products_Sigma()
               Endif
-              !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
               !Call Temperature_Heating()
               ! Viscous heating: Phi/(rho T) in the entropy equation
               ! (quadratic; zero in linear physics).
-              If (thermal_variable .eq. 2) Call Temperature_Viscous_Heating()
+              If ((thermal_variable .eq. 2) .or. sigma_formulation) &
+                   Call Temperature_Viscous_Heating()
               !Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
               
               Call Density_Advection()
@@ -387,6 +383,15 @@ Contains
     Subroutine Compute_T_Recon()
       Implicit None
       Integer :: t, r, k
+      If (sigma_formulation) Then
+         ! Sigma form: tvar = sigma = ln(T/T_ref).
+         !$OMP PARALLEL DO PRIVATE(t,r,k)
+         DO_IDX
+            T_recon(IDX) = ref%temperature(r)*exp( FIELDSP(IDX,tvar) )
+         END_DO
+         !$OMP END PARALLEL DO
+         Return
+      Endif
       !$OMP PARALLEL DO PRIVATE(t,r,k)
       DO_IDX
          T_recon(IDX) = Cs*exp( FIELDSP(IDX,tvar)/bigz &
@@ -403,7 +408,7 @@ Contains
         !       Fredy (8/22/19)
         !       Nick (8/27/19)
         gfactor = gas_gamma*(gas_gamma-1.0d0)*bigz
-        If (thermal_variable .eq. 2) Then
+        If ((thermal_variable .eq. 2) .or. sigma_formulation) Then
            !$OMP PARALLEL DO PRIVATE(t,r,k)
            DO_IDX
            csquared(IDX) = gfactor*T_recon(IDX)
@@ -1070,7 +1075,57 @@ Contains
     Subroutine Pressure_Force()
         Implicit None
         Integer :: t,r,k
-        Real*8 :: gfactor, w, w2
+        Real*8 :: gfactor, w, w2, hmask
+
+        If (sigma_formulation) Then
+            ! Sigma form: -R*T*grad(lnT + lnrho) with R = (gamma-1)*bigz and
+            ! T = T_recon = T_ref*exp(sigma); with Compute_Gravity's -g this
+            ! is -g(e^sigma-1) - R*T_ref*e^sigma*grad(sigma+lnrho).
+            gfactor = gas_gamma - 1.0d0
+            If (implicit_compressible_acoustics) Then
+                ! The implicit vreq rows carry -(g-1)*bigz*Tbar*(d sigma/dr
+                ! + d lnrho/dr) + garr*sigma; the explicit remainder is the
+                ! nonlinear temperature weighting plus the reference-gradient
+                ! restoration.  Under horizontal acoustics the pair rows
+                ! carry the Tbar-weighted horizontal gradients too
+                ! (hmask = 1 masks T -> T - Tbar there).
+                hmask = 0.0d0
+                If (implicit_horizontal_acoustics) hmask = 1.0d0
+                !$OMP PARALLEL DO PRIVATE(t,r,k,w)
+                DO_IDX
+                    w = -(gas_gamma-1.0d0)*bigz*( ref%dT(r) &
+                        + ref%temperature(r)*ref%dlnrho(r) )      ! garr
+                    RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*bigz*( &
+                        (T_recon(IDX)-ref%temperature(r)) &
+                        *( FIELDSP(IDX,dtdr) + FIELDSP(IDX,drhodr) ) &
+                        + T_recon(IDX)*ref%dlnT(r) ) &
+                        - w*FIELDSP(IDX,tvar)
+                    RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
+                        - gfactor*bigz*(T_recon(IDX)-hmask*ref%temperature(r)) &
+                          *One_Over_R(r)*( &
+                          FIELDSP(IDX,dtdt) + FIELDSP(IDX,drhodt) )
+                    RHSP(IDX,vphi) = RHSP(IDX,vphi) &
+                        - gfactor*bigz*(T_recon(IDX)-hmask*ref%temperature(r)) &
+                          *One_Over_R(r)*csctheta(t)*( &
+                          FIELDSP(IDX,dtdp) + FIELDSP(IDX,drhodp) )
+                END_DO
+                !$OMP END PARALLEL DO
+            Else
+                !$OMP PARALLEL DO PRIVATE(t,r,k)
+                DO_IDX
+                    RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*bigz*T_recon(IDX)*( &
+                        ref%dlnT(r) + FIELDSP(IDX,dtdr) + FIELDSP(IDX,drhodr) )
+                    RHSP(IDX,vtheta) = RHSP(IDX,vtheta) &
+                        - gfactor*bigz*T_recon(IDX)*One_Over_R(r)*( &
+                          FIELDSP(IDX,dtdt) + FIELDSP(IDX,drhodt) )
+                    RHSP(IDX,vphi) = RHSP(IDX,vphi) &
+                        - gfactor*bigz*T_recon(IDX)*One_Over_R(r)*csctheta(t)*( &
+                          FIELDSP(IDX,dtdp) + FIELDSP(IDX,drhodp) )
+                END_DO
+                !$OMP END PARALLEL DO
+            Endif
+            Return
+        Endif
 
         If (thermal_variable .eq. 2) Then
            gfactor = gas_gamma - 1.0d0
@@ -1208,12 +1263,10 @@ Contains
             RHSP(IDX,vr) = RHSP(IDX,vr) - w
         END_DO
         If (.not. spin_horizontal) Then
-        ! Under spin the pair's Tier-1 subtraction happens SPECTRALLY in
-        ! Assemble_Spin_Viscous (exact CN-load mirror on the q+/- slots);
-        ! subtracting here and analyzing through the csc-prescaled transform
-        ! would remove the operator applied to csc-roundtrip-mapped
-        ! coefficients instead -- an inconsistency that destabilizes driven
-        ! runs (t~150 blowup at 48x64, dt-independent).
+        ! Under spin the pair's implicit-viscous subtraction happens
+        ! spectrally in Assemble_Spin_Viscous, as an exact mirror of the
+        ! loaded coefficients on the q+/- slots; it must not also be
+        ! subtracted here in physical space.
         DO_IDX
             w = nu(r)*FIELDSP(IDX,d2vtdr2) &
               + ( 2.0d0*One_Over_R(r) + ref%dlnrho(r) )*nu(r)*FIELDSP(IDX,dvtdr) &
@@ -1563,7 +1616,8 @@ Contains
         !           Nick (8/20/19)
         !          
         !Write(6, *) "MIN:MAX dhroFIELD", Maxval(FIELDSP(:, :, :, drhodr)), Minval(FIELDSP(:, :, :, drhodr))
-        If ((implicit_compressible_acoustics) .and. (thermal_variable .eq. 2)) Then
+        If ((implicit_compressible_acoustics) .and. &
+            ((thermal_variable .eq. 2) .or. sigma_formulation)) Then
             ! The background radial advection (-dlnrhobar/dr * vr) is
             ! implicit (rhoeq <- vr rows); advect the fluctuation gradient
             ! directly.  The paired radial-divergence content is gated in
@@ -1699,6 +1753,14 @@ Contains
                 + zfactor * Phi_Visc(IDX) * bigz/T_recon(IDX)
            END_DO
            !$OMP END PARALLEL DO
+        Else If (sigma_formulation) Then
+           ! Sigma form: Phi/(rho cv T) = Phi_Visc/(bigz*T_recon).
+           !$OMP PARALLEL DO PRIVATE(t,r,k)
+           DO_IDX
+           RHSP(IDX,tvar) = RHSP(IDX,tvar) &
+                + zfactor * Phi_Visc(IDX) / T_recon(IDX)
+           END_DO
+           !$OMP END PARALLEL DO
         Else
            ! Add the PHI term to the temperature equation
            !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1729,7 +1791,34 @@ Contains
         ! explicit path.
         Implicit None
         Integer :: t, r, k
-        Real*8  :: kcoeff
+        Real*8  :: kcoeff, wr, wt, wp
+        If (energy_diffusion_type .eq. 2) Then
+            ! TEMPERATURE conduction under tv=2: dS/dt = bigz*(g kappa/Pr)
+            ! *Op[lnT], lnT' gradients = grad S/bigz + (g-1)*grad Lambda'.
+            ! Quadratic remainder |grad lnT'|^2 + grad Lambda' . grad lnT',
+            ! plus the rho-weighted reference conduction source.
+            kcoeff = bigz*gas_gamma/Prandtl_Number
+            !$OMP PARALLEL DO PRIVATE(t,r,k,wr,wt,wp)
+            DO_IDX
+                wr = FIELDSP(IDX,dtdr)/bigz &
+                     + (gas_gamma-1.0d0)*(FIELDSP(IDX,drhodr)-ref%dlnrho(r))
+                wt = FIELDSP(IDX,dtdt)/bigz &
+                     + (gas_gamma-1.0d0)*FIELDSP(IDX,drhodt)
+                wp = FIELDSP(IDX,dtdp)/bigz &
+                     + (gas_gamma-1.0d0)*FIELDSP(IDX,drhodp)
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*gkappa(IDX,1)*( &
+                    ( wr + FIELDSP(IDX,drhodr)-ref%dlnrho(r) )*wr &
+                  + OneOverRSquared(r)*( wt + FIELDSP(IDX,drhodt) )*wt &
+                  + OneOverRSquared(r)*csctheta(t)*csctheta(t)*( &
+                    wp + FIELDSP(IDX,drhodp) )*wp )
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*( gkappa(IDX,1)*( &
+                      ref%d2T(r) + 2.0d0*ref%dT(r)*One_Over_R(r) &
+                    + ref%dlnrho(r)*ref%dT(r) ) &
+                    + gkappa(IDX,2)*ref%dT(r) ) / ref%temperature(r)
+            END_DO
+            !$OMP END PARALLEL DO
+            Return
+        Endif
         kcoeff = 1.0d0/Prandtl_Number
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -1755,23 +1844,121 @@ Contains
         !    
 
         gfactor = 1.0D0-gas_gamma
-        !$OMP PARALLEL DO PRIVATE(t,r,k)
-        DO_IDX
-            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*FIELDSP(IDX,tvar)*divu(IDX,1)! + div V term
-        END_DO
-        !$OMP END PARALLEL DO
+        If (sigma_formulation) Then
+            ! Sigma form: compression is linear in ln(T); the reference
+            ! temperature advection -vr*dlnT_ref rides here.  Under implicit
+            ! acoustics the radial parts live in the teq rows and the
+            ! explicit remainder is the horizontal divergence only.
+            If (implicit_compressible_acoustics .and. &
+                implicit_horizontal_acoustics) Then
+                ! Entire linear divergence and the reference advection are
+                ! implicit; compression is linear, so nothing remains.
+                Continue
+            Else If (implicit_compressible_acoustics) Then
+                !$OMP PARALLEL DO PRIVATE(t,r,k)
+                DO_IDX
+                    RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*( divu(IDX,1) &
+                        - FIELDSP(IDX,dvrdr) &
+                        - 2.0d0*One_Over_R(r)*FIELDSP(IDX,vr) )
+                END_DO
+                !$OMP END PARALLEL DO
+            Else
+                !$OMP PARALLEL DO PRIVATE(t,r,k)
+                DO_IDX
+                    RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*divu(IDX,1) &
+                        - ref%dlnT(r)*FIELDSP(IDX,vr)
+                END_DO
+                !$OMP END PARALLEL DO
+            Endif
+        Else
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*FIELDSP(IDX,tvar)*divu(IDX,1)! + div V term
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
     End Subroutine Temperature_Compression
+
+    Subroutine Temperature_Diffusion_Fluctuation_Products_Sigma()
+        ! Explicit companion of the implicit sigma diffusion rows, per
+        ! energy_diffusion_type.
+        ! Type 1 (entropy law on psi = sigma - (g-1)*Lambda): quadratic
+        !   remainder (kappa/Pr)(gamma grad lnrho' + grad psi').grad psi
+        !   (the tv=2 products with psi gradients), plus the static
+        !   reference restoration (g-1)*op[ln rho_ref] displaced into the
+        !   rhovar implicit column.
+        ! Type 2 (temperature conduction, constant Prandtl): quadratics
+        !   (gamma/Pr) kappa [|grad sigma|^2 + grad Lambda'.grad sigma],
+        !   plus the rho-weighted reference conduction source.
+        Implicit None
+        Integer :: t, r, k
+        Real*8 :: kcoeff, wr, wt, wp
+        If (energy_diffusion_type .eq. 1) Then
+            kcoeff = 1.0d0/Prandtl_Number
+            !$OMP PARALLEL DO PRIVATE(t,r,k,wr,wt,wp)
+            DO_IDX
+                wr = FIELDSP(IDX,dtdr) &
+                     - (gas_gamma-1.0d0)*(FIELDSP(IDX,drhodr)-ref%dlnrho(r))
+                wt = FIELDSP(IDX,dtdt) &
+                     - (gas_gamma-1.0d0)*FIELDSP(IDX,drhodt)
+                wp = FIELDSP(IDX,dtdp) &
+                     - (gas_gamma-1.0d0)*FIELDSP(IDX,drhodp)
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*gkappa(IDX,1)*( &
+                    ( gas_gamma*(FIELDSP(IDX,drhodr)-ref%dlnrho(r)) + wr )*wr &
+                  + OneOverRSquared(r)*( gas_gamma*FIELDSP(IDX,drhodt) + wt )*wt &
+                  + OneOverRSquared(r)*csctheta(t)*csctheta(t)*( &
+                    gas_gamma*FIELDSP(IDX,drhodp) + wp )*wp )
+                ! reference restoration for the rhovar column acting on
+                ! total ln rho: +(g-1)*(kappa/Pr)*op[ln rho_ref]
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) &
+                    + (gas_gamma-1.0d0)*kcoeff*gkappa(IDX,1)*( &
+                      ref%d2lnrho(r) &
+                    + ( 2.0d0*One_Over_R(r) + ref%dlnrho(r) &
+                        + ref%dlnT(r) )*ref%dlnrho(r) )
+            END_DO
+            !$OMP END PARALLEL DO
+        Else
+            kcoeff = gas_gamma/Prandtl_Number
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*gkappa(IDX,1)*( &
+                    ( FIELDSP(IDX,dtdr) &
+                      + FIELDSP(IDX,drhodr)-ref%dlnrho(r) )*FIELDSP(IDX,dtdr) &
+                  + OneOverRSquared(r)*( FIELDSP(IDX,dtdt) &
+                      + FIELDSP(IDX,drhodt) )*FIELDSP(IDX,dtdt) &
+                  + OneOverRSquared(r)*csctheta(t)*csctheta(t)*( &
+                      FIELDSP(IDX,dtdp) + FIELDSP(IDX,drhodp) )*FIELDSP(IDX,dtdp) )
+                ! rho-weighted reference conduction source:
+                ! (gamma/Pr)[kappa(T''+2T'/r+dlnrho_ref T') + kappa' T']/T_ref
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) + kcoeff*( gkappa(IDX,1)*( &
+                      ref%d2T(r) + 2.0d0*ref%dT(r)*One_Over_R(r) &
+                    + ref%dlnrho(r)*ref%dT(r) ) &
+                    + gkappa(IDX,2)*ref%dT(r) ) / ref%temperature(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
+    End Subroutine Temperature_Diffusion_Fluctuation_Products_Sigma
 
     Subroutine Subtract_Implicit_Diffusion_T()
         ! Temperature analog; called at the END of Temperature_Diffusion.
         ! Sign note: htvar = +l(l+1)/r^2 * T.
         Implicit None
         Integer :: r,t,k
-        Real*8 :: w, kc
+        Real*8 :: w, kc, sig_two_dlnT, sig_rho
+        sig_two_dlnT = 0.0d0
+        sig_rho = 1.0d0
+        If (sigma_formulation) Then
+            sig_two_dlnT = 2.0d0
+            sig_rho = 0.0d0
+        Endif
         kc = gas_gamma/Prandtl_Number
+        ! Reachable only via the debug branch (debug + implicit diffusion);
+        ! the sigma constants keep that debug pathway consistent with the
+        ! temperature-law implicit row.
         DO_IDX
             w = kc*kappa(r)*( FIELDSP(IDX,d2tdr2) &
-              + ( 2.0d0*One_Over_R(r) + ref%dlnrho(r) )*FIELDSP(IDX,dtdr) &
+              + ( 2.0d0*One_Over_R(r) + sig_rho*ref%dlnrho(r) &
+                  + sig_two_dlnT*ref%dlnT(r) )*FIELDSP(IDX,dtdr) &
               - FIELDSP(IDX,htvar) )
             RHSP(IDX,tvar) = RHSP(IDX,tvar) - w
         END_DO
@@ -2097,7 +2284,8 @@ Contains
         Implicit None
         Real*8 :: ovt2, ovht2, ovrt2
         Real*8 :: over_safe2, csbar2, cp2, ma2max, ovacc2
-        Integer :: r, la
+        Real*8 :: cs2max, csfloor, dc2, u2, m2
+        Integer :: r, la, j, k
         Call StopWatch(ts_time)%startclock()
 
         ovt2 = 0.0d0    ! "over t squared"
@@ -2134,50 +2322,50 @@ Contains
                 ovt2  = Max(ovt2,ovrt2)
             Enddo
 
-            If (acoustic_cfl .and. (thermal_variable .eq. 2)) Then
-                ! Acoustic remainder CFL (hard): the implicit rows carry the
-                ! Tbar-linearized acoustics; the explicit remainder is a wave
-                ! operator with c'^2 = gamma*(gamma-1)*cv*|T - Tbar|
-                !                    = |csquared - csbar2|.
-                ! AB2 excludes the imaginary axis, so c' must satisfy a CFL of
-                ! its own.  Negligible at low Ma (c' ~ cs*Ma); approaches the
-                ! full acoustic CFL as Ma -> 1.
+            If (acoustic_cfl .and. ((thermal_variable .eq. 2) .or. sigma_formulation)) Then
+                ! Acoustic remainder CFL (hard) and Mach/accuracy gauges.
+                ! The implicit rows carry the Tbar-linearized acoustics; the
+                ! explicit remainder is a wave operator with
+                ! c'^2 = |csquared - csbar2|, csbar2 the spherical mean at
+                ! each radius (the static conductive offset does not
+                ! propagate).  Negligible at low Ma; approaches the full
+                ! acoustic CFL as Ma -> 1.
+                ! Written as explicit loops with scalar accumulators, in the
+                ! style of the advective sweep above: expression slices here
+                ! create per-radius array temporaries, whose allocation
+                ! churn at scale degrades both speed and the registered-
+                ! memory footprint.
                 over_safe2 = 1.0d0/(acoustic_cfl_safety**2)
                 la = acoustic_ell
                 If (la .le. 0) la = l_max
                 ma2max  = 0.0d0
                 ovacc2  = 0.0d0
                 Do r = my_r%min, my_r%max
-                    ! csquared is zero until its first fill; skip until live
-                    ! (a zero field would masquerade as a full-strength
-                    ! remainder and a spurious Mach number).
-                    If (Maxval(csquared(1:n_phi,r,:)) .le. 0.0d0) Cycle
-                    ! Slice to 1:n_phi -- the buffer carries two FFT padding
-                    ! planes that stay zero.  c'^2 is measured against the
-                    ! spherical mean of csquared at this radius, not against
-                    ! the polytropic reference: the static, spherically
-                    ! symmetric offset between the conductive background and
-                    ! the reference (a few percent of cs^2) is held by the
-                    ! conductive equilibrium and does not propagate; only the
-                    ! horizontal fluctuation of cs^2 rings as the explicit
-                    ! remainder wave.
-                    csbar2 = Sum(csquared(1:n_phi,r,:)) &
-                             /Dble(n_phi*Size(csquared,3))
-                    cp2 = Maxval(Abs(csquared(1:n_phi,r,:) - csbar2))
+                    csbar2 = 0.0d0
+                    cs2max = 0.0d0
+                    Do k = my_theta%min, my_theta%max
+                        Do j = 1, n_phi
+                            csbar2 = csbar2 + csquared(j,r,k)
+                            If (csquared(j,r,k) .gt. cs2max) cs2max = csquared(j,r,k)
+                        Enddo
+                    Enddo
+                    If (cs2max .le. 0.0d0) Cycle   ! csquared not yet filled
+                    csbar2 = csbar2/Dble(n_phi*(my_theta%max-my_theta%min+1))
+                    csfloor = 1.0d-6*csbar2
+                    cp2 = 0.0d0
+                    Do k = my_theta%min, my_theta%max
+                        Do j = 1, n_phi
+                            dc2 = Abs(csquared(j,r,k) - csbar2)
+                            If (dc2 .gt. cp2) cp2 = dc2
+                            u2 = wsp%p3a(j,r,k,vr)**2 + wsp%p3a(j,r,k,vtheta)**2 &
+                                 + wsp%p3a(j,r,k,vphi)**2
+                            m2 = u2/Max(csquared(j,r,k), csfloor)
+                            If (m2 .gt. ma2max) ma2max = m2
+                        Enddo
+                    Enddo
                     ovt2 = Max(ovt2, cp2*OneOverRSquared(r)*l_l_plus1(l_max)*over_safe2)
                     ovt2 = Max(ovt2, cp2/(delta_r(r)**2)*over_safe2)
-                    ! Local Mach number and the acoustic frequency at
-                    ! acoustic_ell (horizontal; reduced globally by max, the
-                    ! accuracy gate is applied in Adjust_TimeStep).
-                    ! Floor csquared at a fraction of the background value:
-                    ! it is zeroed before the first fill, and the Mach gauge
-                    ! must not divide by zero.
-                    ma2max = Max(ma2max, Maxval( (wsp%p3a(1:n_phi,r,:,vr)**2 &
-                             + wsp%p3a(1:n_phi,r,:,vtheta)**2 &
-                             + wsp%p3a(1:n_phi,r,:,vphi)**2) &
-                             /Max(csquared(1:n_phi,r,:), 1.0d-6*csbar2) ))
-                    ovacc2 = Max(ovacc2, Maxval(csquared(1:n_phi,r,:)) &
-                             *OneOverRSquared(r)*l_l_plus1(la))
+                    ovacc2 = Max(ovacc2, cs2max*OneOverRSquared(r)*l_l_plus1(la))
                 Enddo
                 global_msgs(6) = ma2max
                 global_msgs(7) = ovacc2

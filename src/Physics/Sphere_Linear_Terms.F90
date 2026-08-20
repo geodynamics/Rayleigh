@@ -151,7 +151,24 @@ Contains
                 Call Initialize_Equation_Coefficients(vreq ,   tvar, 1, lp)
                 Call Initialize_Equation_Coefficients(vreq , rhovar, 1, lp)
                 Call Initialize_Equation_Coefficients(rhoeq,     vr, 1, lp)
-                Call Initialize_Equation_Coefficients(teq  ,     vr, 0, lp)
+                If ((thermal_variable .eq. 2) .and. &
+                    (energy_diffusion_type .eq. 2)) Then
+                    ! temperature-law cross diffusion on the rhovar column
+                    Call Initialize_Equation_Coefficients(teq, rhovar, 2, lp)
+                Endif
+                If (sigma_formulation) Then
+                    ! sigma row carries the radial compression (D1) as well
+                    Call Initialize_Equation_Coefficients(teq,     vr, 1, lp)
+                    If (energy_diffusion_type .eq. 1) Then
+                        ! entropy-law cross diffusion: full operator on rhovar
+                        Call Initialize_Equation_Coefficients(teq, rhovar, 2, lp)
+                    Else
+                        ! temperature-law cross term: dlnT_ref * d(lnrho)/dr
+                        Call Initialize_Equation_Coefficients(teq, rhovar, 1, lp)
+                    Endif
+                Else
+                    Call Initialize_Equation_Coefficients(teq,     vr, 0, lp)
+                Endif
                 If (spin_horizontal) Then
                     ! Spin cross columns (see the loader for the amps):
                     ! vr row <- pair (the d_r(div_h) supply, now implicit)
@@ -171,6 +188,11 @@ Contains
                         Call Initialize_Equation_Coefficients(vteq , rhovar, 0, lp)
                         Call Initialize_Equation_Coefficients(vpeq ,   tvar, 0, lp)
                         Call Initialize_Equation_Coefficients(vpeq , rhovar, 0, lp)
+                        If (sigma_formulation) Then
+                            ! sigma row: horizontal compression
+                            Call Initialize_Equation_Coefficients(teq, vtheta, 0, lp)
+                            Call Initialize_Equation_Coefficients(teq,   vphi, 0, lp)
+                        Endif
                     Endif
                 Endif
             Endif
@@ -775,7 +797,31 @@ Contains
                 Endif
 
                 ! T: (gamma/Pr) kappa [ D2 + (2/r + rp) D1 + Hlap ]
-                If (thermal_variable .eq. 2) Then
+                If ((thermal_variable .eq. 2) .and. &
+                    (energy_diffusion_type .eq. 2)) Then
+                   ! Entropy formulation, TEMPERATURE conduction (constant
+                   ! Prandtl, k = chi*rho*c_p): dS/dt = bigz*(g kappa/Pr)
+                   ! *Op[lnT], lnT = lnCs + S/bigz + (g-1)*lnrho.  Cross-
+                   ! diffusion on the conjugate combination; quadratics and
+                   ! the reference conduction source are explicit.
+                   amp = (gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 2, amp, lp)
+                   amp = ( 2.0d0*One_Over_R + ref%dlnrho + 2.0d0*ref%dlnT ) &
+                        *(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 1, amp, lp)
+                   amp = H_Laplacian*(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, tvar, 0, amp, lp)
+                   amp = bigz*(gas_gamma-1.0d0) &
+                        *(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, rhovar, 2, amp, lp)
+                   amp = bigz*(gas_gamma/Prandtl_Number)*kappa*diff_factor &
+                        *( (gas_gamma-1.0d0)*( 2.0d0*One_Over_R + ref%dlnrho &
+                           + 2.0d0*ref%dlnT ) + ref%dlnT )
+                   Call add_implicit_term(teq, rhovar, 1, amp, lp)
+                   amp = bigz*(gas_gamma-1.0d0)*H_Laplacian &
+                        *(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, rhovar, 0, amp, lp)
+                Else If (thermal_variable .eq. 2) Then
                    amp = (1.0d0/Prandtl_Number)*kappa*diff_factor
                    Call add_implicit_term(teq, tvar, 2, amp, lp)
                    amp = ( 2.0d0*One_Over_R + ref%dlnrho + ref%dlnT ) &
@@ -783,13 +829,46 @@ Contains
                    Call add_implicit_term(teq, tvar, 1, amp, lp)
                    amp = H_Laplacian*(1.0d0/Prandtl_Number)*kappa*diff_factor
                    Call add_implicit_term(teq, tvar, 0, amp, lp)
-                Else
+                Else If (sigma_formulation .and. (energy_diffusion_type .eq. 1)) Then
+                   ! Sigma form, ENTROPY diffusion (the tv=2 benchmark law
+                   ! div(kappa rho T grad S)/(rho T) written in sigma
+                   ! variables): with psi = sigma - (g-1)*Lambda = eps*S the
+                   ! linear operator is the tv=2 row acting on psi, i.e. the
+                   ! same coefficients on the tvar column and -(g-1) times
+                   ! them on the rhovar column.  The static reference piece
+                   ! (g-1)*op[ln rho_ref] is restored as an explicit source
+                   ! (products routine); quadratic remainder is explicit.
+                   amp = kappa*diff_factor/Prandtl_Number
+                   Call add_implicit_term(teq, tvar, 2, amp, lp)
+                   amp = -(gas_gamma-1.0d0)*amp
+                   Call add_implicit_term(teq, rhovar, 2, amp, lp)
+                   amp = ( 2.0d0*One_Over_R + ref%dlnrho + ref%dlnT ) &
+                        *kappa*diff_factor/Prandtl_Number
+                   Call add_implicit_term(teq, tvar, 1, amp, lp)
+                   amp = -(gas_gamma-1.0d0)*amp
+                   Call add_implicit_term(teq, rhovar, 1, amp, lp)
+                   amp = H_Laplacian*kappa*diff_factor/Prandtl_Number
+                   Call add_implicit_term(teq, tvar, 0, amp, lp)
+                   amp = -(gas_gamma-1.0d0)*amp
+                   Call add_implicit_term(teq, rhovar, 0, amp, lp)
+                Else If (sigma_formulation) Then
+                   ! Sigma form, TEMPERATURE conduction with spatially
+                   ! constant Prandtl number: k = chi*rho*c_p, chi =
+                   ! (gamma/Pr)*kappa, i.e. (1/(rho c_v)) div(k grad T)
+                   ! = (gamma/Pr) kappa [lap lnT + |grad lnT|^2
+                   !                     + grad ln rho . grad lnT].
+                   ! Linear part below; the rhovar D1 column carries the
+                   ! dlnT_ref cross term; quadratics + the reference
+                   ! conduction source are explicit (products routine).
                    amp = (gas_gamma/Prandtl_Number)*kappa*diff_factor
                    Call add_implicit_term(teq, tvar, 2, amp, lp)
-                   amp = ( 2.0d0*One_Over_R + ref%dlnrho )*(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   amp = ( 2.0d0*One_Over_R + ref%dlnrho + 2.0d0*ref%dlnT ) &
+                        *(gas_gamma/Prandtl_Number)*kappa*diff_factor
                    Call add_implicit_term(teq, tvar, 1, amp, lp)
                    amp = H_Laplacian*(gas_gamma/Prandtl_Number)*kappa*diff_factor
                    Call add_implicit_term(teq, tvar, 0, amp, lp)
+                   amp = ref%dlnT*(gas_gamma/Prandtl_Number)*kappa*diff_factor
+                   Call add_implicit_term(teq, rhovar, 1, amp, lp)
                 EndIf
             Endif
 
@@ -801,31 +880,49 @@ Contains
                 ! Temperature_Advection so the CN machinery owns these terms.
                 ! garr = inward gravity magnitude from general hydrostatics.
                 !
-                ! vr row:  -(g-1)*Tbar * dS/dr        - g*(g-1)*bigz*Tbar * dq/dr
-                !          + (garr/bigz) * S          + (g-1)*garr * q
-                amp = -(gas_gamma-1.0d0)*ref%temperature
-                Call add_implicit_term(vreq, tvar, 1, amp, lp)
-                amp = -(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
-                Call add_implicit_term(vreq, rhovar, 1, amp, lp)
-                amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
-                      + ref%temperature*ref%dlnrho )          ! garr(r) > 0 inward
-                amp = amp/bigz
-                Call add_implicit_term(vreq, tvar, 0, amp, lp)
-                amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
-                      + ref%temperature*ref%dlnrho )
-                amp = (gas_gamma-1.0d0)*amp
-                Call add_implicit_term(vreq, rhovar, 0, amp, lp)
+                If (sigma_formulation) Then
+                    ! vr row:  -(g-1)*bigz*Tbar * (d sigma/dr + d lnrho/dr)
+                    !          + garr * sigma   (no lnrho D0 piece: -g(e^sigma-1)
+                    !          carries no lnrho dependence)
+                    amp = -(gas_gamma-1.0d0)*bigz*ref%temperature
+                    Call add_implicit_term(vreq, tvar, 1, amp, lp)
+                    Call add_implicit_term(vreq, rhovar, 1, amp, lp)
+                    amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
+                          + ref%temperature*ref%dlnrho )      ! garr(r) > 0 inward
+                    Call add_implicit_term(vreq, tvar, 0, amp, lp)
+
+                    ! sigma row:  -(g-1)*(dvr/dr + 2 vr/r) - dlnT_bar * vr
+                    amp = -(gas_gamma-1.0d0)
+                    Call add_implicit_term(teq, vr, 1, amp, lp)
+                    amp = -(gas_gamma-1.0d0)*2.0d0*One_Over_R - ref%dlnT
+                    Call add_implicit_term(teq, vr, 0, amp, lp)
+                Else
+                    ! vr row:  -(g-1)*Tbar * dS/dr        - g*(g-1)*bigz*Tbar * dq/dr
+                    !          + (garr/bigz) * S          + (g-1)*garr * q
+                    amp = -(gas_gamma-1.0d0)*ref%temperature
+                    Call add_implicit_term(vreq, tvar, 1, amp, lp)
+                    amp = -(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
+                    Call add_implicit_term(vreq, rhovar, 1, amp, lp)
+                    amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
+                          + ref%temperature*ref%dlnrho )          ! garr(r) > 0 inward
+                    amp = amp/bigz
+                    Call add_implicit_term(vreq, tvar, 0, amp, lp)
+                    amp = -(gas_gamma-1.0d0)*bigz*( ref%dT &
+                          + ref%temperature*ref%dlnrho )
+                    amp = (gas_gamma-1.0d0)*amp
+                    Call add_implicit_term(vreq, rhovar, 0, amp, lp)
+
+                    ! S row:  -dSbar/dr * vr   (identically ~0 for adiabatic ref)
+                    amp = -bigz*( ref%dT/ref%temperature &
+                          + (1.0d0-gas_gamma)*ref%dlnrho )
+                    Call add_implicit_term(teq, vr, 0, amp, lp)
+                Endif
 
                 ! lnrho row:  -dvr/dr - (2/r + dlnrho_bar) * vr
                 amp = -1.0d0
                 Call add_implicit_term(rhoeq, vr, 1, amp, lp)
                 amp = -( 2.0d0*One_Over_R + ref%dlnrho )
                 Call add_implicit_term(rhoeq, vr, 0, amp, lp)
-
-                ! S row:  -dSbar/dr * vr   (identically ~0 for adiabatic ref)
-                amp = -bigz*( ref%dT/ref%temperature &
-                      + (1.0d0-gas_gamma)*ref%dlnrho )
-                Call add_implicit_term(teq, vr, 0, amp, lp)
 
                 If (spin_horizontal .and. implicit_horizontal_acoustics) Then
                     ! ---- Horizontal acoustics, Crank-Nicolson: amps below
@@ -841,16 +938,31 @@ Contains
                     Call add_implicit_term(rhoeq, vtheta, 0, amp, lp)
                     amp =  0.5d0*sLl*One_Over_R
                     Call add_implicit_term(rhoeq, vphi, 0, amp, lp)
-                    ! pair rows <- (S, lnrho): +/- 1.0*sL/r*[(g-1)*Tbar*S
-                    !                                 + g*(g-1)*bigz*Tbar*lnrho]
-                    amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*ref%temperature
-                    Call add_implicit_term(vteq, tvar, 0, amp, lp)
-                    amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
-                    Call add_implicit_term(vteq, rhovar, 0, amp, lp)
-                    amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*ref%temperature
-                    Call add_implicit_term(vpeq, tvar, 0, amp, lp)
-                    amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
-                    Call add_implicit_term(vpeq, rhovar, 0, amp, lp)
+                    If (sigma_formulation) Then
+                        ! pair rows <- (sigma, lnrho): +/- sL/r*(g-1)*bigz*Tbar
+                        ! on both columns; sigma row <- pair: -(g-1)*div_h.
+                        amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*bigz*ref%temperature
+                        Call add_implicit_term(vteq, tvar, 0, amp, lp)
+                        Call add_implicit_term(vteq, rhovar, 0, amp, lp)
+                        amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*bigz*ref%temperature
+                        Call add_implicit_term(vpeq, tvar, 0, amp, lp)
+                        Call add_implicit_term(vpeq, rhovar, 0, amp, lp)
+                        amp = -(gas_gamma-1.0d0)*0.5d0*sLl*One_Over_R
+                        Call add_implicit_term(teq, vtheta, 0, amp, lp)
+                        amp =  (gas_gamma-1.0d0)*0.5d0*sLl*One_Over_R
+                        Call add_implicit_term(teq, vphi, 0, amp, lp)
+                    Else
+                        ! pair rows <- (S, lnrho): +/- 1.0*sL/r*[(g-1)*Tbar*S
+                        !                                 + g*(g-1)*bigz*Tbar*lnrho]
+                        amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*ref%temperature
+                        Call add_implicit_term(vteq, tvar, 0, amp, lp)
+                        amp =  1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
+                        Call add_implicit_term(vteq, rhovar, 0, amp, lp)
+                        amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*ref%temperature
+                        Call add_implicit_term(vpeq, tvar, 0, amp, lp)
+                        amp = -1.0d0*sLl*One_Over_R*(gas_gamma-1.0d0)*gas_gamma*bigz*ref%temperature
+                        Call add_implicit_term(vpeq, rhovar, 0, amp, lp)
+                    Endif
                 Endif
             Endif
 
@@ -922,7 +1034,7 @@ Contains
         ! Sets boundary condition of indicated l-value (index lp)
         ! only.  Does not loop over lp.
         Implicit None
-        Real*8 :: samp,one
+        Real*8 :: samp,one,bcamp
         Integer, Intent(In) :: mode_ind
         Integer :: l, r,lp
         one = 1.0d0
@@ -966,9 +1078,16 @@ Contains
         ! Temperature Boundary Conditions 
         r = 1
         If (fix_tvar_top) Then
-
             Call Load_BC(lp,r,teq,tvar,one,0)    !upper boundary
-
+            If (fix_S_with_sigma) Then
+                ! pin S: row = sigma - (g-1)*ln(rho_tot)
+                bcamp = -(gas_gamma-1.0d0)
+                Call Load_BC(lp,r,teq,rhovar,bcamp,0)
+            Else If (fix_T_with_entropy) Then
+                ! pin lnT: row = S + bigz*(g-1)*ln(rho_tot)
+                bcamp = bigz*(gas_gamma-1.0d0)
+                Call Load_BC(lp,r,teq,rhovar,bcamp,0)
+            Endif
         Endif
         If (fix_dtdr_top) Then
             Call Load_BC(lp,r,teq,tvar,one,1)
@@ -977,6 +1096,13 @@ Contains
         r = N_R
         If (fix_tvar_bottom) Then
             Call Load_BC(lp,r,teq,tvar,one,0)    ! lower boundary
+            If (fix_S_with_sigma) Then
+                bcamp = -(gas_gamma-1.0d0)
+                Call Load_BC(lp,r,teq,rhovar,bcamp,0)
+            Else If (fix_T_with_entropy) Then
+                bcamp = bigz*(gas_gamma-1.0d0)
+                Call Load_BC(lp,r,teq,rhovar,bcamp,0)
+            Endif
         Endif
         If (fix_dtdr_bottom) Then
             Call Load_BC(lp,r,teq,tvar,one,1)

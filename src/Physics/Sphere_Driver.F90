@@ -76,7 +76,7 @@ Contains
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*120 :: dtstr, wtmstr, istr
+        Character*120 :: dtstr, wtmstr, istr, mastr
         Character(len=*), parameter ::   fmtstr = '(F14.4)'
         Character*256 :: checkpoint_input_file
 
@@ -178,8 +178,17 @@ Contains
                 Else
                    Write(wtmstr,sci_note_fmt) 0.0d0
                 Endif
-                Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
-                   //Trim(wtmstr))
+                If (acoustic_cfl) Then
+                    ! global_msgs(6) carries the cargo-reduced max Mach^2
+                    ! from the acoustic sweep; NaN here is the earliest
+                    ! console symptom of a diverging run.
+                    Write(mastr,sci_note_fmt) Sqrt(global_msgs(6))
+                    Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
+                       //Trim(wtmstr)//'   Ma: '//Trim(mastr))
+                Else
+                    Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
+                       //Trim(wtmstr))
+                Endif
                 Call Report_RSS(' VmHWM(rank0) MB:')
             Endif
             ! v14.9.3: leak hunt -- global max RSS across ranks at coarse

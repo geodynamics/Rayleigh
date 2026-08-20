@@ -72,9 +72,18 @@ Module Controls
     Logical :: spin_horizontal = .false.        !compressible horizontal pair in spin (q+/-) representation
     Logical :: implicit_compressible_diffusion = .false. ! CN treatment of radial diffusion (compressible only)
     Integer :: thermal_variable = 1 ! 1 = temperature (current path)
+    Logical :: sigma_formulation = .false. ! Derived, not a namelist input:
+                                            ! compressible + thermal_variable=1
+                                            ! is the sigma formulation
+                                            ! (tvar = sigma = ln(T/T_ref)).
+                                            ! Anelastic tv=1 is unaffected.
+    Integer :: energy_diffusion_type = 1 ! 1 = entropy diffusion (kappa rho T grad S; benchmark law)
+                                          ! 2 = temperature conduction, constant Prandtl (k = chi rho c_p)
+                                          ! Applies under BOTH thermal_variable settings; each
+                                          ! formulation carries the proper native/cross code path.
     Logical :: implicit_compressible_acoustics = .false. ! Tier-2: coupled implicit (vr,lnrho,S) radial-acoustic block
     Logical :: nulltest_deltas_zero = .false.       ! diagnostic: zero the conductive contrast
-    Logical :: implicit_horizontal_acoustics = .false.   ! horizontal acoustics into the coupled block; requires spin_horizontal + thermal_variable=2
+    Logical :: implicit_horizontal_acoustics = .false.   ! horizontal acoustics into the coupled block; requires spin_horizontal (tv=2 or sigma)
                                     ! 2 = entropy     (compressible treatment)
                                     ! (3 reserved: potential temperature)
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
@@ -120,7 +129,7 @@ Module Controls
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
                 & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
                 & chi_a_advect_reference_state, chi_p_advect_reference_state, &
-                & implicit_compressible_diffusion, thermal_variable, &
+                & implicit_compressible_diffusion, thermal_variable, energy_diffusion_type, &
                 & implicit_compressible_acoustics, spin_horizontal, &
                 & implicit_horizontal_acoustics, nulltest_deltas_zero
 
@@ -173,6 +182,7 @@ Module Controls
     ! I/O Controls
     ! What is normally sent to standard out can, if desired, be sent to a file instead
     Integer :: stdout_flush_interval = 50  ! Lines stored before stdout buffer is flushed to stdout_unit
+    Integer :: io_rank = 0  ! Set by Main before Initialize_Controls; rank 0 owns file-routed stdout
     Integer :: terminate_check_interval = 50  ! check for presence of terminate_file every n-th time step
     Integer :: statusline_interval = 1  ! output status information only every n-th time step
     Integer :: outputs_per_row = 1    ! Number of MPI ranks, per process row, that participate in parallel writes.
@@ -219,11 +229,25 @@ Contains
         ! acoustic/pressure couplings and the physical-space masking that
         ! balances them are thermal_variable=2 forms, so thermal_variable=1
         ! would load a partial, unbalanced operator.
-        If (spin_horizontal .and. (thermal_variable .ne. 2)) Then
-            Write(6,*) 'ERROR: spin_horizontal = .true. requires '// &
-                       'thermal_variable = 2 (entropy formulation).'
-            Write(6,*) 'The spin representation is not implemented for '// &
-                       'thermal_variable = 1.  Stopping.'
+        sigma_formulation = compressible .and. (thermal_variable .eq. 1)
+        If (spin_horizontal .and. (.not. compressible)) Then
+            Write(6,*) 'ERROR: spin_horizontal requires a compressible run.  Stopping.'
+            Stop
+        Endif
+        If (compressible .and. ((energy_diffusion_type .lt. 1) .or. &
+            (energy_diffusion_type .gt. 2))) Then
+            Write(6,*) 'ERROR: energy_diffusion_type must be 1 (entropy) or 2 (temperature).  Stopping.'
+            Stop
+        Endif
+        If ((thermal_variable .eq. 2) .and. (energy_diffusion_type .eq. 2) &
+            .and. (.not. implicit_compressible_diffusion)) Then
+            Write(6,*) 'ERROR: temperature diffusion under tv=2 requires '// &
+                       'implicit_compressible_diffusion.  Stopping.'
+            Stop
+        Endif
+        If (sigma_formulation .and. (.not. implicit_compressible_diffusion)) Then
+            Write(6,*) 'ERROR: sigma_formulation requires implicit_compressible_diffusion '// &
+                       '(the explicit full T-diffusion path is not sigma-aware).  Stopping.'
             Stop
         Endif
 
@@ -239,22 +263,22 @@ Contains
             Case('nofile')
                 Call stdout%init(6) ! Standard out, with effectively no buffering (line_count = 1)
             Case Default
-                ! All stdout written to file, flushed at user-defined flush interval
-                ofilename = Trim(my_path)//Trim(stdout_file)
-                Call stdout%init(116,line_count = stdout_flush_interval,filename=ofilename)
+                ! Rank 0 writes stdout to the named file, flushed at the
+                ! user-defined interval.  Other ranks keep unit 6: routing
+                ! every rank to one shared filename would have all ranks
+                ! open the same file, and any stray per-rank message
+                ! (errors, warnings) would clobber it.
+                If (io_rank .eq. 0) Then
+                    ofilename = Trim(my_path)//Trim(stdout_file)
+                    Call stdout%init(116,line_count = stdout_flush_interval,filename=ofilename)
+                Else
+                    Call stdout%init(6)
+                Endif
         End Select
         If (.not. inertia) Then
             Call stdout%print("Setting momentum_advection to False")
             momentum_advection = .false.
         Endif
-        If (spin_horizontal) Then
-            ! Version banner: every log self-identifies the spin branch build.
-            ! Bump the tag with every physics-relevant change to this branch.
-            Call stdout%print(" ")
-            Call stdout%print("== SPIN BRANCH v14.9.3.2 (HWM leak-hunt + argmax rank) ==")
-            Call stdout%print("   divl/supply: K*sqrt(L2); force bridge sqrt(2 pi); cross terms IMPLICIT (coupled block)")
-        Endif
-
         Call Initialize_IO_Format_Codes()
 
     End Subroutine Initialize_Controls

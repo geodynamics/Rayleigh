@@ -294,6 +294,13 @@ Contains
             call wsp_indices%Add_Field(dtdr,    config)
             call wsp_indices%Add_Field(d2tdr2,  config)
             call wsp_indices%Add_Field(drhodr,  config)
+            If ((sigma_formulation .and. (energy_diffusion_type .eq. 1)) .or. &
+                (compressible .and. (thermal_variable .eq. 2) &
+                 .and. (energy_diffusion_type .eq. 2))) Then
+                ! cross-diffusion configurations: the lnrho second derivative
+                ! is needed for the CN old-time application
+                call wsp_indices%Add_Field(d2rhodr2, config)
+            Endif
 
         Else
             call wsp_indices%Add_Field(d3Wdr3, config)
