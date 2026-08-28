@@ -131,8 +131,9 @@
     !j_cross_b_squared = j_cross_b_r**2 + j_cross_b_theta**2 + j_cross_b_phi**2
     !viscous_Force_squared = viscous_Force_r**2 + viscous_Force_theta**2 + viscous_Force_phi**2
     !pressure_Force_squared = pressure_Force_r**2 + pressure_Force_theta**2 + pressure_Force_phi**2
-    !Ageo_Coriolis_Force = (Coriolis_Force_r-pressure_Force_r)**2 + (Coriolis_Force_theta-pressure_Force_theta)**2 + (Coriolis_Force_theta-pressure_Force_theta)**2
-    !Ageost_Coriolis_Force = Coriolis - Pressure
+    !Ageo_Coriolis_Force = (Coriolis_Force_r-pressure_Force_r)**2 + (Coriolis_Force_theta-pressure_Force_theta)**2 + (Coriolis_Force_phi-pressure_Force_phi)**2
+    !Ageost_Coriolis_Force = Coriolis - Pressure  
+    ! (NOTE: the above comment doens't appear to be what's implemented, which instead uses coriolis + pressure)
 
 
     ! Define parameters for squared magnitudes 

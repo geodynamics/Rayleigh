@@ -173,7 +173,10 @@ Contains
 
         If (compute_quantity(curl_v_grad_v_abs)) Then
             DO_PSI
-                qty(PSI) =((one_over_r(r) * one_over_r(r) * buffer(PSI,dvtdt) * buffer(PSI,dvpdt) + &
+                ! Note: ref%density(r) multiplies every term of the r/theta/phi
+                ! component formulas above; factored out here rather than repeated
+                ! inside each of the three bracketed sums.
+                qty(PSI) = ref%density(r) * ((one_over_r(r) * one_over_r(r) * buffer(PSI,dvtdt) * buffer(PSI,dvpdt) + &
                            one_over_r(r) * one_over_r(r) * buffer(PSI,vtheta) * DDBUFF(PSI,dvpdtdt) - &
                            one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * buffer(PSI,vtheta) * buffer(PSI,vphi) + &
                            one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,dvtdt) * buffer(PSI,vphi) + &                         
@@ -342,7 +345,9 @@ Contains
         
         If (compute_quantity(curl_buoyancy_force_abs)) Then
             DO_PSI
-                qty(PSI) = ((ref%Buoyancy_Coeff(r) * csctheta(t) * buffer(PSI,dtdp))**2 + &
+                ! Note: radius(r) multiplies both curl_buoyancy_force_theta and
+                ! curl_buoyancy_force_phi above; factored out here.
+                qty(PSI) = radius(r) * ((ref%Buoyancy_Coeff(r) * csctheta(t) * buffer(PSI,dtdp))**2 + &
                            (-ref%Buoyancy_Coeff(r) * buffer(PSI,dtdt))**2)**(0.5)
             END_DO
             Call Add_Quantity(qty)
@@ -679,7 +684,7 @@ Contains
                 
         Endif
 
-        If (compute_quantity(curl_coriolis_force_phi) .or. compute_quantity(curl_coriolis_force_phi)) Then
+        If (compute_quantity(curl_coriolis_force_phi) .or. compute_quantity(curl_coriolis_force_phi_squared)) Then
             DO_PSI
                 qty(PSI) = ref%Coriolis_Coeff * ref%density(r) * (ref%dlnrho(r) * costheta(t) * buffer(PSI,vphi) + &
                             costheta(t) * buffer(PSI,dvpdr) - one_over_r(r) * sintheta(t) * buffer(PSI,dvpdr)) 

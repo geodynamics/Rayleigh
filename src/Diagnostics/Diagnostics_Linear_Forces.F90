@@ -27,11 +27,10 @@ Contains
 
     Subroutine Compute_Linear_Forces(buffer)
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
-        Real*8 :: pfactor(my_r%min:my_r%max)
         Call Compute_Buoyancy_Force(buffer)
-        Call Compute_Coriolis_Force(buffer, pfactor)
+        Call Compute_Coriolis_Force(buffer)
         Call Compute_Viscous_Force(buffer)
-        Call Compute_Pressure_Force(buffer, pfactor)
+        Call Compute_Pressure_Force(buffer)
     End Subroutine Compute_Linear_Forces
 
     Subroutine Compute_Buoyancy_Force(buffer)
@@ -107,13 +106,16 @@ Contains
 
     End Subroutine Compute_Buoyancy_Force
 
-    Subroutine Compute_Coriolis_Force(buffer, pfactor)
+    Subroutine Compute_Coriolis_Force(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Real*8  :: pfactor(my_r%min:my_r%max)
         Integer :: r,k, t
         Real*8 :: coriolis_term
         coriolis_term = ref%Coriolis_Coeff
+
+        pfactor(my_r%min:my_r%max) = ref%dpdr_w_term(my_r%min:my_r%max) &
+                                    /ref%density(my_r%min:my_r%max)
 
         If(compute_quantity(Coriolis_Force_r)) Then
             DO_PSI
@@ -379,7 +381,7 @@ Contains
 
     End Subroutine Compute_Viscous_Force
 
-    Subroutine Compute_Pressure_Force(buffer,  pfactor)
+    Subroutine Compute_Pressure_Force(buffer)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Real*8  :: pfactor(my_r%min:my_r%max)

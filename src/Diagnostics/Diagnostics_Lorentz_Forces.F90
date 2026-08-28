@@ -289,8 +289,7 @@ Contains
         Endif
         If (compute_quantity(j_cross_b_abs)) Then
             DO_PSI
-                qty(PSI) = (((buffer(PSI,curlbtheta)*buffer(PSI,bphi)- &
-                         & buffer(PSI,btheta)*buffer(PSI,curlbphi) ) *ref%Lorentz_Coeff)**2 + &
+                qty(PSI) = ((mean_3dbuffer(PSI,lforce_r) - mean_ell0buffer(r,lforce_r))**2 + &
                             (( buffer(PSI,br)*buffer(PSI,curlbphi)- &
                             buffer(PSI,curlbr)*buffer(PSI,bphi) )*ref%Lorentz_Coeff)**2 + &
                             (( buffer(PSI,curlbr)*buffer(PSI,btheta)- &

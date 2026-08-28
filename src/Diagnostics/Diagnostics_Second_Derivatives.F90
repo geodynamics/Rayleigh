@@ -193,6 +193,30 @@ Contains
             l_compute_bp_dd = .true.
         Endif
 
+        !//////////////////////////////////////////////////////
+        ! Curl-momentum advection force terms use second derivatives of all
+        ! three velocity components (each of curl_v_grad_v_r/theta/phi mixes
+        ! second derivatives of two different components; abs needs all three)
+        If (check(curl_v_grad_v_r) .or. check(curl_v_grad_v_r_squared) .or. &
+            check(curl_v_grad_v_theta) .or. check(curl_v_grad_v_theta_squared) .or. &
+            check(curl_v_grad_v_phi) .or. check(curl_v_grad_v_phi_squared) .or. &
+            check(curl_v_grad_v_abs) ) Then
+            l_compute_vr_dd = .true.
+            l_compute_vt_dd = .true.
+            l_compute_vp_dd = .true.
+        Endif
+
+        ! Curl-momentum magnetic (J x B) force terms likewise use second
+        ! derivatives of all three magnetic field components
+        If (check(curl_j_cross_b_r) .or. check(curl_j_cross_b_r_squared) .or. &
+            check(curl_j_cross_b_theta) .or. check(curl_j_cross_b_theta_squared) .or. &
+            check(curl_j_cross_b_phi) .or. check(curl_j_cross_b_phi_squared) .or. &
+            check(curl_j_cross_b_abs) ) Then
+            l_compute_br_dd = .true.
+            l_compute_bt_dd = .true.
+            l_compute_bp_dd = .true.
+        Endif
+
         ! Execute a lot of compute_q logic here to see if the
         ! different compute_xx variables should be set to true.
 
