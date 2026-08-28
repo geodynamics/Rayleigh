@@ -159,9 +159,8 @@ Contains
                                 buffer(PSI,dvpdt)) + &
                             buffer(PSI,dvpdt) * one_over_r(r) * &
                             (csctheta(t) * buffer(PSI,dvrdp) - buffer(PSI,vphi)))
-                                
             END_DO
-            If (compute_quantity(curl_v_grad_v_theta)) Call Add_Quantity(qty)
+            If (compute_quantity(curl_v_grad_v_phi)) Call Add_Quantity(qty)
             If (compute_quantity(curl_v_grad_v_phi_squared)) Then
                 DO_PSI
                     qty(PSI) = qty(PSI)*qty(PSI)
