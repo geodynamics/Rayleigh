@@ -34,6 +34,18 @@ Module Spherical_IO
 #endif
     Use Parallel_IO
     Implicit None
+
+    ! Interface shared by Sometimes_Compute and Compute_Quantity (below), so that
+    ! trigger-code logic used to decide whether a set of diagnostics is ever needed
+    ! (sometimes_compute) or is needed this iteration (compute_quantity) can be
+    ! written once and parameterized by which query function to use.
+    Abstract Interface
+        Function Quantity_Check_If(qval) result(yesno)
+            Integer, Intent(In) :: qval
+            Logical :: yesno
+        End Function Quantity_Check_If
+    End Interface
+
     ! This module contains routines for outputing spherical data as:
     ! 1. Spherical_3D
     ! 2. Shell_Avgs

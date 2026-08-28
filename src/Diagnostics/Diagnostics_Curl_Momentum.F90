@@ -536,6 +536,85 @@ Contains
 
     End Subroutine Compute_Curl_Viscous_Force
 
+    Subroutine Vforce_Derivative_Logic(check, compute_vforce_i_dj)
+        ! Trigger-code logic shared between the once-at-startup buffer-sizing
+        ! pass (check => Sometimes_Compute, decides which vforce fields ever
+        ! need derivatives, for vfdindmap/buffer sizing) and the per-iteration
+        ! recheck of whether Grad_Viscous_Force needs to run this iteration
+        ! (check => Compute_Quantity).
+        Implicit None
+        Procedure(Quantity_Check_If) :: check
+        Logical, Intent(Out) :: compute_vforce_i_dj(9,3)
+        Integer :: vfoff
+
+        compute_vforce_i_dj = .false.
+
+        If (check(curl_viscous_force_r) .or. &
+            check(curl_viscous_force_r_squared)) Then
+            compute_vforce_i_dj(2,3) = .true.
+            compute_vforce_i_dj(3,2) = .true.
+        Endif
+
+        If (check(curl_viscous_force_theta) .or. &
+            check(curl_viscous_force_theta_squared)) Then
+            compute_vforce_i_dj(1,3) = .true.
+            compute_vforce_i_dj(3,1) = .true.
+        Endif
+
+        If (check(curl_viscous_force_phi) .or. &
+            check(curl_viscous_force_phi_squared)) Then
+            compute_vforce_i_dj(1,2) = .true.
+            compute_vforce_i_dj(2,1) = .true.
+        Endif
+
+        vfoff = 3
+        If (check(curl_viscous_pforce_r)) Then
+            compute_vforce_i_dj(vfoff+2,3) = .true.
+            compute_vforce_i_dj(vfoff+3,2) = .true.
+        Endif
+
+        If (check(curl_viscous_pforce_theta)) Then
+            compute_vforce_i_dj(vfoff+1,3) = .true.
+            compute_vforce_i_dj(vfoff+3,1) = .true.
+        Endif
+
+        If (check(curl_viscous_pforce_phi)) Then
+            compute_vforce_i_dj(vfoff+1,2) = .true.
+            compute_vforce_i_dj(vfoff+2,1) = .true.
+        Endif
+
+        vfoff = 6
+        If (check(curl_viscous_mforce_r)) Then
+            compute_vforce_i_dj(vfoff+2,3) = .true.
+            compute_vforce_i_dj(vfoff+3,2) = .true.
+        Endif
+
+        If (check(curl_viscous_mforce_theta)) Then
+            compute_vforce_i_dj(vfoff+1,3) = .true.
+            compute_vforce_i_dj(vfoff+3,1) = .true.
+        Endif
+
+        If (check(curl_viscous_mforce_phi)) Then
+            compute_vforce_i_dj(vfoff+1,2) = .true.
+            compute_vforce_i_dj(vfoff+2,1) = .true.
+        Endif
+
+    End Subroutine Vforce_Derivative_Logic
+
+    Function Vforce_Derivatives_Needed() result(needed)
+        ! Per-iteration determination of whether Grad_Viscous_Force needs to
+        ! run, via compute_quantity (this iteration's menu) rather than
+        ! sometimes_compute, using the same trigger-code logic as
+        ! Initialize_Grad_Viscous_Force (Vforce_Derivative_Logic).
+        Implicit None
+        Logical :: needed
+        Logical :: compute_vforce_i_dj(9,3)
+
+        Call Vforce_Derivative_Logic(Compute_Quantity, compute_vforce_i_dj)
+        needed = any(compute_vforce_i_dj)
+
+    End Function Vforce_Derivatives_Needed
+
     Subroutine Initialize_Grad_Viscous_Force()
         Implicit None
         integer :: nvfind, nvfdind, vfoff
@@ -565,69 +644,19 @@ Contains
         dvfm_p_dt = -1
 
         vf_i = [vf_r, vf_t, vf_p, vfp_r, vfp_t, vfp_p, vfm_r, vfm_t, vfm_p]
-        compute_vforce_i_dj = .false.
 
-        vfoff = 0
-        If (sometimes_compute(curl_viscous_force_r) .or. &
-            sometimes_compute(curl_viscous_force_r_squared)) Then
-            compute_vforce_i_dj(2,3) = .true.
-            compute_vforce_i_dj(3,2) = .true.
-        Endif
-
-        If (sometimes_compute(curl_viscous_force_theta) .or. &
-            sometimes_compute(curl_viscous_force_theta_squared)) Then
-            compute_vforce_i_dj(1,3) = .true.
-            compute_vforce_i_dj(3,1) = .true.
-        Endif
-
-        If (sometimes_compute(curl_viscous_force_phi) .or. &
-            sometimes_compute(curl_viscous_force_phi_squared)) Then
-            compute_vforce_i_dj(1,2) = .true.
-            compute_vforce_i_dj(2,1) = .true.
-        Endif
-
-        vfoff = 3
-        If (sometimes_compute(curl_viscous_pforce_r)) Then
-            compute_vforce_i_dj(vfoff+2,3) = .true.
-            compute_vforce_i_dj(vfoff+3,2) = .true.
-        Endif
-
-        If (sometimes_compute(curl_viscous_pforce_theta)) Then
-            compute_vforce_i_dj(vfoff+1,3) = .true.
-            compute_vforce_i_dj(vfoff+3,1) = .true.
-        Endif
-
-        If (sometimes_compute(curl_viscous_pforce_phi)) Then
-            compute_vforce_i_dj(vfoff+1,2) = .true.
-            compute_vforce_i_dj(vfoff+2,1) = .true.
-        Endif
-
-        vfoff = 6
-        If (sometimes_compute(curl_viscous_mforce_r)) Then
-            compute_vforce_i_dj(vfoff+2,3) = .true.
-            compute_vforce_i_dj(vfoff+3,2) = .true.
-        Endif
-
-        If (sometimes_compute(curl_viscous_mforce_theta)) Then
-            compute_vforce_i_dj(vfoff+1,3) = .true.
-            compute_vforce_i_dj(vfoff+3,1) = .true.
-        Endif
-
-        If (sometimes_compute(curl_viscous_mforce_phi)) Then
-            compute_vforce_i_dj(vfoff+1,2) = .true.
-            compute_vforce_i_dj(vfoff+2,1) = .true.
-        Endif
+        Call Vforce_Derivative_Logic(Sometimes_Compute, compute_vforce_i_dj)
 
         ! work out how many vf fields we'll be taking the derivative of
         nvffields = count(count(compute_vforce_i_dj, dim=2) .gt. 0)
         Allocate(vfdindmap(nvffields,4))
         vfdindmap(:,:) = -1
-        need_vforce_derivatives = nvffields .gt. 0
-        
+
+
         ! next assign indices to vf_i and vforce derivative entries
         ! this loop is designed to make sure the new derivative fields are indexed
         ! in r, t, p order so that we can grow the buffers appropriately
-        nvfdind = 0
+        nvfdind = nvffields
         do j = 1, 3
             nvfind = 0
             do i = 1, 9
@@ -690,6 +719,7 @@ Contains
 
         call d_vforce_buffer%construct('p3b')
         d_vforce_buffer%config = 'p3b'
+        d_vforce_buffer%p3b = 0.0d0
 
         ! load the fields we want to take derivatives of
         do i = 1, nvffields

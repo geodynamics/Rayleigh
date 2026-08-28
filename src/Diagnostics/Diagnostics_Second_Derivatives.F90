@@ -33,193 +33,226 @@ Module Diagnostics_Second_Derivatives
 
     Integer, Allocatable :: ddindmap(:,:)
     Integer :: nddfields
-    Logical :: compute_vr_dd   = .false.
-    Logical :: compute_vt_dd   = .false.
-    Logical :: compute_vp_dd   = .false.
 
-    Logical :: compute_pvar_dd = .false.
-    Logical :: compute_tvar_dd = .false.
-
-    Logical :: compute_br_dd   = .false.
-    Logical :: compute_bt_dd   = .false.
-    Logical :: compute_bp_dd   = .false.
 Contains
 
-    Subroutine Init_Derivative_Logic()
+    Subroutine Second_Derivative_Logic(check, l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd, &
+                                 l_compute_tvar_dd, l_compute_pvar_dd, &
+                                 l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd, need_dd)
+        ! Trigger-code logic shared between the once-at-startup buffer-sizing
+        ! pass (check => Sometimes_Compute, decides which fields ever need
+        ! second derivatives, for ddindmap/buffer sizing) and the per-iteration
+        ! recheck of whether Compute_Second_Derivatives needs to run this
+        ! iteration (check => Compute_Quantity).
         IMPLICIT NONE
+        Procedure(Quantity_Check_If) :: check
+        Logical, Intent(Out) :: l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd
+        Logical, Intent(Out) :: l_compute_tvar_dd, l_compute_pvar_dd
+        Logical, Intent(Out) :: l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd
+        Logical, Intent(Out) :: need_dd
         Integer :: i
+
+        l_compute_vr_dd   = .false.
+        l_compute_vt_dd   = .false.
+        l_compute_vp_dd   = .false.
+        l_compute_tvar_dd = .false.
+        l_compute_pvar_dd = .false.
+        l_compute_br_dd   = .false.
+        l_compute_bt_dd   = .false.
+        l_compute_bp_dd   = .false.
+        need_dd      = .false.
+
         !///////////////////////////////////////////////////////
         ! Check to see if the user has specified any of the second
         ! derivatives individually
         do i = dv_r_d2r, dvm_r_d2tp,3
-            if (sometimes_compute(i)) compute_vr_dd = .true.
+            if (check(i)) l_compute_vr_dd = .true.
         enddo
 
         do i = dv_theta_d2r, dvm_theta_d2tp,3
-            if (sometimes_compute(i)) compute_vt_dd = .true.
+            if (check(i)) l_compute_vt_dd = .true.
         enddo
         do i = dv_phi_d2r, dvm_phi_d2tp,3
-            if (sometimes_compute(i)) compute_vp_dd = .true.
+            if (check(i)) l_compute_vp_dd = .true.
         enddo
 
         do i = db_r_d2r, dbm_r_d2tp,3
-            if (sometimes_compute(i)) compute_br_dd = .true.
+            if (check(i)) l_compute_br_dd = .true.
         enddo
 
         do i = db_theta_d2r, dbm_theta_d2tp,3
-            if (sometimes_compute(i)) compute_bt_dd = .true.
+            if (check(i)) l_compute_bt_dd = .true.
         enddo
 
         do i = db_phi_d2r, dbm_phi_d2tp,3
-            if (sometimes_compute(i)) compute_bp_dd = .true.
+            if (check(i)) l_compute_bp_dd = .true.
         enddo
 
         do i = entropy_d2r, entropy_m_d2tp,2
-            if (sometimes_compute(i)) compute_tvar_dd = .true.
+            if (check(i)) l_compute_tvar_dd = .true.
         enddo
 
         do i = pressure_d2r, pressure_m_d2tp,2
-            if (sometimes_compute(i)) compute_pvar_dd = .true.
+            if (check(i)) l_compute_pvar_dd = .true.
         enddo
 
 
         !//////////////////////////////////////////////////////////////////
         ! Terms related to viscosity
-        If (sometimes_compute(visc_work) .or. &
-            sometimes_compute(viscous_force_r) .or. &
-            sometimes_compute(curl_viscous_force_theta) .or. &
-            sometimes_compute(curl_viscous_force_theta_squared) .or. &
-            sometimes_compute(curl_viscous_force_phi) .or. &
-            sometimes_compute(curl_viscous_force_phi_squared) .or. &
-            sometimes_compute(viscous_pforce_r) .or. &
-            sometimes_compute(curl_viscous_pforce_theta) .or. &
-            sometimes_compute(curl_viscous_pforce_phi) .or. &
-            sometimes_compute(viscous_mforce_r) .or. &
-            sometimes_compute(curl_viscous_mforce_theta) .or. &
-            sometimes_compute(curl_viscous_mforce_phi)) Then
-            compute_vr_dd = .true.
+        If (check(visc_work) .or. &
+            check(viscous_force_r) .or. &
+            check(curl_viscous_force_theta) .or. &
+            check(curl_viscous_force_theta_squared) .or. &
+            check(curl_viscous_force_phi) .or. &
+            check(curl_viscous_force_phi_squared) .or. &
+            check(viscous_pforce_r) .or. &
+            check(curl_viscous_pforce_theta) .or. &
+            check(curl_viscous_pforce_phi) .or. &
+            check(viscous_mforce_r) .or. &
+            check(curl_viscous_mforce_theta) .or. &
+            check(curl_viscous_mforce_phi)) Then
+            l_compute_vr_dd = .true.
         Endif
 
 
-        If (sometimes_compute(visc_work_pp) .or. &
-            sometimes_compute(viscous_force_theta) .or. &
-            sometimes_compute(curl_viscous_force_r) .or. &
-            sometimes_compute(curl_viscous_force_r_squared) .or. &
-            sometimes_compute(curl_viscous_force_phi) .or. &
-            sometimes_compute(curl_viscous_force_phi_squared) .or. &
-            sometimes_compute(viscous_pforce_theta) .or. &
-            sometimes_compute(curl_viscous_pforce_r) .or. &
-            sometimes_compute(curl_viscous_pforce_phi) .or. &
-            sometimes_compute(viscous_mforce_theta) .or. &
-            sometimes_compute(curl_viscous_mforce_r) .or. &
-            sometimes_compute(curl_viscous_mforce_phi)) Then
-            compute_vt_dd = .true.
+        If (check(visc_work_pp) .or. &
+            check(viscous_force_theta) .or. &
+            check(curl_viscous_force_r) .or. &
+            check(curl_viscous_force_r_squared) .or. &
+            check(curl_viscous_force_phi) .or. &
+            check(curl_viscous_force_phi_squared) .or. &
+            check(viscous_pforce_theta) .or. &
+            check(curl_viscous_pforce_r) .or. &
+            check(curl_viscous_pforce_phi) .or. &
+            check(viscous_mforce_theta) .or. &
+            check(curl_viscous_mforce_r) .or. &
+            check(curl_viscous_mforce_phi)) Then
+            l_compute_vt_dd = .true.
         Endif
 
-        If (sometimes_compute(visc_work_mm) .or. & 
-            sometimes_compute(viscous_force_phi) .or. &
-            sometimes_compute(curl_viscous_force_r) .or. &
-            sometimes_compute(curl_viscous_force_r_squared) .or. &
-            sometimes_compute(curl_viscous_force_theta) .or. &
-            sometimes_compute(curl_viscous_force_theta_squared) .or. &
-            sometimes_compute(viscous_pforce_phi) .or. &
-            sometimes_compute(curl_viscous_pforce_r) .or. &
-            sometimes_compute(curl_viscous_pforce_theta) .or. &
-            sometimes_compute(viscous_mforce_phi) .or. &
-            sometimes_compute(curl_viscous_mforce_r) .or. &
-            sometimes_compute(curl_viscous_mforce_theta)) Then
-            compute_vp_dd = .true.
+        If (check(visc_work_mm) .or. &
+            check(viscous_force_phi) .or. &
+            check(curl_viscous_force_r) .or. &
+            check(curl_viscous_force_r_squared) .or. &
+            check(curl_viscous_force_theta) .or. &
+            check(curl_viscous_force_theta_squared) .or. &
+            check(viscous_pforce_phi) .or. &
+            check(curl_viscous_pforce_r) .or. &
+            check(curl_viscous_pforce_theta) .or. &
+            check(viscous_mforce_phi) .or. &
+            check(curl_viscous_mforce_r) .or. &
+            check(curl_viscous_mforce_theta)) Then
+            l_compute_vp_dd = .true.
         Endif
 
         Do i = visc_flux_r, visc_fluxmm_r, 3
-            if (sometimes_compute(i)) compute_vr_dd = .true.
+            if (check(i)) l_compute_vr_dd = .true.
         Enddo
         Do i = visc_flux_theta, visc_fluxmm_theta, 3
-            if (sometimes_compute(i)) compute_vt_dd = .true.
+            if (check(i)) l_compute_vt_dd = .true.
         Enddo
         Do i = visc_flux_phi, visc_fluxmm_phi, 3
-            if (sometimes_compute(i)) compute_vp_dd = .true.
+            if (check(i)) l_compute_vp_dd = .true.
         Enddo
 
 
         !/////////////////////////////////////////////////////////////////
         ! Check to see if we are computing thermal diffusion terms
-        If (sometimes_compute(s_diff) .or. sometimes_compute(sp_diff) &
-            .or. sometimes_compute(sm_diff) ) Then
-            compute_tvar_dd = .true.
-            compute_pvar_dd = .true.
+        If (check(s_diff) .or. check(sp_diff) &
+            .or. check(sm_diff) ) Then
+            l_compute_tvar_dd = .true.
+            l_compute_pvar_dd = .true.
         Endif
 
         do i = s_diff_r, sm_diff_phi
-            if (sometimes_compute(i)) compute_tvar_dd = .true.
+            if (check(i)) l_compute_tvar_dd = .true.
         enddo
 
         !//////////////////////////////////////////////////////
         ! Are we computing magnetic diffusion terms?
-        If (sometimes_compute(induct_diff_r) .or. sometimes_compute(induct_diff_bm_r) &
-            .or. sometimes_compute(induct_diff_bp_r) ) Then
-            compute_br_dd=.true.
+        If (check(induct_diff_r) .or. check(induct_diff_bm_r) &
+            .or. check(induct_diff_bp_r) ) Then
+            l_compute_br_dd=.true.
         Endif
 
-        If (sometimes_compute(induct_diff_theta) .or. sometimes_compute(induct_diff_bm_theta) &
-            .or. sometimes_compute(induct_diff_bp_theta) ) Then
-            compute_bt_dd=.true.
+        If (check(induct_diff_theta) .or. check(induct_diff_bm_theta) &
+            .or. check(induct_diff_bp_theta) ) Then
+            l_compute_bt_dd=.true.
         Endif
 
-        If (sometimes_compute(induct_diff_phi) .or. sometimes_compute(induct_diff_bm_phi) &
-            .or. sometimes_compute(induct_diff_bp_phi) ) Then
-            compute_bp_dd=.true.
+        If (check(induct_diff_phi) .or. check(induct_diff_bm_phi) &
+            .or. check(induct_diff_bp_phi) ) Then
+            l_compute_bp_dd=.true.
         Endif
 
 
-        If (sometimes_compute(idiff_work) .or. sometimes_compute(idiff_work_pp) &
-            .or. sometimes_compute(idiff_work_mm) ) Then
-            compute_br_dd = .true.
-            compute_bt_dd = .true.
-            compute_bp_dd = .true.
+        If (check(idiff_work) .or. check(idiff_work_pp) &
+            .or. check(idiff_work_mm) ) Then
+            l_compute_br_dd = .true.
+            l_compute_bt_dd = .true.
+            l_compute_bp_dd = .true.
         Endif
 
         ! Execute a lot of compute_q logic here to see if the
-        ! different compute_xx_dd variables should be set to true.
+        ! different compute_xx variables should be set to true.
 
-        If (compute_vr_dd) need_second_derivatives = .true.
-        If (compute_vt_dd) need_second_derivatives = .true.
-        If (compute_vp_dd) need_second_derivatives = .true.
+        If (l_compute_vr_dd) need_dd = .true.
+        If (l_compute_vt_dd) need_dd = .true.
+        If (l_compute_vp_dd) need_dd = .true.
 
-        If (compute_tvar_dd) need_second_derivatives = .true.
-        If (compute_pvar_dd) need_second_derivatives = .true.
+        If (l_compute_tvar_dd) need_dd = .true.
+        If (l_compute_pvar_dd) need_dd = .true.
 
-        If (compute_br_dd) need_second_derivatives = .true.
-        If (compute_bt_dd) need_second_derivatives = .true.
-        If (compute_bp_dd) need_second_derivatives = .true.
+        If (l_compute_br_dd) need_dd = .true.
+        If (l_compute_bt_dd) need_dd = .true.
+        If (l_compute_bp_dd) need_dd = .true.
 
         ! Turbulent KE generation
-        If (sometimes_compute(production_buoyant_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(production_shear_pKE)) need_second_derivatives = .true.
+        If (check(production_buoyant_pKE)) need_dd = .true.
+        If (check(production_shear_pKE)) need_dd = .true.
 
-        If (sometimes_compute(dissipation_viscous_pKE)) need_second_derivatives = .true.
+        If (check(dissipation_viscous_pKE)) need_dd = .true.
 
-        If (sometimes_compute(transport_pressure_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(transport_viscous_pKE)) Then
-            need_second_derivatives = .true.
-            compute_vr_dd = .true.
-            compute_vt_dd = .true.
-            compute_vp_dd = .true.
+        If (check(transport_pressure_pKE)) need_dd = .true.
+        If (check(transport_viscous_pKE)) Then
+            need_dd = .true.
+            l_compute_vr_dd = .true.
+            l_compute_vt_dd = .true.
+            l_compute_vp_dd = .true.
         Endif
-        If (sometimes_compute(transport_turbadvect_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(transport_meanadvect_pKE)) need_second_derivatives = .true.
+        If (check(transport_turbadvect_pKE)) need_dd = .true.
+        If (check(transport_meanadvect_pKE)) need_dd = .true.
 
-        If (sometimes_compute(rflux_pressure_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(rflux_viscous_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(rflux_turbadvect_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(rflux_meanadvect_pKE)) need_second_derivatives = .true.
+        If (check(rflux_pressure_pKE)) need_dd = .true.
+        If (check(rflux_viscous_pKE)) need_dd = .true.
+        If (check(rflux_turbadvect_pKE)) need_dd = .true.
+        If (check(rflux_meanadvect_pKE)) need_dd = .true.
 
-        If (sometimes_compute(thetaflux_pressure_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(thetaflux_viscous_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(thetaflux_turbadvect_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(thetaflux_meanadvect_pKE)) need_second_derivatives = .true.
+        If (check(thetaflux_pressure_pKE)) need_dd = .true.
+        If (check(thetaflux_viscous_pKE)) need_dd = .true.
+        If (check(thetaflux_turbadvect_pKE)) need_dd = .true.
+        If (check(thetaflux_meanadvect_pKE)) need_dd = .true.
 
-    End Subroutine Init_Derivative_Logic
+    End Subroutine Second_Derivative_Logic
+
+    Function Second_Derivatives_Needed() result(needed)
+        ! Per-iteration determination of whether Compute_Second_Derivatives
+        ! needs to run, via compute_quantity (this iteration's menu) rather
+        ! than sometimes_compute. The per-field compute_xx flags are
+        ! local/transient here -- they do not affect the compute_xx_dd locals
+        ! in Initialize_Second_Derivatives, which are fixed once, at startup,
+        ! since they size ddindmap.
+        Implicit None
+        Logical :: needed
+        Logical :: l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd
+        Logical :: l_compute_tvar_dd, l_compute_pvar_dd
+        Logical :: l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd
+
+        Call Second_Derivative_Logic(Compute_Quantity, l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd, &
+                               l_compute_tvar_dd, l_compute_pvar_dd, &
+                               l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd, needed)
+
+    End Function Second_Derivatives_Needed
 
     Subroutine Initialize_Second_Derivatives()
         ! Initializes all the indexing related to computing and
@@ -228,10 +261,19 @@ Contains
         IMPLICIT NONE
         INTEGER :: ndind
         INTEGER :: ddfcount(3,2)
+        Logical :: compute_vr_dd, compute_vt_dd, compute_vp_dd
+        Logical :: compute_tvar_dd, compute_pvar_dd
+        Logical :: compute_br_dd, compute_bt_dd, compute_bp_dd
+        Logical :: need_dd_at_init
 
-
-
-        Call Init_Derivative_Logic()
+        ! Once-at-startup pass: decides, via sometimes_compute (the menu across
+        ! the whole run), which fields ever need second derivatives taken, for
+        ! sizing ddindmap/the d2buffer below. The resulting need_dd_at_init is
+        ! discarded; whether Compute_Second_Derivatives runs is refreshed every
+        ! iteration by Second_Derivatives_Needed().
+        Call Second_Derivative_Logic(Sometimes_Compute, compute_vr_dd, compute_vt_dd, compute_vp_dd, &
+                               compute_tvar_dd, compute_pvar_dd, &
+                               compute_br_dd, compute_bt_dd, compute_bp_dd, need_dd_at_init)
 
 
         nddfields = 0   ! Number of fields whose second derivatives we want

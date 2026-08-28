@@ -130,8 +130,6 @@ Module Diagnostics_Base
     Integer :: dbtdrdr, dbtdtdt, dbtdpdp, dbtdrdt, dbtdrdp, dbtdtdp
     Integer :: dbpdrdr, dbpdtdt, dbpdpdp, dbpdrdt, dbpdrdp, dbpdtdp
 
-    Logical :: need_second_derivatives = .false.
-
     !////////////////////////////////////////////////////////////////////////////
     ! Variables related to mean-correction
     ! (we only correct radial terms, but retain logic for horizontal terms)
@@ -148,9 +146,9 @@ Module Diagnostics_Base
     ! Variables related to viscous force
     Integer :: nvf = 0
     Real*8, Allocatable :: vforce_buffer(:,:,:,:)
-    Integer :: vf_r, vf_t, vf_p
-    Integer :: vfp_r, vfp_t, vfp_p
-    Integer :: vfm_r, vfm_t, vfm_p
+    Integer :: vf_r = -1, vf_t = -1, vf_p = -1
+    Integer :: vfp_r = -1, vfp_t = -1, vfp_p = -1
+    Integer :: vfm_r = -1, vfm_t = -1, vfm_p = -1
 
     ! A special buffer used for holding first derivatives of the viscous forces at output time
     Type(SphericalBuffer) :: d_vforce_buffer
@@ -163,8 +161,6 @@ Module Diagnostics_Base
     Integer :: dvfm_r_dt, dvfm_r_dp
     Integer :: dvfm_t_dr, dvfm_t_dp
     Integer :: dvfm_p_dr, dvfm_p_dt
-
-    Logical :: need_vforce_derivatives = .false.
 
 Contains
 

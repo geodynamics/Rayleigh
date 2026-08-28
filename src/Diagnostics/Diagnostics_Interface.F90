@@ -158,6 +158,8 @@ Contains
         Real*8 :: over_n_phi
 
         Integer :: nfields, bdims(1:4), pass_num
+        Logical :: need_vforce_derivatives
+        Logical :: need_second_derivatives
 
 
         If (time_to_output(iteration)) Then
@@ -177,7 +179,7 @@ Contains
 
             Call Initialize_Mean_Correction()
 
-
+            need_second_derivatives = Second_Derivatives_Needed()
             IF (need_second_derivatives) THEN
                 Call Compute_Second_Derivatives(buffer)
             ENDIF
@@ -190,6 +192,7 @@ Contains
 
             Call Viscous_Force(buffer) ! Pre-calculate the viscous forces and place them in the vforce_buffer
 
+            need_vforce_derivatives = Vforce_Derivatives_Needed()
             if (need_vforce_derivatives) then
                 Call Grad_Viscous_Force()
             endif
@@ -262,6 +265,9 @@ Contains
                 Call d2buffer%deconstruct('p3a')
                 DeAllocate(d2_ell0,d2_m0,d2_fbuffer)
             ENDIF
+            if (need_vforce_derivatives) then
+                Call d_vforce_buffer%deconstruct('p3a')
+            endif
             Call Finalize_Mean_Correction()
         Endif  ! time_to_output(iteration)
     End Subroutine PS_Output
