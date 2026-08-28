@@ -171,6 +171,136 @@ Contains
 
         Endif
 
+        If (compute_quantity(curl_v_grad_v_abs)) Then
+            DO_PSI
+                qty(PSI) =((one_over_r(r) * one_over_r(r) * buffer(PSI,dvtdt) * buffer(PSI,dvpdt) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vtheta) * DDBUFF(PSI,dvpdtdt) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * buffer(PSI,vtheta) * buffer(PSI,vphi) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,dvtdt) * buffer(PSI,vphi) + &                         
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,vtheta) * &
+                           buffer(PSI,dvpdt) - &
+                           one_over_r(r) * buffer(PSI,dvtdt) * buffer(PSI,dvtdp) - &
+                           one_over_r(r) * buffer(PSI,vtheta) * DDBUFF(PSI,dvtdtdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vr) * buffer(PSI,dvrdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,dvrdt) * buffer(PSI,dvrdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,vr) * DDBUFF(PSI,dvrdtdp) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,dvrdt) * buffer(PSI,vphi) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vr) * buffer(PSI,dvpdt) + &
+                           one_over_r(r) * buffer(PSI,dvrdt) * buffer(PSI,dvpdr) + &
+                           one_over_r(r) * buffer(PSI,vr) * DDBUFF(PSI,dvpdrdt) + &                             !(first part ended)
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vtheta) * buffer(PSI,dvpdt) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           costheta(t) * costheta(t) * buffer(PSI,vtheta) * buffer(PSI,vphi) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vtheta) * buffer(PSI,dvtdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           costheta(t) * buffer(PSI,vr) * buffer(PSI,dvrdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vr) * buffer(PSI,vphi) + &
+                           one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,vr) * &
+                           buffer(PSI,dvpdr) - &    !(second part ended)
+                           one_over_r(r) * buffer(PSI,vr) * buffer(PSI,dvtdp) - &
+                           one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,dvrdp) - &
+                           buffer(PSI,dvrdp) * buffer(PSI,dvtdr) - &
+                           buffer(PSI,vr) * DDBUFF(PSI,dvtdrdp) + &
+                           buffer(PSI,dvrdp) * buffer(PSI,dvrdt) + & 
+                           buffer(PSI,vr) * DDBUFF(PSI,dvrdtdp) + &
+                           one_over_r(r) * buffer(PSI,dvpdp) * buffer(PSI,dvpdt) + &
+                           one_over_r(r) * buffer(PSI,vphi) * DDBUFF(PSI,dvpdtdp) + &
+                           2 * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vphi) * buffer(PSI,dvpdp) - &
+                           buffer(PSI,dvpdp) * buffer(PSI,dvtdp) - &               
+                           buffer(PSI,vphi) * DDBUFF(PSI,dvtdpdp))**2 + &
+                           (one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           buffer(PSI,dvpdp) * buffer(PSI,dvrdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           buffer(PSI,vphi) * DDBUFF(PSI,dvrdpdp) - &          
+                           2 * one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,vphi) * buffer(PSI,dvpdp) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dvpdp) * buffer(PSI,dvpdr) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,vphi) * DDBUFF(PSI,dvpdrdp) - &
+                           2 * one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,vtheta) * buffer(PSI,dvtdp) - &    
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dvtdp) * buffer(PSI,dvtdr) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,vtheta) * DDBUFF(PSI,dvtdrdp) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dvtdp) * buffer(PSI,dvrdt) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,vtheta) * DDBUFF(PSI,dvrdtdp) - &    !(first part ended)
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,dvpdt) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vtheta) * buffer(PSI,vphi) + &
+                           one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,dvtdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * buffer(PSI,vr) * &
+                           buffer(PSI,dvrdp) - &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vr) * buffer(PSI,vphi) - &
+                           one_over_r(r) * buffer(PSI,vr) * buffer(PSI,dvpdr) + &                            !(second part ended)
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,dvpdt) - &
+                           one_over_r(r) * buffer(PSI,dvtdr) * buffer(PSI,dvpdt) - &
+                           one_over_r(r) * buffer(PSI,vtheta) * DDBUFF(PSI,dvpdrdt) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vtheta) * buffer(PSI,vphi) - &
+                           one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,dvtdr) * buffer(PSI,vphi) - &
+                           one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,vtheta) * buffer(PSI,dvpdr) + &
+                           buffer(PSI,dvtdr) * buffer(PSI,dvtdp) + &
+                           buffer(PSI,vtheta) * DDBUFF(PSI,dvtdrdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,vr) * buffer(PSI,dvrdp) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dvrdr) * &
+                           buffer(PSI,dvrdp) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,vr) * &
+                           DDBUFF(PSI,dvrdrdp) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vr) * buffer(PSI,vphi) - &
+                           one_over_r(r) * buffer(PSI,dvrdr) * buffer(PSI,vphi) - &
+                           one_over_r(r) * buffer(PSI,vr) * buffer(PSI,dvpdr) - &
+                           buffer(PSI,dvrdr) * buffer(PSI,dvpdr) - &
+                           buffer(PSI,vr) * DDBUFF(PSI,dvpdrdr))**2 + &
+                           (one_over_r(r) * one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,vr) + &
+                           one_over_r(r) * buffer(PSI,vr) * buffer(PSI,dvtdr) - &
+                           one_over_r(r) * buffer(PSI,vr) * buffer(PSI,dvrdt) - &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vphi) * buffer(PSI,dvpdt) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           (buffer(PSI,vphi))**2 + &
+                           one_over_r(r) * buffer(PSI,vphi) * buffer(PSI,dvtdp) - &     !(first part ended)
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vtheta) * &
+                           buffer(PSI,vr) + &
+                           one_over_r(r) * buffer(PSI,dvtdr) * buffer(PSI,vr) + &
+                           one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,dvrdr) + &
+                           buffer(PSI,dvrdr) * buffer(PSI,dvtdr) + &
+                           buffer(PSI,vr) * DDBUFF(PSI,dvtdrdr) - &
+                           buffer(PSI,dvrdr) * buffer(PSI,dvrdt) - &
+                           buffer(PSI,vr) * DDBUFF(PSI,dvrdrdt) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,vphi) * buffer(PSI,dvpdt) - &
+                           one_over_r(r) * buffer(PSI,dvpdr) * buffer(PSI,dvpdt) - &
+                           one_over_r(r) * buffer(PSI,vphi) * DDBUFF(PSI,dvpdrdt) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           (buffer(PSI,vphi))**2 - &
+                           2 * one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI, vphi) * &
+                           buffer(PSI,dvpdr) + &
+                           buffer(PSI, dvpdr) * buffer(PSI, dvtdp) + &
+                           buffer(PSI, vphi) * DDBUFF(PSI,dvtdrdp) + &                 !(second part ended)
+                           one_over_r(r) * csctheta(t) * csctheta(t) * costheta(t) * &
+                           buffer(PSI, vphi) * buffer(PSI,dvrdp) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dvpdt) * buffer(PSI,dvrdp) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,vphi) * &
+                           DDBUFF(PSI,dvrdtdp) + & 
+                           2 * one_over_r(r) * buffer(PSI,vphi) * buffer(PSI,dvpdt) + &
+                           buffer(PSI,dvpdt) * buffer(PSI,dvpdr) + &
+                           buffer(PSI,vphi) * DDBUFF(PSI,dvpdrdt) + &
+                           2 * one_over_r(r) * buffer(PSI,vtheta) * buffer(PSI,dvtdt) + &
+                           buffer(PSI,dvtdt) * buffer(PSI,dvtdr) + &
+                           buffer(PSI,vtheta) * DDBUFF(PSI,dvtdrdt) - &
+                           buffer(PSI,dvtdt) * buffer(PSI,dvrdt) - &
+                           buffer(PSI,vtheta) * DDBUFF(PSI,dvrdtdt))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
     End Subroutine Compute_Curl_Advection_Force
 
     Subroutine Compute_Curl_Buoyancy_Force(buffer)
@@ -208,6 +338,14 @@ Contains
                 Call Add_Quantity(qty)
             Endif
 
+        Endif
+        
+        If (compute_quantity(curl_buoyancy_force_abs)) Then
+            DO_PSI
+                qty(PSI) = ((ref%Buoyancy_Coeff(r) * csctheta(t) * buffer(PSI,dtdp))**2 + &
+                           (-ref%Buoyancy_Coeff(r) * buffer(PSI,dtdt))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
         Endif
 
     End Subroutine Compute_Curl_Buoyancy_Force
@@ -377,6 +515,126 @@ Contains
             Endif            
 
         Endif
+        
+        If (compute_quantity(curl_j_cross_b_abs)) Then
+            DO_PSI
+                qty(PSI) = ((ref%Lorentz_Coeff * (one_over_r(r) * one_over_r(r) * &
+                           buffer(PSI,dbtdt) * buffer(PSI,dbpdt) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,btheta) * DDBUFF(PSI,dbpdtdt) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,bphi) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,dbtdt) * buffer(PSI,bphi) + &                         
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * buffer(PSI,dbtdt) * buffer(PSI,dbtdp) - &
+                           one_over_r(r) * buffer(PSI,btheta) * DDBUFF(PSI,dbtdtdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,br) * buffer(PSI,dbrdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * buffer(PSI,dbrdt) * buffer(PSI,dbrdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * buffer(PSI,br) * DDBUFF(PSI,dbrdtdp) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,dbrdt) * buffer(PSI,bphi) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,br) * buffer(PSI,dbpdt) + &
+                           one_over_r(r) * buffer(PSI,dbrdt) * buffer(PSI,dbpdr) + &
+                           one_over_r(r) * buffer(PSI,br) * DDBUFF(PSI,dbpdrdt) + &                             !(first part ended)
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,dbpdt) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * costheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,bphi) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,dbtdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,br) * buffer(PSI,dbrdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,br) * buffer(PSI,bphi) + &
+                           one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,br) * buffer(PSI,dbpdr) - &    !(second part ended)
+                           one_over_r(r) * buffer(PSI,br) * buffer(PSI,dbtdp) - &
+                           one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,dbrdp) - &
+                           buffer(PSI,dbrdp) * buffer(PSI,dbtdr) - &
+                           buffer(PSI,br) * DDBUFF(PSI,dbtdrdp) + &
+                           buffer(PSI,dbrdp) * buffer(PSI,dbrdt) + & 
+                           buffer(PSI,br) * DDBUFF(PSI,dbrdtdp) + &
+                           one_over_r(r) * buffer(PSI,dbpdp) * buffer(PSI,dbpdt) + &
+                           one_over_r(r) * buffer(PSI,bphi) * DDBUFF(PSI,dbpdtdp) + &
+                           2 * one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,bphi) * buffer(PSI,dbpdp) - &
+                           buffer(PSI,dbpdp) * buffer(PSI,dbtdp) - &               
+                           buffer(PSI,bphi) * DDBUFF(PSI,dbtdpdp)))**2 + &
+                           (ref%Lorentz_Coeff * (one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           buffer(PSI,dbpdp) * buffer(PSI,dbrdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * csctheta(t) * &
+                           buffer(PSI,bphi) * DDBUFF(PSI,dbrdpdp) - &          
+                           2 * one_over_r(r) * one_over_r(r) * csctheta(t) * buffer(PSI,bphi) * buffer(PSI,dbpdp) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI, dbpdp) * buffer(PSI,dbpdr) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,bphi) * DDBUFF(PSI,dbpdrdp) - &
+                           2 * one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,dbtdp) - &    
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dbtdp) * buffer(PSI,dbtdr) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,btheta) * DDBUFF(PSI,dbtdrdp) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dbtdp) * buffer(PSI,dbrdt) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,btheta) * DDBUFF(PSI,dbrdtdp) - &    !(first part ended)
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,bphi) + &
+                           one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,dbtdp) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * buffer(PSI,br) * buffer(PSI,dbrdp) - &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,br) * buffer(PSI,bphi) - &
+                           one_over_r(r) * buffer(PSI,br) * buffer(PSI,dbpdr) + &                            !(second part ended)
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * buffer(PSI,dbtdr) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * buffer(PSI,btheta) * DDBUFF(PSI,dbpdrdt) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,bphi) - &
+                           one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI,dbtdr) * buffer(PSI,bphi) - &
+                           one_over_r(r) * csctheta(t) * costheta(t) * &
+                           buffer(PSI,btheta) * buffer(PSI,dbpdr) + &
+                           buffer(PSI,dbtdr) * buffer(PSI,dbtdp) + &
+                           buffer(PSI,btheta) * DDBUFF(PSI,dbtdrdp) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * &
+                           buffer(PSI,br) * buffer(PSI,dbrdp) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dbrdr) * buffer(PSI,dbrdp) + &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,br) * DDBUFF(PSI,dbrdrdp) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,br) * buffer(PSI,bphi) - &
+                           one_over_r(r) * buffer(PSI,dbrdr) * buffer(PSI,bphi) - &
+                           one_over_r(r) * buffer(PSI,br) * buffer(PSI,dbpdr) - &
+                           buffer(PSI,dbrdr) * buffer(PSI,dbpdr) - &
+                           buffer(PSI,br) * DDBUFF(PSI,dbpdrdr)))**2 + &
+                           (ref%Lorentz_Coeff * (one_over_r(r) * one_over_r(r) * &
+                           buffer(PSI,btheta) * buffer(PSI,br) + &
+                           one_over_r(r) * buffer(PSI,br) * buffer(PSI,dbtdr) - &
+                           one_over_r(r) * buffer(PSI,br) * buffer(PSI,dbrdt) - &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,bphi) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * &
+                           (buffer(PSI, bphi))**2 + &
+                           one_over_r(r) * buffer(PSI,bphi) * buffer(PSI,dbtdp) - &     !(first part ended)
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,br) + &
+                           one_over_r(r) * buffer(PSI,dbtdr) * buffer(PSI,br) + &
+                           one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,dbrdr) + &
+                           buffer(PSI,dbrdr) * buffer(PSI,dbtdr) + &
+                           buffer(PSI,br) * DDBUFF(PSI,dbtdrdr) - &
+                           buffer(PSI,dbrdr) * buffer(PSI,dbrdt) - &
+                           buffer(PSI,br) * DDBUFF(PSI,dbrdrdt) + &
+                           one_over_r(r) * one_over_r(r) * buffer(PSI,bphi) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * buffer(PSI,dbpdr) * buffer(PSI,dbpdt) - &
+                           one_over_r(r) * buffer(PSI,bphi) * DDBUFF(PSI,dbpdrdt) + &
+                           one_over_r(r) * one_over_r(r) * csctheta(t) * costheta(t) * (buffer(PSI, bphi))**2 - &
+                           2 * one_over_r(r) * csctheta(t) * costheta(t) * buffer(PSI, bphi) * buffer(PSI,dbpdr) + &
+                           buffer(PSI, dbpdr) * buffer(PSI, dbtdp) + &
+                           buffer(PSI, bphi) * DDBUFF(PSI,dbtdrdp) + &                 !(second part ended)
+                           one_over_r(r) * csctheta(t) * csctheta(t) * costheta(t) * &
+                           buffer(PSI, bphi) * buffer(PSI,dbrdp) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,dbpdt) * buffer(PSI,dbrdp) - &
+                           one_over_r(r) * csctheta(t) * buffer(PSI,bphi) * DDBUFF(PSI,dbrdtdp) + & 
+                           2 * one_over_r(r) * buffer(PSI,bphi) * buffer(PSI,dbpdt) + &
+                           buffer(PSI,dbpdt) * buffer(PSI,dbpdr) + &
+                           buffer(PSI,bphi) * DDBUFF(PSI,dbpdrdt) + &
+                           2 * one_over_r(r) * buffer(PSI,btheta) * buffer(PSI,dbtdt) + &
+                           buffer(PSI,dbtdt) * buffer(PSI,dbtdr) + &
+                           buffer(PSI,btheta) * DDBUFF(PSI,dbtdrdt) - &
+                           buffer(PSI,dbtdt) * buffer(PSI,dbrdt) - &
+                           buffer(PSI,btheta) * DDBUFF(PSI,dbrdtdt)))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
     End Subroutine Compute_Curl_Magnetic_Force
 
@@ -435,6 +693,22 @@ Contains
                 Call Add_Quantity(qty)
             Endif
         
+        Endif
+
+        If (compute_quantity(curl_coriolis_force_abs)) Then
+            DO_PSI
+                qty(PSI) =((- ref%Coriolis_Coeff * ref%density(r) * one_over_r(r) * &
+                            (-sintheta(t) * buffer(PSI,vtheta) + cottheta(t) * csctheta(t) * buffer(PSI,vtheta) + &
+                            costheta(t) *  buffer(PSI,dvtdt) + 2 * costheta(t) *  buffer(PSI,vr) + sintheta(t) * &
+                            buffer(PSI,dvrdt) + cottheta(t) *  buffer(PSI,dvpdt)))**2 + &
+                           (ref%Coriolis_Coeff * ref%density(r) * (one_over_r(r) * (buffer(PSI,dvpdp) + &
+                            costheta(t) *  buffer(PSI,vtheta) + sintheta(t) * buffer(PSI,vr)) + costheta(t) * &
+                            buffer(PSI,dvtdr) + sintheta(t) * buffer(PSI,dvrdr) + ref%dlnrho(r) * costheta(t) * &
+                            buffer(PSI,vtheta) + ref%dlnrho(r) * sintheta(t) * buffer(PSI,vr)))**2 + &
+                           (ref%Coriolis_Coeff * ref%density(r) * (ref%dlnrho(r) * costheta(t) * buffer(PSI,vphi) + &
+                            costheta(t) * buffer(PSI,dvpdr) - one_over_r(r) * sintheta(t) * buffer(PSI,dvpdr)))**2)**(0.5)   
+            END_DO
+            Call Add_Quantity(qty)
         Endif
 
     End Subroutine Compute_Curl_Coriolis_Force
@@ -533,6 +807,20 @@ Contains
                 Call Add_Quantity(qty)   
             Endif
         Endif    
+        If (compute_quantity(curl_viscous_force_abs)) Then
+            DO_PSI
+                qty(PSI) = sqrt((One_Over_R(r)*(VFDBUFF(PSI,dvf_p_dt) + &
+                                cottheta(t)*vforce_buffer(PSI,vf_p) - &
+                                csctheta(t)*VFDBUFF(PSI,dvf_t_dp)))**2 + &
+                                (One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvf_r_dp) - &
+                                vforce_buffer(PSI,vf_p)) - &
+                                VFDBUFF(PSI,dvf_p_dr))**2 + &
+                                (VFDBUFF(PSI,dvf_t_dr) + &
+                                One_Over_R(r)*(vforce_buffer(PSI,vf_t) - &
+                                VFDBUFF(PSI,dvf_r_dt)))**2)
+            END_DO
+            Call Add_Quantity(qty)   
+        Endif    
 
     End Subroutine Compute_Curl_Viscous_Force
 
@@ -550,19 +838,22 @@ Contains
         compute_vforce_i_dj = .false.
 
         If (check(curl_viscous_force_r) .or. &
-            check(curl_viscous_force_r_squared)) Then
+            check(curl_viscous_force_r_squared) .or. &
+            check(curl_viscous_force_abs)) Then
             compute_vforce_i_dj(2,3) = .true.
             compute_vforce_i_dj(3,2) = .true.
         Endif
 
         If (check(curl_viscous_force_theta) .or. &
-            check(curl_viscous_force_theta_squared)) Then
+            check(curl_viscous_force_theta_squared) .or. &
+            check(curl_viscous_force_abs)) Then
             compute_vforce_i_dj(1,3) = .true.
             compute_vforce_i_dj(3,1) = .true.
         Endif
 
         If (check(curl_viscous_force_phi) .or. &
-            check(curl_viscous_force_phi_squared)) Then
+            check(curl_viscous_force_phi_squared) .or. &
+            check(curl_viscous_force_abs)) Then
             compute_vforce_i_dj(1,2) = .true.
             compute_vforce_i_dj(2,1) = .true.
         Endif

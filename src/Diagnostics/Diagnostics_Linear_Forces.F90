@@ -27,10 +27,11 @@ Contains
 
     Subroutine Compute_Linear_Forces(buffer)
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real*8 :: pfactor(my_r%min:my_r%max)
         Call Compute_Buoyancy_Force(buffer)
-        Call Compute_Coriolis_Force(buffer)
+        Call Compute_Coriolis_Force(buffer, pfactor)
         Call Compute_Viscous_Force(buffer)
-        Call Compute_Pressure_Force(buffer)
+        Call Compute_Pressure_Force(buffer, pfactor)
     End Subroutine Compute_Linear_Forces
 
     Subroutine Compute_Buoyancy_Force(buffer)
@@ -96,12 +97,20 @@ Contains
                 Call Add_Quantity(qty)
             Endif
         Endif
+        ! Calculate buoyancy_force_squared
+        If (compute_quantity(buoyancy_force_abs)) Then
+            DO_PSI
+                qty(PSI) = ( (ref%Buoyancy_Coeff(r)*(buffer(PSI,tvar)-ell0_values(r,tvar)))** 2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif        
 
     End Subroutine Compute_Buoyancy_Force
 
-    Subroutine Compute_Coriolis_Force(buffer)
+    Subroutine Compute_Coriolis_Force(buffer, pfactor)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Real*8  :: pfactor(my_r%min:my_r%max)
         Integer :: r,k, t
         Real*8 :: coriolis_term
         coriolis_term = ref%Coriolis_Coeff
@@ -180,6 +189,33 @@ Contains
                 Call Add_Quantity(qty)
             Endif
         Endif
+        ! Calculate the squared magnitude of the Coriolis force
+        If (compute_quantity(coriolis_force_abs)) Then
+            DO_PSI
+                qty(PSI) =  ((ref%density(r)*coriolis_term*sintheta(t)*buffer(PSI,vphi))**2 + &
+                             (ref%density(r)*coriolis_term*costheta(t)*buffer(PSI,vphi))**2 + &
+                             (- (coriolis_term*costheta(t)*buffer(PSI,vtheta) &
+                              + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+ 
+ 
+        If (compute_quantity(ageo_coriolis_force)) Then
+            DO_PSI
+                qty(PSI) = (((ref%density(r)*coriolis_term*sintheta(t)*buffer(PSI,vphi)) + & 
+                            (-(buffer(PSI,dpdr) - ell0_values(r,dpdr)) * pfactor(r) + & 
+                             (buffer(PSI,pvar) - ell0_values(r,pvar)) * pfactor(r) * & 
+                             ref%dlnrho(r))) ** 2 + & 
+                            ((ref%density(r)*coriolis_term*costheta(t)*buffer(PSI,vphi)) + & 
+                            (-buffer(PSI,dpdt) * pfactor(r) * One_Over_R(r))) ** 2 + & 
+                            ((- (coriolis_term*costheta(t)*buffer(PSI,vtheta)  &
+                                + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r)) + & 
+                            (-buffer(PSI,dpdp) * pfactor(r) * One_Over_R(r) * csctheta(t))) ** 2)**(0.5) 
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
 
     End Subroutine Compute_Coriolis_Force
 
@@ -234,7 +270,16 @@ Contains
                 Call Add_Quantity(tmp1)
             Endif
         Endif
-
+        ! Calculate the squared magnitude of the viscous force
+        If (compute_quantity(viscous_force_abs)) Then
+            DO_PSI
+                qty(k,r,t) = sqrt((mean_3dbuffer(k,r,t,vforce_r)-mean_ell0buffer(r,vforce_r))**2 + &
+                             vforce_buffer(k,r,t,vf_t)**2 + &
+                             vforce_buffer(k,r,t,vf_p)**2 )           
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+ 
         !.............................................................
 
         ! r-direction; fluctuating
@@ -334,7 +379,7 @@ Contains
 
     End Subroutine Compute_Viscous_Force
 
-    Subroutine Compute_Pressure_Force(buffer)
+    Subroutine Compute_Pressure_Force(buffer,  pfactor)
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Real*8  :: pfactor(my_r%min:my_r%max)
@@ -508,6 +553,17 @@ Contains
             END_DO
             Call Add_Quantity(qty)
         Endif
+        ! Calculate the squared magnitude of the pressure force
+        If (compute_quantity(pressure_force_abs)) Then
+            DO_PSI
+                qty(PSI) = ((-(buffer(PSI,dpdr) - ell0_values(r,dpdr)) * pfactor(r) + &
+                            (buffer(PSI,pvar) - ell0_values(r,pvar)) * pfactor(r) * &
+                            ref%dlnrho(r)) ** 2 + &
+                            (-buffer(PSI,dpdt) * pfactor(r) * One_Over_R(r)) ** 2 + &
+                            (-buffer(PSI,dpdp) * pfactor(r) * One_Over_R(r) * csctheta(t)) ** 2) ** 0.5
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
 
 
@@ -523,6 +579,7 @@ Contains
             sometimes_compute(curl_viscous_force_theta_squared) .or. &
             sometimes_compute(curl_viscous_force_phi) .or. &
             sometimes_compute(curl_viscous_force_phi_squared) .or. &
+            sometimes_compute(curl_viscous_force_abs) .or. &
             sometimes_compute(viscous_mforce_r)) Then
             nvf = nvf+1
             vf_r = nvf
@@ -533,6 +590,7 @@ Contains
             sometimes_compute(curl_viscous_force_r) .or. &
             sometimes_compute(curl_viscous_force_r_squared) .or. &
             sometimes_compute(curl_viscous_force_phi) .or. &
+            sometimes_compute(curl_viscous_force_abs) .or. &
             sometimes_compute(curl_viscous_force_phi_squared)) Then
             nvf = nvf + 1
             vf_t = nvf
@@ -543,6 +601,7 @@ Contains
             sometimes_compute(curl_viscous_force_r) .or. &
             sometimes_compute(curl_viscous_force_r_squared) .or. &
             sometimes_compute(curl_viscous_force_theta) .or. &
+            sometimes_compute(curl_viscous_force_abs) .or. &
             sometimes_compute(curl_viscous_force_theta_squared)) Then
             nvf = nvf + 1
             vf_p = nvf
@@ -626,6 +685,7 @@ Contains
             compute_quantity(curl_viscous_force_theta_squared) .or. &
             compute_quantity(curl_viscous_force_phi) .or. &
             compute_quantity(curl_viscous_force_phi_squared) .or. &
+            compute_quantity(curl_viscous_force_abs) .or. &
             compute_quantity(viscous_mforce_r) ) Then
 
             DO_PSI
@@ -661,6 +721,7 @@ Contains
             compute_quantity(curl_viscous_force_r) .or. &
             compute_quantity(curl_viscous_force_r_squared) .or. &
             compute_quantity(curl_viscous_force_phi) .or. &
+            compute_quantity(curl_viscous_force_abs) .or. &
             compute_quantity(curl_viscous_force_phi_squared)) Then
 
             DO_PSI
@@ -691,6 +752,7 @@ Contains
             compute_quantity(curl_viscous_force_r) .or. &
             compute_quantity(curl_viscous_force_r_squared) .or. &
             compute_quantity(curl_viscous_force_theta) .or. &
+            compute_quantity(curl_viscous_force_abs) .or. &
             compute_quantity(curl_viscous_force_theta_squared)) Then
 
             DO_PSI

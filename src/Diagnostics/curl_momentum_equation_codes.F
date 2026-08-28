@@ -140,3 +140,9 @@
 !    Integer, Parameter :: curl_jp_cross_bp_r     = curl_mom_eq_off+84 ! :tex: $\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_r$
 !    Integer, Parameter :: curl_jp_cross_bp_theta = curl_mom_eq_off+85 ! :tex: $\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_\theta$
 !    Integer, Parameter :: curl_jp_cross_bp_phi   = curl_mom_eq_off+86 ! :tex: $\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_\phi$
+
+    Integer, Parameter :: curl_buoyancy_force_abs = curl_mom_eq_off+87
+    Integer, Parameter :: curl_coriolis_force_abs = curl_mom_eq_off+88
+    Integer, Parameter :: curl_v_grad_v_abs       = curl_mom_eq_off+89
+    Integer, Parameter :: curl_j_cross_b_abs      = curl_mom_eq_off+90
+    Integer, Parameter :: curl_viscous_force_abs  = curl_mom_eq_off+91
