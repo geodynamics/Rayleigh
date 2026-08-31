@@ -26,7 +26,7 @@
     Integer, Parameter :: rhotvm_grad_sm = te_eq_off+4 ! :tex: $\mathrm{f}_1\mathrm{f}_4\overline{\boldsymbol{v}}\cdot\boldsymbol{\nabla}\overline{\Theta}$
     Integer, Parameter :: rhotvm_grad_sp = te_eq_off+5 ! :tex: $\mathrm{f}_1\mathrm{f}_4\overline{\boldsymbol{v}}\cdot\boldsymbol{\nabla}\Theta'$
     ! Advection (Pieces)
-    Integer, Parameter :: rhotvr_grad_s   = te_eq_off+6 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r\frac{\partial s}{\partial r}$
+    Integer, Parameter :: rhotvr_grad_s   = te_eq_off+6 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r\frac{\partial \Theta}{\partial r}$
     Integer, Parameter :: rhotvpr_grad_sp = te_eq_off+7 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\frac{\partial \Theta'}{\partial r}$
     Integer, Parameter :: rhotvpr_grad_sm = te_eq_off+8 ! :tex: $\mathrm{f}_1\mathrm{f}_4v_r'\frac{\partial \overline{\Theta}}{\partial r}$
     Integer, Parameter :: rhotvmr_grad_sm = te_eq_off+9 ! :tex: $\mathrm{f}_1\mathrm{f}_4\overline{v_r}\frac{\partial \overline{\Theta}}{\partial r}$
@@ -65,7 +65,7 @@
     ! Heat sources...
     ! Q
     Integer, Parameter :: vol_heat_flux = te_eq_off+33 ! :tex: $F_Q(r)$
-    Integer, Parameter :: vol_heating   = te_eq_off+34 ! :tex: $\mathrm{f}_6(r)$
+    Integer, Parameter :: vol_heating   = te_eq_off+34 ! :tex: $c_{10}\mathrm{f}_6(r)$
 
 
     ! Viscous Heating
@@ -73,7 +73,7 @@
 
     ! Ohmic Heating
 
-    Integer, Parameter :: ohmic_heat    = te_eq_off+36 !  :tex:  $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}'}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
+    Integer, Parameter :: ohmic_heat    = te_eq_off+36 !  :tex:  $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}}}\cdot{\boldsymbol{\mathcal{J}}} \right)$
     Integer, Parameter :: ohmic_heat_pp = te_eq_off+37 !  :tex: $ \mathrm{f}_7c_4\left( {\boldsymbol{\mathcal{J}'}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
     Integer, Parameter :: ohmic_heat_pm = te_eq_off+38 !  :tex: $\mathrm{f}_7c_4\left( \overline{\boldsymbol{\mathcal{J}}}\cdot\overline{\boldsymbol{\mathcal{J}}} \right)$
     Integer, Parameter :: ohmic_heat_mm = te_eq_off+39 !  :tex: $\mathrm{f}_7c_4\left( \overline{\boldsymbol{\mathcal{J}}}\cdot{\boldsymbol{\mathcal{J}'}} \right)$
