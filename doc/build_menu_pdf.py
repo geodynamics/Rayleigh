@@ -26,6 +26,8 @@ def classify_line(codeline):
                 codeline -- string variable containing a line of code
        Outputs:
                 result -- integer {2 = offset code line, 1 = quantity code line, 0 = other} """
+    if (codeline.lstrip().startswith('!')):  # skip commented-out lines
+        return 0
     test=codeline.split('OFFSET CODE')
     if (len(test) > 1):
         return 2

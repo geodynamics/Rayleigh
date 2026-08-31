@@ -258,6 +258,331 @@ Contains
             Call Add_Quantity(qty)
         Endif
 
+        ! curl(v'.grad v') is identical in form to curl(v.grad v) above (both
+        ! are the curl of rho*(A.grad)A for some vector field A), just with
+        ! buffer -> fbuffer and DDBUFF -> d2_fbuffer (the fluctuating-field
+        ! counterparts of the full-field buffer/DDBUFF).
+        If (compute_quantity(curl_vp_grad_vp_r)) Then
+            DO_PSI
+                ! Re-derived from curl(rho*(v.grad)v) with sympy
+                qty(PSI) = d2_fbuffer(PSI,dvpdrdt) * fbuffer(PSI,vr) * one_over_r(r) * ref%density(r) &
+                + d2_fbuffer(PSI,dvpdtdt) * fbuffer(PSI,vtheta) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + fbuffer(PSI,dvpdr) * fbuffer(PSI,dvrdt) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvpdt) * fbuffer(PSI,dvtdt) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + fbuffer(PSI,dvpdt) * fbuffer(PSI,vr) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + fbuffer(PSI,dvrdt) * fbuffer(PSI,vphi) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - fbuffer(PSI,vphi) * fbuffer(PSI,vtheta) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + d2_fbuffer(PSI,dvpdtdp) * fbuffer(PSI,vphi) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + fbuffer(PSI,dvpdp) * fbuffer(PSI,dvpdt) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - d2_fbuffer(PSI,dvtdpdp) * fbuffer(PSI,vphi) * ref%density(r) * csctheta(t) * csctheta(t) * one_over_r(r) &
+                    * one_over_r(r) &
+                - d2_fbuffer(PSI,dvtdrdp) * fbuffer(PSI,vr) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                - d2_fbuffer(PSI,dvtdtdp) * fbuffer(PSI,vtheta) * csctheta(t) * ref%density(r) * one_over_r(r) &
+                    * one_over_r(r) &
+                - fbuffer(PSI,dvpdp) * fbuffer(PSI,dvtdp) * ref%density(r) * csctheta(t) * csctheta(t) * one_over_r(r) &
+                    * one_over_r(r) &
+                - fbuffer(PSI,dvrdp) * fbuffer(PSI,dvtdr) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvrdp) * fbuffer(PSI,vtheta) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - fbuffer(PSI,dvtdp) * fbuffer(PSI,dvtdt) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - fbuffer(PSI,dvtdp) * fbuffer(PSI,vr) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + fbuffer(PSI,dvpdr) * fbuffer(PSI,vr) * costheta(t) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvtdt) * fbuffer(PSI,vphi) * costheta(t) * csctheta(t) * ref%density(r) * one_over_r(r) &
+                    * one_over_r(r) &
+                + fbuffer(PSI,vphi) * fbuffer(PSI,vr) * costheta(t) * csctheta(t) * ref%density(r) * one_over_r(r) &
+                    * one_over_r(r) &
+                + 2 * fbuffer(PSI,dvpdp) * fbuffer(PSI,vphi) * costheta(t) * ref%density(r) * csctheta(t) * csctheta(t) &
+                    * one_over_r(r) * one_over_r(r) &
+                + 2 * fbuffer(PSI,dvpdt) * fbuffer(PSI,vtheta) * costheta(t) * csctheta(t) * ref%density(r) * one_over_r(r) &
+                    * one_over_r(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vp_grad_vp_theta)) Then
+            DO_PSI
+                ! Re-derived from curl(rho*(v.grad)v) with sympy
+                qty(PSI) = -d2_fbuffer(PSI,dvpdrdr) * fbuffer(PSI,vr) * ref%density(r) &
+                - fbuffer(PSI,dvpdr) * fbuffer(PSI,dvrdr) * ref%density(r) &
+                - d2_fbuffer(PSI,dvpdrdt) * fbuffer(PSI,vtheta) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvpdr) * fbuffer(PSI,vr) * ref%density(r) * ref%dlnrho(r) &
+                - fbuffer(PSI,dvpdt) * fbuffer(PSI,dvtdr) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvrdr) * fbuffer(PSI,vphi) * one_over_r(r) * ref%density(r) &
+                - 2 * fbuffer(PSI,dvpdr) * fbuffer(PSI,vr) * one_over_r(r) * ref%density(r) &
+                + d2_fbuffer(PSI,dvrdpdp) * fbuffer(PSI,vphi) * ref%density(r) * csctheta(t) * csctheta(t) * one_over_r(r) &
+                    * one_over_r(r) &
+                + d2_fbuffer(PSI,dvrdrdp) * fbuffer(PSI,vr) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                + d2_fbuffer(PSI,dvrdtdp) * fbuffer(PSI,vtheta) * csctheta(t) * ref%density(r) * one_over_r(r) &
+                    * one_over_r(r) &
+                + fbuffer(PSI,dvpdp) * fbuffer(PSI,dvrdp) * ref%density(r) * csctheta(t) * csctheta(t) * one_over_r(r) &
+                    * one_over_r(r) &
+                + fbuffer(PSI,dvrdp) * fbuffer(PSI,dvrdr) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvrdt) * fbuffer(PSI,dvtdp) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - d2_fbuffer(PSI,dvpdrdp) * fbuffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvpdp) * fbuffer(PSI,dvpdr) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvpdr) * fbuffer(PSI,vtheta) * cottheta(t) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvpdt) * fbuffer(PSI,vtheta) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) &
+                - fbuffer(PSI,dvtdr) * fbuffer(PSI,vphi) * cottheta(t) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,vphi) * fbuffer(PSI,vr) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) &
+                - 2 * fbuffer(PSI,dvpdp) * fbuffer(PSI,vphi) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - 2 * fbuffer(PSI,dvtdp) * fbuffer(PSI,vtheta) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - fbuffer(PSI,dvpdp) * fbuffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) &
+                - fbuffer(PSI,vphi) * fbuffer(PSI,vtheta) * cottheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vp_grad_vp_phi)) Then
+            DO_PSI
+                ! Re-derived from curl(rho*(v.grad)v) with sympy
+                qty(PSI) = d2_fbuffer(PSI,dvtdrdr) * fbuffer(PSI,vr) * ref%density(r) &
+                + fbuffer(PSI,dvrdr) * fbuffer(PSI,dvtdr) * ref%density(r) &
+                + d2_fbuffer(PSI,dvtdrdt) * fbuffer(PSI,vtheta) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvrdr) * fbuffer(PSI,vtheta) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvtdr) * fbuffer(PSI,dvtdt) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvtdr) * fbuffer(PSI,vr) * ref%density(r) * ref%dlnrho(r) &
+                - d2_fbuffer(PSI,dvrdrdt) * fbuffer(PSI,vr) * one_over_r(r) * ref%density(r) &
+                - d2_fbuffer(PSI,dvrdtdt) * fbuffer(PSI,vtheta) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - fbuffer(PSI,dvrdr) * fbuffer(PSI,dvrdt) * one_over_r(r) * ref%density(r) &
+                - fbuffer(PSI,dvrdt) * fbuffer(PSI,dvtdt) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + 2 * fbuffer(PSI,dvpdt) * fbuffer(PSI,vphi) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + 2 * fbuffer(PSI,dvtdr) * fbuffer(PSI,vr) * one_over_r(r) * ref%density(r) &
+                + 2 * fbuffer(PSI,dvtdt) * fbuffer(PSI,vtheta) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                + d2_fbuffer(PSI,dvtdrdp) * fbuffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvpdr) * fbuffer(PSI,dvtdp) * csctheta(t) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvtdt) * fbuffer(PSI,vtheta) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) &
+                + fbuffer(PSI,vr) * fbuffer(PSI,vtheta) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) &
+                - d2_fbuffer(PSI,dvrdtdp) * fbuffer(PSI,vphi) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - fbuffer(PSI,dvpdt) * fbuffer(PSI,dvrdp) * csctheta(t) * ref%density(r) * one_over_r(r) * one_over_r(r) &
+                - cottheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) * fbuffer(PSI,vphi) * fbuffer(PSI,vphi) &
+                - 2 * fbuffer(PSI,dvpdr) * fbuffer(PSI,vphi) * cottheta(t) * one_over_r(r) * ref%density(r) &
+                + fbuffer(PSI,dvrdp) * fbuffer(PSI,vphi) * costheta(t) * ref%density(r) * csctheta(t) * csctheta(t) &
+                    * one_over_r(r) * one_over_r(r) &
+                + fbuffer(PSI,dvtdp) * fbuffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! curl(<v>.grad <v>) is a fresh (but related) derivation: <v> is
+        ! axisymmetric (m0_values has no phi index at all), so every
+        ! phi-derivative term in curl(v.grad v) above vanishes identically,
+        ! leaving a much shorter expression. Derived with sympy
+        ! (v_r/v_t/v_p treated as functions of r,theta only)
+        If (compute_quantity(curl_vm_grad_vm_r)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dvpdrdt)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + d2_m0(PSI2,dvpdtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + m0_values(PSI2,dvpdr)*m0_values(PSI2,dvrdt)*one_over_r(r)*ref%density(r) &
+                + m0_values(PSI2,dvpdt)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                + m0_values(PSI2,dvpdt)*m0_values(PSI2,vr)*one_over_r(r)**2*ref%density(r) &
+                + m0_values(PSI2,dvrdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                - m0_values(PSI2,vphi)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*m0_values(PSI2,dvpdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + cottheta(t)*m0_values(PSI2,dvtdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*m0_values(PSI2,vphi)*m0_values(PSI2,vr)*one_over_r(r)**2*ref%density(r) &
+                + 2*cottheta(t)*m0_values(PSI2,dvpdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vm_grad_vm_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_m0(PSI2,dvpdrdr)*m0_values(PSI2,vr)*ref%density(r) &
+                - m0_values(PSI2,dvpdr)*m0_values(PSI2,dvrdr)*ref%density(r) &
+                - d2_m0(PSI2,dvpdrdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                - m0_values(PSI2,dvpdr)*m0_values(PSI2,vr)*ref%density(r)*ref%dlnrho(r) &
+                - m0_values(PSI2,dvpdt)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                - m0_values(PSI2,dvrdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - 2*m0_values(PSI2,dvpdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*m0_values(PSI2,dvpdr)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*m0_values(PSI2,dvtdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - m0_values(PSI2,dvpdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - m0_values(PSI2,vphi)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*m0_values(PSI2,vphi)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vm_grad_vm_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dvtdrdr)*m0_values(PSI2,vr)*ref%density(r) &
+                + m0_values(PSI2,dvrdr)*m0_values(PSI2,dvtdr)*ref%density(r) &
+                + d2_m0(PSI2,dvtdrdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                + m0_values(PSI2,dvrdr)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                + m0_values(PSI2,dvtdr)*m0_values(PSI2,dvtdt)*one_over_r(r)*ref%density(r) &
+                + m0_values(PSI2,dvtdr)*m0_values(PSI2,vr)*ref%density(r)*ref%dlnrho(r) &
+                - d2_m0(PSI2,dvrdrdt)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                - d2_m0(PSI2,dvrdtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - m0_values(PSI2,dvrdr)*m0_values(PSI2,dvrdt)*one_over_r(r)*ref%density(r) &
+                - m0_values(PSI2,dvrdt)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                + 2*m0_values(PSI2,dvpdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + 2*m0_values(PSI2,dvtdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + 2*m0_values(PSI2,dvtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + m0_values(PSI2,dvtdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                + m0_values(PSI2,vr)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*m0_values(PSI2,vphi)**2*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - 2*cottheta(t)*m0_values(PSI2,dvpdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! curl(v'.grad <v>) and curl(<v>.grad v') are asymmetric: ADotGradB(A,B)
+        ! is not symmetric in A and B (only B is differentiated). Derived with sympy.
+        If (compute_quantity(curl_vp_grad_vm_r)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dvpdrdt)*fbuffer(PSI,vr)*one_over_r(r)*ref%density(r) &
+                + d2_m0(PSI2,dvpdtdt)*fbuffer(PSI,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,dvpdt)*m0_values(PSI2,vr)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,dvrdt)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdt)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vphi)*m0_values(PSI2,dvrdt)*one_over_r(r)**2*ref%density(r) &
+                - fbuffer(PSI,vphi)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,dvpdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,vr)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,vr)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,vtheta)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvrdp)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,vr)*one_over_r(r)**2*ref%density(r) &
+                + costheta(t)*csctheta(t)**2*fbuffer(PSI,dvpdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vp_grad_vm_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_m0(PSI2,dvpdrdr)*fbuffer(PSI,vr)*ref%density(r) &
+                - fbuffer(PSI,dvrdr)*m0_values(PSI2,dvpdr)*ref%density(r) &
+                - d2_m0(PSI2,dvpdrdt)*fbuffer(PSI,vtheta)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvpdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvtdr)*m0_values(PSI2,dvpdt)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,vphi)*m0_values(PSI2,dvrdr)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,vr)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,vr)*m0_values(PSI2,dvpdr)*ref%density(r)*ref%dlnrho(r) &
+                + csctheta(t)*fbuffer(PSI,dvrdp)*m0_values(PSI2,dvrdr)*one_over_r(r)*ref%density(r) &
+                + csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,dvrdt)*one_over_r(r)**2*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,dvpdr)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvpdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - fbuffer(PSI,vphi)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - fbuffer(PSI,vtheta)*m0_values(PSI2,dvpdt)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vp_grad_vm_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dvtdrdr)*fbuffer(PSI,vr)*ref%density(r) &
+                + fbuffer(PSI,dvrdr)*m0_values(PSI2,dvtdr)*ref%density(r) &
+                + d2_m0(PSI2,dvtdrdt)*fbuffer(PSI,vtheta)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvpdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,dvtdr)*m0_values(PSI2,dvtdt)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vphi)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vr)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,vr)*m0_values(PSI2,dvtdr)*ref%density(r)*ref%dlnrho(r) &
+                + fbuffer(PSI,vtheta)*m0_values(PSI2,dvrdr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,vtheta)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                - d2_m0(PSI2,dvrdrdt)*fbuffer(PSI,vr)*one_over_r(r)*ref%density(r) &
+                - d2_m0(PSI2,dvrdtdt)*fbuffer(PSI,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - fbuffer(PSI,dvrdt)*m0_values(PSI2,dvrdr)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvtdt)*m0_values(PSI2,dvrdt)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vtheta)*m0_values(PSI2,dvtdt)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                + fbuffer(PSI,vtheta)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*fbuffer(PSI,dvpdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)*ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vm_grad_vp_r)) Then
+            DO_PSI
+                qty(PSI) = d2_fbuffer(PSI,dvpdrdt)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + d2_fbuffer(PSI,dvpdtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,dvpdr)*m0_values(PSI2,dvrdt)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvpdt)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,dvrdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vr)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                - fbuffer(PSI,vtheta)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,dvpdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,dvpdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,dvtdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,vr)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + cottheta(t)*fbuffer(PSI,vtheta)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                + csctheta(t)*d2_fbuffer(PSI,dvpdtdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + csctheta(t)*fbuffer(PSI,dvpdp)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*d2_fbuffer(PSI,dvtdrdp)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*d2_fbuffer(PSI,dvtdtdp)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvrdp)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)**2*d2_fbuffer(PSI,dvtdpdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + costheta(t)*csctheta(t)**2*fbuffer(PSI,dvpdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vm_grad_vp_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_fbuffer(PSI,dvpdrdr)*m0_values(PSI2,vr)*ref%density(r) &
+                - fbuffer(PSI,dvpdr)*m0_values(PSI2,dvrdr)*ref%density(r) &
+                - d2_fbuffer(PSI,dvpdrdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvpdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvpdr)*m0_values(PSI2,vr)*ref%density(r)*ref%dlnrho(r) &
+                - fbuffer(PSI,dvpdt)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvrdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,vr)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                + csctheta(t)*d2_fbuffer(PSI,dvrdrdp)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + csctheta(t)*d2_fbuffer(PSI,dvrdtdp)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + csctheta(t)**2*d2_fbuffer(PSI,dvrdpdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,dvtdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,vtheta)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*d2_fbuffer(PSI,dvpdrdp)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvpdp)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvpdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - fbuffer(PSI,dvpdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - fbuffer(PSI,vr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*fbuffer(PSI,vtheta)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - csctheta(t)*fbuffer(PSI,dvpdp)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)*ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_vm_grad_vp_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_fbuffer(PSI,dvtdrdr)*m0_values(PSI2,vr)*ref%density(r) &
+                + fbuffer(PSI,dvtdr)*m0_values(PSI2,dvrdr)*ref%density(r) &
+                + d2_fbuffer(PSI,dvtdrdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvpdt)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,dvrdr)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdr)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdr)*m0_values(PSI2,vr)*ref%density(r)*ref%dlnrho(r) &
+                + fbuffer(PSI,dvtdt)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vphi)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                + fbuffer(PSI,vr)*m0_values(PSI2,dvtdr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,vtheta)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                - d2_fbuffer(PSI,dvrdrdt)*m0_values(PSI2,vr)*one_over_r(r)*ref%density(r) &
+                - d2_fbuffer(PSI,dvrdtdt)*m0_values(PSI2,vtheta)*one_over_r(r)**2*ref%density(r) &
+                - fbuffer(PSI,dvrdr)*m0_values(PSI2,dvrdt)*one_over_r(r)*ref%density(r) &
+                - fbuffer(PSI,dvrdt)*m0_values(PSI2,dvtdt)*one_over_r(r)**2*ref%density(r) &
+                + csctheta(t)*d2_fbuffer(PSI,dvtdrdp)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                + csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                + fbuffer(PSI,dvtdt)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                + fbuffer(PSI,vr)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*fbuffer(PSI,dvpdr)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,dvpdr)*one_over_r(r)*ref%density(r) &
+                - csctheta(t)*d2_fbuffer(PSI,dvrdtdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                - csctheta(t)*fbuffer(PSI,dvrdp)*m0_values(PSI2,dvpdt)*one_over_r(r)**2*ref%density(r) &
+                + costheta(t)*csctheta(t)**2*fbuffer(PSI,dvrdp)*m0_values(PSI2,vphi)*one_over_r(r)**2*ref%density(r) &
+                + csctheta(t)*fbuffer(PSI,dvtdp)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)*ref%dlnrho(r) &
+                - cottheta(t)*fbuffer(PSI,vphi)*m0_values(PSI2,vphi)*one_over_r(r)*ref%density(r)*ref%dlnrho(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
     End Subroutine Compute_Curl_Advection_Force
 
@@ -304,6 +629,34 @@ Contains
                 ! curl_buoyancy_force_phi above; factored out here.
                 qty(PSI) = one_over_r(r) * ((ref%Buoyancy_Coeff(r) * csctheta(t) * buffer(PSI,dtdp))**2 + &
                            (-ref%Buoyancy_Coeff(r) * buffer(PSI,dtdt))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! Fluctuating buoyancy curl: identical structure to curl_buoyancy_force_*
+        ! above, T -> T'. curl_buoyancy_pforce_r is always 0, matching curl_buoyancy_force_r.
+        If (compute_quantity(curl_buoyancy_pforce_theta)) Then
+            DO_PSI
+                qty(PSI) = ref%Buoyancy_Coeff(r) * (csctheta(t) * &
+                            one_over_r(r) * fbuffer(PSI,dtdp))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_buoyancy_pforce_phi)) Then
+            DO_PSI
+                qty(PSI) = -ref%Buoyancy_Coeff(r) * ( one_over_r(r) * fbuffer(PSI,dtdt))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! Mean buoyancy curl: T -> <T>. <T> is axisymmetric (m0_values has no
+        ! phi index), so curl_buoyancy_mforce_theta ~ d<T>/dphi is identically
+        ! 0.
+        ! Only curl_buoyancy_mforce_phi ~ d<T>/dtheta survives.
+        If (compute_quantity(curl_buoyancy_mforce_phi)) Then
+            DO_PSI
+                qty(PSI) = -ref%Buoyancy_Coeff(r) * ( one_over_r(r) * m0_values(PSI2,dtdt))
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -490,6 +843,282 @@ Contains
             Call Add_Quantity(qty)
         Endif
 
+        ! curl(Lc*(curl B') x B') is identical in form to curl(Lc*(curl B) x B)
+        ! above, just with buffer(br/btheta/bphi) -> fbuffer(...) and
+        ! DDBUFF -> d2_fbuffer (the fluctuating-field counterparts).
+        If (compute_quantity(curl_jp_cross_bp_r)) Then
+            DO_PSI
+                qty(PSI) = d2_fbuffer(PSI,dbpdrdt)*fbuffer(PSI,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbpdtdp)*fbuffer(PSI,bphi)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbpdtdt)*fbuffer(PSI,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbtdpdp)*fbuffer(PSI,bphi)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbtdrdp)*fbuffer(PSI,br)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbtdtdp)*fbuffer(PSI,btheta)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*fbuffer(PSI,br)*cottheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,bphi)*fbuffer(PSI,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,bphi)*fbuffer(PSI,dbpdp)*costheta(t)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*fbuffer(PSI,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*fbuffer(PSI,dbtdt)*cottheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,br)*fbuffer(PSI,dbpdr)*cottheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,br)*fbuffer(PSI,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,br)*fbuffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,btheta)*fbuffer(PSI,dbpdt)*cottheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,btheta)*fbuffer(PSI,dbrdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdp)*fbuffer(PSI,dbpdt)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdp)*fbuffer(PSI,dbtdp)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdr)*fbuffer(PSI,dbrdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdt)*fbuffer(PSI,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdp)*fbuffer(PSI,dbtdr)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbtdp)*fbuffer(PSI,dbtdt)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jp_cross_bp_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_fbuffer(PSI,dbpdrdr)*fbuffer(PSI,br)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdr)*fbuffer(PSI,dbrdr)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbpdrdt)*fbuffer(PSI,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,bphi)*fbuffer(PSI,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdt)*fbuffer(PSI,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - 2*fbuffer(PSI,br)*fbuffer(PSI,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbrdpdp)*fbuffer(PSI,bphi)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbrdrdp)*fbuffer(PSI,br)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbrdtdp)*fbuffer(PSI,btheta)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdp)*fbuffer(PSI,dbrdp)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdp)*fbuffer(PSI,dbrdr)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdt)*fbuffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbpdrdp)*fbuffer(PSI,bphi)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,bphi)*fbuffer(PSI,dbtdr)*cottheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,btheta)*fbuffer(PSI,dbpdr)*cottheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdp)*fbuffer(PSI,dbpdr)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - 2*fbuffer(PSI,bphi)*fbuffer(PSI,dbpdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - 2*fbuffer(PSI,btheta)*fbuffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jp_cross_bp_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_fbuffer(PSI,dbtdrdr)*fbuffer(PSI,br)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdr)*fbuffer(PSI,dbtdr)*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbtdrdt)*fbuffer(PSI,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,btheta)*fbuffer(PSI,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdr)*fbuffer(PSI,dbtdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbrdrdt)*fbuffer(PSI,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbrdtdt)*fbuffer(PSI,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdr)*fbuffer(PSI,dbrdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdt)*fbuffer(PSI,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,bphi)*fbuffer(PSI,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,br)*fbuffer(PSI,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,btheta)*fbuffer(PSI,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbtdrdp)*fbuffer(PSI,bphi)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdr)*fbuffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbrdtdp)*fbuffer(PSI,bphi)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdt)*fbuffer(PSI,dbrdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - 2*fbuffer(PSI,bphi)*fbuffer(PSI,dbpdr)*cottheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*fbuffer(PSI,dbrdp)*costheta(t)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! curl(Lc*(curl <B>) x <B>) is a fresh (but related) derivation: <B>
+        ! is axisymmetric (m0_values has no phi index), so every
+        ! phi-derivative term in curl(Lc*(curl B) x B) above vanishes.
+        ! Derived with sympy (B_r/B_t/B_p treated
+        ! as functions of r,theta only).
+        If (compute_quantity(curl_jm_cross_bm_r)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dbpdrdt)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + d2_m0(PSI2,dbpdtdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + m0_values(PSI2,bphi)*m0_values(PSI2,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + m0_values(PSI2,br)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + m0_values(PSI2,dbpdr)*m0_values(PSI2,dbrdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                + m0_values(PSI2,dbpdt)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - m0_values(PSI2,bphi)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*m0_values(PSI2,bphi)*m0_values(PSI2,br)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*m0_values(PSI2,bphi)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*m0_values(PSI2,br)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + 2*cottheta(t)*m0_values(PSI2,btheta)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jm_cross_bm_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_m0(PSI2,dbpdrdr)*m0_values(PSI2,br)*ref%Lorentz_Coeff &
+                - m0_values(PSI2,dbpdr)*m0_values(PSI2,dbrdr)*ref%Lorentz_Coeff &
+                - d2_m0(PSI2,dbpdrdt)*m0_values(PSI2,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                - m0_values(PSI2,bphi)*m0_values(PSI2,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - m0_values(PSI2,dbpdt)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - 2*m0_values(PSI2,br)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*m0_values(PSI2,bphi)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*m0_values(PSI2,btheta)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jm_cross_bm_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dbtdrdr)*m0_values(PSI2,br)*ref%Lorentz_Coeff &
+                + m0_values(PSI2,dbrdr)*m0_values(PSI2,dbtdr)*ref%Lorentz_Coeff &
+                + d2_m0(PSI2,dbtdrdt)*m0_values(PSI2,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                + m0_values(PSI2,btheta)*m0_values(PSI2,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + m0_values(PSI2,dbtdr)*m0_values(PSI2,dbtdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_m0(PSI2,dbrdrdt)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_m0(PSI2,dbrdtdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - m0_values(PSI2,dbrdr)*m0_values(PSI2,dbrdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - m0_values(PSI2,dbrdt)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*m0_values(PSI2,bphi)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*m0_values(PSI2,br)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + 2*m0_values(PSI2,btheta)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - 2*cottheta(t)*m0_values(PSI2,bphi)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! curl(Lc*(curl B') x <B>) and curl(Lc*(curl <B>) x B') are asymmetric. Freshly derived with sympy.
+        If (compute_quantity(curl_jp_cross_bm_r)) Then
+            DO_PSI
+                qty(PSI) = d2_fbuffer(PSI,dbpdrdt)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbpdtdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*m0_values(PSI2,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdr)*m0_values(PSI2,dbrdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdt)*m0_values(PSI2,br)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdt)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,bphi)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*fbuffer(PSI,bphi)*m0_values(PSI2,br)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*fbuffer(PSI,bphi)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*fbuffer(PSI,dbpdr)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*d2_fbuffer(PSI,dbpdtdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*d2_fbuffer(PSI,dbtdrdp)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                - csctheta(t)*d2_fbuffer(PSI,dbtdtdp)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbrdp)*m0_values(PSI2,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,br)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)**2*d2_fbuffer(PSI,dbtdpdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*cottheta(t)*fbuffer(PSI,dbpdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + costheta(t)*csctheta(t)**2*fbuffer(PSI,dbpdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jp_cross_bm_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_fbuffer(PSI,dbpdrdr)*m0_values(PSI2,br)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdr)*m0_values(PSI2,dbrdr)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbpdrdt)*m0_values(PSI2,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,bphi)*m0_values(PSI2,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdt)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - 2*fbuffer(PSI,dbpdr)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*d2_fbuffer(PSI,dbrdrdp)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*d2_fbuffer(PSI,dbrdtdp)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + csctheta(t)*fbuffer(PSI,dbrdp)*m0_values(PSI2,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)**2*d2_fbuffer(PSI,dbrdpdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,bphi)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,dbpdr)*m0_values(PSI2,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                - csctheta(t)*d2_fbuffer(PSI,dbpdrdp)*m0_values(PSI2,bphi)*one_over_r(r)*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbpdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jp_cross_bm_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_fbuffer(PSI,dbtdrdr)*m0_values(PSI2,br)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdr)*m0_values(PSI2,dbrdr)*ref%Lorentz_Coeff &
+                + d2_fbuffer(PSI,dbtdrdt)*m0_values(PSI2,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,btheta)*m0_values(PSI2,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,btheta)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdr)*m0_values(PSI2,dbpdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdt)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdr)*m0_values(PSI2,dbtdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbrdrdt)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_fbuffer(PSI,dbrdtdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdt)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdt)*m0_values(PSI2,dbrdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdt)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,dbtdr)*m0_values(PSI2,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*d2_fbuffer(PSI,dbtdrdp)*m0_values(PSI2,bphi)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,bphi)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,dbpdr)*m0_values(PSI2,bphi)*one_over_r(r)*ref%Lorentz_Coeff &
+                - csctheta(t)*d2_fbuffer(PSI,dbrdtdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbrdp)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + costheta(t)*csctheta(t)**2*fbuffer(PSI,dbrdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jm_cross_bp_r)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dbpdrdt)*fbuffer(PSI,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                + d2_m0(PSI2,dbpdtdt)*fbuffer(PSI,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,br)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdt)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdt)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdt)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,btheta)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*fbuffer(PSI,br)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + cottheta(t)*fbuffer(PSI,br)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + cottheta(t)*fbuffer(PSI,dbtdt)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + csctheta(t)*fbuffer(PSI,dbpdp)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + csctheta(t)*fbuffer(PSI,dbrdp)*m0_values(PSI2,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbrdp)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbrdp)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + 2*cottheta(t)*fbuffer(PSI,btheta)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + costheta(t)*csctheta(t)**2*fbuffer(PSI,dbpdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jm_cross_bp_theta)) Then
+            DO_PSI
+                qty(PSI) = -d2_m0(PSI2,dbpdrdr)*fbuffer(PSI,br)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdr)*m0_values(PSI2,dbpdr)*ref%Lorentz_Coeff &
+                - d2_m0(PSI2,dbpdrdt)*fbuffer(PSI,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdr)*m0_values(PSI2,bphi)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbtdr)*m0_values(PSI2,dbpdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - 2*fbuffer(PSI,br)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,btheta)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,dbtdr)*m0_values(PSI2,bphi)*one_over_r(r)*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbpdp)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbpdp)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - csctheta(t)*fbuffer(PSI,dbtdp)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_jm_cross_bp_phi)) Then
+            DO_PSI
+                qty(PSI) = d2_m0(PSI2,dbtdrdr)*fbuffer(PSI,br)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdr)*m0_values(PSI2,dbtdr)*ref%Lorentz_Coeff &
+                + d2_m0(PSI2,dbtdrdt)*fbuffer(PSI,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,bphi)*m0_values(PSI2,dbpdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,btheta)*m0_values(PSI2,dbtdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdt)*m0_values(PSI2,bphi)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbpdt)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbrdr)*m0_values(PSI2,btheta)*one_over_r(r)*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdt)*m0_values(PSI2,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + fbuffer(PSI,dbtdt)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_m0(PSI2,dbrdrdt)*fbuffer(PSI,br)*one_over_r(r)*ref%Lorentz_Coeff &
+                - d2_m0(PSI2,dbrdtdt)*fbuffer(PSI,btheta)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbpdr)*m0_values(PSI2,dbpdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbrdr)*m0_values(PSI2,dbrdt)*one_over_r(r)*ref%Lorentz_Coeff &
+                - fbuffer(PSI,dbtdt)*m0_values(PSI2,dbrdt)*one_over_r(r)**2*ref%Lorentz_Coeff &
+                + 2*fbuffer(PSI,br)*m0_values(PSI2,dbtdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,bphi)*m0_values(PSI2,dbpdr)*one_over_r(r)*ref%Lorentz_Coeff &
+                - cottheta(t)*fbuffer(PSI,dbpdr)*m0_values(PSI2,bphi)*one_over_r(r)*ref%Lorentz_Coeff
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
     End Subroutine Compute_Curl_Magnetic_Force
 
     Subroutine Compute_Curl_Coriolis_Force(buffer)
@@ -560,7 +1189,75 @@ Contains
                             buffer(PSI,dvtdr) + sintheta(t) * buffer(PSI,dvrdr) + ref%dlnrho(r) * costheta(t) * &
                             buffer(PSI,vtheta) + ref%dlnrho(r) * sintheta(t) * buffer(PSI,vr)))**2 + &
                            (ref%Coriolis_Coeff * ref%density(r) * (ref%dlnrho(r) * costheta(t) * buffer(PSI,vphi) + &
-                            costheta(t) * buffer(PSI,dvpdr) - one_over_r(r) * sintheta(t) * buffer(PSI,dvpdt)))**2)**(0.5)   
+                            costheta(t) * buffer(PSI,dvpdr) - one_over_r(r) * sintheta(t) * buffer(PSI,dvpdt)))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! Fluctuating and mean Coriolis curls: same formulas as
+        ! curl_coriolis_force_r/theta/phi above, v -> v'/<v>.
+        If (compute_quantity(curl_coriolis_pforce_r)) Then
+            DO_PSI
+                qty(PSI) = -costheta(t)*fbuffer(PSI,dvtdt)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                - cottheta(t)*fbuffer(PSI,dvpdp)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                - fbuffer(PSI,dvrdt)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t) &
+                - csctheta(t)*fbuffer(PSI,vtheta)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                - 2*costheta(t)*fbuffer(PSI,vr)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                + 2*fbuffer(PSI,vtheta)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_coriolis_pforce_theta)) Then
+            DO_PSI
+                qty(PSI) = costheta(t)*fbuffer(PSI,dvtdr)*ref%Coriolis_Coeff*ref%density(r) &
+                + fbuffer(PSI,dvpdp)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                + fbuffer(PSI,dvrdr)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t) &
+                + costheta(t)*fbuffer(PSI,vtheta)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                + costheta(t)*fbuffer(PSI,vtheta)*ref%Coriolis_Coeff*ref%density(r)*ref%dlnrho(r) &
+                + fbuffer(PSI,vr)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t) &
+                + fbuffer(PSI,vr)*ref%Coriolis_Coeff*ref%density(r)*ref%dlnrho(r)*sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_coriolis_pforce_phi)) Then
+            DO_PSI
+                qty(PSI) = costheta(t)*fbuffer(PSI,dvpdr)*ref%Coriolis_Coeff*ref%density(r) &
+                + costheta(t)*fbuffer(PSI,vphi)*ref%Coriolis_Coeff*ref%density(r)*ref%dlnrho(r) &
+                - fbuffer(PSI,dvpdt)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_coriolis_mforce_r)) Then
+            DO_PSI
+                qty(PSI) = -costheta(t)*m0_values(PSI2,dvtdt)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                - m0_values(PSI2,dvrdt)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t) &
+                - csctheta(t)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                - 2*costheta(t)*m0_values(PSI2,vr)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                + 2*m0_values(PSI2,vtheta)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_coriolis_mforce_theta)) Then
+            DO_PSI
+                qty(PSI) = costheta(t)*m0_values(PSI2,dvtdr)*ref%Coriolis_Coeff*ref%density(r) &
+                + m0_values(PSI2,dvrdr)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t) &
+                + costheta(t)*m0_values(PSI2,vtheta)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r) &
+                + costheta(t)*m0_values(PSI2,vtheta)*ref%Coriolis_Coeff*ref%density(r)*ref%dlnrho(r) &
+                + m0_values(PSI2,vr)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t) &
+                + m0_values(PSI2,vr)*ref%Coriolis_Coeff*ref%density(r)*ref%dlnrho(r)*sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_coriolis_mforce_phi)) Then
+            DO_PSI
+                qty(PSI) = costheta(t)*m0_values(PSI2,dvpdr)*ref%Coriolis_Coeff*ref%density(r) &
+                + costheta(t)*m0_values(PSI2,vphi)*ref%Coriolis_Coeff*ref%density(r)*ref%dlnrho(r) &
+                - m0_values(PSI2,dvpdt)*one_over_r(r)*ref%Coriolis_Coeff*ref%density(r)*sintheta(t)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -606,6 +1303,35 @@ Contains
                 END_DO
                 Call Add_Quantity(qty)
             Endif
+        Endif
+
+        ! Fluctuating pressure curl: identical structure to curl_pressure_force_*
+        ! above, P -> P'. curl_pressure_pforce_r is always 0.
+        If (compute_quantity(curl_pressure_pforce_theta)) Then
+            DO_PSI
+                qty(PSI) = pfactor(r) * &
+                            One_Over_R(r) * csctheta(t) * ref%dlnrho(r) * fbuffer(PSI,dpdp)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_pressure_pforce_phi)) Then
+            DO_PSI
+                qty(PSI) = - pfactor(r) * &
+                              One_Over_R(r) * ref%dlnrho(r) * fbuffer(PSI,dpdt)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! Mean pressure curl: P -> <P>. <P> is axisymmetric (m0_values has no
+        ! phi index), so curl_pressure_mforce_theta ~ d<P>/dphi is identically 0.
+        ! Only curl_pressure_mforce_phi ~ d<P>/dtheta survives.
+        If (compute_quantity(curl_pressure_mforce_phi)) Then
+            DO_PSI
+                qty(PSI) = - pfactor(r) * &
+                              One_Over_R(r) * ref%dlnrho(r) * m0_values(PSI2,dpdt)
+            END_DO
+            Call Add_Quantity(qty)
         Endif
 
     End Subroutine Compute_Curl_Pressure_Force
@@ -673,8 +1399,66 @@ Contains
                                 One_Over_R(r)*(vforce_buffer(PSI,vf_t) - &
                                 VFDBUFF(PSI,dvf_r_dt)))**2)
             END_DO
-            Call Add_Quantity(qty)   
-        Endif    
+            Call Add_Quantity(qty)
+        Endif
+
+        ! Fluctuating and mean viscous force curls: identical in form to
+        ! curl_viscous_force_r/theta/phi above, just using
+        ! the pforce/mforce vforce_buffer/VFDBUFF offsets instead of the
+        ! full-field ones.
+        If (compute_quantity(curl_viscous_pforce_r)) Then
+            DO_PSI
+                qty(PSI) = One_Over_R(r)*(VFDBUFF(PSI,dvfp_p_dt) + &
+                                cottheta(t)*vforce_buffer(PSI,vfp_p) - &
+                                csctheta(t)*VFDBUFF(PSI,dvfp_t_dp))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_viscous_pforce_theta)) Then
+            DO_PSI
+                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvfp_r_dp) - &
+                                vforce_buffer(PSI,vfp_p)) - &
+                            VFDBUFF(PSI,dvfp_p_dr)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_viscous_pforce_phi)) Then
+            DO_PSI
+                qty(PSI) = VFDBUFF(PSI,dvfp_t_dr) + &
+                            One_Over_R(r)*(vforce_buffer(PSI,vfp_t) - &
+                                VFDBUFF(PSI,dvfp_r_dt))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_viscous_mforce_r)) Then
+            DO_PSI
+                qty(PSI) = One_Over_R(r)*(VFDBUFF(PSI,dvfm_p_dt) + &
+                                cottheta(t)*vforce_buffer(PSI,vfm_p) - &
+                                csctheta(t)*VFDBUFF(PSI,dvfm_t_dp))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_viscous_mforce_theta)) Then
+            DO_PSI
+                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvfm_r_dp) - &
+                                vforce_buffer(PSI,vfm_p)) - &
+                            VFDBUFF(PSI,dvfm_p_dr)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(curl_viscous_mforce_phi)) Then
+            DO_PSI
+                qty(PSI) = VFDBUFF(PSI,dvfm_t_dr) + &
+                            One_Over_R(r)*(vforce_buffer(PSI,vfm_t) - &
+                                VFDBUFF(PSI,dvfm_r_dt))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
     End Subroutine Compute_Curl_Viscous_Force
 

@@ -24,10 +24,9 @@ Curl Momentum Equation
  :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta\right)\right]_\phi`                                                                                 1320    curl\_buoyancy\_force\_phi  
  :math:`\left(\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta\right)\right]_\theta\right)^2`                                                                1321    curl\_buoyancy\_force\_theta\_squared  
  :math:`\left(\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta\right)\right]_\phi\right)^2`                                                                  1322    curl\_buoyancy\_force\_phi\_squared  
- :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\overline{\Theta}\right)\right]_\theta`                                                                    1323    curl\_buoyancy\_pforce\_theta  
- :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\overline{\Theta}\right)\right]_\phi`                                                                      1324    curl\_buoyancy\_pforce\_phi  
- :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta'\right)\right]_\theta`                                                                              1325    curl\_buoyancy\_mforce\_theta  
- :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta'\right)\right]_\phi`                                                                                1326    curl\_buoyancy\_mforce\_phi  
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta'\right)\right]_\theta`                                                                              1323    curl\_buoyancy\_pforce\_theta  
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta'\right)\right]_\phi`                                                                                1324    curl\_buoyancy\_pforce\_phi  
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\overline{\Theta}\right)\right]_\phi`                                                                      1326    curl\_buoyancy\_mforce\_phi  
  :math:`\left[\boldsymbol{\nabla}\times\left(-c_1\mathrm{f}_1(\hat{\boldsymbol{z}}\times\boldsymbol{v})\right)\right]_r`                                               1327    curl\_coriolis\_force\_r      
  :math:`\left[\boldsymbol{\nabla}\times\left(-c_1\mathrm{f}_1(\hat{\boldsymbol{z}}\times\boldsymbol{v})\right)\right]_\theta`                                          1328    curl\_coriolis\_force\_theta  
  :math:`\left[\boldsymbol{\nabla}\times\left(-c_1\mathrm{f}_1(\hat{\boldsymbol{z}}\times\boldsymbol{v})\right)\right]_\phi`                                            1329    curl\_coriolis\_force\_phi    
@@ -54,12 +53,11 @@ Curl Momentum Equation
  :math:`\left[\boldsymbol{\nabla}\times\left(c_5\,(\boldsymbol{\nabla}\cdot\overline{\boldsymbol{\mathcal D}})\right)\right]_\phi`                                     1353    curl\_viscous\_mforce\_phi    
  :math:`\left[\nabla\times\nabla P\right]_\theta`                                                                                                                      1358    curl\_pressure\_force\_theta   
  :math:`\left[\nabla\times\nabla P\right]_\phi`                                                                                                                        1359    curl\_pressure\_force\_phi     
- :math:`\left[\nabla\times\nabla P\right]_\theta^2`                                                                                                                    1361    curl\_pressure\_force\_theta\_squared   
- :math:`\left[\nabla\times\nabla P\right]_\phi^2`                                                                                                                      1362    curl\_pressure\_force\_phi\_squared     
- :math:`\left[\nabla\times\nabla P\right]_\theta`                                                                                                                      1364    curl\_pressure\_pforce\_theta  
- :math:`\left[\nabla\times\nabla P\right]_\phi`                                                                                                                        1365    curl\_pressure\_pforce\_phi    
- :math:`\left[\nabla\times\nabla P\right]_\theta`                                                                                                                      1367    curl\_pressure\_mforce\_theta  
- :math:`\left[\nabla\times\nabla P\right]_\phi`                                                                                                                        1368    curl\_pressure\_mforce\_phi    
+ :math:`\left(\left[\nabla\times\nabla P\right]_\theta\right)^2`                                                                                                       1361    curl\_pressure\_force\_theta\_squared   
+ :math:`\left(\left[\nabla\times\nabla P\right]_\phi\right)^2`                                                                                                         1362    curl\_pressure\_force\_phi\_squared     
+ :math:`\left[\nabla\times\nabla P'\right]_\theta`                                                                                                                     1364    curl\_pressure\_pforce\_theta  
+ :math:`\left[\nabla\times\nabla P'\right]_\phi`                                                                                                                       1365    curl\_pressure\_pforce\_phi    
+ :math:`\left[\nabla\times\nabla \overline{P}\right]_\phi`                                                                                                             1368    curl\_pressure\_mforce\_phi    
  :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B)\times\boldsymbol B\right)\right)\right]_r`                              1369    curl\_j\_cross\_b\_r     
  :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B)\times\boldsymbol B\right)\right)\right]_\theta`                         1370    curl\_j\_cross\_b\_theta 
  :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B)\times\boldsymbol B\right)\right)\right]_\phi`                           1371    curl\_j\_cross\_b\_phi   
@@ -72,10 +70,15 @@ Curl Momentum Equation
  :math:`\left[\boldsymbol{\nabla}\times c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\boldsymbol B'\right)\right]_r`                              1378    curl\_jm\_cross\_bp\_r     
  :math:`\left[\boldsymbol{\nabla}\times c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\boldsymbol B'\right)\right]_\theta`                         1379    curl\_jm\_cross\_bp\_theta 
  :math:`\left[\boldsymbol{\nabla}\times c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\boldsymbol B'\right)\right]_\phi`                           1380    curl\_jm\_cross\_bp\_phi   
- :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B')\times\boldsymbol B'\right)\right)\right]_r`                            1381    curl\_jm\_cross\_bm\_r     
- :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B')\times\boldsymbol B'\right)\right)\right]_\theta`                       1382    curl\_jm\_cross\_bm\_theta 
- :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B')\times\boldsymbol B'\right)\right)\right]_\phi`                         1383    curl\_jm\_cross\_bm\_phi   
- :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_r`        1384    curl\_jp\_cross\_bp\_r     
- :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_\theta`   1385    curl\_jp\_cross\_bp\_theta 
- :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_\phi`     1386    curl\_jp\_cross\_bp\_phi   
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_r`        1381    curl\_jm\_cross\_bm\_r     
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_\theta`   1382    curl\_jm\_cross\_bm\_theta 
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\overline{\boldsymbol B})\times\overline{\boldsymbol B}\right)\right)\right]_\phi`     1383    curl\_jm\_cross\_bm\_phi   
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B')\times\boldsymbol B'\right)\right)\right]_r`                            1384    curl\_jp\_cross\_bp\_r     
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B')\times\boldsymbol B'\right)\right)\right]_\theta`                       1385    curl\_jp\_cross\_bp\_theta 
+ :math:`\left[\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B')\times\boldsymbol B'\right)\right)\right]_\phi`                         1386    curl\_jp\_cross\_bp\_phi   
+ :math:`\left|\boldsymbol{\nabla}\times\left(c_2\mathrm{f}_2\Theta\right)\right|`                                                                                      1387    curl\_buoyancy\_force\_abs 
+ :math:`\left|\boldsymbol{\nabla}\times\left(-c_1\mathrm{f}_1(\hat{\boldsymbol{z}}\times\boldsymbol{v})\right)\right|`                                                 1388    curl\_coriolis\_force\_abs 
+ :math:`\left|\nabla\times\mathrm{f}_1\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]\right|`                                                        1389    curl\_v\_grad\_v\_abs       
+ :math:`\left|\boldsymbol{\nabla}\times\left(c_4\left((\boldsymbol{\nabla}\times\boldsymbol B)\times\boldsymbol B\right)\right)\right|`                                1390    curl\_j\_cross\_b\_abs      
+ :math:`\left|\boldsymbol{\nabla}\times\left(c_5\,(\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal D})\right)\right|`                                                     1391    curl\_viscous\_force\_abs  
 ===================================================================================================================================================================== ====== ======================================= 
