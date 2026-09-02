@@ -17,4 +17,4 @@ mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # after both scenarios have run, we test the output for errors
-(cd no_slip && python3 compare.py) && (cd free_slip && python3 compare.py)
+(cd no_slip && python3 compare.py --vtu) && (cd free_slip && python3 compare.py --vtu)
