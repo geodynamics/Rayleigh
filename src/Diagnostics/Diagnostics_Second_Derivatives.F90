@@ -523,6 +523,10 @@ Contains
 
         Call DeAllocate_rlm_Field(ddtemp)
 
+        ! FIXME: necessary?
+        Do mp = my_mp%min, my_mp%max
+            d2buffer%s2a(mp)%data(l_max,:,:,:) = 0.0d0
+        Enddo
 
         Call d2buffer%construct('p2a')
         Call Legendre_Transform(d2buffer%s2a,d2buffer%p2a)

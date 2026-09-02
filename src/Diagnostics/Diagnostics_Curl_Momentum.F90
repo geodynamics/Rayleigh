@@ -1644,7 +1644,7 @@ Contains
 
     Subroutine Grad_Viscous_Force()
         Implicit None
-        Integer :: i, r, k, t
+        Integer :: i, r, k, t, mp
 
         call d_vforce_buffer%construct('p3b')
         d_vforce_buffer%config = 'p3b'
@@ -1715,6 +1715,11 @@ Contains
                 call d_by_dtheta(d_vforce_buffer%s2a, i, vfdindmap(i,3))
             endif
         enddo
+
+        ! FIXME: necessary?
+        Do mp = my_mp%min, my_mp%max
+            d_vforce_buffer%s2a(mp)%data(l_max,:,:,:) = 0.0d0
+        Enddo
 
         call d_vforce_buffer%construct('p2a')
         call Legendre_Transform(d_vforce_buffer%s2a, d_vforce_buffer%p2a)
