@@ -121,6 +121,19 @@ jobs:
           name: ${{ matrix.unit-result-file }}
           path: tests/unit_tests/SHT/changes.diff
 
+    - name: archive sympy diagnostics comparison
+      if: always()
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        tar -czf sympy_diagnostics_comparison.tar.gz tests/sympy_diagnostics_comparison
+
+    - name: upload sympy diagnostics comparison
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+          name: sympy_diagnostics_comparison-${{ matrix.result-file }}
+          path: sympy_diagnostics_comparison.tar.gz
+
   conda:
     name: conda-build
     strategy:
