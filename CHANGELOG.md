@@ -13,15 +13,29 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Extend custom references states to active and passive scalar fields by adding a new custom reference state file type (with an accompanying python preprocessing class and namelist options) for scalar fields.  This allows the scalar equations to include non-zero (and potentially radially dependent) reference state advection and source terms. \[Cian Wilson; 7-13-2026; [#586](https://github.com/geodynamics/Rayleigh/pull/586)\]
 
+- Added a temporal FFT transform class to spectral_utils.py that handles the forward and backward transforms, windowing, spectral filtering, and interpolation to a regular grid. \[Brad Hindman; 7-17-2026; [#631](https://github.com/geodynamics/Rayleigh/pull/631)\]
+- WIP: Added the basis for a fully compressible mode to be implemented into Rayleigh. This includes physical control variables and the basis for a dimensionalized version of the compressible equations in a sphere. \[Brandon Lazard; 7-17-2026 [#611](https://github.com/geodynamics/Rayleigh/pull/611)\]
+
+- Implemented new diagnostic quantity codes for scalar fields.  Added buoyancy forces, buoyancy work, and buoyant KE production associated with the active chi fields.  These are documented in the "Under Development" section of the User Guide.  Additional placeholders have been included for future codes to be added. \[Cian Wilson; 7-13-2026; [#582](https://github.com/geodynamics/Rayleigh/pull/582)\]
+- Add support for building with NVHPC compilers as a preparation for using OpenMP on Nvidia systems. \[Philipp Edelmann; 7-17-2026; [#630](https://github.com/geodynamics/Rayleigh/pull/630)\]
+
+- Augmented spectral_utils_tutorial.ipynb to demonstrate how to use the new TemporalFFT class in rayleigh_diagnostics.py. \[Brad Hindman; 7-23-2026; [#636](https://github.com/geodynamics/Rayleigh/pull/636)\]
+
 ### Changed
 
 - Containers for the TACC systems are no longer supported. \[Philipp Edelmann; 7-12-2026; [#608](https://github.com/geodynamics/Rayleigh/pull/608)\]
 
+- Modified the routine Shell_Spectra in rayleigh_diagnostics.py to allow the user to specify that only portions of the file be read and returned.  The user can now specify which iterations, quantities, radii, harmonic degrees, and azimuthal orders are desired.  \[Brad Hindman; 7-15-2026; [#618](https://github.com/geodynamics/Rayleigh/pull/618)\]
+
 ### Fixed
 
-- Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 6-13-202; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]
+- Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 7-13-2026; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]
 
 - Rayleigh no longer produces a segmentation fault if all theta values local to a particular process are requested for the Point_Probe output. \[Nick Featherstone; 7-16-2026; [#622](https://github.com/geodynamics/Rayleigh/pull/622)\]
+
+- Fixed a bug in the initialization method of the SPH_Modes class in rayleigh_diagnostics.py that caused data corruption whenever multiple quantities were output. \[Nick Featherstone; 7-16-2026; [#624](https://github.com/geodynamics/Rayleigh/pull/624)\]
+
+- Fixed a bug that was causing some second derivatives to be incorrectly calculated at output time when finite-difference mode was active. \[Cian Wilson; 7-22-2026; [#633](https://github.com/geodynamics/Rayleigh/pull/633)\]
 
 ## [1.3.0] - 5-8-2026
 

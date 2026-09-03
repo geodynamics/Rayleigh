@@ -32,6 +32,7 @@ Module Checkpointing
     Use PDE_Coefficients, Only : Write_Equation_Coefficients_File
     Use BufferedOutput
     Use Load_Balance, Only : my_num_lm
+    Use Fields, Only : n_equations
 
     ! Simple Checkpointing Module
     ! Uses MPI-IO to split writing of files amongst rank zero processes from each row
@@ -96,19 +97,31 @@ Contains
             checkpoint_seconds = checkpoint_minutes*60
             checkpoint_interval = -1
         Endif        
-
-        numfields = 4 + n_active_scalars + n_passive_scalars
-        if (magnetism) then
-          numfields = numfields + 2
-        end if
+        
+        numfields = n_equations 
+        !if (magnetism) then
+        !  numfields = numfields + 2
+        !end if
         allocate(checkpoint_suffix(numfields*2))
 
-        checkpoint_suffix(1:4) = (/ 'W     ', 'P     ', 'T     ', 'Z     '/)
-        i = 4
-        if (magnetism) then
-           checkpoint_suffix(5:6) = (/'C     ', 'A     '/)
-           i = 6
-        end if
+        !print *, numfields, n_equations, n_active_scalars, n_passive_scalars
+        If (.not. compressible) Then 
+            checkpoint_suffix(1:4) = (/ 'W     ', 'P     ', 'T     ', 'Z     '/)
+            i = 4
+            If (magnetism) Then
+                checkpoint_suffix(5:6) = (/'C     ', 'A     '/)
+                i = 6
+            Endif
+
+        Else
+            checkpoint_suffix(1:5) = (/ 'VR    ', 'VT    ', 'VP    ', 'T     ', 'RHO   '/)
+            i = 5
+            if (magnetism) then
+                checkpoint_suffix(6:7) = (/'C     ', 'A     '/)
+                i = 7
+            Endif
+        Endif
+
         do j = 1, n_active_scalars
           write(sstring,auto_fmt) (j)
           checkpoint_suffix(i+j) = 'Xa'//sstring
@@ -279,7 +292,7 @@ Contains
         read_var(:) = 0
         If (magnetism) Then
             ! hydro, magnetic, or both sets of field can be read
-            ab_offset = 7 + n_active_scalars + n_passive_scalars
+            ab_offset = n_equations + 1 + n_active_scalars + n_passive_scalars
             read_var(1:4)   = read_hydro
             read_var(ab_offset:ab_offset+3)  = read_hydro
             read_var(5:6)   = read_magnetism

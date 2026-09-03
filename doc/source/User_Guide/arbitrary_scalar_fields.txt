@@ -321,6 +321,14 @@ Active scalar fields
  :math:`\frac{\partial\chi_{a_i}}{\partial \phi}`               10010+200*(i-1)     longitudinal derivative of active scalar field i
  :math:`\frac{\partial\chi_{a_i}^\prime}{\partial \phi}`        10011+200*(i-1)     longitudinal derivative of the active scalar field i perturbation
  :math:`\frac{\partial\overline{\chi_{a_i}}}{\partial \phi}`    10012+200*(i-1)     longitudinal derivative of the active scalar field i mean
+ :math:`d_{7_i}\mathrm{g}_{7_i}\chi`                            10071+200*(i-1)     chi\_buoyancy\_force for active scalar field i
+ :math:`d_{7_i}\mathrm{g}_{7_i}\chi'`                           10072+200*(i-1)     chi\_buoyancy\_pforce for active scalar field i perturbation
+ :math:`d_{7_i}\mathrm{g}_{7_i}\overline{\chi}`                 10073+200*(i-1)     chi\_buoyancy\_mforce for active scalar field i mean
+ :math:`d_{7_i}\mathrm{g}_{7_i}\chi_{00}`                       10074+200*(i-1)     chi\_buoyancy\_force\_ell0 for active scalar field i l0
+ :math:`d_{7_i}v_r\mathrm{g}_{7_i}\chi`                         10171+200*(i-1)     chi\_buoy\_work for active scalar field i
+ :math:`d_{7_i}v'_r\mathrm{g}_{7_i}\chi'`                       10172+200*(i-1)     chi\_buoy\_work\_pp  for active scalar field i perturbation
+ :math:`d_{7_i}\overline{v_r}\mathrm{g}_{7_i}\overline{\chi}`   10173+200*(i-1)     chi\_buoy\_work\_mm for active scalar field i mean
+ :math:`d_{7_i}\mathrm{g}_{7_i}{\chi^\prime}{v^\prime}_r`       10181+200*(i-1)     chi\_production\_buoyant\_pKE for active scalar field i
 =============================================================== =================== ================================================================
 
 Passive scalar fields

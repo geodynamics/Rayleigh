@@ -169,7 +169,6 @@ Contains
     Subroutine Initialize_Diagnostics_Buffer()
         Logical :: dbtrans, dbconfig
         Logical :: test_reduce
-
         dbtrans = .false.
         dbconfig = .false.
         test_reduce = .false.

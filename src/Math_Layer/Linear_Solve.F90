@@ -398,8 +398,9 @@ Module Linear_Solve
         Enddo
     End Subroutine DeAllocate_RHS
 
-    Subroutine Apply_Boundary_Mask(bcmask)
+    Subroutine Apply_Boundary_Mask(bcmask, skip_eq)
         Implicit None
+        Integer, Intent(In), Optional :: skip_eq
         Integer :: j, k, eqind
         Real*8, Intent(In) :: bcmask(:,:,:,:)
 
@@ -409,11 +410,13 @@ Module Linear_Solve
             If (equation_set(1,k)%primary) Then
                 Do j = 1, equation_set(1,k)%nlinks
                     eqind = equation_set(1,k)%links(j)
+                    If (present(skip_eq)) Then 
+                        If (eqind .eq. skip_eq) Cycle
+                    EndIf
                     equation_set(1,k)%RHS(1+(j-1)*ndim1,:,:) = bcmask(1,:,:,eqind) ! Upper boundary
                     equation_set(1,k)%RHS(ndim1*j,:,:) = bcmask(2,:,:,eqind)       ! Lower boundary
                 Enddo
             Endif
-
         Enddo
     End Subroutine Apply_Boundary_Mask
     
@@ -915,7 +918,6 @@ Module Linear_Solve
         equation_set(mode,eqind)%mpointer(rowblock+row,:) = 0.0d0
 
     End Subroutine Clear_Row
-
 
 
     Subroutine LU_Solve_Sparse(self)

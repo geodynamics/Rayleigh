@@ -63,6 +63,8 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
   target_compile_definitions(rayleigh PRIVATE INTEL_COMPILER)
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
   target_compile_definitions(rayleigh PRIVATE CRAY_COMPILER)
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
+  target_compile_definitions(rayleigh PRIVATE NVHPC_COMPILER)
 endif()
 
 if(MPI_Fortran_HAVE_F08_MODULE)
