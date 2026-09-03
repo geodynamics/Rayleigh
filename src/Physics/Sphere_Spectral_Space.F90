@@ -329,29 +329,6 @@ Contains
         Call gridcp%From_Spectral(ctemp%p1a,wsp%p1a)
         Call ctemp%deconstruct('p1a')
 
-        ! DEBUG: second checkpoint -- dump C, dC/dr, d2C/dr2 for the l=1,m=0
-        ! mode again, now AFTER the generic dealias_buffer/From_Spectral pass
-        ! above that converts wsp%p1a from spectral to physical space for
-        ! every field at once. Compared against dcdr_debug_rank*_iter1.txt
-        ! (the checkpoint right after d_by_dr_cp, which matched the local/
-        ! correct run byte-for-byte) this bisects whether the corruption
-        ! happens in this generic transform or further downstream.
-        If (magnetism .and. output_iteration) Then
-            Do lm_dbg = 1, my_num_lm
-                If (l_lm_values(lm_dbg) .eq. 1 .and. m_lm_values(lm_dbg) .eq. 0) Then
-                    Write(dbgfile,'(A,I0,A,I0,A)') 'dcdr_physical_debug_rank', my_rank, '_iter', iteration, '.txt'
-                    Open(unit=8675310, file=Trim(dbgfile), status='replace', action='write')
-                    Write(8675310,'(A)') '# p1a_r_index  C(l=1,m=0)  dCdr(l=1,m=0)  d2Cdr2(l=1,m=0)'
-                    Do r_dbg = my_r%min, my_r%max
-                        Write(8675310,'(I6,3ES24.15)') r_dbg, &
-                            wsp%p1a(r_dbg,1,lm_dbg,cvar), wsp%p1a(r_dbg,1,lm_dbg,dcdr), &
-                            wsp%p1a(r_dbg,1,lm_dbg,d2cdr2)
-                    Enddo
-                    Close(8675310)
-                Endif
-            Enddo
-        Endif
-
         !/////////////////////////////////////////////////////////////////
         !  The rest of the code can remain unchanged
         !/////////////////////////////////////////////////////////////////
