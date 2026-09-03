@@ -178,8 +178,6 @@ Contains
         Implicit None
         Integer :: m, i
         Character*12 :: tstring, otstring
-        Integer :: lm_dbg, r_dbg
-        Character(len=64) :: dbgfile
 
         ! wsp%p1b is assumed to be allocated
         Call StopWatch(psolve_time)%startclock()
@@ -269,29 +267,6 @@ Contains
             Call gridcp%d_by_dr_cp(avar,dadr  ,wsp%p1a,1)
             Call gridcp%d_by_dr_cp(cvar,dcdr  ,wsp%p1a,1)
             Call gridcp%d_by_dr_cp(cvar,d2cdr2,wsp%p1a,2)
-
-            ! DEBUG: dump C, dC/dr, d2C/dr2 for the l=1,m=0 mode right after
-            ! d_by_dr_cp computes them, so we can see whether dcdr is already
-            ! wrong here or gets corrupted downstream in the diagnostics path.
-            ! NOTE: at this point wsp%p1a's first index is a Chebyshev
-            ! coefficient/collocation index (n-cheby space per the comment
-            ! above), not a physical radial grid index -- so this is NOT
-            ! radius(r_dbg); it is dumped as-is against that raw index.
-            If (output_iteration) Then
-                Do lm_dbg = 1, my_num_lm
-                    If (l_lm_values(lm_dbg) .eq. 1 .and. m_lm_values(lm_dbg) .eq. 0) Then
-                        Write(dbgfile,'(A,I0,A,I0,A)') 'dcdr_debug_rank', my_rank, '_iter', iteration, '.txt'
-                        Open(unit=8675309, file=Trim(dbgfile), status='replace', action='write')
-                        Write(8675309,'(A)') '# n_cheby_index  C(l=1,m=0)  dCdr(l=1,m=0)  d2Cdr2(l=1,m=0)'
-                        Do r_dbg = my_r%min, my_r%max
-                            Write(8675309,'(I6,3ES24.15)') r_dbg, &
-                                wsp%p1a(r_dbg,1,lm_dbg,cvar), wsp%p1a(r_dbg,1,lm_dbg,dcdr), &
-                                wsp%p1a(r_dbg,1,lm_dbg,d2cdr2)
-                        Enddo
-                        Close(8675309)
-                    Endif
-                Enddo
-            Endif
         Endif
 
         !//////////////////////////////////////////////////////////////////////////
