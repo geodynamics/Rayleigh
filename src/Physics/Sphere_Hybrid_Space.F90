@@ -123,9 +123,9 @@ Contains
            end do
         Endif 
         
-        If (output_iteration) Call Hybrid_Output_Final()
-
         If (magnetism) Call compute_BandCurlB()
+
+        If (output_iteration) Call Hybrid_Output_Final()
 
         Call DeAllocate_rlm_Field(ftemp1)
         Call DeAllocate_rlm_Field(ftemp2)
