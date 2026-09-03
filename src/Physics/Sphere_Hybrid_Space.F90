@@ -505,12 +505,14 @@ Contains
     Subroutine Hybrid_Output_Initial()
         Implicit None
         Integer :: r, m, mp, imi
+        Integer :: mp_dbg, r_dbg
+        Character(len=64) :: dbgfile
         If (magnetism) Then
             Call Allocate_rlm_Field(ftemp3)
             Call Allocate_rlm_Field(ftemp4)
             ! First we grab a copy of several variables whose
             ! values will be overwritten in B and J are computed
-        
+
             ! Convert A to ell(ell+1) A/r^2  (i.e. [curl B]_r)
             DO_IDX2
                 ASBUFFA(IDX2,avar_cb) = l_l_plus1(m:l_max)* &
@@ -520,6 +522,30 @@ Contains
             DO_IDX2
                 ASBUFFA(IDX2,dbrdr_cb) = SBUFFA(IDX2,dcdr)
             END_DO
+
+            ! DEBUG: third checkpoint -- dump C (still in the br slot, before
+            ! Compute_BandCurlB overwrites it), dC/dr and d2C/dr2 for the
+            ! l=1,m=0 mode here, i.e. after the p1a->s2a transpose out of
+            ! Sphere_Spectral_Space but before this module's own B/curlB
+            ! machinery touches anything. Compare against
+            ! dcdr_physical_debug_rank*_iter1.txt to bisect whether the
+            ! corruption happens in that transpose or later in this module.
+            If (output_iteration) Then
+                Do mp_dbg = my_mp%min, my_mp%max
+                    If (m_values(mp_dbg) .eq. 0) Then
+                        Write(dbgfile,'(A,I0,A,I0,A)') 'sbuffa_debug_rank', my_rank, '_iter', iteration, '.txt'
+                        Open(unit=8675311, file=Trim(dbgfile), status='replace', action='write')
+                        Write(8675311,'(A)') '# r_index  C(l=1,m=0)  dCdr(l=1,m=0)  d2Cdr2(l=1,m=0)'
+                        Do r_dbg = my_r%min, my_r%max
+                            Write(8675311,'(I6,3ES24.15)') r_dbg, &
+                                wsp%s2a(mp_dbg)%data(1,r_dbg,1,br), &
+                                wsp%s2a(mp_dbg)%data(1,r_dbg,1,dcdr), &
+                                wsp%s2a(mp_dbg)%data(1,r_dbg,1,d2cdr2)
+                        Enddo
+                        Close(8675311)
+                    Endif
+                Enddo
+            Endif
 
             DO_IDX2
                 ftemp3(mp)%data(IDX2)  = SBUFFA(IDX2,d2cdr2)
