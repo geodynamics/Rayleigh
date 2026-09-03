@@ -475,8 +475,6 @@ Contains
     Subroutine Bfield_Derivatives()
         Implicit None
         Integer :: r, m, mp, imi
-        Integer :: mp_dbg, r_dbg
-        Character(len=64) :: dbgfile
 
         ! These terms are only needed if we want to output
         ! inductions terms in the diagnostics
@@ -532,29 +530,6 @@ Contains
             ASBUFFA(IDX2,dbrdr_cb) = ASBUFFA(IDX2,dbrdr_cb)- &
                 & SBUFFA(IDX2,br)*Two_Over_R(r)
         END_DO
-
-        ! DEBUG: fourth checkpoint -- dump the FINALIZED db_r/dr (ASBUFFA's
-        ! dbrdr_cb slot) for the l=1,m=0 mode here, right after this routine
-        ! computes it. Checkpoint 3 (sbuffa_debug_rank*_iter1.txt) showed
-        ! dC/dr was still correct just before this routine ran, so this one
-        ! tells us whether the corruption happens in the l(l+1)/r^2 - 2*br/r
-        ! combination above, or later downstream (the Legendre transform /
-        ! transpose / diagnostics buffer assembly that turns this cobuffer
-        ! slot into the final "db_r_dr" output field).
-        If (output_iteration) Then
-            Do mp_dbg = my_mp%min, my_mp%max
-                If (m_values(mp_dbg) .eq. 0) Then
-                    Write(dbgfile,'(A,I0,A,I0,A)') 'dbrdr_final_debug_rank', my_rank, '_iter', iteration, '.txt'
-                    Open(unit=8675312, file=Trim(dbgfile), status='replace', action='write')
-                    Write(8675312,'(A)') '# r_index  dbrdr_cb(l=1,m=0)'
-                    Do r_dbg = my_r%min, my_r%max
-                        Write(8675312,'(I6,ES24.15)') r_dbg, &
-                            cobuffer%s2a(mp_dbg)%data(1,r_dbg,1,dbrdr_cb)
-                    Enddo
-                    Close(8675312)
-                Endif
-            Enddo
-        Endif
 
         ! sintheta dbrdt
         Call d_by_dtheta(wsp%s2a,br,ftemp1)
