@@ -1,0 +1,105 @@
+! ============================================================================
+!  Small-seed sigma run WITH benchmark reporting (v14.3, report_only mode)
+!  benchmark_report_only = .true.: YOUR namelists are authoritative -- every
+!  physics namelist below must be fully populated (this file: the v14.1
+!  production physics verbatim; dt = 20 from the namelist, NOT overridden).
+!  Seed: temp_amp = 1e-4 (effective 1e-8*DeltaS).
+! ============================================================================
+
+&problemsize_namelist
+ n_r = 128
+ n_theta = 192
+ nprow = 64
+ npcol = 32
+ rmin = 2.45d9
+ rmax = 7.0d9
+/
+&numerical_controls_namelist
+static_transpose = .true.
+pad_alltoall = .true.
+/
+&physical_controls_namelist
+ spin_horizontal = .true.
+ compressible = .true.
+ implicit_compressible_diffusion = .true.
+ implicit_compressible_acoustics = .true.
+ implicit_horizontal_acoustics = .true.
+ rotation  = .true.
+ coriolis = .true.
+ gravity = .true.
+ magnetism = .false.
+ advect_reference_state = .false.
+ remove_reference = .false.
+ R_gas = 3.503d7
+ thermal_variable = 2
+ benchmark_mode = 6
+ benchmark_integration_interval = 100
+ benchmark_report_interval = 10000
+ benchmark_report_only = .true.
+/
+&temporal_controls_namelist
+ max_time_step = 30.0
+ max_iterations = 170000
+ checkpoint_interval = 10000
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+globalavg_values = 1,2,3,201,202,301,302,303, 401,402,403,404,405,406,407,408,409,410,411,412, 501,502, 507,508,513,514
+globalavg_frequency = 100
+globalavg_nrec = 100
+
+shellavg_frequency = 500
+shellavg_nrec = 8
+shellavg_values = 1,2,3,301,302,303,401,402,403,404,405,406,407,408,409,410,411,412,501,502,507,508,513,514
+
+shellspectra_levels_nrm = 0.5
+shellspectra_frequency = 1000
+shellspectra_nrec = 1
+shellspectra_values = 1,2,3,501,502
+
+azavg_frequency = 4000
+azavg_nrec = 1
+azavg_values = 1,2,3,301,302,303,401,402,403,404,405,406,407,408,409,410,411,412,501,502,507,508,513,514
+
+shellslice_levels_nrm = 0.025, 0.5, 0.975
+shellslice_frequency = 4000
+shellslice_nrec = 1
+shellslice_values = 1,2,3,301,302,303,401,402,403,404,405,406,407,408,409,410,411,412,501,502,507,508,513,514
+/
+
+&Boundary_Conditions_Namelist
+strict_L_Conservation = .false.
+no_slip_boundaries = .false.
+T_top = 0d0
+T_Bottom = 851225.7
+dtdr_bottom = -2.04d-4
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+fix_dtdr_bottom = .false.
+/
+&Initial_Conditions_Namelist
+init_type = 9
+temp_amp = 1.0d-4
+temp_w = 0.01d4
+/
+&Test_Namelist
+/
+&Reference_Namelist
+reference_type = 2
+heating_type = 0
+gas_gamma = 1.5d0
+luminosity = 7.014464d32
+poly_n = 2.0d0
+poly_Nrho = 5.0d0
+poly_mass = 1.9D30
+poly_rho_i = 1.1d0
+pressure_specific_heat = 1.0509d8
+angular_velocity = 1.76d-4
+/
+&Transport_Namelist
+nu_top    = 3.64364d12
+kappa_top = 3.64364d12
+/

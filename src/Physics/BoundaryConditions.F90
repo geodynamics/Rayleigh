@@ -69,6 +69,14 @@ Module BoundaryConditions
     Logical :: adjust_dTdr_Top = .True.
 
     Real*8  :: T_Bottom     = 0.0d0
+    ! Mixed thermodynamic wall rows (cross-variable Dirichlet conditions):
+    ! fix_S_with_sigma  (sigma formulation): pin S at the walls -- the row
+    !     holds sigma - (g-1)*ln(rho); T_top/T_Bottom then mean S/c_v.
+    ! fix_T_with_entropy (entropy formulation): pin ln T at the walls -- the
+    !     row holds S + c_v*(g-1)*ln(rho); T_top/T_Bottom then mean
+    !     ln(T/T_ref(wall)), the same numbers a matching sigma run uses.
+    Logical :: fix_S_with_sigma   = .false.
+    Logical :: fix_T_with_entropy = .false.
     Real*8  :: T_Top        = 0.0d0
     Real*8  :: dTdr_Top     = 0.0d0
     Real*8  :: dTdr_Bottom  = 0.0d0
@@ -149,6 +157,7 @@ Module BoundaryConditions
     Real*8, allocatable, dimension(:,:,:,:) :: bc_values  ! a 4-D array: (top/bottom, real/imag, my_num_lm, n_equations)
 
     Namelist /Boundary_Conditions_Namelist/ Fix_Tvar_Top, Fix_Tvar_Bottom, T_Bottom, T_Top, dTdr_top, dTdr_bottom, &
+        fix_S_with_sigma, fix_T_with_entropy, &
         fix_dtdr_bottom, fix_dtdr_top, fix_divrt_top, fix_divt_top, fix_divrfc_top, fix_divfc_top, &
         no_slip_boundaries, strict_L_Conservation, fix_poloidalfield_top, fix_poloidalfield_bottom, &
         C10_bottom, C10_top, C11_bottom, C11_top, C1m1_bottom, C1m1_top, Br_bottom, &
@@ -175,12 +184,28 @@ Module BoundaryConditions
 Contains
 
     Subroutine Initialize_Boundary_Conditions()
+        Use Controls, Only : sigma_formulation, thermal_variable
         Implicit None
         Real*8 :: tilt_angle_radians,a,b
         Real*8 :: Ftop, rhotk_top, Fbottom
         Integer :: i
         Integer :: n_active_bcs
 
+        If (fix_S_with_sigma .and. (.not. sigma_formulation)) Then
+            Write(6,*) 'ERROR: fix_S_with_sigma requires the sigma '// &
+                       'formulation (thermal_variable=1 + sigma_formulation).  Stopping.'
+            Stop
+        Endif
+        If (fix_T_with_entropy .and. (thermal_variable .ne. 2)) Then
+            Write(6,*) 'ERROR: fix_T_with_entropy requires the entropy '// &
+                       'formulation (thermal_variable=2).  Stopping.'
+            Stop
+        Endif
+        If (fix_S_with_sigma .and. fix_T_with_entropy) Then
+            Write(6,*) 'ERROR: fix_S_with_sigma and fix_T_with_entropy '// &
+                       'are mutually exclusive.  Stopping.'
+            Stop
+        Endif
         n_active_bcs = count( (/ fix_tvar_top, fix_dtdr_top, couple_tvar_top, couple_dtdr_top /) )
         if (n_active_bcs > 1) then
            call stdout%print(" -- Error: Incompatible boundary conditions for tvar on top boundary.")
@@ -384,7 +409,21 @@ Contains
 
             If (fix_tvar_top .or. couple_tvar_top) Then
                 if (trim(T_top_file) .eq. '__nothing__') then
-                  bc_val= T_Top*sqrt(four_pi)
+                  If (fix_S_with_sigma) Then
+                      ! row holds sigma - (g-1)*ln(rho_tot); target =
+                      ! psi_wall - (g-1)*ln(rho_ref(wall)), psi = S/c_v
+                      bc_val = ( T_Top - (gas_gamma-1.0d0) &
+                                 *Log(ref%density(1)) )*sqrt(four_pi)
+                  Else If (fix_T_with_entropy) Then
+                      ! row holds S + bigz*(g-1)*ln(rho_tot); target =
+                      ! bigz*(lnT_wall - lnCs), lnT_wall = lnT_ref + value
+                      bc_val = bigz*( Log(ref%temperature(1)) + T_Top &
+                               - ( Log(ref%temperature(N_R)) &
+                                 - (gas_gamma-1.0d0)*Log(ref%density(N_R)) ) ) &
+                               *sqrt(four_pi)
+                  Else
+                      bc_val= T_Top*sqrt(four_pi)
+                  Endif
                   Call Set_BC(bc_val,0,0, teq,real_ind, uind)
                 else  
                   Call Set_BC_from_file(T_top_file, teq, uind)
@@ -393,7 +432,17 @@ Contains
 
             If (fix_tvar_bottom .or. couple_tvar_bottom) Then
                 if (trim(T_bottom_file) .eq. '__nothing__') then
-                  bc_val= T_bottom*sqrt(four_pi)
+                  If (fix_S_with_sigma) Then
+                      bc_val = ( T_bottom - (gas_gamma-1.0d0) &
+                                 *Log(ref%density(N_R)) )*sqrt(four_pi)
+                  Else If (fix_T_with_entropy) Then
+                      bc_val = bigz*( Log(ref%temperature(N_R)) + T_bottom &
+                               - ( Log(ref%temperature(N_R)) &
+                                 - (gas_gamma-1.0d0)*Log(ref%density(N_R)) ) ) &
+                               *sqrt(four_pi)
+                  Else
+                      bc_val= T_bottom*sqrt(four_pi)
+                  Endif
                   Call Set_BC(bc_val,0,0, teq,real_ind, lind)
                 else
                   Call Set_BC_from_file(T_bottom_file, teq, lind)

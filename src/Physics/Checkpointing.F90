@@ -43,6 +43,7 @@ Module Checkpointing
     Integer, private :: checkpoint_version = 2
     Integer,private :: checkpoint_tag = 425
     Character*120 :: checkpoint_prefix ='nothing'
+    Logical :: checkpoint_was_spin_native = .false.
     Character*6 :: auto_fmt = '(i2.2)'  ! Format code for quicksaves
     Character*6, allocatable :: checkpoint_suffix(:)
     Integer :: checkpoint_iter = 0
@@ -154,6 +155,9 @@ Contains
     End Subroutine Initialize_Checkpointing
 
     Subroutine Write_Checkpoint(abterms,iteration,dt,new_dt,elapsed_time, input_file)
+        Use Controls, Only : spin_horizontal
+        Use Spin_Conversions, Only : Convert_Spin_Pair_To_Slot
+        Use Fields, Only : vtheta, vphi, vteq, vpeq
         Implicit None
         Real*8, Intent(In) :: abterms(:,:,:,:), dt, new_dt, elapsed_time
         Integer, Intent(In) :: iteration
@@ -171,6 +175,12 @@ Contains
         !Now we want to move from p1a to s2a (rlm space)
         Call chktmp%reform()
 
+        ! Under spin_horizontal the pair state and AB slots are written
+        ! NATIVELY as q+/- spin coefficients (no sintheta weighting, no
+        ! conversion).  A sentinel file 'spin_native' marks the checkpoint;
+        ! the restart reader auto-detects it and converts legacy (slot)
+        ! checkpoints on read.
+
         If (ItIsTimeForAQuickSave) Then
             write(autostring,auto_fmt) (quicksave_num+1) !quick save number starts at 1
             checkpoint_prefix = 'Checkpoints/quicksave_'//trim(autostring)
@@ -181,6 +191,12 @@ Contains
         input_file = TRIM(my_path)//trim(checkpoint_prefix)//'/main_input'
         coeff_file = TRIM(checkpoint_prefix)//'/equation_coefficients'
         If (my_rank .eq. 0) Call Make_Directory(Trim(my_path)//checkpoint_prefix,ecode)
+        If (spin_horizontal .and. (my_rank .eq. 0)) Then
+            Open(unit=57, file=Trim(my_path)//trim(checkpoint_prefix)//'/spin_native', &
+                 form='formatted', status='replace')
+            Write(57,'(A)') 'q+/- native'
+            Close(57)
+        Endif
 
 
         ! Cache and write data, index by index.
@@ -335,6 +351,8 @@ Contains
             !process zero reads all the old info and broadcasts to all other ranks
            
             grid_file = Trim(checkpoint_prefix)//under_slash//'grid_etc'
+            Inquire(File=Trim(checkpoint_prefix)//'/spin_native', &
+                    Exist=checkpoint_was_spin_native)
             Inquire(File=grid_file, Exist=fexist)
             If (.not. fexist) Then
                 ! The user may be running from legacy-format checkpoints.
@@ -450,8 +468,12 @@ Contains
 
         If (my_row_rank .eq. 0) Then    !2-D broadcast pattern
             Call MPI_Bcast(old_pars,7+nsubmax, MPI_INTEGER, 0, pfi%ccomm%comm, ierr)
+            Call MPI_Bcast(checkpoint_was_spin_native, 1, MPI_LOGICAL, 0, &
+                 pfi%ccomm%comm, ierr)
         Endif
         Call MPI_Bcast(old_pars,7+nsubmax, MPI_INTEGER, 0, pfi%rcomm%comm, ierr)
+        Call MPI_Bcast(checkpoint_was_spin_native, 1, MPI_LOGICAL, 0, &
+             pfi%rcomm%comm, ierr)
 
         n_r_old       = old_pars(1)
         grid_type_old = old_pars(2)

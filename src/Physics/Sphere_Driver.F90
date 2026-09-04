@@ -76,7 +76,7 @@ Contains
         Real*8  :: captured_time, max_time_seconds
         Logical :: terminate_file_exists
         Character*14 :: tmstr
-        Character*120 :: dtstr, wtmstr, istr
+        Character*120 :: dtstr, wtmstr, istr, mastr
         Character(len=*), parameter ::   fmtstr = '(F14.4)'
         Character*256 :: checkpoint_input_file
 
@@ -178,9 +178,23 @@ Contains
                 Else
                    Write(wtmstr,sci_note_fmt) 0.0d0
                 Endif
-                Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
-                   //Trim(wtmstr))
+                If (acoustic_cfl) Then
+                    ! global_msgs(6) carries the cargo-reduced max Mach^2
+                    ! from the acoustic sweep; NaN here is the earliest
+                    ! console symptom of a diverging run.
+                    Write(mastr,sci_note_fmt) Sqrt(global_msgs(6))
+                    Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
+                       //Trim(wtmstr)//'   Ma: '//Trim(mastr))
+                Else
+                    Call stdout%print(' Iteration:  '//Trim(istr)//'   DeltaT: '//Trim(dtstr)//'   Iter/sec: '&
+                       //Trim(wtmstr))
+                Endif
+                Call Report_RSS(' VmHWM(rank0) MB:')
             Endif
+            ! v14.9.3: leak hunt -- global max RSS across ranks at coarse
+            ! cadence (one allreduce per 1000 iterations; a leak in the
+            ! distributed transpose layer shows here but not on rank 0).
+            If (mod(iteration,1000) .eq. 0) Call Report_RSS_Max()
             Call rlm_spacea()
 
             Call Physical_Space()
@@ -338,5 +352,68 @@ Contains
         killsig = 2.5d0  ! Adjust to nonzero value between 2 and 3
         
     END
+
+    Subroutine Get_RSS_MB(rss_mb)
+        ! v14.9.3.1: peak resident set size (high-water mark) via
+        ! getrusage(RUSAGE_SELF) -- no file I/O, no Fortran units (the
+        ! /proc open aborted inside the Cray I/O runtime despite iostat).
+        ! Linux x86_64 struct rusage: ru_utime + ru_stime (4 longs), then
+        ! ru_maxrss (KB) as the 5th long.  Peak is monotone -- exactly the
+        ! right observable for a leak hunt.  Returns -1 on failure.
+        Use ISO_C_BINDING, Only : C_INT, C_LONG
+        Implicit None
+        Real*8, Intent(Out) :: rss_mb
+        Integer(C_LONG) :: buf(36)
+        Integer(C_INT)  :: ierr
+        Interface
+            Function c_getrusage(who, usage) Bind(C, name="getrusage") Result(res)
+                Import :: C_INT, C_LONG
+                Integer(C_INT), Value :: who
+                Integer(C_LONG) :: usage(*)
+                Integer(C_INT) :: res
+            End Function c_getrusage
+        End Interface
+        rss_mb = -1.0d0
+        buf = 0_C_LONG
+        ierr = c_getrusage(0_C_INT, buf)
+        If (ierr .eq. 0) rss_mb = buf(5)/1024.0d0
+    End Subroutine Get_RSS_MB
+
+    Subroutine Report_RSS(tag)
+        ! Rank-0 RSS at the status-line cadence (leak hunt, v14.9.3).
+        Implicit None
+        Character(*), Intent(In) :: tag
+        Real*8 :: rss_mb
+        Character(len=32) :: rstr
+        Call Get_RSS_MB(rss_mb)
+        If (rss_mb .lt. 0.0d0) Return
+        Write(rstr,'(F12.1)') rss_mb
+        Call stdout%print(Trim(tag)//' '//Trim(AdjustL(rstr)))
+    End Subroutine Report_RSS
+
+    Subroutine Report_RSS_Max()
+        ! Min/max HWM over all ranks + the lowest rank achieving the max
+        ! (three allreduces; coarse cadence only).  The argmax rank maps to
+        ! (row, col) in the nprow x npcol grid and fingerprints the
+        ! subsystem that is leaking (IO aggregator vs transpose layer vs
+        ! m0-owner).
+        Use General_MPI, Only : Global_Max
+        Implicit None
+        Real*8 :: rss_mb, rss_max, rss_min, tag, tagmax
+        Character(len=96) :: line
+        Call Get_RSS_MB(rss_mb)
+        Call Global_Max(rss_mb, rss_max)
+        Call Global_Max(-rss_mb, rss_min)
+        rss_min = -rss_min
+        ! lowest rank whose HWM is within 0.5 MB of the max
+        tag = -1.0d30
+        If (rss_mb .ge. rss_max - 0.5d0) tag = -Real(my_rank,8)
+        Call Global_Max(tag, tagmax)
+        If (my_rank .eq. 0 .and. rss_max .ge. 0.0d0) Then
+            Write(line,'(A,F10.1,A,F10.1,A,I8)') ' VmHWM over ranks MB:  min=', &
+                rss_min, '  max=', rss_max, '  argmax_rank=', NInt(-tagmax)
+            Call stdout%print(Trim(line))
+        Endif
+    End Subroutine Report_RSS_Max
 
 End Module Sphere_Driver
