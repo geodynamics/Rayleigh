@@ -27,6 +27,10 @@ parser.add_argument('--vtu', action='store_true',
                           'see common/vtu_utils.py) from the exact same quantity_codes/numeric used below')
 args = parser.parse_args()
 
+print("=================")
+print("testing no_slip")
+print("=================")
+
 rmin, rmax = 0.5, 1.0
 l, m, k = 8, 4, 9
 rho = 1.0

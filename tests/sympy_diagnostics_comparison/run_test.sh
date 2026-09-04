@@ -6,12 +6,18 @@ cd tests/sympy_diagnostics_comparison
 # a magnetic (c_init/a_init) IC, compared against an independent sympy
 # reconstruction of the raw diagnostic output (see no_slip/compare.py)
 cd no_slip
+echo "================="
+echo "running no_slip"
+echo "================="
 python3 generate_input.py
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
 
 # free-slip case: same idea, no magnetism (see free_slip/compare.py)
 cd free_slip
+echo "================="
+echo "running free_slip"
+echo "================="
 python3 generate_input.py
 mpirun -np 4 $RAYLEIGH_TEST_MPI_PARAMS ../../../bin/rayleigh.dbg
 cd ..
