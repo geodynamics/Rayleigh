@@ -31,6 +31,7 @@ Module Diagnostics_Interface
     Use Diagnostics_Base
 
     Use Diagnostics_Second_Derivatives
+    Use Diagnostics_Curl_Momentum
 
     Use Diagnostics_Mean_Correction
 
@@ -157,6 +158,8 @@ Contains
         Real*8 :: over_n_phi
 
         Integer :: nfields, bdims(1:4), pass_num
+        Logical :: need_vforce_derivatives
+        Logical :: need_second_derivatives
 
 
         If (time_to_output(iteration)) Then
@@ -174,10 +177,9 @@ Contains
             Call ComputeM0(buffer,m0_values)
             Call Compute_Fluctuations(buffer)
 
-            Call Initialize_Viscous_Force()
             Call Initialize_Mean_Correction()
 
-
+            need_second_derivatives = Second_Derivatives_Needed()
             IF (need_second_derivatives) THEN
                 Call Compute_Second_Derivatives(buffer)
             ENDIF
@@ -189,6 +191,11 @@ Contains
             over_n_phi = 1.0d0/dble(n_phi)
 
             Call Viscous_Force(buffer) ! Pre-calculate the viscous forces and place them in the vforce_buffer
+
+            need_vforce_derivatives = Vforce_Derivatives_Needed()
+            if (need_vforce_derivatives) then
+                Call Grad_Viscous_Force()
+            endif
             
             Call Mean_Correction(buffer)    ! Remove ell=0 component from radial and theta forces
 
@@ -220,6 +227,7 @@ Contains
                 Call Compute_Angular_Momentum_Balance(buffer)
                 Call Compute_Inertial_Terms(buffer)
                 Call Compute_Linear_Forces(buffer)
+                Call Compute_Curl_Momentum_Forces(buffer)
 
                 Call Compute_KE_Flux(buffer)
 
@@ -257,7 +265,9 @@ Contains
                 Call d2buffer%deconstruct('p3a')
                 DeAllocate(d2_ell0,d2_m0,d2_fbuffer)
             ENDIF
-            Call Finalize_Viscous_Force()
+            if (need_vforce_derivatives) then
+                Call d_vforce_buffer%deconstruct('p3a')
+            endif
             Call Finalize_Mean_Correction()
         Endif  ! time_to_output(iteration)
     End Subroutine PS_Output
@@ -337,6 +347,10 @@ Contains
 
 
         Call Initialize_Second_Derivatives()
+
+        Call Initialize_Viscous_Force()
+
+        Call Initialize_Grad_Viscous_Force()
 
         Call Initialize_Diagnostics_Buffer()
 

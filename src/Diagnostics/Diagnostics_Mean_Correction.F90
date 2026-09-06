@@ -70,13 +70,15 @@ Contains
         If (compute_quantity(v_grad_v_r))     compute_full_full = .true.
         If (compute_quantity(v_grad_v_theta)) compute_full_full = .true.
         If (compute_quantity(v_grad_v_phi))   compute_full_full = .true.
+        If (compute_quantity(v_grad_v_abs))   compute_full_full = .true.
         If (compute_quantity(advec_work))     compute_full_full = .true.
 
 
         ! -- v v
         If (compute_full_full ) Then
 
-            If (compute_quantity(v_grad_v_r) .or. compute_quantity(advec_work)) Then
+            If (compute_quantity(v_grad_v_r) .or. compute_quantity(advec_work) &
+                .or. compute_quantity(v_grad_v_abs)) Then
                 ncorrect=ncorrect+1
                 aforce_r = ncorrect
             Endif
@@ -165,7 +167,8 @@ Contains
 
         !///////////////////////////////////////////////////////
         ! Lorentz Force
-        If (compute_quantity(j_cross_b_r) .or. compute_quantity(mag_work)) Then
+        If (compute_quantity(j_cross_b_r) .or. compute_quantity(mag_work) &
+            .or. compute_quantity(j_cross_b_abs)) Then
             ncorrect = ncorrect+1
             lforce_r = ncorrect
         Endif
@@ -245,6 +248,7 @@ Contains
         If (compute_quantity(v_grad_v_r))     compute_full_full = .true.
         !If (compute_quantity(v_grad_v_theta)) compute_full_full = .true.
         !If (compute_quantity(v_grad_v_phi))   compute_full_full = .true.
+        If (compute_quantity(v_grad_v_abs))   compute_full_full = .true.
         If (compute_quantity(advec_work))     compute_full_full = .true.
 
 
@@ -253,7 +257,8 @@ Contains
 
             Call ADotGradB(buffer,buffer,cbuffer,aindices=vindex,bindices=vindex)
 
-            If (compute_quantity(v_grad_v_r) .or. compute_quantity(advec_work)) Then
+            If (compute_quantity(v_grad_v_r) .or. compute_quantity(advec_work) &
+                .or. compute_quantity(v_grad_v_abs)) Then
                 DO_PSI
                     mean_3dbuffer(PSI,aforce_r) = cbuffer(PSI,1)*ref%density(r)
                 END_DO
@@ -358,7 +363,8 @@ Contains
 
         !//////////////////////////////////////////////////////////
         ! Lorentz Forces
-        If (compute_quantity(j_cross_b_r) .or. compute_quantity(mag_work)) Then
+        If (compute_quantity(j_cross_b_r) .or. compute_quantity(mag_work) &
+            .or. compute_quantity(j_cross_b_abs)) Then
             DO_PSI
                 mean_3dbuffer(PSI, lforce_r) = (buffer(PSI,curlbtheta)*buffer(PSI,bphi)- &
                          & buffer(PSI,btheta)*buffer(PSI,curlbphi) ) *ref%Lorentz_Coeff

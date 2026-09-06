@@ -17,6 +17,7 @@ Output Quantity Codes
    current_density
    magnetic_energy
    momentum_equation
+   curl_momentum_equation
    thermal_equation
    induction_equation
    amom_equation
