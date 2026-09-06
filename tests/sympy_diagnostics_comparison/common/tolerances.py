@@ -40,6 +40,12 @@ POLE_LIMITED_TOLERANCES = {
     'curl_v_grad_v_theta': (8.0e-9, 8.0e-9),
     'curl_v_grad_v_phi':   (1.5e-8, 1.5e-8),
 
+    # j_cross_b_r/theta pick up curl(B)'s radial-derivative (Chebyshev)
+    # resolution floor; unlike the pole-limited quantities above, this floor
+    # is flat across theta rather than pole-amplified, hence scale=0.
+    'j_cross_b_r':     (5.0e-9, 0.0),
+    'j_cross_b_theta': (4.0e-9, 0.0),
+
     'curl_j_cross_b_r':     (5.0e-11, 5.0e-11),
     'curl_j_cross_b_theta': (2.5e-3, 3.5e-3),
     'curl_j_cross_b_phi':   (2.0e-3, 2.0e-3),

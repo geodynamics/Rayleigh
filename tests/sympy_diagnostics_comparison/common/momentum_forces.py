@@ -10,6 +10,9 @@ and constant viscosity (nu_type=1 default -> dmudr=0):
   pressure  = -pfactor * grad(P)                          (dlnrho=0 drops the
                                                              density-gradient term)
   buoyancy  = buoyancy_coeff(r) * Theta                    (purely radial)
+  j_cross_b = lorentz_coeff * (curl(B) x B)                 (requires magnetism=.true.
+                                                             and a B-field reconstruction,
+                                                             see magnetic_field.py)
 
 The *_r components of v_grad_v, Coriolis, and pressure (and the buoyancy
 force, which is purely radial) are defined in Rayleigh with their ell=0 
@@ -19,10 +22,12 @@ quantity *linear* in v, P, or Theta (integrating cos(m*phi)/sin(m*phi) over
 a full period is exactly zero for m != 0, regardless of any theta-dependent
 weighting) -- true for Coriolis_Force_r, viscous_Force_r, pressure_Force_r,
 and buoyancy_force, so they are returned as plain sympy expressions.
-v_grad_v is *quadratic* in v, so a pure m mode can self-interact to produce 
+v_grad_v is *quadratic* in v, so a pure m mode can self-interact to produce
 m=0 (axisymmetric) content, which v_grad_v_r has subtracted -- computed via symbolic
-phi-integration (kills every m!=0 term exactly) followed by quadrature over cos(theta). 
-That correction has no closed form, so *every* function below 
+phi-integration (kills every m!=0 term exactly) followed by quadrature over cos(theta).
+j_cross_b is likewise quadratic (in B), so its r-component gets the same
+ell=0 subtraction, whether or not B itself happens to be axisymmetric.
+That correction has no closed form, so *every* function below
 returns plain numpy-callables f(r, theta, phi) (each
 already lambdified internally) rather than sympy expressions, for a
 consistent interface.
@@ -31,7 +36,7 @@ consistent interface.
 import numpy as np
 import sympy as sp
 
-from sympy_utils import r, theta, phi, curl
+from sympy_utils import r, theta, phi, curl, cross
 
 
 def ADotGradB(Ar, At, Ap, Br, Bt, Bp):
@@ -128,6 +133,17 @@ def pressure_force(P, pfactor):
     Ft = -pfactor * sp.diff(P, theta) / r
     Fp = -pfactor * sp.diff(P, phi) / (r * sp.sin(theta))
     return _lambdify3(Fr), _lambdify3(Ft), _lambdify3(Fp)
+
+
+def j_cross_b_force(Br, Bt, Bp, lorentz_coeff, n_theta=64):
+    """j_cross_b_r, j_cross_b_theta, j_cross_b_phi as numpy-callables
+    f(r,theta,phi): lorentz_coeff * (curl(B) x B). j_cross_b is quadratic
+    in B (like v_grad_v is quadratic in v), so its r-component gets the
+    same ell=0 (spherical-mean) subtraction as v_grad_v_force's.
+    """
+    Jr, Jt, Jp = curl(Br, Bt, Bp)
+    Fr, Ft, Fp = tuple(lorentz_coeff * c for c in cross(Jr, Jt, Jp, Br, Bt, Bp))
+    return _remove_ell0(Fr, n_theta), _lambdify3(Ft), _lambdify3(Fp)
 
 
 def buoyancy_force(Theta, buoyancy_coeff):

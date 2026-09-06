@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'po
 from assess_fields import SmoothZeroSlipPoloidal, Y
 from velocity_field import velocity_field_quantities, velocity_from_W
 from velocity_field_codes import QUANTITY_CODES as VELOCITY_CODES
-from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, pressure_force, buoyancy_force
-from momentum_force_codes import QUANTITY_CODES as MOMENTUM_CODES
+from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, pressure_force, buoyancy_force, j_cross_b_force
+from momentum_force_codes import QUANTITY_CODES as MOMENTUM_CODES, MAGNETIC_QUANTITY_CODES as MAGNETIC_MOMENTUM_CODES
 from curl_momentum_forces import curl_v_grad_v_force, curl_buoyancy_force, curl_coriolis_force, curl_pressure_force, curl_viscous_force, curl_j_cross_b_force
 from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES, MAGNETIC_QUANTITY_CODES as CURL_MAGNETIC_CODES
 from magnetic_field import benchmark_insulating_CA, magnetic_field_quantities
@@ -77,9 +77,12 @@ for name, expr in magnetic_quantities.items():
     numeric[name] = sp.lambdify((r, theta, phi), expr, 'numpy')
 numeric['curl_j_cross_b_r'], numeric['curl_j_cross_b_theta'], numeric['curl_j_cross_b_phi'] = \
     curl_j_cross_b_force(magnetic_quantities['b_r'], magnetic_quantities['b_theta'], magnetic_quantities['b_phi'], lorentz_coeff)
+numeric['j_cross_b_r'], numeric['j_cross_b_theta'], numeric['j_cross_b_phi'] = \
+    j_cross_b_force(magnetic_quantities['b_r'], magnetic_quantities['b_theta'], magnetic_quantities['b_phi'], lorentz_coeff)
 
 quantity_codes = dict(VELOCITY_CODES)
 quantity_codes.update(MOMENTUM_CODES)
+quantity_codes.update(MAGNETIC_MOMENTUM_CODES)
 quantity_codes.update(CURL_MOMENTUM_CODES)
 quantity_codes.update(CURL_MAGNETIC_CODES)
 quantity_codes.update(MAGNETIC_FIELD_CODES)
