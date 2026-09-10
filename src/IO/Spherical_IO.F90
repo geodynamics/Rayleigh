@@ -1085,9 +1085,8 @@ Contains
             If (lcount .gt. 0) Then
                 Allocate(self%l_values(1:lcount))
                 self%l_values(1:lcount) = lvals(1:lcount)
-                self%nell = lcount
-                indices(1:self%nell,4) = lvals(1:lcount)
-                indices(4,5) = self%nell
+                indices(1:lcount,4) = lvals(1:lcount)
+                indices(4,5) = lcount
             Else
                 Allocate(self%l_values(1:0))
             Endif
@@ -1100,6 +1099,7 @@ Contains
         self%nr     = rcount
         self%ntheta = tcount
         self%nphi   = pcount
+        self%nell   = lcount
 
         ! Initialize the buffer (and then ocomm)
         avg_axes(:) = 0  ! r, theta, phi
