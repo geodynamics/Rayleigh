@@ -261,7 +261,7 @@ Contains
         Integer, Intent(In) :: iteration, read_pars(1:2)
         Real*8, Intent(InOut) :: fields(:,:,:,:), abterms(:,:,:,:)
         Integer :: n_r_old, l_max_old, grid_type_old
-        Integer :: i, ierr, mp, lb,ub, ab_offset
+        Integer :: i, ierr, mp, lb,ub, ab_offset, nhydro, nmag, nscalar
         Integer :: old_pars(7 + nsubmax), fcount(3,2), version
         Integer :: last_iter, last_auto, endian_tag, funit
         Integer*8 :: found_bytes, expected_bytes, n_r_old_big, l_max_old_big
@@ -292,11 +292,23 @@ Contains
         read_var(:) = 0
         If (magnetism) Then
             ! hydro, magnetic, or both sets of field can be read
-            ab_offset = n_equations + 1 + n_active_scalars + n_passive_scalars
-            read_var(1:4)   = read_hydro
-            read_var(ab_offset:ab_offset+3)  = read_hydro
-            read_var(5:6)   = read_magnetism
-            read_var(ab_offset+4:ab_offset+5) = read_magnetism
+            ! numfields (= n_equations) already includes the magnetic (+2) and
+            ! scalar (+n_active_scalars+n_passive_scalars) contributions,
+            ! so the AB-term block starts at numfields+1.
+            nhydro = 4
+            If (compressible) nhydro = 5
+            nmag = 2
+            nscalar = n_active_scalars + n_passive_scalars
+            ab_offset = numfields + 1
+            read_var(1:nhydro)   = read_hydro
+            read_var(ab_offset:ab_offset+nhydro-1)  = read_hydro
+            read_var(nhydro+1:nhydro+nmag)   = read_magnetism
+            read_var(ab_offset+nhydro:ab_offset+nhydro+nmag-1) = read_magnetism
+            If (nscalar .gt. 0) Then
+                ! scalar fields (and AB terms) restart with hydro
+                read_var(nhydro+nmag+1:numfields) = read_hydro
+                read_var(ab_offset+nhydro+nmag:ab_offset+numfields-1) = read_hydro
+            Endif
         Else
             read_var(:) = 1
         Endif

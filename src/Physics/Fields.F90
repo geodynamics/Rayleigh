@@ -458,7 +458,8 @@ Contains
         else
             emfr     = avar
             emftheta = cvar
-            emfphi   = avar+1
+            ! emfphi should be set below n_equations (which includes any active scalar fields)
+            emfphi   = n_equations+1
             ! seven RHS's (plus scalars) go back for the solve (1 field is differentiated and combined at the end)
             wsfcount(1,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
             wsfcount(2,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
