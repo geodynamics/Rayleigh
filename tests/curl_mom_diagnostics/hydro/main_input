@@ -36,6 +36,14 @@ point_probe_frequency   = 100
 point_probe_nrec        = 1
 point_probe_cache_size  = 1
 
+! All force-balance terms used by pp.py (Inertia, Coriolis, Buoyancy, Pressure, Viscous)
+! and their curls used by pp_curl.py (same terms, curl_* codes)
+meridional_values       = 1201,1202,1203,1216,1219,1220,1221,1228,1229,1230,1237,1238,1239,
+1301,1302,1303,1319,1320,1327,1328,1329,1339,1340,1341,1358,1359
+meridional_indices_nrm  = 0.0
+meridional_frequency    = 100
+meridional_nrec         = 1
+
 
 ! Kinetic energy, Mean KE, Diff-Rot KE, and Convective KE
 globalavg_values = 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412,
