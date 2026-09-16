@@ -70,7 +70,7 @@ Module Spherical_Buffer
         ! to keep the send/receive and/or the configuration buffers
         ! static in memory.  The default is to allocate/deallocate them
         ! throughout each iteration
-        Logical :: dynamic_transpose_buffers = .true.
+        Logical :: dynamic_transpose_buffers = .false.  ! v14.9.3.3: static, allocate-once transpose buffers (dynamic per-call alloc + Cray OFI MR cache = unbounded registered-memory growth at scale)
         Logical :: dynamic_config_buffers = .true.
         Logical :: pad_buffer = .false.
 

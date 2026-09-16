@@ -59,9 +59,153 @@ Module Legendre_Polynomials
     Type(p_lm_array), Allocatable :: p_lm(:), ip_lm(:)
     Type(p_lm_array), Allocatable :: p_lm_odd(:), p_lm_even(:)
     Type(p_lm_array), Allocatable :: ip_lm_odd(:), ip_lm_even(:) ! i means 'integration weights included'
+    ! Spin-weighted (s = +/-1) tables for the compressible horizontal pair
+    ! (Vasil et al. 2019 eq. 26-28 construction; same 1/(2pi) dx-normalization
+    ! family as p_lm, so the 2pi*gl_weights analysis convention is shared).
+    Logical :: build_spin_tables = .false.
+    Type(p_lm_array), Allocatable :: wp_lm(:), wm_lm(:), iwp_lm(:), iwm_lm(:)
+    ! Theta-derivative synthesis tables d(W+-)/dtheta for the advection supply
+    Type(p_lm_array), Allocatable :: wdp_lm(:), wdm_lm(:)
+    ! s=0 (scalar) V19 tables at FULL theta, parity-unsorted: the slot<->spin
+    ! converters need full-theta scalar synthesis/analysis, which p_lm/ip_lm
+    ! cannot provide under use_parity (those are half-theta, resorted).
+    Type(p_lm_array), Allocatable :: ws0_lm(:), iws0_lm(:)
     Type(even_odd_sep), Allocatable :: lvals(:)
     Type(even_odd_sepi), Allocatable :: lvalsi(:)
 Contains
+
+Subroutine Compute_Spin_Wlms()
+    ! Build the s=+1 (wp) and s=-1 (wm) theta-tables from the V19 eq-(26)
+    ! Jacobi construction, quad precision, on the same coloc/gl_weights grid.
+    ! Certified against the standalone reference (build_spin_tables.f90) at 1.6e-13.
+    ! NOTE: use_parity resorting is NOT applied to the spin tables (parity maps
+    ! s -> -s and mixes the streams); the spin transform pass runs unparitied.
+    Implicit None
+    Real(kind=qp) :: shq, chq, nrm, fr, a2b2, c1q, c2q, c3q, xq
+    Real(kind=qp) :: pts_facq, stp_facq, wrawq, wdrawq
+    Real(kind=qp), Allocatable :: jac0(:), jac1(:), jacn(:), jacd(:)
+    Integer :: i,l,m,mv,s,is,a,b,l0,l1,n,k
+
+    Allocate(wp_lm(1:n_m), wm_lm(1:n_m), iwp_lm(1:n_m), iwm_lm(1:n_m))
+    Allocate(wdp_lm(1:n_m), wdm_lm(1:n_m))
+    Allocate(ws0_lm(1:n_m), iws0_lm(1:n_m))
+    Allocate(jac0(1:n_theta), jac1(1:n_theta), jacn(1:n_theta), jacd(1:n_theta))
+    Do m = 1, n_m
+        mv = m_values(m)
+        ! Match the scalar tables' FFT-normalization convention (see the
+        ! PTS_normalization/STP_normalization wrap for ip_lm/p_lm): the
+        ! synthesis tables carry STP (1 at m=0, 1/2 otherwise) and the
+        ! analysis tables carry PTS (1/(2*n_theta) at m=0, 1/n_theta otherwise).
+        If (mv .eq. 0) Then
+            pts_facq = 1.0_qp/(2.0_qp*n_theta)
+            stp_facq = 1.0_qp
+        Else
+            pts_facq = 1.0_qp/real(n_theta,qp)
+            stp_facq = 0.5_qp
+        Endif
+        Allocate( wp_lm(m)%data(mv:l_max,1:n_theta),  wm_lm(m)%data(mv:l_max,1:n_theta))
+        Allocate(iwp_lm(m)%data(1:n_theta,mv:l_max), iwm_lm(m)%data(1:n_theta,mv:l_max))
+        Allocate(wdp_lm(m)%data(mv:l_max,1:n_theta), wdm_lm(m)%data(mv:l_max,1:n_theta))
+        Allocate(ws0_lm(m)%data(mv:l_max,1:n_theta), iws0_lm(m)%data(1:n_theta,mv:l_max))
+        wp_lm(m)%data = 0.0d0;  wm_lm(m)%data = 0.0d0
+        iwp_lm(m)%data = 0.0d0; iwm_lm(m)%data = 0.0d0
+        wdp_lm(m)%data = 0.0d0; wdm_lm(m)%data = 0.0d0
+        ws0_lm(m)%data = 0.0d0; iws0_lm(m)%data = 0.0d0
+        Do is = 1, 3
+            If (is .le. 2) Then
+                s = 3-2*is
+            Else
+                s = 0
+            Endif
+            a = abs(mv+s); b = abs(mv-s); l0 = max(abs(mv),abs(s)); l1 = min(abs(mv),abs(s))
+            Do l = max(l0,mv), l_max
+                n = l-l0
+                jac0(:) = 1.0_qp
+                If (n .ge. 1) Then
+                    Do i = 1, n_theta
+                        jac1(i) = 0.5_qp*(a-b)+0.5_qp*(a+b+2.0_qp)*coloc(i)
+                    Enddo
+                Endif
+                If (n .eq. 0) Then
+                    jacn = jac0
+                Else If (n .eq. 1) Then
+                    jacn = jac1
+                Else
+                    Do k = 2, n
+                        c1q = 2.0_qp*k*(k+a+b)*(2.0_qp*k+a+b-2.0_qp)
+                        a2b2 = real(a*a-b*b,qp)
+                        Do i = 1, n_theta
+                            c2q = (2.0_qp*k+a+b-1.0_qp)*((2.0_qp*k+a+b)*(2.0_qp*k+a+b-2.0_qp)*coloc(i)+a2b2)
+                            c3q = 2.0_qp*(k+a-1.0_qp)*(k+b-1.0_qp)*(2.0_qp*k+a+b)
+                            jacn(i) = (c2q*jac1(i)-c3q*jac0(i))/c1q
+                        Enddo
+                        jac0 = jac1; jac1 = jacn
+                    Enddo
+                Endif
+                fr = 1.0_qp
+                Do k = l+l1+1, l+l0
+                    fr = fr*real(k,qp)
+                Enddo
+                Do k = l-l0+1, l-l1
+                    fr = fr/real(k,qp)
+                Enddo
+                nrm = sqrt((2.0_qp*l+1.0_qp)*fr/(4.0_qp*PiQuad))
+                If (mod(max(mv,-s),2) .eq. 1) nrm = -nrm
+                ! Jacobi derivative for the theta-derivative table:
+                ! J'(x) = (n+a+b+1)/2 * P^(a+1,b+1)_{n-1}(x)
+                If (n .ge. 1) Then
+                    jac0(:) = 1.0_qp
+                    If (n-1 .ge. 1) Then
+                        Do i = 1, n_theta
+                            jac1(i) = 0.5_qp*(a-b)+0.5_qp*(a+b+4.0_qp)*coloc(i)
+                        Enddo
+                    Endif
+                    If (n-1 .eq. 0) Then
+                        jacd = jac0
+                    Else If (n-1 .eq. 1) Then
+                        jacd = jac1
+                    Else
+                        Do k = 2, n-1
+                            c1q = 2.0_qp*k*(k+a+b+2.0_qp)*(2.0_qp*k+a+b)
+                            a2b2 = real((a-b),qp)*real((a+b+2),qp)
+                            Do i = 1, n_theta
+                                c2q = (2.0_qp*k+a+b+1.0_qp)*((2.0_qp*k+a+b+2.0_qp)*(2.0_qp*k+a+b)*coloc(i)+a2b2)
+                                c3q = 2.0_qp*(k+a)*(k+b)*(2.0_qp*k+a+b+2.0_qp)
+                                jacd(i) = (c2q*jac1(i)-c3q*jac0(i))/c1q
+                            Enddo
+                            jac0 = jac1; jac1 = jacd
+                        Enddo
+                    Endif
+                    jacd = jacd*0.5_qp*(n+a+b+1.0_qp)
+                Else
+                    jacd(:) = 0.0_qp
+                Endif
+                Do i = 1, n_theta
+                    xq  = coloc(i)
+                    shq = sqrt((1.0_qp-xq)/2.0_qp)
+                    chq = sqrt((1.0_qp+xq)/2.0_qp)
+                    wrawq  = nrm*shq**a*chq**b*jacn(i)
+                    wdrawq = nrm*( 0.5_qp*a*shq**max(a-1,0)*chq**(b+1)*jacn(i) &
+                            - 0.5_qp*b*shq**(a+1)*chq**max(b-1,0)*jacn(i) &
+                            - 2.0_qp*shq**(a+1)*chq**(b+1)*jacd(i) )
+                    If (s .eq. 1) Then
+                        wp_lm(m)%data(l,i)  = wrawq*stp_facq
+                        iwp_lm(m)%data(i,l) = wrawq*2.0_qp*PiQuad*gl_weights(i)*pts_facq
+                        wdp_lm(m)%data(l,i) = wdrawq*stp_facq
+                    Else If (s .eq. -1) Then
+                        wm_lm(m)%data(l,i)  = wrawq*stp_facq
+                        iwm_lm(m)%data(i,l) = wrawq*2.0_qp*PiQuad*gl_weights(i)*pts_facq
+                        wdm_lm(m)%data(l,i) = wdrawq*stp_facq
+                    Else
+                        ws0_lm(m)%data(l,i)  = wrawq*stp_facq
+                        iws0_lm(m)%data(i,l) = wrawq*2.0_qp*PiQuad*gl_weights(i)*pts_facq
+                    Endif
+                Enddo
+            Enddo
+        Enddo
+    Enddo
+    DeAllocate(jac0,jac1,jacn,jacd)
+End Subroutine Compute_Spin_Wlms
 
 Subroutine Finalize_Legendre()
     Implicit None
@@ -127,11 +271,13 @@ Subroutine DeAllocate_Parity_Plms()
 
 End Subroutine DeAllocate_Parity_Plms
 
-Subroutine Initialize_Legendre(nt,lmax,mval,parity_in)
+Subroutine Initialize_Legendre(nt,lmax,mval,parity_in,spin_tables_in)
     Implicit None
     Real(kind=qp) :: coloc_min,coloc_max
     Logical, Intent(In) :: parity_in
+    Logical, Intent(In), Optional :: spin_tables_in
     Integer, Intent(in) :: nt,lmax, mval(:)
+    If (present(spin_tables_in)) build_spin_tables = spin_tables_in
 
 
     parity = parity_in
@@ -147,6 +293,7 @@ Subroutine Initialize_Legendre(nt,lmax,mval,parity_in)
     m_values(:) = mval(:)
     Call Find_Colocation(coloc_min, coloc_max,coloc,gl_weights,n_theta)
     Call Compute_Plms()
+    If (build_spin_tables) Call Compute_Spin_Wlms()
 End Subroutine Initialize_Legendre
 
 

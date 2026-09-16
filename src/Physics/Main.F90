@@ -55,6 +55,8 @@ Program Main!
     Call Main_Input()
     Call Benchmark_Input_Reset() ! Sets run parameters to benchmark parameters if benchmark_mode .ge. 0
 
+    io_rank = global_rank   ! rank ownership for file-routed stdout
+
     If (test_mode) Then
         Call Initialize_Controls()
         Call Set_Math_Constants()
@@ -73,6 +75,14 @@ Contains
 
 
         Call Initialize_Controls()
+
+        If (global_rank .eq. 0 .and. spin_horizontal) Then
+            ! Version banner (rank 0 only): every log self-identifies the
+            ! spin branch build.  Bump the tag with every change shipped.
+            Call stdout%print(" ")
+            Call stdout%print("== SPIN BRANCH v14.10.17-tv1 (Mach on status line; rank-0 banner) ==")
+            Call stdout%print("   divl/supply: K*sqrt(L2); force bridge sqrt(2 pi); cross terms IMPLICIT (coupled block)")
+        Endif
 
         Call Set_Math_Constants()
         Call Init_ProblemSize()

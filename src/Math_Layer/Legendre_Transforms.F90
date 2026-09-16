@@ -965,17 +965,21 @@ End Subroutine StP_4d_dgp
 
 !/////////////////////////////////////////////////////////////////////////////
 ! These 4-D routines use a higher dimension of temp array
-Subroutine StP_4d_dgp2(data_in, data_out)
+Subroutine StP_4d_dgp2(data_in, data_out, spin_fa, spin_fb, spin_da, spin_db)
     Implicit None
     ! data in is dimensioned (theta,nrhs)
     !Type(hybrid_m), Intent(InOut) :: data_in(:)
     !Type(spectral_m), Intent(InOut) :: data_out(:)
     Type(rmcontainer4d), Intent(In) :: data_in(:)
     Real*8, Intent(InOut) :: data_out(:,:,:)
+    Integer, Intent(In), Optional :: spin_fa(:), spin_fb(:)
+    Integer, Intent(In), Optional :: spin_da(:), spin_db(:)
     Real*8 :: alpha, beta
     Real*8, Allocatable :: temp(:,:), temp3(:,:,:,:)
+    Real*8, Allocatable :: tQp(:,:), tQm(:,:)
     Integer :: m,nl,nt1,i,j,l, nt2, ddims(3), nrhs, jend,r
     Integer :: nfield, rmn, rmx, oddims(4),imi,f
+    Integer :: nr, p, fa, fb, ca, cb
 
     ddims = shape(data_out)
     n_m = ddims(3)
@@ -1071,19 +1075,82 @@ Subroutine StP_4d_dgp2(data_in, data_out)
     DeAllocate(temp)
     Endif
 
+    If (present(spin_fa)) Then
+        ! Spin-pair synthesis: the (fa,fb) slots hold native q+- coefficients.
+        ! Synthesize Q+- with the s=+1 (wp) / s=-1 (wm) tables and rotate back to
+        ! physical (vth,vph), overwriting the main sweep's (invalid) scalar
+        ! synthesis of those columns.  Parity bypassed; streams never mix.
+        nr = rmx-rmn+1
+        Allocate(tQp(1:n_theta,1:2*nr), tQm(1:n_theta,1:2*nr))
+        Do m = 1, n_m
+            nl = l_max-m_values(m)+1
+            Do p = 1, size(spin_fa)
+                fa = spin_fa(p); fb = spin_fb(p)
+                CALL DGEMM('T','N',n_theta,2*nr,nl, alpha, wp_lm(m)%data, &
+                    nl, data_in(m)%data(:,:,:,fa), nl, beta, tQp, n_theta)
+                CALL DGEMM('T','N',n_theta,2*nr,nl, alpha, wm_lm(m)%data, &
+                    nl, data_in(m)%data(:,:,:,fb), nl, beta, tQm, n_theta)
+                ca = (fa-1)*2*nr; cb = (fb-1)*2*nr
+                Do r = 1, nr
+                    Do i = 1, n_theta
+                        data_out(i,ca+r,m)    = 0.5d0*(tQp(i,r)   +tQm(i,r))
+                        data_out(i,ca+nr+r,m) = 0.5d0*(tQp(i,nr+r)+tQm(i,nr+r))
+                        data_out(i,cb+r,m)    = 0.5d0*(tQp(i,nr+r)-tQm(i,nr+r))
+                        data_out(i,cb+nr+r,m) = 0.5d0*(tQm(i,r)   -tQp(i,r))
+                    Enddo
+                Enddo
+            Enddo
+        Enddo
+        DeAllocate(tQp,tQm)
+    Endif
+
+    If (present(spin_da)) Then
+        ! Derivative-pair synthesis: the (da,db) slots hold COPIES of the pair's
+        ! native q+- coefficients; synthesizing them against the d(W+-)/dtheta
+        ! tables and rotating back yields physical (dvth/dth, dvph/dth) --
+        ! the pole-clean advection derivative supply.
+        nr = rmx-rmn+1
+        Allocate(tQp(1:n_theta,1:2*nr), tQm(1:n_theta,1:2*nr))
+        Do m = 1, n_m
+            nl = l_max-m_values(m)+1
+            Do p = 1, size(spin_da)
+                fa = spin_da(p); fb = spin_db(p)
+                CALL DGEMM('T','N',n_theta,2*nr,nl, alpha, wdp_lm(m)%data, &
+                    nl, data_in(m)%data(:,:,:,fa), nl, beta, tQp, n_theta)
+                CALL DGEMM('T','N',n_theta,2*nr,nl, alpha, wdm_lm(m)%data, &
+                    nl, data_in(m)%data(:,:,:,fb), nl, beta, tQm, n_theta)
+                ca = (fa-1)*2*nr; cb = (fb-1)*2*nr
+                Do r = 1, nr
+                    Do i = 1, n_theta
+                        data_out(i,ca+r,m)    = 0.5d0*(tQp(i,r)   +tQm(i,r))
+                        data_out(i,ca+nr+r,m) = 0.5d0*(tQp(i,nr+r)+tQm(i,nr+r))
+                        data_out(i,cb+r,m)    = 0.5d0*(tQp(i,nr+r)-tQm(i,nr+r))
+                        data_out(i,cb+nr+r,m) = 0.5d0*(tQm(i,r)   -tQp(i,r))
+                    Enddo
+                Enddo
+            Enddo
+        Enddo
+        DeAllocate(tQp,tQm)
+    Endif
+
 End Subroutine StP_4d_dgp2
 
 
-Subroutine PtS_4d_dgpv3(data_in, data_out)
+Subroutine PtS_4d_dgpv3(data_in, data_out, spin_fa, spin_fb, spin_sindiv)
     Implicit None
     Type(rmcontainer4D), Intent(InOut) :: data_out(1:)
     Real*8, Intent(In) :: data_in(:,:,:)
+    Integer, Intent(In), Optional :: spin_fa(:), spin_fb(:)
+    Logical, Intent(In), Optional :: spin_sindiv
+    Real*8 :: scth
     Integer  :: nrhs
     Real*8 :: alpha, beta
     Real*8, Allocatable :: temp(:,:,:,:),fodd(:,:,:), feven(:,:,:)
+    Real*8, Allocatable :: qphys(:,:)
     Integer :: m,nl,nt1,i,j,l, nt2,ddims(3),k
     Integer :: oddims(4), nfield
     Integer :: rmn, rmx, f, imi, jend, r
+    Integer :: nr, p, fa, fb, ca, cb
 
     oddims = shape(data_out(1)%data)
     nfield = oddims(4)
@@ -1172,6 +1239,54 @@ Subroutine PtS_4d_dgpv3(data_in, data_out)
     DeAllocate(feven)
     DeAllocate(fodd)
     endif
+
+    If (present(spin_fa)) Then
+        ! Spin-pair analysis (compressible horizontal velocities and their radial
+        ! derivatives).  Physical (vth,vph) columns are rotated to Q+- = vth +- i*vph
+        ! and analyzed against the s=+1 (iwp) / s=-1 (iwm) tables; the results are
+        ! stored NATIVELY as q+- in the (fa,fb) slots, overwriting the main sweep's
+        ! (invalid) scalar analysis of those columns.  Streams never mix.  The
+        ! parity machinery is deliberately bypassed here (parity maps s -> -s).
+        nr = rmx-rmn+1
+        Allocate(qphys(1:n_theta,1:2*nr))
+        Do m = 1, n_m
+            nl = l_max-m_values(m)+1
+            Do p = 1, size(spin_fa)
+                fa = spin_fa(p); fb = spin_fb(p)
+                ca = (fa-1)*2*nr; cb = (fb-1)*2*nr
+                ! Q+ :  re = vth_re - vph_im ;  im = vth_im + vph_re
+                ! (spin_sindiv: the incoming columns are sintheta-weighted, as the
+                !  componentwise RHS pipeline delivers them; divide out here so the
+                !  analysis sees the true physical pair.)
+                Do r = 1, nr
+                    Do i = 1, n_theta
+                        scth = 1.0d0
+                        If (present(spin_sindiv)) Then
+                            If (spin_sindiv) scth = 1.0d0/sqrt(1.0d0-coloc(i)*coloc(i))
+                        Endif
+                        qphys(i,r)    = scth*(data_in(i,ca+r,m)    - data_in(i,cb+nr+r,m))
+                        qphys(i,nr+r) = scth*(data_in(i,ca+nr+r,m) + data_in(i,cb+r,m))
+                    Enddo
+                Enddo
+                CALL DGEMM('T','N',nl,2*nr,n_theta, alpha, iwp_lm(m)%data, &
+                    n_theta, qphys, n_theta, beta, data_out(m)%data(:,:,:,fa), nl)
+                ! Q- :  re = vth_re + vph_im ;  im = vth_im - vph_re
+                Do r = 1, nr
+                    Do i = 1, n_theta
+                        scth = 1.0d0
+                        If (present(spin_sindiv)) Then
+                            If (spin_sindiv) scth = 1.0d0/sqrt(1.0d0-coloc(i)*coloc(i))
+                        Endif
+                        qphys(i,r)    = scth*(data_in(i,ca+r,m)    + data_in(i,cb+nr+r,m))
+                        qphys(i,nr+r) = scth*(data_in(i,ca+nr+r,m) - data_in(i,cb+r,m))
+                    Enddo
+                Enddo
+                CALL DGEMM('T','N',nl,2*nr,n_theta, alpha, iwm_lm(m)%data, &
+                    n_theta, qphys, n_theta, beta, data_out(m)%data(:,:,:,fb), nl)
+            Enddo
+        Enddo
+        DeAllocate(qphys)
+    Endif
 End Subroutine PtS_4d_dgpv3
 
 End Module Legendre_Transforms

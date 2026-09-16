@@ -24,7 +24,10 @@ Module Sphere_Hybrid_Space
     ! NOTE: WE NEED a 1/density variable
     Use Load_Balance, Only : mp_lm_values, l_lm_values, my_num_lm, m_lm_values, my_lm_min, my_nl_lm, my_nm_lm, my_lm_lval, my_lm_max
     Use Parallel_Framework
+    Use Math_Constants, Only : sqrt2pi, Ksp
     Use Controls
+    Use Legendre_Polynomials, Only : iwp_lm, iwm_lm, wp_lm, wm_lm, ws0_lm, iws0_lm
+    Use Spin_Conversions, Only : spin_state_is_slot, Convert_Slot_Pair_To_Spin, Convert_Spin_Pair_To_Slot
     Use ProblemSize
     Use Legendre_Polynomials, Only : p_lm_array
     Use Legendre_Transforms, Only : Legendre_Transform
@@ -38,6 +41,14 @@ Module Sphere_Hybrid_Space
     Real*8, Allocatable :: over_rhor(:), over_rhorsq(:), drho_term(:)
 
     Type(rmcontainer3D), Allocatable :: ftemp1(:), ftemp2(:),ftemp3(:), ftemp4(:)
+    ! Spin-horizontal (q+/-) machinery: persistent explicit viscous force for the pair,
+    ! assembled spectrally in rlm_spacea (constant-nu v1; dlnu terms TODO before
+    ! variable-nu production) and added to the analyzed RHS in rlm_spaceb.
+    Type(rmcontainer4D), Allocatable :: fviscq(:)
+    Logical :: fviscq_alloc = .false.
+    ! One-shot restart conversion: checkpoints store componentwise slot
+    ! coefficients (format-compatible); on the first pass after a restart
+    ! under spin_horizontal, convert the pair's slots to native q+/-.
 Contains
 
 
@@ -79,17 +90,43 @@ Contains
         If (output_iteration) Call Hybrid_Output_Initial()
         
         If (compressible) Then
+           If (spin_horizontal .and. spin_state_is_slot) Then
+              Call Convert_Slot_Pair_To_Spin(wsp%s2a, vtheta, vphi)
+              spin_state_is_slot = .false.
+              If (my_rank .eq. 0) Write(6,*) 'spin_horizontal: restart state converted slot -> q+/-'
+           Endif
+           If (.not. spin_horizontal) Call M0_Pole_Projection()
            ! First theta-derivatives...
            Call d_by_dtheta(wsp%s2a  ,     vr, dvrdt)
-           Call d_by_dtheta(wsp%s2a  , vtheta, dvtdt)
-           Call d_by_dtheta(wsp%s2a  ,   vphi, dvpdt)
+           If (.not. spin_horizontal) Then
+              Call d_by_dtheta(wsp%s2a  , vtheta, dvtdt)
+              Call d_by_dtheta(wsp%s2a  ,   vphi, dvpdt)
+           Endif
            Call d_by_dtheta(wsp%s2a  ,   tvar, dtdt)
            Call d_by_dtheta(wsp%s2a  , rhovar, drhodt)
 
            Call d_by_dtheta(wsp%s2a  , dvrdr, d2vrdrdt)
-           Call d_by_dtheta(wsp%s2a  , dvtdr, d2vtdrdt)
+           If (.not. spin_horizontal) Then
+              Call d_by_dtheta(wsp%s2a  , dvtdr, d2vtdrdt)
 
-           Call d_by_dtheta(wsp%s2a  , dvtdt, d2vtdt2)
+              Call d_by_dtheta(wsp%s2a  , dvtdt, d2vtdt2)
+           Else
+              ! Spin representation: the (dvtdt,dvpdt) slots receive COPIES of the
+              ! native q+/- coefficients; the Legendre synthesis applies the
+              ! d(W+/-)/dtheta tables to them, delivering physical (dvth/dth,dvph/dth)
+              ! pole-cleanly.  d2vtdt2 has no consumers under spin (its chain-rule
+              ! and divu(3) consumers are all in .not.spin_horizontal regions);
+              ! zero it explicitly so the slot never carries stale/uninitialized
+              ! content through the transform.
+              Do mp = my_mp%min, my_mp%max
+                 wsp%s2a(mp)%data(:,:,:,dvtdt)    = wsp%s2a(mp)%data(:,:,:,vtheta)
+                 wsp%s2a(mp)%data(:,:,:,dvpdt)    = wsp%s2a(mp)%data(:,:,:,vphi)
+                 wsp%s2a(mp)%data(:,:,:,d2vtdt2)  = 0.0d0
+              Enddo
+              Call Assemble_Spin_Viscous()   ! fviscq for the pair; also supplies
+                                             ! d_r(div_h) -> d2vtdrdt (divu(:,2))
+                                             ! and zeros hvtheta/hvphi
+           Endif
 
            ! Compute l_l_plus/r^2 for each term
            ! vr
@@ -97,15 +134,20 @@ Contains
            SBUFFA(IDX2,hvr) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vr)*OneOverRsquared(r)
            END_DO
 
-           ! vtheta
-           DO_IDX2
-           SBUFFA(IDX2,hvtheta) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vtheta)*OneOverRsquared(r)
-           END_DO
+           If (.not. spin_horizontal) Then
+              ! vtheta
+              DO_IDX2
+              SBUFFA(IDX2,hvtheta) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vtheta)*OneOverRsquared(r)
+              END_DO
 
-           ! vphi
-           DO_IDX2
-           SBUFFA(IDX2,hvphi) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vphi)*OneOverRSquared(r)
-           END_DO
+              ! vphi
+              DO_IDX2
+              SBUFFA(IDX2,hvphi) = l_l_plus1(m:l_max)*SBUFFA(IDX2,vphi)*OneOverRSquared(r)
+              END_DO
+           Else
+              Continue   ! hvtheta/hvphi carry the grad(div_h) supply, loaded
+                         ! in Assemble_Spin_Viscous (which runs above).
+           Endif
 
            ! T
            DO_IDX2
@@ -140,7 +182,13 @@ Contains
         ! Legendre Transform and transpose the buffer
         Call wsp%construct('p2a')
         Call StopWatch(legendre_time)%startclock()
-        Call Legendre_Transform(wsp%s2a,wsp%p2a)
+        If (compressible .and. spin_horizontal) Then
+            Call Legendre_Transform(wsp%s2a,wsp%p2a, &
+                spin_fa=(/vtheta,dvtdr,d2vtdr2,hvtheta/), spin_fb=(/vphi,dvpdr,d2vpdr2,hvphi/), &
+                spin_da=(/dvtdt/), spin_db=(/dvpdt/))
+        Else
+            Call Legendre_Transform(wsp%s2a,wsp%p2a)
+        Endif
         Call StopWatch(legendre_time)%increment()
         Call wsp%deconstruct('s2a')
         wsp%config = 'p2a'
@@ -156,6 +204,210 @@ Contains
         Call StopWatch(rtranspose_time)%increment()
     End Subroutine rlm_spacea
 
+
+
+    Subroutine Assemble_Spin_Viscous()
+        ! Explicit spectral viscous force for the compressible horizontal pair
+        ! (native q+/- representation), per the certified operator table:
+        !   F+/- = nu(r) [ d2q/dr2 + (2/r) dq/dr - L2/r^2 q ]
+        !          - nu(r) (2/r^2) sqrt(L2) vr_lm
+        !          - (nu(r)/3) (1/r) sqrt(L2) div_lm ,
+        !   div_lm = (sqrt(L2)/(2r)) (q+ - q-)
+        ! Constant-nu v1: dlnu (viscosity-variation) terms are TODO before
+        ! variable-nu production runs.  Signs certified in spin/battery_final.py;
+        ! the code's CS-phased Pbar tables match the paper's Y0, so no phase
+        ! factor appears in the vr/div couplings.
+        !
+        ! TIER-1 CONSISTENCY: when implicit_compressible_diffusion is on, the
+        ! CN matrices apply nu[D2 + (2/r+dlnrho)D1 - (dlnrho/r)D0] to the pair
+        ! rows (SLT loader) acting on the q+/- coefficients.  We subtract that
+        ! operator SPECTRALLY here (same slots the matrices act on) so the
+        ! explicit remainder is exact by construction.  The physical-space
+        ! Subtract_Implicit_Diffusion_V pair blocks are gated off under spin:
+        ! subtracting there and analyzing through the csc-prescaled transform
+        ! applies the operator to (csc-roundtrip)-mapped coefficients, leaving
+        ! a residual nu*k_r^2-scale operator that destabilizes driven runs
+        ! (measured: blowup at t~150 at 48x64, dt-independent; clean with the
+        ! spectral subtraction or with explicit diffusion).
+        Implicit None
+        Integer :: mp, m, r, imi, l
+        Real*8  :: L2, sL, divl, oor, oor2, crossg
+
+        If (.not. fviscq_alloc) Then
+            Allocate(fviscq(my_mp%min:my_mp%max))
+            Do mp = my_mp%min, my_mp%max
+                m = m_values(mp)
+                Allocate(fviscq(mp)%data(m:l_max,my_r%min:my_r%max,1:2,1:2))
+            Enddo
+            fviscq_alloc = .true.
+        Endif
+
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            Do imi = 1, 2
+            Do r = my_r%min, my_r%max
+                oor  = one_over_r(r)
+                oor2 = OneOverRsquared(r)
+                Do l = m, l_max
+                    L2 = l*(l+1.0d0)
+                    sL = sqrt(L2)
+                    ! FULL divergence coefficient: horizontal part from the pair
+                    ! + the vr radial part (dvrdr + 2 vr / r).  Using div_h alone
+                    ! here (the pre-v7 bug) drops the vr->pair block of the
+                    ! nu/3 grad(div) coupling while the vr equation keeps its
+                    ! pair->vr block (divu(:,2) supply): the one-directional
+                    ! coupling destabilizes the acoustic-dilatational family at
+                    ! sigma ~ nu*kr*kh (deaths: 459 its at 128x192, 2657 at
+                    ! 64x96 -- ratio 5.8 vs the coefficient ratio 5.6).
+                    ! In-tree horizontal-divergence coefficient: 2*sqrt(L2)/r *
+                    ! (q+ - q-).  MEASURED against the true physical divergence
+                    ! (utest3: consistent injected state; div_l0 from the ungated
+                    ! componentwise divu(:,1) vs the coefficient here): the paper
+                    ! identity's (sqrt(L2)/2r) transcribes to 4x that in the
+                    ! code's q+/- convention (ratio measured 3.94-4.08 across
+                    ! radii, vr channel calibrated to 5%).  The same factor
+                    ! applies to the d_r(div_h) supply below.
+                    ! TRUE scalar-convention divergence.  The pair part's
+                    ! constant is K*sqrt(L2)/r with K = 1/(2*sqrt(2*pi)) =
+                    ! Ksp = 1/(2 sqrt(2 pi)): the synthesis-kernel constant
+                    ! (multi-m plane scan, ratio flat 0.0996 vs the old 2*sL
+                    ! form at every m from 0 to 31, i.e. true = K*sL exactly;
+                    ! K pinned to 1/(2*sqrt(2*pi)) at 1e-5 via the exact
+                    ! radius).  The earlier x4 (2*sL) calibration was a
+                    ! normalization bug in the transposed-era analysis chain
+                    ! and is retired.  This divl feeds BOTH the d_r(div_h)
+                    ! supply (scalar consumers: must be true-convention) and
+                    ! the fviscq div force below (which carries the exact
+                    ! reverse bridge sqrt(2*pi), so the pair->pair round trip
+                    ! is convention-free).
+                    divl = Ksp*sL*oor*( wsp%s2a(mp)%data(l,r,imi,vtheta) &
+                                        - wsp%s2a(mp)%data(l,r,imi,vphi) ) &
+                         + wsp%s2a(mp)%data(l,r,imi,dvrdr) &
+                         + 2.0d0*oor*wsp%s2a(mp)%data(l,r,imi,vr)
+                    ! Cross terms (vr coupling and grad-div): these are
+                    ! nabla-of-scalar-class forces, whose spin structure is
+                    ! ANTISYMMETRIC across the q+/q- slots (the edth-sign),
+                    ! NOT equal-slot.  Patterns and magnitudes MEASURED
+                    ! end-to-end (utest planes, m=0 kernel: vth = K(q- - q+),
+                    ! machine-clean single mode; true forces from the ungated
+                    ! physical divu/fields):
+                    !   vr term:  a± = ∓ 1.000 * nu (2/r^2) sqrt(L2) vr_lm
+                    !             (measured coef 0.9965)
+                    !   div term: a± = ∓ 0.250 * (nu/3)(sqrt(L2)/r) divl
+                    !             (measured coef 0.2478; divl = TRUE scalar-
+                    !              convention divergence, the x4 form below)
+                    ! The equal-slot coding synthesized ZERO theta-force from
+                    ! these terms (the (a+ + a-) channel), which both broke the
+                    ! vr<->pair grad-div symmetry (the gate-G collapse family)
+                    ! and dropped 28% of the true pair viscous force
+                    ! (F_syn/F_true = 0.72 measured pre-fix).
+                    If (implicit_compressible_acoustics) Then
+                        ! The cross terms are implicit (coupled block);
+                        ! nothing explicit remains of them.
+                        crossg = 0.0d0
+                    Else
+                        crossg = nu(r)*2.0d0*oor2*sL*wsp%s2a(mp)%data(l,r,imi,vr) &
+                               + sqrt2pi*(nu(r)/3.0d0)*oor*sL*divl
+                    Endif
+                    If (implicit_compressible_diffusion) Then
+                        ! The T1 CN rows own the full
+                        ! nu[D2+(2/r+dlnrho)D1+(Hlap-dlnrho/r)D0] pair operator,
+                        ! so the explicit remainder is assembled directly as
+                        !   -nu*dlnrho*(D1 - 1/r) q+/-   (l-independent).
+                        fviscq(mp)%data(l,r,imi,1) = -nu(r)*ref%dlnrho(r)*( &
+                              wsp%s2a(mp)%data(l,r,imi,dvtdr) &
+                            - oor*wsp%s2a(mp)%data(l,r,imi,vtheta) ) &
+                            - crossg
+                        fviscq(mp)%data(l,r,imi,2) = -nu(r)*ref%dlnrho(r)*( &
+                              wsp%s2a(mp)%data(l,r,imi,dvpdr) &
+                            - oor*wsp%s2a(mp)%data(l,r,imi,vphi) ) &
+                            + crossg
+                    Else
+                        fviscq(mp)%data(l,r,imi,1) = nu(r)*( wsp%s2a(mp)%data(l,r,imi,d2vtdr2) &
+                              + 2.0d0*oor*wsp%s2a(mp)%data(l,r,imi,dvtdr) &
+                              - L2*oor2*wsp%s2a(mp)%data(l,r,imi,vtheta) ) &
+                              - crossg
+                        fviscq(mp)%data(l,r,imi,2) = nu(r)*( wsp%s2a(mp)%data(l,r,imi,d2vpdr2) &
+                              + 2.0d0*oor*wsp%s2a(mp)%data(l,r,imi,dvpdr) &
+                              - L2*oor2*wsp%s2a(mp)%data(l,r,imi,vphi) ) &
+                              + crossg
+                    Endif
+                    ! d_r(div_h) supply: the d2vtdrdt slot (scalar synthesis path)
+                    ! feeds the spin-branch divu(:,2) = d_r(div u), whose consumer
+                    ! is the ungated vr-equation nu/3 term:
+                    If (implicit_compressible_acoustics) Then
+                        ! The d_r(div_h) supply is implicit (vreq <- pair
+                        ! columns); the explicit slot must carry zero.
+                        wsp%s2a(mp)%data(l,r,imi,d2vtdrdt) = 0.0d0
+                    Else
+                        wsp%s2a(mp)%data(l,r,imi,d2vtdrdt) = Ksp*sL*( &
+                              ( wsp%s2a(mp)%data(l,r,imi,dvtdr) &
+                              - wsp%s2a(mp)%data(l,r,imi,dvpdr) )*oor &
+                              - ( wsp%s2a(mp)%data(l,r,imi,vtheta) &
+                              - wsp%s2a(mp)%data(l,r,imi,vphi) )*oor2 )
+                    Endif
+                    ! hvtheta/hvphi fed only the theta/phi nu/3 blocks, which are
+                    ! gated off under spin (divu(3:4) consumers all in the OFF-only
+                    ! region).  The prior fill here was a half-implemented gradient
+                    ! route (wrong slots for the W+/- pair mechanism): honest zeros.
+                    wsp%s2a(mp)%data(l,r,imi,hvtheta) = 0.0d0
+                    wsp%s2a(mp)%data(l,r,imi,hvphi)   = 0.0d0
+                Enddo
+            Enddo
+            Enddo
+        Enddo
+    End Subroutine Assemble_Spin_Viscous
+
+    Subroutine M0_Pole_Projection()
+        ! Remove the pole-singular m=0 sector from the sintheta-weighted
+        ! vtheta and vphi slot fields.  Physical v = synth(slot)/sin(theta).
+        ! For m=0, slot content with nonzero pole value gives v ~ 1/sin(theta):
+        ! unphysical.  Enforce synth(slot)(costheta = +/-1) = 0 at every radius
+        ! via the minimal-norm coefficient correction; the two pole constraints
+        ! decouple by parity (even/odd l):
+        !     c_l <- c_l - (sum_class c_l*w_l / sum_class w_l^2) * w_l
+        ! with w_l = sqrt(2l+1).  The global normalization of Pbar_l0(+/-1)
+        ! cancels in the ratio; only the relative l-weighting matters.
+        ! Loop bound l_max-1: the l = l_max slot never reaches physical space
+        ! (measured), so it is excluded from sums and corrections.
+        ! Regular m=0 physics (e.g. meridional circulation) has zero pole
+        ! sum already: the projection is a strict no-op on it.
+        Implicit None
+        Integer :: mp, r, l, imi, f, fld
+        Real*8  :: pe, po, we, wo
+
+        Do mp = my_mp%min, my_mp%max
+            If (m_values(mp) .ne. 0) Cycle
+            Do f = 1, 2
+                If (f .eq. 1) fld = vtheta
+                If (f .eq. 2) fld = vphi
+                Do imi = 1, 2
+                Do r = my_r%min, my_r%max
+                    pe = 0.0d0; po = 0.0d0; we = 0.0d0; wo = 0.0d0
+                    Do l = 0, l_max-1
+                        If (mod(l,2) .eq. 0) Then
+                            pe = pe + wsp%s2a(mp)%data(l,r,imi,fld)*sqrt(2.0d0*l+1.0d0)
+                            we = we + (2.0d0*l+1.0d0)
+                        Else
+                            po = po + wsp%s2a(mp)%data(l,r,imi,fld)*sqrt(2.0d0*l+1.0d0)
+                            wo = wo + (2.0d0*l+1.0d0)
+                        Endif
+                    Enddo
+                    Do l = 0, l_max-1
+                        If (mod(l,2) .eq. 0) Then
+                            wsp%s2a(mp)%data(l,r,imi,fld) = wsp%s2a(mp)%data(l,r,imi,fld) &
+                                                          - (pe/we)*sqrt(2.0d0*l+1.0d0)
+                        Else
+                            wsp%s2a(mp)%data(l,r,imi,fld) = wsp%s2a(mp)%data(l,r,imi,fld) &
+                                                          - (po/wo)*sqrt(2.0d0*l+1.0d0)
+                        Endif
+                    Enddo
+                Enddo
+                Enddo
+            Enddo
+        Enddo
+    End Subroutine M0_Pole_Projection
+    
     Subroutine rlm_spaceb()
         Implicit None
         Integer :: m, mp, r, imi
@@ -172,7 +424,19 @@ Contains
         Call wsp%construct('s2b')
 
         Call StopWatch(legendre_time)%startclock()
-        Call Legendre_Transform(wsp%p2b,wsp%s2b)
+        If (compressible .and. spin_horizontal) Then
+            ! The momentum RHS components (Ftheta,Fphi) analyze as a spin pair;
+            ! the equation slots then hold native F+/- for the q+/- updates.
+            ! spin_sindiv MUST stay .false.: the physical-space assembly
+            ! delivers true unweighted (Ftheta,Fphi), and analysis with
+            ! sindiv off is the exact inverse of the unweighted synthesis.
+            ! With sindiv on, every force term is analyzed as F/sintheta,
+            ! injecting a broad-l pole-band error each step (worst at m=1)
+            ! that drives an l-tail instability.
+            Call Legendre_Transform(wsp%p2b,wsp%s2b, spin_fa=(/vtheta/), spin_fb=(/vphi/), spin_sindiv=.false.)
+        Else
+            Call Legendre_Transform(wsp%p2b,wsp%s2b)
+        Endif
         Call StopWatch(legendre_time)%increment()
 
         Call wsp%deconstruct('p2b')
@@ -191,6 +455,20 @@ Contains
 
         ! Now for the Z RHS, formed from the radial component of the curl of u dot grad u
         If (compressible) Then
+            If (spin_horizontal) Then
+                ! Add the spectrally assembled explicit viscous force for the pair
+                Do mp = my_mp%min, my_mp%max
+                    m = m_values(mp)
+                    Do imi = 1, 2
+                    Do r = my_r%min, my_r%max
+                        wsp%s2b(mp)%data(m:l_max,r,imi,vtheta) = wsp%s2b(mp)%data(m:l_max,r,imi,vtheta) &
+                                                               + fviscq(mp)%data(m:l_max,r,imi,1)
+                        wsp%s2b(mp)%data(m:l_max,r,imi,vphi)   = wsp%s2b(mp)%data(m:l_max,r,imi,vphi) &
+                                                               + fviscq(mp)%data(m:l_max,r,imi,2)
+                    Enddo
+                    Enddo
+                Enddo
+            Endif
             If (magnetism) Then
                 Call Allocate_rlm_Field(ftemp1)
                 Call Allocate_rlm_Field(ftemp2)
@@ -645,11 +923,31 @@ Contains
         Real*8 :: maxt2, maxt
         Character*8 :: dtfmt ='(ES10.4)'
         Character*14 :: tmstr, tmstr2
+        Character*14 :: mastr
+        Logical, Save :: acoustic_gate_open = .false.
 
         Call wsp%unload_cargo(global_msgs)
 
 
         maxt2 = global_msgs(1)
+        If (acoustic_cfl .and. (thermal_variable .eq. 2)) Then
+            ! Accuracy gate: once the flow is compressive enough for stepped-
+            ! over acoustics to matter (Ma > acoustic_mach_gate, i.e. the
+            ! compressive energy fraction ~ Ma^2 exceeds gate^2), cap
+            ! omega_ac*dt at acoustic_theta.  Folding (cflmax/theta)^2 *
+            ! omega_ac^2 into the 1/t^2 budget realizes exactly that cap.
+            If (global_msgs(6) .gt. acoustic_mach_gate**2) Then
+                maxt2 = Max(maxt2, global_msgs(7)*(cflmax/acoustic_theta)**2)
+                If (.not. acoustic_gate_open) Then
+                    acoustic_gate_open = .true.
+                    Write(mastr, dtfmt) sqrt(global_msgs(6))
+                    Call stdout%print(' -- Acoustic accuracy limit engaged; Ma_max = '//trim(mastr))
+                Endif
+            Else If (acoustic_gate_open) Then
+                acoustic_gate_open = .false.
+                Call stdout%print(' -- Acoustic accuracy limit released.')
+            Endif
+        Endif
         if (maxt2 .gt. 0.0d0) Then
             maxt = 1.0d0/sqrt(maxt2)
 

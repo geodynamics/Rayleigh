@@ -180,7 +180,7 @@ Module PDE_Coefficients
     !Compressible nondimensional eq
     Real*8 :: bigz = 0.0d0
     Real*8 :: gas_gamma = 5.0d0/3.0d0
-
+    Real*8 :: Cs  ! Adiabatic constant set once at init
 
     ! Alter some of the above (I) by reading the main_input file
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass, poly_rho_i, &
@@ -255,6 +255,8 @@ Contains
             Call stdout%print(" -- Initalizing Reference State...")
             Call stdout%print(" ---- Specified parameters:")
         Endif
+
+        If (compressible) Specific_Heat_Ratio = gas_gamma
 
         Call Allocate_Reference_State()
 
@@ -1114,8 +1116,8 @@ Contains
 	ref%entropy = volume_specific_heat * (log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%density))
 	ref%entropy = ref%entropy - ref%entropy(1)                    ! zeroing the entropy at the upper boundary
 	ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)     ! Used extensively in the pseudo-incompressible approximation
-    ref%dT = -T_c*c1*d/Radius**2
-    ref%d2T = 2*T_c*c1*d/Radius**3
+        ref%dT = -T_c*c1*d/Radius**2
+        ref%d2T = 2*T_c*c1*d/Radius**3
     
         Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * Ref%dlnrho)
         ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
@@ -1123,6 +1125,13 @@ Contains
 
         If (compressible) Then
             Ref%gravity = gravity
+            ! Set the adiabat constant here so that it is defined on EVERY
+            ! startup path, including checkpoint restarts.  Previously Cs was
+            ! set only inside the entropy initial condition (init_type=9), so
+            ! restarted runs had Cs=0, T_recon=0, zero pressure force, and the
+            ! l=0 sector free-fell under bare gravity.  The reference polytrope
+            ! is the S=0 adiabat, so Cs = Tbar * rhobar**(1-gamma) at any radius.
+            Cs = ref%temperature(N_R)*ref%density(N_R)**(1.0d0-gas_gamma)
             If (R_gas .gt. 0) Then 
                 bigZ = R_gas / (gas_gamma - 1)
             Else
