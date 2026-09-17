@@ -60,6 +60,9 @@ Contains
         If (compute_quantity(v_grad_v_phi)) Then
             compute_full_full = .true.
         Endif
+        If (compute_quantity(v_grad_v_abs)) Then
+            compute_full_full = .true.
+        Endif
 
         !///-- Flags for mean dot grad mean terms
         If (compute_quantity(vm_grad_vm_r)) Then
@@ -373,6 +376,15 @@ Contains
                 Endif
             Endif
         Endif
+        If (compute_quantity(v_grad_v_abs)) Then
+            DO_PSI  
+                qty(PSI) =  ((mean_3dbuffer(PSI,aforce_r)-mean_ell0buffer(r,aforce_r))**2 + &
+                            (cbuffer(PSI,2)*ref%density(r))**2 + &
+                            (cbuffer(PSI,3)*ref%density(r))**2)**(0.5)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
 
         DeAllocate(cbuffer)
 

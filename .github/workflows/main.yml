@@ -93,6 +93,10 @@ jobs:
         # vforce diagnostics regression test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/vforce_diagnostics/run_test.sh
+
+        # sympy diagnostics comparison test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/sympy_diagnostics_comparison/run_test.sh
         
         git diff > changes.diff
         git diff --exit-code --name-only
@@ -116,6 +120,19 @@ jobs:
       with:
           name: ${{ matrix.unit-result-file }}
           path: tests/unit_tests/SHT/changes.diff
+
+    - name: archive sympy diagnostics comparison
+      if: always()
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        tar -czf sympy_diagnostics_comparison.tar.gz tests/sympy_diagnostics_comparison
+
+    - name: upload sympy diagnostics comparison
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+          name: sympy_diagnostics_comparison-${{ matrix.result-file }}
+          path: sympy_diagnostics_comparison.tar.gz
 
   conda:
     name: conda-build

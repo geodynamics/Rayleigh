@@ -64,4 +64,11 @@ Momentum Equation
  :math:`c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r`                            1260    jp\_cross\_bp\_r     
  :math:`c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta`                       1261    jp\_cross\_bp\_theta 
  :math:`c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi`                         1262    jp\_cross\_bp\_phi   
+ :math:`\left|\mathrm{f}_1\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]\right|`                              1263    v\_grad\_v\_abs       
+ :math:`\left|c_2\mathrm{f}_2\Theta\right|`                                                                                      1264    buoyancy\_force\_abs 
+ :math:`\left|-c_1\mathrm{f}_1\left[\boldsymbol{\hat{z}}\times\boldsymbol{v}\right]\right|`                                      1265    coriolis\_force\_abs 
+ :math:`\left|c_5\left[\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\right]\right|`                                           1266    viscous\_force\_abs  
+ :math:`\left|-c_3\boldsymbol{\nabla}P\right|`                                                                                   1267    pressure\_force\_abs 
+ :math:`\left|c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B}\right]\right|`                   1268    j\_cross\_b\_abs      
+ :math:`\left|-c_1\mathrm{f}_1\left(\boldsymbol{\hat{z}}\times\boldsymbol{v}\right)-c_3\boldsymbol{\nabla}P\right|`              1269    ageo\_coriolis\_force
 =============================================================================================================================== ====== ========================== 

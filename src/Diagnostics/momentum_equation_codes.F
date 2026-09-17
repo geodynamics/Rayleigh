@@ -45,7 +45,6 @@
 
     !/////////////////////////////////////////////////////////////
     !  Linear Forces
-    !  Note:  the pressure gradient diagnostic codes are  above
 
     Integer, Parameter :: buoyancy_force  =  mom_eq_off+16  ! :tex: $c_2\mathrm{f}_2\Theta$
     Integer, Parameter :: buoyancy_pforce =  mom_eq_off+17  ! :tex: $c_2\mathrm{f}_2\Theta'$
@@ -121,3 +120,50 @@
     Integer, Parameter :: jp_cross_bp_r     = mom_eq_off+60 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r$
     Integer, Parameter :: jp_cross_bp_theta = mom_eq_off+61 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta$
     Integer, Parameter :: jp_cross_bp_phi   = mom_eq_off+62 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi$
+    
+    !\\\\\\\\\\\\\\\\\\\\\ New Quantities /////////////////////!
+
+    ! Calculate squared magnitudes of each force 
+    
+    !    v_grad_v_squared = v_grad_v_r**2 + v_grad_v_theta**2 + v_grad_v_phi**2
+    !Coriolis_Force_squared = Coriolis_Force_r**2 + Coriolis_Force_theta**2 + Coriolis_Force_phi**2
+    !j_cross_b_squared = j_cross_b_r**2 + j_cross_b_theta**2 + j_cross_b_phi**2
+    !viscous_Force_squared = viscous_Force_r**2 + viscous_Force_theta**2 + viscous_Force_phi**2
+    !pressure_Force_squared = pressure_Force_r**2 + pressure_Force_theta**2 + pressure_Force_phi**2
+    !Ageo_Coriolis_Force = (Coriolis_Force_r-pressure_Force_r)**2 + (Coriolis_Force_theta-pressure_Force_theta)**2 + (Coriolis_Force_phi-pressure_Force_phi)**2
+    !Ageost_Coriolis_Force = Coriolis - Pressure  
+    ! (NOTE: the above comment doens't appear to be what's implemented, which instead uses coriolis + pressure)
+
+
+    ! Define parameters for squared magnitudes
+    Integer, Parameter :: v_grad_v_abs       = mom_eq_off+63 ! :tex: $\left|\mathrm{f}_1\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]\right|$
+    Integer, Parameter :: buoyancy_force_abs = mom_eq_off+64 ! :tex: $\left|c_2\mathrm{f}_2\Theta\right|$
+    Integer, Parameter :: coriolis_force_abs = mom_eq_off+65 ! :tex: $\left|-c_1\mathrm{f}_1\left[\boldsymbol{\hat{z}}\times\boldsymbol{v}\right]\right|$
+    Integer, Parameter :: viscous_force_abs  = mom_eq_off+66 ! :tex: $\left|c_5\left[\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\right]\right|$
+    Integer, Parameter :: pressure_force_abs = mom_eq_off+67 ! :tex: $\left|-c_3\boldsymbol{\nabla}P\right|$
+    Integer, Parameter :: j_cross_b_abs      = mom_eq_off+68 ! :tex: $\left|c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B}\right]\right|$
+    Integer, Parameter :: ageo_coriolis_force= mom_eq_off+69 ! :tex: $\left|-c_1\mathrm{f}_1\left(\boldsymbol{\hat{z}}\times\boldsymbol{v}\right)-c_3\boldsymbol{\nabla}P\right|$
+
+
+!    Integer, Parameter :: j_cross_b_r_squared    = mom_eq_off+70 ! :tex: $\left(c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B}\right]_r\right)^2$
+!    Integer, Parameter :: j_cross_b_theta_squared    = mom_eq_off+71 ! :tex: $\left(c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B}\right]_\theta\right)^2$
+!    Integer, Parameter :: j_cross_b_phi_squared    = mom_eq_off+72 ! :tex: $\left(c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B}\right)\times\boldsymbol{B}\right]_\phi\right)^2$
+
+!    Integer, Parameter :: v_grad_v_r_squared    = mom_eq_off+73 ! :tex: $\left(\mathrm{f}_1\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]_r\right)^2$
+!    Integer, Parameter :: v_grad_v_theta_squared    = mom_eq_off+74 ! :tex: $\left(\mathrm{f}_1\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]_\theta\right)^2$
+!    Integer, Parameter :: v_grad_v_phi_squared    = mom_eq_off+75 ! :tex: $\left(\mathrm{f}_1\left[\boldsymbol{v}\cdot\boldsymbol{\nabla}\boldsymbol{v}\right]_\phi\right)^2$
+
+!    Integer, Parameter :: Coriolis_Force_r_squared = mom_eq_off+76 ! :tex: $\left(-c_1\mathrm{f}_1\left[\boldsymbol{\hat{z}}\times\boldsymbol{v}\right]_r\right)^2$
+!    Integer, Parameter :: Coriolis_Force_Theta_squared = mom_eq_off+77 ! :tex: $\left(-c_1\mathrm{f}_1\left[\boldsymbol{\hat{z}}\times\boldsymbol{v}\right]_\theta\right)^2$
+!    Integer, Parameter :: Coriolis_Force_Phi_squared = mom_eq_off+78 ! :tex: $\left(-c_1\mathrm{f}_1\left[\boldsymbol{\hat{z}}\times\boldsymbol{v}\right]_\phi\right)^2$
+
+!    Integer, Parameter :: viscous_force_r_squared  = mom_eq_off+79 ! :tex: $\left(c_5\left[\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\right]_r\right)^2$
+!    Integer, Parameter :: viscous_force_theta_squared  = mom_eq_off+80 ! :tex: $\left(c_5\left[\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\right]_\theta\right)^2$
+!    Integer, Parameter :: viscous_force_phi_squared  = mom_eq_off+81 ! :tex: $\left(c_5\left[\boldsymbol{\nabla}\cdot\boldsymbol{\mathcal{D}}\right]_\phi\right)^2$
+
+!    Integer, Parameter :: pressure_force_r_squared = mom_eq_off+82 ! :tex: $\left(-c_3\mathrm{f}_1\frac{\partial}{\partial r}\left(\frac{P}{\mathrm{f}_1} \right)\right)^2$
+!    Integer, Parameter :: pressure_force_theta_squared = mom_eq_off+83 ! :tex: $\left(-c_3\frac{1}{r}\frac{\partial P}{\partial \theta}\right)^2$
+!    Integer, Parameter :: pressure_force_phi_squared = mom_eq_off+84 ! :tex: $\left(-c_3\frac{1}{r\mathrm{sin}\theta}\frac{\partial P}{\partial \phi}\right)^2$
+
+
+

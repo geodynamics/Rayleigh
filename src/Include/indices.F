@@ -35,4 +35,5 @@
 #define PSI k,r,t
 #define PSI2 r,t
 #define DDBUFF d2buffer%p3a
+#define VFDBUFF d_vforce_buffer%p3a
 

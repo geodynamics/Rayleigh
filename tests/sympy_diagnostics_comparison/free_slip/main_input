@@ -1,0 +1,82 @@
+! sympy_diagnostics_comparison/free_slip
+! Single iteration, single-mode poloidal velocity IC (w_init), pressure IC
+! (p_init), and temperature IC (t_init).
+
+&problemsize_namelist
+ n_r = 48
+ n_theta = 64
+ nprow = 2
+ npcol = 2
+ rmin = 0.5
+ rmax = 1.0
+/
+&numerical_controls_namelist
+ chebyshev = .true.
+/
+&physical_controls_namelist
+ rotation  = .true.
+ magnetism = .false.
+ viscous_heating = .false.
+ ohmic_heating = .false.
+/
+&temporal_controls_namelist
+ max_time_step = 1.0d-4
+ max_iterations = 1
+ alpha_implicit = 0.50001d0
+ checkpoint_interval = 500000
+ quicksave_interval = 1000000
+ num_quicksaves = -1
+ cflmin = 0.4d0
+ cflmax = 0.6d0
+/
+&io_controls_namelist
+/
+&output_namelist
+full3d_values = 1,2,3,
+                10,11,12, 19,20,21, 28,29,30, 37,38,39, 46,47,48,
+                55,56,57, 64,65,66, 73,74,75, 82,83,84, 91,92,93, 100,101,102,
+                1201,1202,1203, 1216, 1219,1220,1221, 1228,1229,1230, 1237,1238,1239,
+                1301,1302,1303, 1319,1320, 1327,1328,1329, 1339,1340,1341, 1358,1359
+full3d_frequency = 1
+
+point_probe_values = 1,2,3,
+                10,11,12, 19,20,21, 28,29,30, 37,38,39, 46,47,48,
+                55,56,57, 64,65,66, 73,74,75, 82,83,84, 91,92,93, 100,101,102,
+                1201,1202,1203, 1216, 1219,1220,1221, 1228,1229,1230, 1237,1238,1239,
+                1301,1302,1303, 1319,1320, 1327,1328,1329, 1339,1340,1341, 1358,1359
+! one equator probe (theta_nrm=0.5) and two near-pole probes (0.02, 0.98)
+point_probe_r_nrm = 0.5
+point_probe_theta_nrm = 0.02, 0.5, 0.98
+point_probe_phi_nrm = 0.0
+point_probe_frequency = 1
+point_probe_nrec = 1
+point_probe_cache_size = 1
+/
+
+&Boundary_Conditions_Namelist
+no_slip_boundaries = .false.
+strict_L_Conservation = .false.
+T_Top    = 0.0d0
+T_Bottom = 1.0d0
+fix_tvar_top = .true.
+fix_tvar_bottom = .true.
+/
+&Initial_Conditions_Namelist
+init_type = 8 ! File init
+w_init_file = 'w_init'
+p_init_file = 'p_init'
+t_init_file = 't_init'
+/
+&Test_Namelist
+/
+&Reference_Namelist
+Ekman_Number = 1.0d0
+Rayleigh_Number = 1.0d0
+Prandtl_Number = 1.0d0
+Magnetic_Prandtl_Number = 5.0d0
+reference_type = 1
+heating_type = 0      ! No heating
+gravity_power = 9.0d0  ! = k, matches assess's r**k density perturbation
+/
+&Transport_Namelist
+/

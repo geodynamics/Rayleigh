@@ -29,7 +29,16 @@ def get_results(type, dir):
   a = type(files[-1], path='')
   results["times"].append(a.time[-1])
   for k,v in vals.items():
-      results[k].append(a.vals[-1, a.lut[v]].tolist())
+      if type is Point_Probes:
+          # vals shape is (nphi, ntheta, nr, nq, nrec): keep every probe
+          # location, select the quantity axis, and take the last record.
+          data = a.vals[:, :, :, a.lut[v], -1]
+      elif type is G_Avgs:
+          # vals shape is (nrec, nq), take the last record
+          data = a.vals[-1, a.lut[v]]
+      else:
+         raise RuntimeError("Unknown results type.")
+      results[k].append(data.tolist())
   return results
 
 gavgs = get_results(G_Avgs, 'G_Avgs')
