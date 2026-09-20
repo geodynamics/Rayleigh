@@ -1583,6 +1583,10 @@ Contains
                     If (present(clear_existing)) Then
                         If (clear_existing) Then
                             Call MPI_FILE_set_size(funit, zero_file_size, ierr)
+                            ! Some MPI implementations don't wait for MPI_FILE_set_size
+                            ! to clear the existing file so their data gets wiped out.
+                            ! Introduce an MPI barrier to prevent them from carrying on to output.
+                            Call MPI_BARRIER(self%ocomm%comm, ierr)
                         Endif
                     Endif
 
