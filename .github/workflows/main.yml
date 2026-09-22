@@ -52,12 +52,32 @@ jobs:
         make fdeps && git diff --exit-code
         make -j
         make install
-    - name: Test
+    - name: Build Rayleigh v 1.3
+      # Build 1.3 for testing checkpoint compatibility
+      run: |
+        # Build Rayleigh v 1.3
+        git clone -b rayleigh-1.3.0 https://github.com/geodynamics/Rayleigh.git
+        mv Rayleigh Rayleigh_1.3
+        cd Rayleigh_1.3
+        ./configure -debian-mkl ${{ matrix.mpi }} --FFLAGS_DBG='-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -Wall'
+
+        #make fdeps && git diff --exit-code
+        make -j
+        make install
+    - name: Checkpoint Test
+      run: |  
+        # Checkpoint Test
+        cd "$GITHUB_WORKSPACE"
+        cd ./tests/checkpoint
+        sh ./radial_res_test.sh        
+        
+    - name: Chebyshev Test
       run: |
         #Primary test (Chebyshev Mode)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0
         mpirun -np 4 ../../bin/rayleigh.dbg
-
+    - name: Finite-difference Test
+      run: |
         # Finite-difference test (uniform grid)
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0_FD_uniform
         mpirun -np 4 ../../bin/rayleigh.dbg
@@ -69,27 +89,33 @@ jobs:
         # J2011 steady mhd test
         # cd "$GITHUB_WORKSPACE"/tests/j2011_steady_mhd_minimal
         # mpirun -np 4 ../../bin/rayleigh.dbg
-
+    - name: Generic Input Test
+      run: |
         # Generic input test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/generic_input/run_test.sh
-
+    - name: Chi Scalar Test
+      run: |
         # chi scalar test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/chi_scalar/run_test.sh
-        
+    - name: Custom Reference Test
+      run: |        
         # custom reference state test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/custom_reference/run_test.sh
-
+    - name: Chi Custom Reference Test
+      run: |    
         # chi custom reference state test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/chi_custom_reference/run_test.sh
-
+    - name: Coupled BC Test
+      run: |  
         # coupled bc test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/coupled_bcs/run_test.sh
-
+    - name: Vforce Diagnostics Test
+      run: |  
         # vforce diagnostics regression test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/vforce_diagnostics/run_test.sh
