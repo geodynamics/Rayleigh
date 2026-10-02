@@ -130,11 +130,6 @@ Contains
         Call DeAllocate_rlm_Field(ftemp1)
         Call DeAllocate_rlm_Field(ftemp2)
 
-        ! Zero out l_max mode
-        Do mp = my_mp%min, my_mp%max
-            wsp%s2a(mp)%data(l_max,:,:,:) = 0.0d0
-        Enddo
-
         Call StopWatch(rlma_time)%increment()
 
         ! Legendre Transform and transpose the buffer
