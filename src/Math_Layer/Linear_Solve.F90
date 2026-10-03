@@ -233,7 +233,7 @@ Module Linear_Solve
             Enddo
             var_set(var_links(i))%var_start = (i-1)*ndim1+1        ! mode independent for now
             var_set(var_links(i))%var_end = i*ndim1
-            var_set(i)%equ_ind = eq_links(1)
+            var_set(var_links(i))%equ_ind = eq_links(1)
         Enddo
     End Subroutine Link_Equations
 
