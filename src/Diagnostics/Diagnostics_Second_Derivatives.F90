@@ -31,180 +31,294 @@ Module Diagnostics_Second_Derivatives
     Implicit None
 
 
-    Integer, Allocatable :: ddindmap(:,:)
-    Integer :: nddfields
-    Logical :: compute_vr_dd   = .false.
-    Logical :: compute_vt_dd   = .false.
-    Logical :: compute_vp_dd   = .false.
+    ! Each field is either a scalar (v_r, T, P, B_r) or one horizontal component of a vector
+    ! (v_theta, v_phi, B_theta, B_phi).  See Compute_Second_Derivatives.
+    Integer, Parameter :: dd_scalar = 1, dd_theta = 2, dd_phi = 3
+    Integer, Allocatable :: dd_type(:)      ! dd_scalar, dd_theta or dd_phi
+    Integer, Allocatable :: dd_src(:,:)     ! (1:8,i): buffer indices of x, dxdr, dxdt, dxdp and, for horizontal
+                                            !   components, of the other component y, dydr, dydt, dydp
+    Integer, Allocatable :: dd_slot(:,:)    ! (1:2,i): d2buffer p3b slots of the fields transformed for field i
+    Integer, Allocatable :: dd_scr(:)       ! horizontal components: index of the p3a scratch pair holding
+                                            !   d2y/drdphi and d2y/dthetadphi
+    Real*8, Allocatable  :: dd_sgn(:)       ! +1 for theta components (Q = horizontal divergence), 
+                                            ! -1 for phi components (Q = radial vorticity)
+    Integer :: nddfields, ndd_trans, ndd_horiz
 
-    Logical :: compute_pvar_dd = .false.
-    Logical :: compute_tvar_dd = .false.
-
-    Logical :: compute_br_dd   = .false.
-    Logical :: compute_bt_dd   = .false.
-    Logical :: compute_bp_dd   = .false.
 Contains
 
-    Subroutine Init_Derivative_Logic()
+    Subroutine Second_Derivative_Logic(check, l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd, &
+                                 l_compute_tvar_dd, l_compute_pvar_dd, &
+                                 l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd, need_dd)
+        ! Trigger-code logic shared between the once-at-startup buffer-sizing
+        ! pass (check => Sometimes_Compute, decides which fields ever need
+        ! second derivatives, for dd_src/buffer sizing) and the per-iteration
+        ! recheck of whether Compute_Second_Derivatives needs to run this
+        ! iteration (check => Compute_Quantity).
         IMPLICIT NONE
+        Procedure(Quantity_Check_If) :: check
+        Logical, Intent(Out) :: l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd
+        Logical, Intent(Out) :: l_compute_tvar_dd, l_compute_pvar_dd
+        Logical, Intent(Out) :: l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd
+        Logical, Intent(Out) :: need_dd
         Integer :: i
+
+        l_compute_vr_dd   = .false.
+        l_compute_vt_dd   = .false.
+        l_compute_vp_dd   = .false.
+        l_compute_tvar_dd = .false.
+        l_compute_pvar_dd = .false.
+        l_compute_br_dd   = .false.
+        l_compute_bt_dd   = .false.
+        l_compute_bp_dd   = .false.
+        need_dd      = .false.
+
         !///////////////////////////////////////////////////////
         ! Check to see if the user has specified any of the second
         ! derivatives individually
         do i = dv_r_d2r, dvm_r_d2tp,3
-            if (sometimes_compute(i)) compute_vr_dd = .true.
+            if (check(i)) l_compute_vr_dd = .true.
         enddo
 
         do i = dv_theta_d2r, dvm_theta_d2tp,3
-            if (sometimes_compute(i)) compute_vt_dd = .true.
+            if (check(i)) l_compute_vt_dd = .true.
         enddo
         do i = dv_phi_d2r, dvm_phi_d2tp,3
-            if (sometimes_compute(i)) compute_vp_dd = .true.
+            if (check(i)) l_compute_vp_dd = .true.
         enddo
 
         do i = db_r_d2r, dbm_r_d2tp,3
-            if (sometimes_compute(i)) compute_br_dd = .true.
+            if (check(i)) l_compute_br_dd = .true.
         enddo
 
         do i = db_theta_d2r, dbm_theta_d2tp,3
-            if (sometimes_compute(i)) compute_bt_dd = .true.
+            if (check(i)) l_compute_bt_dd = .true.
         enddo
 
         do i = db_phi_d2r, dbm_phi_d2tp,3
-            if (sometimes_compute(i)) compute_bp_dd = .true.
+            if (check(i)) l_compute_bp_dd = .true.
         enddo
 
         do i = entropy_d2r, entropy_m_d2tp,2
-            if (sometimes_compute(i)) compute_tvar_dd = .true.
+            if (check(i)) l_compute_tvar_dd = .true.
         enddo
 
         do i = pressure_d2r, pressure_m_d2tp,2
-            if (sometimes_compute(i)) compute_pvar_dd = .true.
+            if (check(i)) l_compute_pvar_dd = .true.
         enddo
 
 
         !//////////////////////////////////////////////////////////////////
         ! Terms related to viscosity
-        If (sometimes_compute(viscous_force_r))  compute_vr_dd = .true.
-        If (sometimes_compute(viscous_pforce_r)) compute_vr_dd = .true.
-        If (sometimes_compute(viscous_mforce_r)) compute_vr_dd = .true.
+        If (check(visc_work) .or. &
+            check(viscous_force_r) .or. &
+            check(curl_viscous_force_theta) .or. &
+            check(curl_viscous_force_theta_squared) .or. &
+            check(curl_viscous_force_phi) .or. &
+            check(curl_viscous_force_phi_squared) .or. &
+            check(viscous_pforce_r) .or. &
+            check(curl_viscous_pforce_theta) .or. &
+            check(curl_viscous_pforce_phi) .or. &
+            check(viscous_mforce_r) .or. &
+            check(curl_viscous_mforce_theta) .or. &
+            check(curl_viscous_mforce_phi)) Then
+            l_compute_vr_dd = .true.
+        Endif
 
-        If (sometimes_compute(viscous_force_theta))  compute_vt_dd = .true.
-        If (sometimes_compute(viscous_pforce_theta)) compute_vt_dd = .true.
-        If (sometimes_compute(viscous_mforce_theta)) compute_vt_dd = .true.
 
-        If (sometimes_compute(viscous_force_phi))  compute_vp_dd = .true.
-        If (sometimes_compute(viscous_pforce_phi)) compute_vp_dd = .true.
-        If (sometimes_compute(viscous_mforce_phi)) compute_vp_dd = .true.
+        If (check(visc_work_pp) .or. &
+            check(viscous_force_theta) .or. &
+            check(curl_viscous_force_r) .or. &
+            check(curl_viscous_force_r_squared) .or. &
+            check(curl_viscous_force_phi) .or. &
+            check(curl_viscous_force_phi_squared) .or. &
+            check(viscous_pforce_theta) .or. &
+            check(curl_viscous_pforce_r) .or. &
+            check(curl_viscous_pforce_phi) .or. &
+            check(viscous_mforce_theta) .or. &
+            check(curl_viscous_mforce_r) .or. &
+            check(curl_viscous_mforce_phi)) Then
+            l_compute_vt_dd = .true.
+        Endif
 
-        If (sometimes_compute(visc_work) .or. sometimes_compute(visc_work_pp) &
-            .or. sometimes_compute(visc_work_mm) ) Then
-            compute_vr_dd = .true.
-            compute_vt_dd = .true.
-            compute_vp_dd = .true.
+        If (check(visc_work_mm) .or. &
+            check(viscous_force_phi) .or. &
+            check(curl_viscous_force_r) .or. &
+            check(curl_viscous_force_r_squared) .or. &
+            check(curl_viscous_force_theta) .or. &
+            check(curl_viscous_force_theta_squared) .or. &
+            check(viscous_pforce_phi) .or. &
+            check(curl_viscous_pforce_r) .or. &
+            check(curl_viscous_pforce_theta) .or. &
+            check(viscous_mforce_phi) .or. &
+            check(curl_viscous_mforce_r) .or. &
+            check(curl_viscous_mforce_theta)) Then
+            l_compute_vp_dd = .true.
         Endif
 
         Do i = visc_flux_r, visc_fluxmm_r, 3
-            if (sometimes_compute(i)) compute_vr_dd = .true.
+            if (check(i)) l_compute_vr_dd = .true.
         Enddo
         Do i = visc_flux_theta, visc_fluxmm_theta, 3
-            if (sometimes_compute(i)) compute_vt_dd = .true.
+            if (check(i)) l_compute_vt_dd = .true.
         Enddo
         Do i = visc_flux_phi, visc_fluxmm_phi, 3
-            if (sometimes_compute(i)) compute_vp_dd = .true.
+            if (check(i)) l_compute_vp_dd = .true.
         Enddo
 
 
         !/////////////////////////////////////////////////////////////////
         ! Check to see if we are computing thermal diffusion terms
-        If (sometimes_compute(s_diff) .or. sometimes_compute(sp_diff) &
-            .or. sometimes_compute(sm_diff) ) Then
-            compute_tvar_dd = .true.
-            compute_pvar_dd = .true.
+        If (check(s_diff) .or. check(sp_diff) &
+            .or. check(sm_diff) ) Then
+            l_compute_tvar_dd = .true.
+            l_compute_pvar_dd = .true.
         Endif
 
         do i = s_diff_r, sm_diff_phi
-            if (sometimes_compute(i)) compute_tvar_dd = .true.
+            if (check(i)) l_compute_tvar_dd = .true.
         enddo
 
         !//////////////////////////////////////////////////////
         ! Are we computing magnetic diffusion terms?
-        If (sometimes_compute(induct_diff_r) .or. sometimes_compute(induct_diff_bm_r) &
-            .or. sometimes_compute(induct_diff_bp_r) ) Then
-            compute_br_dd=.true.
+        If (check(induct_diff_r) .or. check(induct_diff_bm_r) &
+            .or. check(induct_diff_bp_r) ) Then
+            l_compute_br_dd=.true.
         Endif
 
-        If (sometimes_compute(induct_diff_theta) .or. sometimes_compute(induct_diff_bm_theta) &
-            .or. sometimes_compute(induct_diff_bp_theta) ) Then
-            compute_bt_dd=.true.
+        If (check(induct_diff_theta) .or. check(induct_diff_bm_theta) &
+            .or. check(induct_diff_bp_theta) ) Then
+            l_compute_bt_dd=.true.
         Endif
 
-        If (sometimes_compute(induct_diff_phi) .or. sometimes_compute(induct_diff_bm_phi) &
-            .or. sometimes_compute(induct_diff_bp_phi) ) Then
-            compute_bp_dd=.true.
+        If (check(induct_diff_phi) .or. check(induct_diff_bm_phi) &
+            .or. check(induct_diff_bp_phi) ) Then
+            l_compute_bp_dd=.true.
         Endif
 
 
-        If (sometimes_compute(idiff_work) .or. sometimes_compute(idiff_work_pp) &
-            .or. sometimes_compute(idiff_work_mm) ) Then
-            compute_br_dd = .true.
-            compute_bt_dd = .true.
-            compute_bp_dd = .true.
+        If (check(idiff_work) .or. check(idiff_work_pp) &
+            .or. check(idiff_work_mm) ) Then
+            l_compute_br_dd = .true.
+            l_compute_bt_dd = .true.
+            l_compute_bp_dd = .true.
+        Endif
+
+        !//////////////////////////////////////////////////////
+        If (check(curl_v_grad_v_r) .or. check(curl_v_grad_v_r_squared) .or. &
+            check(curl_v_grad_v_theta) .or. check(curl_v_grad_v_theta_squared) .or. &
+            check(curl_v_grad_v_phi) .or. check(curl_v_grad_v_phi_squared) .or. &
+            check(curl_v_grad_v_abs) .or. &
+            check(curl_vp_grad_vp_r) .or. check(curl_vp_grad_vp_theta) .or. &
+            check(curl_vp_grad_vp_phi) .or. &
+            check(curl_vm_grad_vm_r) .or. check(curl_vm_grad_vm_theta) .or. &
+            check(curl_vm_grad_vm_phi) .or. &
+            check(curl_vp_grad_vm_r) .or. check(curl_vp_grad_vm_theta) .or. &
+            check(curl_vp_grad_vm_phi) .or. &
+            check(curl_vm_grad_vp_r) .or. check(curl_vm_grad_vp_theta) .or. &
+            check(curl_vm_grad_vp_phi) ) Then
+            l_compute_vr_dd = .true.
+            l_compute_vt_dd = .true.
+            l_compute_vp_dd = .true.
+        Endif
+
+        If (check(curl_j_cross_b_r) .or. check(curl_j_cross_b_r_squared) .or. &
+            check(curl_j_cross_b_theta) .or. check(curl_j_cross_b_theta_squared) .or. &
+            check(curl_j_cross_b_phi) .or. check(curl_j_cross_b_phi_squared) .or. &
+            check(curl_j_cross_b_abs) .or. &
+            check(curl_jp_cross_bp_r) .or. check(curl_jp_cross_bp_theta) .or. &
+            check(curl_jp_cross_bp_phi) .or. &
+            check(curl_jm_cross_bm_r) .or. check(curl_jm_cross_bm_theta) .or. &
+            check(curl_jm_cross_bm_phi) .or. &
+            check(curl_jp_cross_bm_r) .or. check(curl_jp_cross_bm_theta) .or. &
+            check(curl_jp_cross_bm_phi) .or. &
+            check(curl_jm_cross_bp_r) .or. check(curl_jm_cross_bp_theta) .or. &
+            check(curl_jm_cross_bp_phi) ) Then
+            l_compute_br_dd = .true.
+            l_compute_bt_dd = .true.
+            l_compute_bp_dd = .true.
         Endif
 
         ! Execute a lot of compute_q logic here to see if the
-        ! different compute_xx_dd variables should be set to true.
+        ! different compute_xx variables should be set to true.
 
-        If (compute_vr_dd) need_second_derivatives = .true.
-        If (compute_vt_dd) need_second_derivatives = .true.
-        If (compute_vp_dd) need_second_derivatives = .true.
+        If (l_compute_vr_dd) need_dd = .true.
+        If (l_compute_vt_dd) need_dd = .true.
+        If (l_compute_vp_dd) need_dd = .true.
 
-        If (compute_tvar_dd) need_second_derivatives = .true.
-        If (compute_pvar_dd) need_second_derivatives = .true.
+        If (l_compute_tvar_dd) need_dd = .true.
+        If (l_compute_pvar_dd) need_dd = .true.
 
-        If (compute_br_dd) need_second_derivatives = .true.
-        If (compute_bt_dd) need_second_derivatives = .true.
-        If (compute_bp_dd) need_second_derivatives = .true.
+        If (l_compute_br_dd) need_dd = .true.
+        If (l_compute_bt_dd) need_dd = .true.
+        If (l_compute_bp_dd) need_dd = .true.
 
         ! Turbulent KE generation
-        If (sometimes_compute(production_buoyant_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(production_shear_pKE)) need_second_derivatives = .true.
+        If (check(production_buoyant_pKE)) need_dd = .true.
+        If (check(production_shear_pKE)) need_dd = .true.
 
-        If (sometimes_compute(dissipation_viscous_pKE)) need_second_derivatives = .true.
+        If (check(dissipation_viscous_pKE)) need_dd = .true.
 
-        If (sometimes_compute(transport_pressure_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(transport_viscous_pKE)) Then
-            need_second_derivatives = .true.
-            compute_vr_dd = .true.
-            compute_vt_dd = .true.
-            compute_vp_dd = .true.
+        If (check(transport_pressure_pKE)) need_dd = .true.
+        If (check(transport_viscous_pKE)) Then
+            need_dd = .true.
+            l_compute_vr_dd = .true.
+            l_compute_vt_dd = .true.
+            l_compute_vp_dd = .true.
         Endif
-        If (sometimes_compute(transport_turbadvect_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(transport_meanadvect_pKE)) need_second_derivatives = .true.
+        If (check(transport_turbadvect_pKE)) need_dd = .true.
+        If (check(transport_meanadvect_pKE)) need_dd = .true.
 
-        If (sometimes_compute(rflux_pressure_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(rflux_viscous_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(rflux_turbadvect_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(rflux_meanadvect_pKE)) need_second_derivatives = .true.
+        If (check(rflux_pressure_pKE)) need_dd = .true.
+        If (check(rflux_viscous_pKE)) need_dd = .true.
+        If (check(rflux_turbadvect_pKE)) need_dd = .true.
+        If (check(rflux_meanadvect_pKE)) need_dd = .true.
 
-        If (sometimes_compute(thetaflux_pressure_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(thetaflux_viscous_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(thetaflux_turbadvect_pKE)) need_second_derivatives = .true.
-        If (sometimes_compute(thetaflux_meanadvect_pKE)) need_second_derivatives = .true.
+        If (check(thetaflux_pressure_pKE)) need_dd = .true.
+        If (check(thetaflux_viscous_pKE)) need_dd = .true.
+        If (check(thetaflux_turbadvect_pKE)) need_dd = .true.
+        If (check(thetaflux_meanadvect_pKE)) need_dd = .true.
 
-    End Subroutine Init_Derivative_Logic
+    End Subroutine Second_Derivative_Logic
+
+    Function Second_Derivatives_Needed() result(needed)
+        ! Per-iteration determination of whether Compute_Second_Derivatives
+        ! needs to run, via compute_quantity (this iteration's menu) rather
+        ! than sometimes_compute. The per-field compute_xx flags are
+        ! local/transient here -- they do not affect the compute_xx_dd locals
+        ! in Initialize_Second_Derivatives, which are fixed once, at startup,
+        ! since they size dd_src/d2buffer.
+        Implicit None
+        Logical :: needed
+        Logical :: l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd
+        Logical :: l_compute_tvar_dd, l_compute_pvar_dd
+        Logical :: l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd
+
+        Call Second_Derivative_Logic(Compute_Quantity, l_compute_vr_dd, l_compute_vt_dd, l_compute_vp_dd, &
+                               l_compute_tvar_dd, l_compute_pvar_dd, &
+                               l_compute_br_dd, l_compute_bt_dd, l_compute_bp_dd, needed)
+
+    End Function Second_Derivatives_Needed
 
     Subroutine Initialize_Second_Derivatives()
         ! Initializes all the indexing related to computing and
         ! accessing second derivatives at output time.
         ! Most of the actual indexing is handled by Set_DD_Indices
         IMPLICIT NONE
-        INTEGER :: ndind
+        INTEGER :: ndind, i
         INTEGER :: ddfcount(3,2)
+        Logical :: compute_vr_dd, compute_vt_dd, compute_vp_dd
+        Logical :: compute_tvar_dd, compute_pvar_dd
+        Logical :: compute_br_dd, compute_bt_dd, compute_bp_dd
+        Logical :: need_dd_at_init
 
-
-
-        Call Init_Derivative_Logic()
+        ! Once-at-startup pass: decides, via sometimes_compute (the menu across
+        ! the whole run), which fields ever need second derivatives taken, for
+        ! sizing dd_src/the d2buffer below. The resulting need_dd_at_init is
+        ! discarded; whether Compute_Second_Derivatives runs is refreshed every
+        ! iteration by Second_Derivatives_Needed().
+        Call Second_Derivative_Logic(Sometimes_Compute, compute_vr_dd, compute_vt_dd, compute_vp_dd, &
+                               compute_tvar_dd, compute_pvar_dd, &
+                               compute_br_dd, compute_bt_dd, compute_bp_dd, need_dd_at_init)
 
 
         nddfields = 0   ! Number of fields whose second derivatives we want
@@ -226,84 +340,107 @@ Contains
 
 
 
-        Allocate(ddindmap(4,nddfields*2))
-        ddindmap(:,:) = -1
+        Allocate(dd_type(nddfields), dd_src(8,nddfields), dd_slot(2,nddfields))
+        Allocate(dd_scr(nddfields), dd_sgn(nddfields))
+        dd_src(:,:) = -1
 
 
         If (compute_vr_dd) THEN
             ndind = ndind+1
-            Call set_dd_indices(ndind,nddfields, ddindmap, &
+            Call set_dd_indices(ndind,nddfields, dd_scalar, &
                                       dvrdrdr, dvrdrdt, dvrdrdp, &
                                       dvrdtdt, dvrdtdp, dvrdpdp, &
-                                      dvrdr  , dvrdt  , dvrdp)
+                                      vr, dvrdr  , dvrdt  , dvrdp)
         Endif
 
         IF (compute_vt_dd) THEN
             ndind = ndind+1
-            Call set_dd_indices(ndind,nddfields, ddindmap, &
+            Call set_dd_indices(ndind,nddfields, dd_theta, &
                                       dvtdrdr, dvtdrdt, dvtdrdp, &
                                       dvtdtdt, dvtdtdp, dvtdpdp, &
-                                      dvtdr  , dvtdt  , dvtdp)
+                                      vtheta, dvtdr  , dvtdt  , dvtdp, &
+                                      vphi  , dvpdr  , dvpdt  , dvpdp)
         ENDIF
 
         IF (compute_vp_dd) THEN
             ndind = ndind+1
-            Call set_dd_indices(ndind,nddfields, ddindmap, &
+            Call set_dd_indices(ndind,nddfields, dd_phi, &
                                       dvpdrdr, dvpdrdt, dvpdrdp, &
                                       dvpdtdt, dvpdtdp, dvpdpdp, &
-                                      dvpdr  , dvpdt  , dvpdp)
+                                      vphi  , dvpdr  , dvpdt  , dvpdp, &
+                                      vtheta, dvtdr  , dvtdt  , dvtdp)
         ENDIF
 
         IF (compute_tvar_dd) THEN
             ndind = ndind+1
-            Call set_dd_indices(ndind,nddfields, ddindmap, &
+            Call set_dd_indices(ndind,nddfields, dd_scalar, &
                                       dtdrdr, dtdrdt, dtdrdp, &
                                       dtdtdt, dtdtdp, dtdpdp, &
-                                      dtdr  , dtdt  , dtdp)
+                                      tvar, dtdr  , dtdt  , dtdp)
         ENDIF
 
         IF (compute_pvar_dd) THEN
             ndind = ndind+1
-            Call set_dd_indices(ndind,nddfields, ddindmap, &
+            Call set_dd_indices(ndind,nddfields, dd_scalar, &
                                       dpdrdr, dpdrdt, dpdrdp, &
                                       dpdtdt, dpdtdp, dpdpdp, &
-                                      dpdr  , dpdt  , dpdp)
+                                      pvar, dpdr  , dpdt  , dpdp)
         ENDIF
 
         If (magnetism) THEN
             If (compute_br_dd) THEN
                 ndind = ndind+1
-                Call set_dd_indices(ndind,nddfields, ddindmap, &
+                Call set_dd_indices(ndind,nddfields, dd_scalar, &
                                           dbrdrdr, dbrdrdt, dbrdrdp, &
                                           dbrdtdt, dbrdtdp, dbrdpdp, &
-                                          dbrdr  , dbrdt  , dbrdp)
+                                          br, dbrdr  , dbrdt  , dbrdp)
             Endif
 
             IF (compute_bt_dd) THEN
                 ndind = ndind+1
-                Call set_dd_indices(ndind,nddfields, ddindmap, &
+                Call set_dd_indices(ndind,nddfields, dd_theta, &
                                           dbtdrdr, dbtdrdt, dbtdrdp, &
                                           dbtdtdt, dbtdtdp, dbtdpdp, &
-                                          dbtdr  , dbtdt  , dbtdp)
+                                          btheta, dbtdr  , dbtdt  , dbtdp, &
+                                          bphi  , dbpdr  , dbpdt  , dbpdp)
             ENDIF
 
             IF (compute_bp_dd) THEN
                 ndind = ndind+1
-                Call set_dd_indices(ndind,nddfields, ddindmap,      &
+                Call set_dd_indices(ndind,nddfields, dd_phi,      &
                                           dbpdrdr, dbpdrdt, dbpdrdp, &
                                           dbpdtdt, dbpdtdp, dbpdpdp, &
-                                          dbpdr  , dbpdt  , dbpdp)
+                                          bphi  , dbpdr  , dbpdt  , dbpdp, &
+                                          btheta, dbtdr  , dbtdt  , dbtdp)
             ENDIF
         ENDIF
 
+        ! Assign the p3b slots of the fields that are Legendre transformed:
+        ! one per scalar (x), two per horizontal component (Q, sin(theta) dx/dr).
+        ndd_trans = 0
+        ndd_horiz = 0
+        dd_slot(:,:) = -1
+        dd_scr(:) = -1
+        Do i = 1, nddfields
+            ndd_trans = ndd_trans+1
+            dd_slot(1,i) = ndd_trans
+            If (dd_type(i) .ne. dd_scalar) Then
+                ndd_trans = ndd_trans+1
+                dd_slot(2,i) = ndd_trans
+                ndd_horiz = ndd_horiz+1
+                dd_scr(i) = ndd_horiz
+            Endif
+        Enddo
 
-
-        ddfcount(1,1) = nddfields*4 ! config 1a
-        ddfcount(2,1) = nddfields*4 ! 2a
-        ddfcount(3,1) = nddfields*7 ! 3a
-        ddfcount(3,2) = nddfields*2 ! 3b
-        ddfcount(2,2) = nddfields*2 ! 2b
-        ddfcount(1,2) = nddfields*4 ! 1b
+        ! Only ndd_trans fields are transposed on the way in and 3 per variable on the
+        ! way back (see Compute_Second_Derivatives).  p3a holds those 3N fields, the 6N
+        ! outputs and the 2*ndd_horiz scratch fields.
+        ddfcount(1,1) = nddfields*3 ! config 1a
+        ddfcount(2,1) = nddfields*3 ! 2a
+        ddfcount(3,1) = nddfields*9+ndd_horiz*2 ! 3a
+        ddfcount(3,2) = ndd_trans   ! 3b
+        ddfcount(2,2) = ndd_trans   ! 2b
+        ddfcount(1,2) = ndd_trans   ! 1b
 
 
         Call d2buffer%init(field_count = ddfcount, config = 'p3b')
@@ -315,55 +452,122 @@ Contains
 
     Subroutine Compute_Second_Derivatives(inbuffer)
         Implicit None
-        INTEGER :: i,j, imi, mp, m
-        INTEGER :: r,k, t
+        INTEGER :: i, j, imi, mp, m
+        INTEGER :: r, k, t
+        INTEGER :: n, nt, nw, ob, sb, s1, s2, k1, k2, k3, ix, ixr, ixt, iyp
+        Real*8 :: sgn
         Real*8, Intent(InOut) :: inbuffer(1:,my_r%min:,my_theta%min:,1:)
+        Real*8, Allocatable :: work(:,:,:,:)
         Type(rmcontainer3D), Allocatable :: ddtemp(:)
 
-
-
-
-
-
-        ! Here were compute all second derivatives for N variables
-        ! Outline of the process:
-        ! 1)  Intialize p3b space of d2buffer
-        ! 2)  Load slots [1 : N] of d2buffer with d_by_dr for each variable
-        ! 3)  Load slots [N+1 : 2N] with d_by_dtheta for each variable
-        ! 4)  Move to p1b/p1a configuration
-        ! 5)  Load slots [2N+1 : 3N] with d2_by_dr2 for each variable
-        ! 6)  Load slots [3N+1 : 4N] with d2_by_drdt for each variable; move to s2a
-        ! 7)  Move to s2a and load sintheta*dxdtdt into slots [N+1 : 2N] (ovewriting dxdt)
-        ! 8)  Move to p3a and load d2_by_drdphi into slots [4N+1: 5N] for each variable
-        ! 9)  Load d2_by_dphi2 into slots [5N+1: 6N] for each variable
-        ! 10) Load d2_by_dtdphi into slots [6N+1 : 7N] for each variable
-        ! 11) FFT, correct for sintheta factor, compute means and fluctuations
+        ! Here we compute all second derivatives for N variables.
+        !
+        ! A field may only be Legendre transformed (forward or inverse) if it is
+        ! smooth at the poles, i.e. if its m-th Fourier component behaves like
+        ! sin^|m|(theta) * (polynomial in cos(theta)).  Scalars x satisfy this, but
+        ! dx/dtheta does not (it has the wrong parity across the pole), and neither
+        ! does a horizontal vector component or its radial derivative. 
+        ! We only transform smooth quantities and do all division by
+        ! sin(theta) pointwise exactly on the grid at the end:
+        !
+        ! Scalars x in (v_r, T, P, B_r) -- transform C = x only
+        !    d2x/dr2       = d2C/dr2
+        !    d2x/drdtheta  = [sin(theta) d(dC/dr)/dtheta]/sin(theta), computed spectrally
+        !    d2x/dtheta2   = Lap_1(C) - d2x/dphi2/sin^2(theta) - cot(theta) dx/dtheta
+        !    where Lap_1 = -l(l+1) is the Laplacian on the unit sphere.
+        !
+        ! Horizontal components x, with y the other component (v_theta/v_phi, B_theta/B_phi),
+        ! sgn = +1 for x = theta component, -1 for x = phi component -- transform
+        !    A = sin(theta) dx/dr
+        !    Q = dx/dtheta + cot(theta) x + sgn dy/dphi / sin(theta)
+        !    Q is r times the horizontal divergence (when x = theta component) or the radial
+        !    vorticity (when x = phi component).
+        !    Both are smooth scalars for any smooth vector field.
+        !    Rearranging,
+        !    dx/dtheta = Q - cot(theta) x - sgn dy/dphi / sin(theta), so that
+        !    d2x/dr2       = d(A)/dr / sin(theta)
+        !    d2x/drdtheta  = dQ/dr - cot(theta) dx/dr - sgn d2y/drdphi / sin(theta)
+        !    d2x/dtheta2   = dQ/dtheta + x/sin^2(theta) - cot(theta) dx/dtheta
+        !                    + sgn cot(theta) dy/dphi / sin(theta) - sgn d2y/dthetadphi / sin(theta)
+        !    with dQ/dtheta = [sin(theta) dQ/dtheta]/sin(theta), computed spectrally.
+        !
+        ! Truncation at l_max:  multiplying by sin(theta) raises the spectral degree by one,
+        ! so A above has an l_max+1 component proportional to the l_max coefficient of x.  The forward
+        ! Legendre transform discards it, the result no longer vanishes like sin(theta) at
+        ! the poles, and the division by sin(theta) in Step 7 below amplifies the error there.
+        ! A is formed in physical space, so it cannot be truncated here; it is exact only
+        ! because the inputs come from rlm_spacea (Sphere_Hybrid_Space), where the l_max
+        ! mode of every field is zeroed before the transform to physical space.
+        ! Any new field added to this routine must satisfy the same condition.
+        ! The fields passed to d_by_dtheta (just Q and dC/dr) are truncated at l_max explicitly
+        ! (Step 4) for the same reason.
+        !
+        ! The phi derivatives d2x/drdphi, d2x/dphi2 and d2x/dthetadphi (and d2y/drdphi,
+        ! d2y/dthetadphi) are computed from the first derivatives in inbuffer with FFTs
+        ! only; no Legendre transform is involved.
+        !
+        ! Every field in p1a and s2a is transposed so only the three fields needed per variable are kept there;
+        ! the radial derivatives are taken in a private work array instead.
+        !
+        ! Steps:
+        ! 1)  Load the p3b slots (see dd_slot) with C, or with Q and A, for each variable
+        ! 2)  Move to p1b and copy to the work array (in Chebyshev space if applicable)
+        ! 3)  Fill p1a slots [3i-2 : 3i] with, for variable i,
+        !        scalar:     C,  dC/dr,  d2C/dr2
+        !        horizontal: Q,  dQ/dr,  dA/dr
+        ! 4)  Move to s2a; scalar: C -> Lap_1(C), dC/dr -> sin(theta) d(dC/dr)/dtheta;
+        !     horizontal: Q -> sin(theta) dQ/dtheta
+        ! 5)  Move to p3a
+        ! 6)  Load dxdr, dxdp, dxdt into the dxdrdp, dxdpdp, dxdtdp slots (and dydr, dydt into
+        !     the scratch slots) and take phi derivatives
+        ! 7)  FFT, assemble dxdtdt, dxdrdr and dxdrdt, compute means and fluctuations
 
         ! When this routine is complete, the contents of d2buffer%p3a will be
-        ! [   1 : N  ] -- workspace;
-        ! [ N+1 : 2N ] -- dxdtdt
-        ! [2N+1 : 3N ] -- dxdrdr
-        ! [3N+1 : 4N ] -- dxdrdt
-        ! [4N+1 : 5N ] -- dxdrdp
-        ! [5N+1 : 6N ] -- dxdpdp
-        ! [6N+1 : 7N ] -- dxdtdp
+        ! [    1 : 3N ] -- transformed fields (workspace)
+        ! [3N+1 : 4N ] -- dxdtdt
+        ! [4N+1 : 5N ] -- dxdrdr
+        ! [5N+1 : 6N ] -- dxdrdt
+        ! [6N+1 : 7N ] -- dxdrdp
+        ! [7N+1 : 8N ] -- dxdpdp
+        ! [8N+1 : 9N ] -- dxdtdp
+        ! followed by workspace
+
+        n    = nddfields
+        nt   = ndd_trans
+        ob   = n*3           ! output base (see Set_DD_Indices)
+        sb   = ob+n*6        ! scratch pairs live in [sb+1 : sb+2*ndd_horiz]
 
         !///////////////////////////////////////////////////////////
-        ! Step 1: Initialize p3b portion of d2buffer
+        ! Step 1:  Load the fields to be transformed
 
         Call d2buffer%construct('p3b')
         d2buffer%config = 'p3b'
+        d2buffer%p3b(:,:,:,:) = 0.0d0
 
-
-        !///////////////////////////////////////////////////////////
-        ! Steps 2-3:  Load radial and theta derivatives
-        Do i = 1, nddfields*2
-            d2buffer%p3b(:,:,:,ddindmap(1,i)) = inbuffer(:,:,:,ddindmap(2,i))
+        Do i = 1, n
+            ix  = dd_src(1,i)
+            ixr = dd_src(2,i)
+            ixt = dd_src(3,i)
+            s1  = dd_slot(1,i)
+            If (dd_type(i) .eq. dd_scalar) Then
+                DO_PSI
+                    d2buffer%p3b(PSI,s1) = inbuffer(PSI,ix)
+                END_DO
+            Else
+                s2  = dd_slot(2,i)
+                iyp = dd_src(8,i)
+                sgn = dd_sgn(i)
+                DO_PSI
+                    d2buffer%p3b(PSI,s1) = inbuffer(PSI,ixt)+cottheta(t)*inbuffer(PSI,ix) &
+                                         + sgn*csctheta(t)*inbuffer(PSI,iyp)
+                    d2buffer%p3b(PSI,s2) = inbuffer(PSI,ixr)*sintheta(t)
+                END_DO
+            Endif
         Enddo
 
 
         !////////////////////////////////////////////////////////////////
-        ! Step 4:  Move to p1b/p1a configuration
+        ! Step 2:  Move to p1b and copy to the work array
         Call fft_to_spectral(d2buffer%p3b, rsc = .true.)
         Call d2buffer%reform()
         Call d2buffer%construct('s2b')
@@ -371,59 +575,70 @@ Contains
         Call d2buffer%deconstruct('p2b')
         d2buffer%config ='s2b'
 
+        Call d2buffer%reform() ! move to p1b
 
-
-        !Move to p1b configuration
-        Call d2buffer%reform()
-        Call d2buffer%construct('p1a')
+        ! The last work slot receives each radial derivative in turn
+        nw = nt+1
+        Allocate(work(1:size(d2buffer%p1b,1),1:2,1:size(d2buffer%p1b,3),1:nw))
+        work(:,:,:,:) = 0.0d0
         If (chebyshev) Then
-            Call gridcp%To_Spectral(d2buffer%p1b,d2buffer%p1a)
-            Call gridcp%dealias_buffer(d2buffer%p1a)
+            Call gridcp%To_Spectral(d2buffer%p1b(:,:,:,1:nt),work(:,:,:,1:nt))
+            Call gridcp%dealias_buffer(work(:,:,:,1:nt))
         Else
-            d2buffer%p1a = d2buffer%p1b
+            work(:,:,:,1:nt) = d2buffer%p1b(:,:,:,1:nt)
         Endif
-        d2buffer%p1b = 0.0
-        d2buffer%config='p1a'
 
 
         !////////////////////////////////////////////////////////////
-        ! Steps 5-6:  Load d2_by_dr2 and d2_by_drdt into the buffer
+        ! Step 3:  Fill p1a with the fields needed in s2a and p3a
+        Call d2buffer%construct('p1a')
+        d2buffer%config='p1a'
+
+        Do i = 1, n
+            s1 = dd_slot(1,i)
+            k1 = 3*i-2
+            k2 = 3*i-1
+            k3 = 3*i
+            d2buffer%p1a(:,:,:,k1) = work(:,:,:,s1)
+            Call radial_derivative(s1, k2, 1)
+            If (dd_type(i) .eq. dd_scalar) Then
+                Call radial_derivative(s1, k3, 2)
+            Else
+                Call radial_derivative(dd_slot(2,i), k3, 1)
+            Endif
+        Enddo
+
         If (chebyshev) Then
-            Do i = 1, nddfields*2
-                j = i+nddfields*2
-                Call gridcp%d_by_dr_cp(i,j,d2buffer%p1a,1)
-            Enddo
-            Call gridcp%From_Spectral(d2buffer%p1a,d2buffer%p1b)
-            d2buffer%p1a=d2buffer%p1b
-        Else
-            Do i = 1, nddfields*2
-                j = i+nddfields*2
-                Call d_by_dx3d3(i,j,d2buffer%p1a,1)
-            Enddo
+            ! Back to physical space in radius; the work array is no longer needed
+            DeAllocate(work)
+            Allocate(work(1:size(d2buffer%p1a,1),1:2,1:size(d2buffer%p1a,3),1:size(d2buffer%p1a,4)))
+            Call gridcp%From_Spectral(d2buffer%p1a,work)
+            d2buffer%p1a = work
         Endif
+        DeAllocate(work)
         Call d2buffer%deconstruct('p1b')
 
-        ! Ordering of fields in buffer is now dxdr, dxdt, dxdrdr, dxdrdt
 
         !///////////////////////////////////////////////////////////////
-        ! Step 7:  Move to s2a & overwrite dxdt with sintheta*{dxdtdt}
+        ! Step 4:  Move to s2a; scalar: C -> Lap_1(C), dC/dr -> sin(theta) d(dC/dr)/dtheta,
+        !          horizontal: Q -> sin(theta) dQ/dtheta
         Call d2buffer%reform()
-
 
         Call Allocate_rlm_Field(ddtemp)
 
-
-        Do i = nddfields+1,nddfields*2
-            ! We overwrite dxdt with sintheta* {dxdtdt}
-            Call d_by_dtheta(d2buffer%s2a,i,ddtemp)
-            DO_IDX2
-                d2buffer%s2a(mp)%data(IDX2,i) = ddtemp(mp)%data(IDX2)
-            END_DO
+        Do i = 1, n
+            If (dd_type(i) .eq. dd_scalar) Then
+                k1 = 3*i-2
+                DO_IDX2
+                    d2buffer%s2a(mp)%data(IDX2,k1) = -l_l_plus1(m:l_max)*d2buffer%s2a(mp)%data(IDX2,k1)
+                END_DO
+                Call sintheta_dtheta_inplace(3*i-1)
+            Else
+                Call sintheta_dtheta_inplace(3*i-2)
+            Endif
         Enddo
 
-
         Call DeAllocate_rlm_Field(ddtemp)
-
 
         Call d2buffer%construct('p2a')
         Call Legendre_Transform(d2buffer%s2a,d2buffer%p2a)
@@ -432,72 +647,130 @@ Contains
 
 
         !/////////////////////////////////////////////////////////////////////
-        !  Steps 8-10 : phi derivatives
+        !  Step 5 : Move to p3a
         Call d2buffer%reform() ! move to p3a
 
-        ! Ordering of fields in buffer is now dxdr, sintheta*{dxdtdt}, dxdrdr, dxdrdt
+        d2buffer%p3a(:,:,:,ob+1:) = 0.0d0
 
-        !Compute dxdrdp
-        Do i = 1, nddfields
-            j = i+nddfields*4
-            Call d_by_dphi(d2buffer%p3a,i,j)
+
+        !/////////////////////////////////////////////////////////////////////
+        !  Step 6 : phi derivatives (FFT only)
+        Do i = 1, n
+            DO_PSI
+                d2buffer%p3a(PSI,ob+i+n*3) = inbuffer(PSI,dd_src(2,i))   ! dxdr -> dxdrdp
+                d2buffer%p3a(PSI,ob+i+n*4) = inbuffer(PSI,dd_src(4,i))   ! dxdp -> dxdpdp
+                d2buffer%p3a(PSI,ob+i+n*5) = inbuffer(PSI,dd_src(3,i))   ! dxdt -> dxdtdp
+            END_DO
+            If (dd_type(i) .ne. dd_scalar) Then
+                j = sb+dd_scr(i)*2-1
+                DO_PSI
+                    d2buffer%p3a(PSI,j  ) = inbuffer(PSI,dd_src(6,i)) ! dydr -> dydrdp
+                    d2buffer%p3a(PSI,j+1) = inbuffer(PSI,dd_src(7,i)) ! dydt -> dydtdp
+                END_DO
+            Endif
         Enddo
 
-        ! Grab dxdp and dxdt from inbuffer
-        ! Inbuffer is in physical space, so after we copy into p3b, we need to FFT
-        Call d2buffer%construct('p3b')
-        Do i = 1, nddfields
-            d2buffer%p3b(:,:,:,i) = inbuffer(:,:,:,ddindmap(3,i))
-            d2buffer%p3b(:,:,:,i+nddfields) = inbuffer(:,:,:,ddindmap(4,i))
+        ! These are physical; the rest of p3a is already in spectral space (in phi)
+        Call fft_to_spectral_rsc(d2buffer%p3a(:,:,:,ob+n*3+1:ob+n*6))
+        If (ndd_horiz .gt. 0) Call fft_to_spectral_rsc(d2buffer%p3a(:,:,:,sb+1:sb+ndd_horiz*2))
+
+        Do j = ob+n*3+1, ob+n*6
+            Call d_by_dphi(d2buffer%p3a,j,j)
         Enddo
-        Call fft_to_spectral_rsc(d2buffer%p3b)  ! call this version since dropping in midway through loop
-
-        !Copy dxdp into dxdr space, then calculate dxdpdp
-        Do i = 1, nddfields
-            j = i+nddfields*5
-            d2buffer%p3a(:,:,:,i) = d2buffer%p3b(:,:,:,i)
-
-            Call d_by_dphi(d2buffer%p3a,i,j)
+        Do j = sb+1, sb+ndd_horiz*2
+            Call d_by_dphi(d2buffer%p3a,j,j)
         Enddo
 
-        !Copy dxdt into dxdr space, then calculate dxdtdp
-        Do i = 1, nddfields
-            j = i+nddfields*6
-            d2buffer%p3a(:,:,:,i) = d2buffer%p3b(:,:,:,i+nddfields)
-            Call d_by_dphi(d2buffer%p3a,i,j)
-        Enddo
-
-        Call d2buffer%deconstruct('p3b')
 
         !//////////////////////////////////////////
-        ! Step 11:   Finalize
+        ! Step 7:   Finalize
         ! FFT
         Call fft_to_physical(d2buffer%p3a,rsc = .true.)
 
-        ! Convert sintheta*{dxdtdt} to dxdtdt
-        Do i = nddfields+1,nddfields*2
-            DO_PSI
-                d2buffer%p3a(PSI,i) = d2buffer%p3a(PSI,i)*csctheta(t)
-            END_DO
+        Do i = 1, n
+            ix  = dd_src(1,i)
+            ixr = dd_src(2,i)
+            ixt = dd_src(3,i)
+            k1  = 3*i-2
+            k2  = 3*i-1
+            k3  = 3*i
+            If (dd_type(i) .eq. dd_scalar) Then
+                DO_PSI
+                    ! d2x/dtheta2   = Lap_1(x) - d2x/dphi2/sin^2(theta) - cot(theta) dx/dtheta
+                    d2buffer%p3a(PSI,ob+i    ) = d2buffer%p3a(PSI,k1) &
+                                               - csctheta(t)*csctheta(t)*d2buffer%p3a(PSI,ob+i+n*4) &
+                                               - cottheta(t)*inbuffer(PSI,ixt)
+                    ! d2x/dr2       = d2C/dr2
+                    d2buffer%p3a(PSI,ob+i+n  ) = d2buffer%p3a(PSI,k3)
+                    ! d2x/drdtheta  = [sin(theta) d(dC/dr)/dtheta]/sin(theta)
+                    d2buffer%p3a(PSI,ob+i+n*2) = d2buffer%p3a(PSI,k2)*csctheta(t)
+                END_DO
+            Else
+                iyp = dd_src(8,i)
+                sgn = dd_sgn(i)
+                j = sb+dd_scr(i)*2-1
+                DO_PSI
+                    ! d2x/dtheta2 = dQ/dtheta + x/sin^2(theta) - cot(theta) dx/dtheta
+                    !         + sgn cot(theta) dy/dphi / sin(theta) - sgn d2y/dthetadphi / sin
+                    d2buffer%p3a(PSI,ob+i    ) = d2buffer%p3a(PSI,k1)*csctheta(t) &
+                                               + csctheta(t)*csctheta(t)*inbuffer(PSI,ix) &
+                                               - cottheta(t)*inbuffer(PSI,ixt) &
+                                               + sgn*csctheta(t)*cottheta(t)*inbuffer(PSI,iyp) &
+                                               - sgn*csctheta(t)*d2buffer%p3a(PSI,j+1)
+                    ! d2x/dr2 = d(sin(theta) dx/dr)/dr / sin(theta)
+                    d2buffer%p3a(PSI,ob+i+n  ) = d2buffer%p3a(PSI,k3)*csctheta(t)
+                    ! d2x/drdtheta  = dQ/dr - cot(theta) dx/dr - sgn d2y/drdphi / sin(theta)
+                    d2buffer%p3a(PSI,ob+i+n*2) = d2buffer%p3a(PSI,k2) &
+                                               - cottheta(t)*inbuffer(PSI,ixr) &
+                                               - sgn*csctheta(t)*d2buffer%p3a(PSI,j)
+                END_DO
+            Endif
         Enddo
-        !D2buffer is now initialized.  Ordering of fields is:
-        ! [dxdt], dxdtdt,dxdrdr,dxdrdt, dxdrdp, dxdpdp, dxdtdp
-        ! Note that we have one redundant derivative, dxdt, stored for each field
+        !D2buffer is now initialized.  Ordering of output fields is:
+        ! dxdtdt, dxdrdr, dxdrdt, dxdrdp, dxdpdp, dxdtdp
 
         ! Now compute the means and fluctuations
-        Allocate(d2_ell0(my_r%min:my_r%max,1:nddfields*7))
-        Allocate(d2_m0(my_r%min:my_r%max,my_theta%min:my_theta%max,1:nddfields*7))
+        Allocate(d2_ell0(my_r%min:my_r%max,ob+1:ob+n*6))
+        Allocate(d2_m0(my_r%min:my_r%max,my_theta%min:my_theta%max,ob+1:ob+n*6))
         Allocate(d2_fbuffer(1:n_phi,my_r%min:my_r%max, &
-            my_theta%min:my_theta%max,1:nddfields*7))
+                 my_theta%min:my_theta%max,ob+1:ob+n*6))
 
-        Call ComputeEll0(d2buffer%p3a,d2_ell0)
-        Call   ComputeM0(d2buffer%p3a,d2_m0)
+        Call ComputeEll0(d2buffer%p3a(:,:,:,ob+1:ob+n*6),d2_ell0)
+        Call   ComputeM0(d2buffer%p3a(:,:,:,ob+1:ob+n*6),d2_m0)
 
-        DO j = 1,nddfields*7
+        DO j = ob+1,ob+n*6
             DO_PSI
                 d2_fbuffer(PSI,j) = d2buffer%p3a(PSI,j) - d2_m0(PSI2,j)
             END_DO
         ENDDO
+
+    Contains
+
+        Subroutine radial_derivative(src, dst, dorder)
+            ! d^dorder/dr^dorder of work slot src into p1a slot dst
+            Integer, Intent(In) :: src, dst, dorder
+            If (chebyshev) Then
+                Call gridcp%d_by_dr_cp(src, nw, work, dorder)
+            Else
+                Call d_by_dx3d3(src, nw, work, dorder)
+            Endif
+            d2buffer%p1a(:,:,:,dst) = work(:,:,:,nw)
+        End Subroutine radial_derivative
+
+        Subroutine sintheta_dtheta_inplace(f)
+            ! s2a slot f -> sin(theta) d/dtheta of slot f.  That needs modes up to
+            ! l_max+1, which s2a cannot hold, so truncate at l_max-1 first so the
+            ! result fits exactly and remains divisible by sin(theta) in Step 7
+            ! (cf. rlm_spacea in Sphere_Hybrid_Space).
+            Integer, Intent(In) :: f
+            Do mp = my_mp%min, my_mp%max
+                d2buffer%s2a(mp)%data(l_max,:,:,f) = 0.0d0
+            Enddo
+            Call d_by_dtheta(d2buffer%s2a,f,ddtemp)
+            DO_IDX2
+                d2buffer%s2a(mp)%data(IDX2,f) = ddtemp(mp)%data(IDX2)
+            END_DO
+        End Subroutine sintheta_dtheta_inplace
 
     End Subroutine Compute_Second_Derivatives
 
@@ -525,40 +798,49 @@ Contains
         DeAllocate(arr)
     End Subroutine DeAllocate_rlm_Field
 
-    Subroutine Set_DD_Indices(iind, nskip, iindmap, &
+    Subroutine Set_DD_Indices(iind, nskip, ftype, &
                                      dxdrdr, dxdrdt, dxdrdp, &
                                      dxdtdt, dxdtdp, dxdpdp, &
-                                       dxdr,   dxdt, dxdp)
-        ! Sets indexing within indmap and assigned values to
-        ! dxdidj consistent with the logic used in
+                                     x, dxdr, dxdt, dxdp, &
+                                     y, dydr, dydt, dydp)
+        ! Sets the field type and buffer indices of field iind in dd_type/dd_src and
+        ! assigns values to dxdidj consistent with the logic used in
         ! Compute_Second_Derivatives()
-        ! [ N+1 : 2N ] -- dxdtdt
-        ! [2N+1 : 3N ] -- dxdrdr
-        ! [3N+1 : 4N ] -- dxdrdt
-        ! [4N+1 : 5N ] -- dxdrdp
-        ! [5N+1 : 6N ] -- dxdpdp
-        ! [6N+1 : 7N ] -- dxdtdp
+        ! [3N+1 : 4N ] -- dxdtdt
+        ! [4N+1 : 5N ] -- dxdrdr
+        ! [5N+1 : 6N ] -- dxdrdt
+        ! [6N+1 : 7N ] -- dxdrdp
+        ! [7N+1 : 8N ] -- dxdpdp
+        ! [8N+1 : 9N ] -- dxdtdp
+        ! (the first 3N slots of d2buffer%p3a hold the transformed fields)
+        ! y and its derivatives (the other horizontal component) are required for
+        ! horizontal components (ftype = dd_theta or dd_phi) and ignored for scalars.
         Implicit None
-        INTEGER, Intent(In)    :: iind, nskip
+        INTEGER, Intent(In)    :: iind, nskip, ftype
         INTEGER, INTENT(OUT)   :: dxdtdt, dxdrdr, dxdrdt
         INTEGER, INTENT(OUT)   :: dxdrdp, dxdpdp, dxdtdp
-        INTEGER, INTENT(IN)    :: dxdr, dxdt, dxdp
-        INTEGER, INTENT(INOUT) :: iindmap(:,:)
-        dxdtdt = iind+nskip
-        dxdrdr = iind+nskip*2
-        dxdrdt = iind+nskip*3
-        dxdrdp = iind+nskip*4
-        dxdpdp = iind+nskip*5
-        dxdtdp = iind+nskip*6
+        INTEGER, INTENT(IN)    :: x, dxdr, dxdt, dxdp
+        INTEGER, INTENT(IN), Optional :: y, dydr, dydt, dydp
+        dxdtdt = iind+nskip*3
+        dxdrdr = iind+nskip*4
+        dxdrdt = iind+nskip*5
+        dxdrdp = iind+nskip*6
+        dxdpdp = iind+nskip*7
+        dxdtdp = iind+nskip*8
 
-        iindmap(1,iind          ) = iind
-        iindmap(2,iind          ) = dxdr
-        iindmap(3,iind          ) = dxdp
-        iindmap(4,iind          ) = dxdt
-        !iindmap(1,iind          ) = iind+nskip
-        iindmap(1,iind+nskip) = iind+nskip
-        iindmap(2,iind+nskip) = dxdt
-
+        dd_type(iind)  = ftype
+        dd_src(1,iind) = x
+        dd_src(2,iind) = dxdr
+        dd_src(3,iind) = dxdt
+        dd_src(4,iind) = dxdp
+        If (ftype .ne. dd_scalar) Then
+            dd_src(5,iind) = y
+            dd_src(6,iind) = dydr
+            dd_src(7,iind) = dydt
+            dd_src(8,iind) = dydp
+        Endif
+        dd_sgn(iind) = 1.0d0
+        If (ftype .eq. dd_phi) dd_sgn(iind) = -1.0d0
 
     End Subroutine Set_DD_Indices
 End Module Diagnostics_Second_Derivatives

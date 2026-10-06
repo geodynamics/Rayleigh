@@ -26,6 +26,8 @@ def classify_line(codeline):
                 codeline -- string variable containing a line of code
        Outputs:
                 result -- integer {2 = offset code line, 1 = quantity code line, 0 = other} """
+    if (codeline.lstrip().startswith('!')):  # skip commented-out lines
+        return 0
     test=codeline.split('OFFSET CODE')
     if (len(test) > 1):
         return 2
@@ -108,6 +110,7 @@ inprefs.append(['magnetic_field'     ,2])
 inprefs.append(['current_density'    ,2])
 inprefs.append(['magnetic_energy'    ,2])
 inprefs.append(['momentum_equation'  ,2])
+inprefs.append(['curl_momentum_equation'  ,2])
 inprefs.append(['thermal_equation'   ,2])
 
 inprefs.append(['induction_equation' ,2])
@@ -130,6 +133,7 @@ page_titles.append('Magnetic Field')
 page_titles.append('Current Density')
 page_titles.append('Magnetic Energy')
 page_titles.append('Momentum Equation')
+page_titles.append('Curl Momentum Equation')
 page_titles.append('Thermal Energy Equation')
 page_titles.append('Induction Equation')
 page_titles.append('Angular Momentum Equation')
