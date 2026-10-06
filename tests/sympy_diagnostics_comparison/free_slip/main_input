@@ -1,5 +1,6 @@
 ! sympy_diagnostics_comparison/free_slip
-! Single iteration, single-mode poloidal velocity IC (w_init), pressure IC
+! Single iteration, two-mode (m=4 and m=0) poloidal (w_init) and two-mode
+! (m=2 and m=0) toroidal (z_init) velocity IC, pressure IC
 ! (p_init), and temperature IC (t_init).
 
 &problemsize_namelist
@@ -36,14 +37,18 @@ full3d_values = 1,2,3,
                 10,11,12, 19,20,21, 28,29,30, 37,38,39, 46,47,48,
                 55,56,57, 64,65,66, 73,74,75, 82,83,84, 91,92,93, 100,101,102,
                 1201,1202,1203, 1216, 1219,1220,1221, 1228,1229,1230, 1237,1238,1239,
-                1301,1302,1303, 1319,1320, 1327,1328,1329, 1339,1340,1341, 1358,1359
+                1301,1302,1303, 1319,1320, 1327,1328,1329, 1339,1340,1341, 1358,1359,
+                1345,1346,1347, 1351,1352,1353,
+                1342,1343,1344, 1391
 full3d_frequency = 1
 
 point_probe_values = 1,2,3,
                 10,11,12, 19,20,21, 28,29,30, 37,38,39, 46,47,48,
                 55,56,57, 64,65,66, 73,74,75, 82,83,84, 91,92,93, 100,101,102,
                 1201,1202,1203, 1216, 1219,1220,1221, 1228,1229,1230, 1237,1238,1239,
-                1301,1302,1303, 1319,1320, 1327,1328,1329, 1339,1340,1341, 1358,1359
+                1301,1302,1303, 1319,1320, 1327,1328,1329, 1339,1340,1341, 1358,1359,
+                1345,1346,1347, 1351,1352,1353,
+                1342,1343,1344, 1391
 ! one equator probe (theta_nrm=0.5) and two near-pole probes (0.02, 0.98)
 point_probe_r_nrm = 0.5
 point_probe_theta_nrm = 0.02, 0.5, 0.98
@@ -66,6 +71,7 @@ init_type = 8 ! File init
 w_init_file = 'w_init'
 p_init_file = 'p_init'
 t_init_file = 't_init'
+z_init_file = 'z_init'
 /
 &Test_Namelist
 /

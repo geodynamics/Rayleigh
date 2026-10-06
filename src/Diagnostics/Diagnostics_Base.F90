@@ -151,17 +151,13 @@ Module Diagnostics_Base
     Integer :: vfp_r = -1, vfp_t = -1, vfp_p = -1
     Integer :: vfm_r = -1, vfm_t = -1, vfm_p = -1
 
-    ! A special buffer used for holding first derivatives of the viscous forces at output time
+    ! A special buffer used for holding the derivatives of the viscous forces needed
+    ! for their curl at output time (see Viscous_Force_Derivatives).  Each index array is
+    ! indexed by force set: 1=full, 2=fluctuating, 3=mean; -1 when not needed.
     Type(SphericalBuffer) :: d_vforce_buffer
-    Integer :: dvf_r_dt,  dvf_r_dp
-    Integer :: dvf_t_dr,  dvf_t_dp
-    Integer :: dvf_p_dr,  dvf_p_dt
-    Integer :: dvfp_r_dt, dvfp_r_dp
-    Integer :: dvfp_t_dr, dvfp_t_dp
-    Integer :: dvfp_p_dr, dvfp_p_dt
-    Integer :: dvfm_r_dt, dvfm_r_dp
-    Integer :: dvfm_t_dr, dvfm_t_dp
-    Integer :: dvfm_p_dr, dvfm_p_dt
+    Integer :: vfd_r_dt(3), vfd_r_dp(3)
+    Integer :: vfd_t_dr(3), vfd_p_dr(3)
+    Integer :: vfd_curl_r(3)
 
 Contains
 

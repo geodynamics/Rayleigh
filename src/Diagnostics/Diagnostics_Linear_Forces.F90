@@ -589,8 +589,6 @@ Contains
 
         If (sometimes_compute(viscous_force_theta) .or. &
             sometimes_compute(visc_work) .or. &
-            sometimes_compute(curl_viscous_force_r) .or. &
-            sometimes_compute(curl_viscous_force_r_squared) .or. &
             sometimes_compute(curl_viscous_force_phi) .or. &
             sometimes_compute(curl_viscous_force_abs) .or. &
             sometimes_compute(curl_viscous_force_phi_squared)) Then
@@ -600,8 +598,6 @@ Contains
 
         If (sometimes_compute(viscous_force_phi) .or. &
             sometimes_compute(visc_work) .or. &
-            sometimes_compute(curl_viscous_force_r) .or. &
-            sometimes_compute(curl_viscous_force_r_squared) .or. &
             sometimes_compute(curl_viscous_force_theta) .or. &
             sometimes_compute(curl_viscous_force_abs) .or. &
             sometimes_compute(curl_viscous_force_theta_squared)) Then
@@ -619,7 +615,6 @@ Contains
 
         If (sometimes_compute(viscous_pforce_theta) .or. &
             sometimes_compute(visc_work_pp) .or. &
-            sometimes_compute(curl_viscous_pforce_r) .or. &
             sometimes_compute(curl_viscous_pforce_phi)) Then
             nvf = nvf + 1
             vfp_t = nvf
@@ -627,7 +622,6 @@ Contains
 
         If (sometimes_compute(viscous_pforce_phi) .or. &
             sometimes_compute(visc_work_pp) .or. &
-            sometimes_compute(curl_viscous_pforce_r) .or. &
             sometimes_compute(curl_viscous_pforce_theta)) Then
             nvf = nvf + 1
             vfp_p = nvf
@@ -643,7 +637,6 @@ Contains
 
         If (sometimes_compute(viscous_mforce_theta) .or. &
             sometimes_compute(visc_work_mm) .or. &
-            sometimes_compute(curl_viscous_mforce_r) .or. &
             sometimes_compute(curl_viscous_mforce_phi)) Then
             nvf = nvf + 1
             vfm_t = nvf
@@ -652,7 +645,6 @@ Contains
         If (sometimes_compute(viscous_mforce_phi) .or. &
             sometimes_compute(samom_diffusion) .or. &
             sometimes_compute(visc_work_mm) .or. &
-            sometimes_compute(curl_viscous_mforce_r) .or. &
             sometimes_compute(curl_viscous_mforce_theta)) Then
             nvf = nvf + 1
             vfm_p = nvf
@@ -720,8 +712,6 @@ Contains
         !Theta-direction; Full
         If (compute_quantity(viscous_force_theta) .or. &
             compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_r) .or. &
-            compute_quantity(curl_viscous_force_r_squared) .or. &
             compute_quantity(curl_viscous_force_phi) .or. &
             compute_quantity(curl_viscous_force_abs) .or. &
             compute_quantity(curl_viscous_force_phi_squared)) Then
@@ -751,8 +741,6 @@ Contains
         !Phi-direction
         If (compute_quantity(viscous_force_phi) .or. &
             compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_r) .or. &
-            compute_quantity(curl_viscous_force_r_squared) .or. &
             compute_quantity(curl_viscous_force_theta) .or. &
             compute_quantity(curl_viscous_force_abs) .or. &
             compute_quantity(curl_viscous_force_theta_squared)) Then
@@ -818,7 +806,6 @@ Contains
         !Theta-direction; Fluctuating
         If (compute_quantity(viscous_pforce_theta) .or. &
             compute_quantity(visc_work_pp) .or. &
-            compute_quantity(curl_viscous_pforce_r) .or. &
             compute_quantity(curl_viscous_pforce_phi)) Then
 
             DO_PSI
@@ -846,7 +833,6 @@ Contains
         !Phi-direction (fluctuating)
         If (compute_quantity(viscous_pforce_phi) .or. &
             compute_quantity(visc_work_pp) .or. &
-            compute_quantity(curl_viscous_pforce_r) .or. &
             compute_quantity(curl_viscous_pforce_theta)) Then
 
             DO_PSI
@@ -908,7 +894,6 @@ Contains
         !Theta-direction; Mean
         If (compute_quantity(viscous_mforce_theta) .or. &
             compute_quantity(visc_work_mm) .or. &
-            compute_quantity(curl_viscous_mforce_r) .or. &
             compute_quantity(curl_viscous_mforce_phi)) Then
 
             DO_PSI
@@ -937,7 +922,6 @@ Contains
         If (compute_quantity(viscous_mforce_phi) .or. &
             compute_quantity(samom_diffusion) .or. &
             compute_quantity(visc_work_mm) .or. &
-            compute_quantity(curl_viscous_mforce_r) .or. &
             compute_quantity(curl_viscous_mforce_theta)) Then
 
             DO_PSI

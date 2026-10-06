@@ -194,7 +194,7 @@ Contains
 
             need_vforce_derivatives = Vforce_Derivatives_Needed()
             if (need_vforce_derivatives) then
-                Call Grad_Viscous_Force()
+                Call Viscous_Force_Derivatives(buffer)
             endif
             
             Call Mean_Correction(buffer)    ! Remove ell=0 component from radial and theta forces
@@ -350,7 +350,7 @@ Contains
 
         Call Initialize_Viscous_Force()
 
-        Call Initialize_Grad_Viscous_Force()
+        Call Initialize_Viscous_Force_Derivatives()
 
         Call Initialize_Diagnostics_Buffer()
 

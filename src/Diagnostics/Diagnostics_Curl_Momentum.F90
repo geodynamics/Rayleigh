@@ -24,10 +24,16 @@ Module Diagnostics_Curl_Momentum
     Use Diagnostics_Base
     Use Spectral_Derivatives
     Use Finite_Difference, Only : d_by_dx3d3
+    Use Structures
+    Use Load_Balance, Only : l_lm_values, my_lm_min
     Implicit None
 
-    Integer, Allocatable :: vfdindmap(:,:)
-    Integer :: nvffields
+    ! Internal slot indices of Viscous_Force_Derivatives, per force set (1=full,
+    ! 2=fluctuating, 3=mean); -1 when not needed.  The output indices (vfd_*)
+    ! are in Diagnostics_Base.
+    Integer :: nvftrans = 0, nvfwork = 0, nvfback = 0
+    Integer :: vf_fr(3), vf_sft(3), vf_sfp(3), vf_q(3)
+    Integer :: vf_sft_dr(3), vf_sfp_dr(3), vf_q_dr(3), vf_q_d2r(3)
 
 Contains
 
@@ -1342,297 +1348,237 @@ Contains
         Integer :: r, k, t
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!! Viscous Force !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       
+
+        ! The derivatives of the viscous force F are computed by
+        ! Viscous_Force_Derivatives (see the comments there), so that
+        !    (curl F)_r     = VFDBUFF(vfd_curl_r)
+        !    (curl F)_theta = (1/r) (dF_r/dphi / sin(theta) - F_phi) - dF_phi/dr
+        !    (curl F)_phi   = dF_theta/dr + (1/r) (F_theta - dF_r/dtheta)
+        ! The second index of each vfd_* array selects the full (1), fluctuating (2)
+        ! or mean (3) force.
+
         If (compute_quantity(curl_viscous_force_r) .or. compute_quantity(curl_viscous_force_r_squared)) Then
             DO_PSI
-                qty(PSI) = One_Over_R(r)*(VFDBUFF(PSI,dvf_p_dt) + &
-                                cottheta(t)*vforce_buffer(PSI,vf_p) - &
-                                csctheta(t)*VFDBUFF(PSI,dvf_t_dp))
+                qty(PSI) = VFDBUFF(PSI,vfd_curl_r(1))
             END_DO
             If (compute_quantity(curl_viscous_force_r)) Call Add_Quantity(qty)
             If (compute_quantity(curl_viscous_force_r_squared)) Then
                 DO_PSI
                     qty(PSI) = qty(PSI)*qty(PSI)
                 END_DO
-                Call Add_Quantity(qty)   
+                Call Add_Quantity(qty)
             Endif
-        Endif    
-            
+        Endif
+
         If (compute_quantity(curl_viscous_force_theta) .or. compute_quantity(curl_viscous_force_theta_squared)) Then
             DO_PSI
-                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvf_r_dp) - &
+                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,vfd_r_dp(1)) - &
                                 vforce_buffer(PSI,vf_p)) - &
-                            VFDBUFF(PSI,dvf_p_dr)
+                            VFDBUFF(PSI,vfd_p_dr(1))
             END_DO
             If (compute_quantity(curl_viscous_force_theta)) Call Add_Quantity(qty)
             If (compute_quantity(curl_viscous_force_theta_squared)) Then
                 DO_PSI
                     qty(PSI) = qty(PSI)*qty(PSI)
                 END_DO
-                Call Add_Quantity(qty)   
+                Call Add_Quantity(qty)
             Endif
-        Endif    
+        Endif
 
         If (compute_quantity(curl_viscous_force_phi) .or. compute_quantity(curl_viscous_force_phi_squared)) Then
             DO_PSI
-                qty(PSI) = VFDBUFF(PSI,dvf_t_dr) + &
+                qty(PSI) = VFDBUFF(PSI,vfd_t_dr(1)) + &
                             One_Over_R(r)*(vforce_buffer(PSI,vf_t) - &
-                                VFDBUFF(PSI,dvf_r_dt))
+                                VFDBUFF(PSI,vfd_r_dt(1)))
             END_DO
             If (compute_quantity(curl_viscous_force_phi)) Call Add_Quantity(qty)
             If (compute_quantity(curl_viscous_force_phi_squared)) Then
                 DO_PSI
                     qty(PSI) = qty(PSI)*qty(PSI)
                 END_DO
-                Call Add_Quantity(qty)   
+                Call Add_Quantity(qty)
             Endif
-        Endif    
+        Endif
+
         If (compute_quantity(curl_viscous_force_abs)) Then
             DO_PSI
-                qty(PSI) = sqrt((One_Over_R(r)*(VFDBUFF(PSI,dvf_p_dt) + &
-                                cottheta(t)*vforce_buffer(PSI,vf_p) - &
-                                csctheta(t)*VFDBUFF(PSI,dvf_t_dp)))**2 + &
-                                (One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvf_r_dp) - &
-                                vforce_buffer(PSI,vf_p)) - &
-                                VFDBUFF(PSI,dvf_p_dr))**2 + &
-                                (VFDBUFF(PSI,dvf_t_dr) + &
+                qty(PSI) = sqrt((VFDBUFF(PSI,vfd_curl_r(1)))**2 + &
+                                (One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,vfd_r_dp(1)) - &
+                                    vforce_buffer(PSI,vf_p)) - &
+                                VFDBUFF(PSI,vfd_p_dr(1)))**2 + &
+                                (VFDBUFF(PSI,vfd_t_dr(1)) + &
                                 One_Over_R(r)*(vforce_buffer(PSI,vf_t) - &
-                                VFDBUFF(PSI,dvf_r_dt)))**2)
+                                    VFDBUFF(PSI,vfd_r_dt(1))))**2)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         ! Fluctuating and mean viscous force curls: identical in form to
-        ! curl_viscous_force_r/theta/phi above, just using
-        ! the pforce/mforce vforce_buffer/VFDBUFF offsets instead of the
-        ! full-field ones.
+        ! curl_viscous_force_r/theta/phi above, just using the pforce/mforce
+        ! vforce_buffer offsets and the second/third set of VFDBUFF indices.
         If (compute_quantity(curl_viscous_pforce_r)) Then
             DO_PSI
-                qty(PSI) = One_Over_R(r)*(VFDBUFF(PSI,dvfp_p_dt) + &
-                                cottheta(t)*vforce_buffer(PSI,vfp_p) - &
-                                csctheta(t)*VFDBUFF(PSI,dvfp_t_dp))
+                qty(PSI) = VFDBUFF(PSI,vfd_curl_r(2))
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(curl_viscous_pforce_theta)) Then
             DO_PSI
-                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvfp_r_dp) - &
+                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,vfd_r_dp(2)) - &
                                 vforce_buffer(PSI,vfp_p)) - &
-                            VFDBUFF(PSI,dvfp_p_dr)
+                            VFDBUFF(PSI,vfd_p_dr(2))
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(curl_viscous_pforce_phi)) Then
             DO_PSI
-                qty(PSI) = VFDBUFF(PSI,dvfp_t_dr) + &
+                qty(PSI) = VFDBUFF(PSI,vfd_t_dr(2)) + &
                             One_Over_R(r)*(vforce_buffer(PSI,vfp_t) - &
-                                VFDBUFF(PSI,dvfp_r_dt))
+                                VFDBUFF(PSI,vfd_r_dt(2)))
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(curl_viscous_mforce_r)) Then
             DO_PSI
-                qty(PSI) = One_Over_R(r)*(VFDBUFF(PSI,dvfm_p_dt) + &
-                                cottheta(t)*vforce_buffer(PSI,vfm_p) - &
-                                csctheta(t)*VFDBUFF(PSI,dvfm_t_dp))
+                qty(PSI) = VFDBUFF(PSI,vfd_curl_r(3))
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(curl_viscous_mforce_theta)) Then
             DO_PSI
-                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,dvfm_r_dp) - &
+                qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,vfd_r_dp(3)) - &
                                 vforce_buffer(PSI,vfm_p)) - &
-                            VFDBUFF(PSI,dvfm_p_dr)
+                            VFDBUFF(PSI,vfd_p_dr(3))
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(curl_viscous_mforce_phi)) Then
             DO_PSI
-                qty(PSI) = VFDBUFF(PSI,dvfm_t_dr) + &
+                qty(PSI) = VFDBUFF(PSI,vfd_t_dr(3)) + &
                             One_Over_R(r)*(vforce_buffer(PSI,vfm_t) - &
-                                VFDBUFF(PSI,dvfm_r_dt))
+                                VFDBUFF(PSI,vfd_r_dt(3)))
             END_DO
             Call Add_Quantity(qty)
         Endif
 
     End Subroutine Compute_Curl_Viscous_Force
 
-    Subroutine Vforce_Derivative_Logic(check, compute_vforce_i_dj)
+    Subroutine Vforce_Derivative_Logic(check, need)
         ! Trigger-code logic shared between the once-at-startup buffer-sizing
-        ! pass (check => Sometimes_Compute, decides which vforce fields ever
-        ! need derivatives, for vfdindmap/buffer sizing) and the per-iteration
-        ! recheck of whether Grad_Viscous_Force needs to run this iteration
+        ! pass (check => Sometimes_Compute) and the per-iteration recheck of
+        ! whether Viscous_Force_Derivatives needs to run this iteration
         ! (check => Compute_Quantity).
+        ! need(c,s) is true if component c (1=r, 2=theta, 3=phi) of the curl
+        ! of force set s (1=full, 2=fluctuating, 3=mean) is required.
         Implicit None
         Procedure(Quantity_Check_If) :: check
-        Logical, Intent(Out) :: compute_vforce_i_dj(9,3)
-        Integer :: vfoff
+        Logical, Intent(Out) :: need(3,3)
 
-        compute_vforce_i_dj = .false.
+        need(1,1) = check(curl_viscous_force_r) .or. check(curl_viscous_force_r_squared)
+        need(2,1) = check(curl_viscous_force_theta) .or. check(curl_viscous_force_theta_squared)
+        need(3,1) = check(curl_viscous_force_phi) .or. check(curl_viscous_force_phi_squared)
+        If (check(curl_viscous_force_abs)) need(:,1) = .true.
 
-        If (check(curl_viscous_force_r) .or. &
-            check(curl_viscous_force_r_squared) .or. &
-            check(curl_viscous_force_abs)) Then
-            compute_vforce_i_dj(2,3) = .true.
-            compute_vforce_i_dj(3,2) = .true.
-        Endif
+        need(1,2) = check(curl_viscous_pforce_r)
+        need(2,2) = check(curl_viscous_pforce_theta)
+        need(3,2) = check(curl_viscous_pforce_phi)
 
-        If (check(curl_viscous_force_theta) .or. &
-            check(curl_viscous_force_theta_squared) .or. &
-            check(curl_viscous_force_abs)) Then
-            compute_vforce_i_dj(1,3) = .true.
-            compute_vforce_i_dj(3,1) = .true.
-        Endif
-
-        If (check(curl_viscous_force_phi) .or. &
-            check(curl_viscous_force_phi_squared) .or. &
-            check(curl_viscous_force_abs)) Then
-            compute_vforce_i_dj(1,2) = .true.
-            compute_vforce_i_dj(2,1) = .true.
-        Endif
-
-        vfoff = 3
-        If (check(curl_viscous_pforce_r)) Then
-            compute_vforce_i_dj(vfoff+2,3) = .true.
-            compute_vforce_i_dj(vfoff+3,2) = .true.
-        Endif
-
-        If (check(curl_viscous_pforce_theta)) Then
-            compute_vforce_i_dj(vfoff+1,3) = .true.
-            compute_vforce_i_dj(vfoff+3,1) = .true.
-        Endif
-
-        If (check(curl_viscous_pforce_phi)) Then
-            compute_vforce_i_dj(vfoff+1,2) = .true.
-            compute_vforce_i_dj(vfoff+2,1) = .true.
-        Endif
-
-        vfoff = 6
-        If (check(curl_viscous_mforce_r)) Then
-            compute_vforce_i_dj(vfoff+2,3) = .true.
-            compute_vforce_i_dj(vfoff+3,2) = .true.
-        Endif
-
-        If (check(curl_viscous_mforce_theta)) Then
-            compute_vforce_i_dj(vfoff+1,3) = .true.
-            compute_vforce_i_dj(vfoff+3,1) = .true.
-        Endif
-
-        If (check(curl_viscous_mforce_phi)) Then
-            compute_vforce_i_dj(vfoff+1,2) = .true.
-            compute_vforce_i_dj(vfoff+2,1) = .true.
-        Endif
+        need(1,3) = check(curl_viscous_mforce_r)
+        need(2,3) = check(curl_viscous_mforce_theta)
+        need(3,3) = check(curl_viscous_mforce_phi)
 
     End Subroutine Vforce_Derivative_Logic
 
     Function Vforce_Derivatives_Needed() result(needed)
-        ! Per-iteration determination of whether Grad_Viscous_Force needs to
+        ! Per-iteration determination of whether Viscous_Force_Derivatives needs to
         ! run, via compute_quantity (this iteration's menu) rather than
         ! sometimes_compute, using the same trigger-code logic as
-        ! Initialize_Grad_Viscous_Force (Vforce_Derivative_Logic).
+        ! Initialize_Viscous_Force_Derivatives (Vforce_Derivative_Logic).
         Implicit None
         Logical :: needed
-        Logical :: compute_vforce_i_dj(9,3)
+        Logical :: need(3,3)
 
-        Call Vforce_Derivative_Logic(Compute_Quantity, compute_vforce_i_dj)
-        needed = any(compute_vforce_i_dj)
+        Call Vforce_Derivative_Logic(Compute_Quantity, need)
+        needed = any(need)
 
     End Function Vforce_Derivatives_Needed
 
-    Subroutine Initialize_Grad_Viscous_Force()
+    Subroutine Initialize_Viscous_Force_Derivatives()
         Implicit None
-        integer :: nvfind, nvfdind, vfoff
-        integer :: nvfdrfields, nvfdtfields, nvfdpfields
-        integer :: vfdfcount(3,2) ! buffer sizes
-        Integer :: vf_i(9) ! indices to vforce_buffer
-        Logical :: compute_vforce_i_dj(9,3)
-        Integer :: i, j
+        Integer :: s, nder, nback, n3
+        Integer :: vfdfcount(3,2) ! buffer sizes
+        Logical :: need(3,3)
 
-        dvf_r_dt = -1
-        dvf_r_dp = -1
-        dvf_t_dr = -1
-        dvf_t_dp = -1
-        dvf_p_dr = -1
-        dvf_p_dt = -1
-        dvfp_r_dt = -1
-        dvfp_r_dp = -1
-        dvfp_t_dr = -1
-        dvfp_t_dp = -1
-        dvfp_p_dr = -1
-        dvfp_p_dt = -1
-        dvfm_r_dt = -1
-        dvfm_r_dp = -1
-        dvfm_t_dr = -1
-        dvfm_t_dp = -1
-        dvfm_p_dr = -1
-        dvfm_p_dt = -1
+        ! Fields Legendre transformed on the way in (p3b slots), per force set s
+        ! (see Viscous_Force_Derivatives):
+        vf_fr(:) = -1     ! F_r
+        vf_sft(:) = -1    ! sin(theta) F_theta
+        vf_sfp(:) = -1    ! sin(theta) F_phi
+        vf_q(:) = -1      ! Q = r omega_r
+        ! Radial derivatives (work array slots):
+        vf_sft_dr(:) = -1
+        vf_sfp_dr(:) = -1
+        vf_q_dr(:) = -1
+        vf_q_d2r(:) = -1
+        ! Outputs (VFDBUFF slots); the first four are the only fields transposed back:
+        vfd_r_dt(:) = -1   ! F_r -> sin(theta) dF_r/dtheta -> dF_r/dtheta
+        vfd_t_dr(:) = -1   ! dF_theta/dr
+        vfd_p_dr(:) = -1   ! dF_phi/dr
+        vfd_curl_r(:) = -1 ! (curl F)_r
+        vfd_r_dp(:) = -1   ! dF_r/dphi (FFT only, added in p3a)
 
-        vf_i = [vf_r, vf_t, vf_p, vfp_r, vfp_t, vfp_p, vfm_r, vfm_t, vfm_p]
+        Call Vforce_Derivative_Logic(Sometimes_Compute, need)
 
-        Call Vforce_Derivative_Logic(Sometimes_Compute, compute_vforce_i_dj)
+        nvftrans = 0
+        Do s = 1, 3
+            If (need(3,s)) Then
+                Call next_slot(nvftrans, vf_fr(s))
+                Call next_slot(nvftrans, vf_sft(s))
+            Endif
+            If (need(2,s)) Call next_slot(nvftrans, vf_sfp(s))
+            If (need(1,s)) Call next_slot(nvftrans, vf_q(s))
+        Enddo
+        If (nvftrans .eq. 0) Return
 
-        ! work out how many vf fields we'll be taking the derivative of
-        nvffields = count(count(compute_vforce_i_dj, dim=2) .gt. 0)
-        Allocate(vfdindmap(nvffields,4))
-        vfdindmap(:,:) = -1
+        nder = nvftrans
+        Do s = 1, 3
+            If (need(3,s)) Call next_slot(nder, vf_sft_dr(s))
+            If (need(2,s)) Call next_slot(nder, vf_sfp_dr(s))
+            If (need(1,s)) Then
+                Call next_slot(nder, vf_q_dr(s))
+                Call next_slot(nder, vf_q_d2r(s))
+            Endif
+        Enddo
+        nvfwork = nder
 
+        nback = 0
+        Do s = 1, 3
+            If (need(3,s)) Then
+                Call next_slot(nback, vfd_r_dt(s))
+                Call next_slot(nback, vfd_t_dr(s))
+            Endif
+            If (need(2,s)) Call next_slot(nback, vfd_p_dr(s))
+            If (need(1,s)) Call next_slot(nback, vfd_curl_r(s))
+        Enddo
+        nvfback = nback
 
-        ! next assign indices to vf_i and vforce derivative entries
-        ! this loop is designed to make sure the new derivative fields are indexed
-        ! in r, t, p order so that we can grow the buffers appropriately
-        nvfdind = nvffields
-        do j = 1, 3
-            nvfind = 0
-            do i = 1, 9
-                if (count(compute_vforce_i_dj(i,:)) .gt. 0) then
-                    nvfind = nvfind + 1
-                    ! assign indices to vforce_buffer in first column (on first outer loop)
-                    if (j .eq. 1) vfdindmap(nvfind, 1) = vf_i(i)
-                    if (compute_vforce_i_dj(i,j)) then
-                        nvfdind = nvfdind + 1
-                        if ((i .eq. 1) .and. (j .eq. 2)) dvf_r_dt = nvfdind
-                        if ((i .eq. 1) .and. (j .eq. 3)) dvf_r_dp = nvfdind
-                        if ((i .eq. 2) .and. (j .eq. 1)) dvf_t_dr = nvfdind
-                        if ((i .eq. 2) .and. (j .eq. 3)) dvf_t_dp = nvfdind
-                        if ((i .eq. 3) .and. (j .eq. 1)) dvf_p_dr = nvfdind
-                        if ((i .eq. 3) .and. (j .eq. 2)) dvf_p_dt = nvfdind
-                        vfoff = 3
-                        if ((i .eq. vfoff+1) .and. (j .eq. 2)) dvfp_r_dt = nvfdind
-                        if ((i .eq. vfoff+1) .and. (j .eq. 3)) dvfp_r_dp = nvfdind
-                        if ((i .eq. vfoff+2) .and. (j .eq. 1)) dvfp_t_dr = nvfdind
-                        if ((i .eq. vfoff+2) .and. (j .eq. 3)) dvfp_t_dp = nvfdind
-                        if ((i .eq. vfoff+3) .and. (j .eq. 1)) dvfp_p_dr = nvfdind
-                        if ((i .eq. vfoff+3) .and. (j .eq. 2)) dvfp_p_dt = nvfdind
-                        vfoff = 6
-                        if ((i .eq. vfoff+1) .and. (j .eq. 2)) dvfm_r_dt = nvfdind
-                        if ((i .eq. vfoff+1) .and. (j .eq. 3)) dvfm_r_dp = nvfdind
-                        if ((i .eq. vfoff+2) .and. (j .eq. 1)) dvfm_t_dr = nvfdind
-                        if ((i .eq. vfoff+2) .and. (j .eq. 3)) dvfm_t_dp = nvfdind
-                        if ((i .eq. vfoff+3) .and. (j .eq. 1)) dvfm_p_dr = nvfdind
-                        if ((i .eq. vfoff+3) .and. (j .eq. 2)) dvfm_p_dt = nvfdind
-                        vfdindmap(nvfind, j+1) = nvfdind
-                    endif
-                endif
-            enddo
-        enddo
-
-        ! work out how many of each type of derivative we're taking
-        nvfdrfields = count(compute_vforce_i_dj(:,1))
-        nvfdtfields = count(compute_vforce_i_dj(:,2))
-        nvfdpfields = count(compute_vforce_i_dj(:,3))
+        n3 = nback
+        Do s = 1, 3
+            If (need(2,s)) Call next_slot(n3, vfd_r_dp(s))
+        Enddo
 
         ! size the buffers at each config stage
-        vfdfcount(1,1) = nvffields + nvfdrfields ! config 1a
-        vfdfcount(2,1) = nvffields + nvfdrfields + nvfdtfields ! 2a
-        vfdfcount(3,1) = nvffields + nvfdrfields + nvfdtfields + nvfdpfields ! 3a
-        vfdfcount(3,2) = nvffields ! 3b
-        vfdfcount(2,2) = nvffields ! 2b
-        vfdfcount(1,2) = nvffields + nvfdrfields ! 1b
+        vfdfcount(1,1) = nback    ! config 1a
+        vfdfcount(2,1) = nback    ! 2a
+        vfdfcount(3,1) = n3       ! 3a
+        vfdfcount(3,2) = nvftrans ! 3b
+        vfdfcount(2,2) = nvftrans ! 2b
+        vfdfcount(1,2) = nvftrans ! 1b
 
         Call d_vforce_buffer%init(field_count = vfdfcount, config = 'p3b')
 
@@ -1640,114 +1586,292 @@ Contains
 
         Call d_vforce_buffer%deconstruct('p3a')
 
-    End Subroutine Initialize_Grad_Viscous_Force
+    Contains
 
-    Subroutine Grad_Viscous_Force()
+        Subroutine next_slot(counter, slot)
+            Integer, Intent(InOut) :: counter
+            Integer, Intent(Out) :: slot
+            counter = counter+1
+            slot = counter
+        End Subroutine next_slot
+
+    End Subroutine Initialize_Viscous_Force_Derivatives
+
+    Subroutine Viscous_Force_Derivatives(buffer)
         Implicit None
-        Integer :: i, r, k, t, mp
+        Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
+        Integer :: s, r, k, t, mp, m, imi, lm, l
+        Real*8 :: ll1
+        Real*8, Allocatable :: mu_visc(:), dmudr(:)
+        Real*8, Allocatable :: work(:,:,:,:), work2(:,:,:,:)
+        Type(rmcontainer3D), Allocatable :: ddtemp(:)
 
+        ! Computes the derivatives of the viscous force F needed for its curl,
+        ! for each requested force set s (1=full, 2=fluctuating, 3=mean).
+        !
+        ! F_r is a smooth scalar but F_theta and F_phi are not, 
+        ! so, as in Compute_Second_Derivatives, they are never
+        ! Legendre transformed directly:
+        !
+        !    (curl F)_theta, (curl F)_phi need dF_r/dtheta, dF_r/dphi, dF_theta/dr and
+        !    dF_phi/dr.  F_r and sin(theta) F_h are smooth scalars of degree <= l_max,
+        !    so they are transformed exactly; dF_r/dtheta = [sin(theta) dF_r/dtheta]/sin(theta)
+        !    (computed spectrally), dF_h/dr = d(sin(theta) F_h)/dr / sin(theta) and
+        !    dF_r/dphi is computed with FFTs only.
+        !
+        !    (curl F)_r needs dF_phi/dtheta, a theta derivative of a horizontal
+        !    component.  Instead we use the identity (assuming mu = mu(r))
+        !        (curl F)_r = (mu/r) Del^2(Q) + dmu/dr d(Q/r)/dr
+        !    where Q = r vort_r = dv_phi/dtheta + cot(theta) v_phi - dv_theta/dphi / sin(theta)
+        !    is a smooth scalar built from first derivatives, and
+        !        Del^2(Q) = d2Q/dr2 + (2/r) dQ/dr - l(l+1) Q/r^2
+        !    is assembled per mode in p1a, with no division by sin(theta).
+        !
+        ! Derivation of the (curl F)_r identity.  Notation: for any vector A,
+        !        rhat.curl(A) = (1/r) C[A],   C[A] = (1/sin(theta)) [d(sin(theta) A_phi)/dtheta - dA_theta/dphi]
+        ! where the angular operator C involves no r, so Q = C[v].
+        ! 1) With S = e - (1/3) div(v) I (e the strain rate), 2 div(e) = Del^2 v + grad(div v)
+        !    and grad(mu) = mu' rhat:
+        !        F = div(2 mu S) = mu [Del^2 v + (1/3) grad(div v)] + 2 mu' S.rhat
+        !    (Viscous_Force uses div(v) = -v_r dlnrho/dr; the identity holds for any v.)
+        ! 2) rhat.curl(mu A) = mu rhat.curl(A), since grad(mu) x A has no r component.
+        !    curl(grad(div v)) = 0, and curl(Del^2 v) = Del^2 omega, so the mu term is
+        !    mu (Del^2 omega)_r.  For divergence-free A,
+        !        (Del^2 A)_r = Del^2 A_r - (2/r^2) A_r - (2/r^2) r div_h(A_h)
+        !    with r div_h(A_h) = -(1/r) d(r^2 A_r)/dr, so
+        !        (Del^2 A)_r = Del^2 A_r + (2/r) dA_r/dr + (2/r^2) A_r = (1/r) Del^2(r A_r)
+        !    (the last step is the product rule Del^2(fg) = f Del^2 g + g Del^2 f + 2 grad f.grad g
+        !    with f = r, grad r = rhat, Del^2 r = 2/r).  With A = omega: (mu/r) Del^2(Q).
+        ! 3) The (1/3) div(v) rhat part of S.rhat is radial, so has no radial curl.  The rest is
+        !        2 e.rhat = d(v)/dr + grad(v_r) - v_h/r
+        !    (componentwise: 2 e_rtheta = dv_theta/dr - v_theta/r + (1/r) dv_r/dtheta, etc.), and
+        !        C[d(v)/dr]    = dQ/dr      (C involves no r)
+        !        C[grad(v_r)]  = 0          (curl of a gradient)
+        !        C[v_h/r]      = Q/r
+        !    so rhat.curl(2 mu' S.rhat) = mu' (1/r) (dQ/dr - Q/r) = mu' d(Q/r)/dr.
+        !
+        ! Outline:
+        ! 1) Load F_r, sin(theta) F_theta, sin(theta) F_phi and Q (as needed) into p3b
+        ! 2) Transform to p1b, copy to the work array and take radial derivatives there
+        ! 3) Fill p1a with F_r, d(sin(theta) F_h)/dr and (curl F)_r
+        ! 4) In s2a: F_r -> sin(theta) dF_r/dtheta
+        ! 5) Transform to p3a, take dF_r/dphi, FFT to physical space, divide out sin(theta)
+
+        Allocate(mu_visc(1:N_R), dmudr(1:N_R))
+        mu_visc = ref%density*nu
+        dmudr = mu_visc*(ref%dlnrho+dlnu)
+
+        !///////////////////////////////////////////////////////////
+        ! Step 1:  Load the fields to be transformed
         call d_vforce_buffer%construct('p3b')
         d_vforce_buffer%config = 'p3b'
         d_vforce_buffer%p3b = 0.0d0
 
-        ! load the fields we want to take derivatives of
-        do i = 1, nvffields
-            d_vforce_buffer%p3b(1:n_phi,:,:,i) = vforce_buffer(:,:,:,vfdindmap(i, 1))
-        enddo
+        Do s = 1, 3
+            If (vf_fr(s) .gt. 0) Then
+                DO_PSI
+                    d_vforce_buffer%p3b(PSI,vf_fr(s)) = vforce_buffer(PSI,vf_set(1,s))
+                END_DO
+            Endif
+            If (vf_sft(s) .gt. 0) Then
+                DO_PSI
+                    d_vforce_buffer%p3b(PSI,vf_sft(s)) = vforce_buffer(PSI,vf_set(2,s))*sintheta(t)
+                END_DO
+            Endif
+            If (vf_sfp(s) .gt. 0) Then
+                DO_PSI
+                    d_vforce_buffer%p3b(PSI,vf_sfp(s)) = vforce_buffer(PSI,vf_set(3,s))*sintheta(t)
+                END_DO
+            Endif
+        Enddo
 
-        ! transform to Fourier m space
+        ! Q = r vort_r, from the first derivatives of the matching velocity set
+        If (vf_q(1) .gt. 0) Then
+            DO_PSI
+                d_vforce_buffer%p3b(PSI,vf_q(1)) = buffer(PSI,dvpdt) + cottheta(t)*buffer(PSI,vphi) &
+                                                 - csctheta(t)*buffer(PSI,dvtdp)
+            END_DO
+        Endif
+        If (vf_q(2) .gt. 0) Then
+            DO_PSI
+                d_vforce_buffer%p3b(PSI,vf_q(2)) = fbuffer(PSI,dvpdt) + cottheta(t)*fbuffer(PSI,vphi) &
+                                                 - csctheta(t)*fbuffer(PSI,dvtdp)
+            END_DO
+        Endif
+        If (vf_q(3) .gt. 0) Then
+            DO_PSI
+                d_vforce_buffer%p3b(PSI,vf_q(3)) = m0_values(PSI2,dvpdt) + cottheta(t)*m0_values(PSI2,vphi) &
+                                                 - csctheta(t)*m0_values(PSI2,dvtdp)
+            END_DO
+        Endif
+
+        !///////////////////////////////////////////////////////////
+        ! Step 2:  Transform to p1b, copy to the work array and take radial derivatives
         Call fft_to_spectral(d_vforce_buffer%p3b, rsc = .true.)
-
-        ! reform to hybrid rlm space
         call d_vforce_buffer%reform() ! move to p2b
-
-        ! allocate spectral buffer and transform
         call d_vforce_buffer%construct('s2b')
         call Legendre_Transform(d_vforce_buffer%p2b, d_vforce_buffer%s2b)
-
-        ! deallocate p2b
         call d_vforce_buffer%deconstruct('p2b')
         d_vforce_buffer%config = 's2b'
 
-        ! reform
         call d_vforce_buffer%reform() ! move to p1b
 
-        ! do a little gymnastics with p1a and p1b
-        call d_vforce_buffer%construct('p1a')
+        Allocate(work(1:size(d_vforce_buffer%p1b,1),1:2,1:size(d_vforce_buffer%p1b,3),1:nvfwork))
+        work(:,:,:,:) = 0.0d0
         if (chebyshev) then
-            ! store chebyshev coefficients in p1a and dealias
-            call gridcp%to_Spectral(d_vforce_buffer%p1b, d_vforce_buffer%p1a)
-            call gridcp%dealias_buffer(d_vforce_buffer%p1a)
+            call gridcp%to_Spectral(d_vforce_buffer%p1b(:,:,:,1:nvftrans), work(:,:,:,1:nvftrans))
+            call gridcp%dealias_buffer(work(:,:,:,1:nvftrans))
         else
-            d_vforce_buffer%p1a = d_vforce_buffer%p1b
+            work(:,:,:,1:nvftrans) = d_vforce_buffer%p1b(:,:,:,1:nvftrans)
         end if
 
-        d_vforce_buffer%p1b = 0.0
+        Do s = 1, 3
+            Call radial_derivative(vf_sft(s), vf_sft_dr(s), 1)
+            Call radial_derivative(vf_sfp(s), vf_sfp_dr(s), 1)
+            Call radial_derivative(vf_q(s), vf_q_dr(s), 1)
+            Call radial_derivative(vf_q(s), vf_q_d2r(s), 2)
+        Enddo
+
+        if (chebyshev) then
+            Allocate(work2(1:size(work,1),1:2,1:size(work,3),1:nvfwork))
+            call gridcp%from_spectral(work, work2)
+            work = work2
+            DeAllocate(work2)
+        end if
+
+        !///////////////////////////////////////////////////////////
+        ! Step 3:  Fill p1a with the fields to be transposed back
+        call d_vforce_buffer%construct('p1a')
         d_vforce_buffer%config = 'p1a'
 
-        ! take d_by_dr
-        ! (and transform back to grid space if in Chebyshev)
-        if (chebyshev) then
-            do i = 1, nvffields
-                if (vfdindmap(i,2) .gt. 0) then
-                    call gridcp%d_by_dr_cp(i, vfdindmap(i,2), d_vforce_buffer%p1a, 1)
-                endif
-            enddo
-            call gridcp%from_spectral(d_vforce_buffer%p1a, d_vforce_buffer%p1b)
-            d_vforce_buffer%p1a = d_vforce_buffer%p1b
-        else
-            do i = 1, nvffields
-                if (vfdindmap(i,2) .gt. 0) then
-                    call d_by_dx3d3(i, vfdindmap(i,2), d_vforce_buffer%p1a,1)
-                endif
-            enddo
-        end if
-
-        ! moving back
+        Do s = 1, 3
+            If (vfd_r_dt(s) .gt. 0) d_vforce_buffer%p1a(:,:,:,vfd_r_dt(s)) = work(:,:,:,vf_fr(s))
+            If (vfd_t_dr(s) .gt. 0) d_vforce_buffer%p1a(:,:,:,vfd_t_dr(s)) = work(:,:,:,vf_sft_dr(s))
+            If (vfd_p_dr(s) .gt. 0) d_vforce_buffer%p1a(:,:,:,vfd_p_dr(s)) = work(:,:,:,vf_sfp_dr(s))
+            If (vfd_curl_r(s) .gt. 0) Then
+                ! (curl F)_r = (mu/r) [Q'' + (2/r) Q' - l(l+1) Q/r^2] + mu' [Q'/r - Q/r^2]
+                Do lm = 1, size(work,3)
+                    l = l_lm_values(my_lm_min+lm-1)
+                    ll1 = l*(l+1.0d0)
+                    Do imi = 1, 2
+                        Do r = 1, size(work,1)
+                            d_vforce_buffer%p1a(r,imi,lm,vfd_curl_r(s)) = &
+                                mu_visc(r)*One_Over_R(r)*( work(r,imi,lm,vf_q_d2r(s)) &
+                                    + Two_Over_R(r)*work(r,imi,lm,vf_q_dr(s)) &
+                                    - ll1*OneOverRSquared(r)*work(r,imi,lm,vf_q(s)) ) &
+                              + dmudr(r)*( One_Over_R(r)*work(r,imi,lm,vf_q_dr(s)) &
+                                    - OneOverRSquared(r)*work(r,imi,lm,vf_q(s)) )
+                        Enddo
+                    Enddo
+                Enddo
+            Endif
+        Enddo
+        DeAllocate(work)
         call d_vforce_buffer%deconstruct('p1b')
 
-        ! reform and start moving back
+        !///////////////////////////////////////////////////////////
+        ! Step 4:  F_r -> sin(theta) dF_r/dtheta
         call d_vforce_buffer%reform() ! now in s2a
 
-        ! take theta derivatives
-        do i = 1, nvffields
-            if (vfdindmap(i,3) .gt. 0) then
-                call d_by_dtheta(d_vforce_buffer%s2a, i, vfdindmap(i,3))
-            endif
-        enddo
-
-        ! FIXME: necessary?
+        Allocate(ddtemp(my_mp%min:my_mp%max))
         Do mp = my_mp%min, my_mp%max
-            d_vforce_buffer%s2a(mp)%data(l_max,:,:,:) = 0.0d0
+            m = m_values(mp)
+            Allocate(ddtemp(mp)%data(m:l_max,my_r%min:my_r%max,1:2))
         Enddo
+        Do s = 1, 3
+            If (vfd_r_dt(s) .gt. 0) Then
+                ! sin(theta) dF_r/dtheta needs modes up to l_max+1, which s2a cannot
+                ! hold.  F_r has no l_max content, but truncate it anyway so that
+                ! the result fits exactly and remains divisible by sin(theta).
+                Do mp = my_mp%min, my_mp%max
+                    d_vforce_buffer%s2a(mp)%data(l_max,:,:,vfd_r_dt(s)) = 0.0d0
+                Enddo
+                Call d_by_dtheta(d_vforce_buffer%s2a, vfd_r_dt(s), ddtemp)
+                DO_IDX2
+                    d_vforce_buffer%s2a(mp)%data(IDX2,vfd_r_dt(s)) = ddtemp(mp)%data(IDX2)
+                END_DO
+            Endif
+        Enddo
+        Do mp = my_mp%min, my_mp%max
+            DeAllocate(ddtemp(mp)%data)
+        Enddo
+        DeAllocate(ddtemp)
 
         call d_vforce_buffer%construct('p2a')
         call Legendre_Transform(d_vforce_buffer%s2a, d_vforce_buffer%p2a)
         call d_vforce_buffer%deconstruct('s2a')
         d_vforce_buffer%config = 'p2a'
 
-        ! reform
+        !///////////////////////////////////////////////////////////
+        ! Step 5:  dF_r/dphi (FFT only), FFT to physical space, divide out sin(theta)
         call d_vforce_buffer%reform() ! move to p3a
 
-        ! take d_by_dphi derivatives
-        do i = 1, nvffields
-            if (vfdindmap(i,4) .gt. 0) then
-                call d_by_dphi(d_vforce_buffer%p3a, i, vfdindmap(i,4))
-            endif
-        enddo
+        If (size(d_vforce_buffer%p3a,4) .gt. nvfback) Then
+            d_vforce_buffer%p3a(:,:,:,nvfback+1:) = 0.0d0
+            Do s = 1, 3
+                If (vfd_r_dp(s) .gt. 0) Then
+                    DO_PSI
+                        VFDBUFF(PSI,vfd_r_dp(s)) = vforce_buffer(PSI,vf_set(1,s))
+                    END_DO
+                Endif
+            Enddo
+            Call fft_to_spectral_rsc(d_vforce_buffer%p3a(:,:,:,nvfback+1:))
+            Do s = 1, 3
+                If (vfd_r_dp(s) .gt. 0) Call d_by_dphi(d_vforce_buffer%p3a, vfd_r_dp(s), vfd_r_dp(s))
+            Enddo
+        Endif
 
-        ! transform to grid space
         call FFT_To_Physical(d_vforce_buffer%p3a, rsc=.true.)
 
-        ! Convert sintheta*{dxdt} to dxdt
-        do i = 1, nvffields
-            if (vfdindmap(i,3) .gt. 0) then
-                DO_PSI
-                    d_vforce_buffer%p3a(PSI,vfdindmap(i,3)) = d_vforce_buffer%p3a(PSI,vfdindmap(i,3))*csctheta(t)
-                END_DO
-            end if
-        enddo
+        Do s = 1, 3
+            Call divide_sintheta(vfd_r_dt(s))
+            Call divide_sintheta(vfd_t_dr(s))
+            Call divide_sintheta(vfd_p_dr(s))
+        Enddo
 
-    End Subroutine Grad_Viscous_Force
- 
+        ! d_vforce_buffer%p3a (VFDBUFF) now holds, in physical space, for each
+        ! force set s (1=full, 2=fluctuating, 3=mean) that needs it:
+        !    vfd_r_dt(s)   -- dF_r/dtheta      (needed for (curl F)_phi)
+        !    vfd_t_dr(s)   -- dF_theta/dr      (needed for (curl F)_phi)
+        !    vfd_p_dr(s)   -- dF_phi/dr        (needed for (curl F)_theta)
+        !    vfd_curl_r(s) -- (curl F)_r
+        !    vfd_r_dp(s)   -- dF_r/dphi        (needed for (curl F)_theta)
+        ! The first four are packed into slots [1 : nvfback] (the only fields
+        ! transposed back), and vfd_r_dp(s) follows in [nvfback+1 : ...].
+        ! Indices are -1 for fields not needed (see Initialize_Viscous_Force_Derivatives).
+
+        DeAllocate(mu_visc, dmudr)
+
+    Contains
+
+        Subroutine radial_derivative(fin, fout, dorder)
+            Integer, Intent(In) :: fin, fout, dorder
+            If (fout .le. 0) Return
+            if (chebyshev) then
+                call gridcp%d_by_dr_cp(fin, fout, work, dorder)
+            else
+                call d_by_dx3d3(fin, fout, work, dorder)
+            end if
+        End Subroutine radial_derivative
+
+        Subroutine divide_sintheta(f)
+            Integer, Intent(In) :: f
+            If (f .le. 0) Return
+            DO_PSI
+                VFDBUFF(PSI,f) = VFDBUFF(PSI,f)*csctheta(t)
+            END_DO
+        End Subroutine divide_sintheta
+
+        Integer Function vf_set(c, iset)
+            ! vforce_buffer index of component c (1=r, 2=theta, 3=phi) of force set iset
+            Integer, Intent(In) :: c, iset
+            Integer :: idx(3,3)
+            idx(:,1) = [vf_r,  vf_t,  vf_p ]
+            idx(:,2) = [vfp_r, vfp_t, vfp_p]
+            idx(:,3) = [vfm_r, vfm_t, vfm_p]
+            vf_set = idx(c, iset)
+        End Function vf_set
+
+    End Subroutine Viscous_Force_Derivatives
+
 End Module Diagnostics_Curl_Momentum

@@ -11,7 +11,7 @@ Diagnostics_ADotGradB.o : Diagnostics_ADotGradB.F90 indices.F Diagnostics_Base.o
 Diagnostics_Angular_Momentum.o : Diagnostics_Angular_Momentum.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Axial_Field.o : Diagnostics_Axial_Field.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Base.o : Diagnostics_Base.F90 scalars_field_codes.F axial_field_codes.F turbKE_codes.F me_equation_codes.F ke_equation_codes.F amom_equation_codes.F induction_equation_codes.F thermal_equation_codes.F curl_momentum_equation_codes.F momentum_equation_codes.F magnetic_energy_codes.F current_density_codes.F magnetic_field_codes.F thermal_energy_codes.F thermal_field_codes.F kinetic_energy_codes.F vorticity_field_codes.F mass_flux_codes.F velocity_field_codes.F indices.F PDE_Coefficients.o Math_Constants.o Fields.o Spherical_IO.o ProblemSize.o 
-Diagnostics_Curl_Momentum.o : Diagnostics_Curl_Momentum.F90 indices.F Finite_Difference.o Spectral_Derivatives.o Diagnostics_Base.o 
+Diagnostics_Curl_Momentum.o : Diagnostics_Curl_Momentum.F90 indices.F Load_Balance.o Structures.o Finite_Difference.o Spectral_Derivatives.o Diagnostics_Base.o 
 Diagnostics_Current_Density.o : Diagnostics_Current_Density.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Custom.o : Diagnostics_Custom.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Energies.o : Diagnostics_Energies.F90 indices.F Diagnostics_Base.o 
@@ -31,7 +31,6 @@ Diagnostics_Thermal_Energies.o : Diagnostics_Thermal_Energies.F90 indices.F Diag
 Diagnostics_Thermal_Equation.o : Diagnostics_Thermal_Equation.F90 indices.F Diagnostics_ADotGradB.o Diagnostics_Base.o 
 Diagnostics_Thermodynamic_Gradients.o : Diagnostics_Thermodynamic_Gradients.F90 indices.F Diagnostics_Base.o 
 Diagnostics_TurbKE_Budget.o : Diagnostics_TurbKE_Budget.F90 indices.F Diagnostics_Base.o 
-Diagnostics_Velocity_Diffusion.o : Diagnostics_Velocity_Diffusion.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Velocity_Field.o : Diagnostics_Velocity_Field.F90 indices.F Diagnostics_Base.o 
 Diagnostics_Vorticity_Field.o : Diagnostics_Vorticity_Field.F90 indices.F Diagnostics_Base.o 
 Fields.o : Fields.F90 Spherical_Buffer.o Controls.o ProblemSize.o Parallel_Framework.o 

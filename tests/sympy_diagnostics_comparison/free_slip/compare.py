@@ -10,12 +10,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'post_processing'))
 
 from assess_fields import SmoothFreeSlipPoloidal, Y
-from velocity_field import velocity_field_quantities, velocity_from_W
+from velocity_field import velocity_quantities_from_v, velocity_from_W, velocity_from_Z
 from velocity_field_codes import QUANTITY_CODES as VELOCITY_CODES
 from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, pressure_force, buoyancy_force
 from momentum_force_codes import QUANTITY_CODES as MOMENTUM_CODES
 from curl_momentum_forces import curl_v_grad_v_force, curl_buoyancy_force, curl_coriolis_force, curl_pressure_force, curl_viscous_force
-from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES
+from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES, MEAN_FLUCTUATING_CODES, \
+    CURL_VISCOUS_DERIVED_CODES
 from compare_utils import compare_full3d_and_probes
 from sympy_utils import r, theta, phi
 
@@ -39,13 +40,30 @@ Rayleigh_Number, Prandtl_Number = 1.0, 1.0
 gravity_power = k                     # matches assess's r**k density perturbation
 buoyancy_coeff = (Rayleigh_Number / Prandtl_Number) * (r / rmax)**gravity_power  # ref%Buoyancy_Coeff(r)
 
+l0, m0 = 2, 0   # axisymmetric velocity mode (see generate_input.py)
+
 sol = SmoothFreeSlipPoloidal(l=l, m=m, k=k, Rp=rmax, Rm=rmin, nu=1.0, g=1.0)
+sol0 = SmoothFreeSlipPoloidal(l=l0, m=m0, k=k, Rp=rmax, Rm=rmin, nu=1.0, g=1.0)
 
 Wl = -rho * r * sol.Pl
-quantities = velocity_field_quantities(Wl, l, m, rho)
+Wl0 = -rho * r * sol0.Pl
+
+# toroidal modes (see generate_input.py)
+lz, mz = 3, 2
+lz0, mz0 = 4, 0
+Zl = rho * r**2 * (1 + 2*r**3 - 3*(rmin + rmax)*r**2 + 6*rmin*rmax*r)
+
+def vsum(*vs):
+    return tuple(sum(c) for c in zip(*vs))
+
+# fluctuating (m != 0) and mean (m = 0) parts of the velocity
+vr1, vt1, vp1 = vsum(velocity_from_W(Wl, l, m, rho), velocity_from_Z(Zl, lz, mz, rho))
+vr0, vt0, vp0 = vsum(velocity_from_W(Wl0, l0, m0, rho), velocity_from_Z(Zl/2, lz0, mz0, rho))
+vr, vt, vp = vr1 + vr0, vt1 + vt0, vp1 + vp0
+
+quantities = velocity_quantities_from_v(vr, vt, vp)
 numeric = {name: sp.lambdify((r, theta, phi), expr, 'numpy') for name, expr in quantities.items()}
 
-vr, vt, vp = velocity_from_W(Wl, l, m, rho)
 numeric['v_grad_v_r'], numeric['v_grad_v_theta'], numeric['v_grad_v_phi'] = v_grad_v_force(vr, vt, vp, rho)
 numeric['Coriolis_Force_r'], numeric['Coriolis_Force_theta'], numeric['Coriolis_Force_phi'] = \
     coriolis_force(vr, vt, vp, coriolis_coeff, rho)
@@ -64,12 +82,21 @@ numeric['curl_coriolis_force_r'], numeric['curl_coriolis_force_theta'], numeric[
     curl_coriolis_force(vr, vt, vp, coriolis_coeff, rho)
 numeric['curl_pressure_force_theta'], numeric['curl_pressure_force_phi'] = \
     curl_pressure_force(sol.P, pfactor)
-numeric['curl_viscous_force_r'], numeric['curl_viscous_force_theta'], numeric['curl_viscous_force_phi'] = \
-    curl_viscous_force(vr, vt, vp, mu_visc=1.0)
+cvf = curl_viscous_force(vr, vt, vp, mu_visc=1.0)
+numeric['curl_viscous_force_r'], numeric['curl_viscous_force_theta'], numeric['curl_viscous_force_phi'] = cvf
+for comp, f in zip(('r', 'theta', 'phi'), cvf):
+    numeric[f'curl_viscous_force_{comp}_squared'] = (lambda g: lambda *x: g(*x)**2)(f)
+numeric['curl_viscous_force_abs'] = lambda *x: (cvf[0](*x)**2 + cvf[1](*x)**2 + cvf[2](*x)**2)**0.5
+numeric['curl_viscous_pforce_r'], numeric['curl_viscous_pforce_theta'], numeric['curl_viscous_pforce_phi'] = \
+    curl_viscous_force(vr1, vt1, vp1, mu_visc=1.0)
+numeric['curl_viscous_mforce_r'], numeric['curl_viscous_mforce_theta'], numeric['curl_viscous_mforce_phi'] = \
+    curl_viscous_force(vr0, vt0, vp0, mu_visc=1.0)
 
 quantity_codes = dict(VELOCITY_CODES)
 quantity_codes.update(MOMENTUM_CODES)
 quantity_codes.update(CURL_MOMENTUM_CODES)
+quantity_codes.update(MEAN_FLUCTUATING_CODES)
+quantity_codes.update(CURL_VISCOUS_DERIVED_CODES)
 
 ok = compare_full3d_and_probes(quantity_codes, numeric)
 

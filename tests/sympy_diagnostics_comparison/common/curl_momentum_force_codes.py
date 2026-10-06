@@ -25,6 +25,27 @@ QUANTITY_CODES = {
     1359: 'curl_pressure_force_phi',
 }
 
+# Curl of the fluctuating (non-axisymmetric) and mean (axisymmetric) viscous
+# forces; only meaningful for a velocity field with both m=0 and m!=0 content
+# (see free_slip).
+MEAN_FLUCTUATING_CODES = {
+    1345: 'curl_viscous_pforce_r',
+    1346: 'curl_viscous_pforce_theta',
+    1347: 'curl_viscous_pforce_phi',
+
+    1351: 'curl_viscous_mforce_r',
+    1352: 'curl_viscous_mforce_theta',
+    1353: 'curl_viscous_mforce_phi',
+}
+
+# Squares and magnitude of the curl of the (full) viscous force.
+CURL_VISCOUS_DERIVED_CODES = {
+    1342: 'curl_viscous_force_r_squared',
+    1343: 'curl_viscous_force_theta_squared',
+    1344: 'curl_viscous_force_phi_squared',
+    1391: 'curl_viscous_force_abs',
+}
+
 MAGNETIC_QUANTITY_CODES = {
     1369: 'curl_j_cross_b_r',
     1370: 'curl_j_cross_b_theta',

@@ -10,7 +10,8 @@ from rayleigh_diagnostics import Spherical_3D_multi, Point_Probes
 def compare_full3d_and_probes(quantity_codes, numeric, full3d_path='Spherical_3D/', probe_path='Point_Probes/'):
     """quantity_codes: {code: name}. numeric: {name: callable(r, theta, phi)}.
     Prints a full3d and point-probe report and returns True iff everything
-    is within tolerance (see common/tolerances.py).
+    is within tolerance (see common/tolerances.py; tolerances are relative to
+    each quantity's max|analytic| over the full3d grid).
     """
     error = False
 
@@ -25,17 +26,19 @@ def compare_full3d_and_probes(quantity_codes, numeric, full3d_path='Spherical_3D
     PHI, THETA, RADIUS = np.meshgrid(phis, thetas, radius, indexing='ij')  # each (nphi, ntheta, nr)
 
     print("--- full3d ---")
+    scales = {}  # max|analytic| per quantity, reused for the point probes
     for code, name in sorted(quantity_codes.items()):
         rayleigh_val = F.vals[f'{code:05d}']  # (nphi, ntheta, nr)
         analytic = np.broadcast_to(numeric[name](RADIUS, THETA, PHI), rayleigh_val.shape)
-        tol = tolerance(name, THETA)
+        maxval = np.abs(analytic).max()
+        scales[name] = maxval
+        tol = tolerance(name, maxval)
 
         diff = np.abs(rayleigh_val - analytic)
         maxratio = (diff / tol).max()
         maxdiff = diff.max()
-        maxval = np.abs(analytic).max()
         print(f"{name} ({code}): max|Rayleigh - analytic| = {maxdiff:.3e}  (max|analytic| = {maxval:.3e},"
-              f" max diff/tol = {maxratio:.3f})")
+              f" tol = {tol:.3e}, max diff/tol = {maxratio:.3f})")
         if np.any(diff > tol):
             print(f"ERROR: {name} mismatch exceeds tolerance!")
             error = True
@@ -56,7 +59,7 @@ def compare_full3d_and_probes(quantity_codes, numeric, full3d_path='Spherical_3D
         for code, name in sorted(quantity_codes.items()):
             rayleigh_val = P.vals[0, ti, 0, P.lut[code], 0]
             analytic = numeric[name](probe_radius, th, probe_phi)
-            tol = tolerance(name, th)
+            tol = tolerance(name, scales[name])
             diff = abs(rayleigh_val - analytic)
             status = "OK" if diff <= tol else "FAIL"
             if status == "FAIL":

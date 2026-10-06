@@ -29,11 +29,24 @@ def velocity_from_W(Wl, l, m, rho=1):
     return sp.simplify(Pr / rho), sp.simplify(Pt / rho), sp.simplify(Pp / rho)
 
 
+def velocity_from_Z(Zl, l, m, rho=1):
+    """As velocity_from_W, for a purely toroidal single (l,m)-mode potential
+    Z = Zl(r) * Y_lm (so rho*v = curl(Z*rhat))."""
+    Pr, Pt, Pp = curl(Zl * Y(l, m), 0, 0)
+    return sp.simplify(Pr / rho), sp.simplify(Pt / rho), sp.simplify(Pp / rho)
+
+
 def velocity_field_quantities(Wl, l, m, rho=1):
     """v_r, v_theta, v_phi and their r/theta/phi
     derivatives, as sympy expressions in (r, theta, phi).
     """
-    v = dict(zip(('r', 'theta', 'phi'), velocity_from_W(Wl, l, m, rho)))
+    return velocity_quantities_from_v(*velocity_from_W(Wl, l, m, rho))
+
+
+def velocity_quantities_from_v(vr, vt, vp):
+    """As velocity_field_quantities, for any velocity (v_r, v_theta, v_phi)
+    given as sympy expressions in (r, theta, phi)."""
+    v = {'r': vr, 'theta': vt, 'phi': vp}
 
     out = {'v_r': v['r'], 'v_theta': v['theta'], 'v_phi': v['phi']}
     for comp, f in v.items():
