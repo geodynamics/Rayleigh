@@ -10,12 +10,12 @@ POBJ  = Controls.o ClockInfo.o ProblemSize.o PDE_Coefficients.o Fields.o \
         BoundaryConditions.o Initial_Conditions.o \
         Diagnostics_Base.o \
         Diagnostics_Second_Derivatives.o \
-        Diagnostics_Velocity_Diffusion.o \
         Diagnostics_ADotGradB.o \
         Diagnostics_Velocity_Field.o Diagnostics_Magnetic_Field.o \
         Diagnostics_Current_Density.o Diagnostics_Vorticity_Field.o Diagnostics_Axial_Field.o \
         Diagnostics_Thermal_Energies.o Diagnostics_Thermal_Equation.o\
         Diagnostics_Thermodynamic_Gradients.o Diagnostics_Linear_Forces.o \
+        Diagnostics_Curl_Momentum.o \
         Diagnostics_Energies.o \
         Diagnostics_Lorentz_Forces.o Diagnostics_Induction.o \
         Diagnostics_Inertial_Forces.o Diagnostics_Angular_Momentum.o \

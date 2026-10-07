@@ -93,6 +93,10 @@ jobs:
         # vforce diagnostics regression test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/vforce_diagnostics/run_test.sh
+
+        # sympy diagnostics comparison test
+        cd "$GITHUB_WORKSPACE"
+        sh ./tests/sympy_diagnostics_comparison/run_test.sh
         
         git diff > changes.diff
         git diff --exit-code --name-only
