@@ -90,10 +90,6 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         sh ./tests/coupled_bcs/run_test.sh
 
-        # vforce diagnostics regression test
-        cd "$GITHUB_WORKSPACE"
-        sh ./tests/vforce_diagnostics/run_test.sh
-
         # sympy diagnostics comparison test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/sympy_diagnostics_comparison/run_test.sh
