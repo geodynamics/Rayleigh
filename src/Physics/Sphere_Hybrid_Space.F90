@@ -130,7 +130,6 @@ Contains
         Call DeAllocate_rlm_Field(ftemp1)
         Call DeAllocate_rlm_Field(ftemp2)
 
-
         Call StopWatch(rlma_time)%increment()
 
         ! Legendre Transform and transpose the buffer
