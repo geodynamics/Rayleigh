@@ -62,10 +62,6 @@ REL_TOLERANCES = {
     'curl_viscous_mforce_r':     1.0e-9,  # 1.4e-10
     'curl_viscous_mforce_theta': 1.0e-6,  # 1.8e-7
     'curl_viscous_mforce_phi':   1.0e-6,  # 1.0e-7
-    'curl_viscous_force_r_squared':     1.5e-9,  # 3.0e-10
-    'curl_viscous_force_theta_squared': 1.5e-6,  # 2.5e-7
-    'curl_viscous_force_phi_squared':   1.5e-6,  # 2.4e-7
-    'curl_viscous_force_abs':           5.0e-8,  # 9.1e-9
 
     # Magnetic field radial derivatives: the benchmark field's radial profile
     # is not resolved to machine precision by the Chebyshev expansion.

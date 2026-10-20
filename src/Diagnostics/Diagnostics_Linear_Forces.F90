@@ -96,13 +96,6 @@ Contains
                 Call Add_Quantity(qty)
             Endif
         Endif
-        ! Calculate buoyancy_force_abs
-        If (compute_quantity(buoyancy_force_abs)) Then
-            DO_PSI
-                qty(PSI) = ( (ref%Buoyancy_Coeff(r)*(buffer(PSI,tvar)-ell0_values(r,tvar)))** 2)**(0.5)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif        
 
     End Subroutine Compute_Buoyancy_Force
 
@@ -191,16 +184,6 @@ Contains
                 Call Add_Quantity(qty)
             Endif
         Endif
-        ! Calculate the magnitude of the Coriolis force
-        If (compute_quantity(coriolis_force_abs)) Then
-            DO_PSI
-                qty(PSI) =  ((ref%density(r)*coriolis_term*sintheta(t)*buffer(PSI,vphi))**2 + &
-                             (ref%density(r)*coriolis_term*costheta(t)*buffer(PSI,vphi))**2 + &
-                             (- (coriolis_term*costheta(t)*buffer(PSI,vtheta) &
-                              + coriolis_term*sintheta(t)*buffer(PSI,vr))*ref%density(r))**2)**(0.5)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
  
  
         If (compute_quantity(ageo_coriolis_force)) Then
@@ -271,15 +254,6 @@ Contains
                 END_DO
                 Call Add_Quantity(tmp1)
             Endif
-        Endif
-        ! Calculate the magnitude of the viscous force
-        If (compute_quantity(viscous_force_abs)) Then
-            DO_PSI
-                qty(k,r,t) = sqrt((mean_3dbuffer(k,r,t,vforce_r)-mean_ell0buffer(r,vforce_r))**2 + &
-                             vforce_buffer(k,r,t,vf_t)**2 + &
-                             vforce_buffer(k,r,t,vf_p)**2 )           
-            END_DO
-            Call Add_Quantity(qty)
         Endif
  
         !.............................................................
@@ -555,17 +529,6 @@ Contains
             END_DO
             Call Add_Quantity(qty)
         Endif
-        ! Calculate the magnitude of the pressure force
-        If (compute_quantity(pressure_force_abs)) Then
-            DO_PSI
-                qty(PSI) = ((-(buffer(PSI,dpdr) - ell0_values(r,dpdr)) * pfactor(r) + &
-                            (buffer(PSI,pvar) - ell0_values(r,pvar)) * pfactor(r) * &
-                            ref%dlnrho(r)) ** 2 + &
-                            (-buffer(PSI,dpdt) * pfactor(r) * One_Over_R(r)) ** 2 + &
-                            (-buffer(PSI,dpdp) * pfactor(r) * One_Over_R(r) * csctheta(t)) ** 2) ** 0.5
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
 
 
 
@@ -578,10 +541,7 @@ Contains
         If (sometimes_compute(viscous_force_r) .or. &
             sometimes_compute(visc_work) .or. &
             sometimes_compute(curl_viscous_force_theta) .or. &
-            sometimes_compute(curl_viscous_force_theta_squared) .or. &
             sometimes_compute(curl_viscous_force_phi) .or. &
-            sometimes_compute(curl_viscous_force_phi_squared) .or. &
-            sometimes_compute(curl_viscous_force_abs) .or. &
             sometimes_compute(viscous_mforce_r) .or. &
             sometimes_compute(visc_work_mm)) Then
             nvf = nvf+1
@@ -590,18 +550,14 @@ Contains
 
         If (sometimes_compute(viscous_force_theta) .or. &
             sometimes_compute(visc_work) .or. &
-            sometimes_compute(curl_viscous_force_phi) .or. &
-            sometimes_compute(curl_viscous_force_abs) .or. &
-            sometimes_compute(curl_viscous_force_phi_squared)) Then
+            sometimes_compute(curl_viscous_force_phi)) Then
             nvf = nvf + 1
             vf_t = nvf
         Endif
 
         If (sometimes_compute(viscous_force_phi) .or. &
             sometimes_compute(visc_work) .or. &
-            sometimes_compute(curl_viscous_force_theta) .or. &
-            sometimes_compute(curl_viscous_force_abs) .or. &
-            sometimes_compute(curl_viscous_force_theta_squared)) Then
+            sometimes_compute(curl_viscous_force_theta)) Then
             nvf = nvf + 1
             vf_p = nvf
         Endif
@@ -677,10 +633,7 @@ Contains
         If (compute_quantity(viscous_force_r) .or. &
             compute_quantity(visc_work) .or. &
             compute_quantity(curl_viscous_force_theta) .or. &
-            compute_quantity(curl_viscous_force_theta_squared) .or. &
             compute_quantity(curl_viscous_force_phi) .or. &
-            compute_quantity(curl_viscous_force_phi_squared) .or. &
-            compute_quantity(curl_viscous_force_abs) .or. &
             compute_quantity(viscous_mforce_r) .or. &
             compute_quantity(visc_work_mm) ) Then
 
@@ -714,9 +667,7 @@ Contains
         !Theta-direction; Full
         If (compute_quantity(viscous_force_theta) .or. &
             compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_phi) .or. &
-            compute_quantity(curl_viscous_force_abs) .or. &
-            compute_quantity(curl_viscous_force_phi_squared)) Then
+            compute_quantity(curl_viscous_force_phi)) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu
@@ -743,9 +694,7 @@ Contains
         !Phi-direction
         If (compute_quantity(viscous_force_phi) .or. &
             compute_quantity(visc_work) .or. &
-            compute_quantity(curl_viscous_force_theta) .or. &
-            compute_quantity(curl_viscous_force_abs) .or. &
-            compute_quantity(curl_viscous_force_theta_squared)) Then
+            compute_quantity(curl_viscous_force_theta)) Then
 
             DO_PSI
                 del2u = DDBUFF(PSI,dvpdrdr)+Two_Over_R(r)*buffer(PSI,dvpdr)

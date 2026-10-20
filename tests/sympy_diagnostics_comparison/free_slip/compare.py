@@ -15,8 +15,7 @@ from velocity_field_codes import QUANTITY_CODES as VELOCITY_CODES
 from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, viscous_work, pressure_force, buoyancy_force
 from momentum_force_codes import QUANTITY_CODES as MOMENTUM_CODES
 from curl_momentum_forces import curl_v_grad_v_force, curl_buoyancy_force, curl_coriolis_force, curl_pressure_force, curl_viscous_force
-from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES, MEAN_FLUCTUATING_CODES, \
-    CURL_VISCOUS_DERIVED_CODES
+from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES, MEAN_FLUCTUATING_CODES
 from ke_equation_codes import VISC_WORK_CODES
 from compare_utils import compare_full3d_and_probes
 from sympy_utils import r, theta, phi
@@ -86,11 +85,8 @@ numeric['curl_coriolis_force_r'], numeric['curl_coriolis_force_theta'], numeric[
     curl_coriolis_force(vr, vt, vp, coriolis_coeff, rho)
 numeric['curl_pressure_force_theta'], numeric['curl_pressure_force_phi'] = \
     curl_pressure_force(sol.P, pfactor)
-cvf = curl_viscous_force(vr, vt, vp, mu_visc=1.0)
-numeric['curl_viscous_force_r'], numeric['curl_viscous_force_theta'], numeric['curl_viscous_force_phi'] = cvf
-for comp, f in zip(('r', 'theta', 'phi'), cvf):
-    numeric[f'curl_viscous_force_{comp}_squared'] = (lambda g: lambda *x: g(*x)**2)(f)
-numeric['curl_viscous_force_abs'] = lambda *x: (cvf[0](*x)**2 + cvf[1](*x)**2 + cvf[2](*x)**2)**0.5
+numeric['curl_viscous_force_r'], numeric['curl_viscous_force_theta'], numeric['curl_viscous_force_phi'] = \
+    curl_viscous_force(vr, vt, vp, mu_visc=1.0)
 numeric['curl_viscous_pforce_r'], numeric['curl_viscous_pforce_theta'], numeric['curl_viscous_pforce_phi'] = \
     curl_viscous_force(vr1, vt1, vp1, mu_visc=1.0)
 numeric['curl_viscous_mforce_r'], numeric['curl_viscous_mforce_theta'], numeric['curl_viscous_mforce_phi'] = \
@@ -100,7 +96,6 @@ quantity_codes = dict(VELOCITY_CODES)
 quantity_codes.update(MOMENTUM_CODES)
 quantity_codes.update(CURL_MOMENTUM_CODES)
 quantity_codes.update(MEAN_FLUCTUATING_CODES)
-quantity_codes.update(CURL_VISCOUS_DERIVED_CODES)
 quantity_codes.update(VISC_WORK_CODES)
 
 ok = compare_full3d_and_probes(quantity_codes, numeric)

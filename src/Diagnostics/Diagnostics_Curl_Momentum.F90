@@ -51,7 +51,6 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r, k, t
-        Real*8 :: vgv_abs_r, vgv_abs_t, vgv_abs_p
 
         Real*8  :: pfactor(my_r%min:my_r%max)
         pfactor(my_r%min:my_r%max) = ref%dpdr_w_term(my_r%min:my_r%max) &
@@ -59,7 +58,7 @@ Contains
         
         !!!!!!!!!!!!!!!!!!!!!!!!! Advection Force !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        If (compute_quantity(curl_v_grad_v_r) .or. compute_quantity(curl_v_grad_v_r_squared)) Then
+        If (compute_quantity(curl_v_grad_v_r)) Then
             DO_PSI
                 qty(PSI) = DDBUFF(PSI,dvpdrdt) * buffer(PSI,vr) * one_over_r(r) * ref%density(r) &
                 + DDBUFF(PSI,dvpdtdt) * buffer(PSI,vtheta) * ref%density(r) * one_over_r(r) * one_over_r(r) &
@@ -91,17 +90,10 @@ Contains
                 + 2 * buffer(PSI,dvpdt) * buffer(PSI,vtheta) * costheta(t) * csctheta(t) * ref%density(r) * one_over_r(r) &
                     * one_over_r(r)
             END_DO
-            If (compute_quantity(curl_v_grad_v_r)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_v_grad_v_r_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif            
-            
+            Call Add_Quantity(qty)
         Endif
     
-        If (compute_quantity(curl_v_grad_v_theta) .or. compute_quantity(curl_v_grad_v_theta_squared)) Then
+        If (compute_quantity(curl_v_grad_v_theta)) Then
             DO_PSI
                 qty(PSI) = -DDBUFF(PSI,dvpdrdr) * buffer(PSI,vr) * ref%density(r) &
                 - buffer(PSI,dvpdr) * buffer(PSI,dvrdr) * ref%density(r) &
@@ -130,17 +122,10 @@ Contains
                 - buffer(PSI,dvpdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r) &
                 - buffer(PSI,vphi) * buffer(PSI,vtheta) * cottheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r)
             END_DO
-            If (compute_quantity(curl_v_grad_v_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_v_grad_v_theta_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-
+            Call Add_Quantity(qty)
         Endif
         
-        If (compute_quantity(curl_v_grad_v_phi) .or. compute_quantity(curl_v_grad_v_phi_squared)) Then
+        If (compute_quantity(curl_v_grad_v_phi)) Then
             DO_PSI
                 qty(PSI) = DDBUFF(PSI,dvtdrdr) * buffer(PSI,vr) * ref%density(r) &
                 + buffer(PSI,dvrdr) * buffer(PSI,dvtdr) * ref%density(r) &
@@ -167,95 +152,9 @@ Contains
                     * one_over_r(r) * one_over_r(r) &
                 + buffer(PSI,dvtdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%density(r) * ref%dlnrho(r)
             END_DO
-            If (compute_quantity(curl_v_grad_v_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_v_grad_v_phi_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-
-        Endif
-
-        If (compute_quantity(curl_v_grad_v_abs)) Then
-            DO_PSI
-                vgv_abs_r = DDBUFF(PSI,dvpdrdt) * buffer(PSI,vr) * one_over_r(r) &
-                + DDBUFF(PSI,dvpdtdt) * buffer(PSI,vtheta) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvpdr) * buffer(PSI,dvrdt) * one_over_r(r) &
-                + buffer(PSI,dvpdt) * buffer(PSI,dvtdt) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvpdt) * buffer(PSI,vr) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvrdt) * buffer(PSI,vphi) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,vphi) * buffer(PSI,vtheta) * one_over_r(r) * one_over_r(r) &
-                + DDBUFF(PSI,dvpdtdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvpdp) * buffer(PSI,dvpdt) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - DDBUFF(PSI,dvtdpdp) * buffer(PSI,vphi) * csctheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - DDBUFF(PSI,dvtdrdp) * buffer(PSI,vr) * csctheta(t) * one_over_r(r) &
-                - DDBUFF(PSI,dvtdtdp) * buffer(PSI,vtheta) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvpdp) * buffer(PSI,dvtdp) * csctheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvrdp) * buffer(PSI,dvtdr) * csctheta(t) * one_over_r(r) &
-                - buffer(PSI,dvrdp) * buffer(PSI,vtheta) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvtdp) * buffer(PSI,dvtdt) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvtdp) * buffer(PSI,vr) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvpdr) * buffer(PSI,vr) * costheta(t) * csctheta(t) * one_over_r(r) &
-                + buffer(PSI,dvtdt) * buffer(PSI,vphi) * costheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,vphi) * buffer(PSI,vr) * costheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + 2 * buffer(PSI,dvpdp) * buffer(PSI,vphi) * costheta(t) * csctheta(t) * csctheta(t) * one_over_r(r) &
-                    * one_over_r(r) &
-                + 2 * buffer(PSI,dvpdt) * buffer(PSI,vtheta) * costheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r)
-
-                vgv_abs_t = -DDBUFF(PSI,dvpdrdr) * buffer(PSI,vr) &
-                - buffer(PSI,dvpdr) * buffer(PSI,dvrdr) &
-                - DDBUFF(PSI,dvpdrdt) * buffer(PSI,vtheta) * one_over_r(r) &
-                - buffer(PSI,dvpdr) * buffer(PSI,vr) * ref%dlnrho(r) &
-                - buffer(PSI,dvpdt) * buffer(PSI,dvtdr) * one_over_r(r) &
-                - buffer(PSI,dvrdr) * buffer(PSI,vphi) * one_over_r(r) &
-                - 2 * buffer(PSI,dvpdr) * buffer(PSI,vr) * one_over_r(r) &
-                + DDBUFF(PSI,dvrdpdp) * buffer(PSI,vphi) * csctheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + DDBUFF(PSI,dvrdrdp) * buffer(PSI,vr) * csctheta(t) * one_over_r(r) &
-                + DDBUFF(PSI,dvrdtdp) * buffer(PSI,vtheta) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvpdp) * buffer(PSI,dvrdp) * csctheta(t) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                + buffer(PSI,dvrdp) * buffer(PSI,dvrdr) * csctheta(t) * one_over_r(r) &
-                + buffer(PSI,dvrdt) * buffer(PSI,dvtdp) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - DDBUFF(PSI,dvpdrdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) &
-                - buffer(PSI,dvpdp) * buffer(PSI,dvpdr) * csctheta(t) * one_over_r(r) &
-                - buffer(PSI,dvpdr) * buffer(PSI,vtheta) * cottheta(t) * one_over_r(r) &
-                - buffer(PSI,dvpdt) * buffer(PSI,vtheta) * one_over_r(r) * ref%dlnrho(r) &
-                - buffer(PSI,dvtdr) * buffer(PSI,vphi) * cottheta(t) * one_over_r(r) &
-                - buffer(PSI,vphi) * buffer(PSI,vr) * one_over_r(r) * ref%dlnrho(r) &
-                - 2 * buffer(PSI,dvpdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - 2 * buffer(PSI,dvtdp) * buffer(PSI,vtheta) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvpdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%dlnrho(r) &
-                - buffer(PSI,vphi) * buffer(PSI,vtheta) * cottheta(t) * one_over_r(r) * ref%dlnrho(r)
-
-                vgv_abs_p = DDBUFF(PSI,dvtdrdr) * buffer(PSI,vr) &
-                + buffer(PSI,dvrdr) * buffer(PSI,dvtdr) &
-                + DDBUFF(PSI,dvtdrdt) * buffer(PSI,vtheta) * one_over_r(r) &
-                + buffer(PSI,dvrdr) * buffer(PSI,vtheta) * one_over_r(r) &
-                + buffer(PSI,dvtdr) * buffer(PSI,dvtdt) * one_over_r(r) &
-                + buffer(PSI,dvtdr) * buffer(PSI,vr) * ref%dlnrho(r) &
-                - DDBUFF(PSI,dvrdrdt) * buffer(PSI,vr) * one_over_r(r) &
-                - DDBUFF(PSI,dvrdtdt) * buffer(PSI,vtheta) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvrdr) * buffer(PSI,dvrdt) * one_over_r(r) &
-                - buffer(PSI,dvrdt) * buffer(PSI,dvtdt) * one_over_r(r) * one_over_r(r) &
-                + 2 * buffer(PSI,dvpdt) * buffer(PSI,vphi) * one_over_r(r) * one_over_r(r) &
-                + 2 * buffer(PSI,dvtdr) * buffer(PSI,vr) * one_over_r(r) &
-                + 2 * buffer(PSI,dvtdt) * buffer(PSI,vtheta) * one_over_r(r) * one_over_r(r) &
-                + DDBUFF(PSI,dvtdrdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) &
-                + buffer(PSI,dvpdr) * buffer(PSI,dvtdp) * csctheta(t) * one_over_r(r) &
-                + buffer(PSI,dvtdt) * buffer(PSI,vtheta) * one_over_r(r) * ref%dlnrho(r) &
-                + buffer(PSI,vr) * buffer(PSI,vtheta) * one_over_r(r) * ref%dlnrho(r) &
-                - DDBUFF(PSI,dvrdtdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - buffer(PSI,dvpdt) * buffer(PSI,dvrdp) * csctheta(t) * one_over_r(r) * one_over_r(r) &
-                - cottheta(t) * one_over_r(r) * ref%dlnrho(r) * buffer(PSI,vphi) * buffer(PSI,vphi) &
-                - 2 * buffer(PSI,dvpdr) * buffer(PSI,vphi) * cottheta(t) * one_over_r(r) &
-                + buffer(PSI,dvrdp) * buffer(PSI,vphi) * costheta(t) * csctheta(t) * csctheta(t) * one_over_r(r) &
-                    * one_over_r(r) &
-                + buffer(PSI,dvtdp) * buffer(PSI,vphi) * csctheta(t) * one_over_r(r) * ref%dlnrho(r)
-
-                qty(PSI) = ref%density(r) * sqrt(vgv_abs_r * vgv_abs_r + vgv_abs_t * vgv_abs_t + vgv_abs_p * vgv_abs_p)
-            END_DO
             Call Add_Quantity(qty)
         Endif
+
 
         If (compute_quantity(curl_vp_grad_vp_r)) Then
             DO_PSI
@@ -579,42 +478,21 @@ Contains
         !!!!!!!!!!!!!!!!!!!!!!!!!! Buoyancy Force !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
 
-        If (compute_quantity(curl_buoyancy_force_theta) .or. compute_quantity(curl_buoyancy_force_theta_squared)) Then
+        If (compute_quantity(curl_buoyancy_force_theta)) Then
             DO_PSI
                 qty(PSI) = ref%Buoyancy_Coeff(r) * (csctheta(t) * &
                             one_over_r(r) * buffer(PSI,dtdp))
             END_DO
-            If (compute_quantity(curl_buoyancy_force_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_buoyancy_force_theta_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-
+            Call Add_Quantity(qty)
         Endif
 
-        If (compute_quantity(curl_buoyancy_force_phi) .or. compute_quantity(curl_buoyancy_force_phi_squared)) Then
+        If (compute_quantity(curl_buoyancy_force_phi)) Then
             DO_PSI
                 qty(PSI) = -ref%Buoyancy_Coeff(r) * ( one_over_r(r) * buffer(PSI,dtdt))
             END_DO
-            If (compute_quantity(curl_buoyancy_force_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_buoyancy_force_phi_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-
-        Endif
-        
-        If (compute_quantity(curl_buoyancy_force_abs)) Then
-            DO_PSI
-                qty(PSI) = one_over_r(r) * ((ref%Buoyancy_Coeff(r) * csctheta(t) * buffer(PSI,dtdp))**2 + &
-                           (-ref%Buoyancy_Coeff(r) * buffer(PSI,dtdt))**2)**(0.5)
-            END_DO
             Call Add_Quantity(qty)
         Endif
+        
 
         If (compute_quantity(curl_buoyancy_pforce_theta)) Then
             DO_PSI
@@ -644,11 +522,10 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r, k, t
-        Real*8 :: jxb_abs_r, jxb_abs_t, jxb_abs_p
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Magnetic Force !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        If (compute_quantity(curl_j_cross_b_r) .or. compute_quantity(curl_j_cross_b_r_squared)) Then
+        If (compute_quantity(curl_j_cross_b_r)) Then
             DO_PSI
                 qty(PSI) = DDBUFF(PSI,dbpdrdt)*buffer(PSI,br)*one_over_r(r)*ref%Lorentz_Coeff &
                 + DDBUFF(PSI,dbpdtdp)*buffer(PSI,bphi)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
@@ -673,18 +550,11 @@ Contains
                 - buffer(PSI,dbrdp)*buffer(PSI,dbtdr)*csctheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
                 - buffer(PSI,dbtdp)*buffer(PSI,dbtdt)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff
             END_DO
-            If (compute_quantity(curl_j_cross_b_r)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_j_cross_b_r_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif            
-        
+            Call Add_Quantity(qty)
         Endif
         
         
-        If (compute_quantity(curl_j_cross_b_theta) .or. compute_quantity(curl_j_cross_b_theta_squared)) Then
+        If (compute_quantity(curl_j_cross_b_theta)) Then
             DO_PSI
                 qty(PSI) = -DDBUFF(PSI,dbpdrdr)*buffer(PSI,br)*ref%Lorentz_Coeff &
                 - buffer(PSI,dbpdr)*buffer(PSI,dbrdr)*ref%Lorentz_Coeff &
@@ -705,17 +575,10 @@ Contains
                 - 2*buffer(PSI,bphi)*buffer(PSI,dbpdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff &
                 - 2*buffer(PSI,btheta)*buffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2*ref%Lorentz_Coeff
             END_DO
-            If (compute_quantity(curl_j_cross_b_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_j_cross_b_theta_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif            
-
+            Call Add_Quantity(qty)
         Endif
         
-        If (compute_quantity(curl_j_cross_b_phi) .or. compute_quantity(curl_j_cross_b_phi_squared)) Then
+        If (compute_quantity(curl_j_cross_b_phi)) Then
             DO_PSI
                 qty(PSI) = DDBUFF(PSI,dbtdrdr)*buffer(PSI,br)*ref%Lorentz_Coeff &
                 + buffer(PSI,dbrdr)*buffer(PSI,dbtdr)*ref%Lorentz_Coeff &
@@ -736,81 +599,9 @@ Contains
                 - 2*buffer(PSI,bphi)*buffer(PSI,dbpdr)*cottheta(t)*one_over_r(r)*ref%Lorentz_Coeff &
                 + buffer(PSI,bphi)*buffer(PSI,dbrdp)*costheta(t)*csctheta(t)**2*one_over_r(r)**2*ref%Lorentz_Coeff
             END_DO
-            If (compute_quantity(curl_j_cross_b_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_j_cross_b_phi_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif            
-
-        Endif
-        
-        If (compute_quantity(curl_j_cross_b_abs)) Then
-            DO_PSI
-                jxb_abs_r = DDBUFF(PSI,dbpdrdt)*buffer(PSI,br)*one_over_r(r) &
-                + DDBUFF(PSI,dbpdtdp)*buffer(PSI,bphi)*csctheta(t)*one_over_r(r)**2 &
-                + DDBUFF(PSI,dbpdtdt)*buffer(PSI,btheta)*one_over_r(r)**2 &
-                - DDBUFF(PSI,dbtdpdp)*buffer(PSI,bphi)*csctheta(t)**2*one_over_r(r)**2 &
-                - DDBUFF(PSI,dbtdrdp)*buffer(PSI,br)*csctheta(t)*one_over_r(r) &
-                - DDBUFF(PSI,dbtdtdp)*buffer(PSI,btheta)*csctheta(t)*one_over_r(r)**2 &
-                + buffer(PSI,bphi)*buffer(PSI,br)*cottheta(t)*one_over_r(r)**2 &
-                - buffer(PSI,bphi)*buffer(PSI,btheta)*one_over_r(r)**2 &
-                + 2*buffer(PSI,bphi)*buffer(PSI,dbpdp)*costheta(t)*csctheta(t)**2*one_over_r(r)**2 &
-                + buffer(PSI,bphi)*buffer(PSI,dbrdt)*one_over_r(r)**2 &
-                + buffer(PSI,bphi)*buffer(PSI,dbtdt)*cottheta(t)*one_over_r(r)**2 &
-                + buffer(PSI,br)*buffer(PSI,dbpdr)*cottheta(t)*one_over_r(r) &
-                + buffer(PSI,br)*buffer(PSI,dbpdt)*one_over_r(r)**2 &
-                - buffer(PSI,br)*buffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2 &
-                + 2*buffer(PSI,btheta)*buffer(PSI,dbpdt)*cottheta(t)*one_over_r(r)**2 &
-                - buffer(PSI,btheta)*buffer(PSI,dbrdp)*csctheta(t)*one_over_r(r)**2 &
-                + buffer(PSI,dbpdp)*buffer(PSI,dbpdt)*csctheta(t)*one_over_r(r)**2 &
-                - buffer(PSI,dbpdp)*buffer(PSI,dbtdp)*csctheta(t)**2*one_over_r(r)**2 &
-                + buffer(PSI,dbpdr)*buffer(PSI,dbrdt)*one_over_r(r) &
-                + buffer(PSI,dbpdt)*buffer(PSI,dbtdt)*one_over_r(r)**2 &
-                - buffer(PSI,dbrdp)*buffer(PSI,dbtdr)*csctheta(t)*one_over_r(r) &
-                - buffer(PSI,dbtdp)*buffer(PSI,dbtdt)*csctheta(t)*one_over_r(r)**2
-
-                jxb_abs_t = -DDBUFF(PSI,dbpdrdr)*buffer(PSI,br) - buffer(PSI,dbpdr)*buffer(PSI,dbrdr) &
-                - DDBUFF(PSI,dbpdrdt)*buffer(PSI,btheta)*one_over_r(r) &
-                - buffer(PSI,bphi)*buffer(PSI,dbrdr)*one_over_r(r) &
-                - buffer(PSI,dbpdt)*buffer(PSI,dbtdr)*one_over_r(r) &
-                - 2*buffer(PSI,br)*buffer(PSI,dbpdr)*one_over_r(r) &
-                + DDBUFF(PSI,dbrdpdp)*buffer(PSI,bphi)*csctheta(t)**2*one_over_r(r)**2 &
-                + DDBUFF(PSI,dbrdrdp)*buffer(PSI,br)*csctheta(t)*one_over_r(r) &
-                + DDBUFF(PSI,dbrdtdp)*buffer(PSI,btheta)*csctheta(t)*one_over_r(r)**2 &
-                + buffer(PSI,dbpdp)*buffer(PSI,dbrdp)*csctheta(t)**2*one_over_r(r)**2 &
-                + buffer(PSI,dbrdp)*buffer(PSI,dbrdr)*csctheta(t)*one_over_r(r) &
-                + buffer(PSI,dbrdt)*buffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2 &
-                - DDBUFF(PSI,dbpdrdp)*buffer(PSI,bphi)*csctheta(t)*one_over_r(r) &
-                - buffer(PSI,bphi)*buffer(PSI,dbtdr)*cottheta(t)*one_over_r(r) &
-                - buffer(PSI,btheta)*buffer(PSI,dbpdr)*cottheta(t)*one_over_r(r) &
-                - buffer(PSI,dbpdp)*buffer(PSI,dbpdr)*csctheta(t)*one_over_r(r) &
-                - 2*buffer(PSI,bphi)*buffer(PSI,dbpdp)*csctheta(t)*one_over_r(r)**2 &
-                - 2*buffer(PSI,btheta)*buffer(PSI,dbtdp)*csctheta(t)*one_over_r(r)**2
-
-                jxb_abs_p = DDBUFF(PSI,dbtdrdr)*buffer(PSI,br) + buffer(PSI,dbrdr)*buffer(PSI,dbtdr) &
-                + DDBUFF(PSI,dbtdrdt)*buffer(PSI,btheta)*one_over_r(r) &
-                + buffer(PSI,btheta)*buffer(PSI,dbrdr)*one_over_r(r) &
-                + buffer(PSI,dbtdr)*buffer(PSI,dbtdt)*one_over_r(r) &
-                - DDBUFF(PSI,dbrdrdt)*buffer(PSI,br)*one_over_r(r) &
-                - DDBUFF(PSI,dbrdtdt)*buffer(PSI,btheta)*one_over_r(r)**2 &
-                - buffer(PSI,dbrdr)*buffer(PSI,dbrdt)*one_over_r(r) &
-                - buffer(PSI,dbrdt)*buffer(PSI,dbtdt)*one_over_r(r)**2 &
-                + 2*buffer(PSI,bphi)*buffer(PSI,dbpdt)*one_over_r(r)**2 &
-                + 2*buffer(PSI,br)*buffer(PSI,dbtdr)*one_over_r(r) &
-                + 2*buffer(PSI,btheta)*buffer(PSI,dbtdt)*one_over_r(r)**2 &
-                + DDBUFF(PSI,dbtdrdp)*buffer(PSI,bphi)*csctheta(t)*one_over_r(r) &
-                + buffer(PSI,dbpdr)*buffer(PSI,dbtdp)*csctheta(t)*one_over_r(r) &
-                - DDBUFF(PSI,dbrdtdp)*buffer(PSI,bphi)*csctheta(t)*one_over_r(r)**2 &
-                - buffer(PSI,dbpdt)*buffer(PSI,dbrdp)*csctheta(t)*one_over_r(r)**2 &
-                - 2*buffer(PSI,bphi)*buffer(PSI,dbpdr)*cottheta(t)*one_over_r(r) &
-                + buffer(PSI,bphi)*buffer(PSI,dbrdp)*costheta(t)*csctheta(t)**2*one_over_r(r)**2
-
-                qty(PSI) = ref%Lorentz_Coeff * sqrt(jxb_abs_r*jxb_abs_r + jxb_abs_t*jxb_abs_t + jxb_abs_p*jxb_abs_p)
-            END_DO
             Call Add_Quantity(qty)
         Endif
+        
 
         If (compute_quantity(curl_jp_cross_bp_r)) Then
             DO_PSI
@@ -1088,71 +879,35 @@ Contains
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!! Coriolis Force !!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        If (compute_quantity(curl_coriolis_force_r) .or. compute_quantity(curl_coriolis_force_r_squared)) Then
+        If (compute_quantity(curl_coriolis_force_r)) Then
             DO_PSI
                 qty(PSI) = - ref%Coriolis_Coeff * ref%density(r) * one_over_r(r) * &
                             (-sintheta(t) * buffer(PSI,vtheta) + cottheta(t) * costheta(t) * buffer(PSI,vtheta) + &
                             costheta(t) *  buffer(PSI,dvtdt) + 2 * costheta(t) *  buffer(PSI,vr) + sintheta(t) * &
                             buffer(PSI,dvrdt) + cottheta(t) *  buffer(PSI,dvpdp))
             END_DO
-            If (compute_quantity(curl_coriolis_force_r)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_coriolis_force_r_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-        
+            Call Add_Quantity(qty)
         Endif
 
-        If (compute_quantity(curl_coriolis_force_theta) .or. compute_quantity(curl_coriolis_force_theta_squared)) Then
+        If (compute_quantity(curl_coriolis_force_theta)) Then
             DO_PSI
                 qty(PSI) = ref%Coriolis_Coeff * ref%density(r) * (one_over_r(r) * (buffer(PSI,dvpdp) + &
                             costheta(t) *  buffer(PSI,vtheta) + sintheta(t) * buffer(PSI,vr)) + costheta(t) * &
                             buffer(PSI,dvtdr) + sintheta(t) * buffer(PSI,dvrdr) + ref%dlnrho(r) * costheta(t) * &
                             buffer(PSI,vtheta) + ref%dlnrho(r) * sintheta(t) * buffer(PSI,vr))
             END_DO
-            If (compute_quantity(curl_coriolis_force_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_coriolis_force_theta_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-                
+            Call Add_Quantity(qty)
         Endif
 
-        If (compute_quantity(curl_coriolis_force_phi) .or. compute_quantity(curl_coriolis_force_phi_squared)) Then
+        If (compute_quantity(curl_coriolis_force_phi)) Then
             DO_PSI
                 qty(PSI) = ref%Coriolis_Coeff * ref%density(r) * (ref%dlnrho(r) * costheta(t) * buffer(PSI,vphi) + &
                             costheta(t) * buffer(PSI,dvpdr) - one_over_r(r) * sintheta(t) * buffer(PSI,dvpdt)) 
 
             END_DO
-            If (compute_quantity(curl_coriolis_force_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_coriolis_force_phi_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-        
-        Endif
-
-        If (compute_quantity(curl_coriolis_force_abs)) Then
-            DO_PSI
-                qty(PSI) =((- ref%Coriolis_Coeff * ref%density(r) * one_over_r(r) * &
-                            (-sintheta(t) * buffer(PSI,vtheta) + cottheta(t) * costheta(t) * buffer(PSI,vtheta) + &
-                            costheta(t) *  buffer(PSI,dvtdt) + 2 * costheta(t) *  buffer(PSI,vr) + sintheta(t) * &
-                            buffer(PSI,dvrdt) + cottheta(t) *  buffer(PSI,dvpdp)))**2 + &
-                           (ref%Coriolis_Coeff * ref%density(r) * (one_over_r(r) * (buffer(PSI,dvpdp) + &
-                            costheta(t) *  buffer(PSI,vtheta) + sintheta(t) * buffer(PSI,vr)) + costheta(t) * &
-                            buffer(PSI,dvtdr) + sintheta(t) * buffer(PSI,dvrdr) + ref%dlnrho(r) * costheta(t) * &
-                            buffer(PSI,vtheta) + ref%dlnrho(r) * sintheta(t) * buffer(PSI,vr)))**2 + &
-                           (ref%Coriolis_Coeff * ref%density(r) * (ref%dlnrho(r) * costheta(t) * buffer(PSI,vphi) + &
-                            costheta(t) * buffer(PSI,dvpdr) - one_over_r(r) * sintheta(t) * buffer(PSI,dvpdt)))**2)**(0.5)
-            END_DO
             Call Add_Quantity(qty)
         Endif
+
 
         If (compute_quantity(curl_coriolis_pforce_r)) Then
             DO_PSI
@@ -1235,32 +990,20 @@ Contains
 
        ! curl_pressure_force_r is always 0
          
-        If (compute_quantity(curl_pressure_force_theta) .or. compute_quantity(curl_pressure_force_theta_squared)) Then
+        If (compute_quantity(curl_pressure_force_theta)) Then
             DO_PSI
                 qty(PSI) = pfactor(r) * &
                             One_Over_R(r) * csctheta(t) * ref%dlnrho(r) * buffer(PSI,dpdp)
             END_DO
-            If (compute_quantity(curl_pressure_force_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_pressure_force_theta_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
+            Call Add_Quantity(qty)
         Endif
 
-        If (compute_quantity(curl_pressure_force_phi) .or. compute_quantity(curl_pressure_force_phi_squared)) Then
+        If (compute_quantity(curl_pressure_force_phi)) Then
             DO_PSI
                 qty(PSI) = - pfactor(r) * &
                               One_Over_R(r) * ref%dlnrho(r) * buffer(PSI,dpdt)
             END_DO
-            If (compute_quantity(curl_pressure_force_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_pressure_force_phi_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
+            Call Add_Quantity(qty)
         Endif
 
         ! curl_pressure_pforce_r is always 0.
@@ -1309,61 +1052,31 @@ Contains
         ! The second index of each vfd_* array selects the full (1), fluctuating (2)
         ! or mean (3) force.
 
-        If (compute_quantity(curl_viscous_force_r) .or. compute_quantity(curl_viscous_force_r_squared)) Then
+        If (compute_quantity(curl_viscous_force_r)) Then
             DO_PSI
                 qty(PSI) = VFDBUFF(PSI,vfd_curl_r(1))
             END_DO
-            If (compute_quantity(curl_viscous_force_r)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_viscous_force_r_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
+            Call Add_Quantity(qty)
         Endif
 
-        If (compute_quantity(curl_viscous_force_theta) .or. compute_quantity(curl_viscous_force_theta_squared)) Then
+        If (compute_quantity(curl_viscous_force_theta)) Then
             DO_PSI
                 qty(PSI) = One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,vfd_r_dp(1)) - &
                                 vforce_buffer(PSI,vf_p)) - &
                             VFDBUFF(PSI,vfd_p_dr(1))
             END_DO
-            If (compute_quantity(curl_viscous_force_theta)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_viscous_force_theta_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
+            Call Add_Quantity(qty)
         Endif
 
-        If (compute_quantity(curl_viscous_force_phi) .or. compute_quantity(curl_viscous_force_phi_squared)) Then
+        If (compute_quantity(curl_viscous_force_phi)) Then
             DO_PSI
                 qty(PSI) = VFDBUFF(PSI,vfd_t_dr(1)) + &
                             One_Over_R(r)*(vforce_buffer(PSI,vf_t) - &
                                 VFDBUFF(PSI,vfd_r_dt(1)))
             END_DO
-            If (compute_quantity(curl_viscous_force_phi)) Call Add_Quantity(qty)
-            If (compute_quantity(curl_viscous_force_phi_squared)) Then
-                DO_PSI
-                    qty(PSI) = qty(PSI)*qty(PSI)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-        Endif
-
-        If (compute_quantity(curl_viscous_force_abs)) Then
-            DO_PSI
-                qty(PSI) = sqrt((VFDBUFF(PSI,vfd_curl_r(1)))**2 + &
-                                (One_Over_R(r)*(csctheta(t)*VFDBUFF(PSI,vfd_r_dp(1)) - &
-                                    vforce_buffer(PSI,vf_p)) - &
-                                VFDBUFF(PSI,vfd_p_dr(1)))**2 + &
-                                (VFDBUFF(PSI,vfd_t_dr(1)) + &
-                                One_Over_R(r)*(vforce_buffer(PSI,vf_t) - &
-                                    VFDBUFF(PSI,vfd_r_dt(1))))**2)
-            END_DO
             Call Add_Quantity(qty)
         Endif
+
 
         ! Fluctuating and mean viscous force curls: identical in form to
         ! curl_viscous_force_r/theta/phi above, just using the pforce/mforce
@@ -1431,10 +1144,9 @@ Contains
         Procedure(Quantity_Check_If) :: check
         Logical, Intent(Out) :: need(3,3)
 
-        need(1,1) = check(curl_viscous_force_r) .or. check(curl_viscous_force_r_squared)
-        need(2,1) = check(curl_viscous_force_theta) .or. check(curl_viscous_force_theta_squared)
-        need(3,1) = check(curl_viscous_force_phi) .or. check(curl_viscous_force_phi_squared)
-        If (check(curl_viscous_force_abs)) need(:,1) = .true.
+        need(1,1) = check(curl_viscous_force_r)
+        need(2,1) = check(curl_viscous_force_theta)
+        need(3,1) = check(curl_viscous_force_phi)
 
         need(1,2) = check(curl_viscous_pforce_r)
         need(2,2) = check(curl_viscous_pforce_theta)

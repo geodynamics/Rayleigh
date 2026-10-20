@@ -111,9 +111,7 @@ Contains
         ! Terms related to viscosity
         If (check(viscous_force_r) .or. &
             check(curl_viscous_force_theta) .or. &
-            check(curl_viscous_force_theta_squared) .or. &
             check(curl_viscous_force_phi) .or. &
-            check(curl_viscous_force_phi_squared) .or. &
             check(viscous_pforce_r) .or. &
             check(curl_viscous_pforce_theta) .or. &
             check(curl_viscous_pforce_phi) .or. &
@@ -126,9 +124,7 @@ Contains
 
         If (check(viscous_force_theta) .or. &
             check(curl_viscous_force_r) .or. &
-            check(curl_viscous_force_r_squared) .or. &
             check(curl_viscous_force_phi) .or. &
-            check(curl_viscous_force_phi_squared) .or. &
             check(viscous_pforce_theta) .or. &
             check(curl_viscous_pforce_r) .or. &
             check(curl_viscous_pforce_phi) .or. &
@@ -140,9 +136,7 @@ Contains
 
         If (check(viscous_force_phi) .or. &
             check(curl_viscous_force_r) .or. &
-            check(curl_viscous_force_r_squared) .or. &
             check(curl_viscous_force_theta) .or. &
-            check(curl_viscous_force_theta_squared) .or. &
             check(viscous_pforce_phi) .or. &
             check(curl_viscous_pforce_r) .or. &
             check(curl_viscous_pforce_theta) .or. &
@@ -209,10 +203,9 @@ Contains
         Endif
 
         !//////////////////////////////////////////////////////
-        If (check(curl_v_grad_v_r) .or. check(curl_v_grad_v_r_squared) .or. &
-            check(curl_v_grad_v_theta) .or. check(curl_v_grad_v_theta_squared) .or. &
-            check(curl_v_grad_v_phi) .or. check(curl_v_grad_v_phi_squared) .or. &
-            check(curl_v_grad_v_abs) .or. &
+        If (check(curl_v_grad_v_r) .or. &
+            check(curl_v_grad_v_theta) .or. &
+            check(curl_v_grad_v_phi) .or. &
             check(curl_vp_grad_vp_r) .or. check(curl_vp_grad_vp_theta) .or. &
             check(curl_vp_grad_vp_phi) .or. &
             check(curl_vm_grad_vm_r) .or. check(curl_vm_grad_vm_theta) .or. &
@@ -226,10 +219,9 @@ Contains
             l_compute_vp_dd = .true.
         Endif
 
-        If (check(curl_j_cross_b_r) .or. check(curl_j_cross_b_r_squared) .or. &
-            check(curl_j_cross_b_theta) .or. check(curl_j_cross_b_theta_squared) .or. &
-            check(curl_j_cross_b_phi) .or. check(curl_j_cross_b_phi_squared) .or. &
-            check(curl_j_cross_b_abs) .or. &
+        If (check(curl_j_cross_b_r) .or. &
+            check(curl_j_cross_b_theta) .or. &
+            check(curl_j_cross_b_phi) .or. &
             check(curl_jp_cross_bp_r) .or. check(curl_jp_cross_bp_theta) .or. &
             check(curl_jp_cross_bp_phi) .or. &
             check(curl_jm_cross_bm_r) .or. check(curl_jm_cross_bm_theta) .or. &
