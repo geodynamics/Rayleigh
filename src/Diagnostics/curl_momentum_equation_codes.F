@@ -97,20 +97,20 @@
 
     ! Pressure forces
 ! curl_pressure_force_r = 0
-    Integer, Parameter :: curl_pressure_force_theta   = curl_mom_eq_off+58 ! :tex: $\left[\nabla\times\nabla P\right]_\theta$
-    Integer, Parameter :: curl_pressure_force_phi     = curl_mom_eq_off+59 ! :tex:  $\left[\nabla\times\nabla P\right]_\phi$
+    Integer, Parameter :: curl_pressure_force_theta   = curl_mom_eq_off+58 ! :tex: $\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1}\right)\right)\right]_\theta$
+    Integer, Parameter :: curl_pressure_force_phi     = curl_mom_eq_off+59 ! :tex: $\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1}\right)\right)\right]_\phi$
 
 ! curl_pressure_force_r_squared = 0
-    Integer, Parameter :: curl_pressure_force_theta_squared   = curl_mom_eq_off+61 ! :tex: $\left(\left[\nabla\times\nabla P\right]_\theta\right)^2$
-    Integer, Parameter :: curl_pressure_force_phi_squared     = curl_mom_eq_off+62 ! :tex: $\left(\left[\nabla\times\nabla P\right]_\phi\right)^2$
+    Integer, Parameter :: curl_pressure_force_theta_squared   = curl_mom_eq_off+61 ! :tex: $\left(\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1}\right)\right)\right]_\theta\right)^2$
+    Integer, Parameter :: curl_pressure_force_phi_squared     = curl_mom_eq_off+62 ! :tex: $\left(\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{P}{\mathrm{f}_1}\right)\right)\right]_\phi\right)^2$
 
 ! curl_pressure_pforce_r = 0
-    Integer, Parameter :: curl_pressure_pforce_theta  = curl_mom_eq_off+64 ! :tex: $\left[\nabla\times\nabla P'\right]_\theta$
-    Integer, Parameter :: curl_pressure_pforce_phi    = curl_mom_eq_off+65 ! :tex: $\left[\nabla\times\nabla P'\right]_\phi$
+    Integer, Parameter :: curl_pressure_pforce_theta  = curl_mom_eq_off+64 ! :tex: $\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{P'}{\mathrm{f}_1}\right)\right)\right]_\theta$
+    Integer, Parameter :: curl_pressure_pforce_phi    = curl_mom_eq_off+65 ! :tex: $\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{P'}{\mathrm{f}_1}\right)\right)\right]_\phi$
 
 ! curl_pressure_mforce_r = 0
 ! curl_pressure_mforce_theta = 0: <P> is axisymmetric, so d<P>/dphi = 0
-    Integer, Parameter :: curl_pressure_mforce_phi    = curl_mom_eq_off+68 ! :tex: $\left[\nabla\times\nabla \overline{P}\right]_\phi$
+    Integer, Parameter :: curl_pressure_mforce_phi    = curl_mom_eq_off+68 ! :tex: $\left[\boldsymbol{\nabla}\times\left(-c_3\mathrm{f}_1\boldsymbol{\nabla}\left(\frac{\overline{P}}{\mathrm{f}_1}\right)\right)\right]_\phi$
 
 
     !/////////////////////////// Lorentz forces ///////////////////////////////
