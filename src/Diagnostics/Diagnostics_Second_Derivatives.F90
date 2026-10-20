@@ -141,6 +141,7 @@ Contains
             check(curl_viscous_pforce_r) .or. &
             check(curl_viscous_pforce_theta) .or. &
             check(viscous_mforce_phi) .or. &
+            check(samom_diffusion) .or. &
             check(curl_viscous_mforce_r) .or. &
             check(curl_viscous_mforce_theta)) Then
             l_compute_vp_dd = .true.
