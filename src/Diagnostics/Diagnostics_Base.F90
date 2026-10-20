@@ -60,6 +60,7 @@ Module Diagnostics_Base
     include "magnetic_energy_codes.F"
 
     include "momentum_equation_codes.F"
+    include "curl_momentum_equation_codes.F"
     include "thermal_equation_codes.F"
     include "induction_equation_codes.F"
 
@@ -86,6 +87,7 @@ Module Diagnostics_Base
     Integer, Parameter :: ell0_vr = custom_offset+3
     Integer, Parameter :: ell0_tvar = custom_offset+4
     Integer, Parameter :: ell0_dpdr = custom_offset+5
+
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
@@ -129,9 +131,6 @@ Module Diagnostics_Base
     Integer :: dbtdrdr, dbtdtdt, dbtdpdp, dbtdrdt, dbtdrdp, dbtdtdp
     Integer :: dbpdrdr, dbpdtdt, dbpdpdp, dbpdrdt, dbpdrdp, dbpdtdp
 
-    Logical :: need_second_derivatives = .false.
-
-
     !////////////////////////////////////////////////////////////////////////////
     ! Variables related to mean-correction
     ! (we only correct radial terms, but retain logic for horizontal terms)
@@ -148,9 +147,17 @@ Module Diagnostics_Base
     ! Variables related to viscous force
     Integer :: nvf = 0
     Real*8, Allocatable :: vforce_buffer(:,:,:,:)
-    Integer :: vf_r, vf_t, vf_p
-    Integer :: vfp_r, vfp_t, vfp_p
-    Integer :: vfm_r, vfm_t, vfm_p
+    Integer :: vf_r = -1, vf_t = -1, vf_p = -1
+    Integer :: vfp_r = -1, vfp_t = -1, vfp_p = -1
+    Integer :: vfm_r = -1, vfm_t = -1, vfm_p = -1
+
+    ! A special buffer used for holding the derivatives of the viscous forces needed
+    ! for their curl at output time (see Viscous_Force_Derivatives).  Each index array is
+    ! indexed by force set: 1=full, 2=fluctuating, 3=mean; -1 when not needed.
+    Type(SphericalBuffer) :: d_vforce_buffer
+    Integer :: vfd_r_dt(3), vfd_r_dp(3)
+    Integer :: vfd_t_dr(3), vfd_p_dr(3)
+    Integer :: vfd_curl_r(3)
 
 Contains
 

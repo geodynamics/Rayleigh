@@ -64,4 +64,5 @@ Momentum Equation
  :math:`c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r`                            1260    jp\_cross\_bp\_r     
  :math:`c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta`                       1261    jp\_cross\_bp\_theta 
  :math:`c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi`                         1262    jp\_cross\_bp\_phi   
+ :math:`\left|-c_1\mathrm{f}_1\left(\boldsymbol{\hat{z}}\times\boldsymbol{v}\right)-c_3\boldsymbol{\nabla}P\right|`              1263    ageo\_coriolis\_force 
 =============================================================================================================================== ====== ========================== 

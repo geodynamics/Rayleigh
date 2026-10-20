@@ -66,14 +66,16 @@ Contains
         Integer :: onembed, ostride, odist
         Integer :: xshape(4)
 
+        ! n is needed for the rescaling below, whether or not a plan is provided
+        xshape = shape(x)
+        n = xshape(1) -2 ! We assume nphi is even that the arrays has been padded by 2
+
         If (present(plan)) Then
             ! Plan exists - x assumed to keep memory location
             call dfftw_execute(plan)
         Else
             ! X will typically be deallocated and reallocated (unfortunately)
             ! So we will need to recreate the plan (because x's memory location may change)
-            xshape = shape(x)
-            n = xshape(1) -2 ! We assume nphi is even that the arrays has been padded by 2
             howmany = xshape(2)*xshape(3)*xshape(4)
             inembed = 0
             onembed = 0

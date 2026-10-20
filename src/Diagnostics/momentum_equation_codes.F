@@ -45,7 +45,6 @@
 
     !/////////////////////////////////////////////////////////////
     !  Linear Forces
-    !  Note:  the pressure gradient diagnostic codes are  above
 
     Integer, Parameter :: buoyancy_force  =  mom_eq_off+16  ! :tex: $c_2\mathrm{f}_2\Theta$
     Integer, Parameter :: buoyancy_pforce =  mom_eq_off+17  ! :tex: $c_2\mathrm{f}_2\Theta'$
@@ -121,3 +120,7 @@
     Integer, Parameter :: jp_cross_bp_r     = mom_eq_off+60 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_r$
     Integer, Parameter :: jp_cross_bp_theta = mom_eq_off+61 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\theta$
     Integer, Parameter :: jp_cross_bp_phi   = mom_eq_off+62 ! :tex: $c_4\left[\left(\boldsymbol{\nabla}\times\boldsymbol{B'}\right)\times\boldsymbol{B'}\right]_\phi$
+
+    ! Magnitude of the ageostrophic Coriolis force, i.e. of the sum of the
+    ! Coriolis and pressure forces
+    Integer, Parameter :: ageo_coriolis_force = mom_eq_off+63 ! :tex: $\left|-c_1\mathrm{f}_1\left(\boldsymbol{\hat{z}}\times\boldsymbol{v}\right)-c_3\boldsymbol{\nabla}P\right|$
