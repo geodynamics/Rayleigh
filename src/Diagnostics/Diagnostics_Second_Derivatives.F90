@@ -109,8 +109,7 @@ Contains
 
         !//////////////////////////////////////////////////////////////////
         ! Terms related to viscosity
-        If (check(visc_work) .or. &
-            check(viscous_force_r) .or. &
+        If (check(viscous_force_r) .or. &
             check(curl_viscous_force_theta) .or. &
             check(curl_viscous_force_theta_squared) .or. &
             check(curl_viscous_force_phi) .or. &
@@ -125,8 +124,7 @@ Contains
         Endif
 
 
-        If (check(visc_work_pp) .or. &
-            check(viscous_force_theta) .or. &
+        If (check(viscous_force_theta) .or. &
             check(curl_viscous_force_r) .or. &
             check(curl_viscous_force_r_squared) .or. &
             check(curl_viscous_force_phi) .or. &
@@ -140,8 +138,7 @@ Contains
             l_compute_vt_dd = .true.
         Endif
 
-        If (check(visc_work_mm) .or. &
-            check(viscous_force_phi) .or. &
+        If (check(viscous_force_phi) .or. &
             check(curl_viscous_force_r) .or. &
             check(curl_viscous_force_r_squared) .or. &
             check(curl_viscous_force_theta) .or. &
@@ -152,6 +149,14 @@ Contains
             check(viscous_mforce_phi) .or. &
             check(curl_viscous_mforce_r) .or. &
             check(curl_viscous_mforce_theta)) Then
+            l_compute_vp_dd = .true.
+        Endif
+
+        ! The viscous work is v . (viscous force), so needs all three components
+        If (check(visc_work) .or. check(visc_work_pp) .or. &
+            check(visc_work_mm)) Then
+            l_compute_vr_dd = .true.
+            l_compute_vt_dd = .true.
             l_compute_vp_dd = .true.
         Endif
 

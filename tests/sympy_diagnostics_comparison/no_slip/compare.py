@@ -10,14 +10,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'post_processing'))
 
 from assess_fields import SmoothZeroSlipPoloidal, Y
-from velocity_field import velocity_field_quantities, velocity_from_W
+from velocity_field import velocity_field_quantities, velocity_from_W, mean_and_fluctuating
 from velocity_field_codes import QUANTITY_CODES as VELOCITY_CODES
-from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, pressure_force, buoyancy_force, j_cross_b_force
+from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, viscous_work, pressure_force, buoyancy_force, j_cross_b_force
 from momentum_force_codes import QUANTITY_CODES as MOMENTUM_CODES, MAGNETIC_QUANTITY_CODES as MAGNETIC_MOMENTUM_CODES
 from curl_momentum_forces import curl_v_grad_v_force, curl_buoyancy_force, curl_coriolis_force, curl_pressure_force, curl_viscous_force, curl_j_cross_b_force
 from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES, MAGNETIC_QUANTITY_CODES as CURL_MAGNETIC_CODES
 from magnetic_field import benchmark_insulating_CA, magnetic_field_quantities
 from magnetic_field_codes import QUANTITY_CODES as MAGNETIC_FIELD_CODES
+from ke_equation_codes import VISC_WORK_CODES
 from compare_utils import compare_full3d_and_probes
 from sympy_utils import r, theta, phi
 
@@ -57,6 +58,10 @@ numeric['viscous_Force_r'], numeric['viscous_Force_theta'], numeric['viscous_For
     viscous_force(vr, vt, vp, mu_visc=1.0)
 numeric['pressure_Force_r'], numeric['pressure_Force_theta'], numeric['pressure_Force_phi'] = \
     pressure_force(sol.P, pfactor)
+(vr0, vt0, vp0), (vr1, vt1, vp1) = mean_and_fluctuating(vr, vt, vp)
+numeric['visc_work'] = viscous_work(vr, vt, vp, mu_visc=1.0)
+numeric['visc_work_pp'] = viscous_work(vr1, vt1, vp1, mu_visc=1.0)
+numeric['visc_work_mm'] = viscous_work(vr0, vt0, vp0, mu_visc=1.0)
 
 Theta = Y(l, m)  # t_init radial part = 1
 numeric['buoyancy_force'] = buoyancy_force(Theta, buoyancy_coeff)
@@ -86,6 +91,7 @@ quantity_codes.update(MAGNETIC_MOMENTUM_CODES)
 quantity_codes.update(CURL_MOMENTUM_CODES)
 quantity_codes.update(CURL_MAGNETIC_CODES)
 quantity_codes.update(MAGNETIC_FIELD_CODES)
+quantity_codes.update(VISC_WORK_CODES)
 
 ok = compare_full3d_and_probes(quantity_codes, numeric)
 

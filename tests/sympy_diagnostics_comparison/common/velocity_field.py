@@ -43,6 +43,18 @@ def velocity_field_quantities(Wl, l, m, rho=1):
     return velocity_quantities_from_v(*velocity_from_W(Wl, l, m, rho))
 
 
+def mean_and_fluctuating(vr, vt, vp):
+    """Split a velocity (sympy expressions in (r, theta, phi)) into its
+    axisymmetric mean <v> (the phi-average, i.e. Rayleigh's m=0 part) and the
+    fluctuating remainder v' = v - <v>.  Returns ((<v_r>, <v_theta>, <v_phi>),
+    (v_r', v_theta', v_phi')).
+    """
+    mean = tuple(sp.simplify(sp.integrate(f, (phi, 0, 2 * sp.pi)) / (2 * sp.pi))
+                 for f in (vr, vt, vp))
+    fluct = tuple(f - fm for f, fm in zip((vr, vt, vp), mean))
+    return mean, fluct
+
+
 def velocity_quantities_from_v(vr, vt, vp):
     """As velocity_field_quantities, for any velocity (v_r, v_theta, v_phi)
     given as sympy expressions in (r, theta, phi)."""

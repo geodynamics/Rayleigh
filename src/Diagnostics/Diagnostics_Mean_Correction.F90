@@ -159,7 +159,7 @@ Contains
         !/////////////////////////////////////////////////////
         ! Viscous Force
         If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
-            compute_quantity(viscous_mforce_r) ) Then
+            compute_quantity(viscous_mforce_r) .or. compute_quantity(visc_work_mm) ) Then
             ncorrect = ncorrect+1
             vforce_r = ncorrect
         Endif
@@ -354,7 +354,7 @@ Contains
         ! Viscous Force
 
         If (compute_quantity(viscous_force_r) .or. compute_quantity(visc_work) .or. &
-            compute_quantity(viscous_mforce_r) ) Then
+            compute_quantity(viscous_mforce_r) .or. compute_quantity(visc_work_mm) ) Then
 
             mean_3dbuffer(:,:,:,vforce_r) = vforce_buffer(:,:,:,vf_r)
 

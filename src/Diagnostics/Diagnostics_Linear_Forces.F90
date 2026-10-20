@@ -582,7 +582,8 @@ Contains
             sometimes_compute(curl_viscous_force_phi) .or. &
             sometimes_compute(curl_viscous_force_phi_squared) .or. &
             sometimes_compute(curl_viscous_force_abs) .or. &
-            sometimes_compute(viscous_mforce_r)) Then
+            sometimes_compute(viscous_mforce_r) .or. &
+            sometimes_compute(visc_work_mm)) Then
             nvf = nvf+1
             vf_r = nvf
         Endif
@@ -680,7 +681,8 @@ Contains
             compute_quantity(curl_viscous_force_phi) .or. &
             compute_quantity(curl_viscous_force_phi_squared) .or. &
             compute_quantity(curl_viscous_force_abs) .or. &
-            compute_quantity(viscous_mforce_r) ) Then
+            compute_quantity(viscous_mforce_r) .or. &
+            compute_quantity(visc_work_mm) ) Then
 
             DO_PSI
                 ! first, compute all the terms multiplied by mu

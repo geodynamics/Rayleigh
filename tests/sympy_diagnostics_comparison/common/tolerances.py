@@ -48,6 +48,9 @@ REL_TOLERANCES = {
     'viscous_Force_r':     3.0e-10,  # 5.7e-11
     'viscous_Force_theta': 2.0e-9,   # 4.1e-10
     'viscous_Force_phi':   2.0e-9,   # 4.1e-10
+    'visc_work':           1.0e-9,   # 1.9e-10
+    'visc_work_pp':        1.5e-9,   # 2.9e-10
+    'visc_work_mm':        8.0e-10,  # 1.6e-10
 
     # The curl of the viscous force needs third radial derivatives.
     'curl_viscous_force_r':      1.0e-9,  # 1.5e-10

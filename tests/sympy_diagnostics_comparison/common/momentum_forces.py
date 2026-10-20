@@ -123,6 +123,16 @@ def viscous_force(vr, vt, vp, mu_visc=1):
     return _lambdify3(Fr), _lambdify3(Ft), _lambdify3(Fp)
 
 
+def viscous_work(vr, vt, vp, mu_visc=1):
+    """visc_work (ke_equation_codes.F) as a numpy-callable f(r,theta,phi):
+    v . viscous_Force, with viscous_Force as in viscous_force() above.
+    Pass the fluctuating (mean) velocity for visc_work_pp (visc_work_mm).
+    """
+    Fr, Ft, Fp = viscous_force(vr, vt, vp, mu_visc)
+    fvr, fvt, fvp = _lambdify3(vr), _lambdify3(vt), _lambdify3(vp)
+    return lambda *x: fvr(*x) * Fr(*x) + fvt(*x) * Ft(*x) + fvp(*x) * Fp(*x)
+
+
 def pressure_force(P, pfactor):
     """pressure_Force_r, pressure_Force_theta, pressure_Force_phi as
     numpy-callables f(r,theta,phi) (with dlnrho=0, dropping the density-gradient

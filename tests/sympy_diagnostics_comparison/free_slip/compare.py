@@ -10,13 +10,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'post_processing'))
 
 from assess_fields import SmoothFreeSlipPoloidal, Y
-from velocity_field import velocity_quantities_from_v, velocity_from_W, velocity_from_Z
+from velocity_field import velocity_quantities_from_v, velocity_from_W, velocity_from_Z, mean_and_fluctuating
 from velocity_field_codes import QUANTITY_CODES as VELOCITY_CODES
-from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, pressure_force, buoyancy_force
+from momentum_forces import v_grad_v_force, coriolis_force, viscous_force, viscous_work, pressure_force, buoyancy_force
 from momentum_force_codes import QUANTITY_CODES as MOMENTUM_CODES
 from curl_momentum_forces import curl_v_grad_v_force, curl_buoyancy_force, curl_coriolis_force, curl_pressure_force, curl_viscous_force
 from curl_momentum_force_codes import QUANTITY_CODES as CURL_MOMENTUM_CODES, MEAN_FLUCTUATING_CODES, \
     CURL_VISCOUS_DERIVED_CODES
+from ke_equation_codes import VISC_WORK_CODES
 from compare_utils import compare_full3d_and_probes
 from sympy_utils import r, theta, phi
 
@@ -56,10 +57,10 @@ Zl = rho * r**2 * (1 + 2*r**3 - 3*(rmin + rmax)*r**2 + 6*rmin*rmax*r)
 def vsum(*vs):
     return tuple(sum(c) for c in zip(*vs))
 
-# fluctuating (m != 0) and mean (m = 0) parts of the velocity
-vr1, vt1, vp1 = vsum(velocity_from_W(Wl, l, m, rho), velocity_from_Z(Zl, lz, mz, rho))
-vr0, vt0, vp0 = vsum(velocity_from_W(Wl0, l0, m0, rho), velocity_from_Z(Zl/2, lz0, mz0, rho))
-vr, vt, vp = vr1 + vr0, vt1 + vt0, vp1 + vp0
+vr, vt, vp = vsum(velocity_from_W(Wl, l, m, rho), velocity_from_Z(Zl, lz, mz, rho),
+                  velocity_from_W(Wl0, l0, m0, rho), velocity_from_Z(Zl/2, lz0, mz0, rho))
+# mean (axisymmetric) and fluctuating parts of the velocity
+(vr0, vt0, vp0), (vr1, vt1, vp1) = mean_and_fluctuating(vr, vt, vp)
 
 quantities = velocity_quantities_from_v(vr, vt, vp)
 numeric = {name: sp.lambdify((r, theta, phi), expr, 'numpy') for name, expr in quantities.items()}
@@ -71,6 +72,9 @@ numeric['viscous_Force_r'], numeric['viscous_Force_theta'], numeric['viscous_For
     viscous_force(vr, vt, vp, mu_visc=1.0)
 numeric['pressure_Force_r'], numeric['pressure_Force_theta'], numeric['pressure_Force_phi'] = \
     pressure_force(sol.P, pfactor)
+numeric['visc_work'] = viscous_work(vr, vt, vp, mu_visc=1.0)
+numeric['visc_work_pp'] = viscous_work(vr1, vt1, vp1, mu_visc=1.0)
+numeric['visc_work_mm'] = viscous_work(vr0, vt0, vp0, mu_visc=1.0)
 
 Theta = Y(l, m)  # t_init radial part = 1
 numeric['buoyancy_force'] = buoyancy_force(Theta, buoyancy_coeff)
@@ -97,6 +101,7 @@ quantity_codes.update(MOMENTUM_CODES)
 quantity_codes.update(CURL_MOMENTUM_CODES)
 quantity_codes.update(MEAN_FLUCTUATING_CODES)
 quantity_codes.update(CURL_VISCOUS_DERIVED_CODES)
+quantity_codes.update(VISC_WORK_CODES)
 
 ok = compare_full3d_and_probes(quantity_codes, numeric)
 
